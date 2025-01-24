@@ -47,7 +47,6 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
-from galaxy.model.base import transaction
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -764,8 +763,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
         if success_count:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(

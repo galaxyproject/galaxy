@@ -44,7 +44,6 @@ from galaxy.model import (
     User,
     UserShareAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import (
     ShareWithExtra,
@@ -199,8 +198,7 @@ class SharableModelManager(
 
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return user_share_assoc
 
     def unshare_with(self, item, user: User, flush: bool = True):
@@ -212,8 +210,7 @@ class SharableModelManager(
         self.session().delete(user_share_assoc)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return user_share_assoc
 
     def _query_shared_with(self, user, eagerloads=True, **kwargs):
@@ -279,8 +276,7 @@ class SharableModelManager(
 
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return current_shares, needs_adding, needs_removing
 
     # .... slugs
@@ -305,8 +301,7 @@ class SharableModelManager(
 
         item.slug = new_slug
         if flush:
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def _default_slug_base(self, item):
@@ -348,8 +343,7 @@ class SharableModelManager(
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     # TODO: def by_slug( self, user, **kwargs ):

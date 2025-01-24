@@ -10,7 +10,6 @@ from string import Template
 from typing import ClassVar
 from urllib import parse
 
-from galaxy.model.base import transaction
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
@@ -211,8 +210,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         user.set_password_cleartext("test123")
         sa_session.add(user)
         try:
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
         except Exception:
             # User already exists
             pass
@@ -237,8 +235,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         user.set_password_cleartext("test123")
         sa_session.add(user)
         try:
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
         except Exception:
             # User already exists
             pass

@@ -22,7 +22,6 @@ from galaxy.model import (
     Library,
     Role,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.library import (
     get_libraries_by_name,
     get_libraries_for_admins,
@@ -78,8 +77,7 @@ class LibraryManager:
             root_folder = trans.app.model.LibraryFolder(name=name, description="")
             library.root_folder = root_folder
             trans.sa_session.add_all((library, root_folder))
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return library
 
     def update(
@@ -116,8 +114,7 @@ class LibraryManager:
             changed = True
         if changed:
             trans.sa_session.add(library)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return library
 
     def delete(self, trans, library: Library, undelete: Optional[bool] = False) -> Library:
@@ -131,8 +128,7 @@ class LibraryManager:
         else:
             library.deleted = True
         trans.sa_session.add(library)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return library
 
     def list(self, trans, deleted: Optional[bool] = False) -> Tuple[Query, Dict[str, Set]]:

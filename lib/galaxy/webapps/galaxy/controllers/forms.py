@@ -10,7 +10,6 @@ from sqlalchemy import (
 
 from galaxy import model
 from galaxy.managers.forms import get_form
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -292,6 +291,5 @@ class Forms(BaseUIController):
         form_definition.form_definition_current = form_definition_current
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return form_definition, None

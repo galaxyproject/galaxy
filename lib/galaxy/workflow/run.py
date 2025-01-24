@@ -20,10 +20,7 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.schema.invocation import (
     CancelReason,
     FAILURE_REASONS_EXPECTED,
@@ -126,8 +123,7 @@ def __invoke(
 
     # Be sure to update state of workflow_invocation.
     trans.sa_session.add(workflow_invocation)
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
 
     return outputs, workflow_invocation
 

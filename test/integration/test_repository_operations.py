@@ -3,7 +3,6 @@ from collections import namedtuple
 
 from sqlalchemy import select
 
-from galaxy.model.base import transaction
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import UsesShed
@@ -87,16 +86,15 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         hg_util.update_repository(repository_path, ctx_rev="3")
         # change repo to revision 3 in database
         model = self._app.install_model
-        tsr = model.session.scalars(select(model.ToolShedRepository).limit(1)).first()
+        session = model.context()
+        tsr = session.scalars(select(model.ToolShedRepository).limit(1)).first()
         assert tsr.name == REPO.name
         assert tsr.changeset_revision == latest_revision
         assert int(tsr.ctx_rev) >= 4
         tsr.ctx_rev = "3"
         tsr.installed_changeset_revision = REVISION_3
         tsr.changeset_revision = REVISION_3
-        session = model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         # update shed_tool_conf.xml to look like revision 3 was the installed_changeset_revision
         with open(self._app.config.shed_tool_config_file) as shed_config:
             shed_text = shed_config.read().replace(latest_revision, REVISION_3)

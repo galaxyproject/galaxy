@@ -26,7 +26,6 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
 
 import tool_shed.webapp.config as tool_shed_config
 import tool_shed.webapp.model.mapping
-from galaxy.model.base import transaction
 from galaxy.util import (
     build_url,
     send_mail as galaxy_send_mail,
@@ -176,8 +175,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
             repository.deprecated = True
             app.sa_session.add(repository)
             session = app.sa_session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         owner = repositories_by_owner[repository_owner]["owner"]
         send_mail_to_owner(
             app, owner.username, owner.email, repositories_by_owner[repository_owner]["repositories"], days

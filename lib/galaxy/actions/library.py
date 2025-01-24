@@ -17,7 +17,6 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
 )
 from galaxy.model import LibraryFolder
-from galaxy.model.base import transaction
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -294,8 +293,7 @@ class LibraryActions:
         if link_data_only == "link_to_files":
             uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return uploaded_dataset
 
     def _upload_library_dataset(self, trans, payload):
@@ -335,8 +333,7 @@ class LibraryActions:
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         new_folder_dict = dict(created=new_folder)

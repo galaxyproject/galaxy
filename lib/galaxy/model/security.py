@@ -49,7 +49,6 @@ from galaxy.model import (
     UserGroupAssociation,
     UserRoleAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.role import (
     get_npns_roles,
     get_private_user_role,
@@ -695,29 +694,25 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
     def associate_user_group(self, user, group):
         assoc = UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def associate_user_role(self, user, role):
         assoc = UserRoleAssociation(user, role)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def associate_group_role(self, group, role):
         assoc = GroupRoleAssociation(group, role)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def associate_action_dataset_role(self, action, dataset, role):
         assoc = DatasetPermissions(action, dataset, role)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def create_user_role(self, user, app):
@@ -769,8 +764,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             num_in_groups = len(in_groups) + 1
         else:
             num_in_groups = len(in_groups)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return role, num_in_groups
 
     def get_sharing_roles(self, user):
@@ -816,8 +810,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dup)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         if history:
             for history in user.active_histories:
                 self.history_set_default_permissions(
@@ -856,8 +849,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dhp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         if dataset:
             # Only deal with datasets that are not purged
             for hda in history.activatable_datasets:
@@ -925,8 +917,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed and flush:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         return ""
 
     def set_dataset_permission(self, dataset, permission=None):
@@ -955,8 +946,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def get_permissions(self, item):
         """
@@ -1008,8 +998,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
     def _create_sharing_role(self, users):
         sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
         self.sa_session.add(sharing_role)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         for user in users:
             self.associate_user_role(user, sharing_role)
         return sharing_role
@@ -1050,8 +1039,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                             permissions[self.permitted_actions.DATASET_MANAGE_PERMISSIONS] = roles
                             self.set_dataset_permission(library_item.dataset, permissions)
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def set_library_item_permission(self, library_item, permission=None):
         """
@@ -1078,8 +1066,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     self.sa_session.add(item_permission)
                     flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def library_is_public(self, library, contents=False):
         if contents:
@@ -1104,8 +1091,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.delete(lp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def folder_is_public(self, folder):
         for sub_folder in folder.folders:
@@ -1216,8 +1202,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.delete(dp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def derive_roles_from_access(self, trans, item_id, cntrller, library=False, **kwd):
         # Check the access permission on a dataset.  If library is true, item_id refers to a library.  If library
@@ -1344,8 +1329,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 if not found_permission_class.filter_by(role_id=private_role.id, action=action.action).first():
                     lp = found_permission_class(action.action, target_library_item, private_role)
                     self.sa_session.add(lp)
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
+                    self.sa_session.commit()
 
     def get_permitted_libraries(self, trans, user, actions):
         """
@@ -1749,8 +1733,7 @@ class HostAgent(RBACAgent):
         else:
             hdadaa = HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
         self.sa_session.add(hdadaa)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
 
 def _walk_action_roles(permissions, query_action):

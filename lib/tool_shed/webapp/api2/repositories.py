@@ -23,7 +23,6 @@ from galaxy.exceptions import (
     ActionInputError,
     InsufficientPermissionsException,
 )
-from galaxy.model.base import transaction
 from galaxy.webapps.galaxy.api import as_form
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
@@ -386,8 +385,7 @@ class FastAPIRepositories:
         repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
         repository_metadata.malicious = True
         trans.sa_session.add(repository_metadata)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -404,8 +402,7 @@ class FastAPIRepositories:
         repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
         repository_metadata.malicious = False
         trans.sa_session.add(repository_metadata)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
@@ -422,8 +419,7 @@ class FastAPIRepositories:
         ensure_can_manage(trans, repository)
         repository.deprecated = True
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -440,8 +436,7 @@ class FastAPIRepositories:
         ensure_can_manage(trans, repository)
         repository.deprecated = False
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(

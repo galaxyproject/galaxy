@@ -13,7 +13,6 @@ from galaxy.model import (
     StoredWorkflow,
     Workflow,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.schema import (
     ClaimLandingPayload,
     CreateToolLandingRequestPayload,
@@ -154,8 +153,7 @@ class TestLanding(BaseTestCase):
         stored_workflow = StoredWorkflow()
         stored_workflow.user = self.trans.user
         sa_session.add(stored_workflow)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         return CreateWorkflowLandingRequestPayload(
             workflow_id=self.app.security.encode_id(stored_workflow.id),
@@ -173,8 +171,7 @@ class TestLanding(BaseTestCase):
         workflow.stored_workflow = stored_workflow
         sa_session.add(stored_workflow)
         sa_session.add(workflow)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         return CreateWorkflowLandingRequestPayload(
             workflow_id=self.app.security.encode_id(workflow.id),

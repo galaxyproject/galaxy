@@ -7,7 +7,6 @@ from typing import (
 
 from sqlalchemy import select
 
-from galaxy.model.base import transaction
 from galaxy.tool_shed.util.hg_util import (
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
@@ -150,8 +149,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
                 session = sa_session()
-                with transaction(session):
-                    session.commit()
+                session.commit()
             except Exception:
                 rev = -1
         else:
@@ -269,8 +267,7 @@ def repository_metadata_by_changeset_revision(
         for repository_metadata in all_metadata_records[1:]:
             sa_session.delete(repository_metadata)
             session = sa_session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return all_metadata_records[0]
     elif all_metadata_records:
         return all_metadata_records[0]

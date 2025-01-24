@@ -23,7 +23,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     LibraryFolder,
 )
-from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
 
@@ -133,8 +132,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
             session = self.session()
             session.add(ldda)
             if flush:
-                with transaction(session):
-                    session.commit()
+                session.commit()
 
     def _validate_and_parse_update_payload(self, payload):
         MINIMUM_STRING_LENGTH = 1

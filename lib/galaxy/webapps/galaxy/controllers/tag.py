@@ -12,7 +12,6 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import web
-from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesTagsMixin,
@@ -32,8 +31,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         trans.tag_handler.apply_item_tags(user, item, new_tag)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=new_tag)
         trans.log_action(user, "tag", context, params)
@@ -48,8 +46,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         trans.tag_handler.remove_item_tag(user, item, tag_name)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=tag_name)
         trans.log_action(user, "untag", context, params)

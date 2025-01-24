@@ -49,7 +49,6 @@ from galaxy.model import (
     UserNotificationAssociation,
     UserRoleAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.notifications import (
     AnyNotificationContent,
@@ -164,12 +163,10 @@ class NotificationManager:
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification, request.galaxy_url)
         self.sa_session.add(notification)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         notifications_sent = self._create_associations(notification, recipient_users)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         return notification, notifications_sent
 
@@ -199,8 +196,7 @@ class NotificationManager:
         for notification in pending_notifications:
             notification.dispatched = True
 
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         # Do the actual dispatching
         for notification in pending_notifications:
@@ -284,8 +280,7 @@ class NotificationManager:
         self.ensure_notifications_enabled()
         notification = self._create_notification_model(request)
         self.sa_session.add(notification)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return notification
 
     def get_user_notification(self, user: User, notification_id: int, active_only: Optional[bool] = True):
@@ -383,8 +378,7 @@ class NotificationManager:
             stmt = stmt.values(deleted=request.deleted)
         result = self.sa_session.execute(stmt)
         updated_row_count = result.rowcount
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return updated_row_count
 
     def update_broadcasted_notification(self, notification_id: int, request: NotificationBroadcastUpdateRequest) -> int:
@@ -408,8 +402,7 @@ class NotificationManager:
             stmt = stmt.values(content=request.content.json())
         result = self.sa_session.execute(stmt)
         updated_row_count = result.rowcount
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return updated_row_count
 
     def get_user_notification_preferences(self, user: User) -> UserNotificationPreferences:
@@ -430,8 +423,7 @@ class NotificationManager:
         preferences = self.get_user_notification_preferences(user)
         preferences.update(request.preferences)
         user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = preferences.model_dump_json()
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return preferences
 
     def _register_supported_channels(self) -> Dict[str, NotificationChannelPlugin]:
@@ -469,8 +461,7 @@ class NotificationManager:
         result = self.sa_session.execute(delete_stmt)
         deleted_notifications_count = result.rowcount
 
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         return CleanupResultSummary(deleted_notifications_count, deleted_associations_count)
 

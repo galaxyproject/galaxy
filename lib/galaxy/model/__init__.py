@@ -146,10 +146,7 @@ from galaxy.files.templates import (
     FileSourceTemplate,
     template_to_configuration as file_source_template_to_configuration,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.custom_types import (
     DoubleEncodedJsonType,
     JSONType,
@@ -1164,8 +1161,7 @@ ON CONFLICT
             # the existing value - we're setting it in raw SQL for
             # performance reasons and bypassing object properties.
             sa_session.expire(self, ["disk_usage"])
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
     @staticmethod
     def user_template_environment(user: Optional["User"]):
@@ -1234,8 +1230,7 @@ ON CONFLICT
         role = Role(type=Role.types.PRIVATE)
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def dictify_objectstore_usage(self) -> List[UserObjectstoreUsage]:
         session = object_session(self)
@@ -1941,8 +1936,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 job.resume(flush=False)
             if flush:
                 session = object_session(self)
-                with transaction(session):
-                    session.commit()
+                session.commit()
 
     def _serialize(self, id_encoder, serialization_options):
         job_attrs = dict_for(self)
@@ -2209,8 +2203,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             output_association.item.visible = False
         if flush:
             session = object_session(self)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
 
 class Task(Base, JobLike, RepresentById):
@@ -2815,8 +2808,7 @@ class JobExportHistoryArchive(Base, RepresentById):
         archive_dataset = Dataset()
         sa_session.add(archive_dataset)
 
-        with transaction(sa_session):
-            sa_session.commit()  # ensure job.id and archive_dataset.id are available
+        sa_session.commit()  # ensure job.id and archive_dataset.id are available
 
         object_store.create(archive_dataset)  # set the object store id, create dataset (if applicable)
         # Add association for keeping track of job, history, archive relationship.
@@ -3382,8 +3374,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             object_session(self).add(dataset)
 
             session = object_session(self)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
         elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError(
@@ -3430,15 +3421,13 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                         self.user.adjust_total_disk_usage(disk_usage, quota_source_info.label)
             sa_session.add_all(datasets)
             if flush:
-                with transaction(sa_session):
-                    sa_session.commit()
+                sa_session.commit()
         else:
             for dataset in datasets:
                 self.add_dataset(dataset, parent_id=parent_id, genome_build=genome_build, set_hid=set_hid, quota=quota)
                 sa_session.add(dataset)
                 if flush:
-                    with transaction(sa_session):
-                        sa_session.commit()
+                    sa_session.commit()
 
     def __add_datasets_optimized(self, datasets, genome_build=None):
         """Optimized version of add_dataset above that minimizes database
@@ -3517,8 +3506,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
-        with transaction(db_session):
-            db_session.commit()
+        db_session.commit()
 
         return new_history
 
@@ -3575,8 +3563,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         if job is not None:
             # We'll flush once if there was a paused job
             session = object_session(job)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
     @property
     def paused_jobs(self):
@@ -4131,8 +4118,7 @@ class DefaultHistoryPermissions(Base, RepresentById):
 class StorableObject:
     def flush(self):
         if sa_session := object_session(self):
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
 
 
 def setup_global_object_store_for_models(object_store: "BaseObjectStore") -> None:
@@ -4420,8 +4406,7 @@ class Dataset(Base, StorableObject, Serializable):
         # for backwards compatibility, set if unset
         self.set_total_size()
         db_session = object_session(self)
-        with transaction(db_session):
-            db_session.commit()
+        db_session.commit()
         return self.total_size
 
     def set_total_size(self):
@@ -4721,8 +4706,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
-                with transaction(sa_session):
-                    sa_session.commit()
+                sa_session.commit()
         elif dataset:
             add_object_to_object_session(self, dataset)
         self.dataset = dataset
@@ -5428,8 +5412,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.metadata = self.metadata
         if flush:
             session = object_session(self)
-            with transaction(session):
-                session.commit()
+            session.commit()
         return hda
 
     def copy_tags_to(self, copy_tags=None):
@@ -5499,8 +5482,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             trans.sa_session.add(dp)
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         if self.set_metadata_requires_flush:
-            with transaction(session):
-                session.commit()
+            session.commit()
         ldda.metadata = self.metadata
         # TODO: copy #tags from history
         if ldda_message:
@@ -5509,9 +5491,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
             session.add(target_folder)
         session.add(library_dataset)
-
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         return ldda
 
@@ -6140,8 +6120,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             if commit:
                 target_history.add_pending_items()
         if commit:
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
         return hda
 
     def copy(self, parent_id=None, target_folder=None, flush=True):
@@ -6167,12 +6146,10 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         tag_manager.apply_item_tags(user=self.user, item=ldda, tags_str=src_ldda_tags)
 
         sa_session.add(ldda)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         return ldda
 
     def clear_associated_files(self, metadata_safe=False, purge=False):
@@ -6882,8 +6859,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         object_session(self).add(new_collection)
         if flush:
             session = object_session(self)
-            with transaction(session):
-                session.commit()
+            session.commit()
         return new_collection
 
     def replace_failed_elements(self, replacements):
@@ -7314,8 +7290,7 @@ class HistoryDatasetCollectionAssociation(
             element_destination.add_pending_items()
         if flush:
             session = object_session(self)
-            with transaction(session):
-                session.commit()
+            session.commit()
         return hdca
 
     @property
@@ -10102,8 +10077,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     def save(self):
         self.sa_session.add(self)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     @classmethod
     def store(cls, server_url, association):
@@ -10123,8 +10097,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
         assoc.lifetime = association.lifetime
         assoc.assoc_type = association.assoc_type
         cls.sa_session.add(assoc)
-        with transaction(cls.sa_session):
-            cls.sa_session.commit()
+        cls.sa_session.commit()
 
     @classmethod
     def get(cls, *args, **kwargs):
@@ -10166,8 +10139,7 @@ class PSACode(Base, CodeMixin, RepresentById):
 
     def save(self):
         self.sa_session.add(self)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     @classmethod
     def get_code(cls, code):
@@ -10196,8 +10168,7 @@ class PSANonce(Base, NonceMixin, RepresentById):
 
     def save(self):
         self.sa_session.add(self)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     @classmethod
     def use(cls, server_url, timestamp, salt):
@@ -10211,8 +10182,7 @@ class PSANonce(Base, NonceMixin, RepresentById):
         except IndexError:
             instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
             cls.sa_session.add(instance)
-            with transaction(cls.sa_session):
-                cls.sa_session.commit()
+            cls.sa_session.commit()
             return instance
 
 
@@ -10236,8 +10206,7 @@ class PSAPartial(Base, PartialMixin, RepresentById):
 
     def save(self):
         self.sa_session.add(self)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     @classmethod
     def load(cls, token):
@@ -10255,8 +10224,7 @@ class PSAPartial(Base, PartialMixin, RepresentById):
         if partial := cls.load(token):
             session = cls.sa_session
             session.execute(delete(partial))
-            with transaction(session):
-                session.commit()
+            session.commit()
 
 
 class UserAuthnzToken(Base, UserMixin, RepresentById):
@@ -10293,13 +10261,11 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     def set_extra_data(self, extra_data=None):
         if super().set_extra_data(extra_data):
             self.sa_session.add(self)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def save(self):
         self.sa_session.add(self)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     @classmethod
     def changed(cls, user):
@@ -10308,8 +10274,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         (Required by social_core.storage.UserMixin interface)
         """
         cls.sa_session.add(user)
-        with transaction(cls.sa_session):
-            cls.sa_session.commit()
+        cls.sa_session.commit()
 
     @classmethod
     def get_username(cls, user):
@@ -10361,8 +10326,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
             raise Exception(f"User with this email '{instance.email}' already exists.")
         instance.set_random_password()
         cls.sa_session.add(instance)
-        with transaction(cls.sa_session):
-            cls.sa_session.commit()
+        cls.sa_session.commit()
         return instance
 
     @classmethod
@@ -10414,8 +10378,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         uid = str(uid)
         instance = cls(user=user, uid=uid, provider=provider)
         cls.sa_session.add(instance)
-        with transaction(cls.sa_session):
-            cls.sa_session.commit()
+        cls.sa_session.commit()
         return instance
 
 

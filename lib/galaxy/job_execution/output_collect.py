@@ -24,7 +24,6 @@ from galaxy.model import (
     JobToOutputDatasetAssociation,
     LibraryDatasetDatasetAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
@@ -302,8 +301,7 @@ class JobContext(BaseJobContext):
         self.sa_session.add(obj)
 
     def flush(self):
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     def get_library_folder(self, destination):
         app = self.app
@@ -343,8 +341,7 @@ class JobContext(BaseJobContext):
         trans = self.work_context
         trans.app.security_agent.copy_library_permissions(trans, library_folder, ld)
         trans.sa_session.add(ld)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
         trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
@@ -354,12 +351,10 @@ class JobContext(BaseJobContext):
         )
         library_folder.add_library_dataset(ld, genome_build=ldda.dbkey)
         trans.sa_session.add(library_folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         trans.sa_session.add(ld)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         sa_session = self.sa_session

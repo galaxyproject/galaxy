@@ -32,7 +32,6 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
@@ -136,8 +135,7 @@ class DatasetInstanceMaterializer:
                     sa_session = object_session(dataset_instance)
                 assert sa_session
                 sa_session.add(materialized_dataset)
-                with transaction(sa_session):
-                    sa_session.commit()
+                sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)

@@ -41,7 +41,6 @@ from galaxy.model import (
     Job,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
@@ -157,8 +156,7 @@ def change_datatype(
         path = dataset_instance.dataset.get_file_name()
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
 
 
@@ -174,8 +172,7 @@ def touch(
     stmt = select(model.HistoryDatasetCollectionAssociation).filter_by(id=item_id)
     item = sa_session.execute(stmt).scalar_one()
     item.touch()
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -209,8 +206,7 @@ def set_metadata(
     except Exception as e:
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
         dataset_instance.state = dataset_instance.states.FAILED_METADATA
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
 
 def _get_dataset_manager(

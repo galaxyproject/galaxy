@@ -42,7 +42,6 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
@@ -288,8 +287,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         # an anonymous user can only have one history
         if self.user_manager.is_anonymous(trans.user):
@@ -387,8 +385,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
@@ -405,8 +402,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return task_summary
 
     def update(

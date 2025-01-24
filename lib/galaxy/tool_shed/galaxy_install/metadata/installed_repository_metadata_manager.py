@@ -9,7 +9,6 @@ from typing import (
 from sqlalchemy import false
 
 from galaxy import util
-from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
@@ -135,8 +134,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
 
                 session = self.app.install_model.context
                 session.add(self.repository)
-                with transaction(session):
-                    session.commit()
+                session.commit()
 
                 log.debug(f"Metadata has been reset on repository {self.repository.name}.")
             else:
