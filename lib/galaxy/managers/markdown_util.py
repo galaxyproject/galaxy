@@ -217,16 +217,16 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 url = trans.app.config.organization_url
                 rval = self.handle_instance_organization_link(line, title, url)
             elif container == "invocation_inputs":
-                rval = None
+                rval = self.handle_invocation_inputs(line, title, url)
             elif container == "invocation_outputs":
-                rval = None
+                rval = self.handle_invocation_outputs(line, title, url)
             elif container == "invocation_time":
                 invocation = workflow_manager.get_invocation(
                     trans, object_id, check_ownership=False, check_accessible=True
                 )
                 rval = self.handle_invocation_time(line, invocation)
             elif container == "visualization":
-                rval = None
+                rval = self.handle_visualization(line, title, url)
             else:
                 raise MalformedContents(f"Unknown Galaxy Markdown directive encountered [{container}].")
             if rval is not None:
@@ -359,6 +359,18 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def handle_invocation_time(self, line, date):
+        pass
+
+    @abc.abstractmethod
+    def handle_invocation_inputs(self, line, date):
+        pass
+
+    @abc.abstractmethod
+    def handle_invocation_outputs(self, line, date):
+        pass
+
+    @abc.abstractmethod
+    def handle_visualization(self, line, date):
         pass
 
     @abc.abstractmethod
