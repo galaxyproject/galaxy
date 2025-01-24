@@ -5788,7 +5788,9 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
         order_by=asc(name),
         back_populates="parent",
     )
-    parent: Mapped[Optional["LibraryFolder"]] = relationship(back_populates="folders", remote_side=[id])
+    parent: Mapped[Optional["LibraryFolder"]] = relationship(
+        back_populates="folders", remote_side=lambda: LibraryFolder.id
+    )
 
     active_folders: Mapped[List["LibraryFolder"]] = relationship(
         primaryjoin=("and_(LibraryFolder.parent_id == LibraryFolder.id, not_(LibraryFolder.deleted))"),
@@ -5928,10 +5930,12 @@ class LibraryDataset(Base, Serializable):
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     folder: Mapped[Optional["LibraryFolder"]] = relationship()
     library_dataset_dataset_association = relationship(
-        "LibraryDatasetDatasetAssociation", foreign_keys=library_dataset_dataset_association_id, post_update=True
+        "LibraryDatasetDatasetAssociation",
+        foreign_keys=library_dataset_dataset_association_id,
+        post_update=True,
     )
     expired_datasets: Mapped[List["LibraryDatasetDatasetAssociation"]] = relationship(
-        foreign_keys=[id, library_dataset_dataset_association_id],
+        foreign_keys=lambda: [LibraryDataset.id, LibraryDataset.library_dataset_dataset_association_id],
         primaryjoin=(
             "and_(LibraryDataset.id == LibraryDatasetDatasetAssociation.library_dataset_id, \
              not_(LibraryDataset.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.id))"
@@ -6937,8 +6941,9 @@ class HistoryDatasetCollectionAssociation(
 
     copied_from_history_dataset_collection_association = relationship(
         "HistoryDatasetCollectionAssociation",
-        primaryjoin=copied_from_history_dataset_collection_association_id == id,
-        remote_side=[id],
+        primaryjoin=lambda: HistoryDatasetCollectionAssociation.copied_from_history_dataset_collection_association_id
+        == HistoryDatasetCollectionAssociation.id,
+        remote_side=lambda: HistoryDatasetCollectionAssociation.id,
         uselist=False,
     )
     implicit_input_collections: Mapped[List["ImplicitlyCreatedDatasetCollectionInput"]] = relationship(
@@ -8483,7 +8488,7 @@ class WorkflowComment(Base, RepresentById):
     parent_comment: Mapped[Optional["WorkflowComment"]] = relationship(
         primaryjoin=(lambda: WorkflowComment.id == WorkflowComment.parent_comment_id),
         back_populates="child_comments",
-        remote_side=[id],
+        remote_side=lambda: WorkflowComment.id,
     )
 
     child_comments: Mapped[List["WorkflowComment"]] = relationship(
@@ -10593,7 +10598,7 @@ class Tag(Base, RepresentById):
     parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"))
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     children: Mapped[List["Tag"]] = relationship(back_populates="parent")
-    parent: Mapped[Optional["Tag"]] = relationship(back_populates="children", remote_side=[id])
+    parent: Mapped[Optional["Tag"]] = relationship(back_populates="children", remote_side=lambda: Tag.id)
 
     def __str__(self):
         return f"Tag(id={self.id}, type={self.type or -1}, parent_id={self.parent_id}, name={self.name})"
@@ -10860,7 +10865,7 @@ class Vault(Base):
     key: Mapped[str] = mapped_column(Text, primary_key=True)
     parent_key: Mapped[Optional[str]] = mapped_column(Text, ForeignKey(key), index=True)
     children: Mapped[List["Vault"]] = relationship(back_populates="parent")
-    parent: Mapped[Optional["Vault"]] = relationship(back_populates="children", remote_side=[key])
+    parent: Mapped[Optional["Vault"]] = relationship(back_populates="children", remote_side=lambda: Vault.key)
     value: Mapped[Optional[str]] = mapped_column(Text)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
@@ -11519,7 +11524,7 @@ mapper_registry.map_imperatively(
                 HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
                 == HistoryDatasetAssociation.table.c.id
             ),
-            remote_side=[HistoryDatasetAssociation.table.c.id],
+            remote_side=lambda: HistoryDatasetAssociation.table.c.id,
             uselist=False,
             back_populates="copied_to_history_dataset_associations",
         ),
@@ -11610,7 +11615,7 @@ mapper_registry.map_imperatively(
                 LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
                 == LibraryDatasetDatasetAssociation.table.c.id
             ),
-            remote_side=[LibraryDatasetDatasetAssociation.table.c.id],
+            remote_side=lambda: LibraryDatasetDatasetAssociation.table.c.id,
             uselist=False,
             back_populates="copied_to_library_dataset_dataset_associations",
         ),
