@@ -46,7 +46,7 @@
                 title="Disconnect External Identity"
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
-                Disconnect {{ item.provider_label.charAt(0).toUpperCase() + item.provider_label.slice(1) }} -
+                Disconnect {{ capitalizeAsTitle(item.provider_label) }} -
                 {{ item.email }}
             </b-button>
 
@@ -98,6 +98,8 @@ import { Toast } from "composables/toast";
 import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
 import Vue from "vue";
+
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
@@ -157,6 +159,9 @@ export default {
         Toast.success(notificationMessage);
     },
     methods: {
+        capitalizeAsTitle(str) {
+            return capitalizeFirstLetter(str);
+        },
         loadIdentities() {
             this.loading = true;
             svc.getIdentityProviders()

@@ -7,6 +7,7 @@ import Multiselect from "vue-multiselect";
 import { useConfig } from "@/composables/config";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -282,7 +283,7 @@ function getIdpPreference() {
                                 {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
                             </span>
                             <span v-else>
-                                {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                                {{ capitalizeFirstLetter(idp) }}
                             </span>
                         </BButton>
                     </span>
