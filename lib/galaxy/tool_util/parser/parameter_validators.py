@@ -695,7 +695,7 @@ def _parse_int(xml_el: Element, attribute: str) -> Optional[int]:
 
 def _parse_number(xml_el: Element, attribute: str) -> Optional[Union[float, int]]:
     raw_value = xml_el.get(attribute)
-    if raw_value and ("." in raw_value or "e" in raw_value):
+    if raw_value and ("." in raw_value or "e" in raw_value or "inf" in raw_value):
         return float(raw_value)
     elif raw_value:
         return int(raw_value)
