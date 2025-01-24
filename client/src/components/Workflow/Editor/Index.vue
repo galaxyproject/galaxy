@@ -999,8 +999,6 @@ export default {
                 await this.resetStores();
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
-                console.log("loading");
-
                 try {
                     const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
                     await fromSimple(id, data);
