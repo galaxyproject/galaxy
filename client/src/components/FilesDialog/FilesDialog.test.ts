@@ -130,6 +130,14 @@ describe("FilesDialog, file mode", () => {
         expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
     });
 
+    it("should list the user defined file sources first", async () => {
+        await utils.openRoot();
+        const rows = utils.getRenderedRows();
+        const firstItem = rows[0];
+        expect(firstItem).toBeDefined();
+        expect(firstItem!.url).toContain("gxuserfiles://");
+    });
+
     it("should allow selecting files and update OK button accordingly", async () => {
         await utils.openRootDirectory();
         const filesInResponse = pdbResponse.filter((item) => item.class === "File");
@@ -291,9 +299,13 @@ class Utils {
         this.wrapper = wrapper;
     }
 
-    async openRootDirectory() {
+    async openRoot() {
         expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         expect(this.getRenderedRows().length).toBe(rootResponse.length);
+    }
+
+    async openRootDirectory() {
+        await this.openRoot();
         await this.openDirectoryById(rootId);
     }
 
