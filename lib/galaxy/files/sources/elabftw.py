@@ -21,7 +21,10 @@ not have an endpoint that can list attachments for several experiments and/or re
 listing the root directory or an entity type *recursively*, a list of entities has to be fetched first, then to fetch
 the information on their attachments, a separate request has to be sent *for each one* of them. The ``aiohttp`` library
 makes it bearable to recursively browse instances with up to ~500 experiments or resources with attachments by sending
-them concurrently, but ultimately solving the problem would require changes to the API from the eLabFTW side.
+them concurrently, but ultimately solving the problem would require changes to the API from the eLabFTW side. Another
+limitation is that it does not support pagination, since eLabFTW does not return the total count of experiments or
+resources matching a query, therefore the amount of pages that should be displayed on the Galaxy user interface is
+unknown.
 
 References:
 - [1] https://www.elabftw.net/
@@ -151,7 +154,9 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
     plugin_type = "elabftw"
     plugin_kind = PluginKind.rfs
-    supports_pagination = True
+    supports_pagination = False
+    # reason: eLabFTW does not return the total count of elements matching a query, see
+    # https://github.com/galaxyproject/galaxy/pull/19319#discussion_r1928753352
     supports_search = True
     supports_sorting = True
 
@@ -520,6 +525,9 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         if limit is not None:
             wrapped_entries = wrapped_entries[:limit]
 
+        # The second return value is meant to be the total count of elements that match the current filter. Since the
+        # file source does not support pagination (both `limit` and `offset` are always `None`), the length of `entries`
+        # always matches such value.
         return (entries := [wrapped_entry.entry for wrapped_entry in wrapped_entries]), len(entries)
 
     @staticmethod
