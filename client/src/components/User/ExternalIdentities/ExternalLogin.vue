@@ -16,7 +16,14 @@ interface Idp {
     OrganizationName: string;
     RandS: boolean;
 }
-type OIDCConfig = Record<string, { icon?: string }>;
+type OIDCConfig = Record<
+    string,
+    {
+        icon?: string;
+        label?: string;
+        custom_button_text?: string;
+    }
+>;
 
 interface Props {
     loginPage?: boolean;
