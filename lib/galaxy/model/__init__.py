@@ -3127,6 +3127,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
 
+    id: Mapped[int] = mapped_column(primary_key=True)  # duplicated intentionally due to update_time column_property
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     _update_time: Mapped[datetime] = mapped_column(
         "update_time", DateTime, index=True, default=now, onupdate=now, nullable=True
