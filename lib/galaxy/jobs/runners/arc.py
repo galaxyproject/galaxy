@@ -111,7 +111,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         bulkdesc += arc_job.descrstr
         bulkdesc += "</ActivityDescriptions>"
 
-        results = self.arcrest.createJobs(bulkdesc, delegationID=delegationID)
+        results = self.arcrest.createJobs(bulkdesc, delegationID=delegationID)[0].value
         arc_jobid = None
 
         if isinstance(results[0], ARCHTTPError):
@@ -120,14 +120,14 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             job_wrapper.fail("Not submitted")
         else:
             # successful submission
-            arc_jobid, status = results[0]
+            arc_jobid, status = results
             job_wrapper.set_external_id(arc_jobid)
             log.debug(
                 f"Successfully submitted job to remote ARC resource {self.arc.url} with ARC id: {arc_jobid}job_wrapper.external_job_id: {job_wrapper.get_job().job_runner_external_id} job_wrapper.get_job().get-job_runner_external_id(): {job_wrapper.get_job().get_job_runner_external_id()}"
             )
             # beware! this means 1 worker, no timeout and default upload buffer
-            errors = self.arcrest.uploadJobFiles([arc_jobid], [arc_job.inputs])
-            if errors[0]:  # input upload error
+            errors = self.arcrest.uploadJobFiles([arc_jobid], [arc_job.inputs])[0]
+            if errors:  # input upload error
                 log.error("Job creation failure. No Response from ARC")
                 log.debug(
                     f"Could not upload job files for job with galaxy-id: {galaxy_jobid} to ARC resource {self.arc.url}. Error was: {errors[0]}"
@@ -222,7 +222,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
 
         """ Get task from ARC """
         arc_jobid = job_state.job_id
-        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0]
+        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0].value
 
         if isinstance(arc_job_state, ARCHTTPError) or isinstance(arc_job_state, NoValueInARCResult):
             return None
@@ -240,7 +240,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             galaxy_job_wrapper.change_state(model.Job.states.OK)
 
             galaxy_outputdir = galaxy_workdir + "/working"
-            self.arcrest.downloadJobFiles(galaxy_outputdir, [arc_jobid])
+            self.arcrest.downloadJobFiles(galaxy_outputdir, [arc_jobid])[0]
 
             self.place_output_files(job_state, mapped_state)
             self.mark_as_finished(job_state)
@@ -296,7 +296,6 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         deletes an active job from history?
         I can not see that this method is called then. It seems to only get called once the external job state is
         fetched and rendered as "Finished".
-
         """
         """ Attempts to delete a dispatched executing Job in ARC """
         """This function is called by fail_job()
@@ -316,14 +315,21 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         self.arcrest = get_client(self.arc.url, token=token)
 
         """ Get the current ARC job status from the remote ARC endpoint """
-        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0]
+        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0].value
         if arc_job_state is None:
             return None
-        mapped_state = self.arc.ARC_STATE_MAPPING[arc_job_state]
+        try:
+            mapped_state = self.arc.ARC_STATE_MAPPING[arc_job_state]
+        except:
+            log.debug(
+                f"Job with ARC id: {arc_jobid} and Galaxy id: {job_id} - no job state found"
+            )
+                            
+            return None
         if not (mapped_state == "Killed" or mapped_state == "Deleted" or mapped_state == "Finished"):
             try:
                 # Initiate a delete call,if the job is running in ARC.
-                waskilled = self.arcrest.killJobs([arc_jobid])
+                waskilled = self.arcrest.killJobs([arc_jobid])[0].value
                 f"Job with ARC id: {arc_jobid} and Galaxy id: {job_id} was killed by external request (user or admin). Status waskilld: {waskilled}"
             except Exception as e:
                 log.debug(
@@ -365,11 +371,8 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
          output_datasets
          input_dataset_collections...
          parameters
-
          https://docs.galaxyproject.org/en/release_21.05/lib/galaxy.model.html?highlight=galaxy%20model#galaxy.model.Job
-
          Example of simple ARC job-description:
-
         <?xml version="1.0" ?>
         <ActivityDescriptions>
              <ActivityDescription xmlns="http://www.eu-emi.eu/es/2010/12/adl" xmlns:emiestypes="http://www.eu-emi.eu/es/2010/12/types" xmlns:nordugrid-adl="http://www.nordugrid.org/es/2011/12/nordugrid-adl">
@@ -380,7 +383,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
                          <Output>arc.out</Output>
                          <Error>arc.err</Error>
                          <Executable>
-                                 <Path>./runhello.sh</Path>
+                                 <Path>./tool_script.sh</Path>
                          </Executable>
                  </Application>
                  <Resources>
@@ -392,6 +395,22 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
                          <InputFile>
                                  <Name>runhello.sh</Name>
                          </InputFile>
+                         <InputFile>
+                                 <Name>remote_file_0</Name>
+                                 <Source>
+                                    <URI>http://download.nordugrid.org/repos/6/centos/el7/source/updates/repodata/repomd.xml</URI>
+                                 </Source>
+                         </InputFile>
+                         <InputFile>
+                                 <Name>remote_file_1</Name>
+                                 <Source>
+                                    <URI>http://download.nordugrid.org/repos/6/rocky/9/source/updates/repodata/repomd.xml</URI>
+                                 </Source>
+                         </InputFile>
+                         <InputFile>
+                                 <Name>tool_script.sh</Name>
+                         </InputFile>
+
                          <OutputFile>
                                  <Name>arcout1.txt</Name>
                                  <Target>
@@ -419,26 +438,22 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """ The job_wrapper.job_destination has access to the parameters from the id=arc destination configured in the job_conf"""
         galaxy_job = job_wrapper.get_job()
 
-        """ job_input_params are the input params fetched from the tool """
+        
+        job_destination = job_wrapper.job_destination
         job_input_params = {}
         """ Make a dictionary of the job inputs and use this for filling in the job description"""
-        for param in galaxy_job.parameters:
-            job_input_params[str(param.name)] = str(param.value.strip('"'))
+        
 
         """ Organize the galaxy jobs input-files into executables,  input- and output-files
         The ARC job description expects a different format for executables compared to other input files.
-
         This works currently in the following way for the ARC test-tool
         - The tool (hello_arc.xml) has param with name tag arcjob_exe, arcjob_outputs (and could potentially have arcjob_inputs)
-
         If the galaxy_job.get_input_datasets() name attribute has "exe" in it:
         In the below I match the strings
         - exe in the tag_name to match  the input file uploaded via the arcjob_exe form field
         Else I treat it as "ordinary" input file.
-
         For outputs - I get the galaxy_job.get_output_datasets().
         Currently in the ARC test-tool there is no specified specific output files - ARC client will collect all output files generated in the ARC jobs working directory.
-
         TODO: Use the command-builder to extract the executable command instead of using an executable file uploaded to Galaxy.
         TODO: Extend to support fuller ARC job description options - such as ARC runtimeenvironment that inform the ARC client about what capabilities the endpoint has.
                e.g. what software is installed.
@@ -454,16 +469,30 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """
         input_datasets = galaxy_job.get_input_datasets()
 
+        #""" Hack - will surely fetch the correct name from galaxy vars - not hardcode as here """
+        #does not work - need to find out path to the generated galaxy job script
+        #arc_job.inputs['tool_script.sh'] = 'file://tool_script.sh'
+        #arc_job.exe_path = "./tool_script.sh"
+        
         for input_data in input_datasets:
-            file_source = input_data.dataset.get_file_name()
+            file_source = ""
+            if input_data.dataset.has_deferred_data:
+                file_source = input_data.dataset.deferred_source_uri
+            else:
+                file_source = "file://" + input_data.dataset.get_file_name()
+
             tool_input_tag = input_data.name
             file_realname = input_data.dataset.get_display_name()
 
-            arc_job.inputs[file_realname] = "file://" + file_source
+            arc_job.inputs[file_realname] = file_source
+            
 
-            """ This is just for the ARC test-tool, will not be used in the final version using generic tools. """
+            """ This is just for the ARC test-tool, will not be used in the final version using generic tools. 
+            instead the galaxy produced tool sh file will be sent as executable """
             if "exe" in tool_input_tag:
                 arc_job.exe_path = "./" + file_realname
+            else:
+                arc_job.exe_path = "/bin/ls"
 
         """ Potentially more than one file - but currently actually only one, so the for-loop here is currently not actually needed """
         output_datasets = galaxy_job.get_output_datasets()
@@ -473,8 +502,10 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             arc_job.outputs.append(file_name)
 
         """ Fetch the other job description items from the ARC destination """
-        arc_cpuhrs = str(job_input_params["arcjob_cpuhrs"])
-        arc_mem = str(job_input_params["arcjob_memory"])
+        #arc_cpuhrs = str(job_input_params["arcjob_cpuhrs"])
+        #arc_mem = str(job_input_params["arcjob_memory"])
+        arc_cpuhrs = str(1)
+        arc_mem = str(100)
 
         """
         TODO- should probably not be Hard-coded
@@ -504,3 +535,4 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         arc_job.descrstr = arc_job.to_xml_str()
 
         return arc_job
+    

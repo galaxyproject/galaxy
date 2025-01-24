@@ -58,8 +58,9 @@ class ARCJobBuilder:
         actid = SubElement(descr, "ActivityIdentification")
         app = SubElement(descr, "Application")
         resources = SubElement(descr, "Resources")
-        datastaging = SubElement(descr, "DataStaging")
 
+        datastaging = SubElement(descr, "DataStaging")
+        
         actid_name = SubElement(actid, "Name")
         actid_name.text = "galaxy_arc_hello_test"
 
@@ -73,11 +74,18 @@ class ARCJobBuilder:
         app_exe_path = SubElement(app_exe, "Path")
         app_exe_path.text = self.exe_path
 
-        for arc_input in self.inputs:
+        for arc_input_name, arc_input_src in self.inputs.items():
             """Datastaging tag"""
-            sub_el = SubElement(datastaging, "InputFile")
-            subsub_el = SubElement(sub_el, "Name")
-            subsub_el.text = arc_input
+            inputfile = SubElement(datastaging, "InputFile")
+            
+            sub_el = SubElement(inputfile, "Name")
+            sub_el.text = arc_input_name
+            if 'file://' not in arc_input_src:
+                """ Remote source """
+                source = SubElement(inputfile, "Source")
+                uri = SubElement(source,"URI")
+                uri.text = arc_input_src
+                
 
         for arc_output in self.outputs:
             sub_el = SubElement(datastaging, "OutputFile")
