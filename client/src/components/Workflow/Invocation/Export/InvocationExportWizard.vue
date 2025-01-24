@@ -66,19 +66,7 @@ const errorMessage = ref<string>();
 
 const existingProgress = ref<InstanceType<typeof ExistingInvocationExportProgressCard>>();
 
-const exportData: InvocationExportData = reactive({
-    exportPluginFormat: "ro-crate",
-    destination: "download",
-    remoteUri: "",
-    outputFileName: "",
-    includeData: true,
-    bcoDatabase: {
-        serverBaseUrl: "https://biocomputeobject.org",
-        table: "GALXY",
-        ownerGroup: "",
-        authorization: "",
-    },
-});
+const exportData: InvocationExportData = reactive(initializeExportData());
 
 const exportButtonLabel = computed(() => {
     switch (exportData.destination) {
@@ -186,6 +174,15 @@ watch(
         // Only allow BCO format to be exported to BCODB
         if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
             exportData.destination = "download";
+        }
+    }
+);
+
+watch(
+    () => isWizardBusy.value,
+    (newValue, oldValue) => {
+        if (oldValue && !newValue) {
+            resetWizard();
         }
     }
 );
@@ -300,6 +297,28 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
     }
 
     return destinations;
+}
+
+function initializeExportData(): InvocationExportData {
+    return {
+        exportPluginFormat: "ro-crate",
+        destination: "download",
+        remoteUri: "",
+        outputFileName: "",
+        includeData: true,
+        bcoDatabase: {
+            serverBaseUrl: "https://biocomputeobject.org",
+            table: "GALXY",
+            ownerGroup: "",
+            authorization: "",
+        },
+    };
+}
+
+function resetWizard() {
+    const initialExportData = initializeExportData();
+    Object.assign(exportData, initialExportData);
+    wizard.goTo("select-format");
 }
 </script>
 
