@@ -35,6 +35,7 @@ class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
     @retry_during_transitions
     def _assert_displaying_edam_operations(self):
         tool_panel = self.components.tool_panel
+        tool_panel.toolbox.wait_for_visible()
         labels = tool_panel.panel_labels.all()
         assert len(labels) > 0
         label0 = labels[0]
