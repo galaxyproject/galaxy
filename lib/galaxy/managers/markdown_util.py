@@ -845,21 +845,27 @@ def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: 
 
 
 def resolve_invocation_markdown(trans, invocation, workflow_markdown):
-    """Resolve invocation objects to convert markdown to 'internal' representation.
-
-    Replace references to abstract workflow parts with actual galaxy object IDs corresponding
-    to the actual executed workflow. For instance:
-
-        convert output=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
-        convert input=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
-        convert step=name -to- job_id=<id>
-
-    Also expand/convert workflow invocation specific container sections into actual Galaxy
-    markdown - these containers include: invocation_inputs, invocation_outputs, invocation_workflow.
-    Hopefully this list will be expanded to include invocation_qc.
     """
-    # TODO: convert step outputs?
-    # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+    Resolve invocation objects to convert markdown to 'internal' representation.
+
+    Add the invocation_id to the relevant attributes where required.
+    Avoid making irreversible changes to the markdown, as this could compromise the interchangeability between
+    workflow reports and pages. In future updates, the `invocation_id` may be migrated from the markdown to a
+    dedicated database relationship column for better management.
+
+    Specifically:
+    - Convert references to abstract workflow parts into attributes that include invocation-specific
+    details, such as invocation_id. For example:
+        - `output=name` becomes `invocation_id=<id>, output=name`
+        - `input=name` becomes `invocation_id=<id>, input=name`
+        - `step=name` becomes `invocation_id=<id>, step=name `
+
+    Additionally, expand/convert workflow invocation-specific container sections into their
+    corresponding Galaxy markdown representations. These sections include:
+    - invocation_inputs
+    - invocation_outputs
+    - invocation_workflow
+    """
 
     def _remap(container, line):
         for workflow_instance_directive in ["workflow_display", "workflow_image"]:
