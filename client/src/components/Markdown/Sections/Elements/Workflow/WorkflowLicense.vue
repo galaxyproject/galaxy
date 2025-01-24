@@ -5,16 +5,14 @@ interface WorkflowLicenseProps {
     licenseId?: string;
 }
 
-const props = withDefaults(defineProps<WorkflowLicenseProps>(), {
-    licenseId: undefined,
-});
+defineProps<WorkflowLicenseProps>();
 </script>
 
 <template>
     <span>
-        <p v-if="!props.licenseId">
+        <License v-if="licenseId" :license-id="licenseId" />
+        <p v-else>
             <i>Workflow does not define a license.</i>
         </p>
-        <License v-else :license-id="props.licenseId" />
     </span>
 </template>
