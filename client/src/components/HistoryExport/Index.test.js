@@ -1,30 +1,31 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { useFileSources } from "@/composables/fileSources";
 
 import Index from "./Index.vue";
 
-jest.mock("@/schema");
+jest.mock("@/composables/fileSources");
 
 const localVue = getLocalVue();
 
-describe("Index.vue", () => {
-    beforeEach(() => {
-        mockFetcher
-            .path("/api/remote_files/plugins")
-            .method("get")
-            .mock({ data: [{ id: "foo", writable: false }] });
-    });
+useFileSources.mockReturnValue({ isLoading: false, hasWritable: true });
 
-    it("should render tabs", () => {
+describe("Index.vue", () => {
+    it("should render tabs", async () => {
         // just make sure the component renders to catch obvious big errors
+        const pinia = createTestingPinia();
         const wrapper = shallowMount(Index, {
             propsData: {
                 historyId: "test_id",
             },
             localVue,
+            pinia,
         });
-        expect(wrapper.exists("b-tabs-stub")).toBeTruthy();
+        await flushPromises();
+        const tabs = wrapper.findComponent(".history-export-tabs");
+        expect(tabs.exists()).toBeTruthy();
     });
 });

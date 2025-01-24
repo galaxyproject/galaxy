@@ -29,12 +29,12 @@ class ApplyTagsHistory:
             try:
                 update_history = history.show_history(self.history_id)
             except Exception as exception:
-                print("Some problem occurred with history: %s" % self.history_id)
+                print(f"Some problem occurred with history: {self.history_id}")
                 print(exception)
                 return
         update_history_id = update_history["id"]
-        print("History name: %s" % update_history["name"])
-        print("History id: %s" % update_history_id)
+        print(f"History name: {update_history['name']}")
+        print(f"History id: {update_history_id}")
         self.find_dataset_parents_update_tags(history, job, update_history_id)
 
     def find_dataset_parents_update_tags(self, history, job, history_id):
@@ -42,13 +42,13 @@ class ApplyTagsHistory:
         Operate on datasets for a particular history and recursively find parents
         for a dataset
         """
-        datasets_inheritance_chain = dict()
-        own_tags = dict()
-        parent_tags = dict()
+        datasets_inheritance_chain = {}
+        own_tags = {}
+        parent_tags = {}
         count_datasets_updated = 0
         # get all datasets belonging to a history
         all_datasets = history.show_history(history_id, contents=True)
-        print("Total datasets: %d. Updating their tags may take a while..." % len(all_datasets))
+        print(f"Total datasets: {len(all_datasets)}. Updating their tags may take a while...")
         for dataset in all_datasets:
             try:
                 if not dataset["deleted"] and dataset["state"] == "ok":
@@ -91,7 +91,7 @@ class ApplyTagsHistory:
                 )
                 if is_updated:
                     count_datasets_updated += 1
-        print("Tags of %d datasets updated" % count_datasets_updated)
+        print(f"Tags of {count_datasets_updated} datasets updated")
 
     def collect_parent_ids(self, datasets_inheritance_chain):
         """
@@ -107,7 +107,7 @@ class ApplyTagsHistory:
                 for parent in dataset_parents:
                     find_parent_recursive(parent, recursive_parents)
 
-        recursive_parent_ids = dict()
+        recursive_parent_ids = {}
         for item in datasets_inheritance_chain:
             recursive_parents: List = []
 
@@ -136,9 +136,8 @@ class ApplyTagsHistory:
         self_tags = self.collect_hash_tags(own_tags[dataset_id])
         # find unique tags from all parents
         all_tags_set = set(all_tags)
-        self_tags_set = set(self_tags)
         # update tags if there are new tags from parents
-        if all_tags_set != self_tags_set:
+        if all_tags_set != (self_tags_set := set(self_tags)):
             if not all_tags_set.issubset(self_tags_set):
                 # append the tags of the child itself
                 all_tags.extend(self_tags)
@@ -159,4 +158,4 @@ if __name__ == "__main__":
     history_tags = ApplyTagsHistory(sys.argv[1], sys.argv[2], history_id)
     history_tags.read_galaxy_history()
     end_time = time.time()
-    print("Program finished in %d seconds" % int(end_time - start_time))
+    print(f"Program finished in {int(end_time - start_time)} seconds")

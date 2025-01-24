@@ -1,9 +1,8 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.api import skip_if_api_v2
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -54,16 +53,10 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             emboss_repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "emboss/emboss.tar",
             commit_message="Uploaded emboss.tar.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_create_tool_dependency_repository(self):
@@ -85,18 +78,13 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="freebayes/freebayes.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "freebayes/freebayes.tar",
             commit_message="Uploaded freebayes.tar.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
+    @skip_if_api_v2
     def test_0030_browse_tools(self):
         """Load the page to browse tools.
 
@@ -108,6 +96,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         strings_displayed = ["EMBOSS", "antigenic1", "5.0.0", changeset_revision, "user1", "emboss_0430"]
         self.browse_tools(strings_displayed=strings_displayed)
 
+    @skip_if_api_v2
     def test_0040_browse_tool_dependencies(self):
         """Browse tool dependencies and look for the right versions of freebayes and samtools.
 

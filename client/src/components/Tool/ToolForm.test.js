@@ -1,21 +1,29 @@
+import "tests/jest/mockHelpPopovers";
+
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import MockCurrentHistory from "components/providers/MockCurrentHistory";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { useHistoryStore } from "stores/historyStore";
-import { useUserStore } from "stores/userStore";
-import { getLocalVue } from "tests/jest/helpers";
-import Vue from "vue";
+import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
-import ToolForm from "./ToolForm";
+import ToolForm from "./ToolForm.vue";
 
-jest.mock("@/schema");
+const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 const pinia = createPinia();
+
+// the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
+// better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
+// stub out the Popover piece I think.
+suppressBootstrapVueWarnings();
 
 describe("ToolForm", () => {
     let wrapper;
@@ -24,26 +32,31 @@ describe("ToolForm", () => {
     let historyStore;
 
     beforeEach(() => {
-        mockFetcher
-            .path("/api/configuration")
-            .method("get")
-            .mock({ data: { enable_tool_source_display: false, object_store_allows_id_selection: false } });
+        // I tried using the useConfig mock and this component seems to bypass that, it would be
+        // better if it didn't. We shouldn't have to stub out an API request to get a particular config.
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response.untyped(
+                    HttpResponse.json({
+                        enable_tool_source_display: false,
+                        object_store_allows_id_selection: false,
+                    })
+                );
+            })
+        );
 
         axiosMock = new MockAdapter(axios);
-
-        const toolData = {
+        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {
             id: "tool_id",
             name: "tool_name",
             version: "version",
             inputs: [],
             help: "help_text",
+            help_format: "restructuredtext",
             creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
-        };
-        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
+        });
         axiosMock.onGet(`/api/webhooks`).reply(200, []);
-
-        const citations = [];
-        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);
+        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, []);
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -58,7 +71,8 @@ describe("ToolForm", () => {
             pinia,
         });
         userStore = useUserStore();
-        userStore.currentUser = { id: "fakeUser" };
+        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });
+
         historyStore = useHistoryStore();
         historyStore.setHistories([{ id: "fakeHistory" }]);
         historyStore.setCurrentHistoryId("fakeHistory");
@@ -70,7 +84,7 @@ describe("ToolForm", () => {
     });
 
     it("shows props", async () => {
-        await Vue.nextTick();
+        await flushPromises();
         const button = wrapper.find(".btn-primary");
         expect(button.attributes("title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");

@@ -8,7 +8,7 @@ from typing import (
 
 from pydantic import (
     Field,
-    Required,
+    RootModel,
 )
 from typing_extensions import (
     Annotated,
@@ -35,41 +35,47 @@ class RemoteFilesDisableMode(str, Enum):
     files = "files"
 
 
+class FilesSourceSupports(Model):
+    pagination: Annotated[bool, Field(description="Whether this file source supports server-side pagination.")] = False
+    search: Annotated[bool, Field(description="Whether this file source supports server-side search.")] = False
+    sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
+
+
 class FilesSourcePlugin(Model):
     id: str = Field(
-        Required,
+        ...,
         title="ID",
         description="The `FilesSource` plugin identifier",
-        example="_import",
+        examples=["_import"],
     )
     type: str = Field(
-        Required,
+        ...,
         title="Type",
         description="The type of the plugin.",
-        example="gximport",
+        examples=["gximport"],
     )
     label: str = Field(
-        Required,
+        ...,
         title="Label",
         description="The display label for this plugin.",
-        example="Library Import Directory",
+        examples=["Library Import Directory"],
     )
-    doc: str = Field(
-        Required,
+    doc: Optional[str] = Field(
+        None,
         title="Documentation",
         description="Documentation or extended description for this plugin.",
-        example="Galaxy's library import directory",
+        examples=["Galaxy's library import directory"],
     )
     browsable: bool = Field(
-        Required,
+        ...,
         title="Browsable",
         description="Whether this file source plugin can list items.",
     )
     writable: bool = Field(
-        Required,
+        ...,
         title="Writeable",
         description="Whether this files source plugin allows write access.",
-        example=False,
+        examples=[False],
     )
     requires_roles: Optional[str] = Field(
         None,
@@ -81,23 +87,32 @@ class FilesSourcePlugin(Model):
         title="Requires groups",
         description="Only users belonging to the groups specified here can access this files source.",
     )
+    url: Optional[str] = Field(
+        None,
+        title="URL",
+        description="Optional URL that might be provided by some plugins to link to the remote source.",
+    )
+    supports: Annotated[
+        FilesSourceSupports,
+        Field(default=..., description="Features supported by this file source."),
+    ] = FilesSourceSupports()
 
 
 class BrowsableFilesSourcePlugin(FilesSourcePlugin):
     browsable: Literal[True]
     uri_root: str = Field(
-        Required,
+        ...,
         title="URI root",
         description="The URI root used by this type of plugin.",
-        example="gximport://",
+        examples=["gximport://"],
     )
 
 
-class FilesSourcePluginList(Model):
-    __root__: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
+class FilesSourcePluginList(RootModel):
+    root: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
         default=[],
         title="List of files source plugins",
-        example=[
+        examples=[
             {
                 "id": "_import",
                 "type": "gximport",
@@ -112,27 +127,28 @@ class FilesSourcePluginList(Model):
 
 
 class RemoteEntry(Model):
-    name: str = Field(Required, title="Name", description="The name of the entry.")
-    uri: str = Field(Required, title="URI", description="The URI of the entry.")
-    path: str = Field(Required, title="Path", description="The path of the entry.")
+    name: str = Field(..., title="Name", description="The name of the entry.")
+    uri: str = Field(..., title="URI", description="The URI of the entry.")
+    path: str = Field(..., title="Path", description="The path of the entry.")
 
 
 class RemoteDirectory(RemoteEntry):
-    class_: Literal["Directory"] = Field(Required, alias="class", const=True)
+    class_: Literal["Directory"] = Field(..., alias="class")
 
 
 class RemoteFile(RemoteEntry):
-    class_: Literal["File"] = Field(Required, alias="class", const=True)
-    size: int = Field(Required, title="Size", description="The size of the file in bytes.")
-    ctime: str = Field(Required, title="Creation time", description="The creation time of the file.")
+    class_: Literal["File"] = Field(..., alias="class")
+    size: int = Field(..., title="Size", description="The size of the file in bytes.")
+    ctime: str = Field(..., title="Creation time", description="The creation time of the file.")
 
 
-class ListJstreeResponse(Model):
-    __root__: List[Any] = Field(
+class ListJstreeResponse(RootModel):
+    root: List[Any] = Field(
         default=[],
         title="List of files",
         description="List of files in Jstree format.",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 
@@ -142,8 +158,8 @@ AnyRemoteEntry = Annotated[
 ]
 
 
-class ListUriResponse(Model):
-    __root__: List[AnyRemoteEntry] = Field(
+class ListUriResponse(RootModel):
+    root: List[AnyRemoteEntry] = Field(
         default=[],
         title="List of remote entries",
         description="List of directories and files.",
@@ -155,30 +171,30 @@ AnyRemoteFilesListResponse = Union[ListUriResponse, ListJstreeResponse]
 
 class CreateEntryPayload(Model):
     target: str = Field(
-        Required,
+        ...,
         title="Target",
         description="The target file source to create the entry in.",
     )
     name: str = Field(
-        Required,
+        ...,
         title="Name",
         description="The name of the entry to create.",
-        example="my_new_entry",
+        examples=["my_new_entry"],
     )
 
 
 class CreatedEntryResponse(Model):
     name: str = Field(
-        Required,
+        ...,
         title="Name",
         description="The name of the created entry.",
-        example="my_new_entry",
+        examples=["my_new_entry"],
     )
     uri: str = Field(
-        Required,
+        ...,
         title="URI",
         description="The URI of the created entry.",
-        example="gxfiles://my_new_entry",
+        examples=["gxfiles://my_new_entry"],
     )
     external_link: Optional[str] = Field(
         default=None,

@@ -31,6 +31,7 @@ from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
+from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -73,12 +74,23 @@ router = Router(tags=["tools"])
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
+async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+    # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    if not files2:
+        data = await request.form()
+        for value in data.values():
+            if isinstance(value, StarletteUploadFile):
+                files2.append(value)
+    return files2
+
+
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
+    def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
         return self.service.create_fetch(trans, payload)
 
     @router.post(
@@ -86,22 +98,13 @@ class FetchTools:
         summary="Upload files to Galaxy",
         route_class_override=FormDataApiRoute,
     )
-    async def fetch_form(
+    def fetch_form(
         self,
-        request: Request,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
-        files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        files: List[StarletteUploadFile] = Depends(get_files),
     ):
-        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
-
-        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-        if not files2:
-            data = await request.form()
-            for value in data.values():
-                if isinstance(value, StarletteUploadFile):
-                    files2.append(value)
-        return self.service.create_fetch(trans, payload, files2)
+        return self.service.create_fetch(trans, payload, files)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -178,6 +181,40 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
     @expose_api_anonymous_and_sessionless
+    def panel_views(self, trans: GalaxyWebTransaction, **kwds):
+        """
+        GET /api/tool_panels
+        returns a dictionary of available tool panel views and default view
+        """
+
+        rval = {}
+        rval["default_panel_view"] = self.app.toolbox._default_panel_view(trans)
+        rval["views"] = self.app.toolbox.panel_view_dicts()
+        return rval
+
+    @expose_api_anonymous_and_sessionless
+    def panel_view(self, trans: GalaxyWebTransaction, view, **kwds):
+        """
+        GET /api/tool_panels/{view}
+
+        returns a dictionary of tools and tool sections for the given view
+
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        """
+
+        # Read param.
+        trackster = util.string_as_bool(kwds.get("trackster", "False"))
+
+        # Return panel view.
+        try:
+            return self.app.toolbox.to_panel_view(trans, trackster=trackster, view=view)
+        except exceptions.MessageException:
+            raise
+        except Exception:
+            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+
+    @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}
@@ -204,9 +241,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version")
-        history_id = kwd.pop("history_id", None)
         history = None
-        if history_id:
+        if history_id := kwd.pop("history_id", None):
             history = self.history_manager.get_owned(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
@@ -241,8 +277,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         filename = kwd.get("filename")
         if filename is None:
             raise exceptions.ObjectNotFound("Test data filename not specified.")
-        path = tool.test_data_path(filename)
-        if path:
+        if path := tool.test_data_path(filename):
             if os.path.isfile(path):
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(path, mode="rb")
@@ -284,7 +319,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans: GalaxyWebTransaction, id, **kwd):
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> List[ToolTestDescriptionDict]:
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -429,9 +464,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             lineage_dict = tool.lineage.to_dict()
         else:
             lineage_dict = None
-        tool_shed_dependencies = tool.installed_tool_dependencies
         tool_shed_dependencies_dict: Optional[list] = None
-        if tool_shed_dependencies:
+        if tool_shed_dependencies := tool.installed_tool_dependencies:
             tool_shed_dependencies_dict = list(map(to_dict, tool_shed_dependencies))
         return {
             "tool_id": tool.id,
@@ -482,8 +516,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             ],
             "batch": input_src == "hdca",
         }
-        history_id = payload.get("history_id")
-        if history_id:
+        if history_id := payload.get("history_id"):
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         else:

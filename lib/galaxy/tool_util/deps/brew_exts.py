@@ -380,16 +380,16 @@ class EnvAction:
     @staticmethod
     def build_env(env_actions):
         new_env = os.environ.copy()
-        map(lambda env_action: env_action.modify_environ(new_env), env_actions)
+        (env_action.modify_environ(new_env) for env_action in env_actions)
         return new_env
 
     def modify_environ(self, environ):
         if self.action == "set" or not environ.get(self.variable, ""):
             environ[self.variable] = self.__eval("${value}")
         elif self.action == "prepend":
-            environ[self.variable] = self.__eval("${value}:%s" % environ[self.variable])
+            environ[self.variable] = self.__eval(f"${{value}}:{environ[self.variable]}")
         else:
-            environ[self.variable] = self.__eval("%s:${value}" % environ[self.variable])
+            environ[self.variable] = self.__eval(f"{environ[self.variable]}:${{value}}")
 
     def __eval(self, template):
         return string.Template(template).safe_substitute(
@@ -523,9 +523,9 @@ def recipe_cellar_path(cellar_path, recipe, version):
     recipe_base_path = os.path.join(cellar_path, recipe_base, version)
     revision_paths = glob.glob(f"{recipe_base_path}_*")
     if revision_paths:
-        revisions = map(lambda x: int(x.rsplit("_", 1)[-1]), revision_paths)
+        revisions = (int(x.rsplit("_", 1)[-1]) for x in revision_paths)
         max_revision = max(revisions)
-        recipe_path = "%s_%d" % (recipe_base_path, max_revision)
+        recipe_path = f"{recipe_base_path}_{max_revision}"
     else:
         recipe_path = recipe_base_path
     return recipe_path

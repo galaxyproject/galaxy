@@ -79,6 +79,26 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert not new_hda_details["deleted"]
 
     @pytest.mark.require_new_history
+    def test_materialize_hash_failure(self, history_id: str):
+        store_dict = deferred_hda_model_store_dict(source_uri="gxfiles://testdatafiles/2.bed")
+        store_dict["datasets"][0]["file_metadata"]["hashes"][0]["hash_value"] = "invalidhash"
+        as_list = self.dataset_populator.create_contents_from_store(history_id, store_dict=store_dict)
+        assert len(as_list) == 1
+        deferred_hda = as_list[0]
+        assert deferred_hda["model_class"] == "HistoryDatasetAssociation"
+        assert deferred_hda["state"] == "deferred"
+        assert not deferred_hda["deleted"]
+
+        self.dataset_populator.materialize_dataset_instance(history_id, deferred_hda["id"])
+        self.dataset_populator.wait_on_history_length(history_id, 2)
+        new_hda_details = self.dataset_populator.get_history_dataset_details(
+            history_id, hid=2, assert_ok=False, wait=False
+        )
+        assert new_hda_details["model_class"] == "HistoryDatasetAssociation"
+        assert new_hda_details["state"] == "error"
+        assert not new_hda_details["deleted"]
+
+    @pytest.mark.require_new_history
     def test_materialize_history_dataset_bam(self, history_id: str):
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
@@ -140,7 +160,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(uploaded_details["sources"]) == 1
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This is a line of text."
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This is a line of text."
 
@@ -166,7 +186,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(transform) == 1
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This is a line of text.\n"
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This is a line of text.\n"
 
@@ -192,7 +212,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(transform) == 1
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This\tis\ta\tline\tof\ttext."
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This\tis\ta\tline\tof\ttext."
 
@@ -219,7 +239,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(transform) == 2
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This\tis\ta\tline\tof\ttext.\n"
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This\tis\ta\tline\tof\ttext.\n"
 
@@ -242,20 +262,17 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         transform = source_0["transform"]
         assert isinstance(transform, list)
         assert len(transform) == 1
-        original_details = self.dataset_populator.get_history_dataset_details(
-            history_id, dataset=output, assert_ok=True
-        )
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         new_details = self.dataset_populator.get_history_dataset_details(new_history_id, hid=2, assert_ok=False)
-        for key in original_details.keys():
+        for key in uploaded_details.keys():
             if key in ["metadata_bam_header", "metadata_bam_index"]:
                 # differs because command-line different, index path different, and such...
                 continue
             if key.startswith("metadata_"):
-                assert original_details[key] == new_details[key], f"Mismatched on key {key}"
-        assert original_details["file_ext"] == new_details["file_ext"]
+                assert uploaded_details[key] == new_details[key], f"Mismatched on key {key}"
+        assert uploaded_details["file_ext"] == new_details["file_ext"]
 
-    def _reupload_and_then_materialize(self, history_id, dataset):
+    def _reupload_and_then_materialize(self, dataset):
         new_history_id, uploaded_hdas = self.dataset_populator.reupload_contents(dataset)
         assert len(uploaded_hdas) == 1
         deferred_hda = uploaded_hdas[0]

@@ -58,11 +58,11 @@ def main(argv):
                     with transaction(session):
                         session.commit()
                 else:
-                    print("Modifying revision %s." % p.id)
+                    print(f"Modifying revision {p.id}.")
                     print(difflib.unified_diff(p.content, newcontent))
         except Exception:
             logging.exception(
-                "Error parsing page, rolling changes back and skipping revision %s.  Please report this error." % p.id
+                "Error parsing page, rolling changes back and skipping revision %s.  Please report this error.", p.id
             )
             session.rollback()
 

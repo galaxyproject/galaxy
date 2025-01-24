@@ -9,13 +9,13 @@ export const getUserPreferencesModel = (user_id) => {
         information: {
             title: _l("Manage Information"),
             id: "edit-preferences-information",
-            description: config.enable_account_interface
-                ? _l("Edit your email, addresses and custom parameters or change your public name.")
-                : _l("Edit your custom parameters."),
+            description:
+                config.enable_account_interface && !config.use_remote_user
+                    ? _l("Edit your email, addresses and custom parameters or change your public name.")
+                    : _l("Edit your custom parameters."),
             url: `/api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "/user",
-            disabled: config.use_remote_user,
         },
         password: {
             title: _l("Change Password"),
@@ -26,18 +26,6 @@ export const getUserPreferencesModel = (user_id) => {
             submit_title: "Save Password",
             redirect: "/user",
             disabled: config.use_remote_user || !config.enable_account_interface,
-        },
-        permissions: {
-            title: _l("Set Dataset Permissions for New Histories"),
-            id: "edit-preferences-permissions",
-            description: _l(
-                "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
-            ),
-            url: `/api/users/${user_id}/permissions/inputs`,
-            icon: "fa-users",
-            submitTitle: "Save Permissions",
-            redirect: "/user",
-            disabled: config.single_user,
         },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),

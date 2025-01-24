@@ -1,5 +1,6 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
+
 import logging
 import operator
 import os
@@ -16,6 +17,7 @@ from typing import (
 from sqlalchemy.orm.scoping import ScopedSession
 
 from galaxy.model import (
+    DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
@@ -40,7 +42,10 @@ from galaxy.model.store.discover import (
     SessionlessModelPersistenceContext,
     UNSET,
 )
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files,
+)
 from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -86,12 +91,11 @@ class PermissionProvider(AbstractPermissionProvider):
         return self._permissions
 
     def set_default_hda_permissions(self, primary_data):
-        permissions = self.permissions
-        if permissions is not UNSET:
+        if (permissions := self.permissions) is not UNSET:
             self._security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
 
     def copy_dataset_permissions(self, init_from, primary_data):
-        self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
+        self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset, flush=False)
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
@@ -180,6 +184,7 @@ def collect_dynamic_outputs(
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
                 final_job_state=job_context.final_job_state,
+                change_datatype_actions=job_context.change_datatype_actions,
             )
             collection_builder.populate()
         except Exception:
@@ -240,6 +245,10 @@ class JobContext(BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
         self._tag_handler = None
+
+    @property
+    def change_datatype_actions(self):
+        return self.job.get_change_datatype_actions()
 
     @property
     def tag_handler(self):
@@ -415,6 +424,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
 
+    @property
+    def change_datatype_actions(self):
+        return self.metadata_params.get("change_datatype_actions", {})
+
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]
         output_collection_defs = tool_as_dict["output_collections"]
@@ -471,11 +484,11 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
-    primary_output_assigned = False
     new_outdata_name = None
     primary_datasets: Dict[str, Dict[str, Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation]]] = {}
     storage_callbacks: List[Callable] = []
-    for output_index, (name, outdata) in enumerate(output.items()):
+    for name, outdata in output.items():
+        primary_output_assigned = False
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
         output_def = job_context.output_def(name)
         if output_def is not None:
@@ -501,14 +514,15 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
             dbkey = fields_match.dbkey
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey
-            if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
+            if filename_index == 0 and extra_file_collector.assign_primary_output:
                 new_outdata_name = fields_match.name or f"{outdata.name} ({designation})"
                 outdata.change_datatype(ext)
                 outdata.dbkey = dbkey
                 outdata.designation = designation
                 outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
-                job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
+                if not outdata.dataset.purged:
+                    job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
@@ -541,6 +555,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
                 dataset_attributes=new_primary_datasets_attributes,
                 creating_job_id=job_context.get_job_id() if job_context else None,
                 storage_callbacks=storage_callbacks,
+                purged=outdata.dataset.purged,
             )
             # Associate new dataset with job
             job_context.add_output_dataset_association(f"__new_primary_file_{name}|{designation}__", primary_data)
@@ -550,7 +565,13 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
         if primary_output_assigned:
             outdata.name = new_outdata_name
             outdata.init_meta()
-            outdata.set_meta()
+            if not outdata.dataset.purged:
+                try:
+                    outdata.set_meta()
+                except Exception:
+                    # We don't want to fail here on a single "bad" discovered dataset
+                    log.debug("set meta failed for %s", outdata, exc_info=True)
+                    outdata.state = HistoryDatasetAssociation.states.FAILED_METADATA
             outdata.set_peek()
             outdata.discovered = True
             sa_session = job_context.sa_session
@@ -672,9 +693,8 @@ class DatasetCollector:
         pattern = self._pattern_for_dataset(dataset_instance)
         if self.match_relative_path and parent_paths:
             filename = os.path.join(*parent_paths, filename)
-        re_match = re.match(pattern, filename)
         match_object = None
-        if re_match:
+        if re_match := re.match(pattern, filename):
             match_object = RegexCollectedDatasetMatch(re_match, self, filename, path=path)
         return match_object
 
@@ -723,9 +743,19 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
-def collect_extra_files(object_store, dataset, job_working_directory):
+def collect_extra_files(
+    object_store: ObjectStore,
+    dataset: "DatasetInstance",
+    job_working_directory: str,
+    outputs_to_working_directory: bool = False,
+):
     # TODO: should this use compute_environment to determine the extra files path ?
-    file_name = dataset.dataset.extra_files_path_name_from(object_store)
+    assert dataset.dataset
+    real_file_name = file_name = dataset.dataset.extra_files_path_name_from(object_store)
+    if outputs_to_working_directory:
+        # OutputsToWorkingDirectoryPathRewriter always rewrites extra files to uuid path,
+        # so we have to collect from that path even if the real extra files path is dataset_N_files
+        file_name = f"dataset_{dataset.dataset.uuid}_files"
     output_location = "outputs"
     temp_file_path = os.path.join(job_working_directory, output_location, file_name)
     if not os.path.exists(temp_file_path):
@@ -740,16 +770,12 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, _dirs, files in os.walk(temp_file_path):
-            for f in files:
-                object_store.update_from_file(
-                    dataset.dataset,
-                    extra_dir=os.path.normpath(os.path.join(file_name, os.path.relpath(root, temp_file_path))),
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
+        persist_extra_files(
+            object_store=object_store,
+            src_extra_files_path=temp_file_path,
+            primary_data=dataset,
+            extra_files_path_name=real_file_name,
+        )
     except Exception as e:
         log.debug("Error in collect_associated_files: %s", unicodify(e))
 

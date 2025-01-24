@@ -14,5 +14,5 @@ def dyndest_chain_2():
 
 
 def dyndest_chain_3(tmp_dir_prefix_two):
-    tmp_dir = "$(mktemp -d -p $(pwd) %sand3XXXXXXXXXXXX)" % tmp_dir_prefix_two
+    tmp_dir = f"$(mktemp -d -p $(pwd) {tmp_dir_prefix_two}and3XXXXXXXXXXXX)"
     return JobDestination(runner="local", params={"tmp_dir": tmp_dir})

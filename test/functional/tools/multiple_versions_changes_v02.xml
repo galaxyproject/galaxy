@@ -5,13 +5,22 @@
     <inputs>
         <param name="inttest" value="1" type="integer" />
         <param name="floattest" value="1.0" type="float" />
+        <conditional name="cond">
+            <param name="bool_to_select" type="select">
+                <option value="a">a</option>
+                <option value="b" selected="true">b</option>
+            </param>
+            <when value="a" />
+            <when value="b" />
+        </conditional>
+
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" />
     </outputs>
     <tests>
         <test>
-            <param name="intest" value="1" />
+            <param name="inttest" value="1" />
             <output name="out_file1">
                 <assert_contents>
                     <has_line line="Version 0.2" />

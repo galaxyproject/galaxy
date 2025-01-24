@@ -8,8 +8,9 @@ from typing import (
     Dict,
 )
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 DESCRIPTION = """Load a Galaxy model store into a running Galaxy instance.
 
@@ -35,8 +36,7 @@ def main(argv=None):
     api_url = f"{galaxy_url.rstrip('/')}/api"
     api_key = args.key
     assert api_key
-    history_id = args.history_id
-    if history_id:
+    if history_id := args.history_id:
         create_url = f"{api_url}/histories/{history_id}/contents_from_store?key={api_key}"
     else:
         create_url = f"{api_url}/histories/from_store?key={api_key}"

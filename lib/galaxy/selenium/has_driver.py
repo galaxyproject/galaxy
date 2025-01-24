@@ -3,6 +3,7 @@
 This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
+
 import abc
 import threading
 from typing import (
@@ -13,7 +14,6 @@ from typing import (
     Union,
 )
 
-import requests
 from axe_selenium_python import Axe
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -28,6 +28,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from galaxy.navigation.components import Target
+from galaxy.util import requests
 from .axe_results import (
     AxeResults,
     NullAxeResults,
@@ -250,8 +251,7 @@ class HasDriver:
             element.send_keys(key)
 
     @abc.abstractmethod
-    def timeout_for(self, **kwds) -> float:
-        ...
+    def timeout_for(self, **kwds) -> float: ...
 
     def wait(self, timeout=UNSPECIFIED_TIMEOUT, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:
@@ -286,8 +286,7 @@ class HasDriver:
         self, timeout_exception: SeleniumTimeoutException, message: str
     ) -> SeleniumTimeoutException:
         msg = message
-        timeout_msg = timeout_exception.msg
-        if timeout_msg:
+        if timeout_msg := timeout_exception.msg:
             msg += f" {timeout_msg}"
         return SeleniumTimeoutException(
             msg=msg,

@@ -43,7 +43,7 @@ class IdentityProvider:
     def refresh(self, trans, token):
         raise NotImplementedError()
 
-    def authenticate(self, provider, trans):
+    def authenticate(self, trans, idphint=None):
         """Runs for authentication process. Checks the database if a
         valid identity exists in the database; if yes, then the  user
         is authenticated, if not, it generates a provider-specific
@@ -72,7 +72,7 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
         raise NotImplementedError()
 
     def logout(self, trans, post_user_logout_href=None):
@@ -85,5 +85,21 @@ class IdentityProvider:
 
         :type post_user_logout_href: string
         :param post_user_logout_href: Optional URL to redirect to after logging out of IDP.
+        """
+        raise NotImplementedError()
+
+    def decode_user_access_token(self, sa_session, access_token):
+        """
+        Verifies and decodes an access token against this provider, returning the user and
+        a dict containing the decoded token data.
+
+        :type  sa_session:      sqlalchemy.orm.scoping.scoped_session
+        :param sa_session:      SQLAlchemy database handle.
+
+        :type  access_token: string
+        :param access_token: An OIDC access token
+
+        :return: A tuple containing the user and decoded jwt data
+        :rtype: Tuple[User, dict]
         """
         raise NotImplementedError()

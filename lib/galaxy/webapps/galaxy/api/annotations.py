@@ -1,6 +1,7 @@
 """
 API operations on annotations.
 """
+
 import logging
 from abc import abstractmethod
 
@@ -28,8 +29,7 @@ class BaseAnnotationsController(BaseGalaxyAPIController, UsesStoredWorkflowMixin
     @expose_api
     def index(self, trans: ProvidesHistoryContext, **kwd):
         idnum = kwd[self.tagged_item_id]
-        item = self._get_item_from_id(trans, idnum)
-        if item is not None:
+        if (item := self._get_item_from_id(trans, idnum)) is not None:
             return self.get_item_annotation_str(trans.sa_session, trans.user, item)
 
     @expose_api
@@ -37,8 +37,7 @@ class BaseAnnotationsController(BaseGalaxyAPIController, UsesStoredWorkflowMixin
         if "text" not in payload:
             return ""
         idnum = kwd[self.tagged_item_id]
-        item = self._get_item_from_id(trans, idnum)
-        if item is not None:
+        if (item := self._get_item_from_id(trans, idnum)) is not None:
             new_annotation = payload.get("text")
             # TODO: sanitize on display not entry
             new_annotation = sanitize_html(new_annotation)
@@ -52,8 +51,7 @@ class BaseAnnotationsController(BaseGalaxyAPIController, UsesStoredWorkflowMixin
     @expose_api
     def delete(self, trans: ProvidesHistoryContext, **kwd):
         idnum = kwd[self.tagged_item_id]
-        item = self._get_item_from_id(trans, idnum)
-        if item is not None:
+        if (item := self._get_item_from_id(trans, idnum)) is not None:
             return self.delete_item_annotation(trans.sa_session, trans.user, item)
 
     @expose_api

@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0030"
 column_maker_repository_description = "Add column"
@@ -19,9 +17,10 @@ running_standalone = False
 class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a repository with repository dependency revisions."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -51,16 +50,10 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 column_maker_repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
+                "column_maker/column_maker.tar",
+                commit_message="Uploaded column maker tarball.",
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "5"])
             column_maker_tuple = (
@@ -82,16 +75,10 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_6_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "6"])
             column_maker_tuple = (
@@ -113,16 +100,10 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "5"])
             dependency_tuple = (
@@ -151,7 +132,6 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0010_install_emboss_repository(self):
         """Install the emboss repository into the Galaxy instance."""
         global running_standalone
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
@@ -162,15 +142,15 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0015_uninstall_emboss_repository(self):
         """Uninstall the emboss repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_repository)
+        self._uninstall_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names(emboss_repository_name)
 
     def test_0020_reinstall_emboss_repository(self):
         """Reinstall the emboss repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(installed_repository)
@@ -179,7 +159,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0025_deactivate_emboss_repository(self):
         """Deactivate the emboss repository without removing it from disk."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_repository)
@@ -187,7 +167,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0030_reactivate_emboss_repository(self):
         """Reactivate the emboss repository and verify that it now shows up in the list of installed repositories."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_repository)

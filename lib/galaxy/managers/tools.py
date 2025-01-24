@@ -6,13 +6,17 @@ from typing import (
 )
 from uuid import UUID
 
-from sqlalchemy import sql
+from sqlalchemy import (
+    select,
+    sql,
+)
 
 from galaxy import (
     exceptions,
     model,
 )
 from galaxy.exceptions import DuplicatedIdentifierException
+from galaxy.model import DynamicTool
 from galaxy.tool_util.cwl import tool_proxy
 from .base import (
     ModelManager,
@@ -26,22 +30,22 @@ if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
 
 
-class DynamicToolManager(ModelManager):
+class DynamicToolManager(ModelManager[model.DynamicTool]):
     """Manages dynamic tools stored in Galaxy's database."""
 
     model_class = model.DynamicTool
 
     def get_tool_by_uuid(self, uuid: Optional[Union[UUID, str]]):
-        dynamic_tool = self._one_or_none(self.query().filter(self.model_class.uuid == uuid))
-        return dynamic_tool
+        stmt = select(DynamicTool).where(DynamicTool.uuid == uuid)
+        return self.session().scalars(stmt).one_or_none()
 
     def get_tool_by_tool_id(self, tool_id):
-        dynamic_tool = self._one_or_none(self.query().filter(self.model_class.tool_id == tool_id))
-        return dynamic_tool
+        stmt = select(DynamicTool).where(DynamicTool.tool_id == tool_id)
+        return self.session().scalars(stmt).one_or_none()
 
     def get_tool_by_id(self, object_id):
-        dynamic_tool = self._one_or_none(self.query().filter(self.model_class.id == object_id))
-        return dynamic_tool
+        stmt = select(DynamicTool).where(DynamicTool.id == object_id)
+        return self.session().scalars(stmt).one_or_none()
 
     def create_tool(self, trans, tool_payload, allow_load=True):
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
@@ -106,13 +110,16 @@ class DynamicToolManager(ModelManager):
                 tool_path=tool_path,
                 tool_directory=tool_directory,
                 uuid=uuid,
+                active=tool_payload.get("active"),
+                hidden=tool_payload.get("hidden"),
                 value=representation,
             )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
 
     def list_tools(self, active=True):
-        return self.query().filter(self.model_class.active == active)
+        stmt = select(DynamicTool).where(DynamicTool.active == active)
+        return self.session().scalars(stmt)
 
     def deactivate(self, dynamic_tool):
         self.update(dynamic_tool, {"active": False})

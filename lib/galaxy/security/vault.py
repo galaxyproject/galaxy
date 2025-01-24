@@ -12,6 +12,7 @@ from cryptography.fernet import (
     Fernet,
     MultiFernet,
 )
+from sqlalchemy import select
 
 try:
     from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
@@ -80,6 +81,19 @@ class Vault(abc.ABC):
                  Note that only immediate subkeys are returned.
         """
 
+    def delete_secret(self, key: str) -> None:
+        """
+        Eliminate a secret from the target vault.
+
+        Ideally the entry in the target source if removed, but by default the secret is
+        simply overwritten with the empty string as its value.
+
+        :param key: The key to write to. Typically a hierarchical path such as `/galaxy/user/1/preferences/editor`
+        :param value: The value to write, such as 'vscode'
+        :return:
+        """
+        self.write_secret(key, "")
+
 
 class NullVault(Vault):
     def read_secret(self, key: str) -> Optional[str]:
@@ -130,7 +144,7 @@ class DatabaseVault(Vault):
         return MultiFernet(self.fernet_keys)
 
     def _update_or_create(self, key: str, value: Optional[str]) -> model.Vault:
-        vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        vault_entry = self._get_vault_value(key)
         if vault_entry:
             if value:
                 vault_entry.value = value
@@ -149,7 +163,7 @@ class DatabaseVault(Vault):
         return vault_entry
 
     def read_secret(self, key: str) -> Optional[str]:
-        key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        key_obj = self._get_vault_value(key)
         if key_obj and key_obj.value:
             f = self._get_multi_fernet()
             return f.decrypt(key_obj.value.encode("utf-8")).decode("utf-8")
@@ -160,8 +174,17 @@ class DatabaseVault(Vault):
         token = f.encrypt(value.encode("utf-8"))
         self._update_or_create(key=key, value=token.decode("utf-8"))
 
+    def delete_secret(self, key: str) -> None:
+        vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        self.sa_session.delete(vault_entry)
+        self.sa_session.flush()
+
     def list_secrets(self, key: str) -> List[str]:
         raise NotImplementedError()
+
+    def _get_vault_value(self, key):
+        stmt = select(model.Vault).filter_by(key=key).limit(1)
+        return self.sa_session.scalars(stmt).first()
 
 
 class CustosVault(Vault):
@@ -294,3 +317,7 @@ class VaultFactory:
             return VaultFactory.from_vault_type(app, vault_config.get("type", None), vault_config)
         log.warning("No vault configured. We recommend defining the vault_config_file setting in galaxy.yml")
         return NullVault()
+
+
+def is_vault_configured(vault: Vault) -> bool:
+    return not isinstance(vault, NullVault)

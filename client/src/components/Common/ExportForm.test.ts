@@ -43,7 +43,10 @@ describe("ExportForm.vue", () => {
 
     it("should localize button text", async () => {
         const newLocal = wrapper.find(".export-button").text();
-        expect(newLocal).toBeLocalizationOf("Export");
+        // TODO: fix typing, this is a jest matcher with a custom expect
+        // extension, or, just use vanilla javascript in test harness if there
+        // isn't significant value in typing here?
+        (expect(newLocal) as any).toBeLocalizationOf("Export");
     });
 
     it("should emit 'export' event with correct inputs on export button click", async () => {

@@ -1,48 +1,56 @@
+<script setup lang="ts">
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+
+interface Props {
+    title?: string;
+    wait?: boolean;
+    tooltip?: string;
+    disabled?: boolean;
+    size?: string;
+    variant?: string;
+    icon?: IconDefinition;
+}
+
+withDefaults(defineProps<Props>(), {
+    title: "",
+    wait: false,
+    tooltip: "",
+    disabled: false,
+    size: "md",
+    variant: "primary",
+    icon: undefined,
+});
+</script>
+
 <template>
-    <b-button
+    <BButton
         v-if="wait"
         v-b-tooltip.hover.bottom
         disabled
+        :size="size"
         variant="info"
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
-        <FontAwesomeIcon icon="spinner" class="mr-2" spin />{{ title }}
-    </b-button>
-    <b-button
+        <FontAwesomeIcon :icon="faSpinner" fixed-width spin />
+        <slot>
+            <span v-if="title">{{ title }}</span>
+        </slot>
+    </BButton>
+    <BButton
         v-else
         v-b-tooltip.hover.bottom
-        variant="primary"
+        :variant="variant"
         class="d-flex flex-nowrap align-items-center text-nowrap"
         :title="tooltip"
+        :disabled="disabled"
+        :size="size"
         @click="$emit('onClick')">
-        <FontAwesomeIcon icon="play" class="mr-2" />{{ title }}
-    </b-button>
+        <FontAwesomeIcon :icon="!icon ? faPlay : icon" fixed-width />
+        <slot>
+            <span v-if="title">{{ title }}</span>
+        </slot>
+    </BButton>
 </template>
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
-library.add(faSpinner);
-library.add(faPlay);
-
-export default {
-    components: {
-        FontAwesomeIcon,
-    },
-    props: {
-        title: {
-            type: String,
-            required: true,
-        },
-        wait: {
-            type: Boolean,
-            default: false,
-        },
-        tooltip: {
-            type: String,
-            default: null,
-        },
-    },
-};
-</script>

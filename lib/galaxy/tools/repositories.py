@@ -1,24 +1,37 @@
 """Provides a subset of app for verifying tools."""
+
 import os
 import shutil
 import tempfile
 from contextlib import contextmanager
+from typing import Optional
 
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util.bunch import Bunch
 
 
+class ValidationContextConfig:
+    tool_data_path: Optional[str]
+    shed_tool_data_path: Optional[str]
+    tool_data_table_config: str
+    shed_tool_data_table_config: str
+    interactivetools_enable: bool
+    len_file_path: str
+    builds_file_path: Optional[str]
+
+
 class ValidationContext:
     """Minimal App object for tool validation."""
 
     is_webapp = True
+    config: ValidationContextConfig
 
     def __init__(
         self,
-        app_name,
-        security,
+        app_name: str,
         model,
+        security,
         tool_data_path,
         shed_tool_data_path,
         tool_data_tables=None,
@@ -27,9 +40,9 @@ class ValidationContext:
         biotools_metadata_source=None,
     ):
         self.name = app_name
-        self.security = security
         self.model = model
-        self.config = Bunch()
+        self.security = security
+        self.config = ValidationContextConfig()
         self.config.tool_data_path = tool_data_path
         self.config.shed_tool_data_path = shed_tool_data_path
         self.temporary_path = tempfile.mkdtemp(prefix="tool_validation_")
@@ -67,11 +80,11 @@ class ValidationContext:
             with ValidationContext(
                 app_name=app.name,
                 security=app.security,
-                model=app.model,
+                model=getattr(app, "model", None),
                 tool_data_path=work_dir,
                 shed_tool_data_path=work_dir,
                 tool_data_tables=tool_data_tables,
-                registry=app.datatypes_registry,
+                registry=getattr(app, "datatypes_registry", None),
                 hgweb_config_manager=getattr(app, "hgweb_config_manager", None),
                 biotools_metadata_source=getattr(app, "biotools_metadata_source", None),
             ) as app:

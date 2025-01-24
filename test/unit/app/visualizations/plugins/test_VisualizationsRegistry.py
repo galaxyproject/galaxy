@@ -1,6 +1,7 @@
 """
 Test lib/galaxy/visualization/plugins/registry.
 """
+
 import os
 
 from galaxy.app_unittest_utils import galaxy_mock
@@ -14,7 +15,7 @@ from . import VisualizationsBase_TestCase
 
 glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, "database", "compiled_templates")
-addtional_templates_dir = os.path.join(glx_dir, "config", "plugins", "visualizations", "common", "templates")
+additional_templates_dir = os.path.join(glx_dir, "config", "plugins", "visualizations", "common", "templates")
 vis_reg_path = "config/plugins/visualizations"
 
 config1 = """\
@@ -143,7 +144,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
                     <model_class>HistoryDatasetAssociation</model_class>
                 </data_source>
             </data_sources>
-            <entry_point entry_point_type="script" data-main="one" src="bler"></entry_point>
+            <entry_point entry_point_type="script" container="mycontainer" src="mysrc" css="mycss"></entry_point>
         </visualization>
         """
         )
@@ -166,11 +167,11 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert script_entry.serves_templates
 
         trans = galaxy_mock.MockTrans()
-        script_entry._set_up_template_plugin(mock_app_dir.root_path, [addtional_templates_dir])
-        response = script_entry._render({}, trans=trans, embedded=True)
-        assert 'src="bler"' in response
-        assert 'type="text/javascript"' in response
-        assert 'data-main="one"' in response
+        script_entry._set_up_template_plugin(mock_app_dir.root_path, [additional_templates_dir])
+        response = script_entry.render(trans=trans, embedded=True)
+        assert '<script type="module" src="mysrc">' in response
+        assert '<link rel="stylesheet" href="mycss">' in response
+        assert "<div id=\"mycontainer\" data-incoming='{}'></div>" in response
         mock_app_dir.remove()
 
 

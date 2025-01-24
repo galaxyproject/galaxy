@@ -1,6 +1,7 @@
 """ API for asynchronous job running mechanisms can use to fetch or put files
 related to running and queued jobs.
 """
+
 import logging
 
 from galaxy import (
@@ -12,6 +13,7 @@ from galaxy.model import (
     InteractiveToolEntryPoint,
     Job,
 )
+from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
 from . import BaseGalaxyAPIController
@@ -51,7 +53,8 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
             )
 
         if job_id is not None:
-            job = trans.sa_session.query(Job).get(self.decode_id(job_id))
+            job = trans.sa_session.get(Job, self.decode_id(job_id))
+            assert job
             if not self.interactivetool_manager.can_access_job(trans, job):
                 raise exceptions.ItemAccessibilityException()
             entry_points = job.interactivetool_entry_points
@@ -60,7 +63,11 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
 
         rval = []
         for entry_point in entry_points:
-            as_dict = self.encode_all_ids(trans, entry_point.to_dict(), True)
+            entrypoint_id_encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+            as_dict = entry_point.to_dict()
+            as_dict["id"] = entrypoint_id_encoder.encode_id(as_dict["id"])
+            as_dict_no_id = {k: v for k, v in as_dict.items() if k != "id"}
+            as_dict.update(self.encode_all_ids(trans, as_dict_no_id, True))
             target = self.interactivetool_manager.target_if_active(trans, entry_point)
             if target:
                 as_dict["target"] = target
@@ -82,7 +89,8 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
         # Because of auto id encoding needed for link from grid, the item.id keyword must be 'id'
         if not id:
             raise exceptions.RequestParameterMissingException("Must supply entry point ID.")
-        entry_point_id = self.decode_id(id)
+        entrypoint_id_encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+        entry_point_id = entrypoint_id_encoder.decode_id(id)
         return {"target": self.interactivetool_manager.access_entry_point_target(trans, entry_point_id)}
 
     @expose_api_anonymous_and_sessionless
@@ -93,8 +101,9 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
         if not id:
             raise exceptions.RequestParameterMissingException("Must supply entry point id")
         try:
-            entry_point_id = self.decode_id(id)
-            entry_point = trans.sa_session.query(InteractiveToolEntryPoint).get(entry_point_id)
+            entrypoint_id_encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+            entry_point_id = entrypoint_id_encoder.decode_id(id)
+            entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         except Exception:
             raise exceptions.RequestParameterInvalidException("entry point invalid")
         if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):

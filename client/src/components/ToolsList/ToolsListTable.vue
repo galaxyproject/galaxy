@@ -10,6 +10,7 @@
             :key="item.id"
             :name="item.name"
             :section="item.panel_section_name"
+            :ontologies="item.ontologies"
             :description="item.description"
             :summary="item.summary"
             :help="item.help"
@@ -59,7 +60,12 @@ export default {
     },
     computed: {
         buffer() {
-            return this.tools.slice(0, this.bufferLen);
+            return this.tools.slice(0, this.bufferLen).map((tool) => {
+                return {
+                    ...tool,
+                    ontologies: tool.edam_operations.concat(tool.edam_topics),
+                };
+            });
         },
     },
     created() {
@@ -91,7 +97,7 @@ export default {
             }
         },
         async fetchHelp(tool) {
-            await fetchData(`api/tools/${tool.id}/build`).then((response) => {
+            await fetchData(`api/tools/${encodeURIComponent(tool.id)}/build`).then((response) => {
                 const help = response.help;
                 Vue.set(tool, "_showDetails", false); // maybe not needed
                 if (help && help != "\n") {

@@ -62,9 +62,9 @@ def quotacheck(sa_session, users, engine, object_store):
         print("none")
     else:
         if new > current:
-            print("+%s" % (nice_size(new - current)))
+            print(f"+{nice_size(new - current)}")
         else:
-            print("-%s" % (nice_size(current - new)))
+            print(f"-{nice_size(current - new)}")
 
 
 if __name__ == "__main__":
@@ -74,9 +74,9 @@ if __name__ == "__main__":
 
     if not args.username and not args.email:
         user_count = sa_session.query(model.User).count()
-        print("Processing %i users..." % user_count)
+        print(f"Processing {user_count} users...")
         for i, user in enumerate(sa_session.query(model.User).enable_eagerloads(False).yield_per(1000)):
-            print("%3i%%" % int(float(i) / user_count * 100), end=" ")
+            print(f"{int(float(i) / user_count * 100):3d}%", end=" ")
             quotacheck(sa_session, user, engine, object_store)
         print("100% complete")
         object_store.shutdown()

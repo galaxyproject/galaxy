@@ -1,3 +1,7 @@
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+
+import { type SelectionItem } from "../SelectionDialog/selectionTypes";
+
 export const isSubPath = (originPath: string, destinationPath: string) => {
     return subPathCondition(ensureTrailingSlash(originPath), ensureTrailingSlash(destinationPath));
 };
@@ -8,4 +12,15 @@ function ensureTrailingSlash(path: string) {
 }
 function subPathCondition(originPath: string, destinationPath: string) {
     return originPath !== destinationPath && destinationPath.startsWith(originPath);
+}
+
+export function fileSourcePluginToItem(plugin: BrowsableFilesSourcePlugin): SelectionItem {
+    const result = {
+        id: plugin.id,
+        label: plugin.label,
+        details: plugin.doc || "",
+        isLeaf: false,
+        url: plugin.uri_root,
+    };
+    return result;
 }

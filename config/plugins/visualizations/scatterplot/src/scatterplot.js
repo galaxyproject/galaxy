@@ -1,13 +1,14 @@
 import "./jqglobals";
 // This is a really annoying hack to get bootstrap/jqui jquery bindings available correctly.
 /* global $ */
-import * as Backbone from "backbone";
-import * as d3 from "d3";
-import * as _ from "underscore";
-import "../../../../../client/src/ui/peek-column-selector";
-import "../../../../../client/src/ui/pagination";
+import "./peek-column-selector";
+import "./pagination";
 import "jquery-ui-bundle";
 import "bootstrap";
+
+import Backbone from "backbone";
+import * as d3 from "d3";
+import _ from "underscore";
 
 //TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
 

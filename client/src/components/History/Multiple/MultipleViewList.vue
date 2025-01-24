@@ -1,17 +1,29 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
-import type { HistorySummary } from "@/stores/historyStore";
+import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
+
+import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
+
+library.add(faCheckSquare, faPlus);
+
+const historyStore = useHistoryStore();
 
 const props = withDefaults(
     defineProps<{
-        histories: HistorySummary[];
         selectedHistories: { id: string }[];
         filter?: string;
     }>(),
@@ -19,6 +31,11 @@ const props = withDefaults(
         filter: "",
     }
 );
+
+// defineEmits below
+const emit = defineEmits<{
+    (e: "update:show-modal", value: boolean): void;
+}>();
 
 const scrollContainer: Ref<HTMLElement | null> = ref(null);
 const { arrived } = useAnimationFrameScroll(scrollContainer);
@@ -30,9 +47,38 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
+
+async function createAndPin() {
+    try {
+        await historyStore.createNewHistory();
+        if (!historyStore.currentHistoryId) {
+            throw new Error("Error creating history");
+        }
+
+        if (historyStore.pinnedHistories.length > 0) {
+            historyStore.pinHistory(historyStore.currentHistoryId);
+        }
+    } catch (error: any) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Error creating and pinning history");
+    }
+}
+
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(undefined, true, true);
+
+async function onKeyDown(evt: KeyboardEvent) {
+    if (evt.key === "Enter" || evt.key === " ") {
+        if ((evt.target as HTMLElement)?.classList?.contains("top-picker")) {
+            await createAndPin();
+        } else if ((evt.target as HTMLElement)?.classList?.contains("bottom-picker")) {
+            emit("update:show-modal", true);
+        }
+    }
+}
 </script>
 
 <template>
+    <!-- eslint-disable vuejs-accessibility/no-static-element-interactions -->
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
             <VirtualList
@@ -43,26 +89,75 @@ const scrolledRight = computed(() => !isScrollable.value || arrived.right);
                 :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
                 :extra-props="{ filter }"
-                :item-style="{ width: '15rem' }"
+                :item-style="{ width: '100%', minWidth: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
                 wrap-class="row flex-nowrap m-0">
             </VirtualList>
 
             <div
-                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap"
-                @click.stop="$emit('update:show-modal', true)">
-                Select histories
+                class="history-picker"
+                @drop.prevent="onDrop"
+                @dragenter.prevent="onDragEnter"
+                @dragover="onDragOver"
+                @dragleave.prevent="onDragLeave">
+                <span v-if="!showDropZone" class="d-flex flex-column h-100">
+                    <div
+                        class="history-picker-box top-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="createAndPin">
+                        <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+                        {{ localize("Create and pin new history") }}
+                    </div>
+                    <div
+                        class="history-picker-box bottom-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('update:show-modal', true)">
+                        <FontAwesomeIcon :icon="faCheckSquare" class="mr-1" />
+                        {{ localize("Select histories") }}
+                    </div>
+                </span>
+                <div v-else class="history-picker-box history-picker-drop-zone text-primary">
+                    {{ localize("Create new history with this item") }}
+                    <HistoryDropZone />
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
+@import "scss/theme/blue.scss";
 .list-container {
     .history-picker {
-        border: dotted lightgray;
-        cursor: pointer;
+        min-width: 15rem;
+        max-width: 15rem;
+        margin: 1rem;
+        .history-picker-box {
+            border: dotted lightgray;
+            cursor: pointer;
+            position: relative;
+            justify-content: center;
+            display: flex;
+            align-items: center;
+            text-wrap: none;
+            &.top-picker {
+                height: 20%;
+            }
+            &.bottom-picker {
+                height: 80%;
+            }
+            &:not(.history-picker-drop-zone) {
+                &:hover {
+                    background-color: rgba($brand-info, 0.2);
+                }
+            }
+            &.history-picker-drop-zone {
+                height: 100%;
+            }
+        }
     }
 
     position: relative;

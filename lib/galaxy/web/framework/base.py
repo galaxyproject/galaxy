@@ -1,6 +1,7 @@
 """
 A simple WSGI application/framework.
 """
+
 import io
 import json
 import logging
@@ -34,7 +35,7 @@ log = logging.getLogger(__name__)
 #: time of the most recent server startup
 server_starttime = int(time.time())
 try:
-    meta_json = json.loads(resource_string(__package__, "meta.json"))
+    meta_json = json.loads(resource_string(__name__, "meta.json"))
     server_starttime = meta_json.get("epoch") or server_starttime
 except Exception:
     meta_json = {}
@@ -93,8 +94,8 @@ class WebApplication:
         `finalize_config` when all controllers and routes have been added
         and `__call__` to handle a request (WSGI style).
         """
-        self.controllers = dict()
-        self.api_controllers = dict()
+        self.controllers = {}
+        self.api_controllers = {}
         self.mapper = routes.Mapper()
         self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be
@@ -103,6 +104,7 @@ class WebApplication:
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
+        self.session_factories = []
 
     def add_ui_controller(self, controller_name, controller):
         """
@@ -169,10 +171,12 @@ class WebApplication:
         path_info = environ.get("PATH_INFO", "")
 
         try:
-            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            for session_factory in self.session_factories:
+                session_factory.set_request_id(request_id)  # Start SQLAlchemy session scope
             return self.handle_request(request_id, path_info, environ, start_response)
         finally:
-            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
+            for session_factory in self.session_factories:
+                session_factory.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
@@ -222,6 +226,12 @@ class WebApplication:
         rc = routes.request_config()
         rc.mapper = self.mapper
         rc.mapper_dict = map_match
+        server_port = environ["SERVER_PORT"]
+        if isinstance(server_port, int):
+            # Workaround bug in the routes package, which would concatenate this
+            # without casting to str in
+            # https://github.com/bbangert/routes/blob/c4d5a5fb693ce8dc7cf5dbc591861acfc49d5c23/routes/__init__.py#L73
+            environ["SERVER_PORT"] = str(server_port)
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory(environ)
@@ -244,9 +254,14 @@ class WebApplication:
                 raise
         trans.controller = controller_name
         trans.action = action
-        environ[
-            "controller_action_key"
-        ] = f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+
+        # Action can still refer to invalid and/or inaccurate paths here, so we use the actual
+        # controller and method names to set the timing key.
+
+        action_tag = getattr(method, "__name__", "default")
+        environ["controller_action_key"] = (
+            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action_tag}"
+        )
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update(map_match)
@@ -257,6 +272,7 @@ class WebApplication:
         except Exception as e:
             body = self.handle_controller_exception(e, trans, method, **kwargs)
             if not body:
+                trans.response.headers.pop("content-length", None)
                 raise
         body_renderer = body_renderer or self._render_body
         return body_renderer(trans, body, environ, start_response)
@@ -420,8 +436,7 @@ class Request(webob.Request):
     @lazy_property
     def cookies(self):
         cookies = SimpleCookie()
-        cookie_header = self.environ.get("HTTP_COOKIE")
-        if cookie_header:
+        if cookie_header := self.environ.get("HTTP_COOKIE"):
             all_cookies = webob.cookies.parse_cookie(cookie_header)
             galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
             if galaxy_cookies:
@@ -515,7 +530,7 @@ class Response:
         """
         if isinstance(self.status, int):
             exception = webob.exc.status_map.get(self.status)
-            return "%d %s" % (exception.code, exception.title)
+            return f"{exception.code} {exception.title}"
         else:
             return self.status
 
@@ -542,6 +557,9 @@ def send_file(start_response, trans, body):
         trans.response.headers["accept-ranges"] = "bytes"
         start = None
         end = None
+        if trans.request.method == "HEAD":
+            trans.response.headers["content-length"] = os.path.getsize(body.name)
+            body = b""
         if trans.request.range:
             start = int(trans.request.range.start)
             file_size = int(trans.response.headers["content-length"])
@@ -549,7 +567,8 @@ def send_file(start_response, trans, body):
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206
-        body = iterate_file(body, start, end)
+        if body:
+            body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 

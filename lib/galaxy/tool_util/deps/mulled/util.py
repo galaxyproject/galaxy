@@ -18,7 +18,6 @@ from typing import (
     Union,
 )
 
-import requests
 from conda_package_streaming.package_streaming import stream_conda_info
 from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
 from packaging.version import Version
@@ -29,6 +28,7 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.util import requests
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache
@@ -335,7 +335,11 @@ def v2_image_name(
     >>> multi_targets_versionless = [build_target("samtools"), build_target("bwa")]
     >>> v2_image_name(multi_targets_versionless)
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
+    >>> targets_version_with_build = [build_target("samtools", version="1.3.1", build="h9071d68_10"), build_target("bedtools", version="2.26.0", build="0")]
+    >>> v2_image_name(targets_version_with_build)
+    'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619'
     """
+
     if name_override is not None:
         print(
             "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
@@ -347,14 +351,14 @@ def v2_image_name(
         return _simple_image_name(targets, image_build=image_build)
     else:
         targets_order = sorted(targets, key=lambda t: t.package)
-        package_name_buffer = "\n".join(map(lambda t: t.package, targets_order))
+        package_name_buffer = "\n".join(t.package for t in targets_order)
         package_hash = hashlib.sha1()
         package_hash.update(package_name_buffer.encode())
 
-        versions = map(lambda t: t.version, targets_order)
+        versions = (t.version for t in targets_order)
         if any(versions):
             # Only hash versions if at least one package has versions...
-            version_name_buffer = "\n".join(map(lambda t: t.version or "null", targets_order))
+            version_name_buffer = "\n".join(t.version or "null" for t in targets_order)
             version_hash = hashlib.sha1()
             version_hash.update(version_name_buffer.encode())
             version_hash_str = version_hash.hexdigest()

@@ -3,6 +3,8 @@ import axios from "axios";
 import { withPrefix } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
+import { toSimple } from "./Editor/modules/model";
+
 /** Workflow data request helper **/
 export class Services {
     async copyWorkflow(workflow) {
@@ -22,6 +24,16 @@ export class Services {
             const createWorkflow = createResponse.data;
             this._addAttributes(createWorkflow);
             return createWorkflow;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    async createWorkflow(workflow) {
+        const url = withPrefix("/api/workflows");
+        try {
+            const { data } = await axios.post(url, { workflow: toSimple(workflow.id, workflow), from_tool_form: true });
+            return data;
         } catch (e) {
             rethrowSimple(e);
         }

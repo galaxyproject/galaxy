@@ -306,7 +306,7 @@ class GroupGrid(grids.Grid):
 
 
 class ManageCategoryGrid(CategoryGrid):
-    columns = [col for col in CategoryGrid.columns]
+    columns = list(CategoryGrid.columns)
     # Override the NameColumn to include an Edit link
     columns[0] = CategoryGrid.NameColumn(
         "Name",
@@ -355,7 +355,7 @@ class AdminRepositoryGrid(RepositoryGrid):
             filterable="standard",
         )
     )
-    operations = [operation for operation in RepositoryGrid.operations]
+    operations = list(RepositoryGrid.operations)
     operations.append(
         grids.GridOperation(
             "Delete", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False
@@ -401,7 +401,7 @@ class RepositoryMetadataGrid(grids.Grid):
                         # We used to display the following, but grid was too cluttered.
                         # for tool_metadata_dict in metadata[ 'tools' ]:
                         #    tools_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
-                        return "%d" % len(metadata["tools"])
+                        return "{}".format(len(metadata["tools"]))
             return tools_str
 
     class DatatypesColumn(grids.TextColumn):
@@ -414,7 +414,7 @@ class RepositoryMetadataGrid(grids.Grid):
                         # We used to display the following, but grid was too cluttered.
                         # for datatype_metadata_dict in metadata[ 'datatypes' ]:
                         #    datatypes_str += '%s<br/>' % datatype_metadata_dict[ 'extension' ]
-                        return "%d" % len(metadata["datatypes"])
+                        return "{}".format(len(metadata["datatypes"]))
             return datatypes_str
 
     class WorkflowsColumn(grids.TextColumn):
@@ -432,7 +432,7 @@ class RepositoryMetadataGrid(grids.Grid):
                         # workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
                         # for workflow_metadata_dict in workflow_metadata_dicts:
                         #    workflows_str += '%s<br/>' % workflow_metadata_dict[ 'name' ]
-                        return "%d" % len(metadata["workflows"])
+                        return "{}".format(len(metadata["workflows"]))
             return workflows_str
 
     class DeletedColumn(grids.BooleanColumn):

@@ -16,7 +16,7 @@ from galaxy import (
     util,
 )
 from galaxy.model.base import transaction
-from galaxy.structured_app import StructuredApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -37,6 +37,7 @@ from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
 )
+from galaxy.util.tool_shed.tool_shed_registry import Registry
 from tool_shed_client.schema import (
     ExtraRepoInfo,
     RepositoryMetadataInstallInfoDict,
@@ -45,11 +46,43 @@ from tool_shed_client.schema import (
 log = logging.getLogger(__name__)
 
 
+def get_install_info_from_tool_shed(
+    tool_shed_url: str, tool_shed_registry: Registry, name: str, owner: str, changeset_revision: str
+) -> Tuple[RepositoryMetadataInstallInfoDict, ExtraRepoInfo]:
+    params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
+    pathspec = ["api", "repositories", "get_repository_revision_install_info"]
+    try:
+        raw_text = util.url_get(
+            tool_shed_url,
+            auth=tool_shed_registry.url_auth(tool_shed_url),
+            pathspec=pathspec,
+            params=params,
+        )
+    except Exception:
+        message = "Error attempting to retrieve installation information from tool shed "
+        message += f"{tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
+        log.exception(message)
+        raise exceptions.InternalServerError(message)
+    if raw_text:
+        # If successful, the response from get_repository_revision_install_info will be 3
+        # dictionaries, a dictionary defining the Repository, a dictionary defining the
+        # Repository revision (RepositoryMetadata), and a dictionary including the additional
+        # information required to install the repository.
+        items = json.loads(util.unicodify(raw_text))
+        repository_revision_dict: RepositoryMetadataInstallInfoDict = items[1]
+        repo_info_dict: ExtraRepoInfo = items[2]
+    else:
+        message = f"Unable to retrieve installation information from tool shed {tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
+        log.warning(message)
+        raise exceptions.InternalServerError(message)
+    return repository_revision_dict, repo_info_dict
+
+
 class InstallRepositoryManager:
-    app: StructuredApp
+    app: InstallationTarget
     tpm: tool_panel_manager.ToolPanelManager
 
-    def __init__(self, app: StructuredApp, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
+    def __init__(self, app: InstallationTarget, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
         self.app = app
         self.install_model = self.app.install_model
         self._view = views.DependencyResolversView(app)
@@ -79,32 +112,9 @@ class InstallRepositoryManager:
     def __get_install_info_from_tool_shed(
         self, tool_shed_url: str, name: str, owner: str, changeset_revision: str
     ) -> Tuple[RepositoryMetadataInstallInfoDict, List[ExtraRepoInfo]]:
-        params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
-        pathspec = ["api", "repositories", "get_repository_revision_install_info"]
-        try:
-            raw_text = util.url_get(
-                tool_shed_url,
-                auth=self.app.tool_shed_registry.url_auth(tool_shed_url),
-                pathspec=pathspec,
-                params=params,
-            )
-        except Exception:
-            message = "Error attempting to retrieve installation information from tool shed "
-            message += f"{tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
-            log.exception(message)
-            raise exceptions.InternalServerError(message)
-        if raw_text:
-            # If successful, the response from get_repository_revision_install_info will be 3
-            # dictionaries, a dictionary defining the Repository, a dictionary defining the
-            # Repository revision (RepositoryMetadata), and a dictionary including the additional
-            # information required to install the repository.
-            items = json.loads(util.unicodify(raw_text))
-            repository_revision_dict: RepositoryMetadataInstallInfoDict = items[1]
-            repo_info_dict: ExtraRepoInfo = items[2]
-        else:
-            message = f"Unable to retrieve installation information from tool shed {tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
-            log.warning(message)
-            raise exceptions.InternalServerError(message)
+        repository_revision_dict, repo_info_dict = get_install_info_from_tool_shed(
+            tool_shed_url, self.app.tool_shed_registry, name, owner, changeset_revision
+        )
         # Make sure the tool shed returned everything we need for installing the repository.
         if not repository_revision_dict or not repo_info_dict:
             invalid_parameter_message = "No information is available for the requested repository revision.\n"
@@ -318,7 +328,7 @@ class InstallRepositoryManager:
             tool_shed_repositories.append(tsr)
         clause_list = []
         for tsr_id in tsr_ids:
-            clause_list.append(self.install_model.ToolShedRepository.table.c.id == tsr_id)
+            clause_list.append(self.install_model.ToolShedRepository.id == tsr_id)
         query = self.install_model.context.query(self.install_model.ToolShedRepository).filter(or_(*clause_list))
         return encoded_kwd, query, tool_shed_repositories, encoded_repository_ids
 

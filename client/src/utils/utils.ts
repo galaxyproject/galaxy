@@ -6,8 +6,13 @@
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 import { getGalaxyInstance } from "@/app";
+import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
 import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
+
+export function stateIsTerminal(result: Record<string, any>) {
+    return !NON_TERMINAL_STATES.includes(result.state);
+}
 
 /** Object with any internal structure. More specific key than built-in Object type */
 export type AnyObject = Record<string | number | symbol, any>;
@@ -387,6 +392,71 @@ export function mergeObjectListsById<T extends { id: string; [key: string]: any 
     return mergedList;
 }
 
+export function parseBool(value: string): boolean {
+    return value.toLowerCase() === "true";
+}
+
+type MatchObject<T extends string | number | symbol, R> = {
+    [_Case in T]: () => R;
+};
+
+/**
+ * Alternative to `switch` statement.
+ * Unlike `switch` it is exhaustive and allows for returning a value.
+ *
+ * @param key A key with the type of a Union of possible keys
+ * @param matcher An object with a key for every possible match and a function as value, which will be ran if a match occurs
+ * @returns The ran functions return value
+ *
+ * @example
+ * ```ts
+ * type literal = "a" | "b";
+ * const thing = "a" as literal;
+ *
+ * const result = match(thing, {
+ *   a: () => 1,
+ *   b: () => 2,
+ * });
+ *
+ * result === 1;
+ * ```
+ */
+export function match<T extends string | number | symbol, R>(key: T, matcher: MatchObject<T, R>): R {
+    return matcher[key]();
+}
+
+/**
+ * Checks whether or not an object contains all supplied keys.
+ *
+ * @param object Object to check
+ * @param keys Array of all keys to check for
+ * @returns if all keys were found
+ */
+export function hasKeys(object: unknown, keys: string[]) {
+    if (typeof object === "object" && object !== null) {
+        let valid = true;
+        keys.forEach((key) => (valid = valid && key in object));
+        return valid;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Get the full URL path of the app
+ *
+ * @param path Path to append to the URL path
+ * @returns Full URL path of the app
+ */
+export function getFullAppUrl(path: string = ""): string {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : "";
+    const appRoot = getAppRoot();
+
+    return `${protocol}//${hostname}${port}${appRoot}${path}`;
+}
+
 export default {
     cssLoadFile,
     get,
@@ -405,4 +475,5 @@ export default {
     waitForElementToBePresent,
     wait,
     mergeObjectListsById,
+    getFullAppUrl,
 };

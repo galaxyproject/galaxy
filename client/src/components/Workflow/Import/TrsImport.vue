@@ -1,42 +1,30 @@
 <script setup lang="ts">
+import { BAlert, BCard, BFormGroup, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
+import { Services } from "@/components/Workflow/services";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
-import { getRedirectOnImportPath } from "../redirectPath";
-import { Services } from "../services";
 import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
-import TrsServerSelection from "./TrsServerSelection.vue";
-import TrsTool from "./TrsTool.vue";
-import TrsUrlImport from "./TrsUrlImport.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
+import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
+import TrsUrlImport from "@/components/Workflow/Import/TrsUrlImport.vue";
 
-const props = defineProps({
-    queryTrsServer: {
-        type: String,
-        default: null,
-    },
-    queryTrsId: {
-        type: String,
-        default: null,
-    },
-    queryTrsVersionId: {
-        type: String,
-        default: null,
-    },
-    queryTrsUrl: {
-        type: String,
-        default: null,
-    },
-    isRun: {
-        type: Boolean,
-        default: false,
-    },
-});
+interface Props {
+    isRun?: boolean;
+    queryTrsId?: string;
+    queryTrsUrl?: string;
+    queryTrsServer?: string;
+    queryTrsVersionId?: string;
+}
+
+const props = defineProps<Props>();
 
 const trsTool: Ref<TrsToolInterface | null> = ref(null);
 const loading = ref(false);
@@ -158,47 +146,56 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 
 <template>
     <div class="workflow-import-trs-id">
-        <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <BCard v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <div>
                 <b>TRS Server:</b>
+
                 <TrsServerSelection
                     :trs-selection="trsSelection"
                     :query-trs-server="props.queryTrsServer"
                     @onError="onTrsSelectionError"
                     @onTrsSelection="onTrsSelection" />
             </div>
-            <b-alert v-if="isAutoImport && !hasErrorMessage" show variant="info">
+
+            <BAlert v-if="isAutoImport && !hasErrorMessage" show variant="info">
                 <LoadingSpan message="Loading your Workflow" />
-            </b-alert>
+            </BAlert>
             <div v-else>
                 <div class="my-3">
-                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
-                        <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
-                    </b-form-group>
+                    <BFormGroup label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
+                        <BFormInput id="trs-id-input" v-model="toolId" debounce="500" />
+                    </BFormGroup>
                 </div>
                 <div>
-                    <b-alert v-if="loading" show variant="info">
+                    <BAlert v-if="loading" show variant="info">
                         <LoadingSpan :message="`Loading ${toolIdTrimmed}, this may take a while - please be patient`" />
-                    </b-alert>
-                    <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-                    <b-alert v-if="importing" show variant="info">
+                    </BAlert>
+
+                    <BAlert :show="hasErrorMessage" variant="danger">
+                        {{ errorMessage }}
+                    </BAlert>
+
+                    <BAlert v-if="importing" show variant="info">
                         <LoadingSpan message="Importing workflow" />
-                    </b-alert>
+                    </BAlert>
                 </div>
+
                 <TrsTool
                     v-if="trsTool"
                     :trs-tool="trsTool"
                     @onImport="(versionId) => importVersion(trsSelection?.id, trsTool?.id, versionId)" />
             </div>
+
             <hr />
+
             <div>
                 <TrsUrlImport
                     :query-trs-url="props.queryTrsUrl"
                     @onImport="(url) => importVersionFromUrl(url, isRun)" />
             </div>
-        </b-card>
-        <b-alert v-else class="text-center my-2" show variant="danger">
+        </BCard>
+        <BAlert v-else class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
-        </b-alert>
+        </BAlert>
     </div>
 </template>

@@ -38,7 +38,7 @@ describe("Index", () => {
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;
         mockLoadWorkflow.mockResolvedValue({ steps: {} });
-        MockGetVersions.mockResolvedValue(() => []);
+        MockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => "prefix/");
         Object.defineProperty(window, "onbeforeunload", {
@@ -47,9 +47,9 @@ describe("Index", () => {
         });
         wrapper = shallowMount(Index, {
             propsData: {
-                id: "workflow_id",
+                workflowId: "workflow_id",
                 initialVersion: 1,
-                tags: ["moo", "cow"],
+                workflowTags: ["moo", "cow"],
                 moduleSections: [],
                 dataManagers: [],
                 workflows: [],

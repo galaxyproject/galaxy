@@ -22,5 +22,6 @@ def initialize_fast_app(gx_webapp):
     add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.reports.api")
     wsgi_handler = WSGIMiddleware(gx_webapp)
-    app.mount("/", wsgi_handler)
+    # https://github.com/abersheeran/a2wsgi/issues/44
+    app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     return app

@@ -11,6 +11,7 @@ from urllib.parse import quote
 
 import zipstream
 
+from galaxy.util import to_content_disposition
 from .path import safe_walk
 
 CRC32_MIN = 1444
@@ -41,7 +42,7 @@ class ZipstreamWrapper:
     def get_headers(self) -> Dict[str, str]:
         headers = {}
         if self.archive_name:
-            headers["Content-Disposition"] = f'attachment; filename="{self.archive_name}.zip"'
+            headers["Content-Disposition"] = to_content_disposition(f"{self.archive_name}.zip")
         if self.upstream_mod_zip:
             headers["X-Archive-Files"] = "zip"
         else:

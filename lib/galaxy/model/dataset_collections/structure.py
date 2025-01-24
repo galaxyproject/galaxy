@@ -1,5 +1,6 @@
 """ Module for reasoning about structure of and matching hierarchical collections of data.
 """
+
 import logging
 
 log = logging.getLogger(__name__)
@@ -148,7 +149,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return f"Tree[collection_type={self.collection_type_description},children={','.join(map(lambda identifier_and_element: f'{identifier_and_element[0]}={identifier_and_element[1]}', self.children))}]"
+        return f"Tree[collection_type={self.collection_type_description},children={','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)}]"
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):

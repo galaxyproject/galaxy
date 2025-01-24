@@ -9,6 +9,7 @@ from typing import (
     Optional,
     Set,
 )
+from unittest.mock import patch
 
 import pytest
 
@@ -77,10 +78,11 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         notification_data = NotificationCreateData(**data)
 
         request = NotificationCreateRequest(
-            recipients=NotificationRecipients.construct(
+            recipients=NotificationRecipients.model_construct(
                 user_ids=[user.id for user in users],
             ),
             notification=notification_data,
+            galaxy_url="https://test.galaxy.url",
         )
         created_notification, notifications_sent = self.notification_manager.send_notification_to_recipients(request)
         return created_notification, notifications_sent
@@ -95,14 +97,12 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         assert actual_notification.variant == expected_notification["variant"]
         assert actual_notification.category == expected_notification["category"]
 
-        expected_publication_time = expected_notification.get("publication_time")
-        if expected_publication_time:
+        if expected_publication_time := expected_notification.get("publication_time"):
             assert actual_notification.publication_time == expected_publication_time
         else:
             assert actual_notification.publication_time is not None
 
-        expected_expiration_time = expected_notification.get("expiration_time")
-        if expected_expiration_time:
+        if expected_expiration_time := expected_notification.get("expiration_time"):
             assert actual_notification.expiration_time == expected_expiration_time
         else:
             assert actual_notification.expiration_time is not None
@@ -112,6 +112,13 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         assert user_notification_content["category"] == expected_notification["content"]["category"]
         assert user_notification_content["subject"] == expected_notification["content"]["subject"]
         assert user_notification_content["message"] == expected_notification["content"]["message"]
+
+
+class NotificationManagerBaseTestCaseWithTasks(NotificationManagerBaseTestCase):
+    def set_up_managers(self):
+        super().set_up_managers()
+        self.app.config.enable_celery_tasks = True
+        self.notification_manager = NotificationManager(self.trans.sa_session, self.app.config)
 
 
 class TestBroadcastNotifications(NotificationManagerBaseTestCase):
@@ -266,8 +273,8 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         actual_user_notification = self.notification_manager.get_user_notification(user, notification.id)
 
         self._assert_notification_expected(actual_user_notification, expected_user_notification)
-        assert actual_user_notification["seen_time"] is None
-        assert actual_user_notification["deleted"] is False
+        assert actual_user_notification._mapping["seen_time"] is None
+        assert actual_user_notification._mapping["deleted"] is False
 
     def test_update_user_notifications(self):
         user = self._create_test_user()
@@ -276,7 +283,7 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert user_notification.seen_time is None
         assert user_notification.deleted is False
         request = UserNotificationUpdateRequest(seen=True)
-        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
+        self.notification_manager.update_user_notifications(user, {notification.id}, request)
         user_notification = self.notification_manager.get_user_notification(user, notification.id)
         assert user_notification.seen_time is not None
         assert user_notification.deleted is False
@@ -370,6 +377,79 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         user_notifications = self.notification_manager.get_user_notifications(user_opt_in)
         assert len(user_notifications) == 1
 
+    def test_urgent_notifications_ignore_preferences(self):
+        user = self._create_test_user()
+        update_request = UpdateUserNotificationPreferencesRequest(
+            preferences={
+                PersonalNotificationCategory.message: NotificationCategorySettings(enabled=False),
+            }
+        )
+        self.notification_manager.update_user_notification_preferences(user, update_request)
+
+        # Send normal message notification
+        notification_data = self._default_test_notification_data()
+        self._send_message_notification_to_users([user], notification=notification_data)
+        user_notifications = self.notification_manager.get_user_notifications(user)
+        assert len(user_notifications) == 0
+
+        # Send urgent message notification
+        notification_data["variant"] = NotificationVariant.urgent
+        self._send_message_notification_to_users([user], notification=notification_data)
+        user_notifications = self.notification_manager.get_user_notifications(user)
+        assert len(user_notifications) == 1
+
+
+class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
+
+    def test_urgent_notifications_via_email_channel(self):
+        user = self._create_test_user()
+        # Disable email channel only
+        update_request = UpdateUserNotificationPreferencesRequest(
+            preferences={
+                PersonalNotificationCategory.message: NotificationCategorySettings(
+                    enabled=True,
+                    channels=NotificationChannelSettings(email=False),
+                ),
+            }
+        )
+        self.notification_manager.update_user_notification_preferences(user, update_request)
+
+        emails_sent = []
+
+        def validate_send_email(frm, to, subject, body, config, html=None):
+            emails_sent.append(
+                {
+                    "frm": frm,
+                    "to": to,
+                    "subject": subject,
+                    "body": body,
+                    "config": config,
+                    "html": html,
+                }
+            )
+
+        with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
+            notification_data = self._default_test_notification_data()
+
+            # Send normal message notification
+            self._send_message_notification_to_users([user], notification=notification_data)
+            # The in-app notification should be sent but the email notification should not be sent after dispatching
+            user_notifications = self.notification_manager.get_user_notifications(user)
+            assert len(user_notifications) == 1
+            self.notification_manager.dispatch_pending_notifications_via_channels()
+            mock_send_mail.assert_not_called()
+
+            # Send urgent message notification
+            notification_data["variant"] = NotificationVariant.urgent
+            self._send_message_notification_to_users([user], notification=notification_data)
+            # The in-app notification should be sent, now there are 2 notifications
+            user_notifications = self.notification_manager.get_user_notifications(user)
+            assert len(user_notifications) == 2
+            # The email notification should be sent after dispatching the pending notifications
+            self.notification_manager.dispatch_pending_notifications_via_channels()
+            mock_send_mail.assert_called_once()
+            assert len(emails_sent) == 1
+
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def test_default_resolution_strategy(self):
@@ -414,7 +494,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             groups=[group1],
         )
 
-        recipients = NotificationRecipients.construct(
+        recipients = NotificationRecipients.model_construct(
             user_ids=[users[9].id],
             group_ids=[group3.id],
             role_ids=[role3.id],
@@ -444,8 +524,9 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
         sa_session = self.trans.sa_session
         group = Group(name=name)
         sa_session.add(group)
-        self.trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        sa_session.flush()
+        user_ids = [user.id for user in users]
+        role_ids = [role.id for role in roles]
+        self.trans.app.security_agent.set_group_user_and_role_associations(group, user_ids=user_ids, role_ids=role_ids)
         return group
 
     def _create_test_role(self, name: str, users: List[User], groups: List[Group]):

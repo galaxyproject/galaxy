@@ -1,4 +1,5 @@
 """Dependency injection framework for Galaxy-type apps."""
+
 from typing import (
     Optional,
     Type,

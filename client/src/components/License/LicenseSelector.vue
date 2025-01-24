@@ -1,130 +1,112 @@
+<script setup lang="ts">
+import { watchImmediate } from "@vueuse/core";
+import { BAlert } from "bootstrap-vue";
+import { computed, ref } from "vue";
+import Multiselect from "vue-multiselect";
+
+import { GalaxyApi } from "@/api";
+import { type components } from "@/api/schema";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import License from "@/components/License/License.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const defaultLicense: LicenseType = {
+    licenseId: null,
+    name: "*Do not specify a license.*",
+};
+
+type LicenseMetadataModel = components["schemas"]["LicenseMetadataModel"];
+type LicenseType = {
+    licenseId: string | null;
+    name: string;
+};
+
+interface Props {
+    inputLicense: string;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "onLicense", license: string | null): void;
+}>();
+
+const licensesLoading = ref(false);
+const errorMessage = ref<string>("");
+const currentLicense = ref<LicenseType>();
+const licenses = ref<LicenseMetadataModel[] | undefined>([]);
+
+const licenseOptions = computed(() => {
+    const options: LicenseType[] = [];
+
+    options.push(defaultLicense);
+
+    for (const license of licenses.value || []) {
+        if (license.licenseId == currentLicense.value?.licenseId || license.recommended) {
+            options.push({
+                licenseId: license.licenseId,
+                name: license.name,
+            });
+        }
+    }
+
+    return options;
+});
+
+function onLicense(license: LicenseType) {
+    emit("onLicense", license.licenseId);
+}
+
+async function fetchLicenses() {
+    const { error, data } = await GalaxyApi().GET("/api/licenses");
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error) || "Unable to fetch licenses.";
+    }
+
+    licenses.value = data;
+
+    licensesLoading.value = false;
+}
+
+async function setCurrentLicense() {
+    if (!licenses.value?.length && !licensesLoading.value) {
+        licensesLoading.value = true;
+
+        await fetchLicenses();
+    }
+
+    const inputLicense = props.inputLicense;
+
+    currentLicense.value = (licenses.value || []).find((l) => l.licenseId == inputLicense) || defaultLicense;
+}
+
+watchImmediate(
+    () => props.inputLicense,
+    () => {
+        setCurrentLicense();
+    }
+);
+</script>
+
 <template>
-    <div v-if="editLicense">
-        <LoadingSpan v-if="licensesLoading" message="Loading licenses..." />
-        <b-form-select
+    <div>
+        <BAlert v-if="licensesLoading" variant="info" class="m-0" show>
+            <LoadingSpan message="Loading licenses" />
+        </BAlert>
+        <BAlert v-else-if="errorMessage" variant="danger" class="m-0" show>
+            {{ errorMessage }}
+        </BAlert>
+        <Multiselect
             v-else
-            v-model="license"
+            v-model="currentLicense"
             data-description="license select"
-            :options="licenseOptions"></b-form-select>
-        <License v-if="currentLicenseInfo" :license-id="license" :input-license-info="currentLicenseInfo">
-            <template v-slot:buttons>
-                <span v-b-tooltip.hover title="Save License"
-                    ><FontAwesomeIcon data-description="license save" icon="save" @click="onSave"
-                /></span>
-                <span v-b-tooltip.hover title="Cancel Edit"><FontAwesomeIcon icon="times" @click="disableEdit" /></span>
-            </template>
-        </License>
-        <div v-else>
-            <a href="#" @click.prevent="onSave">Save without license</a> or
-            <a href="#" @click.prevent="editLicense = false">cancel edit.</a>
-        </div>
-    </div>
-    <div v-else-if="license" data-description="license selector" :data-license="license">
-        <License :license-id="license">
-            <template v-slot:buttons>
-                <span v-b-tooltip.hover title="Edit License"
-                    ><FontAwesomeIcon icon="edit" data-description="edit license link" @click="editLicense = true"
-                /></span>
-            </template>
-        </License>
-    </div>
-    <div v-else data-description="license selector" data-license="null">
-        <i
-            ><a href="#" data-description="edit license link" @click.prevent="editLicense = true"
-                >Specify a license for this workflow.</a
-            ></i
-        >
+            track-by="licenseId"
+            :options="licenseOptions"
+            label="name"
+            placeholder="Select a license"
+            @select="onLicense" />
+        <License v-if="currentLicense?.licenseId" :license-id="currentLicense.licenseId" />
     </div>
 </template>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
-
-import License from "./License";
-
-library.add(faSave);
-library.add(faTimes);
-library.add(faEdit);
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: { License, LoadingSpan, FontAwesomeIcon },
-    props: {
-        inputLicense: {
-            type: String,
-        },
-    },
-    data() {
-        return {
-            license: this.inputLicense || null,
-            licensesLoading: false,
-            licenses: [],
-            editLicense: false,
-        };
-    },
-    computed: {
-        currentLicenseInfo() {
-            for (const license of this.licenses) {
-                if (license.licenseId == this.license) {
-                    return license;
-                }
-            }
-            return null;
-        },
-        licenseOptions() {
-            const options = [];
-            options.push({
-                value: null,
-                text: "*Do not specify a license.*",
-            });
-            for (const license of this.licenses) {
-                if (license.licenseId == this.license || license.recommended) {
-                    options.push({
-                        value: license.licenseId,
-                        text: license.name,
-                    });
-                }
-            }
-            return options;
-        },
-    },
-    watch: {
-        inputLicense() {
-            this.license = this.inputLicense;
-        },
-    },
-    mounted() {
-        const url = `${getAppRoot()}api/licenses`;
-        axios
-            .get(url)
-            .then((response) => response.data)
-            .then((data) => {
-                this.licenses = data;
-                this.licensesLoading = false;
-            })
-            .catch((e) => {
-                console.error(e);
-            });
-    },
-    methods: {
-        onSave() {
-            this.onLicense(this.license);
-            this.disableEdit();
-        },
-        disableEdit() {
-            this.editLicense = false;
-        },
-        onLicense(license) {
-            this.$emit("onLicense", license);
-        },
-    },
-};
-</script>

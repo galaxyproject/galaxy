@@ -1,17 +1,16 @@
 """
-Upload class
+Controller to handle communication of tools of type data_source_async
 """
 
 import logging
 from urllib.parse import urlencode
-
-import requests
 
 from galaxy import web
 from galaxy.model.base import transaction
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
+    requests,
     unicodify,
 )
 from galaxy.util.hash_util import hmac_new
@@ -39,8 +38,6 @@ class ASync(BaseUIController):
             return trans.response.send_redirect("/index")
 
         params = Params(kwd, sanitize=False)
-        STATUS = params.STATUS
-        URL = params.URL
         data_id = params.data_id
 
         log.debug(f"async dataid -> {data_id}")
@@ -52,30 +49,62 @@ class ASync(BaseUIController):
         if not tool:
             return f"Tool with id {tool_id} not found"
 
-        #
-        # we have an incoming data_id
-        #
         if data_id:
-            if not URL:
-                return f"No URL parameter was submitted for data {data_id}"
+            #
+            # we have an incoming data_id
+            #
             data = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(data_id)
 
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
+            if data.state in data.dataset.terminal_states:
+                log.debug(f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely")
+                trans.log_event(
+                    f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely"
+                )
+                return f"Data {data_id} has finished processing before job could be completed"
+
+            # map params from the tool's <request_param_translation> section;
+            # ignore any other params that may have been passed by the remote
+            # server with the exception of STATUS and URL;
+            # if name, info, dbkey and data_type are not handled via incoming params,
+            # use the metadata from the already existing dataset;
+            # preserve original params under nested dict
+            params_dict = dict(
+                STATUS=params.STATUS,
+                URL=params.URL,
+                name=data.name,
+                info=data.info,
+                dbkey=data.dbkey,
+                data_type=data.ext,
+                incoming_request_params=params.__dict__.copy(),
+            )
+            if tool.input_translator:
+                tool.input_translator.translate(params)
+                tool_declared_params = {
+                    translator.galaxy_name for translator in tool.input_translator.param_trans_dict.values()
+                }
+                for param in params:
+                    if param in tool_declared_params or not tool.wants_params_cleaned:
+                        params_dict[param] = params.get(param, None)
+            params = params_dict
+
+            if not params.get("URL"):
+                return f"No URL parameter was submitted for data {data_id}"
+
+            STATUS = params.get("STATUS")
 
             if STATUS == "OK":
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 if key != data_secret:
                     return f"You do not have permission to alter data {data_id}."
+                if not params.get("GALAXY_URL"):
+                    # provide a fallback for GALAXY_URL
+                    params["GALAXY_URL"] = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug(f"executing tool {tool.id}")
                 trans.log_event(f"Async executing tool {tool.id}", tool_id=tool.id)
-                galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
-                galaxy_url = params.get("GALAXY_URL", galaxy_url)
-                params = dict(
-                    URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
-                )
 
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
@@ -104,9 +133,21 @@ class ASync(BaseUIController):
 
             return f"Data {data_id} with status {STATUS} received. OK"
         else:
-            #
             # no data_id must be parameter submission
             #
+            # create new dataset, put it into running state,
+            # send request for data to remote server and see if the response
+            # ends in ok;
+            # the request that's getting sent goes to the URL found in
+            # params.URL or, in its absence, to the one found as the value of
+            # the "action" attribute of the data source tool's "inputs" tag.
+            # Included in the request are the parameters:
+            # - data_id, which indicates to the remote server that Galaxy is
+            #   ready to accept data
+            # - GALAXY_URL, which takes the form:
+            #   {base_url}/async/{tool_id}/{data_id}/{data_secret}, and which
+            #   when used by the remote server to send a data download link,
+            #   will trigger the if branch above.
             GALAXY_TYPE = None
             if params.data_type:
                 GALAXY_TYPE = params.data_type
@@ -162,16 +203,16 @@ class ASync(BaseUIController):
                 trans.sa_session.commit()
             # Need to explicitly create the file
             data.dataset.object_store.create(data.dataset)
-            trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
+            trans.log_event(f"Added dataset {data.id} to history {trans.history.id}", tool_id=tool_id)
 
             try:
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 params.update({"GALAXY_URL": galaxy_url})
                 params.update({"data_id": data.id})
 
                 # Use provided URL or fallback to tool action
-                url = URL or tool.action
+                url = params.URL or tool.action
                 # Does url already have query params?
                 if "?" in url:
                     url_join_char = "&"

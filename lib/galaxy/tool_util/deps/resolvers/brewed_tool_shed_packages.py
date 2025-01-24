@@ -3,6 +3,7 @@ This dependency resolver resolves tool shed dependencies (those defined
 tool_dependencies.xml) installed using Platform Homebrew and converted
 via shed2tap (e.g. https://github.com/jmchilton/homebrew-toolshed).
 """
+
 import logging
 import os
 

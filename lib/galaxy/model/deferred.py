@@ -9,9 +9,11 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import (
+    object_session,
+    Session,
+)
 from sqlalchemy.orm.exc import DetachedInstanceError
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.datatypes.sniff import (
     convert_function,
@@ -24,6 +26,7 @@ from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
     DatasetSource,
+    DescribesHash,
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -34,6 +37,7 @@ from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
 )
+from galaxy.util.hash_util import verify_hash
 
 log = logging.getLogger(__name__)
 
@@ -59,9 +63,9 @@ class SimpleTransientPathMapper(TransientPathMapper):
         self._staging_directory = staging_directory
 
     def transient_paths_for(self, old_dataset: Dataset) -> TransientDatasetPaths:
-        external_filename_basename = "dataset_%s.dat" % str(old_dataset.uuid)
+        external_filename_basename = f"dataset_{old_dataset.uuid}.dat"
         external_filename = os.path.join(self._staging_directory, external_filename_basename)
-        external_extras_basename = "dataset_%s_files" % str(old_dataset.uuid)
+        external_extras_basename = f"dataset_{old_dataset.uuid}_files"
         external_extras = os.path.join(self._staging_directory, external_extras_basename)
         return TransientDatasetPaths(external_filename, external_extras, self._staging_directory)
 
@@ -75,7 +79,7 @@ class DatasetInstanceMaterializer:
         object_store_populator: Optional[ObjectStorePopulator] = None,
         transient_path_mapper: Optional[TransientPathMapper] = None,
         file_sources: Optional[ConfiguredFileSources] = None,
-        sa_session: Optional[scoped_session] = None,
+        sa_session: Optional[Session] = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
@@ -93,6 +97,7 @@ class DatasetInstanceMaterializer:
         self,
         dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation],
         target_history: Optional[History] = None,
+        in_place: bool = False,
     ) -> HistoryDatasetAssociation:
         """Create a new detached dataset instance from the supplied instance.
 
@@ -104,15 +109,21 @@ class DatasetInstanceMaterializer:
         if dataset.state != Dataset.states.DEFERRED and isinstance(dataset_instance, HistoryDatasetAssociation):
             return dataset_instance
 
-        materialized_dataset = Dataset()
-        materialized_dataset.state = Dataset.states.OK
-        materialized_dataset.deleted = False
-        materialized_dataset.purged = False
-        materialized_dataset.sources = [s.copy() for s in dataset.sources]
-        materialized_dataset.hashes = [h.copy() for h in dataset.hashes]
-
+        materialized_dataset_hashes = [h.copy() for h in dataset.hashes]
+        if in_place:
+            materialized_dataset = dataset_instance.dataset
+            materialized_dataset.state = Dataset.states.OK
+        else:
+            materialized_dataset = Dataset()
+            materialized_dataset.state = Dataset.states.OK
+            materialized_dataset.deleted = False
+            materialized_dataset.purged = False
+            materialized_dataset.sources = [s.copy() for s in dataset.sources]
+            materialized_dataset.hashes = materialized_dataset_hashes
         target_source = self._find_closest_dataset_source(dataset)
         transient_paths = None
+
+        exception_materializing: Optional[Exception] = None
         if attached:
             object_store_populator = self._object_store_populator
             assert object_store_populator
@@ -123,21 +134,29 @@ class DatasetInstanceMaterializer:
                 sa_session = self._sa_session
                 if sa_session is None:
                     sa_session = object_session(dataset_instance)
+                assert sa_session
                 sa_session.add(materialized_dataset)
                 with transaction(sa_session):
                     sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
-            path = self._stream_source(target_source, datatype=dataset_instance.datatype)
-            object_store.update_from_file(materialized_dataset, file_name=path)
+            try:
+                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                object_store.update_from_file(materialized_dataset, file_name=path)
+                materialized_dataset.set_size()
+            except Exception as e:
+                exception_materializing = e
         else:
             transient_path_mapper = self._transient_path_mapper
             assert transient_path_mapper
             transient_paths = transient_path_mapper.transient_paths_for(dataset)
             # TODO: optimize this by streaming right to this path...
-            # TODO: take into acount transform and ensure we are and are not modifying the file as appropriate.
-            path = self._stream_source(target_source, datatype=dataset_instance.datatype)
-            shutil.move(path, transient_paths.external_filename)
-            materialized_dataset.external_filename = transient_paths.external_filename
+            # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
+            try:
+                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                shutil.move(path, transient_paths.external_filename)
+                materialized_dataset.external_filename = transient_paths.external_filename
+            except Exception as e:
+                exception_materializing = e
 
         history = target_history
         if history is None and isinstance(dataset_instance, HistoryDatasetAssociation):
@@ -145,18 +164,31 @@ class DatasetInstanceMaterializer:
                 history = dataset_instance.history
             except DetachedInstanceError:
                 history = None
-        materialized_dataset_instance = HistoryDatasetAssociation(
-            create_dataset=False,  # is the default but lets make this really clear...
-            history=history,
-        )
+
+        materialized_dataset_instance: HistoryDatasetAssociation
+        if not in_place:
+            materialized_dataset_instance = HistoryDatasetAssociation(
+                create_dataset=False,  # is the default but lets make this really clear...
+                history=history,
+            )
+        else:
+            assert isinstance(dataset_instance, HistoryDatasetAssociation)
+            materialized_dataset_instance = cast(HistoryDatasetAssociation, dataset_instance)
+        if exception_materializing is not None:
+            materialized_dataset.state = Dataset.states.ERROR
+            error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"
+            materialized_dataset_instance.info = error_msg
+            log.error(error_msg)
         if attached:
             sa_session = self._sa_session
             if sa_session is None:
                 sa_session = object_session(dataset_instance)
+            assert sa_session
             sa_session.add(materialized_dataset_instance)
-        materialized_dataset_instance.copy_from(
-            dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
-        )
+        if not in_place:
+            materialized_dataset_instance.copy_from(
+                dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
+            )
         require_metadata_regeneration = (
             materialized_dataset_instance.has_metadata_files or materialized_dataset_instance.metadata_deferred
         )
@@ -165,15 +197,22 @@ class DatasetInstanceMaterializer:
             if transient_paths:
                 metadata_tmp_files_dir = transient_paths.metadata_files_dir
             else:
-                # If metadata_tmp_files_dir is set we generate a MetdataTempFile,
+                # If metadata_tmp_files_dir is set we generate a MetadataTempFile,
                 # which we don't want when we're generating an attached materialized dataset instance
                 metadata_tmp_files_dir = None
             materialized_dataset_instance.set_meta(metadata_tmp_files_dir=metadata_tmp_files_dir)
             materialized_dataset_instance.metadata_deferred = False
         return materialized_dataset_instance
 
-    def _stream_source(self, target_source: DatasetSource, datatype) -> str:
-        path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
+    def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
+        source_uri = target_source.source_uri
+        if source_uri is None:
+            raise Exception("Cannot stream from dataset source without specified source_uri")
+        path = stream_url_to_file(source_uri, file_sources=self._file_sources)
+        if target_source.hashes:
+            for source_hash in target_source.hashes:
+                _validate_hash(path, source_hash, "downloaded file")
+
         transform = target_source.transform or []
         to_posix_lines = False
         spaces_to_tabs = False
@@ -187,7 +226,7 @@ class DatasetInstanceMaterializer:
             elif action == "datatype_groom":
                 datatype_groom = True
             else:
-                raise Exception(f"Failed to materialize dataest, unknown transformation action {action} applied.")
+                raise Exception(f"Failed to materialize dataset, unknown transformation action {action} applied.")
         if to_posix_lines or spaces_to_tabs:
             convert_fxn = convert_function(to_posix_lines, spaces_to_tabs)
             convert_result = convert_fxn(path, False)
@@ -195,6 +234,13 @@ class DatasetInstanceMaterializer:
             path = convert_result.converted_path
         if datatype_groom:
             datatype.groom_dataset_content(path)
+            # Grooming is not reproducible (e.g. temporary paths in BAM headers), so invalidate hashes
+            dataset.hashes = []
+
+        if dataset.hashes:
+            for dataset_hash in dataset.hashes:
+                _validate_hash(path, dataset_hash, "dataset contents")
+
         return path
 
     def _find_closest_dataset_source(self, dataset: Dataset) -> DatasetSource:
@@ -278,7 +324,7 @@ def materializer_factory(
     transient_path_mapper: Optional[TransientPathMapper] = None,
     transient_directory: Optional[str] = None,
     file_sources: Optional[ConfiguredFileSources] = None,
-    sa_session: Optional[scoped_session] = None,
+    sa_session: Optional[Session] = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)
@@ -291,3 +337,9 @@ def materializer_factory(
         file_sources=file_sources,
         sa_session=sa_session,
     )
+
+
+def _validate_hash(path: str, describes_hash: DescribesHash, what: str) -> None:
+    hash_value = describes_hash.hash_value
+    if hash_value is not None:
+        verify_hash(path, hash_func_name=describes_hash.hash_func_name, hash_value=hash_value)

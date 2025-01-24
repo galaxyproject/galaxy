@@ -1,19 +1,15 @@
+import "tests/jest/mockHelpPopovers";
+
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { createPinia } from "pinia";
-import { useHistoryStore } from "stores/historyStore";
-import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { getDatatypes, getDbKeys } from "./services";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 import UploadContainer from "./UploadContainer.vue";
 import UploadModal from "./UploadModal.vue";
-
-jest.mock("app");
-jest.mock("./services");
-jest.mock("@/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -21,6 +17,8 @@ jest.mock("@/composables/config", () => ({
         isConfigLoaded: true,
     })),
 }));
+
+const { server, http } = useServerMock();
 
 const fastaResponse = {
     description_url: "https://wiki.galaxyproject.org/Learn/Datatypes#Fasta",
@@ -36,9 +34,6 @@ const genomesResponse = [
     ["Cat Sep. 2011 (ICGSC Felis_catus 6.2/felCat5) (felCat5)", "felCat5"],
 ];
 
-getDatatypes.mockReturnValue({ data: [fastaResponse] });
-getDbKeys.mockReturnValue({ data: genomesResponse });
-
 const propsData = {
     chunkUploadSize: 1024,
     fileSourcesConfigured: true,
@@ -46,13 +41,23 @@ const propsData = {
 
 describe("UploadModal.vue", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
     let historyStore;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/histories/count`).reply(200, 0);
+        server.use(
+            http.get("/api/datatypes", ({ response }) => {
+                return response(200).json([fastaResponse]);
+            }),
+
+            http.get("/api/genomes", ({ response }) => {
+                return response(200).json(genomesResponse);
+            }),
+
+            http.get("/api/histories/count", ({ response }) => {
+                return response(200).json(0);
+            })
+        );
 
         const localVue = getLocalVue();
         const pinia = createPinia();
@@ -78,11 +83,6 @@ describe("UploadModal.vue", () => {
         historyStore.setCurrentHistoryId("fakeHistory");
 
         await wrapper.vm.open();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-        axiosMock.reset();
     });
 
     it("should load with correct defaults", async () => {

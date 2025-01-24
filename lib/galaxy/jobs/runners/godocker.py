@@ -3,8 +3,6 @@ import logging
 import time
 from datetime import datetime
 
-import requests
-
 from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
@@ -12,6 +10,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
     unicodify,
 )
 
@@ -133,7 +132,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             godocker_master=dict(map=str), user=dict(map=str), key=dict(map=str), godocker_project=dict(map=str)
         )
         if "runner_param_specs" not in kwargs:
-            kwargs["runner_param_specs"] = dict()
+            kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         # Start the job runner parent object
@@ -235,8 +234,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched executing Job in GoDocker"""
-        # This function is called by fail_job() where
-        # param job = self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id)
+        # This function is called by fail_job()
         # No Return data expected
         job_id = job_wrapper.job_id
         log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")
@@ -380,7 +378,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 volume = job_destination.params["godocker_volumes"]
                 volume = volume.split(",")
                 for i in volume:
-                    temp = dict({"name": i})
+                    temp = {"name": i}
                     volumes.append(temp)
             except Exception:
                 log.debug("godocker_volume not set, using default.")

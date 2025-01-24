@@ -8,6 +8,7 @@ Running this class of tests should implicitly come with the expectation that new
 jobs, workflows, and datasets will be created. But tests creating new published objects,
 histories, libraries, etc... should be annotated ideally.
 """
+
 import os
 import unittest
 from functools import wraps
@@ -43,8 +44,7 @@ def using_requirement(tag: KnownRequirementT):
     """
     requirement = f"requires_{tag}"
     skip_environment_variable = f"GALAXY_TEST_SKIP_IF_{requirement.upper()}"
-    env_value = os.environ.get(skip_environment_variable, "0")
-    if env_value != "0":
+    if (env_value := os.environ.get(skip_environment_variable, "0")) != "0":
         raise unittest.SkipTest(f"[{env_value}] Skipping due to {skip_environment_variable} being set to {env_value}")
 
 
@@ -65,6 +65,14 @@ def _wrap_method_with_galaxy_requirement(method, tag: KnownRequirementT):
         return method(*args, **kwargs)
 
     return wrapped_method
+
+
+def requires_tool_id(tool_id: str):
+
+    def method_wrapper(method):
+        return pytest.mark.requires_tool_id(tool_id)(method)
+
+    return method_wrapper
 
 
 def requires_new_history(method):

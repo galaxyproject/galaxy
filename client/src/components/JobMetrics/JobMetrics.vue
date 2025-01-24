@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, unref } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
@@ -45,7 +46,7 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    shouldShowCarbonEmissionsEstimates: {
+    shouldShowCarbonEmissionEstimates: {
         type: Boolean,
         default: true,
     },
@@ -60,7 +61,14 @@ async function getJobMetrics() {
         await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
     }
 }
-getJobMetrics();
+
+watch(
+    props,
+    () => {
+        getJobMetrics();
+    },
+    { immediate: true }
+);
 
 const ec2Instances = ref<EC2[]>();
 import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
@@ -194,17 +202,14 @@ const estimatedServerInstance = computed(() => {
         </div>
 
         <AwsEstimate
-            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances"
+            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances && shouldShowAwsEstimate"
             :ec2-instances="ec2Instances"
-            :should-show-aws-estimate="shouldShowAwsEstimate"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="
-                shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated
-            "
+            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
             :carbon-intensity="carbonIntensity"
             :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"
@@ -213,4 +218,5 @@ const estimatedServerInstance = computed(() => {
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
+    <BAlert v-else variant="info" show> No metrics available for this job. </BAlert>
 </template>

@@ -7,8 +7,8 @@ from .framework import (
 class TestPublishedPagesGrid(SharedStateSeleniumTestCase):
     @selenium_test
     def test_index(self):
-        self.navigate_to_published_pages()
-        self.components.pages.dropdown(id=self.page_id_1).wait_for_visible()
+        self.navigate_to_pages()
+        assert len(self.get_grid_entry_names("#pages-published-grid")) == 2
 
     def setup_shared_state(self):
         self.user1_email = self._get_random_email("test1")

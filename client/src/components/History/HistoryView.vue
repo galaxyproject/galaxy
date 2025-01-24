@@ -1,49 +1,46 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
-            {{ historyStateInfoMessage }}
-        </b-alert>
-        <div v-else class="flex-row flex-grow-0 pb-3">
+        <div class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="userOwnsHistory"
                 size="sm"
-                variant="outline-info"
-                title="Switch to this history"
+                :title="setAsCurrentTitle"
                 :disabled="isSetAsCurrentDisabled"
                 data-description="switch to history button"
                 @click="setCurrentHistory(history.id)">
                 Switch to this history
             </b-button>
+
             <b-button
-                v-else
+                v-if="canImportHistory"
                 v-b-modal:copy-history-modal
                 size="sm"
-                variant="outline-info"
                 title="Import this history"
                 data-description="import history button">
                 Import this history
             </b-button>
         </div>
+
+        <b-alert :show="copySuccess">
+            History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
+        </b-alert>
+
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
             :history="history"
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
-        <HistoryPanel
-            v-else
-            :history="history"
-            :writable="canEditHistory"
-            :show-controls="false"
-            filterable
-            @view-collection="onViewCollection" />
-        <CopyModal id="copy-history-modal" :history="history" />
+        <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
+
+        <CopyModal id="copy-history-modal" :history="history" @ok="copyOkay" />
     </div>
 </template>
 
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { isAnonymousUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -66,6 +63,7 @@ export default {
     data() {
         return {
             selectedCollections: [],
+            copySuccess: false,
         };
     },
     computed: {
@@ -77,24 +75,23 @@ export default {
         userOwnsHistory() {
             return this.currentUser.id == this.history.user_id;
         },
+        isCurrentHistory() {
+            return this.currentHistory?.id == this.history?.id;
+        },
         isSetAsCurrentDisabled() {
-            return this.currentHistory?.id == this.history?.id || this.history.archived || this.history.purged;
+            return this.isCurrentHistory;
         },
-        canEditHistory() {
-            return this.userOwnsHistory && !this.history.archived && !this.history.purged;
-        },
-        showHistoryStateInfo() {
-            return this.history.archived || this.history.purged;
-        },
-        historyStateInfoMessage() {
-            if (this.history.archived && this.history.purged) {
-                return "This history has been archived and purged.";
-            } else if (this.history.archived) {
-                return "This history has been archived.";
-            } else if (this.history.purged) {
-                return "This history has been purged.";
+        setAsCurrentTitle() {
+            if (this.isCurrentHistory) {
+                return "This history is already your current history.";
             }
-            return "";
+            return "Switch to this history";
+        },
+        canImportHistory() {
+            return !this.userOwnsHistory && !this.history.purged;
+        },
+        importedHistoryLink() {
+            return isAnonymousUser(this.currentUser) ? "/" : "/histories/list";
         },
     },
     created() {
@@ -104,6 +101,9 @@ export default {
         ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentHistory"]),
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
+        },
+        copyOkay() {
+            this.copySuccess = true;
         },
     },
 };

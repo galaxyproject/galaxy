@@ -8,13 +8,14 @@ from typing import (
 
 from typing_extensions import Unpack
 
-from galaxy.util.drs import fetch_drs_to_file
+from galaxy.files import OptionalUserContext
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
 )
+from .util import fetch_drs_to_file
 
 log = logging.getLogger(__name__)
 
@@ -44,22 +45,44 @@ class DRSFilesSource(BaseFilesSource):
         self._force_http = props.pop("force_http", False)
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    @property
+    def _allowlist(self):
+        return self._file_sources_config.fetch_url_allowlist
+
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         props = self._serialization_props(user_context)
         headers = props.pop("http_headers", {}) or {}
-        fetch_drs_to_file(source_path, native_path, user_context, headers=headers, force_http=self._force_http)
+        fetch_drs_to_file(
+            source_path,
+            native_path,
+            user_context,
+            fetch_url_allowlist=self._allowlist,
+            headers=headers,
+            force_http=self._force_http,
+        )
 
-    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):
-        match = self._url_regex.match(url)
-        if match:
+        if match := self._url_regex.match(url):
             return match.span()[1]
         else:
             return 0
 
-    def _serialization_props(self, user_context=None) -> DRSFilesSourceProperties:
+    def _serialization_props(self, user_context: OptionalUserContext = None) -> DRSFilesSourceProperties:
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)

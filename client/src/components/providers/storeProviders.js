@@ -3,10 +3,8 @@ import axios from "axios";
 import { mapActions, mapState } from "pinia";
 import { useDbKeyStore } from "stores/dbKeyStore";
 import { prependPath } from "utils/redirect";
-import { mapActions as vuexMapActions, mapGetters } from "vuex";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
-import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {
     props: {
@@ -140,66 +138,3 @@ export const DatasetCollectionElementProvider = {
         },
     },
 };
-
-/**
- * Provider component interface to the actual stores i.e. history items and collection elements stores.
- * @param {String} storeAction The store action is executed when the consuming component e.g. the history panel, changes the provider props.
- * @param {String} storeGetter The store getter passes its result to the slot of the corresponding provider.
- * @param {String} storeCountGetter The query stats store getter passes its matches counts to the slot of the corresponding provider.
- */
-export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
-    return {
-        mixins: [HasAttributesMixin],
-        watch: {
-            $attrs(newVal, oldVal) {
-                if (JSON.stringify(newVal) != JSON.stringify(oldVal)) {
-                    this.load();
-                }
-            },
-        },
-        data() {
-            return {
-                loading: false,
-                error: null,
-            };
-        },
-        created() {
-            this.load();
-        },
-        computed: {
-            ...mapGetters([storeGetter, storeCountGetter]),
-            result() {
-                return this[storeGetter](this.attributes);
-            },
-            count() {
-                return storeCountGetter ? this[storeCountGetter]() : undefined;
-            },
-        },
-        render() {
-            return this.$scopedSlots.default({
-                error: this.error,
-                loading: this.loading,
-                result: this.result,
-                count: this.count,
-            });
-        },
-        methods: {
-            ...vuexMapActions([storeAction]),
-            async load() {
-                this.loading = true;
-                try {
-                    await this[storeAction](this.attributes);
-                    this.error = null;
-                    this.loading = false;
-                } catch (error) {
-                    this.error = error;
-                    this.loading = false;
-                }
-            },
-        },
-    };
-};
-
-export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
-export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
-export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");

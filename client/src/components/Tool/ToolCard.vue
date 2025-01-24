@@ -7,11 +7,14 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
@@ -81,10 +84,20 @@ function onSetError(e) {
     errorText.value = e;
 }
 
+const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
+
+const storageLocationModalTitle = computed(() => {
+    if (isOnlyPreference.value) {
+        return "Tool Execution Preferred Storage Location";
+    } else {
+        return "Tool Execution Storage Location";
+    }
+});
 
 const root = computed(() => getAppRoot());
 const showPreferredObjectStoreModal = ref(false);
@@ -99,11 +112,13 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
     toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
+
+const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
 </script>
 
 <template>
     <div class="position-relative">
-        <div class="underlay sticky-top" />
+        <div class="ui-form-header-underlay sticky-top" />
         <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
@@ -143,7 +158,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                         </ToolTargetPreferredObjectStorePopover>
                         <b-modal
                             v-model="showPreferredObjectStoreModal"
-                            title="Tool Execution Preferred Object Store"
+                            :title="storageLocationModalTitle"
                             modal-class="tool-preferred-object-store-modal"
                             title-tag="h3"
                             size="sm"
@@ -171,7 +186,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
         <div>
             <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
-                <ToolHelp :content="props.options.help" />
+                <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 
             <ToolTutorialRecommendations
@@ -179,6 +194,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :name="props.options.name"
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
+
+            <ToolHelpForum v-if="showHelpForum" :tool-id="props.id" :tool-name="props.title" />
 
             <ToolFooter
                 :id="props.id"
@@ -192,19 +209,6 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
-
-.underlay::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: -$margin-h;
-    left: -0.5rem;
-    right: -0.5rem;
-    height: 50px;
-    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
-}
-
 .fa-wrench {
     cursor: unset;
 }

@@ -4,8 +4,10 @@ from typing import (
     NoReturn,
     Optional,
     Set,
+    Union,
 )
 
+from galaxy.celery.tasks import send_notification_to_recipients_async
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
@@ -15,7 +17,7 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.model import User
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
@@ -23,6 +25,7 @@ from galaxy.schema.notifications import (
     NotificationBroadcastUpdateRequest,
     NotificationCreatedResponse,
     NotificationCreateRequest,
+    NotificationCreateRequestBody,
     NotificationResponse,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
@@ -33,7 +36,11 @@ from galaxy.schema.notifications import (
     UserNotificationResponse,
     UserNotificationUpdateRequest,
 )
-from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.schema.schema import AsyncTaskResultSummary
+from galaxy.webapps.galaxy.services.base import (
+    async_task_summary,
+    ServiceBase,
+)
 
 
 class NotificationService(ServiceBase):
@@ -41,14 +48,43 @@ class NotificationService(ServiceBase):
         self.notification_manager = notification_manager
 
     def send_notification(
-        self, sender_context: ProvidesUserContext, payload: NotificationCreateRequest
-    ) -> NotificationCreatedResponse:
-        """Sends a notification to a list of recipients (users, groups or roles)."""
+        self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        Before sending the notification, it checks if the requesting user has the necessary permissions to do so.
+        """
         self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_send_notifications(sender_context)
-        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(payload)
+        galaxy_url = (
+            str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
+        )
+        request = NotificationCreateRequest.model_construct(
+            notification=payload.notification,
+            recipients=payload.recipients,
+            galaxy_url=galaxy_url,
+        )
+        return self.send_notification_internal(request)
+
+    def send_notification_internal(
+        self, request: NotificationCreateRequest, force_sync: bool = False
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
+        in a background task.
+
+        Note: This function is meant for internal use from other services that don't need to check sender permissions.
+        """
+        if self.notification_manager.can_send_notifications_async and not force_sync:
+            result = send_notification_to_recipients_async.delay(request)
+            summary = async_task_summary(result)
+            return summary
+
+        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(request)
         return NotificationCreatedResponse(
-            total_notifications_sent=recipient_user_count, notification=NotificationResponse.from_orm(notification)
+            total_notifications_sent=recipient_user_count,
+            notification=NotificationResponse.model_validate(notification),
         )
 
     def broadcast(
@@ -62,7 +98,7 @@ class NotificationService(ServiceBase):
         self._ensure_user_can_broadcast_notifications(sender_context)
         notification = self.notification_manager.create_broadcast_notification(payload)
         return NotificationCreatedResponse(
-            total_notifications_sent=1, notification=NotificationResponse.from_orm(notification)
+            total_notifications_sent=1, notification=NotificationResponse.model_validate(notification)
         )
 
     def get_notifications_status(self, user_context: ProvidesUserContext, since: datetime) -> NotificationStatusSummary:
@@ -92,9 +128,9 @@ class NotificationService(ServiceBase):
         """
         self.notification_manager.ensure_notifications_enabled()
         if user_context.anonymous:
-            return UserNotificationListResponse(__root__=[])
+            return UserNotificationListResponse(root=[])
         user_notifications = self._get_user_notifications(user_context, limit, offset)
-        return UserNotificationListResponse(__root__=user_notifications)
+        return UserNotificationListResponse(root=user_notifications)
 
     def get_broadcasted_notification(
         self, user_context: ProvidesUserContext, notification_id: int
@@ -108,7 +144,7 @@ class NotificationService(ServiceBase):
             broadcasted_notification = self.notification_manager.get_broadcasted_notification(
                 notification_id, active_only
             )
-            return BroadcastNotificationResponse.from_orm(broadcasted_notification)
+            return BroadcastNotificationResponse.model_validate(broadcasted_notification)
         except ObjectNotFound:
             self._raise_notification_not_found(notification_id)
 
@@ -118,14 +154,14 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         active_only = not user_context.user_is_admin
         broadcasted_notifications = self._get_all_broadcasted(active_only=active_only)
-        return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
+        return BroadcastNotificationListResponse(root=broadcasted_notifications)
 
     def get_user_notification(self, user: User, notification_id: int) -> UserNotificationResponse:
         """Gets the information of the notification received by the user with the given ID."""
         self.notification_manager.ensure_notifications_enabled()
         try:
             notification = self.notification_manager.get_user_notification(user, notification_id)
-            return UserNotificationResponse.from_orm(notification)
+            return UserNotificationResponse.model_validate(notification)
         except ObjectNotFound:
             self._raise_notification_not_found(notification_id)
 
@@ -134,7 +170,7 @@ class NotificationService(ServiceBase):
     ):
         """Updates a single notification received by the user with the requested values."""
         self.notification_manager.ensure_notifications_enabled()
-        updated_response = self.update_user_notifications(user_context, set([notification_id]), request)
+        updated_response = self.update_user_notifications(user_context, {notification_id}, request)
         if not updated_response.updated_count:
             self._raise_notification_not_found(notification_id)
 
@@ -209,7 +245,7 @@ class NotificationService(ServiceBase):
     ) -> List[BroadcastNotificationResponse]:
         notifications = self.notification_manager.get_all_broadcasted_notifications(since, active_only)
         broadcasted_notifications = [
-            BroadcastNotificationResponse.from_orm(notification) for notification in notifications
+            BroadcastNotificationResponse.model_validate(notification) for notification in notifications
         ]
         return broadcasted_notifications
 
@@ -221,10 +257,10 @@ class NotificationService(ServiceBase):
         since: Optional[datetime] = None,
     ) -> List[UserNotificationResponse]:
         notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset, since)
-        user_notifications = [UserNotificationResponse.from_orm(notification) for notification in notifications]
+        user_notifications = [UserNotificationResponse.model_validate(notification) for notification in notifications]
         return user_notifications
 
     def _raise_notification_not_found(self, notification_id: int) -> NoReturn:
         raise ObjectNotFound(
-            f"The requested notification with id '{DecodedDatabaseIdField.encode(notification_id)}' was not found."
+            f"The requested notification with id '{Security.security.encode_id(notification_id)}' was not found."
         )

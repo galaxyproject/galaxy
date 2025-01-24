@@ -1,18 +1,26 @@
 from typing import (
     Any,
     List,
+    Optional,
     TYPE_CHECKING,
 )
 
-from sqlalchemy import func
+from sqlalchemy import (
+    func,
+    text,
+)
 
-from galaxy import model as m
 from galaxy.exceptions import (
     ReferenceDataError,
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.structured_app import StructuredApp
+from galaxy.model import User
+from galaxy.model.database_utils import is_postgres
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
 from .base import raise_filter_err
 
 if TYPE_CHECKING:
@@ -24,10 +32,10 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: m.User, chrom_info: bool) -> List[List[str]]:
+    def get_dbkeys(self, user: Optional[User], chrom_info: bool) -> List[List[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
-    def is_registered_dbkey(self, dbkey: str, user: m.User) -> bool:
+    def is_registered_dbkey(self, dbkey: str, user: Optional[User]) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
             if dbkey == key:
@@ -74,6 +82,7 @@ class GenomesManager:
 
 
 class GenomeFilterMixin:
+    app: MinimalManagerApp
     orm_filter_parsers: "OrmFilterParsersType"
     valid_ops = ("eq", "contains", "has")
 
@@ -86,10 +95,14 @@ class GenomeFilterMixin:
             # Doesn't filter genome_build for collections
             if model_class.__name__ == "HistoryDatasetCollectionAssociation":
                 return False
-            column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+            if is_postgres(self.app.config.database_connection):
+                column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
+            else:
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")  # type:ignore[assignment]
             lower_val = val.lower()  # Ignore case
+            # dbkey can either be "hg38" or '["hg38"]', so we need to check both
             if op == "eq":
-                cond = func.lower(column) == lower_val
+                cond = func.lower(column) == lower_val or func.lower(column) == f'["{lower_val}"]'
             else:
                 cond = func.lower(column).contains(lower_val, autoescape=True)
             return cond

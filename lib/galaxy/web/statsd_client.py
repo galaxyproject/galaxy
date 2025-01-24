@@ -54,8 +54,7 @@ CURRENT_TEST_METRICS: Optional[Dict[str, Dict]] = None
 
 class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
     def timing(self, path, time, tags=None):
-        metrics = CURRENT_TEST_METRICS
-        if metrics is not None:
+        if (metrics := CURRENT_TEST_METRICS) is not None:
             timing = metrics["timing"]
             if path not in timing:
                 timing[path] = []
@@ -63,8 +62,7 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
         super().timing(path, time, tags=tags)
 
     def incr(self, path, n=1, tags=None):
-        metrics = CURRENT_TEST_METRICS
-        if metrics is not None:
+        if (metrics := CURRENT_TEST_METRICS) is not None:
             counter = metrics["counter"]
             if path not in counter:
                 counter[path] = []
@@ -72,8 +70,7 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
         super().incr(path, n=n, tags=tags)
 
     def _effective_infix(self, path, tags):
-        current_test = CURRENT_TEST
-        if current_test is not None:
+        if (current_test := CURRENT_TEST) is not None:
             tags = tags or {}
             tags["test"] = current_test
         return super()._effective_infix(path, tags)

@@ -1,14 +1,22 @@
 """Tool Shed Security"""
+
 import logging
+from typing import List
 
 from sqlalchemy import (
-    and_,
     false,
+    select,
 )
 
 from galaxy.model.base import transaction
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
+from tool_shed.webapp.model import (
+    Group,
+    Role,
+)
+
+IUC_NAME = "Intergalactic Utilities Commission"
 
 log = logging.getLogger(__name__)
 
@@ -158,16 +166,7 @@ class CommunityRBACAgent(RBACAgent):
         return [permission for permission in item.actions if permission.action == action.action]
 
     def get_private_user_role(self, user, auto_create=False):
-        role = (
-            self.sa_session.query(self.model.Role)
-            .filter(
-                and_(
-                    self.model.Role.table.c.name == user.email,
-                    self.model.Role.table.c.type == self.model.Role.types.PRIVATE,
-                )
-            )
-            .first()
-        )
+        role = _get_private_user_role(self.sa_session, user.email)
         if not role:
             if auto_create:
                 return self.create_private_user_role(user)
@@ -239,9 +238,12 @@ class CommunityRBACAgent(RBACAgent):
             for group in groups:
                 self.associate_components(user=user, group=group)
 
+    def usernames_that_can_push(self, repository) -> List[str]:
+        return listify(repository.allow_push())
+
     def can_push(self, app, user, repository):
         if user:
-            return user.username in listify(repository.allow_push())
+            return user.username in self.usernames_that_can_push(repository)
         return False
 
     def user_can_administer_repository(self, user, repository):
@@ -272,17 +274,7 @@ class CommunityRBACAgent(RBACAgent):
         if user.username == archive_owner:
             return True
         # A member of the IUC is authorized to create new repositories that are owned by another user.
-        iuc_group = (
-            self.sa_session.query(self.model.Group)
-            .filter(
-                and_(
-                    self.model.Group.table.c.name == "Intergalactic Utilities Commission",
-                    self.model.Group.table.c.deleted == false(),
-                )
-            )
-            .first()
-        )
-        if iuc_group is not None:
+        if (iuc_group := get_iuc_group(self.sa_session)) is not None:
             for uga in iuc_group.users:
                 if uga.user.id == user.id:
                     return True
@@ -296,3 +288,13 @@ def get_permitted_actions(filter=None):
     tmp_bunch = Bunch()
     [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
     return tmp_bunch
+
+
+def get_iuc_group(session):
+    stmt = select(Group).where(Group.name == IUC_NAME).where(Group.deleted == false()).limit(1)
+    return session.scalars(stmt).first()
+
+
+def _get_private_user_role(session, user_email):
+    stmt = select(Role).where(Role.name == user_email).where(Role.type == Role.types.PRIVATE).limit(1)
+    return session.scalars(stmt).first()

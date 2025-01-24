@@ -1,6 +1,7 @@
 """
 Mothur Metagenomics Datatypes
 """
+
 import logging
 import re
 from typing import (
@@ -45,7 +46,7 @@ class Otu(Text):
         >>> dataset = Bunch()
         >>> dataset.metadata = Bunch
         >>> otu = Otu()
-        >>> dataset.file_name = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
+        >>> dataset.get_file_name = lambda : get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
         >>> dataset.has_data = lambda: True
         >>> otu.set_meta(dataset)
         >>> dataset.metadata.columns
@@ -64,8 +65,8 @@ class Otu(Text):
             data_lines = 0
             comment_lines = 0
 
-            headers = iter_headers(dataset.file_name, sep="\t", count=-1)
-            first_line = get_headers(dataset.file_name, sep="\t", count=1)
+            headers = iter_headers(dataset.get_file_name(), sep="\t", count=-1)
+            first_line = get_headers(dataset.get_file_name(), sep="\t", count=1)
             if first_line:
                 first_line = first_line[0]
             # set otulabels
@@ -184,7 +185,7 @@ class GroupAbund(Otu):
             comment_lines = 0
             ncols = 0
 
-            headers = iter_headers(dataset.file_name, sep="\t", count=-1)
+            headers = iter_headers(dataset.get_file_name(), sep="\t", count=-1)
             for line in headers:
                 if line[0] == "label" and line[1] == "Group":
                     skip = 1
@@ -357,7 +358,7 @@ class DistanceMatrix(Text):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = 0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-        headers = iter_headers(dataset.file_name, sep="\t")
+        headers = iter_headers(dataset.get_file_name(), sep="\t")
         for line in headers:
             if not line[0].startswith("@"):
                 try:
@@ -606,7 +607,7 @@ class Group(Tabular):
         super().set_meta(dataset, overwrite=overwrite, skip=skip, max_data_lines=max_data_lines, **kwd)
 
         group_names = set()
-        headers = iter_headers(dataset.file_name, sep="\t", count=-1)
+        headers = iter_headers(dataset.get_file_name(), sep="\t", count=-1)
         for line in headers:
             if len(line) > 1:
                 group_names.add(line[1])
@@ -853,7 +854,7 @@ class CountTable(Tabular):
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
-        headers = get_headers(dataset.file_name, sep="\t", count=1)
+        headers = get_headers(dataset.get_file_name(), sep="\t", count=1)
         colnames = headers[0]
         dataset.metadata.column_types = ["str"] + (["int"] * (len(headers[0]) - 1))
         if len(colnames) > 1:
@@ -1065,7 +1066,7 @@ class SffFlow(Tabular):
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=1, max_data_lines=max_data_lines, **kwd)
 
-        headers = get_headers(dataset.file_name, sep="\t", count=1)
+        headers = get_headers(dataset.get_file_name(), sep="\t", count=1)
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
@@ -1084,7 +1085,7 @@ class SffFlow(Tabular):
             out += "<th>2. Flows</th>"
             for i in range(3, dataset.metadata.columns + 1):
                 base = dataset.metadata.flow_order[(i + 1) % 4]
-                out += "<th>%d. %s</th>" % (i - 2, base)
+                out += f"<th>{i - 2}. {base}</th>"
             out += "</tr>"
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += "</table>"

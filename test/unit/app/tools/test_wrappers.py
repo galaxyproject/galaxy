@@ -128,17 +128,17 @@ def valuewrapper(tool, value, paramtype, optional=False):
     parameter: ToolParameter
     if paramtype == "integer":
         optional = 'optional="true"' if optional else 'value="10"'
-        parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" %s min="0" />' % optional))
+        parameter = IntegerToolParameter(tool, XML(f'<param name="blah" type="integer" {optional} min="0" />'))
     elif paramtype == "text":
         optional = 'optional="true"' if optional else 'value="foo"'
-        parameter = TextToolParameter(tool, XML('<param name="blah" type="text" %s/>' % optional))
+        parameter = TextToolParameter(tool, XML(f'<param name="blah" type="text" {optional}/>'))
     elif paramtype == "float":
         optional = 'optional="true"' if optional else 'value="10.0"'
-        parameter = FloatToolParameter(tool, XML('<param name="blah" type="float" %s/>' % optional))
+        parameter = FloatToolParameter(tool, XML(f'<param name="blah" type="float" {optional}/>'))
     elif paramtype == "boolean":
         optional = 'optional="true"' if optional else 'value=""'
         parameter = BooleanToolParameter(
-            tool, XML('<param name="blah" type="boolean" truevalue="truevalue" falsevalue="falsevalue" %s/>' % optional)
+            tool, XML(f'<param name="blah" type="boolean" truevalue="truevalue" falsevalue="falsevalue" {optional}/>')
         )
     return InputValueWrapper(parameter, value)
 
@@ -234,7 +234,7 @@ class MockComputeEnvironment:
         return self.false_extra_files_path
 
     def unstructured_path_rewrite(self, path):
-        return "Rewrite<%s>" % path
+        return f"Rewrite<{path}>"
 
 
 def test_dataset_false_extra_files_path():
@@ -287,14 +287,13 @@ def _drilldown_parameter(tool):
 def _setup_blast_tool(tool, multiple=False):
     tool.app.write_test_tool_data("blastdb.loc", "val1\tname1\tpath1\nval2\tname2\tpath2\n")
     xml = XML(
-        """<param name="database" type="select" label="Nucleotide BLAST database" multiple="%s">
+        f"""<param name="database" type="select" label="Nucleotide BLAST database" multiple="{multiple}">
         <options from_file="blastdb.loc">
             <column name="value" index="0"/>
             <column name="name" index="1"/>
             <column name="path" index="2"/>
         </options>
     </param>"""
-        % multiple
     )
     parameter = SelectToolParameter(tool, xml)
     return parameter
@@ -308,10 +307,13 @@ MOCK_DATASET_EXT = "bam"
 class MockDataset:
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
-        self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
         self.tags = []
+        self.has_deferred_data = False
+
+    def get_file_name(self, sync_cache=True):
+        return MOCK_DATASET_PATH
 
 
 class MockTool:

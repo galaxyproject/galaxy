@@ -1,6 +1,7 @@
 """ This module contains functionality to aid in extracting workflows from
 histories.
 """
+
 import logging
 from typing import Optional
 
@@ -8,7 +9,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -71,6 +75,7 @@ def extract_workflow(
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
+    ensure_object_added_to_session(workflow, session=trans.sa_session)
     with transaction(trans.sa_session):
         trans.sa_session.commit()
     return stored
@@ -296,8 +301,7 @@ class WorkflowSummary:
 
         hid = dataset_collection.hid
         self.collection_types[hid] = dataset_collection.collection.collection_type
-        cja = dataset_collection.creating_job_associations
-        if cja:
+        if cja := dataset_collection.creating_job_associations:
             # Use the "first" job to represent all mapped jobs.
             representative_assoc = cja[0]
             representative_job = representative_assoc.job
@@ -317,7 +321,15 @@ class WorkflowSummary:
         # tracking with creating_job_associations. Will delete at some point.
         elif dataset_collection.implicit_output_name:
             # TODO: Optimize db call
-            dataset_instance = dataset_collection.collection.dataset_instances[0]
+            element = dataset_collection.collection.first_dataset_element
+            if not element:
+                # Got no dataset instance to walk back up to creating job.
+                # TODO track this via tool request model
+                job = DatasetCollectionCreationJob(dataset_collection)
+                self.jobs[job] = [(None, dataset_collection)]
+                return
+            else:
+                dataset_instance = element.hda
             if not self.__check_state(dataset_instance):
                 # Just checking the state of one instance, don't need more but
                 # makes me wonder if even need this check at all?
@@ -430,7 +442,7 @@ def __cleanup_param_values(inputs, values):
                     group_values = values[key]
                     for i, rep_values in enumerate(group_values):
                         rep_index = rep_values["__index__"]
-                        cleanup("%s%s_%d|" % (prefix, key, rep_index), input.inputs, group_values[i])
+                        cleanup(f"{prefix}{key}_{rep_index}|", input.inputs, group_values[i])
             elif isinstance(input, Conditional):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include

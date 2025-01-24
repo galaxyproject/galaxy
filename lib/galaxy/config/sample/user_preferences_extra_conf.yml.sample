@@ -93,21 +93,63 @@ preferences:
             - name: password
               label: Password
               type:  password
+              # for storing the password in a vault (instead of plaintext in the DB)
+              # store: vault
               required: False
 
     invenio:
         description: Your Invenio RDM Integration Settings
         inputs:
             - name: token
-              label: Personal Token to upload files to Invenio RDM
+              label: Personal Token used to create draft records and to upload files
               type: secret
               store: vault # Requires setting up vault_config_file in your galaxy.yml
               required: False
             - name: public_name
-              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used.
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
               type: text
               required: False
-            - name: public_records
-              label: Whether to make draft records publicly available or restricted.
+
+    zenodo:
+        description: Your Zenodo Integration Settings
+        inputs:
+            - name: token
+              label: Personal Access Token used to create draft records and to upload files. You can manage your tokens at https://zenodo.org/account/settings/applications/
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
+              type: text
+              required: False
+
+    zenodo_sandbox:
+        description: Your Zenodo Sandbox Integration Settings (TESTING ONLY)
+        inputs:
+            - name: token
+              label: Personal Access Token used to create draft records and to upload files. You can manage your tokens at https://sandbox.zenodo.org/account/settings/applications/
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
+              type: text
+              required: False
+
+    # Used in file_sources_conf.yml
+    onedata:
+        description: Your Onedata account
+        inputs:
+            - name: onezone_domain
+              label: Domain of the Onezone service (e.g. datahub.egi.eu). The minimal supported Onezone version is 21.02.4.
+              type: text
+              required: False
+            - name: access_token
+              label: Your access token, suitable for REST API access in a Oneprovider service
+              type: password
+              required: False
+            - name: disable_tls_certificate_validation
+              label: Allow connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.
               type: boolean
               required: False
+              value: False

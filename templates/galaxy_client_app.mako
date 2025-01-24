@@ -73,7 +73,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 
 <%def name="config_plausible_analytics(plausible_server, plausible_domain)">
     %if plausible_server and plausible_domain:
-        <script async defer data-domain="${plausible_domain}" src="${plausible_server}/js/plausible.js"></script>
+        <script async defer data-domain="${plausible_domain}" src="${plausible_server}/js/script.js"></script>
         <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
     %else:
         <script>

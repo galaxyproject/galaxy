@@ -25,19 +25,7 @@ def generate_repository_dependencies_key_for_repository(
     # of the Galaxy database for an installed repository.  This value does not include the protocol, but does include
     # the port if there is one.
     tool_shed = remove_protocol_from_tool_shed_url(toolshed_base_url)
-    return "{}{}{}{}{}{}{}{}{}{}{}".format(
-        tool_shed,
-        STRSEP,
-        repository_name,
-        STRSEP,
-        repository_owner,
-        STRSEP,
-        changeset_revision,
-        STRSEP,
-        str(prior_installation_required),
-        STRSEP,
-        str(only_if_compiling_contained_td),
-    )
+    return f"{tool_shed}{STRSEP}{repository_name}{STRSEP}{repository_owner}{STRSEP}{changeset_revision}{STRSEP}{prior_installation_required}{STRSEP}{only_if_compiling_contained_td}"
 
 
 def get_components_from_key(key: str) -> tuple:

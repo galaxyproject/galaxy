@@ -1,8 +1,7 @@
 import os
 import tempfile
 
-from sqlalchemy import select
-
+from galaxy.model.db.user import get_user_by_email
 from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
@@ -36,7 +35,7 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
         app = self._app
 
         with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
-            user = self._get_user_by_email(self.USER_1_APP_VAULT_ENTRY)
+            user = get_user_by_email(self._app.model.session, self.USER_1_APP_VAULT_ENTRY)
             user_vault = UserVaultWrapper(app.vault, user)
             # use a valid symlink path so the posix list succeeds
             user_vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
@@ -48,7 +47,7 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
             print(remote_files)
 
         with self._different_user(email=self.USER_2_APP_VAULT_ENTRY):
-            user = self._get_user_by_email(self.USER_2_APP_VAULT_ENTRY)
+            user = get_user_by_email(self._app.model.session, self.USER_2_APP_VAULT_ENTRY)
             user_vault = UserVaultWrapper(app.vault, user)
             # use an invalid symlink path so the posix list fails
             user_vault.write_secret("posix/root_path", "/invalid/root")
@@ -69,7 +68,7 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
         app.vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
 
         with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
-            user = self._get_user_by_email(self.USER_1_APP_VAULT_ENTRY)
+            user = get_user_by_email(self._app.model.session, self.USER_1_APP_VAULT_ENTRY)
             user_vault = UserVaultWrapper(app.vault, user)
             # use a valid symlink path so the posix list succeeds
             user_vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
@@ -81,7 +80,7 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
             print(remote_files)
 
         with self._different_user(email=self.USER_2_APP_VAULT_ENTRY):
-            user = self._get_user_by_email(self.USER_2_APP_VAULT_ENTRY)
+            user = get_user_by_email(self._app.model.session, self.USER_2_APP_VAULT_ENTRY)
             user_vault = UserVaultWrapper(app.vault, user)
             # use an invalid symlink path so the posix list would fail if used
             user_vault.write_secret("posix/root_path", "/invalid/root")
@@ -95,7 +94,7 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
     def test_upload_file_from_remote_source(self):
         with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
             app = self._app
-            user = self._get_user_by_email(self.USER_1_APP_VAULT_ENTRY)
+            user = get_user_by_email(self._app.model.session, self.USER_1_APP_VAULT_ENTRY)
             user_vault = UserVaultWrapper(app.vault, user)
             # use a valid symlink path so the posix list succeeds
             user_vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
@@ -120,7 +119,3 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
                 new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
                 content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
                 assert content == "I require access to the vault", content
-
-    def _get_user_by_email(self, email):
-        stmt = select(self._app.model.User).filter(self._app.model.User.email == email).limit(1)
-        return self._app.model.session.scalars(stmt).first()

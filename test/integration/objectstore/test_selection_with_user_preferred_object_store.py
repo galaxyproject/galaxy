@@ -244,17 +244,22 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
 
     def test_workflow_objectstore_selection(self):
         with self.dataset_populator.test_history() as history_id:
-            output_dict, intermediate_dict = self._run_workflow_get_output_storage_info_dicts(history_id)
+            output_dict, intermediate_dict, _ = self._run_workflow_get_output_storage_info_dicts(history_id)
             assert_storage_name_is(output_dict, "Default Store")
             assert_storage_name_is(intermediate_dict, "Default Store")
 
-            output_dict, intermediate_dict = self._run_workflow_get_output_storage_info_dicts(
+            output_dict, intermediate_dict, wf_run = self._run_workflow_get_output_storage_info_dicts(
                 history_id, {"preferred_object_store_id": "static"}
             )
             assert_storage_name_is(output_dict, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Static Storage")
 
-            output_dict, intermediate_dict = self._run_workflow_get_output_storage_info_dicts(
+            request = self.workflow_populator.invocation_to_request(wf_run.invocation_id)
+            assert request["preferred_object_store_id"] == "static"
+            assert request["preferred_outputs_object_store_id"] is None
+            assert request["preferred_intermediate_object_store_id"] is None
+
+            output_dict, intermediate_dict, wf_run = self._run_workflow_get_output_storage_info_dicts(
                 history_id,
                 {
                     "preferred_outputs_object_store_id": "static",
@@ -263,6 +268,11 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             )
             assert_storage_name_is(output_dict, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Dynamic EBS")
+
+            request = self.workflow_populator.invocation_to_request(wf_run.invocation_id)
+            assert request["preferred_object_store_id"] is None
+            assert request["preferred_outputs_object_store_id"] == "static"
+            assert request["preferred_intermediate_object_store_id"] == "dynamic_ebs"
 
     def test_simple_subworkflow_objectstore_selection(self):
         with self.dataset_populator.test_history() as history_id:
@@ -420,15 +430,14 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
         self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None, twice_nested=False
     ):
-        worklfow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
+        workflow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
-            worklfow_data,
+            workflow_data,
             test_data=TEST_NESTED_WORKFLOW_TEST_DATA,
             history_id=history_id,
             extra_invocation_kwds=extra_invocation_kwds,
         )
         jobs = wf_run.jobs_for_tool("cat1")
-        print(jobs)
         assert len(jobs) == 2
 
         intermediate_info = self._storage_info_for_job_id(jobs[1]["id"])
@@ -448,11 +457,10 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             extra_invocation_kwds=extra_invocation_kwds,
         )
         jobs = wf_run.jobs_for_tool("cat")
-        print(jobs)
         assert len(jobs) == 2
         output_info = self._storage_info_for_job_id(jobs[0]["id"])
         intermediate_info = self._storage_info_for_job_id(jobs[1]["id"])
-        return output_info, intermediate_info
+        return output_info, intermediate_info, wf_run
 
     def _storage_info_for_job_id(self, job_id: str) -> Dict[str, Any]:
         job_dict = self.dataset_populator.get_job_details(job_id, full=True).json()
@@ -470,9 +478,8 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _storage_info(self, hda):
         return self.dataset_populator.dataset_storage_info(hda["id"])
 
-    def _set_user_preferred_object_store_id(self, store_id: Optional[str]):
-        user_properties = self.dataset_populator.update_user({"preferred_object_store_id": store_id})
-        assert user_properties["preferred_object_store_id"] == store_id
+    def _set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+        self.dataset_populator.set_user_preferred_object_store_id(store_id)
 
     def _reset_user_preferred_object_store_id(self):
         self._set_user_preferred_object_store_id(None)

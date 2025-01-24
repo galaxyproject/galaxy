@@ -1,9 +1,8 @@
 {
   "name": "@galaxyproject/galaxy",
-  "version": "1.0.0",
+  "version": "24.0.0",
   "description": ".. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg    :alt: Galaxy Logo",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "stage": "cpy './node_modules/@galaxyproject/galaxy-client/dist/*' './static/dist'"
   },
@@ -18,8 +17,7 @@
   },
   "homepage": "https://github.com/galaxyproject/galaxy#readme",
   "dependencies": {
-    "@galaxyproject/galaxy-client": "^23.0.0",
-    "cpy-cli": "^4.2.0",
-    "vuedraggable": "^2.24.3"
+    "@galaxyproject/galaxy-client": "^24.0.0",
+    "cpy-cli": "^5.0.0"
   }
 }

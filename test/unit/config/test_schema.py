@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from galaxy.config.schema import AppSchema
 from galaxy.util.yaml_util import (
     ordered_load,
@@ -46,7 +48,7 @@ def test_schema_is_loaded(monkeypatch):
     monkeypatch.setattr(AppSchema, "_read_schema", mock_read_schema)
     monkeypatch.setattr(OrderedLoader, "__init__", mock_init)
 
-    schema = AppSchema("no path", "mockgalaxy")
+    schema = AppSchema(Path("no path"), "mockgalaxy")
     data = ordered_load(MOCK_YAML)
 
     assert schema.description == data["desc"]

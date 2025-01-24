@@ -1,9 +1,11 @@
 """Integration tests for the Kubernetes runner."""
+
 # Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup,
 # also works on minikube
 import collections
 import json
 import os
+import shlex
 import string
 import subprocess
 import tempfile
@@ -18,10 +20,7 @@ import pytest
 from typing_extensions import Literal
 
 from galaxy.tool_util.verify.wait import timeout_type
-from galaxy.util import (
-    shlex_join,
-    unicodify,
-)
+from galaxy.util import unicodify
 from galaxy_test.base.populators import (
     DatasetPopulator,
     DEFAULT_TIMEOUT,
@@ -134,21 +133,21 @@ def job_config(jobs_directory: str) -> Config:
             <param id="limits_cpu">1.1</param>
             <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
             <param id="limits_cpu">1.1</param>
             <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
             <param id="limits_cpu">1.1</param>
             <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="local_dest" runner="local">
@@ -192,6 +191,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
     jobs_directory: str
     persistent_volume_claims: List[KubeSetupConfigTuple]
     persistent_volumes: List[KubeSetupConfigTuple]
+    container_type = "docker"
 
     def setUp(self) -> None:
         super().setUp()
@@ -347,12 +347,10 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         external_id = job.job_runner_external_id
 
         @overload
-        def get_kubectl_logs(allow_wait: Literal[False]) -> str:
-            ...
+        def get_kubectl_logs(allow_wait: Literal[False]) -> str: ...
 
         @overload
-        def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]:
-            ...
+        def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]: ...
 
         def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]:
             log_cmd = ["kubectl", "logs", "-l", f"job-name={external_id}"]
@@ -361,7 +359,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
                 if allow_wait and "is waiting to start" in p.stderr:
                     return None
                 raise Exception(
-                    f"Command '{shlex_join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
+                    f"Command '{shlex.join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
                 )
             return p.stdout
 

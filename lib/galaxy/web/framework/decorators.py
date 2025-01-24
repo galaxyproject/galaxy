@@ -3,10 +3,16 @@ from functools import wraps
 from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 import paste.httpexceptions
-from pydantic import BaseModel
-from pydantic.error_wrappers import ValidationError
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
 from galaxy.exceptions import (
     error_codes,
@@ -14,12 +20,16 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.util import (
     parse_non_hex_float,
     unicodify,
 )
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
+
+if TYPE_CHECKING:
+    from fastapi.exceptions import RequestValidationError
 
 log = logging.getLogger(__name__)
 
@@ -236,8 +246,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
         payload = loads(unicodify(trans.request.body))
-    run_as = trans.request.headers.get("run-as")
-    if run_as:
+    if run_as := trans.request.headers.get("run-as"):
         payload["run_as"] = run_as
     return payload
 
@@ -373,7 +382,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
     if isinstance(rval, BaseModel):
-        json = rval.json(**dumps_kwargs)
+        json = rval.model_dump_json(indent=4)
     else:
         json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
@@ -381,53 +390,31 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: ValidationError) -> MessageException:
+def validation_error_to_message_exception(e: Union[ValidationError, "RequestValidationError"]) -> MessageException:
     invalid_found = False
     missing_found = False
+    messages = []
+    clean_validation_errors = []
     for error in e.errors():
-        if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
+        messages.append(f"{error['msg']} in {error['loc']}")
+        if error["type"] == "missing" or error["type"] == "type_error.none.not_allowed":
             missing_found = True
         elif error["type"].startswith("type_error"):
             invalid_found = True
+        # ctx contains data that can't be serialized, like exception instances
+        error.pop("ctx", None)
+        try:
+            clean_validation_errors.append(safe_dumps(error))
+        except TypeError:
+            pass
     if missing_found and not invalid_found:
-        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
+        return RequestParameterMissingException("\n".join(messages), validation_errors=clean_validation_errors)
     else:
-        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
-
-
-def api_error_message(trans, **kwds):
-    exception = kwds.get("exception", None)
-    if exception:
-        # If we are passed a MessageException use err_msg.
-        default_error_code = getattr(exception, "err_code", error_codes.UNKNOWN)
-        default_error_message = getattr(exception, "err_msg", default_error_code.default_error_message)
-        extra_error_info = getattr(exception, "extra_error_info", {})
-        if not isinstance(extra_error_info, dict):
-            extra_error_info = {}
-    else:
-        default_error_message = "Error processing API request."
-        default_error_code = error_codes.UNKNOWN
-        extra_error_info = {}
-    traceback_string = kwds.get("traceback", "No traceback available.")
-    err_msg = kwds.get("err_msg", default_error_message)
-    error_code_object = kwds.get("err_code", default_error_code)
-    try:
-        error_code = error_code_object.code
-    except AttributeError:
-        # Some sort of bad error code sent in, logic failure on part of
-        # Galaxy developer.
-        error_code = error_codes.UNKNOWN.code
-    # Would prefer the terminology of error_code and error_message, but
-    # err_msg used a good number of places already. Might as well not change
-    # it?
-    error_response = dict(err_msg=err_msg, err_code=error_code, **extra_error_info)
-    if trans and trans.debug:  # TODO: Should admins get to see traceback as well?
-        error_response["traceback"] = traceback_string
-    return error_response
+        return RequestParameterInvalidException("\n".join(messages), validation_errors=clean_validation_errors)
 
 
 def __api_error_dict(trans, **kwds):
-    error_dict = api_error_message(trans, **kwds)
+    error_dict = api_error_to_dict(debug=trans.debug, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.

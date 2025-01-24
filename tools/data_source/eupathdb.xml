@@ -1,4 +1,4 @@
-<tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post" version="1.0.0">
+<tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post" version="1.0.0" profile="20.09">
     <description>server</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>

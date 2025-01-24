@@ -1,40 +1,28 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
+import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
-import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
-import { isConfigLoaded, useConfig } from "@/composables/config";
+import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
+import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
-import { getActiveTab } from "./utilities";
 
-import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
-const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
-
-const route = useRoute();
-const { config } = useConfig();
-
-const emit = defineEmits(["open-url"]);
+const router = useRouter();
+const { config, isConfigLoaded } = useConfig();
 
 const props = defineProps({
-    tabs: {
-        type: Array,
-        default: () => [],
-    },
     brand: {
         type: String,
         default: null,
-    },
-    initialActiveTab: {
-        type: String,
-        default: "analysis",
     },
     logoUrl: {
         type: String,
@@ -54,49 +42,29 @@ const props = defineProps({
     },
 });
 
-const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
-let entryPointStore;
-const itsMenu = reactive({
-    id: "interactive",
-    url: "/interactivetool_entry_points/list",
-    tooltip: "See Running Interactive Tools",
-    icon: "fa-cogs",
-    hidden: true,
-});
-
-function setActiveTab() {
-    const currentRoute = route.path;
-    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+function openUrl(url, target = null) {
+    if (!target) {
+        router.push(url);
+    } else {
+        url = withPrefix(url);
+        if (target == "_blank") {
+            window.open(url);
+        } else {
+            window.location = url;
+        }
+    }
 }
 
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
-}
-function updateVisibility(isActive) {
-    itsMenu.hidden = !isActive;
+    props.windowTab.onclick();
 }
 
-watch(
-    () => route.path,
-    () => {
-        setActiveTab();
-    }
-);
-
-/* lifecyle */
-onBeforeMount(() => {
-    entryPointStore = useEntryPointStore();
-    entryPointStore.ensurePollingEntryPoints();
-    entryPointStore.$subscribe((mutation, state) => {
-        updateVisibility(state.entryPoints.length > 0);
-    });
-});
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
-    setActiveTab();
 });
 </script>
 
@@ -104,47 +72,79 @@ onMounted(() => {
     <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <BNavbarNav>
             <BNavbarBrand
+                id="analysis"
                 v-b-tooltip.hover
-                class="ml-2 mr-2"
+                class="ml-2 mr-2 p-0"
                 title="Home"
                 aria-label="homepage"
                 :href="withPrefix(logoUrl)">
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
             </BNavbarBrand>
-            <span v-if="brand" class="navbar-text px-2">
+            <span v-if="brand" class="navbar-text py-0 px-2">
                 {{ brand }}
             </span>
         </BNavbarNav>
-        <BNavbarNav>
+        <BNavbarNav v-if="isConfigLoaded" class="mr-1">
             <MastheadItem
-                v-for="(tab, idx) in props.tabs"
-                v-show="tab.hidden !== true"
-                :key="`tab-${idx}`"
-                :tab="tab"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
-            <MastheadItem
-                v-show="itsMenu.hidden !== true"
-                :key="`its-tab`"
-                :tab="itsMenu"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
+                v-if="windowTab"
+                :id="windowTab.id"
+                :icon="windowTab.icon"
+                :toggle="windowToggle"
+                :tooltip="windowTab.tooltip"
+                @click="onWindowToggle" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
+                :id="tab.id"
                 :key="`extension-tab-${idx}`"
-                :tab="tab"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
-            <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem
-                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system && !showActivityBar"
-                id="notifications-bell">
-                <NotificationsBell tooltip-placement="bottom" />
-            </BNavItem>
+                :title="tab.title"
+                :icon="tab.icon"
+                :url="tab.url"
+                :tooltip="tab.tooltip"
+                :target="tab.target"
+                @click="tab.onclick ? tab.onclick : undefined" />
+            <MastheadItem
+                id="help"
+                icon="fa-question"
+                url="/about"
+                tooltip="Support, Contact, and Community"
+                @click="openUrl('/about')" />
+            <QuotaMeter />
+            <MastheadItem
+                v-if="isAnonymous && config.allow_user_creation"
+                id="user"
+                class="loggedout-only"
+                title="Login or Register"
+                @click="openUrl('/login/start')" />
+            <MastheadItem
+                v-if="isAnonymous && !config.allow_user_creation"
+                id="user"
+                class="loggedout-only"
+                title="Login"
+                @click="openUrl('/login/start')" />
+            <MastheadDropdown
+                v-if="currentUser && !isAnonymous && !config.single_user"
+                id="user"
+                class="loggedin-only"
+                icon="fa-user"
+                :title="currentUser.username"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: 'fa-gear',
+                        handler: () => openUrl('/user'),
+                    },
+                    {
+                        title: 'Sign Out',
+                        icon: 'fa-sign-out-alt',
+                        handler: () => userLogout(),
+                    },
+                ]"
+                @click="userLogout" />
         </BNavbarNav>
-        <QuotaMeter />
+        <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
     </BNavbar>
 </template>
 
@@ -180,15 +180,17 @@ onMounted(() => {
                 cursor: pointer;
                 text-decoration: none;
                 color: var(--masthead-text-color);
+                margin-right: 0.25rem;
+                margin-left: 0.25rem;
                 &:hover {
                     color: var(--masthead-text-hover);
                 }
                 &.nav-icon {
-                    font-size: 1.3em;
+                    font-size: 1.2em;
                     .nav-note {
                         position: absolute;
-                        left: 1.9rem;
-                        top: 1.9rem;
+                        left: 1.6rem;
+                        top: 1.6rem;
                         font-size: 0.6rem;
                         font-weight: bold;
                     }
@@ -201,11 +203,12 @@ onMounted(() => {
     }
     .navbar-brand {
         cursor: pointer;
+        line-height: $masthead-height;
         img {
             filter: $text-shadow;
             display: inline;
             border: none;
-            height: 2.3rem;
+            height: 2rem;
         }
     }
     .navbar-text {
@@ -213,7 +216,7 @@ onMounted(() => {
         font-weight: bold;
         font-family: Verdana, sans-serif;
         font-size: 1rem;
-        line-height: 2rem;
+        line-height: $masthead-height;
         color: var(--masthead-text-color);
     }
 }

@@ -1,87 +1,91 @@
-<template>
-    <div class="listing-layout">
-        <VirtualList
-            ref="listing"
-            class="listing"
-            role="list"
-            data-key="id"
-            :offset="offset"
-            :data-sources="items"
-            :data-component="{}"
-            :estimate-size="estimatedItemHeight"
-            :keeps="estimatedItemCount"
-            @scroll="onScroll">
-            <template v-slot:item="{ item }">
-                <slot name="item" :item="item" :current-offset="getOffset()" />
-            </template>
-            <template v-slot:footer>
-                <LoadingSpan v-if="loading" class="m-2" message="Loading" />
-            </template>
-        </VirtualList>
-    </div>
-</template>
-<script>
-import { useElementBounding } from "@vueuse/core";
-import LoadingSpan from "components/LoadingSpan";
-import { computed, ref } from "vue";
-import VirtualList from "vue-virtual-scroll-list";
+<script setup lang="ts">
+import { nextTick, ref, watch } from "vue";
 
-export default {
-    components: {
-        LoadingSpan,
-        VirtualList,
-    },
-    props: {
-        offset: { type: Number, default: 0 },
-        loading: { type: Boolean, default: false },
-        items: { type: Array, default: null },
-        queryKey: { type: String, default: null },
-    },
-    setup() {
-        const listing = ref(null);
-        const { height } = useElementBounding(listing);
+import IntersectionObservable from "./IntersectionObservable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-        const estimatedItemHeight = 40;
-        const estimatedItemCount = computed(() => {
-            const baseCount = Math.ceil(height.value / estimatedItemHeight);
-            return baseCount + 20;
+const props = defineProps<{
+    items: any[];
+    queryKey?: string;
+    dataKey?: string;
+    loading?: boolean;
+    offset?: number;
+}>();
+
+const emit = defineEmits<{
+    (e: "scroll", currentOffset: number): void;
+}>();
+
+const root = ref<HTMLDivElement>();
+const currentOffset = ref(0);
+
+watch(
+    () => currentOffset.value,
+    (offset) => emit("scroll", offset)
+);
+
+watch(
+    () => props.queryKey,
+    () => {
+        root.value?.scrollTo({
+            top: 0,
         });
+    }
+);
 
-        return { listing, estimatedItemHeight, estimatedItemCount };
+watch(
+    () => props.offset,
+    async (offset) => {
+        await nextTick();
+        if (offset !== undefined) {
+            scrollToOffset(offset);
+        }
     },
-    data() {
-        return {
-            previousStart: undefined,
-        };
+    { immediate: true }
+);
+
+function scrollToOffset(offset: number) {
+    const element = root.value?.querySelector(`.listing-layout-item[data-index="${offset}"]`);
+    element?.scrollIntoView();
+}
+
+const observer = new IntersectionObserver(
+    (items) => {
+        const intersecting = items.filter((item) => item.isIntersecting);
+        const indices = intersecting.map((item) => parseInt(item.target.getAttribute("data-index") ?? "0"));
+        currentOffset.value = indices.length > 0 ? Math.min(...indices) : 0;
     },
-    watch: {
-        queryKey() {
-            this.listing.scrollToOffset(0);
-        },
-    },
-    methods: {
-        onScroll() {
-            const rangeStart = this.listing.range.start;
-            if (this.previousStart !== rangeStart) {
-                this.previousStart = rangeStart;
-                this.$emit("scroll", rangeStart);
-            }
-        },
-        getOffset() {
-            return this.listing?.getOffset() || 0;
-        },
-    },
-};
+    { root: root.value }
+);
+
+function getKey(item: unknown, index: number) {
+    if (props.dataKey) {
+        return (item as Record<string, unknown>)[props.dataKey];
+    } else {
+        return index;
+    }
+}
 </script>
 
+<template>
+    <div ref="root" class="listing-layout">
+        <IntersectionObservable
+            v-for="(item, i) in props.items"
+            :key="getKey(item, i)"
+            class="listing-layout-item"
+            :data-index="i"
+            :observer="observer">
+            <slot name="item" :item="item" :current-offset="i" />
+        </IntersectionObservable>
+        <LoadingSpan v-if="props.loading" class="m-2" message="Loading" />
+    </div>
+</template>
+
 <style scoped lang="scss">
-@import "scss/mixins.scss";
 .listing-layout {
-    .listing {
-        @include absfill();
-        scroll-behavior: smooth;
-        overflow-y: scroll;
-        overflow-x: hidden;
-    }
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow-y: scroll;
 }
 </style>

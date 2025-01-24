@@ -145,7 +145,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(1)
 
-        details = list(map(lambda d: d.text, self._get_dataset_tool_parameters(1)))
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
 
         assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
 
@@ -191,18 +191,18 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
             error_input1.text
-            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+            == "Parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
         # validate errors when inputs are missing
-        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         error_col_names = self.components.tool_form.parameter_error(parameter="col_names").wait_for_visible()
         assert error_input1.text == "Please provide a value for this option."
-        assert error_col.text == "parameter 'col': requires a value, but no legal values defined"
-        assert error_col_names.text == "parameter 'col_names': requires a value, but no legal values defined"
+        assert error_col.text == "Parameter 'col': requires a value, but no legal values defined"
+        assert error_col_names.text == "Parameter 'col_names': requires a value, but no legal values defined"
         # validate warnings when inputs are restored
         self.components.tool_form.parameter_data_input_single(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -210,9 +210,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
             error_input1.text
-            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+            == "Parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
     @selenium_test
     def test_rerun_dataset_collection_element(self):
@@ -223,15 +223,16 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         history_id = self.current_history_id()
         # upload a nested collection
-        collection_id = self.dataset_collection_populator.create_list_of_list_in_history(
+        self.dataset_collection_populator.create_list_of_list_in_history(
             history_id,
             collection_type="list:list",
             wait=True,
         ).json()["id"]
         self.tool_open("identifier_multiple")
-        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.tool_form.data_option_value(item_id=collection_id).wait_for_and_click()
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1")
+        self.select_set_value(select_field, "list:list")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(7)
@@ -241,7 +242,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.hda_click_primary_action_button(1, "rerun")
         self.sleep_for(self.wait_types.UX_RENDER)
-        assert self.driver.find_element(By.CSS_SELECTOR, "option:checked").text == "Selected: test0"
         self.tool_form_execute()
         self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(9)
@@ -283,8 +283,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         @retry_assertion_during_transitions
         def assert_citations_visible():
             references = self.components.tool_form.reference.all()
-            references_rendered = len(references)
-            if references_rendered != citation_count:
+            if (references_rendered := len(references)) != citation_count:
                 citations_api = self.api_get("tools/bibtex/citations")
                 current_citation_count = len(citations_api)
                 message = f"Expected {citation_count} references to be rendered, {references_rendered} actually rendered. Currently the API yields {current_citation_count} references"

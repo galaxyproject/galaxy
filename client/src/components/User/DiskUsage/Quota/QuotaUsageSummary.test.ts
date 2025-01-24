@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { QuotaUsage } from "./model";
+import { type QuotaUsage, toQuotaUsage } from "./model";
 
 import QuotaUsageSummary from "./QuotaUsageSummary.vue";
 
@@ -11,17 +11,17 @@ const QUOTA_1_BYTES = 654846535;
 const QUOTA_2_BYTES = 68468436;
 
 const FAKE_QUOTA_USAGES_LIST: QuotaUsage[] = [
-    new QuotaUsage({
+    toQuotaUsage({
         quota_source_label: "source 1",
         quota_bytes: QUOTA_1_BYTES,
         total_disk_usage: QUOTA_1_BYTES,
     }),
-    new QuotaUsage({
+    toQuotaUsage({
         quota_source_label: "source 2",
         quota_bytes: QUOTA_2_BYTES,
         total_disk_usage: QUOTA_2_BYTES,
     }),
-    new QuotaUsage({
+    toQuotaUsage({
         quota_source_label: "Unlimited source",
         quota_bytes: undefined,
         total_disk_usage: 0,
@@ -29,7 +29,7 @@ const FAKE_QUOTA_USAGES_LIST: QuotaUsage[] = [
 ];
 
 function mountQuotaUsageSummaryWith(quotaUsages: QuotaUsage[]) {
-    const wrapper = shallowMount(QuotaUsageSummary, { propsData: { quotaUsages }, localVue });
+    const wrapper = shallowMount(QuotaUsageSummary as object, { propsData: { quotaUsages }, localVue });
     return wrapper;
 }
 
@@ -50,12 +50,12 @@ describe("QuotaUsageSummary.vue", () => {
 
     it("should display `unlimited` quota when all sources are unlimited", async () => {
         const FAKE_UNLIMITED_QUOTA_USAGES: QuotaUsage[] = [
-            new QuotaUsage({
+            toQuotaUsage({
                 quota_source_label: "Unlimited source 1",
                 quota_bytes: undefined,
                 total_disk_usage: QUOTA_1_BYTES,
             }),
-            new QuotaUsage({
+            toQuotaUsage({
                 quota_source_label: "Unlimited source 2",
                 quota_bytes: undefined,
                 total_disk_usage: QUOTA_2_BYTES,

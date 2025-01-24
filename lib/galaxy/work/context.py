@@ -1,8 +1,13 @@
 import abc
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
+    Tuple,
 )
+
+from typing_extensions import Literal
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
@@ -40,6 +45,7 @@ class WorkRequestContext(ProvidesHistoryContext):
         self.__user_current_roles: Optional[List[Role]] = None
         self.__history = history
         self._url_builder = url_builder
+        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 
@@ -77,19 +83,36 @@ class WorkRequestContext(ProvidesHistoryContext):
 class GalaxyAbstractRequest:
     """Abstract interface to provide access to some request properties."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def base(self) -> str:
         """Base URL of the request."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
+    def url_path(self) -> str:
+        """Base with optional prefix added."""
+
+    @property
+    @abc.abstractmethod
     def host(self) -> str:
         """The host address."""
+
+    @property
+    @abc.abstractmethod
+    def is_secure(self) -> bool:
+        """Was this a secure (https) request."""
+
+    @abc.abstractmethod
+    def get_cookie(self, name):
+        """Return cookie."""
 
 
 class GalaxyAbstractResponse:
     """Abstract interface to provide access to some response utilities."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def headers(self) -> dict:
         """The response headers."""
 
@@ -101,6 +124,21 @@ class GalaxyAbstractResponse:
 
     def get_content_type(self):
         return self.headers.get("content-type", None)
+
+    @abc.abstractmethod
+    def set_cookie(
+        self,
+        key: str,
+        value: str = "",
+        max_age: Optional[int] = None,
+        expires: Optional[int] = None,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: Optional[Literal["lax", "strict", "none"]] = "lax",
+    ) -> None:
+        """Set a cookie."""
 
 
 class SessionRequestContext(WorkRequestContext):
@@ -136,7 +174,7 @@ class SessionRequestContext(WorkRequestContext):
 
 def proxy_work_context_for_history(
     trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False
-):
+) -> WorkRequestContext:
     """Create a WorkContext for supplied context with potentially different history.
 
     This provides semi-structured access to a transaction/work context with a supplied target

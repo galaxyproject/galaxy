@@ -13,7 +13,10 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
-from galaxy.tool_util.data import BundleProcessingOptions
+from galaxy.tool_util.data import (
+    BundleProcessingOptions,
+    ToolDataTableManager,
+)
 from galaxy.tool_util.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
@@ -23,7 +26,6 @@ from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
     ToolDataTable,
-    ToolDataTableManager,
 )
 
 
@@ -47,12 +49,12 @@ class ToolDataManager:
         """Get details of a given data table"""
         data_table = self._data_table(table_name)
         element_view = data_table.to_dict(view="element")
-        return ToolDataDetails.construct(**element_view)
+        return ToolDataDetails.model_construct(**element_view)
 
     def show_field(self, table_name: str, field_name: str) -> ToolDataField:
         """Get information about a partiular field in a tool data table"""
         field = self._data_table_field(table_name, field_name)
-        return ToolDataField.construct(**field.to_dict())
+        return ToolDataField.model_construct(**field.to_dict())
 
     def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""

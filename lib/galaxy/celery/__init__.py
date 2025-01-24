@@ -1,4 +1,5 @@
 import os
+import uuid
 from functools import (
     lru_cache,
     wraps,
@@ -101,8 +102,7 @@ def get_galaxy_app():
 
 @lru_cache(maxsize=1)
 def build_app():
-    kwargs = get_app_properties()
-    if kwargs:
+    if kwargs := get_app_properties():
         kwargs["check_migrate_databases"] = False
         kwargs["use_display_applications"] = False
         kwargs["use_converters"] = False
@@ -167,6 +167,10 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
             app = get_galaxy_app()
             assert app
 
+            # Ensure sqlalchemy session registry scope is specific to this instance of the celery task
+            scoped_id = str(uuid.uuid4())
+            app.model.set_request_id(scoped_id)
+
             desc = func.__name__
             if action is not None:
                 desc += f" to {action}"
@@ -184,6 +188,9 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
             except Exception:
                 log.warning(f"Celery task execution failed for {desc} {timer}")
                 raise
+            finally:
+                # Close and remove any open session this task has created
+                app.model.unset_request_id(scoped_id)
 
         return wrapper
 
@@ -213,7 +220,7 @@ def config_celery_app(config, celery_app):
     if config.celery_conf:
         celery_app.conf.update(config.celery_conf)
     # Handle special cases
-    if not celery_app.conf.broker_url:
+    if not config.celery_conf.get("broker_url"):
         celery_app.conf.broker_url = config.amqp_internal_connection
 
 
@@ -231,7 +238,10 @@ def setup_periodic_tasks(config, celery_app):
     beat_schedule: Dict[str, Dict[str, Any]] = {}
     schedule_task("prune_history_audit_table", config.history_audit_table_prune_interval)
     schedule_task("cleanup_short_term_storage", config.short_term_storage_cleanup_interval)
-    schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
+
+    if config.enable_notification_system:
+        schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
+        schedule_task("dispatch_pending_notifications", config.dispatch_notifications_interval)
 
     if config.object_store_cache_monitor_driver in ["auto", "celery"]:
         schedule_task("clean_object_store_caches", config.object_store_cache_monitor_interval)

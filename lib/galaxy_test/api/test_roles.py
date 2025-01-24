@@ -79,7 +79,6 @@ class TestRolesApi(ApiTestCase):
 
         # Test missing name
         payload_missing_name = {
-            "name": None,
             "description": description,
             "user_ids": [self.dataset_populator.user_id()],
         }
@@ -104,15 +103,7 @@ class TestRolesApi(ApiTestCase):
     def test_create_valid(self):
         name = self.dataset_populator.get_random_name()
         description = "A test role."
-        payload = {
-            "name": name,
-            "description": description,
-            "user_ids": [self.dataset_populator.user_id()],
-        }
-        response = self._post("roles", payload, admin=True, json=True)
-        assert_status_code_is(response, 200)
-        role = response.json()
-        self.check_role_dict(role)
+        role = self._create_role(name=name, description=description)
 
         assert role["name"] == name
         assert role["description"] == description
@@ -134,11 +125,11 @@ class TestRolesApi(ApiTestCase):
         response = self._get("roles/badroleid")
         assert_status_code_is(response, 400)
 
-        # Trying to access roles are errors - should probably be 403 not 400 though?
+        # Trying to access others roles raise (not found) error
         with self._different_user():
             different_user_role_id = self.dataset_populator.user_private_role_id()
         response = self._get(f"roles/{different_user_role_id}")
-        assert_status_code_is(response, 400)
+        assert_status_code_is(response, 404)
 
     @requires_admin
     def test_create_only_admin(self):
@@ -147,6 +138,77 @@ class TestRolesApi(ApiTestCase):
         response_err = response.json()
         assert response_err["err_code"] == 403006
         assert "administrator" in response_err["err_msg"]
+
+    @requires_admin
+    def test_delete(self):
+        role = self._create_role()
+        role_id = role["id"]
+        response = self._delete(f"roles/{role_id}", admin=True)
+        assert_status_code_is(response, 200)
+
+    @requires_admin
+    def test_delete_duplicating_name_raises_409(self):
+        role = self._create_role()
+        role_id = role["id"]
+        role_name = role["name"]
+
+        delete_response = self._delete(f"roles/{role_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+
+        # Create a new role with the same name as the deleted one is not allowed
+        payload = self._build_valid_role_payload(role_name)
+        response = self._post("roles", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 409)
+
+    @requires_admin
+    def test_purge(self):
+        role = self._create_role()
+        role_id = role["id"]
+
+        # Delete and purge the role
+        delete_response = self._delete(f"roles/{role_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"roles/{role_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
+        # The role is deleted and purged, so it cannot be found
+        response = self._get(f"roles/{role_id}", admin=True)
+        self._assert_status_code_is(response, 404)
+
+    @requires_admin
+    def test_purge_can_reuse_name(self):
+        role = self._create_role()
+        role_id = role["id"]
+        role_name = role["name"]
+
+        # Delete and purge the role
+        delete_response = self._delete(f"roles/{role_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"roles/{role_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
+        # Create a new role with the same name as the deleted one is allowed
+        payload = self._build_valid_role_payload(role_name)
+        response = self._post("roles", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+
+    def _create_role(self, name: Optional[str] = None, description: Optional[str] = None) -> Dict[str, Any]:
+        payload = self._build_valid_role_payload(name=name, description=description)
+        response = self._post("roles", payload, admin=True, json=True)
+        assert_status_code_is(response, 200)
+        role = response.json()
+        self.check_role_dict(role)
+        return role
+
+    def _build_valid_role_payload(self, name: Optional[str] = None, description: Optional[str] = None):
+        name = name or self.dataset_populator.get_random_name()
+        description = description or f"A test role with name: {name}."
+        payload = {
+            "name": name,
+            "description": description,
+            "user_ids": [self.dataset_populator.user_id()],
+        }
+        return payload
 
     @staticmethod
     def check_role_dict(role_dict: Dict[str, Any], assert_id: Optional[str] = None) -> None:

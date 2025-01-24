@@ -21,7 +21,7 @@ class TestPages(SeleniumTestCase):
         self.history_panel_wait_for_hid_ok(1)
         self.navigate_to_pages()
         self.screenshot("pages_grid")
-        self.create_page_and_edit(screenshot_name="pages_create_form")
+        page_name = self.create_page_and_edit(screenshot_name="pages_create_form")
         self.screenshot("pages_editor_new")
         editor = self._page_editor
         editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
@@ -31,7 +31,7 @@ class TestPages(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.save.wait_for_and_click()
         self.screenshot("pages_editor_saved")
-        self.page_open_and_screenshot("page_view_with_embedded_dataset")
+        self.page_open_and_screenshot(page_name, "page_view_with_embedded_dataset")
 
     @selenium_test
     @managed_history
@@ -44,7 +44,7 @@ class TestPages(SeleniumTestCase):
             WORKFLOW_WITH_BAD_COLUMN_PARAMETER, exact_tools=True
         )
         self.navigate_to_pages()
-        self.create_page_and_edit()
+        page_name = self.create_page_and_edit()
         editor = self._page_editor
         editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
         editor.embed_workflow_display.wait_for_and_click()
@@ -55,7 +55,7 @@ class TestPages(SeleniumTestCase):
         editor.workflow_selection(id=problem_workflow_2_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.save.wait_for_and_click()
-        self.page_open_and_screenshot("page_view_with_workflow_problems")
+        self.page_open_and_screenshot(page_name, "page_view_with_workflow_problems")
 
     @selenium_test
     @managed_history
@@ -65,18 +65,18 @@ class TestPages(SeleniumTestCase):
         self.current_history_publish()
         history_id = self.current_history_id()
         self.navigate_to_pages()
-        self.create_page_and_edit()
+        page_name = self.create_page_and_edit()
         editor = self._page_editor
         editor.history_link.wait_for_and_click()
         editor.history_selection(id=history_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.save.wait_for_and_click()
-        self.page_open_and_screenshot("page_view_with_history_link")
+        self.page_open_and_screenshot(page_name, "page_view_with_history_link")
         view = self.components.pages.view
         view.history_link(history_id=history_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.navigate_to_histories_page()
-        history_names = self.histories_get_history_names()
+        history_names = self.get_grid_entry_names("#histories-grid")
         assert f"Copy of '{new_history_name}'" in history_names
 
     @property

@@ -1,0 +1,38 @@
+## A sample job config for InteractiveTools using local runner, configured for Podman ##
+
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 4
+
+# Uncomment if dynamic handlers are defined in "gravity:handlers" section in galaxy.yml
+#
+#handling:
+#  assign:
+#    - db-skip-locked
+
+execution:
+  default: docker_dispatch
+  environments:
+    local:
+      runner: local
+
+    docker_local:
+      runner: local
+      docker_enabled: true
+
+      docker_set_user:
+
+      # For containers running as root (on the inside)
+      docker_run_extra_arguments: --security-opt label=disable --network slirp4netns:allow_host_loopback=true
+      # Should work for containers with non-root user (on the inside)
+      #docker_run_extra_arguments:  --userns=keep-id --security-opt label=disable --network slirp4netns:allow_host_loopback=true
+
+      # Change to home directory of the galaxy user, not the directory of the galaxy installation
+      docker_cmd: HOME="/home/galaxy"; podman
+
+    docker_dispatch:
+      runner: dynamic
+      type: docker_dispatch
+      docker_destination_id: docker_local
+      default_destination_id: local

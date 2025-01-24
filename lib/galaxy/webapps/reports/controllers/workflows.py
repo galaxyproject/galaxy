@@ -204,7 +204,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
             self.select_day(model.StoredWorkflow.table.c.create_time).label("date"), model.StoredWorkflow.table.c.id
         )
 
-        trends = dict()
+        trends = {}
         for workflow in trans.sa_session.execute(all_workflows):
             workflow_day = int(workflow.date.strftime("%-d")) - 1
             workflow_month = int(workflow.date.strftime("%-m"))
@@ -292,7 +292,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
             model.StoredWorkflow.table.c.id,
         ).select_from(sa.outerjoin(model.StoredWorkflow.table, model.User.table))
         currday = datetime.today()
-        trends = dict()
+        trends = {}
         for workflow in trans.sa_session.execute(all_workflows_per_user):
             curr_user = re.sub(r"\W+", "", workflow.user_email)
             try:
@@ -356,7 +356,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
             self.select_day(model.StoredWorkflow.table.c.create_time).label("date"), model.StoredWorkflow.table.c.id
         ).where(model.StoredWorkflow.table.c.user_id == user_id)
 
-        trends = dict()
+        trends = {}
         for workflow in trans.sa_session.execute(all_workflows_user_month):
             workflow_day = int(workflow.date.strftime("%-d")) - 1
             workflow_month = int(workflow.date.strftime("%-m"))
@@ -447,7 +447,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
         )
 
         currday = date.today()
-        trends = dict()
+        trends = {}
         for run in trans.sa_session.execute(all_runs_per_workflow):
             curr_tool = re.sub(r"\W+", "", str(run.workflow_id))
             try:
@@ -491,4 +491,4 @@ class Workflows(BaseUIController, ReportQueryBuilder):
 
 
 def get_workflow(trans, id):
-    return trans.sa_session.query(trans.model.Workflow).get(trans.security.decode_id(id))
+    return trans.sa_session.get(model.Workflow, trans.security.decode_id(id))

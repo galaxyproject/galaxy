@@ -74,7 +74,7 @@ def main():
         elif primary is None and val is None:
             primary = arg
         elif secondary is None and val is None:
-            secondary = arg
+            secondary = arg  # type: ignore[unreachable]
         else:
             usage("unknown argument: %s" % arg)
 

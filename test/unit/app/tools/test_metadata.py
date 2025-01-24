@@ -188,7 +188,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             f.write(contents)
 
     def _write_output_dataset_contents(self, output_dataset, contents):
-        with open(output_dataset.dataset.file_name, "w") as f:
+        with open(output_dataset.dataset.get_file_name(), "w") as f:
             f.write(contents)
 
     def _write_galaxy_json(self, contents):
@@ -217,7 +217,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         safe_makedirs(os.path.join(self.job_working_directory, "metadata"))
         self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        output_fnames = [DatasetPath(o.dataset.id, o.dataset.file_name, None) for o in output_datasets.values()]
+        output_fnames = [DatasetPath(o.dataset.id, o.dataset.get_file_name(), None) for o in output_datasets.values()]
         command = metadata_compute_strategy.setup_external_metadata(
             output_datasets,
             output_collections,

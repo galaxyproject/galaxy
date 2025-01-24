@@ -1,0 +1,23 @@
+- doc: |
+    Test to verify text parameter can be connected to data column param
+  job:
+    text_input1:
+      collection_type: list
+      elements:
+        - identifier: A
+          content: A
+        - identifier: B
+          content: B
+  outputs:
+    out1:
+      class: Collection
+      collection_type: list
+      elements:
+        A:
+          asserts:
+            - that: has_line
+              line: A
+        B:
+          asserts:
+            - that: has_line
+              line: B

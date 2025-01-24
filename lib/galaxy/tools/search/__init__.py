@@ -24,6 +24,7 @@ Filters - various filters are available for processing content as the index is
     stemming -> stem; opened -> open; philosophy -> philosoph.
 
 """
+
 import logging
 import os
 import re
@@ -57,8 +58,10 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util import ExecutionTimer
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.util import (
+    ExecutionTimer,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -68,8 +71,7 @@ CanConvertToInt = Union[str, int, float]
 
 def get_or_create_index(index_dir, schema):
     """Get or create a reference to the index."""
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
+    os.makedirs(index_dir, exist_ok=True)
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
         if idx.schema == schema:
@@ -230,7 +232,7 @@ class ToolPanelViewSearch:
                 # Add tool document to index (or overwrite if existing)
                 writer.update_document(**add_doc_kwds)
 
-        log.debug(f"Toolbox index of panel {self.panel_view_id}" f" finished {execution_timer}")
+        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
 
     def _get_tools_to_remove(self, tool_cache) -> list:
         """Return list of tool IDs to be removed from index."""
@@ -279,7 +281,7 @@ class ToolPanelViewSearch:
         def clean(string):
             """Remove hyphens as they are Whoosh wildcards."""
             if "-" in string:
-                return (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
+                return (" ").join(token.text for token in self.rex(unicodify(tool.name)))
             else:
                 return string
 
@@ -287,16 +289,16 @@ class ToolPanelViewSearch:
             #  Do not add data managers to the public index
             return {}
         add_doc_kwds = {
-            "id": to_unicode(tool.id),
-            "id_exact": to_unicode(tool.id),
+            "id": unicodify(tool.id),
+            "id_exact": unicodify(tool.id),
             "name": clean(tool.name),
-            "description": to_unicode(tool.description),
-            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
+            "description": unicodify(tool.description),
+            "section": unicodify(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
             "edam_operations": clean(tool.edam_operations),
             "edam_topics": clean(tool.edam_topics),
-            "repository": to_unicode(tool.repository_name),
-            "owner": to_unicode(tool.repository_owner),
-            "help": to_unicode(""),
+            "repository": unicodify(tool.repository_name),
+            "owner": unicodify(tool.repository_owner),
+            "help": unicodify(""),
         }
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
@@ -304,14 +306,14 @@ class ToolPanelViewSearch:
             id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
             add_doc_kwds["stub"] = clean(id_stub)
         else:
-            add_doc_kwds["stub"] = to_unicode(id)
+            add_doc_kwds["stub"] = unicodify(id)
         if tool.labels:
-            add_doc_kwds["labels"] = to_unicode(" ".join(tool.labels))
+            add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
         if index_help:
             raw_help = tool.raw_help
             if raw_help:
                 try:
-                    add_doc_kwds["help"] = to_unicode(raw_help)
+                    add_doc_kwds["help"] = unicodify(raw_help)
                 except Exception:
                     # Don't fail to build index when help fails to parse
                     pass

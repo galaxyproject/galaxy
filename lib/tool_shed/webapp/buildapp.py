@@ -1,6 +1,7 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
+
 import atexit
 import logging
 import os
@@ -13,19 +14,38 @@ from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
 from galaxy import util
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.web import url_for
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-from galaxy.webapps.base.webapp import build_url_map
+from galaxy.webapps.base.webapp import (
+    build_url_map,
+    GalaxyWebTransaction,
+)
 from galaxy.webapps.util import wrap_if_allowed
+from .config import SHED_API_VERSION
 
 log = logging.getLogger(__name__)
 
 
+class ToolShedGalaxyWebTransaction(GalaxyWebTransaction):
+    @property
+    def repositories_hostname(self) -> str:
+        return url_for("/", qualified=True).rstrip("/")
+
+    def get_or_create_default_history(self):
+        # tool shed has no concept of histories
+        raise NotImplementedError
+
+
 class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
     injection_aware: bool = True
+
+    def transaction_chooser(self, environ, galaxy_app: BasicSharedApp, session_cookie: str):
+        return ToolShedGalaxyWebTransaction(environ, galaxy_app, self, session_cookie)
 
 
 def add_ui_controllers(webapp, app):
@@ -65,11 +85,15 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
     kwargs = load_app_properties(kwds=kwargs, config_prefix="TOOL_SHED_CONFIG_", **load_app_kwds)
     if "app" in kwargs:
         app = kwargs.pop("app")
+        import tool_shed.webapp.app
+
+        tool_shed.webapp.app.app = app
     else:
         try:
-            from tool_shed.webapp.app import UniverseApplication
+            import tool_shed.webapp.app
 
-            app = UniverseApplication(global_conf=global_conf, **kwargs)
+            app = tool_shed.webapp.app.UniverseApplication(global_conf=global_conf, **kwargs)
+            tool_shed.webapp.app.app = app
         except Exception:
             import sys
             import traceback
@@ -98,123 +122,128 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route("/repos/*path_info", controller="hg", action="handle_request", path_info="/")
     # Add the web API.  # A good resource for RESTful services - https://routes.readthedocs.io/en/latest/restful.html
-    webapp.add_api_controllers("tool_shed.webapp.api", app)
-    webapp.mapper.connect(
-        "api_key_retrieval",
-        "/api/authenticate/baseauth/",
-        controller="authenticate",
-        action="get_tool_shed_api_key",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect("group", "/api/groups/", controller="groups", action="index", conditions=dict(method=["GET"]))
-    webapp.mapper.connect(
-        "group", "/api/groups/", controller="groups", action="create", conditions=dict(method=["POST"])
-    )
-    webapp.mapper.connect(
-        "group", "/api/groups/{encoded_id}", controller="groups", action="show", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.resource(
-        "category",
-        "categories",
-        controller="categories",
-        name_prefix="category_",
-        path_prefix="/api",
-        parent_resources=dict(member_name="category", collection_name="categories"),
-    )
-    webapp.mapper.connect(
-        "repositories_in_category",
-        "/api/categories/{category_id}/repositories",
-        controller="categories",
-        action="get_repositories",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "show_updates_for_repository",
-        "/api/repositories/updates",
-        controller="repositories",
-        action="updates",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.resource(
-        "repository",
-        "repositories",
-        controller="repositories",
-        collection={
-            "add_repository_registry_entry": "POST",
-            "get_repository_revision_install_info": "GET",
-            "get_ordered_installable_revisions": "GET",
-            "get_installable_revisions": "GET",
-            "remove_repository_registry_entry": "POST",
-            "reset_metadata_on_repositories": "POST",
-            "reset_metadata_on_repository": "POST",
-        },
-        name_prefix="repository_",
-        path_prefix="/api",
-        parent_resources=dict(member_name="repository", collection_name="repositories"),
-    )
-    webapp.mapper.resource(
-        "repository_revision",
-        "repository_revisions",
-        member={"repository_dependencies": "GET", "export": "POST"},
-        controller="repository_revisions",
-        name_prefix="repository_revision_",
-        path_prefix="/api",
-        parent_resources=dict(member_name="repository_revision", collection_name="repository_revisions"),
-    )
-    webapp.mapper.resource(
-        "user",
-        "users",
-        controller="users",
-        name_prefix="user_",
-        path_prefix="/api",
-        parent_resources=dict(member_name="user", collection_name="users"),
-    )
-    webapp.mapper.connect(
-        "update_repository",
-        "/api/repositories/{id}",
-        controller="repositories",
-        action="update",
-        conditions=dict(method=["PATCH", "PUT"]),
-    )
-    webapp.mapper.connect(
-        "repository_create_changeset_revision",
-        "/api/repositories/{id}/changeset_revision",
-        controller="repositories",
-        action="create_changeset_revision",
-        conditions=dict(method=["POST"]),
-    )
-    webapp.mapper.connect(
-        "repository_get_metadata",
-        "/api/repositories/{id}/metadata",
-        controller="repositories",
-        action="metadata",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "repository_show_tools",
-        "/api/repositories/{id}/{changeset}/show_tools",
-        controller="repositories",
-        action="show_tools",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "create_repository",
-        "/api/repositories",
-        controller="repositories",
-        action="create",
-        conditions=dict(method=["POST"]),
-    )
-    webapp.mapper.connect(
-        "tools",
-        "/api/tools/build_search_index",
-        controller="tools",
-        action="build_search_index",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect("tools", "/api/tools", controller="tools", action="index", conditions=dict(method=["GET"]))
-    webapp.mapper.connect(
-        "version", "/api/version", controller="configuration", action="version", conditions=dict(method=["GET"])
-    )
+    if SHED_API_VERSION == "v1":
+        webapp.add_api_controllers("tool_shed.webapp.api", app)
+        webapp.mapper.connect(
+            "api_key_retrieval",
+            "/api/authenticate/baseauth/",
+            controller="authenticate",
+            action="get_tool_shed_api_key",
+            conditions=dict(method=["GET"]),
+        )
+        webapp.mapper.connect(
+            "group", "/api/groups/", controller="groups", action="index", conditions=dict(method=["GET"])
+        )
+        webapp.mapper.connect(
+            "group", "/api/groups/", controller="groups", action="create", conditions=dict(method=["POST"])
+        )
+        webapp.mapper.connect(
+            "group", "/api/groups/{encoded_id}", controller="groups", action="show", conditions=dict(method=["GET"])
+        )
+        webapp.mapper.resource(
+            "category",
+            "categories",
+            controller="categories",
+            name_prefix="category_",
+            path_prefix="/api",
+            parent_resources=dict(member_name="category", collection_name="categories"),
+        )
+        webapp.mapper.connect(
+            "repositories_in_category",
+            "/api/categories/{category_id}/repositories",
+            controller="categories",
+            action="get_repositories",
+            conditions=dict(method=["GET"]),
+        )
+        webapp.mapper.connect(
+            "show_updates_for_repository",
+            "/api/repositories/updates",
+            controller="repositories",
+            action="updates",
+            conditions=dict(method=["GET"]),
+        )
+        webapp.mapper.resource(
+            "repository",
+            "repositories",
+            controller="repositories",
+            collection={
+                "add_repository_registry_entry": "POST",
+                "get_repository_revision_install_info": "GET",
+                "get_ordered_installable_revisions": "GET",
+                "get_installable_revisions": "GET",
+                "remove_repository_registry_entry": "POST",
+                "reset_metadata_on_repositories": "POST",
+                "reset_metadata_on_repository": "POST",
+            },
+            name_prefix="repository_",
+            path_prefix="/api",
+            parent_resources=dict(member_name="repository", collection_name="repositories"),
+        )
+        webapp.mapper.resource(
+            "repository_revision",
+            "repository_revisions",
+            member={"repository_dependencies": "GET", "export": "POST"},
+            controller="repository_revisions",
+            name_prefix="repository_revision_",
+            path_prefix="/api",
+            parent_resources=dict(member_name="repository_revision", collection_name="repository_revisions"),
+        )
+        webapp.mapper.resource(
+            "user",
+            "users",
+            controller="users",
+            name_prefix="user_",
+            path_prefix="/api",
+            parent_resources=dict(member_name="user", collection_name="users"),
+        )
+        webapp.mapper.connect(
+            "update_repository",
+            "/api/repositories/{id}",
+            controller="repositories",
+            action="update",
+            conditions=dict(method=["PATCH", "PUT"]),
+        )
+        webapp.mapper.connect(
+            "repository_create_changeset_revision",
+            "/api/repositories/{id}/changeset_revision",
+            controller="repositories",
+            action="create_changeset_revision",
+            conditions=dict(method=["POST"]),
+        )
+        webapp.mapper.connect(
+            "repository_get_metadata",
+            "/api/repositories/{id}/metadata",
+            controller="repositories",
+            action="metadata",
+            conditions=dict(method=["GET"]),
+        )
+        webapp.mapper.connect(
+            "repository_show_tools",
+            "/api/repositories/{id}/{changeset}/show_tools",
+            controller="repositories",
+            action="show_tools",
+            conditions=dict(method=["GET"]),
+        )
+        webapp.mapper.connect(
+            "create_repository",
+            "/api/repositories",
+            controller="repositories",
+            action="create",
+            conditions=dict(method=["POST"]),
+        )
+        webapp.mapper.connect(
+            "tools",
+            "/api/tools/build_search_index",
+            controller="tools",
+            action="build_search_index",
+            conditions=dict(method=["PUT"]),
+        )
+        webapp.mapper.connect(
+            "tools", "/api/tools", controller="tools", action="index", conditions=dict(method=["GET"])
+        )
+        webapp.mapper.connect(
+            "version", "/api/version", controller="configuration", action="version", conditions=dict(method=["GET"])
+        )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

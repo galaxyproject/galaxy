@@ -40,9 +40,6 @@ def main(argv=None):
     )
     parser.add_option("--file-sources", type=str, help="file sources json")
     (options, args) = parser.parse_args(argv)
-    galaxy_version = options.galaxy_version
-    if galaxy_version is None:
-        galaxy_version = "19.05"
 
     gzip = bool(options.gzip)
     assert len(args) >= 2
@@ -59,16 +56,18 @@ def main(argv=None):
     # Create archive.
     exit = create_archive(temp_directory, out_file, gzip=gzip)
     if destination_uri is not None and exit == 0:
-        _write_to_destination(options.file_sources, os.path.abspath(out_file), destination_uri)
+        actual_uri = _write_to_destination(options.file_sources, os.path.abspath(out_file), destination_uri)
+        if destination_uri != actual_uri:
+            print(f"Saved history archive to {actual_uri}.")
     return exit
 
 
-def _write_to_destination(file_sources_path: str, out_file: str, destination_uri: str):
+def _write_to_destination(file_sources_path: str, out_file: str, destination_uri: str) -> str:
     file_sources = get_file_sources(file_sources_path)
     file_source_path = file_sources.get_file_source_path(destination_uri)
     file_source = file_source_path.file_source
     assert os.path.exists(out_file)
-    file_source.write_from(file_source_path.path, out_file)
+    return file_source.write_from(file_source_path.path, out_file)
 
 
 def get_file_sources(file_sources_path: str) -> ConfiguredFileSources:

@@ -15,6 +15,8 @@ import threading
 import time
 from pathlib import Path
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
 )
@@ -32,7 +34,6 @@ from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
 )
-from galaxy.tools import ToolBox
 from galaxy.util import (
     asbool,
     download_to_file,
@@ -49,8 +50,6 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
 )
-from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
-from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()
@@ -70,9 +69,8 @@ DEFAULT_LOCALES = "en"
 log = logging.getLogger("test_driver")
 
 
-# Global variables to pass database contexts around - only needed for older
+# Global variable to pass database contexts around - only needed for older
 # Tool Shed twill tests that didn't utilize the API for such interactions.
-tool_shed_context = None
 install_context = None
 
 
@@ -227,7 +225,6 @@ def setup_galaxy_config(
         template_cache_path=template_cache_path,
         tool_config_file=tool_config_file,
         tool_data_table_config_path=tool_data_table_config_path,
-        tool_parse_help=False,
         tool_path=tool_path,
         update_integrated_tool_panel=update_integrated_tool_panel,
         use_tasked_jobs=True,
@@ -237,7 +234,7 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
-        fetch_url_allowlist="127.0.0.1",
+        fetch_url_allowlist=["127.0.0.0/24"],
         job_handler_monitor_sleep=0.2,
         job_runner_monitor_sleep=0.2,
         workflow_monitor_sleep=0.2,
@@ -245,9 +242,9 @@ def setup_galaxy_config(
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
     if not use_shared_connection_for_amqp:
-        config[
-            "amqp_internal_connection"
-        ] = f"sqlalchemy+sqlite:///{os.path.join(tmpdir, 'control.sqlite')}?isolation_level=IMMEDIATE"
+        config["amqp_internal_connection"] = (
+            f"sqlalchemy+sqlite:///{os.path.join(tmpdir, 'control.sqlite')}?isolation_level=IMMEDIATE"
+        )
 
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -451,7 +448,7 @@ def _get_static_settings():
 def get_webapp_global_conf():
     """Get the global_conf dictionary sent to ``app_factory``."""
     # (was originally sent 'dict()') - nothing here for now except static settings
-    global_conf = dict()
+    global_conf = {}
     global_conf.update(_get_static_settings())
     return global_conf
 
@@ -539,7 +536,7 @@ def uvicorn_serve(app, port, host=None):
     return server, port, t
 
 
-def cleanup_directory(tempdir):
+def cleanup_directory(tempdir: str) -> None:
     """Clean up temporary files used by test unless GALAXY_TEST_NO_CLEANUP is set.
 
     Also respect TOOL_SHED_TEST_NO_CLEANUP for legacy reasons.
@@ -553,24 +550,6 @@ def cleanup_directory(tempdir):
             shutil.rmtree(tempdir)
     except Exception:
         pass
-
-
-def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_installed_tools):
-    """Modify Galaxy app's toolbox for migrated or installed tool tests."""
-    if testing_installed_tools:
-        # TODO: Do this without modifying app - that is a pretty violation
-        # of Galaxy's abstraction - we shouldn't require app at all let alone
-        # be modifying it.
-
-        tool_configs = app.config.tool_configs
-        # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
-        # and reload the app's toolbox.
-        relative_migrated_tool_panel_config = os.path.join(app.config.root, MIGRATED_TOOL_PANEL_CONFIG)
-        if relative_migrated_tool_panel_config in tool_configs:
-            tool_configs.remove(relative_migrated_tool_panel_config)
-        for installed_tool_panel_config in INSTALLED_TOOL_PANEL_CONFIGS:
-            tool_configs.append(installed_tool_panel_config)
-        app.toolbox = ToolBox(tool_configs, app.config.tool_path, app)
 
 
 def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
@@ -597,26 +576,6 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     # We need to ensure to build an index for the test galaxy app -- this is
     # pretty fast with the limited toolset
     app.reindex_tool_search()
-
-    return app
-
-
-def build_shed_app(simple_kwargs):
-    """Build a Galaxy app object from a simple keyword arguments.
-
-    Construct paste style complex dictionary. Also setup "global" reference
-    to sqlalchemy database context for tool shed database.
-    """
-    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
-    # TODO: Simplify global_conf to match Galaxy above...
-    simple_kwargs["__file__"] = "tool_shed_wsgi.yml.sample"
-    simple_kwargs["global_conf"] = get_webapp_global_conf()
-
-    app = ToolshedUniverseApplication(**simple_kwargs)
-    log.info("Embedded Toolshed application started")
-
-    global tool_shed_context
-    tool_shed_context = app.model.context
 
     return app
 
@@ -668,7 +627,7 @@ class ServerWrapper:
     def app(self):
         raise NotImplementedError("Test can be run against target - requires a Galaxy app object.")
 
-    def stop(self):
+    def stop(self) -> None:
         raise NotImplementedError()
 
 
@@ -776,7 +735,14 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     )
 
 
-def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
+def launch_server(
+    app_factory,
+    webapp_factory,
+    prefix=DEFAULT_CONFIG_PREFIX,
+    galaxy_config=None,
+    config_object=None,
+    init_fast_app=init_galaxy_fast_app,
+):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
     port = attempt_ports(port)
@@ -810,12 +776,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
         static_enabled=True,
         register_shutdown_at_exit=False,
     )
-    if name == "galaxy":
-        asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
-    elif name == "tool_shed":
-        asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
-    else:
-        raise NotImplementedError(f"Launching {name} not implemented")
+    asgi_app = init_fast_app(wsgi_webapp, app)
 
     server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
@@ -835,28 +796,24 @@ class TestDriver:
 
     def __init__(self):
         """Setup tracked resources."""
-        self.server_wrappers = []
-        self.temp_directories = []
+        self.server_wrappers: List[ServerWrapper] = []
+        self.temp_directories: List[str] = []
 
-    def setup(self, config_object=None):
+    def setup(self) -> None:
         """Called before tests are built."""
 
-    def build_tests(self):
-        """After environment is setup, setup tests."""
-
-    def tear_down(self):
+    def tear_down(self) -> None:
         """Cleanup resources tracked by this object."""
         self.stop_servers()
         for temp_directory in self.temp_directories:
             cleanup_directory(temp_directory)
 
-    def stop_servers(self):
+    def stop_servers(self) -> None:
         for server_wrapper in self.server_wrappers:
             server_wrapper.stop()
         for th in threading.enumerate():
             log.debug(f"After stopping all servers thread {th} is alive.")
-        active_count = threading.active_count()
-        if active_count > 100:
+        if (active_count := threading.active_count()) > 100:
             # For an unknown reason running iRODS tests results in application threads not shutting down immediately,
             # but if we've accumulated over 100 active threads something else is wrong that needs to be fixed.
             raise Exception(
@@ -874,13 +831,14 @@ class TestDriver:
 class GalaxyTestDriver(TestDriver):
     """Instantial a Galaxy-style TestDriver for testing Galaxy."""
 
-    server_wrappers: List[ServerWrapper]
     testing_shed_tools = False
 
-    def _configure(self, config_object=None):
+    def _configure(self, config_object=None) -> None:
         """Setup various variables used to launch a Galaxy server."""
         config_object = self._ensure_config_object(config_object)
         self.external_galaxy = os.environ.get("GALAXY_TEST_EXTERNAL", None)
+        if not self.external_galaxy:
+            os.environ["GALAXY_TEST_STRICT_CHECKS"] = "1"
 
         # Allow controlling the log format
         self.log_format = os.environ.get("GALAXY_TEST_LOG_FORMAT")
@@ -892,7 +850,8 @@ class GalaxyTestDriver(TestDriver):
 
         default_tool_conf: Optional[str]
         datatypes_conf_override: Optional[str]
-        if getattr(config_object, "framework_tool_and_types", False):
+        framework_tools_and_types = getattr(config_object, "framework_tool_and_types", False)
+        if framework_tools_and_types:
             default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = FRAMEWORK_DATATYPES_CONF
         else:
@@ -913,18 +872,19 @@ class GalaxyTestDriver(TestDriver):
         self._configure(config_object)
         self._register_and_run_servers(config_object)
 
-    def get_logs(self):
-        if self.server_wrappers:
-            server_wrapper = self.server_wrappers[0]
-            return server_wrapper.get_logs()
+    def get_logs(self) -> Optional[str]:
+        if not self.server_wrappers:
+            return None
+        server_wrapper = self.server_wrappers[0]
+        return server_wrapper.get_logs()
 
-    def restart(self, config_object=None, handle_config=None):
+    def restart(self, config_object=None, handle_config=None) -> None:
         self.stop_servers()
         self._register_and_run_servers(config_object, handle_config=handle_config)
 
-    def _register_and_run_servers(self, config_object=None, handle_config=None):
+    def _register_and_run_servers(self, config_object=None, handle_config=None) -> None:
         config_object = self._ensure_config_object(config_object)
-        self.app = None
+        self.app: Optional[GalaxyUniverseApplication] = None
 
         if self.external_galaxy is None:
             if self._saved_galaxy_config is not None:
@@ -978,7 +938,7 @@ class GalaxyTestDriver(TestDriver):
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
 
-    def build_galaxy_app(self, galaxy_config):
+    def build_galaxy_app(self, galaxy_config) -> GalaxyUniverseApplication:
         self.app = build_galaxy_app(galaxy_config)
         return self.app
 
@@ -987,38 +947,12 @@ class GalaxyTestDriver(TestDriver):
             config_object = self
         return config_object
 
-    def setup_shed_tools(self, testing_migrated_tools=False, testing_installed_tools=True):
-        setup_shed_tools_for_test(self.app, self.galaxy_test_tmp_dir, testing_migrated_tools, testing_installed_tools)
-
-    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False):
-        if self.app is None:
-            return
-
-        if testing_shed_tools is None:
-            testing_shed_tools = getattr(self, "testing_shed_tools", False)
-
-        # We must make sure that functional.test_toolbox is always imported after
-        # database_contexts.galaxy_content is set (which occurs in this method above).
-        # If functional.test_toolbox is imported before database_contexts.galaxy_content
-        # is set, sa_session will be None in all methods that use it.
-        import functional.test_toolbox
-
-        functional.test_toolbox.toolbox = self.app.toolbox
-        # When testing data managers, do not test toolbox.
-        test_classes = functional.test_toolbox.build_tests(
-            app=self.app,
-            testing_shed_tools=testing_shed_tools,
-            master_api_key=get_admin_api_key(),
-            user_api_key=get_user_api_key(),
-        )
-        if return_test_classes:
-            return test_classes
-        return functional.test_toolbox
-
-    def run_tool_test(self, tool_id, index=0, resource_parameters=None, **kwd):
+    def run_tool_test(
+        self, tool_id: str, index: int = 0, resource_parameters: Optional[Dict[str, Any]] = None, **kwd
+    ) -> None:
         if resource_parameters is None:
             resource_parameters = {}
-        host, port, url = target_url_parts()
+        _, _, url = target_url_parts()
         galaxy_interactor_kwds = {
             "galaxy_url": url,
             "master_api_key": get_admin_api_key(),

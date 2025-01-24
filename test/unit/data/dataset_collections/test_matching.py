@@ -78,7 +78,7 @@ def build_collections_to_match(*items):
             collection_instance, subcollection_type = item
         else:
             collection_instance, subcollection_type = item, None
-        to_match.add("input_%d" % i, collection_instance, subcollection_type)
+        to_match.add(f"input_{i}", collection_instance, subcollection_type)
     return to_match
 
 

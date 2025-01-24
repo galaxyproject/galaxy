@@ -1,11 +1,22 @@
 import os
 from functools import partial
+from typing import Optional
 
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
-from galaxy.jobs.handler import ItemGrabber
+from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import transaction
+from galaxy.schema.invocation import (
+    FailureReason,
+    InvocationFailureDatasetFailed,
+    InvocationState,
+    InvocationUnexpectedFailure,
+)
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    RequestUser,
+)
 from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -79,12 +90,12 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info(
                 "(%s) Handler unassigned at startup, resubmitting workflow invocation for assignment", invocation_id
             )
-            workflow_invocation = sa_session.query(model.WorkflowInvocation).get(invocation_id)
+            workflow_invocation = sa_session.get(model.WorkflowInvocation, invocation_id)
             self._assign_handler(workflow_invocation)
 
     def _handle_setup_msg(self, workflow_invocation_id=None):
         sa_session = self.app.model.context
-        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(workflow_invocation_id)
+        workflow_invocation = sa_session.get(model.WorkflowInvocation, workflow_invocation_id)
         if workflow_invocation.handler is None:
             workflow_invocation.handler = self.app.config.server_name
             sa_session.add(workflow_invocation)
@@ -154,8 +165,9 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         if exception:
             raise exception
 
-    def queue(self, workflow_invocation, request_params, flush=True):
-        workflow_invocation.state = model.WorkflowInvocation.states.NEW
+    def queue(self, workflow_invocation, request_params, flush=True, initial_state: Optional[InvocationState] = None):
+        initial_state = initial_state or model.WorkflowInvocation.states.NEW
+        workflow_invocation.set_state(initial_state)
         workflow_invocation.scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
@@ -285,13 +297,12 @@ class WorkflowRequestMonitor(Monitors):
         self.invocation_grabber = None
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(
+        handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
             self.workflow_scheduling_manager.handler_assignment_methods
         )
         if handler_assignment_method:
-            self.invocation_grabber = ItemGrabber(
+            self.invocation_grabber = InvocationGrabber(
                 app=app,
-                grab_type="WorkflowInvocation",
                 handler_assignment_method=handler_assignment_method,
                 max_grab=self.workflow_scheduling_manager.handler_max_grab,
                 self_handler_tags=self_handler_tags,
@@ -327,11 +338,61 @@ class WorkflowRequestMonitor(Monitors):
             if not self.monitor_running:
                 return
 
+    def __attempt_materialize(self, workflow_invocation, session) -> bool:
+        try:
+            inputs_to_materialize = workflow_invocation.inputs_requiring_materialization()
+            for input_to_materialize in inputs_to_materialize:
+                hda = input_to_materialize.hda
+                user = RequestUser(user_id=workflow_invocation.history.user_id)
+                task_request = MaterializeDatasetInstanceTaskRequest(
+                    user=user,
+                    history_id=workflow_invocation.history.id,
+                    source="hda",
+                    content=hda.id,
+                )
+                materialized_okay = self.app.hda_manager.materialize(task_request, in_place=True)
+                if not materialized_okay:
+                    workflow_invocation.fail()
+                    workflow_invocation.add_message(
+                        InvocationFailureDatasetFailed(
+                            workflow_step_id=input_to_materialize.input_dataset.workflow_step.id,
+                            reason=FailureReason.dataset_failed,
+                            hda_id=hda.id,
+                        )
+                    )
+                    session.add(workflow_invocation)
+                    session.commit()
+                    return False
+
+            # place back into ready and let it proceed normally on next iteration?
+            workflow_invocation.set_state(model.WorkflowInvocation.states.READY)
+            session.add(workflow_invocation)
+            session.commit()
+            return True
+        except Exception as e:
+            log.exception(f"Failed to materialize dataset for workflow {workflow_invocation.id} - {e}")
+            workflow_invocation.fail()
+            failure = InvocationUnexpectedFailure(reason=FailureReason.unexpected_failure, details=str(e))
+            workflow_invocation.add_message(failure)
+            session.add(workflow_invocation)
+            session.commit()
+        return False
+
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
         with self.app.model.context() as session:
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
-
+            if workflow_invocation.state == workflow_invocation.states.REQUIRES_MATERIALIZATION:
+                if not self.__attempt_materialize(workflow_invocation, session):
+                    return None
+                if self.app.config.workflow_scheduling_separate_materialization_iteration:
+                    return None
             try:
+                if workflow_invocation.state == workflow_invocation.states.CANCELLING:
+                    workflow_invocation.cancel_invocation_steps()
+                    workflow_invocation.mark_cancelled()
+                    session.commit()
+                    return False
+
                 if not workflow_invocation or not workflow_invocation.active:
                     return False
 

@@ -55,7 +55,7 @@
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
-                <input type="submit" value="Search repositories"/>
+                <input type="submit" name="find_tools_submit" value="Search repositories"/>
             </div>
         </form>
     </div>

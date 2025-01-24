@@ -4,11 +4,12 @@
  */
 import Backbone from "backbone";
 import $ from "jquery";
-import Ui from "mvc/ui/ui-misc";
-import Tabs from "mvc/ui/ui-tabs";
-import Description from "mvc/visualization/chart/views/description";
-import Groups from "mvc/visualization/chart/views/groups";
-import Settings from "mvc/visualization/chart/views/settings";
+
+import Description from "./description";
+import Groups from "./groups";
+import Ui from "./misc";
+import Settings from "./settings";
+import Tabs from "./tabs";
 
 export default Backbone.View.extend({
     initialize: function (app, options) {
@@ -35,7 +36,7 @@ export default Backbone.View.extend({
                 )
                 .append(new Settings(this.app).$el),
         });
-        if (this.chart.plugin.groups) {
+        if (this.chart.plugin.tracks) {
             this.tabs.add({
                 id: "groups",
                 icon: "fa-database",

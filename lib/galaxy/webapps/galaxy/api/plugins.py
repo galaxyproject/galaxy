@@ -1,6 +1,7 @@
 """
 Plugins resource control over the API.
 """
+
 import logging
 
 from galaxy import exceptions
@@ -35,8 +36,7 @@ class PluginsController(BaseGalaxyAPIController):
         GET /api/plugins:
         """
         registry = self._get_registry()
-        dataset_id = kwargs.get("dataset_id")
-        if dataset_id is not None:
+        if (dataset_id := kwargs.get("dataset_id")) is not None:
             hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
             return registry.get_visualizations(trans, hda)
         else:
@@ -49,8 +49,7 @@ class PluginsController(BaseGalaxyAPIController):
         GET /api/plugins/{id}:
         """
         registry = self._get_registry()
-        history_id = kwargs.get("history_id")
-        if history_id is not None:
+        if (history_id := kwargs.get("history_id")) is not None:
             history = self.history_manager.get_owned(
                 trans.security.decode_id(history_id), trans.user, current_history=trans.history
             )

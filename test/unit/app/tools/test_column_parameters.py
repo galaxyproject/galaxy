@@ -1,6 +1,7 @@
 """ Tests for tool parameters, more tests exist in test_data_parameters.py and
 test_select_parameters.py.
 """
+
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import datatypes_registry
 from galaxy.model.base import transaction
@@ -87,7 +88,7 @@ class TestDataColumnParameter(BaseParameterTestCase):
                 extension="interval", create_dataset=True, sa_session=self.app.model.context
             )
         )
-        ready_hda.set_dataset_state("ok")
+        ready_hda.state = "ok"
         return ready_hda
 
     @property

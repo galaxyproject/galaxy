@@ -39,7 +39,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
         retryDelays: [0, 3000, 10000],
         fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
-        metadata: data.payload,
+        storeFingerprintForResuming: false,
         onError: function (err) {
             const status = err.originalResponse?.getStatus();
             if (status == 403) {
@@ -72,7 +72,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
 
 function tusUploadStart(upload) {
     // Check if there are any previous uploads to continue.
-    upload.findPreviousUploads().then(function (previousUploads) {
+    upload.findPreviousUploads().then((previousUploads) => {
         // Found previous uploads so we select the first one.
         if (previousUploads.length) {
             console.log("previous Upload", previousUploads);

@@ -12,6 +12,7 @@ from sqlalchemy import (
     exc,
 )
 from sqlalchemy.engine import Engine
+from sqlalchemy.pool import NullPool
 
 log = logging.getLogger(__name__)
 
@@ -42,10 +43,7 @@ def stripwd(s):
 
 
 def pretty_stack():
-    rval = []
-    for _, fname, line, funcname, _, _ in inspect.stack()[2:]:
-        rval.append("%s:%s@%d" % (stripwd(fname), funcname, line))
-    return rval
+    return [f"{stripwd(fname)}:{funcname}@{line}" for _, fname, line, funcname, _, _ in inspect.stack()[2:]]
 
 
 def build_engine(
@@ -101,8 +99,13 @@ def build_engine(
                     pass
 
     engine_options = engine_options or {}
-    engine_options = set_sqlite_connect_args(engine_options, url)
-    engine = create_engine(url, **engine_options)
+    if url.startswith("sqlite://"):
+        set_sqlite_connect_args(engine_options, url)
+
+    if url.startswith("sqlite://") and url not in ("sqlite:///:memory:", "sqlite://"):
+        engine = create_engine(url, **engine_options, poolclass=NullPool)
+    else:
+        engine = create_engine(url, **engine_options)
 
     # Prevent sharing connection across fork: https://docs.sqlalchemy.org/en/14/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
     register_after_fork(engine, lambda e: e.dispose())
@@ -123,13 +126,11 @@ def build_engine(
     return engine
 
 
-def set_sqlite_connect_args(engine_options: Dict, url: str):
+def set_sqlite_connect_args(engine_options: Dict, url: str) -> None:
     """
     Add or update `connect_args` in `engine_options` if db is sqlite.
     Set check_same_thread to False for sqlite, handled by request-specific session.
     See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
     """
-    if url.startswith("sqlite://"):
-        connect_args = engine_options.setdefault("connect_args", {})
-        connect_args["check_same_thread"] = False
-    return engine_options
+    connect_args = engine_options.setdefault("connect_args", {})
+    connect_args["check_same_thread"] = False

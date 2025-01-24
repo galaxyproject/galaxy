@@ -1,5 +1,7 @@
 """The module describes the ``meminfo`` job metrics plugin."""
+
 import re
+from typing import Any
 
 from galaxy import util
 from . import InstrumentPlugin
@@ -13,9 +15,9 @@ MEMINFO_TITLES = {"memtotal": "Total System Memory", "swaptotal": "Total System 
 
 
 class MemInfoFormatter(formatting.JobMetricFormatter):
-    def format(self, key, value):
+    def format(self, key: str, value: Any) -> formatting.FormattedMetric:
         title = MEMINFO_TITLES.get(key, key)
-        return title, util.nice_size(value * 1000)  # kB = *1000, KB = *1024 - wikipedia
+        return formatting.FormattedMetric(title, util.nice_size(value * 1000))  # kB = *1000, KB = *1024 - wikipedia
 
 
 class MemInfoPlugin(InstrumentPlugin):

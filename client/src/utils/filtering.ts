@@ -7,13 +7,12 @@
  * for values that contain spaces.
  * Each query key has a default suffix defined e.g. name:foo will be converted to name-eq:foo.
  * Comparison aliases are allowed converting e.g. '>' to '-gt' and '<' to '-lt'.
- *
- * TODO: Reduce usage of `filterText` as a param in several functions
  */
 
-import { omit } from "lodash";
+import { isEqual, omit } from "lodash";
+import { type DefineComponent } from "vue";
 
-type Converter<T> = (value: T) => T;
+export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
 
 /** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
@@ -30,9 +29,69 @@ const operatorForAlias = {
     eq: ":",
 } as const satisfies Record<string, string>;
 
+export type ErrorType = {
+    filter: string;
+    index?: string;
+    value?: string;
+    typeError?: string;
+    msg: string;
+};
+
 type OperatorForAlias = typeof operatorForAlias;
-type Alias = keyof OperatorForAlias;
+export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
+export type FilterType =
+    | typeof String
+    | typeof Number
+    | typeof Boolean
+    | typeof Date
+    | "MultiTags"
+    | "ObjectStore"
+    | "QuotaSource"
+    | "Dropdown";
+
+/** A ValidFilter<T> with a `handler` for the `Filtering<T>` class,
+ * and remaining properties for the `FilterMenu` component
+ * */
+export type ValidFilter<T> = {
+    /** The `FilterMenu` input field/tooltip/label placeholder */
+    placeholder?: string;
+    /** The data type of the `FilterMenu` input field */
+    type?: FilterType;
+    /** If type: Boolean:
+     * - booleanType: 'default' creates: `filter:true|false|any`
+     * - booleanType: 'is' creates: `is:filter`
+     */
+    boolType?: "default" | "is";
+    /** The handler function for this filter */
+    handler: HandlerReturn<T>;
+    /** Is this a filter to include as a field in `FilterMenu`?
+     * (if `false` the filter is still valid for the search bar `filterText`)
+     */
+    menuItem: boolean;
+    /** The datalist of values for this field */
+    datalist?:
+        | string[]
+        | {
+              value: string;
+              text: string;
+          }[];
+    /** Is this a `FilterMenu` range filter?
+     * (if yes, the `filter` key is taken and aliased into 2 input
+     * fields: `filter-gt` & `filter-lt`)
+     */
+    isRangeInput?: boolean;
+    /** The help info component to append to the `FilterMenu` input field */
+    helpInfo?: DefineComponent | string;
+    /** A default value (will make this a default filter for an empty `filterText`) */
+    default?: T;
+    /** A dict of filters and corresponding values for this filter that disable them.
+     * Note: if value is null, the filter is disabled for any value of this filter.
+     */
+    disablesFilters?: {
+        [filter: string]: T[] | null;
+    };
+};
 
 /** Converts user input to backend compatible date
  * @param value
@@ -68,13 +127,17 @@ export function toLowerNoQuotes<T>(value: T): string {
 
 /** Converts name tags starting with '#' to 'name:'
  * @param value
- * @returns Lowercase value with 'name:' replaced with '#'
+ * @returns String value with 'name:' replaced with '#'
  * */
 export function expandNameTag<T>(value: T): string {
     if (value && typeof value === "string") {
-        value = value.replace(/^#/, "name:") as T;
+        if ((value.startsWith("'#") || value.startsWith('"#')) && (value.endsWith('"') || value.endsWith("'"))) {
+            value = value.replace(/^['"]#/g, "'name:") as T;
+        } else {
+            value = value.replace(/^#/, "name:") as T;
+        }
     }
-    return toLower(value);
+    return value as string;
 }
 
 /** Converts string alias to string operator, e.g.: 'gt' to '>'
@@ -85,7 +148,7 @@ export function getOperatorForAlias(alias: Alias): Operator {
     return operatorForAlias[alias];
 }
 
-type HandlerReturn<T> = {
+export type HandlerReturn<T> = {
     attribute: string;
     converter?: Converter<T>;
     query: string;
@@ -109,6 +172,25 @@ export function equals<T>(attribute: string, query?: string, converter?: Convert
                 q = converter(q);
             }
             return toLower(v) === toLower(q);
+        },
+    };
+}
+
+export function quotaSourceFilter<T>(attribute: string, converter: Converter<T>): HandlerReturn<T> {
+    return {
+        attribute: attribute,
+        converter: converter,
+        query: `${attribute}-eq`,
+        handler: (v: T, q: T) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
+            function handleNullConversion(v: T) {
+                const lowerV = toLower(v);
+                return lowerV == "__null__" ? "null" : lowerV;
+            }
+            return handleNullConversion(v) === handleNullConversion(q);
         },
     };
 }
@@ -166,46 +248,98 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
     };
 }
 
+/**
+ * Class for filtering (menus). Handles user input as one string filterText
+ * or multiple filters (e.g. 'name:foo type:bar'), with appropriate functions.
+ * @param validFilters: Record of valid filters with their handlers,
+ *                      and FilterMenu properties (if menuItem = true)
+ * @param validAliases: Array of valid aliases for filters
+ * @param quoteStrings: Whether to auto quote filter strings in the query
+ * @param nameMatching: Whether to apply name filter for unspecified filterText
+ *                      (e.g. filterText = 'foo' -> 'name:foo').
+ *                      Typically, when this is false, we index every field in
+ *                      the backend for unspecified filterText.
+ * @returns Filtering object
+ * */
 export default class Filtering<T> {
-    validFilters: Record<string, HandlerReturn<T>>;
+    validFilters: Record<string, ValidFilter<T>>;
     validAliases: Array<[string, string]>;
-    useDefaultFilters: boolean;
-    defaultFilters: Record<string, T> = {
-        deleted: false as T,
-        visible: true as T,
-    };
+    defaultFilters: Record<string, T>;
+    quoteStrings: boolean;
+    nameMatching: boolean;
 
     constructor(
-        validFilters: Record<string, HandlerReturn<T>>,
-        useDefaultFilters = true,
-        validAliases?: Array<[string, string]>
+        validFilters: Record<string, ValidFilter<T>>,
+        validAliases?: Array<[string, string]>,
+        quoteStrings = true,
+        nameMatching = true
     ) {
         this.validFilters = validFilters;
-        this.useDefaultFilters = useDefaultFilters;
         this.validAliases = validAliases || defaultValidAliases;
+        this.quoteStrings = quoteStrings;
+        this.nameMatching = nameMatching;
+        // If (default) we are nameMatching, add `name` filter if not present
+        if (this.nameMatching && this.validFilters["name"] === undefined) {
+            this.validFilters["name"] = {
+                handler: contains("name"),
+                menuItem: false,
+            };
+        }
+        this.defaultFilters = this.createDefaultFiltersIfPresent();
+        this.addRangedFiltersIfNotPresent();
     }
 
-    /** Returns normalize defaults by adding the operator to the key identifier
-     * @returns Dictionary with query key and values for default filters
-     * */
-    getDefaults(): Record<string, T> {
-        const normalized: Record<string, T> = {};
-        Object.entries(this.defaultFilters).forEach(([key, value]) => {
-            normalized[`${key}:`] = value;
+    /** For `FilterMenu` validFilters, if `isRangeInput`, then adds handlers
+     * for the `lt` & `gt` filters if not included in `validFilters` already
+     */
+    addRangedFiltersIfNotPresent() {
+        Object.entries(this.validFilters).forEach(([key, filter]) => {
+            if (filter.isRangeInput) {
+                const { converter } = filter.handler as HandlerReturn<T>;
+                if (this.validFilters[`${key}_gt`] === undefined) {
+                    this.validFilters[`${key}_gt`] = {
+                        ...filter,
+                        handler: compare(key, "gt", converter),
+                        menuItem: false,
+                    };
+                }
+                if (this.validFilters[`${key}_lt`] === undefined) {
+                    this.validFilters[`${key}_lt`] = {
+                        ...filter,
+                        handler: compare(key, "lt", converter),
+                        menuItem: false,
+                    };
+                }
+            }
         });
-        return normalized;
+    }
+
+    /** If any `validFilters` are given the `default` key, a `defaultFilters`
+     * object is created with provided values, that an empty `filterText`
+     * corresponds to.
+     * */
+    createDefaultFiltersIfPresent(): Record<string, T> {
+        const defaultFilters: Record<string, T> = {};
+        Object.entries(this.validFilters).forEach(([key, filter]) => {
+            if (filter.default !== undefined) {
+                defaultFilters[key] = filter.default;
+            }
+        });
+        return defaultFilters;
     }
 
     /** Returns true if default filter values are not changed
-     * @param filterSettings Object containing filter settings
+     * @param filters Object containing filters
      * @returns true if default filter values are not changed
      * **/
-    containsDefaults(filterSettings: Record<string, T>): boolean {
-        const normalized = this.getDefaults();
+    containsDefaults(filters: Record<string, T>): boolean {
+        if (this.defaultFilters === undefined) {
+            return false;
+        }
         let hasDefaults = true;
-        for (const key in normalized) {
-            const value = String(filterSettings[key]).toLowerCase();
-            const normalizedValue = String(normalized[key]).toLowerCase();
+        for (const key in this.defaultFilters) {
+            const value = String(filters[key]).toLowerCase();
+            const normalizedValue = String(this.defaultFilters[key]).toLowerCase();
             if (value !== normalizedValue) {
                 hasDefaults = false;
                 break;
@@ -220,40 +354,70 @@ export default class Filtering<T> {
      * @returns true if all default __keys__ are found in `filters`
      */
     hasAllDefaultKeys(filters: Record<string, T>): boolean {
-        return Object.keys(this.defaultFilters).every((def) => Object.keys(filters).includes(def));
+        return (
+            this.defaultFilters !== undefined &&
+            Object.keys(this.defaultFilters).every((def) => Object.keys(filters).includes(def))
+        );
     }
 
-    /** Build a text filter from filter settings (with aliases: `{"filter:": "value", ...}`)
-     * @param filterSettings Object containing filter settings
+    /** Build a text filter from filters {filter: "value", ...} => "filter:value"
+     * @param filters Object containing filters
+     * @param backendFormatted If true, returns a string formatted for the backend
      * @returns Parsed filter text string
      * */
-    getFilterText(filterSettings: Record<string, T>): string {
-        const normalized = this.getDefaults();
-        const hasDefaults = this.containsDefaults(filterSettings);
+    getFilterText(filters: Record<string, T>, backendFormatted = false): string {
+        filters = this.getValidFilters(filters, backendFormatted).validFilters;
+        const hasDefaults = this.containsDefaults(filters);
 
         let newFilterText = "";
-        Object.entries(filterSettings).forEach(([key, value]) => {
-            const skipDefault = hasDefaults && normalized[key] !== undefined;
-            if (!skipDefault && value !== null && value !== undefined && value !== "") {
+        Object.entries(filters).forEach(([key, value]) => {
+            // this is a default filter, skip it if ALL default filters have default values
+            const skipDefault = !backendFormatted && hasDefaults && this.defaultFilters[key] !== undefined;
+            if (!skipDefault) {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
-                if (String(value).includes(" ")) {
-                    value = `'${value}'` as T;
+                if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
+                    if (value === true) {
+                        newFilterText += `is:${key}`;
+                    }
+                } else if (this.validFilters[key]?.type == "MultiTags" && Array.isArray(value) && value.length > 0) {
+                    newFilterText += `${value.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
+                } else if (this.quoteStrings && String(value).includes(" ")) {
+                    newFilterText += `${this.toAliasKey(key)}'${value}'`;
+                } else {
+                    newFilterText += `${this.toAliasKey(key)}${value}`;
                 }
-                newFilterText += `${key}${value}`;
             }
         });
+        // enforce `filter:any` for any default *boolean* filters missing in filters object
+        if (!hasDefaults && this.defaultFilters !== undefined) {
+            Object.entries(this.defaultFilters).forEach(([key, value]) => {
+                if (
+                    filters[key] == undefined &&
+                    typeof value === "boolean" &&
+                    this.validFilters[key]?.boolType !== "is"
+                ) {
+                    if (newFilterText) {
+                        newFilterText += " ";
+                    }
+                    newFilterText += `${this.toAliasKey(key)}any`;
+                }
+            });
+        }
         return newFilterText;
     }
 
     /** Parses single text input into a dict of field->value pairs.
      * @param filterText Raw filter text string
-     * @param removeAny default: `true` Whether to remove default filters if the are set to `any`
+     * @param removeAny default: `true` Whether to remove default filters if they are set to `any`
      * @returns Filters as 2D array of of [field, value] pairs
      * */
-    getFiltersForText(filterText: string, removeAny = true): [string, T][] {
-        const pairSplitRE = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
+    getFiltersForText(filterText: string, removeAny = true, validate = true): [string, T][] {
+        filterText = filterText.trim();
+        const pairSplitRE = this.quoteStrings
+            ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
+            : /(\S+):(.*?)(?=\s+\S+:|$)/g;
         const matches = filterText.match(pairSplitRE);
         let result: Record<string, T> = {};
         let hasMatches = false;
@@ -262,9 +426,9 @@ export default class Filtering<T> {
                 const elgRE = /(\S+)([:><])(.+)/g;
                 const elgMatch = elgRE.exec(pair);
                 if (elgMatch) {
-                    let field = elgMatch[1]!;
-                    const elg = elgMatch[2]!;
-                    const value = elgMatch[3]!;
+                    let field = elgMatch[1];
+                    const elg = elgMatch[2];
+                    const value = elgMatch[3];
                     // replace alias for less and greater symbol
                     for (const [alias, substitute] of this.validAliases) {
                         if (elg === alias) {
@@ -273,33 +437,58 @@ export default class Filtering<T> {
                         }
                     }
                     // replaces dashes with underscores in query field names
-                    const normalizedField = field.split("-").join("_");
-                    if (this.validFilters[normalizedField]) {
+                    const normalizedField = field?.split("-").join("_");
+                    if (
+                        normalizedField &&
+                        this.validFilters[normalizedField]?.boolType !== "is" &&
+                        ((!validate && normalizedField !== "is") || this.validFilters[normalizedField])
+                    ) {
                         // removes quotation and applies lower-case to filter value
-                        result[normalizedField] = toLowerNoQuotes(value) as T;
+                        const newVal = this.quoteStrings ? (toLowerNoQuotes(value) as T) : (value as T);
+                        // if the field is a MultiTags field, we need to push each value to an array
+                        if (this.validFilters[normalizedField]?.type === "MultiTags") {
+                            if (result[normalizedField] === undefined) {
+                                result[normalizedField] = [newVal] as T;
+                            } else {
+                                (result[normalizedField] as T[]).push(newVal);
+                            }
+                        } else {
+                            result[normalizedField] = newVal;
+                        }
+                        hasMatches = true;
+                    } else if (
+                        value &&
+                        field === "is" &&
+                        elg === ":" &&
+                        (!validate || this.validFilters[value]?.boolType === "is")
+                    ) {
+                        // handle `is:filter` syntax
+                        result[value] = true as T;
                         hasMatches = true;
                     }
                 }
             });
         }
         // assume name matching if no filter key has been matched
-        if (!hasMatches && filterText.length > 0) {
+        if (this.nameMatching && !hasMatches && filterText.length > 0) {
             result["name"] = filterText as T;
         }
-        // check if any default filter keys have been used
-        let hasDefaults = false;
-        Object.keys(this.defaultFilters).forEach((defaultKey) => {
-            const value = result[defaultKey];
-            if (value !== undefined) {
-                if (value == "any" && removeAny) {
-                    delete result[defaultKey];
+        // check if any default filter keys have been used in the filter text
+        if (this.defaultFilters !== undefined) {
+            let hasDefaults = false;
+            Object.keys(this.defaultFilters).forEach((defaultKey) => {
+                const value = result[defaultKey];
+                if (value !== undefined) {
+                    if (value == "any" && removeAny) {
+                        delete result[defaultKey];
+                    }
+                    hasDefaults = true;
                 }
-                hasDefaults = true;
+            });
+            // use default filters if none of the default filters has been explicitly specified
+            if (!hasDefaults) {
+                result = { ...result, ...this.defaultFilters };
             }
-        });
-        // use default filters if none of the default filters has been explicitly specified
-        if (!hasDefaults && this.useDefaultFilters) {
-            result = { ...result, ...this.defaultFilters };
         }
 
         return Object.entries(result);
@@ -313,60 +502,69 @@ export default class Filtering<T> {
      * @returns Parsed `filterText` string with added/removed filter(s)
      */
     applyFiltersToText(filters: Record<string, T>, existingText: string, remove = false) {
-        let validSettings = this.getValidFilterSettings(filters);
-        const existingSettings = this.toAlias(this.getFiltersForText(existingText, false));
+        let { validFilters } = this.getValidFilters(filters);
+        const existingFilters = Object.fromEntries(this.getFiltersForText(existingText, false));
         if (remove) {
-            validSettings = omit(existingSettings, Object.keys(validSettings));
+            validFilters = omit(existingFilters, Object.keys(validFilters));
         } else {
-            validSettings = Object.assign(existingSettings, validSettings);
+            validFilters = Object.assign(existingFilters, validFilters);
         }
-        return this.getFilterText(validSettings);
+        return this.getFilterText(validFilters);
     }
 
-    getValidFilters(filters: Record<string, T>) {
-        const validFilters: Record<string, T> = {};
-        Object.entries(filters).forEach(([key, value]) => {
-            const validValue = this.getConvertedValue(key, value);
-            if (validValue !== undefined) {
-                validFilters[key] = validValue;
-            }
-        });
-        return validFilters;
-    }
-
-    /** Returns a dictionary resembling filterSettings (for HistoryFilters):
-     * e.g.: Unlike getFiltersForText or getQueryDict, this maintains "hid>":"3" instead
-     *       of changing it to "hid-gt":"3"
-     * (Used to sync filterSettings in HistoryFilters)
-     * @param filters Parsed filters object from getFiltersForText()
-     * @returns `filterSettings` as dict of {"field:": "value"} pairs
+    /** Takes a filters object and returns a new object with only valid filters
+     *
+     * @param filters A filters object (e.g.: {hid: "3", name: "test", invalid: "x"}})
+     * @param backendFormatted default: `false` Whether to convert the values to backend format
+     * @returns a _valid_ filters object (e.g.: {hid: "3", name: "test"}}) and one with invalid filters
      */
-    toAlias(filters: [string, T][]) {
-        const result: Record<string, T> = {};
-        for (const [key, value] of filters) {
-            let hasAlias = false;
-            for (const [alias, substitute] of this.validAliases) {
-                if (key.endsWith(substitute)) {
-                    const keyPrefix = key.slice(0, -substitute.length);
-                    result[`${keyPrefix}${alias}`] = value;
-                    hasAlias = true;
-                    break;
+    getValidFilters(filters: Record<string, T>, backendFormatted = false) {
+        const validFilters: Record<string, T> = {};
+        const invalidFilters: Record<string, T> = {};
+        Object.entries(filters).forEach(([key, value]) => {
+            if (this.validFilters[key]?.type === "MultiTags" && Array.isArray(value)) {
+                const validValues = value
+                    .map((v) => this.getConvertedValue(key, v, backendFormatted))
+                    .filter((v) => v !== undefined) as T[];
+
+                if (validValues.length > 0) {
+                    validFilters[key] = validValues as T;
+                }
+
+                const invalidValues = value.filter(
+                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted) as T)
+                );
+
+                if (invalidValues.length > 0) {
+                    invalidFilters[key] = invalidValues as T;
+                }
+            } else {
+                const validValue = this.getConvertedValue(key, value, backendFormatted);
+                if (validValue !== undefined) {
+                    validFilters[key] = validValue;
+                } else {
+                    invalidFilters[key] = value;
                 }
             }
-            if (!hasAlias) {
-                result[`${key}:`] = value;
-            }
-        }
-        return result;
+        });
+        return { validFilters, invalidFilters };
     }
 
-    /** Returns valid filters with valid keys and values.
-     * @param filters Raw dictionary with **(potentially invalid)** filters and keys
-     * @returns **Valid** `filterSettings` as dict of {"field:": "value"} pairs
+    /** Convert a valid filter key (`filter`/`filter-gt`) to alias filter key (`filter:`/`filter>`)
+     *  to use in creating `filterText` string.
+     *
+     * e.g.: filter = "hid-gt" becomes "hid>", filter = "hid" becomes "hid:"
+     * @param filter Parsed filters object from getFiltersForText()
+     * @returns filter key
      */
-    getValidFilterSettings(filters: Record<string, T>) {
-        const validFilters = this.getValidFilters(filters);
-        return this.toAlias(Object.entries(validFilters));
+    toAliasKey(filter: string) {
+        for (const [alias, substitute] of this.validAliases) {
+            if (filter.endsWith(substitute)) {
+                const keyPrefix = filter.slice(0, -substitute.length);
+                return `${keyPrefix}${alias}`;
+            }
+        }
+        return `${filter}:`;
     }
 
     /** Returns a dictionary with query key and values.
@@ -377,9 +575,11 @@ export default class Filtering<T> {
         const queryDict: Record<string, T> = {};
         const filters = this.getFiltersForText(filterText);
         for (const [key, value] of filters) {
-            const query = this.validFilters[key]!.query;
-            const converter = this.validFilters[key]!.converter;
-            queryDict[query] = converter ? converter(value) : value;
+            const query = this.validFilters[key]?.handler.query;
+            const converter = this.validFilters[key]?.handler.converter;
+            if (query) {
+                queryDict[query] = converter ? converter(value) : value;
+            }
         }
         return queryDict;
     }
@@ -406,13 +606,21 @@ export default class Filtering<T> {
      * @returns converted value if there is a converter, else `filterValue`
      */
     getConvertedValue(filterName: string, filterValue: T, backendFormatted = false): T | undefined {
-        if (this.validFilters[filterName]) {
-            const { converter } = this.validFilters[filterName] as HandlerReturn<T>;
+        if (
+            this.validFilters[filterName] &&
+            !Array.isArray(filterValue) &&
+            filterValue !== null &&
+            filterValue !== undefined &&
+            filterValue !== ""
+        ) {
+            const { converter } = this.validFilters[filterName]?.handler as HandlerReturn<T>;
             if (converter) {
-                if (converter == toBool && filterValue == "any") {
+                if (
+                    (converter == toBool && filterValue == "any") ||
+                    (!backendFormatted && /^(['"]).*\1$/.test(filterValue as string)) ||
+                    (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter))
+                ) {
                     return filterValue;
-                } else if (!backendFormatted && (converter == expandNameTag || converter == toDate)) {
-                    return toLower(filterValue) as T;
                 }
                 return converter(filterValue);
             } else {
@@ -443,10 +651,17 @@ export default class Filtering<T> {
     getFilterValue(filterText: string, filterName: string, backendFormatted = false): T | undefined {
         const filters = Object.fromEntries(this.getFiltersForText(filterText));
         let filterVal = filters[filterName];
-        if (filterVal !== undefined) {
+        const defaultFilterValue = this.defaultFilters[filterName];
+        // if filterVal is an array, convert each value
+        if (Array.isArray(filterVal)) {
+            filterVal = filterVal
+                .map((v) => this.getConvertedValue(filterName, v, backendFormatted))
+                .filter((v) => v !== undefined) as T;
+            return filterVal;
+        } else if (filterVal !== undefined) {
             filterVal = this.getConvertedValue(filterName, filterVal, backendFormatted);
             return filterVal;
-        } else if (Object.keys(this.defaultFilters).includes(filterName)) {
+        } else if (defaultFilterValue !== undefined && typeof defaultFilterValue == "boolean") {
             filterVal = this.getConvertedValue(filterName, "any" as T, backendFormatted);
             return filterVal;
         }
@@ -455,7 +670,7 @@ export default class Filtering<T> {
             return filters[filterName];
         }
 
-        return this.defaultFilters[filterName];
+        return defaultFilterValue;
     }
 
     /**
@@ -468,12 +683,32 @@ export default class Filtering<T> {
     setFilterValue(filterText: string, newFilter: string, newVal: T) {
         let updatedText = "";
         const oldVal = this.getFilterValue(filterText, newFilter);
-        const convVal = this.getConvertedValue(newFilter, newVal);
-        if (convVal == undefined) {
+        let convVal = this.getConvertedValue(newFilter, newVal) as T;
+        if (convVal == undefined && !Array.isArray(newVal)) {
             return filterText;
         }
+        // for MultiTags filter
+        if (this.validFilters[newFilter]?.type === "MultiTags" || Array.isArray(oldVal)) {
+            // if newVal is an array, convert each value, else put already converted val in array
+            let valuesToAdd = Array.isArray(newVal)
+                ? newVal.map((v) => this.getConvertedValue(newFilter, v)).filter((v) => v !== undefined)
+                : [convVal];
+            // if oldVal is an array, convert new value(s), and only add ones that aren't already in oldVal
+            if (Array.isArray(oldVal)) {
+                const updatedArr = [...oldVal] as T[];
+                (valuesToAdd as T[]).forEach((value) => {
+                    if (!oldVal.includes(value)) {
+                        updatedArr.push(value);
+                    } else {
+                        updatedArr.splice(updatedArr.indexOf(value), 1);
+                    }
+                });
+                valuesToAdd = updatedArr.length !== 0 ? updatedArr : oldVal;
+            }
+            convVal = valuesToAdd as T;
+        }
         const settings = { [newFilter]: convVal };
-        if (oldVal == convVal) {
+        if (isEqual(oldVal, convVal) || oldVal == convVal) {
             updatedText = this.applyFiltersToText(settings, filterText, true);
         } else {
             updatedText = this.applyFiltersToText(settings, filterText);
@@ -491,11 +726,14 @@ export default class Filtering<T> {
             if (!(key in this.validFilters)) {
                 console.error(`Invalid filter ${key}`);
             } else {
-                const filterAttribute = this.validFilters[key]!.attribute;
-                const filterHandler = this.validFilters[key]!.handler;
-                const itemValue = item[filterAttribute];
-                if (itemValue === undefined || !filterHandler(itemValue, filterValue)) {
-                    return false;
+                const validFilter = this.validFilters[key];
+                if (validFilter) {
+                    const filterAttribute = validFilter.handler.attribute;
+                    const filterHandler = validFilter.handler.handler;
+                    const itemValue = item[filterAttribute];
+                    if (itemValue === undefined || !filterHandler(itemValue, filterValue)) {
+                        return false;
+                    }
                 }
             }
         }

@@ -1,4 +1,5 @@
 """This module describes the :class:`ExplicitContainerResolver` ContainerResolver plugin."""
+
 import copy
 import logging
 import os

@@ -11,11 +11,11 @@ from galaxy.util import (
 )
 
 UPDATE_TEMPLATE = Template(
-    "git --work-tree $dir --git-dir $dir/.git fetch && " "git --work-tree $dir --git-dir $dir/.git merge origin/master"
+    "git --work-tree $dir --git-dir $dir/.git fetch && git --work-tree $dir --git-dir $dir/.git merge origin/master"
 )
 
 UPDATE_FAILED_TEMPLATE = Template(
-    "Warning failed to update test repository $dir - " "update stdout was [$stdout] and stderr was [$stderr]."
+    "Warning failed to update test repository $dir - update stdout was [$stdout] and stderr was [$stderr]."
 )
 
 

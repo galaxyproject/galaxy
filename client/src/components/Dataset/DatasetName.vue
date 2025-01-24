@@ -1,67 +1,74 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faCopy, faEye, faPause, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink } from "bootstrap-vue";
+import { computed } from "vue";
+
+import { type HDASummary } from "@/api";
+
+library.add(faCaretDown, faCopy, faEye, faTimesCircle, faPause);
+
+interface Props {
+    item: HDASummary;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "copyDataset", item: Props["item"]): void;
+    (e: "showDataset", item: Props["item"]): void;
+}>();
+
+const getName = computed(() => {
+    return props.item.name || "Unavailable";
+});
+const isError = computed(() => {
+    return props.item.state === "error";
+});
+const isPaused = computed(() => {
+    return props.item.state === "paused";
+});
+
+function copyDataset() {
+    emit("copyDataset", props.item);
+}
+</script>
+
 <template>
     <div>
-        <b-link
+        <BLink
             id="dataset-dropdown"
-            class="workflow-dropdown font-weight-bold p-2"
+            class="workflow-dropdown p-2"
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false">
-            <span
+            <FontAwesomeIcon
                 v-if="isError"
                 v-b-tooltip.hover
-                class="dataset-icon error fa fa-times-circle text-danger"
+                :icon="faTimesCircle"
+                class="dataset-icon error text-danger"
                 title="An error occurred for this dataset." />
-            <span
+            <FontAwesomeIcon
                 v-else-if="isPaused"
                 v-b-tooltip.hover
-                class="dataset-icon pause fa fa-pause text-info"
+                :icon="faPause"
+                class="dataset-icon pause text-info"
                 title="The creation of this dataset has been paused." />
-            <span v-else class="dataset-icon fa fa-caret-down" />
+            <FontAwesomeIcon v-else :icon="faCaretDown" class="dataset-icon" />
+
             <span class="name">{{ getName }}</span>
-        </b-link>
+        </BLink>
+
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-            <a class="dropdown-item" href="#" @click.prevent="showDataset">
-                <span class="fa fa-eye fa-fw mr-1" />
-                <span>Show in History containing dataset</span>
-            </a>
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
-                <span class="fa fa-copy fa-fw mr-1" />
+                <FontAwesomeIcon :icon="faCopy" class="mr-1" />
+
                 <span>Copy to current History</span>
             </a>
         </div>
     </div>
 </template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
-
-export default {
-    props: {
-        item: Object,
-    },
-    computed: {
-        getName() {
-            return this.item.name || "Unavailable";
-        },
-        isError() {
-            return this.item.state === "error";
-        },
-        isPaused() {
-            return this.item.state === "paused";
-        },
-    },
-    methods: {
-        copyDataset(item) {
-            this.$emit("copyDataset", this.item);
-        },
-        showDataset(item) {
-            this.$emit("showDataset", this.item);
-        },
-    },
-};
-</script>
 
 <style scoped>
 .dataset-icon {

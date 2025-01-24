@@ -1,0 +1,51 @@
+Use this template to customize the text email your users will receive
+when a new notification of category "new_shared_item" is sent to them.
+Copy the file to {{ templates_dir }}/mail/notifications/new_shared_item-email.txt and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the text like
+{{ variable_name }}. They will be rendered into the text before the email is
+sent:
+
+- name                      The user's name
+- user_email                The user's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the user's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The new_shared_item payload
+  - item_type               The type of the shared item
+  - item_name               The name of the shared item
+  - owner_name              The name of the owner of the shared item
+  - slug                    The slug of the shared item. Used for the link to the item.
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here>>>>>>
+Hello {{ name }},
+
+A new {{ content['item_type'] }} has been shared with you on {{ date }} by {{ content['owner_name'] }}.
+
+To access the shared {{ content['item_type'] }}, please visit the following link:
+{{ galaxy_url }}/{{ content['slug'] }}
+
+Thank you for using Galaxy!
+
+Regards,
+Your Galaxy Team at {{ hostname }}
+
+---
+
+You received this email because you are subscribed to receive notifications when another user shares an item with you.
+{% if notification_settings_url %}
+To manage your notification settings, please visit {{ notification_settings_url }}.
+{% endif %}
+
+{% if contact_email %}
+This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at {{ contact_email }}.
+{% endif %}
+
+

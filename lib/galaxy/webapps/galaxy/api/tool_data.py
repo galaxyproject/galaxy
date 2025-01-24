@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import (
     Body,
     Path,
@@ -32,7 +34,7 @@ ToolDataTableName = Path(
     ...,  # Mark this field as required
     title="Data table name",
     description="The name of the tool data table",
-    example="all_fasta",
+    examples=["all_fasta"],
 )
 
 ToolDataTableFieldName = Path(
@@ -54,7 +56,7 @@ class FastAPIToolData:
         "/api/tool_data",
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        require_admin=True,
+        public=True,
     )
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""
@@ -65,11 +67,11 @@ class FastAPIToolData:
         summary="Import a data manager bundle",
         require_admin=True,
     )
-    async def create(
-        self, tool_data_file_path=None, import_bundle_model: ImportToolDataBundle = Body(...)
+    def create(
+        self, tool_data_file_path: Optional[str] = None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
-        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.dict())
+        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.model_dump())
         summary = async_task_summary(result)
         return summary
 
@@ -89,7 +91,7 @@ class FastAPIToolData:
         response_description="A description of the reloaded data table and its content",
         require_admin=True,
     )
-    async def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+    def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Reloads a data table and return its details."""
         return self.tool_data_manager.reload(table_name)
 
@@ -114,7 +116,7 @@ class FastAPIToolData:
         response_class=GalaxyFileResponse,
         require_admin=True,
     )
-    async def download_field_file(
+    def download_field_file(
         self,
         table_name: str = ToolDataTableName,
         field_name: str = ToolDataTableFieldName,
@@ -134,7 +136,7 @@ class FastAPIToolData:
         response_description="A description of the affected data table and its content",
         require_admin=True,
     )
-    async def delete(
+    def delete(
         self,
         payload: ToolDataItem,
         table_name: str = ToolDataTableName,

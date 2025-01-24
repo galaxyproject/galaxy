@@ -1,6 +1,7 @@
 """
 Test lib/galaxy/visualization/plugins/plugin.
 """
+
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import (
@@ -58,7 +59,7 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         A plugin that has neither template or static directory should serve neither.
         """
         vis_dir = galaxy_mock.MockDir({"config": {"vis1.xml": ""}})
-        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path, "myvis", dict())
+        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path, "myvis", {})
         assert not plugin.serves_templates
         # not sure what this would do, but...
 
@@ -73,7 +74,7 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         render_vars = plugin._build_render_vars(config)
         assert render_vars["visualization_name"] == plugin.name
         assert render_vars["visualization_display_name"] == plugin.config["name"]
-        assert render_vars["title"] is None
+        assert render_vars["title"] == "Unnamed Visualization"
         assert render_vars["saved_visualization"] is None
         assert render_vars["visualization_id"] is None
         assert render_vars["query"] == {}
@@ -82,21 +83,21 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
 
     def test_build_config(self):
         """ """
-        plugin_config: dict = dict()
+        plugin_config: dict = {}
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         config = plugin._build_config({})
         assert isinstance(config, vis_utils.OpenObject)
         assert config.__dict__ == {}
 
         # existing should flow through
-        plugin_config = dict()
+        plugin_config = {}
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         existing_config = dict(wat=1)
         config = plugin._build_config(existing_config)
         assert config.wat == 1
 
         # unlisted/non-param kwargs should NOT overwrite existing
-        plugin_config = dict()
+        plugin_config = {}
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         existing_config = dict(wat=1)
         config = plugin._build_config(existing_config, wat=2)

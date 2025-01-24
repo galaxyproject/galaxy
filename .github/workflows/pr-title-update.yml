@@ -1,0 +1,29 @@
+name: Update PR title
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened]
+
+jobs:
+  update-title:
+    if: github.event.action != 'edited' || github.event.changes.base.ref.from != ''
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Update PR title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_BRANCH: "${{ github.base_ref }}"
+          PR_TITLE: "${{ github.event.pull_request.title }}"
+          REPO: "${{ github.repository }}"
+        run: |
+          VERSION=$(echo $TARGET_BRANCH | grep -oP '^release_\K\d+.\d+$' || true)
+          NEW_TITLE=$(echo "$PR_TITLE" | sed -E "s/\[[0-9]+\.[0-9]+\] //")
+          if [[ -n "$VERSION" ]]; then
+            NEW_TITLE="[$VERSION] $NEW_TITLE"
+          fi
+          if [[ "$NEW_TITLE" != "$PR_TITLE" ]]; then
+            gh pr edit $PR_NUMBER --repo "$REPO" --title "$NEW_TITLE"
+          fi

@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 from inspect import ismodule
+from typing import TYPE_CHECKING
 
 from kombu import (
     Consumer,
@@ -23,12 +24,16 @@ from kombu.pools import producers
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
+from galaxy.model import User
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.special_tools import load_lib_tools
 
 logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import MinimalManagerApp
 
 
 def send_local_control_task(app, task, get_response=False, kwargs=None):
@@ -184,7 +189,7 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
-    app.toolbox = new_toolbox
+    app._toolbox = new_toolbox
     app.toolbox.persist_cache()
 
 
@@ -194,9 +199,8 @@ def reload_data_managers(app, **kwargs):
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
-    reload_count = app.data_managers._reload_count
-    app.data_managers = DataManagers(app)
-    app.data_managers._reload_count = reload_count + 1
+    reload_count = app.data_managers._reload_count + 1
+    app.data_managers = DataManagers(app, None, reload_count)
     if hasattr(app, "tool_cache"):
         app.tool_cache.reset_status()
     if hasattr(app, "watchers"):
@@ -216,10 +220,9 @@ def reload_sanitize_allowlist(app):
 
 
 def recalculate_user_disk_usage(app, **kwargs):
-    user_id = kwargs.get("user_id", None)
     sa_session = app.model.context
-    if user_id:
-        user = sa_session.query(app.model.User).get(user_id)
+    if user_id := kwargs.get("user_id", None):
+        user = sa_session.get(User, user_id)
         if user:
             user.calculate_and_set_disk_usage(app.object_store)
         else:
@@ -245,7 +248,7 @@ def rebuild_toolbox_search_index(app, **kwargs):
         log.debug("App is not a webapp, not building a search index")
 
 
-def reload_job_rules(app, **kwargs):
+def reload_job_rules(app: "MinimalManagerApp", **kwargs):
     reload_timer = util.ExecutionTimer()
     for module in job_rule_modules(app):
         rules_module_name = module.__name__
@@ -266,7 +269,7 @@ def reload_tour(app, **kwargs):
     log.debug("Tour reloaded")
 
 
-def __job_rule_module_names(app):
+def __job_rule_module_names(app: "MinimalManagerApp"):
     rules_module_names = {"galaxy.jobs.rules"}
     if app.job_config.dynamic_params is not None:
         module_name = app.job_config.dynamic_params.get("rules_module")
@@ -280,7 +283,7 @@ def __job_rule_module_names(app):
     return rules_module_names
 
 
-def job_rule_modules(app):
+def job_rule_modules(app: "MinimalManagerApp"):
     rules_module_list = []
     for rules_module_name in __job_rule_module_names(app):
         rules_module = sys.modules.get(rules_module_name, None)

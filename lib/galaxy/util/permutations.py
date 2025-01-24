@@ -6,10 +6,9 @@ first.
 Maybe this doesn't make sense and maybe much of this stuff could be replaced
 with itertools product and permutations. These are open questions.
 """
-from typing import (
-    Dict,
-    TypeVar,
-)
+
+import copy
+from typing import Tuple
 
 from galaxy.exceptions import MessageException
 from galaxy.util.bunch import Bunch
@@ -20,47 +19,20 @@ input_classification = Bunch(
     MULTIPLIED="multiplied",
 )
 
-# generic type of splitting input dictionary
-T = TypeVar("T")
-
 
 class InputMatchedException(MessageException):
     """Indicates problem matching inputs while building up inputs
     permutations."""
 
 
-def expand_multi_inputs(inputs: Dict[str, T], classifier, key_filter=None):
-    key_filter = key_filter or (lambda x: True)
-
-    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(inputs, classifier, key_filter)
-
+def build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested):
     # Build up every combination of inputs to be run together.
-    input_combos = __extend_with_matched_combos(single_inputs, matched_multi_inputs)
-    input_combos = __extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
-
+    input_combos = __extend_with_matched_combos(single_inputs, matched_multi_inputs, nested)
+    input_combos = __extend_with_multiplied_combos(input_combos, multiplied_multi_inputs, nested)
     return input_combos
 
 
-def __split_inputs(inputs: Dict[str, T], classifier, key_filter):
-    key_filter = key_filter or (lambda x: True)
-
-    single_inputs: Dict[str, T] = {}
-    matched_multi_inputs: Dict[str, T] = {}
-    multiplied_multi_inputs: Dict[str, T] = {}
-
-    for input_key in filter(key_filter, inputs):
-        input_type, expanded_val = classifier(input_key)
-        if input_type == input_classification.SINGLE:
-            single_inputs[input_key] = expanded_val
-        elif input_type == input_classification.MATCHED:
-            matched_multi_inputs[input_key] = expanded_val
-        elif input_type == input_classification.MULTIPLIED:
-            multiplied_multi_inputs[input_key] = expanded_val
-
-    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)
-
-
-def __extend_with_matched_combos(single_inputs, multi_inputs):
+def __extend_with_matched_combos(single_inputs, multi_inputs, nested):
     """
 
     {a => 1, b => 2} and {c => {3, 4}, d => {5, 6}}
@@ -80,7 +52,7 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
     first_multi_value = multi_inputs.get(first_multi_input_key)
 
     for value in first_multi_value:
-        new_inputs = __copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
+        new_inputs = __copy_and_extend_inputs(single_inputs, first_multi_input_key, value, nested=nested)
         matched_multi_inputs.append(new_inputs)
 
     for multi_input_key, multi_input_values in multi_inputs.items():
@@ -88,17 +60,16 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
             continue
         if len(multi_input_values) != len(first_multi_value):
             raise InputMatchedException(
-                "Received %d inputs for '%s' and %d inputs for '%s', these should be of equal length"
-                % (len(multi_input_values), multi_input_key, len(first_multi_value), first_multi_input_key)
+                f"Received {len(multi_input_values)} inputs for '{multi_input_key}' and {len(first_multi_value)} inputs for '{first_multi_input_key}', these should be of equal length"
             )
 
         for index, value in enumerate(multi_input_values):
-            matched_multi_inputs[index][multi_input_key] = value
+            state_set_value(matched_multi_inputs[index], multi_input_key, value, nested)
 
     return matched_multi_inputs
 
 
-def __extend_with_multiplied_combos(input_combos, multi_inputs):
+def __extend_with_multiplied_combos(input_combos, multi_inputs, nested):
     combos = input_combos
 
     for multi_input_key, multi_input_value in multi_inputs.items():
@@ -106,7 +77,7 @@ def __extend_with_multiplied_combos(input_combos, multi_inputs):
 
         for combo in combos:
             for input_value in multi_input_value:
-                iter_combo = __copy_and_extend_inputs(combo, multi_input_key, input_value)
+                iter_combo = __copy_and_extend_inputs(combo, multi_input_key, input_value, nested)
                 iter_combos.append(iter_combo)
 
         combos = iter_combos
@@ -114,7 +85,84 @@ def __extend_with_multiplied_combos(input_combos, multi_inputs):
     return combos
 
 
-def __copy_and_extend_inputs(inputs, key, value):
-    new_inputs = dict(inputs)
-    new_inputs[key] = value
+def __copy_and_extend_inputs(inputs, key, value, nested):
+    # can't deepcopy dicts with our models for reason I don't understand,
+    # test_map_over_two_collections_unlinked breaks if I try to combine these two branches of the if
+    new_inputs = state_copy(inputs, nested)
+    state_set_value(new_inputs, key, value, nested)
     return new_inputs
+
+
+def state_copy(inputs, nested):
+    # can't deepcopy dicts with our models for reason I don't understand,
+    # test_map_over_two_collections_unlinked breaks if I try to combine these two branches of the if
+    if nested:
+        state_dict_copy = copy.deepcopy(inputs)
+    else:
+        state_dict_copy = dict(inputs)
+    return state_dict_copy
+
+
+def state_set_value(state_dict, key, value, nested):
+    if "|" not in key or not nested:
+        state_dict[key] = value
+    else:
+        first, rest = key.split("|", 1)
+        if first not in state_dict and looks_like_flattened_repeat_key(first):
+            repeat_name, index = split_flattened_repeat_key(first)
+            if repeat_name not in state_dict:
+                state_dict[repeat_name] = []
+            repeat_state = state_dict[repeat_name]
+            while len(repeat_state) <= index:
+                repeat_state.append({})
+            state_set_value(repeat_state[index], rest, value, nested)
+        else:
+            state_set_value(state_dict[first], rest, value, nested)
+
+
+def state_remove_value(state_dict, key, nested):
+    if "|" not in key or not nested:
+        del state_dict[key]
+    else:
+        first, rest = key.split("|", 1)
+        child_dict = state_dict[first]
+        # repeats?
+        if "|" in rest:
+            state_remove_value(child_dict, rest, nested)
+        else:
+            del child_dict[rest]
+            if len(child_dict) == 0:
+                del state_dict[first]
+
+
+def state_get_value(state_dict, key, nested):
+    if "|" not in key or not nested:
+        return state_dict[key]
+    else:
+        first, rest = key.split("|", 1)
+        if first not in state_dict and looks_like_flattened_repeat_key(first):
+            repeat_name, index = split_flattened_repeat_key(first)
+            return state_get_value(state_dict[repeat_name][index], rest, nested)
+        else:
+            return state_get_value(state_dict[first], rest, nested)
+
+
+def is_in_state(state_dict, key, nested):
+    if not state_dict:
+        return False
+    if "|" not in key or not nested:
+        return key in state_dict
+    else:
+        first, rest = key.split("|", 1)
+        # repeats?
+        is_in_state(state_dict.get(first), rest, nested)
+
+
+def looks_like_flattened_repeat_key(key: str) -> bool:
+    return key.rsplit("_", 1)[-1].isdigit()
+
+
+def split_flattened_repeat_key(key: str) -> Tuple[str, int]:
+    input_name, _index = key.rsplit("_", 1)
+    index = int(_index)
+    return input_name, index

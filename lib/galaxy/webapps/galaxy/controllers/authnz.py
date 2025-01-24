@@ -2,7 +2,6 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-
 import datetime
 import json
 import logging
@@ -20,6 +19,7 @@ from galaxy.webapps.base.controller import JSAppLauncher
 log = logging.getLogger(__name__)
 
 PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
+LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 
 
 class OIDC(JSAppLauncher):
@@ -73,12 +73,17 @@ class OIDC(JSAppLauncher):
 
     @web.json
     @web.expose
-    def login(self, trans, provider, idphint=None):
+    def login(self, trans, provider, idphint=None, next=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
             return trans.show_error_message(msg)
-        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint=idphint)
+        if next:
+            trans.set_cookie(value=next, name=LOGIN_NEXT_COOKIE_NAME, age=1)
+        else:
+            # If no next parameter is provided, ensure we unset any existing next cookie.
+            trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
+        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -87,13 +92,14 @@ class OIDC(JSAppLauncher):
     @web.expose
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
+        login_next = url_for(trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME) or "/")
         if not bool(kwargs):
             log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
-                "Did not receive any information from the `{}` identity provider to complete user `{}` authentication "
+                f"Did not receive any information from the `{provider}` identity provider to complete user `{user}` authentication "
                 "flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note "
                 "that this endpoint is to receive authentication callbacks only, and should not be called/reached by "
-                "a user.".format(provider, user)
+                "a user."
             )
         if "error" in kwargs:
             log.error(
@@ -111,7 +117,7 @@ class OIDC(JSAppLauncher):
                 kwargs.get("state", " "),
                 kwargs["code"],
                 trans,
-                login_redirect_url=url_for("/"),
+                login_redirect_url=login_next,
                 idphint=idphint,
             )
         except exceptions.AuthenticationFailed:
@@ -128,13 +134,15 @@ class OIDC(JSAppLauncher):
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message(
-                "An unknown error occurred when handling the callback from `{}` "
+                f"An unknown error occurred when handling the callback from `{provider}` "
                 "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin.".format(provider)
+                "contact the Galaxy instance admin."
             )
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        # Clear the login next cookie back to default.
+        trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
@@ -153,9 +161,9 @@ class OIDC(JSAppLauncher):
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message(
-                "An unknown error occurred when handling the callback from `{}` "
+                f"An unknown error occurred when handling the callback from `{provider}` "
                 "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin.".format(provider)
+                "contact the Galaxy instance admin."
             )
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
@@ -188,6 +196,7 @@ class OIDC(JSAppLauncher):
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
+        trans.handle_user_logout()
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -202,13 +211,12 @@ class OIDC(JSAppLauncher):
     @web.expose
     @web.json
     def get_cilogon_idps(self, trans, **kwargs):
-        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
         try:
             cilogon_idps = json.loads(url_get("https://cilogon.org/idplist/", params=dict(kwargs)))
         except Exception as e:
             raise Exception(f"Invalid server response. {str(e)}.")
 
-        if allowed_idps:
+        if allowed_idps := trans.app.authnz_manager.get_allowed_idps():
             validated_idps = list(filter(lambda idp: idp["EntityID"] in allowed_idps, cilogon_idps))
 
             if not (len(validated_idps) == len(allowed_idps)):

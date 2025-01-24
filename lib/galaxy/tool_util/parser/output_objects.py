@@ -3,6 +3,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
+    Union,
 )
 
 from typing_extensions import TypedDict
@@ -13,6 +15,16 @@ from .output_actions import ToolOutputActionGroup
 from .output_collection_def import (
     dataset_collector_descriptions_from_output_dict,
     DatasetCollectionDescription,
+)
+from .output_models import (
+    ToolOutputBoolean as ToolOutputBooleanModel,
+    ToolOutputCollection as ToolOutputCollectionModel,
+    ToolOutputCollectionStructure as ToolOutputCollectionStructureModel,
+    ToolOutputDataset as ToolOutputDataModel,
+    ToolOutputFloat as ToolOutputFloatModel,
+    ToolOutputInteger as ToolOutputIntegerModel,
+    ToolOutputT as ToolOutputModel,
+    ToolOutputText as ToolOutputTextModel,
 )
 
 
@@ -25,6 +37,10 @@ class ChangeFormatModel(TypedDict):
 
 
 class ToolOutputBase(Dictifiable):
+    name: str
+    label: Optional[str]
+    hidden: bool
+
     def __init__(
         self,
         name: str,
@@ -128,8 +144,23 @@ class ToolOutput(ToolOutputBase):
             as_dict["edam_format"] = edam_format
             edam_data = app.datatypes_registry.edam_data.get(self.format)
             as_dict["edam_data"] = edam_data
-        as_dict["discover_datasets"] = list(map(lambda d: d.to_dict(), self.dataset_collector_descriptions))
+        if self.dataset_collector_descriptions:
+            as_dict["discover_datasets"] = [d.to_dict() for d in self.dataset_collector_descriptions]
+        else:
+            as_dict["discover_datasets"] = []
         return as_dict
+
+    def to_model(self) -> ToolOutputDataModel:
+        return ToolOutputDataModel(
+            type="data",
+            name=self.name,
+            label=self.label,
+            hidden=self.hidden,
+            format=self.format,
+            format_source=self.format_source,
+            metadata_source=self.metadata_source or None,  # model is decorated as Optional
+            discover_datasets=[d.to_model() for d in self.dataset_collector_descriptions],
+        )
 
     @staticmethod
     def from_dict(name: str, output_dict: Dict[str, Any], tool: Optional[object] = None) -> "ToolOutput":
@@ -174,6 +205,31 @@ class ToolExpressionOutput(ToolOutputBase):
         self.change_format = []
         self.implicit = False
         self.from_work_dir = None
+
+    def to_model(self) -> ToolOutputModel:
+        model_class: Union[
+            Type[ToolOutputIntegerModel],
+            Type[ToolOutputFloatModel],
+            Type[ToolOutputBooleanModel],
+            Type[ToolOutputTextModel],
+        ]
+        model_type = self.output_type
+        if self.output_type == "integer":
+            model_class = ToolOutputIntegerModel
+        elif self.output_type == "float":
+            model_class = ToolOutputFloatModel
+        elif self.output_type == "bool":
+            model_class = ToolOutputBooleanModel
+            model_type = "boolean"
+        elif self.output_type == "text":
+            model_class = ToolOutputTextModel
+        assert model_class
+        return model_class(
+            type=model_type,
+            name=self.name,
+            label=self.label,
+            hidden=self.hidden,
+        )
 
 
 class ToolOutputCollection(ToolOutputBase):
@@ -225,7 +281,7 @@ class ToolOutputCollection(ToolOutputBase):
         self.collection = True
         self.default_format = default_format
         self.structure = structure
-        self.outputs: Dict[str, str] = {}
+        self.outputs: Dict[str, ToolOutput] = {}
 
         self.inherit_format = inherit_format
         self.inherit_metadata = inherit_metadata
@@ -300,6 +356,15 @@ class ToolOutputCollection(ToolOutputBase):
         as_dict["structure"] = self.structure.to_dict()
         return as_dict
 
+    def to_model(self) -> ToolOutputCollectionModel:
+        return ToolOutputCollectionModel(
+            type="collection",
+            name=self.name,
+            label=self.label,
+            hidden=self.hidden,
+            structure=self.structure.to_model(),
+        )
+
     @staticmethod
     def from_dict(name, output_dict, tool=None) -> "ToolOutputCollection":
         structure = ToolOutputCollectionStructure.from_dict(output_dict["structure"])
@@ -323,6 +388,13 @@ class ToolOutputCollection(ToolOutputBase):
 
 
 class ToolOutputCollectionStructure:
+    collection_type: Optional[str]
+    collection_type_source: Optional[str]
+    collection_type_from_rules: Optional[str]
+    structured_like: Optional[str]
+    dataset_collector_descriptions: Optional[List[DatasetCollectionDescription]]
+    dynamic: bool
+
     def __init__(
         self,
         collection_type: Optional[str],
@@ -366,13 +438,19 @@ class ToolOutputCollectionStructure:
         return collection_prototype
 
     def to_dict(self):
-        return {
-            "collection_type": self.collection_type,
-            "collection_type_source": self.collection_type_source,
-            "collection_type_from_rules": self.collection_type_from_rules,
-            "structured_like": self.structured_like,
-            "discover_datasets": [d.to_dict() for d in self.dataset_collector_descriptions],
-        }
+        return self.to_model().dict()
+
+    def to_model(self) -> ToolOutputCollectionStructureModel:
+        discover_datasets = []
+        if self.dataset_collector_descriptions:
+            discover_datasets = [d.to_model() for d in self.dataset_collector_descriptions]
+        return ToolOutputCollectionStructureModel(
+            collection_type=self.collection_type,
+            collection_type_source=self.collection_type_source,
+            collection_type_from_rules=self.collection_type_from_rules,
+            structured_like=self.structured_like,
+            discover_datasets=discover_datasets,
+        )
 
     @staticmethod
     def from_dict(as_dict) -> "ToolOutputCollectionStructure":

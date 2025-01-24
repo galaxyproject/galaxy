@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { PropType } from "vue";
-import Vue, { ref } from "vue";
+import { type PropType, ref, set } from "vue";
 
-import type { components } from "@/schema";
+import { type components } from "@/api/schema";
 
 import ContentItem from "./ContentItem.vue";
 
@@ -17,7 +16,7 @@ const expandCollections = ref({});
 const expandDatasets = ref({});
 
 function toggle(expansionMap: Record<string, boolean>, itemId: string) {
-    Vue.set(expansionMap, itemId, !expansionMap[itemId]);
+    set(expansionMap, itemId, !expansionMap[itemId]);
 }
 </script>
 
@@ -25,7 +24,7 @@ function toggle(expansionMap: Record<string, boolean>, itemId: string) {
     <div>
         <div v-for="(item, index) in dsc.elements" :key="index">
             <ContentItem
-                :id="item.element_index"
+                :id="item.element_index + 1"
                 :item="item.object"
                 :name="item.element_identifier"
                 :is-dataset="item.element_type == 'hda'"

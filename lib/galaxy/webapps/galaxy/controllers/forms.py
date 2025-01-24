@@ -3,18 +3,24 @@ import csv
 import logging
 import re
 
-from markupsafe import escape
+from sqlalchemy import (
+    false,
+    true,
+)
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model
+from galaxy.managers.forms import get_form
 from galaxy.model.base import transaction
-from galaxy.web.framework.helpers import (
-    grids,
-    iff,
-    time_ago,
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    text_column_filter,
 )
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
+from galaxy.web.framework.helpers import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,
     web,
@@ -25,67 +31,69 @@ log = logging.getLogger(__name__)
 VALID_FIELDNAME_RE = re.compile(r"^[a-zA-Z0-9\_]+$")
 
 
-class FormsGrid(grids.Grid):
+class FormsGrid(grids.GridData):
     # Custom column types
-    class NameColumn(grids.TextColumn):
+    class NameColumn(grids.GridColumn):
         def get_value(self, trans, grid, form):
-            return escape(form.latest_form.name)
+            return form.latest_form.name
 
-    class DescriptionColumn(grids.TextColumn):
+    class DescriptionColumn(grids.GridColumn):
         def get_value(self, trans, grid, form):
-            return escape(form.latest_form.desc)
+            return form.latest_form.desc
 
-    class TypeColumn(grids.TextColumn):
+    class TypeColumn(grids.GridColumn):
         def get_value(self, trans, grid, form):
             return form.latest_form.type
-
-    class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            if user.deleted:
-                return "deleted"
-            return "active"
 
     # Grid definition
     title = "Forms"
     model_class = model.FormDefinitionCurrent
-    default_sort_key = "-update_time"
-    num_rows_per_page = 50
-    use_paging = True
-    default_filter = dict(deleted="False")
+    default_sort_key = "update_time"
     columns = [
         NameColumn(
             "Name",
             key="name",
             model_class=model.FormDefinition,
-            link=(lambda item: iff(item.deleted, None, dict(controller="admin", action="form/edit_form", id=item.id))),
-            attach_popup=True,
-            filterable="advanced",
         ),
-        DescriptionColumn("Description", key="desc", model_class=model.FormDefinition, filterable="advanced"),
-        TypeColumn("Type"),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-        StatusColumn("Status"),
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        DescriptionColumn("Description", key="desc", model_class=model.FormDefinition),
+        TypeColumn("Type", key="type", model_class=model.FormDefinition),
+        grids.GridColumn("Last Updated", key="update_time"),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    operations = [
-        grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
-        grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
-    ]
-    global_actions = [grids.GridAction("Create new form", dict(controller="admin", action="form/create_form"))]
 
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class).join(
-            model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id
-        )
+    def apply_query_filter(self, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "name": "name",
+            "description": "description",
+            "is": "is",
+        }
+        deleted = False
+        query = query.join(model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id)
+        if search_query := kwargs.get("search"):
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(model.FormDefinition.name, term))
+                    elif key == "description":
+                        query = query.filter(text_column_filter(model.FormDefinition.desc, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                model.FormDefinition.name,
+                                model.FormDefinition.desc,
+                            ],
+                            term,
+                        )
+                    )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        return query
 
 
 class Forms(BaseUIController):
@@ -94,21 +102,6 @@ class Forms(BaseUIController):
     @web.legacy_expose_api
     @web.require_admin
     def forms_list(self, trans, payload=None, **kwd):
-        message = kwd.get("message", "")
-        status = kwd.get("status", "")
-        if "operation" in kwd:
-            id = kwd.get("id")
-            if not id:
-                return self.message_exception(trans, f"Invalid form id ({str(id)}) received.")
-            ids = util.listify(id)
-            operation = kwd["operation"].lower()
-            if operation == "delete":
-                message, status = self._delete_form(trans, ids)
-            elif operation == "undelete":
-                message, status = self._undelete_form(trans, ids)
-        if message and status:
-            kwd["message"] = util.sanitize_text(message)
-            kwd["status"] = status
         return self.forms_grid(trans, **kwd)
 
     @web.legacy_expose_api
@@ -147,8 +140,8 @@ class Forms(BaseUIController):
                     if len(row) >= 6:
                         for column in range(len(row)):
                             row[column] = str(row[column]).strip('"')
-                        prefix = "fields_%i|" % index
-                        payload[f"{prefix}name"] = "%i_imported_field" % (index + 1)
+                        prefix = f"fields_{index}|"
+                        payload[f"{prefix}name"] = f"{index + 1}_imported_field"
                         payload[f"{prefix}label"] = row[0]
                         payload[f"{prefix}helptext"] = row[1]
                         payload[f"{prefix}type"] = row[2]
@@ -159,9 +152,9 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
                 return self.message_exception(trans, message)
-            imported = (" with %i imported fields" % index) if index > 0 else ""
+            imported = (f" with {index} imported fields") if index > 0 else ""
             message = f"The form '{payload.get('name')}' has been created{imported}."
-            return {"message": util.sanitize_text(message)}
+            return {"message": message}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -194,7 +187,7 @@ class Forms(BaseUIController):
                 {"name": "required", "label": "Required", "type": "boolean", "value": False},
             ]
             form_dict = {
-                "title": "Edit form for '%s'" % (util.sanitize_text(latest_form.name)),
+                "title": f"Edit form for '{latest_form.name}'",
                 "inputs": [
                     {"name": "name", "label": "Name", "value": latest_form.name},
                     {"name": "desc", "label": "Description", "value": latest_form.desc},
@@ -229,7 +222,7 @@ class Forms(BaseUIController):
             if new_form is None:
                 return self.message_exception(trans, message)
             message = f"The form '{payload.get('name')}' has been updated."
-            return {"message": util.sanitize_text(message)}
+            return {"message": message}
 
     def get_current_form(self, trans, payload=None, **kwd):
         """
@@ -242,7 +235,7 @@ class Forms(BaseUIController):
         fields = []
         index = 0
         while True:
-            prefix = "fields_%i|" % index
+            prefix = f"fields_{index}|"
             if f"{prefix}label" in payload:
                 field_attributes = ["name", "label", "helptext", "required", "type", "selectlist", "default"]
                 field_dict = {attr: payload.get(f"{prefix}{attr}") for attr in field_attributes}
@@ -302,36 +295,3 @@ class Forms(BaseUIController):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return form_definition, None
-
-    @web.expose
-    @web.require_admin
-    def _delete_form(self, trans, ids):
-        for form_id in ids:
-            form = get_form(trans, form_id)
-            form.deleted = True
-            trans.sa_session.add(form)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return ("Deleted %i form(s)." % len(ids), "done")
-
-    @web.expose
-    @web.require_admin
-    def _undelete_form(self, trans, ids):
-        for form_id in ids:
-            form = get_form(trans, form_id)
-            form.deleted = False
-            trans.sa_session.add(form)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return ("Undeleted %i form(s)." % len(ids), "done")
-
-
-# ---- Utility methods -------------------------------------------------------
-
-
-def get_form(trans, form_id):
-    """Get a FormDefinition from the database by id."""
-    form = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
-    if not form:
-        return trans.show_error_message(f"Form not found for id ({str(form_id)})")
-    return form

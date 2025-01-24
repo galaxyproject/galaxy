@@ -1,7 +1,6 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.api import skip_if_api_v2
+from ..base.twilltestcase import ShedTwillTestCase
 
 freebayes_repository_name = "freebayes_0040"
 freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
@@ -42,16 +41,10 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="freebayes/freebayes.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "freebayes/freebayes.tar",
             commit_message="Uploaded the tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0015_create_filtering_repository(self):
@@ -66,16 +59,10 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded the tool tarball for filtering 1.1.0.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_create_dependency_on_freebayes(self):
@@ -141,6 +128,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         for repository in [freebayes_repository, filtering_repository]:
             self.verify_unchanged_repository_metadata(repository)
 
+    @skip_if_api_v2
     def test_0040_verify_tool_dependencies(self):
         """Verify that freebayes displays tool dependencies."""
         repository = self._get_repository_by_name_and_owner(freebayes_repository_name, common.test_user_1_name)

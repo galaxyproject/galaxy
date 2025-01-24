@@ -1,14 +1,18 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MountTarget from "./FormSelect";
+import MountTarget from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
 
 function createTarget(propsData) {
+    const pinia = createTestingPinia();
+
     return mount(MountTarget, {
         localVue,
         propsData,
+        pinia,
     });
 }
 
@@ -21,7 +25,7 @@ const defaultOptions = [
 
 function testDefaultOptions(wrapper) {
     const target = wrapper.findComponent(MountTarget);
-    const options = target.findAll("li > span > span");
+    const options = target.findAll("li > span > div");
     expect(options.length).toBe(4);
     for (let i = 0; i < options.length; i++) {
         expect(options.at(i).text()).toBe(`label_${i + 1}`);
@@ -48,7 +52,7 @@ describe("FormSelect", () => {
             optional: true,
         });
         const target = wrapper.findComponent(MountTarget);
-        const options = target.findAll("li > span > span");
+        const options = target.findAll("li > span > div");
         expect(options.length).toBe(5);
         expect(options.at(0).text()).toBe("Nothing selected");
         const selectedDefault = wrapper.find(".multiselect__option--selected");
@@ -56,7 +60,7 @@ describe("FormSelect", () => {
         await wrapper.setProps({ value: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
-        selectedValue.trigger("click");
+        options.at(0).trigger("click");
         const nullValue = wrapper.emitted().input[0][0];
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: null });
@@ -66,6 +70,7 @@ describe("FormSelect", () => {
 
     it("multiple values", async () => {
         const wrapper = createTarget({
+            optional: true,
             multiple: true,
             options: defaultOptions,
             value: ["value_1", "", 99],

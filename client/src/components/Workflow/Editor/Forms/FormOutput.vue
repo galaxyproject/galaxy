@@ -9,15 +9,13 @@
                 title="Rename dataset"
                 type="text"
                 @input="onInput" />
-            <FormElement
+            <FormDatatype
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
-                :attributes="{ options: datatypeExtensions }"
+                :datatypes="datatypes"
                 title="Change datatype"
-                type="select"
-                backbonejs
                 help="This action will change the datatype of the output to the indicated datatype."
-                @input="onDatatype" />
+                @onChange="onDatatype" />
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
                 :value="formData[actionNames.TagDatasetAction__tags]"
@@ -41,7 +39,6 @@
                         :value="formData[actionNames.ColumnSetAction__chromCol]"
                         title="Chrom column"
                         type="integer"
-                        backbonejs
                         help="This action will set the chromosome column."
                         @input="onInput" />
                     <FormElement
@@ -49,7 +46,6 @@
                         :value="formData[actionNames.ColumnSetAction__startCol]"
                         title="Start column"
                         type="integer"
-                        backbonejs
                         help="This action will set the start column."
                         @input="onInput" />
                     <FormElement
@@ -57,7 +53,6 @@
                         :value="formData[actionNames.ColumnSetAction__endCol]"
                         title="End column"
                         type="integer"
-                        backbonejs
                         help="This action will set the end column."
                         @input="onInput" />
                     <FormElement
@@ -65,7 +60,6 @@
                         :value="formData[actionNames.ColumnSetAction__strandCol]"
                         title="Strand column"
                         type="integer"
-                        backbonejs
                         help="This action will set the strand column."
                         @input="onInput" />
                     <FormElement
@@ -73,7 +67,6 @@
                         :value="formData[actionNames.ColumnSetAction__nameCol]"
                         title="Name column"
                         type="integer"
-                        backbonejs
                         help="This action will set the name column."
                         @input="onInput" />
                 </template>
@@ -85,6 +78,7 @@
 <script>
 import FormCard from "@/components/Form/FormCard";
 import FormElement from "@/components/Form/FormElement";
+import FormDatatype from "@/components/Workflow/Editor/Forms/FormDatatype";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel";
 
 const actions = [
@@ -107,6 +101,7 @@ export default {
         FormCard,
         FormElement,
         FormOutputLabel,
+        FormDatatype,
     },
     props: {
         outputName: {
@@ -153,26 +148,6 @@ export default {
                 index[action] = `pja__${this.outputName}__${action}`;
             });
             return index;
-        },
-        datatypeExtensions() {
-            const extensions = [];
-            for (const key in this.datatypes) {
-                extensions.push({ 0: this.datatypes[key], 1: this.datatypes[key] });
-            }
-            extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
-            extensions.unshift({
-                0: "Sequences",
-                1: "Sequences",
-            });
-            extensions.unshift({
-                0: "Roadmaps",
-                1: "Roadmaps",
-            });
-            extensions.unshift({
-                0: "Leave unchanged",
-                1: "",
-            });
-            return extensions;
         },
         renameHelp() {
             /* TODO: FormElement should provide a slot for custom help templating instead. */

@@ -2,6 +2,7 @@
 
 Information on TRS can be found at https://github.com/ga4gh/tool-registry-service-schemas.
 """
+
 import logging
 
 from galaxy.web import expose_api

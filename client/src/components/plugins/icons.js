@@ -4,6 +4,7 @@ import {
     faBell,
     faBolt,
     faBurn,
+    faCalculator,
     faChartArea,
     faChartBar,
     faCheckSquare,
@@ -23,6 +24,7 @@ import {
     faEye,
     faFile,
     faFileArchive,
+    faFileContract,
     faFileExport,
     faFilter,
     faFolder,
@@ -47,6 +49,7 @@ import {
     faTrash,
     faTrashRestore,
     faUndo,
+    faUserCog,
     faUserLock,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -57,6 +60,7 @@ library.add(
     faBell,
     faBolt,
     faBurn,
+    faCalculator,
     faChartArea,
     faChartBar,
     faCheckSquare,
@@ -73,6 +77,7 @@ library.add(
     faExternalLinkAlt,
     faEye,
     faFileArchive,
+    faFileContract,
     faFileExport,
     faFilter,
     faFile,
@@ -100,6 +105,7 @@ library.add(
     faTrashRestore,
     faExclamationTriangle,
     faUndo,
+    faUserCog,
     faUserLock,
     faWrench
 );

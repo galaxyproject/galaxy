@@ -2,15 +2,22 @@ import logging
 import os
 import re
 import urllib.parse
+from typing import List
 
-import requests
 import yaml
 
-from galaxy.exceptions import MessageException
+from galaxy.config import Configuration
+from galaxy.exceptions import (
+    MessageException,
+    RequestParameterInvalidException,
+)
+from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     asbool,
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
 )
+from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
@@ -53,8 +60,8 @@ def parse_search_kwds(search_query):
 
 
 class TrsProxy:
-    def __init__(self, config=None):
-        config_file = getattr(config, "trs_servers_config_file", None)
+    def __init__(self, config: Configuration):
+        config_file = config.trs_servers_config_file
         if config_file and os.path.exists(config_file):
             with open(config_file) as f:
                 server_list = yaml.safe_load(f)
@@ -62,6 +69,7 @@ class TrsProxy:
             server_list = DEFAULT_TRS_SERVERS
         self._server_list = server_list if server_list else []
         self._server_dict = {t["id"]: t for t in self._server_list}
+        self.fetch_url_allowlist_ips = config.fetch_url_allowlist_ips
 
     def get_servers(self):
         return self._server_list
@@ -73,9 +81,26 @@ class TrsProxy:
     def server_from_url(self, trs_url):
         return TrsServer(trs_url)
 
-    def match_url(self, url):
-        matches = re.match(TRS_URL_REGEX, url)
-        if matches:
+    def get_trs_id_and_version_from_trs_url(self, trs_url):
+        parts = self.match_url(trs_url, self.fetch_url_allowlist_ips)
+        if parts:
+            return self.server_from_url(parts["trs_base_url"]), parts["tool_id"], parts["version_id"]
+        raise RequestParameterInvalidException(f"Invalid TRS URL {trs_url}.")
+
+    def get_version_from_trs_url(self, trs_url):
+        server, trs_tool_id, trs_version_id = self.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
+        return server.get_version_descriptor(trs_tool_id, trs_version_id)
+
+    def match_url(self, url, ip_allowlist: List[IpAllowedListEntryT]):
+        if url.lstrip().startswith("file://"):
+            # requests doesn't know what to do with file:// anyway, but just in case we swap
+            # out the implementation
+            raise RequestParameterInvalidException("Invalid TRS URL %s", url)
+        validate_non_local(url, ip_allowlist=ip_allowlist or [])
+        return self._match_url(url)
+
+    def _match_url(self, url):
+        if matches := re.match(TRS_URL_REGEX, url):
             match_dict = matches.groupdict()
             match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
             return match_dict
@@ -114,6 +139,9 @@ class TrsServer:
             f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
         )
         return self._get(trs_api_url)["content"]
+
+    def get_trs_url(self, tool_id: str, version_id: str):
+        return f"{self._get_tool_api_endpoint(tool_id)}/versions/{version_id}"
 
     def _quote(self, tool_id, **kwd):
         if asbool(kwd.get("tool_id_b64_encoded", False)):

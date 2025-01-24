@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="610px" preserveAspectRatio="none" style="width:1812px;height:610px;background:#FFFFFF;" version="1.1" viewBox="0 0 1812 610" width="1812px" zoomAndPan="magnify"><defs/><g><!--MD5=[85f7edf671c9ca26ac4c2dd7910a1a26]
+cluster galaxy.tool_util.parameters.state--><g id="cluster_galaxy.tool_util.parameters.state"><path d="M8.5,6 L242.5,6 A3.75,3.75 0 0 1 245,8.5 L252,28.4883 L1802.5,28.4883 A2.5,2.5 0 0 1 1805,30.9883 L1805,600.65 A2.5,2.5 0 0 1 1802.5,603.15 L8.5,603.15 A2.5,2.5 0 0 1 6,600.65 L6,8.5 A2.5,2.5 0 0 1 8.5,6 " fill="none" style="stroke:#FF8C00;stroke-width:1.5;"/><line style="stroke:#FF8C00;stroke-width:1.5;" x1="6" x2="252" y1="28.4883" y2="28.4883"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="233" x="10" y="21.5352">galaxy.tool_util.parameters.state</text></g><!--MD5=[001dd53740ce1259671441135e7c1cd4]
+class ToolState--><g id="elem_ToolState"><rect codeLine="5" fill="#FFEFD5" height="113.9531" id="ToolState" rx="2.5" ry="2.5" style="stroke:#FF8C00;stroke-width:0.5;" width="573" x="822.5" y="41"/><ellipse cx="1072.25" cy="57" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M1074.7231,63.1431 Q1074.1421,63.4419 1073.5029,63.5913 Q1072.8638,63.7407 1072.1582,63.7407 Q1069.6514,63.7407 1068.3315,62.0889 Q1067.0117,60.437 1067.0117,57.3159 Q1067.0117,54.1865 1068.3315,52.5347 Q1069.6514,50.8828 1072.1582,50.8828 Q1072.8638,50.8828 1073.5112,51.0322 Q1074.1587,51.1816 1074.7231,51.4805 L1074.7231,54.2031 Q1074.0923,53.6221 1073.4988,53.3523 Q1072.9053,53.0825 1072.2744,53.0825 Q1070.9297,53.0825 1070.2449,54.1492 Q1069.5601,55.2158 1069.5601,57.3159 Q1069.5601,59.4077 1070.2449,60.4744 Q1070.9297,61.541 1072.2744,61.541 Q1072.9053,61.541 1073.4988,61.2712 Q1074.0923,61.0015 1074.7231,60.4204 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="1092.75" y="62.291">ToolState</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="823.5" x2="1394.5" y1="73" y2="73"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="167" x="828.5" y="90.5352">state_representation: str</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="172" x="828.5" y="107.0234">input_state: Dict[str, Any]</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="823.5" x2="1394.5" y1="113.9766" y2="113.9766"/><ellipse cx="833.5" cy="127.7207" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="297" x="842.5" y="131.5117">validate(parameters: ToolParameterBundle)</text><ellipse cx="833.5" cy="144.209" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="547" x="842.5" y="148">_to_base_model(parameters: ToolParameterBundle): Optional[Type[BaseModel]]</text></g><!--MD5=[93f66f43011efc5ae11c3d66e5c838fe]
+class RequestToolState--><g id="elem_RequestToolState"><rect codeLine="12" fill="#FFEFD5" height="80.9766" id="RequestToolState" rx="2.5" ry="2.5" style="stroke:#FF8C00;stroke-width:0.5;" width="504" x="22" y="215.95"/><ellipse cx="209.75" cy="231.95" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M212.2231,238.0931 Q211.6421,238.3919 211.0029,238.5413 Q210.3638,238.6907 209.6582,238.6907 Q207.1514,238.6907 205.8315,237.0389 Q204.5117,235.387 204.5117,232.2659 Q204.5117,229.1365 205.8315,227.4847 Q207.1514,225.8328 209.6582,225.8328 Q210.3638,225.8328 211.0112,225.9822 Q211.6587,226.1316 212.2231,226.4305 L212.2231,229.1531 Q211.5923,228.5721 210.9988,228.3023 Q210.4053,228.0325 209.7744,228.0325 Q208.4297,228.0325 207.7449,229.0992 Q207.0601,230.1658 207.0601,232.2659 Q207.0601,234.3577 207.7449,235.4244 Q208.4297,236.491 209.7744,236.491 Q210.4053,236.491 210.9988,236.2212 Q211.5923,235.9515 212.2231,235.3704 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="120" x="230.25" y="237.241">RequestToolState</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="23" x2="525" y1="247.95" y2="247.95"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="222" x="28" y="265.4852">state_representation = "request"</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="23" x2="525" y1="272.4383" y2="272.4383"/><ellipse cx="33" cy="286.1824" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="478" x="42" y="289.9734">_to_base_model(parameters: ToolParameterBundle): Type[BaseModel]</text></g><g id="elem_GMN5"><path d="M55.5,386.45 L55.5,442.3816 A0,0 0 0 0 55.5,442.3816 L298.5,442.3816 A0,0 0 0 0 298.5,442.3816 L298.5,396.45 L288.5,386.45 L198.04,386.45 L249.27,297.21 L190.04,386.45 L55.5,386.45 A0,0 0 0 0 55.5,386.45 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><path d="M288.5,386.45 L288.5,396.45 L298.5,396.45 L288.5,386.45 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="185" x="61.5" y="404.0184">Object references of the form</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="192" x="61.5" y="419.3289">{src: "hda", id: &lt;encoded_id&gt;}.</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="218" x="65.5" y="434.6395">Allow mapping/reduce constructs.</text></g><!--MD5=[93d581e844301c3bb0d1bdd786d99f81]
+class RequestInternalToolState--><g id="elem_RequestInternalToolState"><rect codeLine="18" fill="#FFEFD5" height="80.9766" id="RequestInternalToolState" rx="2.5" ry="2.5" style="stroke:#FF8C00;stroke-width:0.5;" width="504" x="621" y="215.95"/><ellipse cx="782.25" cy="231.95" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M784.7231,238.0931 Q784.1421,238.3919 783.5029,238.5413 Q782.8638,238.6907 782.1582,238.6907 Q779.6514,238.6907 778.3315,237.0389 Q777.0117,235.387 777.0117,232.2659 Q777.0117,229.1365 778.3315,227.4847 Q779.6514,225.8328 782.1582,225.8328 Q782.8638,225.8328 783.5112,225.9822 Q784.1587,226.1316 784.7231,226.4305 L784.7231,229.1531 Q784.0923,228.5721 783.4988,228.3023 Q782.9053,228.0325 782.2744,228.0325 Q780.9297,228.0325 780.2449,229.0992 Q779.5601,230.1658 779.5601,232.2659 Q779.5601,234.3577 780.2449,235.4244 Q780.9297,236.491 782.2744,236.491 Q782.9053,236.491 783.4988,236.2212 Q784.0923,235.9515 784.7231,235.3704 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="173" x="802.75" y="237.241">RequestInternalToolState</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="622" x2="1124" y1="247.95" y2="247.95"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="282" x="627" y="265.4852">state_representation = "request_internal"</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="622" x2="1124" y1="272.4383" y2="272.4383"/><ellipse cx="632" cy="286.1824" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="478" x="641" y="289.9734">_to_base_model(parameters: ToolParameterBundle): Type[BaseModel]</text></g><g id="elem_GMN9"><path d="M333,386.45 L333,442.3816 A0,0 0 0 0 333,442.3816 L709,442.3816 A0,0 0 0 0 709,442.3816 L709,396.45 L699,386.45 L586.96,386.45 L782.81,297.41 L578.96,386.45 L333,386.45 A0,0 0 0 0 333,386.45 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><path d="M699,386.45 L699,396.45 L709,396.45 L699,386.45 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="185" x="339" y="404.0184">Object references of the form</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="192" x="339" y="419.3289">{src: "hda", id: &lt;decoded_id&gt;}.</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="351" x="343" y="434.6395">Allow mapping/reduce constructs. Allows URI src dicts.</text></g><!--MD5=[f215adf382bf0ace6a358f4944a6558b]
+class RequestInternalDereferencedToolState--><g id="elem_RequestInternalDereferencedToolState"><rect codeLine="24" fill="#FFEFD5" height="80.9766" id="RequestInternalDereferencedToolState" rx="2.5" ry="2.5" style="stroke:#FF8C00;stroke-width:0.5;" width="504" x="1248" y="215.95"/><ellipse cx="1363.25" cy="231.95" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M1365.7231,238.0931 Q1365.1421,238.3919 1364.5029,238.5413 Q1363.8638,238.6907 1363.1582,238.6907 Q1360.6514,238.6907 1359.3315,237.0389 Q1358.0117,235.387 1358.0117,232.2659 Q1358.0117,229.1365 1359.3315,227.4847 Q1360.6514,225.8328 1363.1582,225.8328 Q1363.8638,225.8328 1364.5112,225.9822 Q1365.1587,226.1316 1365.7231,226.4305 L1365.7231,229.1531 Q1365.0923,228.5721 1364.4988,228.3023 Q1363.9053,228.0325 1363.2744,228.0325 Q1361.9297,228.0325 1361.2449,229.0992 Q1360.5601,230.1658 1360.5601,232.2659 Q1360.5601,234.3577 1361.2449,235.4244 Q1361.9297,236.491 1363.2744,236.491 Q1363.9053,236.491 1364.4988,236.2212 Q1365.0923,235.9515 1365.7231,235.3704 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="265" x="1383.75" y="237.241">RequestInternalDereferencedToolState</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="1249" x2="1751" y1="247.95" y2="247.95"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="282" x="1254" y="265.4852">state_representation = "request_internal"</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="1249" x2="1751" y1="272.4383" y2="272.4383"/><ellipse cx="1259" cy="286.1824" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="478" x="1268" y="289.9734">_to_base_model(parameters: ToolParameterBundle): Type[BaseModel]</text></g><g id="elem_GMN13"><path d="M744,386.45 L744,442.3816 A0,0 0 0 0 744,442.3816 L1250,442.3816 A0,0 0 0 0 1250,442.3816 L1250,396.45 L1240,386.45 L1089.54,386.45 L1371.12,297.41 L1081.54,386.45 L744,386.45 A0,0 0 0 0 744,386.45 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><path d="M1240,386.45 L1240,396.45 L1250,396.45 L1240,386.45 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="185" x="750" y="404.0184">Object references of the form</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="192" x="750" y="419.3289">{src: "hda", id: &lt;decoded_id&gt;}.</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="481" x="754" y="434.6395">Allow mapping/reduce constructs. No URI src dicts - all converted to HDAs.</text></g><!--MD5=[48b694eadbf7bc2510a32379c1b70352]
+class JobInternalToolState--><g id="elem_JobInternalToolState"><rect codeLine="30" fill="#FFEFD5" height="80.9766" id="JobInternalToolState" rx="2.5" ry="2.5" style="stroke:#FF8C00;stroke-width:0.5;" width="504" x="1285" y="373.93"/><ellipse cx="1462.75" cy="389.93" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M1465.2231,396.0731 Q1464.6421,396.3719 1464.0029,396.5213 Q1463.3638,396.6707 1462.6582,396.6707 Q1460.1514,396.6707 1458.8315,395.0189 Q1457.5117,393.367 1457.5117,390.2459 Q1457.5117,387.1165 1458.8315,385.4647 Q1460.1514,383.8128 1462.6582,383.8128 Q1463.3638,383.8128 1464.0112,383.9622 Q1464.6587,384.1116 1465.2231,384.4105 L1465.2231,387.1331 Q1464.5923,386.5521 1463.9988,386.2823 Q1463.4053,386.0125 1462.7744,386.0125 Q1461.4297,386.0125 1460.7449,387.0792 Q1460.0601,388.1458 1460.0601,390.2459 Q1460.0601,392.3377 1460.7449,393.4044 Q1461.4297,394.471 1462.7744,394.471 Q1463.4053,394.471 1463.9988,394.2012 Q1464.5923,393.9315 1465.2231,393.3504 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="140" x="1483.25" y="395.221">JobInternalToolState</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="1286" x2="1788" y1="405.93" y2="405.93"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="252" x="1291" y="423.4652">state_representation = "job_internal"</text><line style="stroke:#FF8C00;stroke-width:0.5;" x1="1286" x2="1788" y1="430.4183" y2="430.4183"/><ellipse cx="1296" cy="444.1624" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="478" x="1305" y="447.9534">_to_base_model(parameters: ToolParameterBundle): Type[BaseModel]</text></g><g id="elem_GMN17"><path d="M1415,515.91 L1415,587.1522 A0,0 0 0 0 1415,587.1522 L1659,587.1522 A0,0 0 0 0 1659,587.1522 L1659,525.91 L1649,515.91 L1541,515.91 L1537,455.23 L1533,515.91 L1415,515.91 A0,0 0 0 0 1415,515.91 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><path d="M1649,515.91 L1649,525.91 L1659,525.91 L1649,515.91 " fill="#FFEFD5" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="185" x="1421" y="533.4784">Object references of the form</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="192" x="1421" y="548.7889">{src: "hda", id: &lt;decoded_id&gt;}.</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="219" x="1425" y="564.0995">Mapping constructs expanded out.</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="144" x="1425" y="579.41">(Defaults are inserted?)</text></g><!--MD5=[269f52e8487e2a76b96d386d755c75d8]
+reverse link ToolState to RequestToolState--><g id="link_ToolState_RequestToolState"><path codeLine="37" d="M801.15,156.66 C696.82,176.21 582.66,197.61 487.33,215.47 " fill="none" id="ToolState-backto-RequestToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="none" points="799.79,149.8,820.74,152.99,802.37,163.56,799.79,149.8" style="stroke:#FFA500;stroke-width:1.0;"/></g><!--MD5=[dd93b154e0c0c396ba5562a34580b1a6]
+reverse link ToolState to RequestInternalToolState--><g id="link_ToolState_RequestInternalToolState"><path codeLine="38" d="M1006.55,166.9 C981.47,183.53 955.45,200.78 933.1,215.6 " fill="none" id="ToolState-backto-RequestInternalToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="none" points="1002.33,161.3,1022.87,156.08,1010.07,172.97,1002.33,161.3" style="stroke:#FFA500;stroke-width:1.0;"/></g><!--MD5=[0358dda221f8b059da8053d6fb03640e]
+reverse link ToolState to RequestInternalDereferencedToolState--><g id="link_ToolState_RequestInternalDereferencedToolState"><path codeLine="39" d="M1269.66,163.27 C1313.89,180.97 1360.57,199.65 1400.26,215.53 " fill="none" id="ToolState-backto-RequestInternalDereferencedToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="none" points="1267.26,169.85,1251.29,155.92,1272.46,156.85,1267.26,169.85" style="stroke:#FFA500;stroke-width:1.0;"/></g><!--MD5=[36305bbce111c7e7d9f6236ae242d2c7]
+reverse link ToolState to JobInternalToolState--><g id="link_ToolState_JobInternalToolState"><path codeLine="40" d="M1416.95,115.94 C1566.33,131.28 1723.47,160.47 1770,215.95 C1793.13,243.53 1788.92,266.32 1770,296.93 C1748.66,331.46 1713.65,356.09 1677.17,373.53 " fill="none" id="ToolState-backto-JobInternalToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="none" points="1416.66,122.95,1397.44,114.02,1418.03,109.02,1416.66,122.95" style="stroke:#FFA500;stroke-width:1.0;"/></g><!--MD5=[7b766fbe81ea9c5eae779649ae0bfd4b]
+link RequestToolState to RequestInternalToolState--><g id="link_RequestToolState_RequestInternalToolState"><path codeLine="42" d="M526.29,256.44 C557.47,256.44 589.34,256.44 620.52,256.44 " fill="none" id="RequestToolState-RequestInternalToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="#FF8C00" points="553.5,245.0953,544.4549,242.1563,544.4549,248.0342,553.5,245.0953" style="stroke:#FF8C00;stroke-width:1.0;"/><text fill="#FF8C00" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="45" x="557.5" y="250.0084">decode</text></g><!--MD5=[fba7cd1c751470181daccad9648ff09d]
+link RequestInternalToolState to RequestInternalDereferencedToolState--><g id="link_RequestInternalToolState_RequestInternalDereferencedToolState"><path codeLine="44" d="M1125.31,256.44 C1165.64,256.44 1207.37,256.44 1247.69,256.44 " fill="none" id="RequestInternalToolState-RequestInternalDereferencedToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="#FF8C00" points="1152.5,245.0953,1143.4549,242.1563,1143.4549,248.0342,1152.5,245.0953" style="stroke:#FF8C00;stroke-width:1.0;"/><text fill="#FF8C00" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="73" x="1156.5" y="250.0084">dereference</text></g><!--MD5=[eaac149cd52357b54ad3c2582b313d87]
+reverse link RequestInternalDereferencedToolState to JobInternalToolState--><g id="link_RequestInternalDereferencedToolState_JobInternalToolState"><path codeLine="46" d="M1512.76,311.21 C1517.6,331.64 1523.03,354.53 1527.52,373.46 " fill="none" id="RequestInternalDereferencedToolState-backto-JobInternalToolState" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="none" points="1509.78,298.68,1507.2733,305.4414,1512.5505,310.3558,1515.0572,303.5944,1509.78,298.68" style="stroke:#FFA500;stroke-width:1.0;"/><polygon fill="#FF8C00" points="1525.1536,340.4504,1525.9264,330.9713,1520.2071,332.3274,1525.1536,340.4504" style="stroke:#FF8C00;stroke-width:1.0;"/><text fill="#FF8C00" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="46" x="1533" y="340.4984">expand</text></g><!--MD5=[ec4fa4eb858d20753965cdb606e0251f]
+@startuml
+
+!include plantuml_options.txt
+
+package galaxy.tool_util.parameters.state {
+
+class ToolState {
+state_representation: str
+input_state: Dict[str, Any]
++ validate(parameters: ToolParameterBundle)
++ {abstract} _to_base_model(parameters: ToolParameterBundle): Optional[Type[BaseModel]]
+}
+
+class RequestToolState {
+state_representation = "request"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <encoded_id>}.\n Allow mapping/reduce constructs.
+
+class RequestInternalToolState {
+state_representation = "request_internal"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Allow mapping/reduce constructs. Allows URI src dicts.
+
+class RequestInternalDereferencedToolState {
+state_representation = "request_internal"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Allow mapping/reduce constructs. No URI src dicts - all converted to HDAs.
+
+class JobInternalToolState {
+state_representation = "job_internal"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Mapping constructs expanded out.\n (Defaults are inserted?)
+
+ToolState <|- - RequestToolState
+ToolState <|- - RequestInternalToolState
+ToolState <|- - RequestInternalDereferencedToolState
+ToolState <|- - JobInternalToolState
+
+RequestToolState - RequestInternalToolState : decode >
+
+RequestInternalToolState - RequestInternalDereferencedToolState : dereference > 
+
+RequestInternalDereferencedToolState o- - JobInternalToolState : expand >
+
+}
+@enduml
+
+@startuml
+
+
+skinparam class {
+    ArrowFontColor DarkOrange
+    BackgroundColor #FFEFD5
+    ArrowColor Orange
+    BorderColor DarkOrange
+}
+
+skinparam object {
+    ArrowFontColor DarkOrange
+    BackgroundColor #FFEFD5
+    BackgroundColor #FFEFD5
+    ArrowColor Orange
+    BorderColor DarkOrange
+}
+
+skinparam ComponentBackgroundColor #FFEFD5
+skinparam ComponentBorderColor DarkOrange
+
+skinparam DatabaseBackgroundColor #FFEFD5
+skinparam DatabaseBorderColor DarkOrange
+
+skinparam StorageBackgroundColor #FFEFD5
+skinparam StorageBorderColor DarkOrange
+
+skinparam QueueBackgroundColor #FFEFD5
+skinparam QueueBorderColor DarkOrange
+
+skinparam note {
+    BackgroundColor #FFEFD5
+    BorderColor #BF5700
+}
+
+skinparam sequence {
+    ArrowColor Orange
+    ArrowFontColor DarkOrange
+    ActorBorderColor DarkOrange
+    ActorBackgroundColor #FFEFD5
+
+    ParticipantBorderColor DarkOrange
+    ParticipantBackgroundColor #FFEFD5
+
+    LifeLineBorderColor DarkOrange
+    LifeLineBackgroundColor #FFEFD5
+
+    DividerBorderColor DarkOrange
+    GroupBorderColor DarkOrange
+}
+
+
+package galaxy.tool_util.parameters.state {
+
+class ToolState {
+state_representation: str
+input_state: Dict[str, Any]
++ validate(parameters: ToolParameterBundle)
++ {abstract} _to_base_model(parameters: ToolParameterBundle): Optional[Type[BaseModel]]
+}
+
+class RequestToolState {
+state_representation = "request"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <encoded_id>}.\n Allow mapping/reduce constructs.
+
+class RequestInternalToolState {
+state_representation = "request_internal"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Allow mapping/reduce constructs. Allows URI src dicts.
+
+class RequestInternalDereferencedToolState {
+state_representation = "request_internal"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Allow mapping/reduce constructs. No URI src dicts - all converted to HDAs.
+
+class JobInternalToolState {
+state_representation = "job_internal"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Mapping constructs expanded out.\n (Defaults are inserted?)
+
+ToolState <|- - RequestToolState
+ToolState <|- - RequestInternalToolState
+ToolState <|- - RequestInternalDereferencedToolState
+ToolState <|- - JobInternalToolState
+
+RequestToolState - RequestInternalToolState : decode >
+
+RequestInternalToolState - RequestInternalDereferencedToolState : dereference > 
+
+RequestInternalDereferencedToolState o- - JobInternalToolState : expand >
+
+}
+@enduml
+
+PlantUML version 1.2022.8(Sun Sep 25 05:00:33 EDT 2022)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

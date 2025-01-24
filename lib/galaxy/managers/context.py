@@ -28,6 +28,7 @@ should annotate their dependency on the narrowest context they require.
 A method that requires a user but not a history should declare its
 ``trans`` argument as requiring type :class:`galaxy.managers.context.ProvidesUserContext`.
 """
+
 # TODO: Refactor this class so that galaxy.managers depends on a package
 # containing this.
 # TODO: Provide different classes for real users and potentially bootstrapped
@@ -38,11 +39,16 @@ import abc
 import string
 from json import dumps
 from typing import (
+    Any,
     Callable,
     cast,
+    Dict,
     List,
     Optional,
+    Tuple,
 )
+
+from sqlalchemy import select
 
 from galaxy.exceptions import (
     AuthenticationRequired,
@@ -76,11 +82,13 @@ class ProvidesAppContext:
     Mixed in class must provide `app` property.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def app(self) -> MinimalManagerApp:
         """Provide access to the Galaxy ``app`` object."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def url_builder(self) -> Optional[Callable[..., str]]:
         """
         Provide access to Galaxy URLs (if available).
@@ -201,6 +209,13 @@ class ProvidesUserContext(ProvidesAppContext):
 
     galaxy_session: Optional[GalaxySession] = None
     _tag_handler: Optional[GalaxyTagHandlerSession] = None
+    _short_term_cache: Dict[Tuple[str, ...], Any]
+
+    def set_cache_value(self, args: Tuple[str, ...], value: Any):
+        self._short_term_cache[args] = value
+
+    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
+        return self._short_term_cache.get(args, default)
 
     @property
     def tag_handler(self):
@@ -214,7 +229,8 @@ class ProvidesUserContext(ProvidesAppContext):
             raise AuthenticationRequired("The async task requires user authentication.")
         return RequestUser(user_id=self.user.id)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def user(self):
         """Provide access to the user object."""
 
@@ -232,8 +248,7 @@ class ProvidesUserContext(ProvidesAppContext):
         return self.user is None
 
     def get_current_user_roles(self) -> List[Role]:
-        user = self.user
-        if user:
+        if user := self.user:
             roles = user.all_roles()
         else:
             roles = []
@@ -288,7 +303,8 @@ class ProvidesHistoryContext(ProvidesUserContext):
     properties.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def history(self) -> Optional[History]:
         """Provide access to the user's current history model object.
 
@@ -307,15 +323,8 @@ class ProvidesHistoryContext(ProvidesUserContext):
             return None
         non_ready_or_ok = set(Dataset.non_ready_states)
         non_ready_or_ok.add(HistoryDatasetAssociation.states.OK)
-        datasets = (
-            self.sa_session.query(HistoryDatasetAssociation)
-            .filter_by(deleted=False, history_id=self.history.id, extension="len")
-            .filter(
-                HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
-            )
-        )
         valid_ds = None
-        for ds in datasets:
+        for ds in get_hdas(self.sa_session, self.history.id, non_ready_or_ok):
             if ds.dbkey == dbkey:
                 if ds.state == HistoryDatasetAssociation.states.OK:
                     return ds
@@ -330,3 +339,12 @@ class ProvidesHistoryContext(ProvidesUserContext):
         """
         # FIXME: This method should be removed
         return self.app.genome_builds.get_genome_build_names(trans=self)
+
+
+def get_hdas(session, history_id, states):
+    stmt = (
+        select(HistoryDatasetAssociation)
+        .filter_by(deleted=False, history_id=history_id, extension="len")
+        .where(HistoryDatasetAssociation._state.in_(states))
+    )
+    return session.scalars(stmt)

@@ -1,73 +1,67 @@
-<template>
-    <b-form @submit.prevent="submit">
-        <b-alert v-if="!!message" :variant="variant" show>
-            {{ message }}
-        </b-alert>
-        <b-card header="Change your password">
-            <b-form-group v-if="expiredUser" label="Current Password">
-                <b-form-input v-model="current" type="password" />
-            </b-form-group>
-            <b-form-group label="New Password"> <b-form-input v-model="password" type="password" /> </b-form-group>
-            <b-form-group label="Confirm password"> <b-form-input v-model="confirm" type="password" /> </b-form-group>
-            <b-button type="submit">Save new password</b-button>
-        </b-card>
-    </b-form>
-</template>
-<script>
+<script setup lang="ts">
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
-import Vue from "vue";
+import { BAlert, BButton, BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
-Vue.use(BootstrapVue);
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-export default {
-    props: {
-        token: {
-            type: String,
-            default: null,
-        },
-        expiredUser: {
-            type: String,
-            default: null,
-        },
-        messageText: {
-            type: String,
-            default: null,
-        },
-        messageVariant: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            password: null,
-            confirm: null,
-            current: null,
-            message: this.messageText,
-            variant: this.messageVariant,
-        };
-    },
-    methods: {
-        submit() {
-            axios
-                .post(withPrefix("/user/change_password"), {
-                    token: this.token,
-                    id: this.expiredUser,
-                    current: this.current,
-                    password: this.password,
-                    confirm: this.confirm,
-                })
-                .then((response) => {
-                    window.location = withPrefix(`/`);
-                })
-                .catch((error) => {
-                    this.variant = "danger";
-                    const message = error.response && error.response.data && error.response.data.err_msg;
-                    this.message = message || "Password change failed for an unknown reason.";
-                });
-        },
-    },
-};
+interface Props {
+    token?: string;
+    expiredUser?: string;
+    messageText?: string;
+    messageVariant?: string;
+}
+
+const props = defineProps<Props>();
+
+const router = useRouter();
+
+const confirm = ref(null);
+const current = ref(null);
+const password = ref(null);
+const message = ref(props.messageText);
+const variant = ref(props.messageVariant);
+
+async function submit() {
+    try {
+        await axios.post(withPrefix("/user/change_password"), {
+            token: props.token,
+            id: props.expiredUser,
+            current: current.value,
+            password: password.value,
+            confirm: confirm.value,
+        });
+
+        router.push("/");
+    } catch (error: any) {
+        variant.value = "danger";
+        message.value = errorMessageAsString(error, "Password change failed for an unknown reason.");
+    }
+}
 </script>
+
+<template>
+    <BForm @submit.prevent="submit">
+        <BAlert v-if="!!message" :variant="variant" show>
+            {{ message }}
+        </BAlert>
+
+        <BCard header="Change your password">
+            <BFormGroup v-if="expiredUser" label="Current Password">
+                <BFormInput v-model="current" type="password" autocomplete="current-password" />
+            </BFormGroup>
+
+            <BFormGroup label="New Password">
+                <BFormInput v-model="password" type="password" autocomplete="new-password" />
+            </BFormGroup>
+
+            <BFormGroup label="Confirm password">
+                <BFormInput v-model="confirm" type="password" autocomplete="new-password" />
+            </BFormGroup>
+
+            <BButton type="submit">Save new password</BButton>
+        </BCard>
+    </BForm>
+</template>

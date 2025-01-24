@@ -194,7 +194,7 @@ class TestLibrariesApi(ApiTestCase):
         library = self.library_populator.new_private_library(library_name)
         payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
         create_response = self.galaxy_interactor.post(
-            "libraries/%s/contents" % library["id"], payload, files=files, key=self.master_api_key
+            f"libraries/{library['id']}/contents", payload, files=files, key=self.master_api_key
         )
         self._assert_status_code_is(create_response, 400)
 
@@ -313,9 +313,9 @@ class TestLibrariesApi(ApiTestCase):
             "upload_option": "upload_file",
             "files_0|url_paste": FILE_URL,
         }
-        create_response = self._post(f"libraries/{library['id']}/contents", payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 400)
-        assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
+        assert create_response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
 
     @skip_if_github_down
     @requires_new_library
@@ -340,7 +340,6 @@ class TestLibrariesApi(ApiTestCase):
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
             "targets": targets,
-            "validate_hashes": True,
         }
         tool_response = self.dataset_populator.fetch(payload, assert_ok=False)
         job = self.dataset_populator.check_run(tool_response)
@@ -447,10 +446,11 @@ class TestLibrariesApi(ApiTestCase):
             "name": "updated_name",
             "file_ext": "fasta",
             "misc_info": "updated_info",
-            "genome_build": "updated_genome_build",
+            "message": "update message",
         }
         ld_updated = self._patch_library_dataset(ld["id"], data)
-        self._assert_has_keys(ld_updated, "name", "file_ext", "misc_info", "genome_build")
+        for key, value in data.items():
+            assert ld_updated[key] == value
 
     @requires_new_library
     def test_update_dataset_tags(self):
@@ -551,7 +551,7 @@ class TestLibrariesApi(ApiTestCase):
             history_id, contents=["xxx", "yyy"], direct_upload=True, wait=True
         ).json()["outputs"][0]["id"]
         payload = {"from_hdca_id": hdca_id, "create_type": "file", "folder_id": folder_id}
-        create_response = self._post(f"libraries/{library['id']}/contents", payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
 
     @requires_new_library
@@ -587,7 +587,7 @@ class TestLibrariesApi(ApiTestCase):
             create_type="folder",
             name="New Folder",
         )
-        return self._post(f"libraries/{library['id']}/contents", data=create_data)
+        return self._post(f"libraries/{library['id']}/contents", data=create_data, json=True)
 
     def _create_subfolder(self, containing_folder_id):
         create_data = dict(
@@ -604,6 +604,6 @@ class TestLibrariesApi(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content=content, wait=wait)["id"]
         payload = {"from_hda_id": hda_id, "create_type": "file", "folder_id": folder_id}
-        ld = self._post(f"libraries/{folder_id}/contents", payload)
+        ld = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         ld.raise_for_status()
         return ld

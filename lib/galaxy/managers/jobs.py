@@ -1,11 +1,20 @@
 import json
 import logging
-import typing
 from datetime import (
     date,
     datetime,
 )
+from pathlib import Path
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 
+import sqlalchemy
 from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
@@ -15,29 +24,46 @@ from sqlalchemy import (
     and_,
     false,
     func,
+    null,
     or_,
+    true,
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
+from typing_extensions import TypedDict
 
 from galaxy import model
 from galaxy.exceptions import (
-    AdminRequiredException,
+    ConfigDoesNotAllowException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
+    ImplicitCollectionJobs,
+    ImplicitCollectionJobsJobAssociation,
     Job,
+    JobMetricNumeric,
     JobParameter,
+    User,
+    Workflow,
+    WorkflowInvocation,
+    WorkflowInvocationStep,
+    WorkflowStep,
+    YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
@@ -51,10 +77,15 @@ from galaxy.schema.schema import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.tools._types import (
+    ToolStateDumpedToJsonInternalT,
+    ToolStateJobInstancePopulatedT,
+)
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
     listify,
+    string_as_bool_or_none,
 )
 from galaxy.util.search import (
     FilteredTerm,
@@ -63,6 +94,13 @@ from galaxy.util.search import (
 )
 
 log = logging.getLogger(__name__)
+
+JobStateT = str
+JobStatesT = Union[JobStateT, List[JobStateT]]
+
+
+STDOUT_LOCATION = "outputs/tool_stdout"
+STDERR_LOCATION = "outputs/tool_stderr"
 
 
 class JobLock(BaseModel):
@@ -93,76 +131,56 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(self, trans, payload: JobIndexQueryPayload):
+    def index_query(self, trans: ProvidesUserContext, payload: JobIndexQueryPayload) -> sqlalchemy.engine.ScalarResult:
+        """The caller is responsible for security checks on the resulting job if
+        history_id, invocation_id, or implicit_collection_jobs_id is set.
+        Otherwise this will only return the user's jobs or all jobs if the requesting
+        user is acting as an admin.
+        """
         is_admin = trans.user_is_admin
         user_details = payload.user_details
-
         decoded_user_id = payload.user_id
+        history_id = payload.history_id
+        workflow_id = payload.workflow_id
+        invocation_id = payload.invocation_id
+        implicit_collection_jobs_id = payload.implicit_collection_jobs_id
+        search = payload.search
+        order_by = payload.order_by
 
-        if is_admin:
-            if decoded_user_id is not None:
-                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
-            else:
-                query = trans.sa_session.query(model.Job)
-            if user_details:
-                query = query.outerjoin(model.Job.user)
-
-        else:
-            if user_details:
-                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
-            if decoded_user_id is not None and decoded_user_id != trans.user.id:
-                raise AdminRequiredException("Only admins can index the jobs of others")
-            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
-
-        def build_and_apply_filters(query, objects, filter_func):
+        def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:
                 if isinstance(objects, (str, date, datetime)):
-                    query = query.filter(filter_func(objects))
+                    stmt = stmt.where(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []
                     for obj in objects:
                         t.append(filter_func(obj))
-                    query = query.filter(or_(*t))
-            return query
+                    stmt = stmt.where(or_(*t))
+            return stmt
 
-        query = build_and_apply_filters(query, payload.states, lambda s: model.Job.state == s)
-        query = build_and_apply_filters(query, payload.tool_ids, lambda t: model.Job.tool_id == t)
-        query = build_and_apply_filters(query, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
-        query = build_and_apply_filters(query, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
-        query = build_and_apply_filters(query, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
-
-        history_id = payload.history_id
-        workflow_id = payload.workflow_id
-        invocation_id = payload.invocation_id
-        if history_id is not None:
-            query = query.filter(model.Job.history_id == history_id)
-        if workflow_id or invocation_id:
+        def add_workflow_jobs():
+            wfi_step = select(WorkflowInvocationStep)
             if workflow_id is not None:
                 wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .join(model.WorkflowInvocation)
-                    .join(model.Workflow)
-                    .filter(
-                        model.Workflow.stored_workflow_id == workflow_id,
-                    )
-                    .subquery()
+                    wfi_step.join(WorkflowInvocation).join(Workflow).where(Workflow.stored_workflow_id == workflow_id)
                 )
             elif invocation_id is not None:
-                wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == invocation_id)
-                    .subquery()
-                )
-            query1 = query.join(wfi_step)
-            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
-                wfi_step,
-                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
-                == wfi_step.c.implicit_collection_jobs_id,
-            )
-            query = query1.union(query2)
+                wfi_step = wfi_step.where(WorkflowInvocationStep.workflow_invocation_id == invocation_id)
+            wfi_step_sq = wfi_step.subquery()
 
-        search = payload.search
-        if search:
+            stmt1 = stmt.join(wfi_step_sq)
+            stmt2 = stmt.join(ImplicitCollectionJobsJobAssociation).join(
+                wfi_step_sq,
+                ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
+                == wfi_step_sq.c.implicit_collection_jobs_id,
+            )
+            # Ensure the result is models, not tuples
+            sq = stmt1.union(stmt2).subquery()
+            # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection (`sq.c`).
+            # Ref: https://github.com/galaxyproject/galaxy/pull/16852#issuecomment-1804676322
+            return select(aliased(Job, sq)), sq.c
+
+        def add_search_criteria(stmt):
             search_filters = {
                 "tool": "tool",
                 "t": "tool",
@@ -184,36 +202,78 @@ class JobManager:
                         "h": "handler",
                     }
                 )
+            assert search
             parsed_search = parse_filters_structured(search, search_filters)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
                     if key == "user":
-                        query = query.filter(text_column_filter(model.User.email, term))
+                        stmt = stmt.where(text_column_filter(User.email, term))
                     elif key == "tool":
-                        query = query.filter(text_column_filter(model.Job.tool_id, term))
+                        stmt = stmt.where(text_column_filter(Job.tool_id, term))
                     elif key == "handler":
-                        query = query.filter(text_column_filter(model.Job.handler, term))
+                        stmt = stmt.where(text_column_filter(Job.handler, term))
                     elif key == "runner":
-                        query = query.filter(text_column_filter(model.Job.job_runner_name, term))
+                        stmt = stmt.where(text_column_filter(Job.job_runner_name, term))
                 elif isinstance(term, RawTextTerm):
-                    columns = [model.Job.tool_id]
+                    columns: List = [Job.tool_id]
                     if user_details:
-                        columns.append(model.User.email)
+                        columns.append(User.email)
                     if is_admin:
-                        columns.append(model.Job.handler)
-                        columns.append(model.Job.job_runner_name)
-                    query = query.filter(raw_text_column_filter(columns, term))
+                        columns.append(Job.handler)
+                        columns.append(Job.job_runner_name)
+                    stmt = stmt.filter(raw_text_column_filter(columns, term))
+            return stmt
 
-        if payload.order_by == JobIndexSortByEnum.create_time:
-            order_by = model.Job.create_time.desc()
+        stmt = select(Job)
+
+        if is_admin:
+            if decoded_user_id is not None:
+                stmt = stmt.where(Job.user_id == decoded_user_id)
+            if user_details:
+                stmt = stmt.outerjoin(Job.user)
         else:
-            order_by = model.Job.update_time.desc()
-        query = query.order_by(order_by)
+            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
+                # If we're not filtering on history, invocation or collection we filter the jobs owned by the current user
+                if trans.user:
+                    stmt = stmt.where(Job.user_id == trans.user.id)
+                elif trans.galaxy_session:
+                    stmt = stmt.where(Job.session_id == trans.galaxy_session.id)
+                else:
+                    raise RequestParameterMissingException("A session is required to list jobs for anonymous users")
 
-        query = query.offset(payload.offset)
-        query = query.limit(payload.limit)
-        return query
+        stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
+        stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
+        stmt = build_and_apply_filters(stmt, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
+        stmt = build_and_apply_filters(stmt, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
+        stmt = build_and_apply_filters(stmt, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
+
+        if history_id is not None:
+            stmt = stmt.where(Job.history_id == history_id)
+
+        order_by_columns = Job
+        if workflow_id or invocation_id:
+            stmt, order_by_columns = add_workflow_jobs()
+        elif implicit_collection_jobs_id:
+            stmt = (
+                stmt.join(ImplicitCollectionJobsJobAssociation, ImplicitCollectionJobsJobAssociation.job_id == Job.id)
+                .join(
+                    ImplicitCollectionJobs,
+                    ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+                )
+                .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == implicit_collection_jobs_id)
+            )
+        if search:
+            stmt = add_search_criteria(stmt)
+
+        if order_by == JobIndexSortByEnum.create_time:
+            stmt = stmt.order_by(order_by_columns.create_time.desc())
+        else:
+            stmt = stmt.order_by(order_by_columns.update_time.desc())
+
+        stmt = stmt.offset(payload.offset)
+        stmt = stmt.limit(payload.limit)
+        return trans.sa_session.scalars(stmt)
 
     def job_lock(self) -> JobLock:
         return JobLock(active=self.app.job_manager.job_lock)
@@ -224,15 +284,15 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id):
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+    def get_accessible_job(self, trans: ProvidesUserContext, decoded_job_id) -> Job:
+        job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (
-            (job.user_id == trans.user.id)
-            if job.user_id and trans.user
-            else (job.session_id == trans.get_galaxy_session().id)
-        )
+        belongs_to_user = False
+        if trans.user:
+            belongs_to_user = job.user_id == trans.user.id
+        elif trans.galaxy_session:
+            belongs_to_user = job.session_id == trans.galaxy_session.id
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
@@ -242,6 +302,47 @@ class JobManager:
                     raise ItemAccessibilityException("You are not allowed to rerun this job.")
         trans.sa_session.refresh(job)
         return job
+
+    def get_job_console_output(
+        self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+    ):
+        if job is None:
+            raise ObjectNotFound()
+
+        # Check job destination params to see if stdout reporting is enabled
+        dest_params = job.destination_params
+        if not string_as_bool_or_none(dest_params.get("live_tool_output_reporting", False)):
+            raise ConfigDoesNotAllowException()
+
+        # If stdout_length and stdout_position are good values, then load standard out and add it to status
+        console_output = {}
+        console_output["state"] = job.state
+        if job.state == job.states.RUNNING:
+            working_directory = trans.app.object_store.get_filename(
+                job, base_dir="job_work", dir_only=True, obj_dir=True
+            )
+            if stdout_length > -1 and stdout_position > -1:
+                try:
+                    stdout_path = Path(working_directory) / STDOUT_LOCATION
+                    stdout_file = open(stdout_path)
+                    stdout_file.seek(stdout_position)
+                    console_output["stdout"] = stdout_file.read(stdout_length)
+                except Exception as e:
+                    log.error("Could not read STDOUT: %s", e)
+                    console_output["stdout"] = ""
+            if stderr_length > -1 and stderr_position > -1:
+                try:
+                    stderr_path = Path(working_directory) / STDERR_LOCATION
+                    stderr_file = open(stderr_path)
+                    stderr_file.seek(stderr_position)
+                    console_output["stderr"] = stderr_file.read(stderr_length)
+                except Exception as e:
+                    log.error("Could not read STDERR: %s", e)
+                    console_output["stderr"] = ""
+        else:
+            console_output["stdout"] = job.tool_stdout
+            console_output["stderr"] = job.tool_stderr
+        return console_output
 
     def stop(self, job, message=None):
         if not job.finished:
@@ -272,7 +373,15 @@ class JobSearch:
         self.ldda_manager = ldda_manager
         self.decode_id = id_encoding_helper.decode_id
 
-    def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state="ok"):
+    def by_tool_input(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_id: str,
+        tool_version: Optional[str],
+        param: ToolStateJobInstancePopulatedT,
+        param_dump: ToolStateDumpedToJsonInternalT,
+        job_state: Optional[JobStatesT] = "ok",
+    ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -314,7 +423,14 @@ class JobSearch:
         )
 
     def __search(
-        self, tool_id, tool_version, user, input_data, job_state=None, param_dump=None, wildcard_param_dump=None
+        self,
+        tool_id: str,
+        tool_version: Optional[str],
+        user: model.User,
+        input_data,
+        job_state: Optional[JobStatesT],
+        param_dump: ToolStateDumpedToJsonInternalT,
+        wildcard_param_dump=None,
     ):
         search_timer = ExecutionTimer()
 
@@ -329,81 +445,19 @@ class JobSearch:
                 return key, value
             return key, value
 
-        # build one subquery that selects a job with correct job parameters
+        stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
-        subq = select(model.Job.id).where(
-            and_(
-                model.Job.tool_id == tool_id,
-                model.Job.user_id == user.id,
-                model.Job.copied_from_job_id.is_(None),  # Always pick original job
-            )
-        )
-        if tool_version:
-            subq = subq.where(Job.tool_version == str(tool_version))
+        stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
 
-        if job_state is None:
-            subq = subq.where(
-                Job.state.in_(
-                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
-                )
-            )
-        else:
-            if isinstance(job_state, str):
-                subq = subq.where(Job.state == job_state)
-            elif isinstance(job_state, list):
-                subq = subq.where(or_(*[Job.state == s for s in job_state]))
+        data_conditions: List = []
 
-        # exclude jobs with deleted outputs
-        subq = subq.where(
-            and_(
-                model.Job.any_output_dataset_collection_instances_deleted == false(),
-                model.Job.any_output_dataset_deleted == false(),
-            )
-        )
-
-        for k, v in wildcard_param_dump.items():
-            wildcard_value = None
-            if v == {"__class__": "RuntimeValue"}:
-                # TODO: verify this is always None. e.g. run with runtime input input
-                v = None
-            elif k.endswith("|__identifier__"):
-                # We've taken care of this while constructing the conditions based on ``input_data`` above
-                continue
-            elif k == "chromInfo" and "?.len" in v:
-                continue
-                wildcard_value = '"%?.len"'
-            if not wildcard_value:
-                value_dump = json.dumps(v, sort_keys=True)
-                wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
-            a = aliased(JobParameter)
-            if value_dump == wildcard_value:
-                subq = subq.join(a).where(
-                    and_(
-                        Job.id == a.job_id,
-                        a.name == k,
-                        a.value == value_dump,
-                    )
-                )
-            else:
-                subq = subq.join(a).where(
-                    and_(
-                        Job.id == a.job_id,
-                        a.name == k,
-                        a.value.like(wildcard_value),
-                    )
-                )
-
-        query = select(Job.id).select_from(Job.table.join(subq, subq.c.id == Job.id))
-
-        data_conditions = []
-
-        # We now build the query filters that relate to the input datasets
+        # We now build the stmt filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
         # the type (hda, hdca or lda) in `data_types`
         # and the ids that have been used in the job that has already been run in `used_ids`.
         requested_ids = []
         data_types = []
-        used_ids = []
+        used_ids: List = []
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
             # the input is in a repeat, or not (section and conditional)
@@ -415,137 +469,19 @@ class JobSearch:
                 data_types.append(t)
                 identifier = type_values["identifier"]
                 if t == "hda":
-                    a = aliased(model.JobToInputDatasetAssociation)
-                    b = aliased(model.HistoryDatasetAssociation)
-                    c = aliased(model.HistoryDatasetAssociation)
-                    d = aliased(model.JobParameter)
-                    e = aliased(model.HistoryDatasetAssociationHistory)
-                    query.add_columns(a.dataset_id)
-                    used_ids.append(a.dataset_id)
-                    query = query.join(a, a.job_id == model.Job.id)
-                    stmt = select(model.HistoryDatasetAssociation.id).where(
-                        model.HistoryDatasetAssociation.id == e.history_dataset_association_id
-                    )
-                    # b is the HDA used for the job
-                    query = query.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
-                    name_condition = []
-                    if identifier:
-                        query = query.join(d)
-                        data_conditions.append(
-                            and_(
-                                d.name.in_({f"{_}|__identifier__" for _ in k}),
-                                d.value == json.dumps(identifier),
-                            )
-                        )
-                    else:
-                        stmt = stmt.where(e.name == c.name)
-                        name_condition.append(b.name == c.name)
-                    stmt = (
-                        stmt.where(
-                            e.extension == c.extension,
-                        )
-                        .where(
-                            a.dataset_version == e.version,
-                        )
-                        .where(
-                            e._metadata == c._metadata,
-                        )
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            c.id == v,  # c is the requested job input HDA
-                            # We need to make sure that the job we are looking for has been run with identical inputs.
-                            # Here we deal with 3 requirements:
-                            #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
-                            #  - b's update_time is older than the job create time, meaning no changes occurred
-                            #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
-                            or_(
-                                and_(
-                                    or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
-                                    b.extension == c.extension,
-                                    b.metadata == c.metadata,
-                                    *name_condition,
-                                ),
-                                b.id.in_(stmt),
-                            ),
-                            or_(b.deleted == false(), c.deleted == false()),
-                        )
-                    )
+                    stmt = self._build_stmt_for_hda(stmt, data_conditions, used_ids, k, v, identifier)
                 elif t == "ldda":
-                    a = aliased(model.JobToInputLibraryDatasetAssociation)
-                    query = query.add_columns(a.ldda_id)
-                    query = query.join(a, a.job_id == model.Job.id)
-                    data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
-                    used_ids.append(a.ldda_id)
+                    stmt = self._build_stmt_for_ldda(stmt, data_conditions, used_ids, k, v)
                 elif t == "hdca":
-                    a = aliased(model.JobToInputDatasetCollectionAssociation)
-                    b = aliased(model.HistoryDatasetCollectionAssociation)
-                    c = aliased(model.HistoryDatasetCollectionAssociation)
-                    query = query.add_columns(a.dataset_collection_id)
-                    query = (
-                        query.join(a, a.job_id == model.Job.id)
-                        .join(b, b.id == a.dataset_collection_id)
-                        .join(c, b.name == c.name)
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            c.id == v,
-                            or_(
-                                and_(b.deleted == false(), b.id == v),
-                                and_(
-                                    or_(
-                                        c.copied_from_history_dataset_collection_association_id == b.id,
-                                        b.copied_from_history_dataset_collection_association_id == c.id,
-                                    ),
-                                    c.deleted == false(),
-                                ),
-                            ),
-                        )
-                    )
-                    used_ids.append(a.dataset_collection_id)
+                    stmt = self._build_stmt_for_hdca(stmt, data_conditions, used_ids, k, v)
                 elif t == "dce":
-                    a = aliased(model.JobToInputDatasetCollectionElementAssociation)
-                    b = aliased(model.DatasetCollectionElement)
-                    c = aliased(model.DatasetCollectionElement)
-                    d = aliased(model.HistoryDatasetAssociation)
-                    e = aliased(model.HistoryDatasetAssociation)
-                    query = query.add_columns(a.dataset_collection_element_id)
-                    query = (
-                        query.join(a)
-                        .join(b, b.id == a.dataset_collection_element_id)
-                        .join(
-                            c,
-                            and_(
-                                c.element_identifier == b.element_identifier,
-                                or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
-                            ),
-                        )
-                        .outerjoin(d, d.id == c.hda_id)
-                        .outerjoin(e, e.dataset_id == d.dataset_id)
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            or_(
-                                c.child_collection_id == b.child_collection_id,
-                                and_(
-                                    c.hda_id == b.hda_id,
-                                    d.id == c.hda_id,
-                                    e.dataset_id == d.dataset_id,
-                                ),
-                            ),
-                            c.id == v,
-                        )
-                    )
-                    used_ids.append(a.dataset_collection_element_id)
+                    stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v)
                 else:
                     return []
 
-            query = query.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+        stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
-        for job in self.sa_session.execute(query):
+        for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
@@ -572,17 +508,13 @@ class JobSearch:
                         continue
                     elif k == "chromInfo" and "?.len" in v:
                         continue
-                        wildcard_value = '"%?.len"'
-                    if not wildcard_value:
-                        wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
                         and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
                     )
             else:
                 job_parameter_conditions = [model.Job.id == job[0]]
-            query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
-            job = query.first()
+            job = get_job(self.sa_session, *job_parameter_conditions)
             if job is None:
                 continue
             n_parameters = 0
@@ -607,10 +539,212 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
+    def _build_job_subquery(
+        self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
+    ):
+        """Build subquery that selects a job with correct job parameters."""
+        stmt = (
+            select(model.Job.id)
+            .join(model.History, model.Job.history_id == model.History.id)
+            .where(
+                and_(
+                    model.Job.tool_id == tool_id,
+                    or_(
+                        model.Job.user_id == user_id,
+                        model.History.published == true(),
+                    ),
+                    model.Job.copied_from_job_id.is_(None),  # Always pick original job
+                )
+            )
+        )
+        if tool_version:
+            stmt = stmt.where(Job.tool_version == str(tool_version))
 
-def view_show_job(trans, job, full: bool) -> typing.Dict:
+        if job_state is None:
+            stmt = stmt.where(
+                Job.state.in_(
+                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
+                )
+            )
+        else:
+            if isinstance(job_state, str):
+                stmt = stmt.where(Job.state == job_state)
+            elif isinstance(job_state, list):
+                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
+
+        # exclude jobs with deleted outputs
+        stmt = stmt.where(
+            and_(
+                model.Job.any_output_dataset_collection_instances_deleted == false(),
+                model.Job.any_output_dataset_deleted == false(),
+            )
+        )
+
+        for k, v in wildcard_param_dump.items():
+            if v == {"__class__": "RuntimeValue"}:
+                # TODO: verify this is always None. e.g. run with runtime input input
+                v = None
+            elif k.endswith("|__identifier__"):
+                # We've taken care of this while constructing the conditions based on ``input_data`` above
+                continue
+            elif k == "chromInfo" and "?.len" in v:
+                continue
+            value_dump = json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            a = aliased(JobParameter)
+            if value_dump == wildcard_value:
+                stmt = stmt.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value == value_dump,
+                    )
+                )
+            else:
+                stmt = stmt.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value.like(wildcard_value),
+                    )
+                )
+
+        return stmt.subquery()
+
+    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+        a = aliased(model.JobToInputDatasetAssociation)
+        b = aliased(model.HistoryDatasetAssociation)
+        c = aliased(model.HistoryDatasetAssociation)
+        d = aliased(model.JobParameter)
+        e = aliased(model.HistoryDatasetAssociationHistory)
+        stmt = stmt.add_columns(a.dataset_id)
+        used_ids.append(a.dataset_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        hda_stmt = select(model.HistoryDatasetAssociation.id).where(
+            model.HistoryDatasetAssociation.id == e.history_dataset_association_id
+        )
+        # b is the HDA used for the job
+        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)  # type:ignore[attr-defined]
+        name_condition = []
+        if identifier:
+            stmt = stmt.join(d)
+            data_conditions.append(
+                and_(
+                    d.name.in_({f"{_}|__identifier__" for _ in k}),
+                    d.value == json.dumps(identifier),
+                )
+            )
+        else:
+            hda_stmt = hda_stmt.where(e.name == c.name)
+            name_condition.append(b.name == c.name)
+        hda_stmt = (
+            hda_stmt.where(
+                e.extension == c.extension,
+            )
+            .where(
+                a.dataset_version == e.version,
+            )
+            .where(
+                e._metadata == c._metadata,
+            )
+        )
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                c.id == v,  # c is the requested job input HDA
+                # We need to make sure that the job we are looking for has been run with identical inputs.
+                # Here we deal with 3 requirements:
+                #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
+                #  - b's update_time is older than the job create time, meaning no changes occurred
+                #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
+                or_(
+                    and_(
+                        or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
+                        b.extension == c.extension,
+                        b.metadata == c.metadata,
+                        *name_condition,
+                    ),
+                    b.id.in_(hda_stmt),
+                ),
+                or_(b.deleted == false(), c.deleted == false()),
+            )
+        )
+        return stmt
+
+    def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputLibraryDatasetAssociation)
+        stmt = stmt.add_columns(a.ldda_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
+        used_ids.append(a.ldda_id)
+        return stmt
+
+    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputDatasetCollectionAssociation)
+        b = aliased(model.HistoryDatasetCollectionAssociation)
+        c = aliased(model.HistoryDatasetCollectionAssociation)
+        stmt = stmt.add_columns(a.dataset_collection_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id).join(b, b.id == a.dataset_collection_id).join(c, b.name == c.name)
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                c.id == v,
+                or_(
+                    and_(b.deleted == false(), b.id == v),
+                    and_(
+                        or_(
+                            c.copied_from_history_dataset_collection_association_id == b.id,
+                            b.copied_from_history_dataset_collection_association_id == c.id,
+                        ),
+                        c.deleted == false(),
+                    ),
+                ),
+            )
+        )
+        used_ids.append(a.dataset_collection_id)
+        return stmt
+
+    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputDatasetCollectionElementAssociation)
+        b = aliased(model.DatasetCollectionElement)
+        c = aliased(model.DatasetCollectionElement)
+        d = aliased(model.HistoryDatasetAssociation)
+        e = aliased(model.HistoryDatasetAssociation)
+        stmt = stmt.add_columns(a.dataset_collection_element_id)
+        stmt = (
+            stmt.join(a, a.job_id == model.Job.id)
+            .join(b, b.id == a.dataset_collection_element_id)
+            .join(
+                c,
+                and_(
+                    c.element_identifier == b.element_identifier,
+                    or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
+                ),
+            )
+            .outerjoin(d, d.id == c.hda_id)
+            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
+        )
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                or_(
+                    c.child_collection_id == b.child_collection_id,
+                    and_(
+                        c.hda_id == b.hda_id,
+                        d.id == c.hda_id,
+                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
+                    ),
+                ),
+                c.id == v,
+            )
+        )
+        used_ids.append(a.dataset_collection_element_id)
+        return stmt
+
+
+def view_show_job(trans, job: Job, full: bool) -> Dict:
     is_admin = trans.user_is_admin
-    job_dict = trans.app.security.encode_all_ids(job.to_dict("element", system_details=is_admin), True)
+    job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
         job_dict["command_line"] = job.command_line
     if full:
@@ -652,6 +786,43 @@ def invocation_job_source_iter(sa_session, invocation_id):
             yield ("ImplicitCollectionJobs", row[1], row[2])
 
 
+def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+    single_job_stmnt = (
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        .join(Job, JobMetricNumeric.job_id == Job.id)
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id, WorkflowInvocationStep.job_id == Job.id
+            ),
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+    )
+    collection_job_stmnt = (
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        .join(Job, JobMetricNumeric.job_id == Job.id)
+        .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+        .join(
+            ImplicitCollectionJobs,
+            ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+        )
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id,
+                WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
+            ),
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+    )
+    # should be sa_session.execute(single_job_stmnt.union(collection_job_stmnt)).all() but that returns
+    # columns instead of the job metrics ORM instance.
+    return sorted(
+        (*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()),
+        key=lambda row: row[0],
+    )
+
+
 def fetch_job_states(sa_session, job_source_ids, job_source_types):
     assert len(job_source_ids) == len(job_source_types)
     job_ids = set()
@@ -667,7 +838,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         elif job_source_type == "ImplicitCollectionJobs":
             implicit_collection_job_ids.add(job_source_id)
         elif job_source_type == "WorkflowInvocation":
-            invocation_state = sa_session.query(model.WorkflowInvocation).get(job_source_id).state
+            invocation_state = sa_session.get(model.WorkflowInvocation, job_source_id).state
             workflow_invocation_states[job_source_id] = invocation_state
             workflow_invocation_job_sources = []
             for (
@@ -690,10 +861,10 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
     implicit_collection_jobs_summaries = {}
 
     for job_id in job_ids:
-        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.query(model.Job).get(job_id))
+        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.get(Job, job_id))
     for implicit_collection_jobs_id in implicit_collection_job_ids:
         implicit_collection_jobs_summaries[implicit_collection_jobs_id] = summarize_jobs_to_dict(
-            sa_session, sa_session.query(model.ImplicitCollectionJobs).get(implicit_collection_jobs_id)
+            sa_session, sa_session.get(model.ImplicitCollectionJobs, implicit_collection_jobs_id)
         )
 
     rval = []
@@ -778,7 +949,14 @@ def summarize_invocation_jobs(
     return rval
 
 
-def summarize_jobs_to_dict(sa_session, jobs_source):
+class JobsSummary(TypedDict):
+    populated_state: str
+    states: Dict[str, int]
+    model: str
+    id: int
+
+
+def summarize_jobs_to_dict(sa_session, jobs_source) -> Optional[JobsSummary]:
     """Produce a summary of jobs for job summary endpoints.
 
     :type   jobs_source: a Job or ImplicitCollectionJobs or None
@@ -787,7 +965,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
     :rtype:     dict
     :returns:   dictionary containing job summary information
     """
-    rval = None
+    rval: Optional[JobsSummary] = None
     if jobs_source is None:
         pass
     elif isinstance(jobs_source, model.Job):
@@ -803,22 +981,21 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
             "id": jobs_source.id,
             "populated_state": populated_state,
             "model": "ImplicitCollectionJobs",
+            "states": {},
         }
         if populated_state == "ok":
             # produce state summary...
-            states = {}
             join = model.ImplicitCollectionJobs.table.join(
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
             statement = (
-                select(model.Job.state, func.count("*"))
+                select(model.Job.state, func.count())
                 .select_from(join)
                 .where(model.ImplicitCollectionJobs.id == jobs_source.id)
                 .group_by(model.Job.state)
             )
             for row in sa_session.execute(statement):
-                states[row[0]] = row[1]
-            rval["states"] = states
+                rval["states"][row[0]] = row[1]
     return rval
 
 
@@ -828,6 +1005,10 @@ def summarize_job_metrics(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    return summarize_metrics(trans, job.metrics)
+
+
+def summarize_metrics(trans: ProvidesUserContext, job_metrics):
     safety_level = Safety.SAFE
     if trans.user_is_admin:
         safety_level = Safety.UNSAFE
@@ -839,7 +1020,7 @@ def summarize_job_metrics(trans, job):
             m.metric_value,
             m.plugin,
         )
-        for m in job.metrics
+        for m in job_metrics
     ]
     dictifiable_metrics = trans.app.job_metrics.dictifiable_metrics(raw_metrics, safety_level)
     return [d.dict() for d in dictifiable_metrics]
@@ -857,18 +1038,19 @@ def summarize_destination_params(trans, job):
         "Runner Job ID": job.job_runner_external_id,
         "Handler": job.handler,
     }
-    job_destination_params = job.destination_params
-    if job_destination_params:
+    if job_destination_params := job.destination_params:
         destination_params.update(job_destination_params)
     return destination_params
 
 
-def summarize_job_parameters(trans, job):
+def summarize_job_parameters(trans, job: Job):
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    # More client logic here than is ideal but it is hard to reason about
+    # tool parameter types on the client relative to the server.
 
     def inputs_recursive(input_params, param_values, depth=1, upgrade_messages=None):
         if upgrade_messages is None:
@@ -878,23 +1060,24 @@ def summarize_job_parameters(trans, job):
 
         for input in input_params.values():
             if input.name in param_values:
+                input_value = param_values[input.name]
                 if input.type == "repeat":
-                    for i in range(len(param_values[input.name])):
-                        rval.extend(inputs_recursive(input.inputs, param_values[input.name][i], depth=depth + 1))
+                    for i in range(len(input_value)):
+                        rval.extend(inputs_recursive(input.inputs, input_value[i], depth=depth + 1))
                 elif input.type == "section":
                     # Get the value of the current Section parameter
                     rval.append(dict(text=input.name, depth=depth))
                     rval.extend(
                         inputs_recursive(
                             input.inputs,
-                            param_values[input.name],
+                            input_value,
                             depth=depth + 1,
                             upgrade_messages=upgrade_messages.get(input.name),
                         )
                     )
                 elif input.type == "conditional":
                     try:
-                        current_case = param_values[input.name]["__current_case__"]
+                        current_case = input_value["__current_case__"]
                         is_valid = True
                     except Exception:
                         current_case = None
@@ -906,7 +1089,7 @@ def summarize_job_parameters(trans, job):
                         rval.extend(
                             inputs_recursive(
                                 input.cases[current_case].inputs,
-                                param_values[input.name],
+                                input_value,
                                 depth=depth + 1,
                                 upgrade_messages=upgrade_messages.get(input.name),
                             )
@@ -925,20 +1108,25 @@ def summarize_job_parameters(trans, job):
                         dict(
                             text=input.group_title(param_values),
                             depth=depth,
-                            value=f"{len(param_values[input.name])} uploaded datasets",
+                            value=f"{len(input_value)} uploaded datasets",
                         )
                     )
-                elif input.type == "data" or input.type == "data_collection":
-                    value = []
-                    for element in listify(param_values[input.name]):
-                        encoded_id = trans.security.encode_id(element.id)
+                elif (
+                    input.type == "data"
+                    or input.type == "data_collection"
+                    or isinstance(input_value, model.HistoryDatasetAssociation)
+                ):
+                    value: List[Union[Dict[str, Any], None]] = []
+                    for element in listify(input_value):
                         if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                            value.append({"src": "hda", "id": element.id, "hid": hda.hid, "name": hda.name})
                         elif isinstance(element, model.DatasetCollectionElement):
-                            value.append({"src": "dce", "id": encoded_id, "name": element.element_identifier})
+                            value.append({"src": "dce", "id": element.id, "name": element.element_identifier})
                         elif isinstance(element, model.HistoryDatasetCollectionAssociation):
-                            value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
+                            value.append({"src": "hdca", "id": element.id, "hid": element.hid, "name": element.name})
+                        elif element is None:
+                            value.append(None)
                         else:
                             raise Exception(
                                 f"Unhandled data input parameter type encountered {element.__class__.__name__}"
@@ -954,7 +1142,7 @@ def summarize_job_parameters(trans, job):
                         dict(
                             text=label,
                             depth=depth,
-                            value=input.value_to_display_text(param_values[input.name]),
+                            value=input.value_to_display_text(input_value),
                             notes=upgrade_messages.get(input.name, ""),
                         )
                     )
@@ -963,8 +1151,6 @@ def summarize_job_parameters(trans, job):
                 # Get parameter label.
                 if input.type == "conditional":
                     label = input.test_param.label
-                elif input.type == "repeat":
-                    label = input.label()
                 else:
                     label = input.label or input.name
                 rval.append(
@@ -1001,7 +1187,7 @@ def summarize_job_parameters(trans, job):
     return {
         "parameters": parameters,
         "has_parameter_errors": has_parameter_errors,
-        "outputs": summarize_job_outputs(job=job, tool=tool, params=params_objects, security=trans.security),
+        "outputs": summarize_job_outputs(job=job, tool=tool, params=params_objects),
     }
 
 
@@ -1016,7 +1202,7 @@ def get_output_name(tool, output, params):
         pass
 
 
-def summarize_job_outputs(job: model.Job, tool, params, security):
+def summarize_job_outputs(job: model.Job, tool, params):
     outputs = defaultdict(list)
     output_labels = {}
     possible_outputs = (
@@ -1025,6 +1211,7 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
         ("hdca", "dataset_collection_id", job.output_dataset_collection_instances),
     )
     for src, attribute, output_associations in possible_outputs:
+        output_associations = cast(List, output_associations)  # during iteration, mypy sees it as object
         for output_association in output_associations:
             output_name = output_association.name
             if output_name not in output_labels and tool:
@@ -1036,7 +1223,30 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
             outputs[output_name].append(
                 {
                     "label": label,
-                    "value": {"src": src, "id": security.encode_id(getattr(output_association, attribute))},
+                    "value": {"src": src, "id": getattr(output_association, attribute)},
                 }
             )
     return outputs
+
+
+def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_database: bool, config):
+    if track_jobs_in_database:
+        in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED)
+    else:
+        in_list = (Job.states.NEW, Job.states.QUEUED, Job.states.RUNNING)
+
+    stmt = (
+        select(Job)
+        .execution_options(yield_per=YIELD_PER_ROWS)
+        .filter(Job.state.in_(in_list) & (Job.handler == config.server_name))
+    )
+    if config.user_activation_on:
+        # Filter out the jobs of inactive users.
+        stmt = stmt.outerjoin(User).filter(or_((Job.user_id == null()), (User.active == true())))
+
+    return session.scalars(stmt).all()
+
+
+def get_job(session, *where_clauses):
+    stmt = select(Job).where(*where_clauses).limit(1)
+    return session.scalars(stmt).first()

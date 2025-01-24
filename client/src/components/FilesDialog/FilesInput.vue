@@ -2,15 +2,17 @@
 import { BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { type FileSourceBrowsingMode, type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { filesDialog } from "@/utils/data";
 
-import { FileSourceBrowsingMode, FilterFileSourcesOptions } from "./services";
+import { type SelectionItem } from "../SelectionDialog/selectionTypes";
 
 interface Props {
     value: string;
     mode?: FileSourceBrowsingMode;
     requireWritable?: boolean;
     filterOptions?: FilterFileSourcesOptions;
+    selectedItem?: SelectionItem;
 }
 
 interface SelectableFile {
@@ -21,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
     mode: "file",
     requireWritable: false,
     filterOptions: undefined,
+    selectedItem: undefined,
 });
 
 const emit = defineEmits<{
@@ -41,6 +44,7 @@ const selectFile = () => {
         mode: props.mode,
         requireWritable: props.requireWritable,
         filterOptions: props.filterOptions,
+        selectedItem: props.selectedItem,
     };
     filesDialog((selected: SelectableFile) => {
         currentValue.value = selected?.url;

@@ -30,7 +30,7 @@ import FormMessage from "components/Form/FormMessage";
 import { visitInputs } from "components/Form/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 import { mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 
 import { getTool } from "./services";
 
@@ -70,12 +70,12 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
+        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         icon() {
             return WorkflowIcons[this.model.step_type];
         },
         historyStatusKey() {
-            return `${this.historyId}_${this.getLastUpdateTime}`;
+            return `${this.historyId}_${this.lastUpdateTime}`;
         },
     },
     watch: {

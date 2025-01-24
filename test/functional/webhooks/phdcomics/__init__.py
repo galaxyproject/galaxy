@@ -29,7 +29,7 @@ def main(trans, webhook, params):
             )
 
         random_id = random.randint(1, webhook.config["latest_id"])
-        url = "http://www.phdcomics.com/comics/archive.php?comicid=%d" % random_id
+        url = f"http://www.phdcomics.com/comics/archive.php?comicid={random_id}"
         content = urlopen(url).read()
         soup = BeautifulSoup(content, "html.parser")
         comic_img = soup.find_all("img", id="comic2")

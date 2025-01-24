@@ -1,42 +1,32 @@
 <template>
-    <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Insert Objects</div>
-            </div>
-        </div>
-        <div class="unified-panel-body">
-            <div class="toolMenuContainer">
-                <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
-                    {{ error }}
-                </b-alert>
-                <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
-                <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
-                <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
-                <ToolSection
-                    v-if="isWorkflow"
-                    :category="workflowInEditorSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-                <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
-                <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
-                <ToolSection
-                    v-if="hasVisualizations"
-                    :category="visualizationSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-            </div>
+    <ActivityPanel title="Insert Markdown Objects">
+        <div class="toolMenuContainer">
+            <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+                {{ error }}
+            </b-alert>
+            <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
+            <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-if="isWorkflow" :category="workflowInEditorSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+            <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
+            <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
+            <ToolSection
+                v-if="hasVisualizations"
+                :category="visualizationSection"
+                :expanded="true"
+                @onClick="onClick" />
         </div>
         <MarkdownDialog
             v-if="selectedShow"
             :argument-type="selectedType"
             :argument-name="selectedArgumentName"
             :argument-payload="selectedPayload"
-            :labels="selectedLabels"
+            :labels="workflowLabels"
             :use-labels="isWorkflow"
             @onInsert="onInsert"
             @onCancel="onCancel" />
-    </div>
+    </ActivityPanel>
 </template>
 
 <script>
@@ -46,67 +36,57 @@ import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { directiveEntry } from "./directives.ts";
+import { fromSteps } from "./labels.ts";
 import MarkdownDialog from "./MarkdownDialog";
+
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 Vue.use(BootstrapVue);
 
-const historySharedElements = [
-    {
-        id: "history_dataset_display",
-        name: "Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_collection_display",
-        name: "Collection",
-        emitter: "onHistoryCollectionId",
-    },
-    {
-        id: "history_dataset_as_image",
-        name: "Image",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_index",
-        name: "Dataset Index",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_embedded",
-        name: "Embedded Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_type",
-        name: "Dataset Type",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_link",
-        name: "Link to Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_name",
-        name: "Name of Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_peek",
-        name: "Peek into Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_info",
-        name: "Dataset Details",
-        emitter: "onHistoryDatasetId",
-    },
-];
+function historySharedElements(mode) {
+    return [
+        directiveEntry("history_dataset_display", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_collection_display", mode, {
+            emitter: "onHistoryCollectionId",
+        }),
+        directiveEntry("history_dataset_as_image", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_index", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_embedded", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_as_table", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_type", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_link", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_name", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_peek", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_info", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+    ];
+}
 
 export default {
     components: {
         MarkdownDialog,
         ToolSection,
+        ActivityPanel,
     },
     props: {
         steps: {
@@ -118,7 +98,6 @@ export default {
         return {
             selectedArgumentName: null,
             selectedType: null,
-            selectedLabels: null,
             selectedShow: false,
             selectedPayload: null,
             visualizationIndex: {},
@@ -127,111 +106,89 @@ export default {
                 title: "History",
                 name: "history",
                 elems: [
-                    ...historySharedElements,
-                    {
-                        id: "history_link",
-                        name: "Link to Import",
+                    ...historySharedElements("page"),
+                    directiveEntry("history_link", "page", {
                         emitter: "onHistoryId",
-                    },
+                    }),
                 ],
             },
             historyInEditorSection: {
                 title: "History",
                 name: "history",
-                elems: [
-                    ...historySharedElements,
-                    {
-                        id: "history_link",
-                        name: "Link to Import",
-                    },
-                ],
-            },
-            jobSection: {
-                title: "Jobs",
-                name: "jobs",
-                elems: [
-                    {
-                        id: "job_metrics",
-                        name: "Job Metrics",
-                        description: "as table",
-                        emitter: "onJobId",
-                    },
-                    {
-                        id: "job_parameters",
-                        name: "Job Parameters",
-                        description: "as table",
-                        emitter: "onJobId",
-                    },
-                    {
-                        id: "tool_stdout",
-                        name: "Tool Output",
-                        description: "of job run",
-                        emitter: "onJobId",
-                    },
-                    {
-                        id: "tool_stderr",
-                        name: "Tool Error",
-                        description: "of job run",
-                        emitter: "onJobId",
-                    },
-                ],
+                elems: [...historySharedElements("report"), directiveEntry("history_link", "report")],
             },
             workflowSection: {
                 title: "Workflow",
                 name: "workflow",
                 elems: [
-                    {
-                        id: "invocation_time",
-                        name: "Invocation Time",
+                    directiveEntry("invocation_time", "page", {
                         emitter: "onInvocationId",
-                    },
-                    {
-                        id: "workflow_display",
-                        name: "Workflow Display",
+                    }),
+                    directiveEntry("workflow_display", "page", {
                         emitter: "onWorkflowId",
-                    },
+                    }),
+                    directiveEntry("workflow_license", "page", {
+                        emitter: "onWorkflowId",
+                    }),
+                    directiveEntry("workflow_image", "page", {
+                        emitter: "onWorkflowId",
+                    }),
                 ],
             },
             workflowInEditorSection: {
                 title: "Workflow",
                 name: "workflow",
                 elems: [
-                    {
-                        id: "invocation_inputs",
-                        name: "Invocation Inputs",
-                    },
-                    {
-                        id: "invocation_outputs",
-                        name: "Invocation Output",
-                    },
-                    {
-                        id: "invocation_time",
-                        name: "Time a Workflow",
-                        description: "was invoked",
-                    },
-                    {
-                        id: "workflow_display",
-                        name: "Current Workflow",
-                        description: "containing all steps",
-                    },
+                    directiveEntry("invocation_inputs", "report"),
+                    directiveEntry("invocation_outputs", "report"),
+                    directiveEntry("invocation_time", "report"),
+                    directiveEntry("workflow_display", "report"),
+                    directiveEntry("workflow_license", "report"),
+                    directiveEntry("workflow_image", "report"),
                 ],
             },
-            otherSection: {
-                title: "Miscellaneous",
-                name: "others",
+            linksSection: {
+                title: "Galaxy Instance Links",
+                name: "links",
                 elems: [
                     {
-                        id: "generate_galaxy_version",
-                        name: "Galaxy Version",
-                        description: "as text",
+                        id: "instance_access_link",
+                        name: "Access",
+                        description: "(link used to access this Galaxy)",
                     },
                     {
-                        id: "generate_time",
-                        name: "Current Time",
-                        description: "as text",
+                        id: "instance_resources_link",
+                        name: "Resources",
+                        description: "(link for more information about this Galaxy)",
+                    },
+                    {
+                        id: "instance_help_link",
+                        name: "Help",
+                        description: "(link for finding help content for this Galaxy)",
+                    },
+                    {
+                        id: "instance_support_link",
+                        name: "Support",
+                        description: "(link for support for this Galaxy)",
+                    },
+                    {
+                        id: "instance_citation_link",
+                        name: "Citation",
+                        description: "(link describing how to cite this Galaxy instance)",
+                    },
+                    {
+                        id: "instance_terms_link",
+                        name: "Terms and Conditions",
+                        description: "(link describing terms and conditions for using this Galaxy instance)",
+                    },
+                    {
+                        id: "instance_organization_link",
+                        name: "Organization",
+                        description: "(link describing organization that runs this Galaxy instance)",
                     },
                 ],
             },
+
             visualizationSection: {
                 title: "Visualizations",
                 name: "visualizations",
@@ -243,8 +200,44 @@ export default {
         isWorkflow() {
             return !!this.steps;
         },
+        mode() {
+            return this.isWorkflow ? "report" : "page";
+        },
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;
+        },
+        otherSection() {
+            return {
+                title: "Miscellaneous",
+                name: "others",
+                elems: [
+                    directiveEntry("generate_galaxy_version", this.mode),
+                    directiveEntry("generate_time", this.mode),
+                ],
+            };
+        },
+        jobSection() {
+            return {
+                title: "Jobs",
+                name: "jobs",
+                elems: [
+                    directiveEntry("job_metrics", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                    directiveEntry("job_parameters", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                    directiveEntry("tool_stdout", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                    directiveEntry("tool_stderr", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                ],
+            };
+        },
+        workflowLabels() {
+            return fromSteps(this.steps);
         },
     },
     created() {
@@ -255,23 +248,30 @@ export default {
             const steps = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
-                    if (step.label || step.content_id) {
-                        steps.push(step.label || step.content_id);
+                    if (step.label) {
+                        steps.push(step.label);
                     }
                 });
             return steps;
         },
-        getOutputs() {
+        getOutputs(filterByType = undefined) {
             const outputLabels = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
                     step.workflow_outputs.forEach((workflowOutput) => {
                         if (workflowOutput.label) {
-                            outputLabels.push(workflowOutput.label);
+                            if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
+                                outputLabels.push(workflowOutput.label);
+                            }
                         }
                     });
                 });
             return outputLabels;
+        },
+        stepOutputMatchesType(step, workflowOutput, type) {
+            return Boolean(
+                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type)
+            );
         },
         getArgumentTitle(argumentName) {
             return (
@@ -309,7 +309,7 @@ export default {
             }
         },
         onInsert(markdownBlock) {
-            this.$emit("onInsert", markdownBlock);
+            this.$emit("insert", markdownBlock);
             this.selectedShow = false;
         },
         onCancel() {
@@ -322,7 +322,6 @@ export default {
             this.selectedArgumentName = argumentName;
             this.selectedType = "visualization_id";
             this.selectedPayload = this.visualizationIndex[argumentName];
-            this.selectedLabels = this.getOutputs();
             this.selectedShow = true;
         },
         onHistoryId(argumentName) {
@@ -333,13 +332,13 @@ export default {
         onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
-            this.selectedLabels = this.getOutputs();
+            this.selectedLabels = this.getOutputs("data");
             this.selectedShow = true;
         },
         onHistoryCollectionId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_collection_id";
-            this.selectedLabels = this.getOutputs();
+            this.selectedLabels = this.getOutputs("collection");
             this.selectedShow = true;
         },
         onWorkflowId(argumentName) {
@@ -350,13 +349,11 @@ export default {
         onJobId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "job_id";
-            this.selectedLabels = this.getSteps();
             this.selectedShow = true;
         },
         onInvocationId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "invocation_id";
-            this.selectedLabels = this.getSteps();
             this.selectedShow = true;
         },
         async getVisualizations() {

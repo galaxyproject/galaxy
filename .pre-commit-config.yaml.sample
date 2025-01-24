@@ -1,10 +1,10 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 22.10.0
+    rev: 24.1.1
     hooks:
     - id: black
   - repo: https://github.com/pycqa/flake8
-    rev: 5.0.4
+    rev: 7.0.0
     hooks:
     - id: flake8
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -16,7 +16,7 @@ repos:
         additional_dependencies:
           - prettier@2.8.8 # Workaround. See https://github.com/pre-commit/mirrors-prettier/issues/29
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0  # Use the ref you want to point at
+    rev: v4.5.0  # Use the ref you want to point at
     hooks:
       - id: trailing-whitespace
       - id: check-merge-conflict
@@ -30,7 +30,7 @@ repos:
     - id: shell-lint
       args: [--format=json]
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.19.2
+    rev: 0.27.4
     hooks:
       - id: check-github-workflows
   - repo: local

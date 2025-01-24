@@ -2,6 +2,7 @@
 Naming convention and helper functions for generating names of database
 constraints and indexes.
 """
+
 from typing import (
     List,
     Union,

@@ -1,5 +1,6 @@
 """Base utilities for working Galaxy test environments.
 """
+
 import fcntl
 import os
 import socket
@@ -9,7 +10,12 @@ from typing import (
     Tuple,
 )
 
+from galaxy.util import asbool
+
 DEFAULT_WEB_HOST = socket.gethostbyname("localhost")
+REQUIRE_ALL_NEEDED_TOOLS = asbool(os.environ.get("GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS", "0"))
+
+GalaxyTarget = Tuple[str, Optional[str], str]
 
 
 def setup_keep_outdir() -> str:
@@ -22,7 +28,7 @@ def setup_keep_outdir() -> str:
     return keep_outdir
 
 
-def target_url_parts() -> Tuple[str, Optional[str], str]:
+def target_url_parts() -> GalaxyTarget:
     host = socket.gethostbyname(os.environ.get("GALAXY_TEST_HOST", DEFAULT_WEB_HOST))
     port = os.environ.get("GALAXY_TEST_PORT")
     if port:

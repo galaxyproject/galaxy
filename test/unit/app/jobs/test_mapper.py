@@ -1,8 +1,11 @@
 import uuid
+from typing import cast
 
 from galaxy.jobs import (
     HasResourceParameters,
+    JobConfiguration,
     JobDestination,
+    JobWrapper,
 )
 from galaxy.jobs.mapper import (
     ERROR_MESSAGE_NO_RULE_FUNCTION,
@@ -83,7 +86,7 @@ def test_dynamic_mapping_workflow_invocation_parameter():
 
 
 def test_dynamic_mapping_no_function():
-    dest = __dynamic_destination(dict())
+    dest = __dynamic_destination({})
     mapper = __mapper(dest)
     mapper.job_wrapper.tool.all_ids = ["no_such_function"]
     error_message = ERROR_MESSAGE_NO_RULE_FUNCTION % dest
@@ -134,10 +137,10 @@ def __assert_mapper_errors_with_message(mapper, message):
 
 
 def __mapper(tool_job_destination=TOOL_JOB_DESTINATION):
-    job_wrapper = MockJobWrapper(tool_job_destination)
-    job_config = MockJobConfig()
+    job_wrapper = cast(JobWrapper, MockJobWrapper(tool_job_destination))
+    job_config = cast(JobConfiguration, MockJobConfig())
 
-    mapper = JobRunnerMapper(job_wrapper, {}, job_config)
+    mapper = JobRunnerMapper(job_wrapper, lambda url: JobDestination(), job_config)
     mapper.rules_module = test_rules
     return mapper
 

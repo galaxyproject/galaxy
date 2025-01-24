@@ -1,6 +1,9 @@
+import "tests/jest/mockHelpPopovers";
+
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation";
@@ -8,6 +11,7 @@ import { ROOT_COMPONENT } from "@/utils/navigation";
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore.vue";
 
 setupSelectableMock();
+setupMockConfig({});
 
 const localVue = getLocalVue(true);
 
@@ -27,6 +31,7 @@ describe("WorkflowSelectPreferredObjectStore.vue", () => {
         await flushPromises();
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);
+
         const galaxyDefaultOption = wrapper.find(
             PREFERENCES.object_store_selection.option_button({ object_store_id: "__null__" }).selector
         );

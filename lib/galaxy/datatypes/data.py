@@ -1,3 +1,4 @@
+import json
 import logging
 import mimetypes
 import os
@@ -49,6 +50,7 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
+    to_content_disposition,
     unicodify,
     UNKNOWN,
 )
@@ -71,7 +73,7 @@ if TYPE_CHECKING:
 
 XSS_VULNERABLE_MIME_TYPES = [
     "image/svg+xml",  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
-    "application/xml",  # Some browsers will evalute SVG embedded JS in such XML documents.
+    "application/xml",  # Some browsers will evaluate SVG embedded JS in such XML documents.
 ]
 DEFAULT_MIME_TYPE = "text/plain"  # Vulnerable mime types will be replaced with this.
 
@@ -163,7 +165,7 @@ def _is_binary_file(data):
     return isinstance(data.datatype, binary.Binary) or type(data.datatype) is Data
 
 
-def _get_max_peak_size(data):
+def _get_max_peek_size(data):
     from galaxy.datatypes import (
         binary,
         text,
@@ -183,7 +185,7 @@ def _get_file_size(data):
         if data.dataset.object_store:
             file_size = data.dataset.object_store.size(data.dataset)
         else:
-            file_size = os.stat(data.file_name).st_size
+            file_size = os.stat(data.get_file_name()).st_size
     return file_size
 
 
@@ -207,6 +209,7 @@ class Data(metaclass=DataMeta):
     edam_data = "data_0006"
     edam_format = "format_1915"
     file_ext = "data"
+    is_subclass = False
     # Data is not chunkable by default.
     CHUNKABLE = False
 
@@ -337,10 +340,10 @@ class Data(metaclass=DataMeta):
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML table, used for displaying peek"""
+        if not dataset.peek:
+            return "Peek not available"
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            if not dataset.peek:
-                dataset.set_peek()
             data = dataset.peek
             lines = data.splitlines()
             for line in lines:
@@ -389,7 +392,7 @@ class Data(metaclass=DataMeta):
         error = False
         msg = ""
         ext = data.extension
-        path = data.file_name
+        path = data.get_file_name()
         efp = data.extra_files_path
         # Add any central file to the archive,
 
@@ -424,10 +427,10 @@ class Data(metaclass=DataMeta):
     def _serve_raw(
         self, dataset: DatasetHasHidProtocol, to_ext: Optional[str], headers: Headers, **kwd
     ) -> Tuple[IO, Headers]:
-        headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
-        headers[
-            "content-type"
-        ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+        headers["Content-Length"] = str(os.stat(dataset.get_file_name()).st_size)
+        headers["content-type"] = (
+            "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+        )
         filename = self._download_filename(
             dataset,
             to_ext,
@@ -435,8 +438,8 @@ class Data(metaclass=DataMeta):
             element_identifier=kwd.get("element_identifier"),
             filename_pattern=kwd.get("filename_pattern"),
         )
-        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-        return open(dataset.file_name, mode="rb"), headers
+        headers["Content-Disposition"] = to_content_disposition(filename)
+        return open(dataset.get_file_name(), mode="rb"), headers
 
     def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
         """
@@ -451,19 +454,21 @@ class Data(metaclass=DataMeta):
         if dataset.datatype.composite_type or dataset.extension.endswith("html"):
             main_file = f"{name}.html"
             rel_paths.append(main_file)
-            file_paths.append(dataset.file_name)
+            file_paths.append(dataset.get_file_name())
             for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
                 rel_paths.append(os.path.join(name, rpath))
                 file_paths.append(fpath)
         else:
-            rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
-            file_paths.append(dataset.file_name)
+            rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}")
+            file_paths.append(dataset.get_file_name())
         return zip(file_paths, rel_paths)
 
     def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
         composite_extensions.append("html")  # for archiving composite datatypes
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
+        composite_extensions.append("directory")  # for downloading directories.
+        composite_extensions.append("zarr")  # for downloading zarr directories.
 
         if data.extension in composite_extensions:
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
@@ -476,40 +481,44 @@ class Data(metaclass=DataMeta):
                 element_identifier=kwd.get("element_identifier"),
                 filename_pattern=kwd.get("filename_pattern"),
             )
-            headers[
-                "content-type"
-            ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
-            headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-            return open(data.file_name, "rb"), headers
+            headers["content-type"] = (
+                "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+            )
+            headers["Content-Disposition"] = to_content_disposition(filename)
+            return open(data.get_file_name(), "rb"), headers
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
         headers["content-type"] = "text/html"
-        return (
-            trans.fill_template_mako(
-                "/dataset/binary_file.mako",
-                data=data,
-                file_contents=open(data.file_name, "rb").read(max_peek_size),
-                file_size=util.nice_size(file_size),
-                truncated=file_size > max_peek_size,
-            ),
-            headers,
-        )
+        with open(data.get_file_name(), "rb") as fh:
+            return (
+                trans.fill_template_mako(
+                    "/dataset/binary_file.mako",
+                    data=data,
+                    file_contents=fh.read(max_peek_size),
+                    file_size=util.nice_size(file_size),
+                    truncated=file_size > max_peek_size,
+                ),
+                headers,
+            )
 
     def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
         from galaxy.datatypes import images
 
         preview = util.string_as_bool(preview)
         if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
-            return self._yield_user_file_content(trans, data, data.file_name, headers), headers
+            return self._yield_user_file_content(trans, data, data.get_file_name(), headers), headers
 
-        # preview large text file
-        headers["content-type"] = "text/html"
-        return (
-            trans.fill_template_mako(
-                "/dataset/large_file.mako", truncated_data=open(data.file_name, "rb").read(max_peek_size), data=data
-            ),
-            headers,
-        )
+        with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
+            # preview large text file
+            headers["content-type"] = "text/html"
+            return (
+                trans.fill_template_mako(
+                    "/dataset/large_file.mako",
+                    truncated_data=fh.read(max_peek_size),
+                    data=data,
+                ),
+                headers,
+            )
 
     def display_data(
         self,
@@ -523,10 +532,10 @@ class Data(metaclass=DataMeta):
         """
         Displays data in central pane if preview is `True`, else handles download.
 
-        Datatypes should be very careful if overridding this method and this interface
+        Datatypes should be very careful if overriding this method and this interface
         between datatypes and Galaxy will likely change.
 
-        TOOD: Document alternatives to overridding this method (data
+        TODO: Document alternatives to overriding this method (data
         providers?).
         """
         headers = kwd.get("headers", {})
@@ -547,8 +556,7 @@ class Data(metaclass=DataMeta):
                         dir_items = sorted(os.listdir(file_path))
                         base_path, item_name = os.path.split(file_path)
                         tmp_fh.write(
-                            "<html><head><h3>Directory %s contents: %d items</h3></head>\n"
-                            % (escape(item_name), len(dir_items))
+                            f"<html><head><h3>Directory {escape(item_name)} contents: {len(dir_items)} items</h3></head>\n"
                         )
                         tmp_fh.write('<body><p/><table cellpadding="2">\n')
                         for index, fname in enumerate(dir_items):
@@ -581,15 +589,15 @@ class Data(metaclass=DataMeta):
         downloading = to_ext is not None
         file_size = _get_file_size(dataset)
 
-        if not os.path.exists(dataset.file_name):
-            raise ObjectNotFound(f"File Not Found ({dataset.file_name}).")
+        if not os.path.exists(dataset.get_file_name()):
+            raise ObjectNotFound(f"File Not Found ({dataset.get_file_name()}).")
 
         if downloading:
             trans.log_event(f"Download dataset id: {str(dataset.id)}")
             return self._serve_file_download(headers, dataset, trans, to_ext, file_size, **kwd)
         else:  # displaying
             trans.log_event(f"Display dataset id: {str(dataset.id)}")
-            max_peek_size = _get_max_peak_size(dataset)
+            max_peek_size = _get_max_peek_size(dataset)
             if (
                 _is_binary_file(dataset) and preview and hasattr(trans, "fill_template_mako")
             ):  # preview file which format is unknown (to Galaxy), we still try to display this as text
@@ -604,7 +612,7 @@ class Data(metaclass=DataMeta):
         on datatypes not tightly tied to a Galaxy version (e.g. datatypes in the
         Tool Shed).
 
-        Speaking very losely - the datatype should load a bounded amount
+        Speaking very loosely - the datatype should load a bounded amount
         of data from the supplied dataset instance and prepare for embedding it
         into Markdown. This should be relatively vanilla Markdown - the result of
         this is bleached and it should not contain nested Galaxy Markdown
@@ -618,7 +626,7 @@ class Data(metaclass=DataMeta):
         if self.is_binary:
             result = "*cannot display binary content*\n"
         else:
-            with open(dataset_instance.file_name) as f:
+            with open(dataset_instance.get_file_name()) as f:
                 contents = f.read(DEFAULT_MAX_PEEK_SIZE)
             result = literal_via_fence(contents)
             if len(contents) == DEFAULT_MAX_PEEK_SIZE:
@@ -652,16 +660,13 @@ class Data(metaclass=DataMeta):
         element_identifier: Optional[str] = None,
         filename_pattern: Optional[str] = None,
     ) -> str:
-        def escape(raw_identifier):
-            return "".join(c in FILENAME_VALID_CHARS and c or "_" for c in raw_identifier)[0:150]
-
         if not to_ext or to_ext == "data":
             # If a client requests to_ext with the extension 'data', they are
             # deferring to the server, set it based on datatype.
             to_ext = dataset.extension
 
         template_values = {
-            "name": escape(dataset.name),
+            "name": dataset.name,
             "ext": to_ext,
             "hid": dataset.hid,
         }
@@ -674,8 +679,9 @@ class Data(metaclass=DataMeta):
 
         if hdca is not None:
             # Use collection context to build up filename.
-            template_values["element_identifier"] = element_identifier
-            template_values["hdca_name"] = escape(hdca.name)
+            if element_identifier is not None:
+                template_values["element_identifier"] = element_identifier
+            template_values["hdca_name"] = hdca.name
             template_values["hdca_hid"] = hdca.hid
 
         return string.Template(filename_pattern).substitute(**template_values)
@@ -781,7 +787,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: DatasetProtocol, type: str, app, base_url: str, request, target_frame: str = "_blank", **kwd
+        self, dataset: DatasetProtocol, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
@@ -792,7 +798,7 @@ class Data(metaclass=DataMeta):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]["links_function"])(
-                    dataset, type, app, base_url, request, **kwd
+                    dataset, type, app, base_url, **kwd
                 )
         except Exception:
             log.exception(
@@ -840,7 +846,15 @@ class Data(metaclass=DataMeta):
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type
         # Run converter, job is dispatched through Queue
-        job, converted_datasets, *_ = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)
+        job, converted_datasets, *_ = converter.execute(
+            trans, incoming=params, set_output_hid=visible, history=history, flush_job=False
+        )
+        # We should only have a single converted output, but let's be defensive here
+        n_converted_datasets = len(converted_datasets)
+        for converted_dataset in converted_datasets.values():
+            if converted_dataset.extension == "auto" and n_converted_datasets == 1:
+                converted_dataset.extension = target_type
+            original_dataset.attach_implicitly_converted_dataset(trans.sa_session, converted_dataset, target_type)
         trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:
             trans.log_event(f"Converter params: {str(params)}", tool_id=converter.id)
@@ -1038,12 +1052,12 @@ class Text(Data):
         """
         sample_size = 1048576
         try:
-            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:
                 dataset_read = dataset_fh.read(sample_size)
             sample_lines = dataset_read.count("\n")
             return int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         except UnicodeDecodeError:
-            log.error(f"Unable to estimate lines in file {dataset.file_name}")
+            log.warning(f"Unable to estimate lines in file {dataset.get_file_name()}, likely not a text file.")
             return None
 
     def count_data_lines(self, dataset: HasFileName) -> Optional[int]:
@@ -1053,7 +1067,7 @@ class Text(Data):
         """
         CHUNK_SIZE = 2**15  # 32Kb
         data_lines = 0
-        with compression_utils.get_fileobj(dataset.file_name) as in_file:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
             # FIXME: Potential encoding issue can prevent the ability to iterate over lines
             # causing set_meta process to fail otherwise OK jobs. A better solution than
             # a silent try/except is desirable.
@@ -1063,7 +1077,7 @@ class Text(Data):
                     if line and not line.startswith("#"):
                         data_lines += 1
             except UnicodeDecodeError:
-                log.error(f"Unable to count lines in file {dataset.file_name}")
+                log.warning(f"Unable to count lines in file {dataset.get_file_name()}, likely not a text file.")
                 return None
         return data_lines
 
@@ -1078,7 +1092,7 @@ class Text(Data):
 
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek(dataset.file_name, width=width, skipchars=skipchars, line_wrap=line_wrap)
+            dataset.peek = get_file_peek(dataset.get_file_name(), width=width, skipchars=skipchars, line_wrap=line_wrap)
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -1098,7 +1112,7 @@ class Text(Data):
                     else:
                         est_lines = self.estimate_file_lines(dataset)
                         if est_lines is not None:
-                            dataset.blurb = f"~{util.commaify(util.roundify(str(est_lines)))} {inflector.cond_plural(est_lines, self.line_class)}"
+                            dataset.blurb = f"~{util.shorten_with_metric_prefix(est_lines)} {inflector.cond_plural(est_lines, self.line_class)}"
                         else:
                             dataset.blurb = "Error: Cannot estimate lines in dataset"
             else:
@@ -1108,7 +1122,7 @@ class Text(Data):
             dataset.blurb = "file purged from disk"
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by line.
         """
@@ -1117,7 +1131,7 @@ class Text(Data):
 
         if len(input_datasets) > 1:
             raise Exception("Text file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         lines_per_file = None
         chunk_size = None
@@ -1202,6 +1216,142 @@ class Text(Data):
 
 class Directory(Data):
     """Class representing a directory of files."""
+
+    file_ext = "directory"
+
+    def _archive_main_file(
+        self, archive: ZipstreamWrapper, display_name: str, data_filename: str
+    ) -> Tuple[bool, str, str]:
+        """Overwrites the method to not do anything.
+
+        No main file gets added to a directory archive.
+        """
+        error, msg, messagetype = False, "", ""
+        return error, msg, messagetype
+
+
+class ZarrDirectory(Directory):
+    """Class representing a zarr-format structure with general-purpose numeric content."""
+
+    edam_format = "format_3915"
+    file_ext = "zarr"
+
+    # This wouldn't be needed if the CompressedFile.extract function didn't
+    # create an extra folder under the dataset's extra_files_path.
+    # Maybe this can be avoided somehow?
+    MetadataElement(
+        name="store_root",
+        default=None,
+        desc="Name of the root folder where the zarr store is located",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    MetadataElement(
+        name="zarr_format",
+        default=None,
+        desc="Zarr format version",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.blurb = f"Format v{dataset.metadata.zarr_format}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        store_root_folder = self._find_store_root_folder_name(dataset)
+        if store_root_folder is None:
+            log.debug("Directory structure does not look like Zarr format")
+            return
+        dataset.metadata.store_root = store_root_folder
+
+        root_directory = os.path.join(dataset.extra_files_path, store_root_folder)
+        format_version = self._get_format_version(root_directory)
+        if not format_version:
+            log.debug("Could not determine Zarr format version")
+            return
+        dataset.metadata.zarr_format = format_version
+
+    def sniff(self, filename: str) -> bool:
+        # TO DO: Can we access extra files path from here? Otherwise it cannot be auto-detected.
+        return False
+
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        if preview:
+            store_root_path = os.path.join(dataset.extra_files_path, dataset.metadata.store_root)
+            metadata_file_path = self._find_zarr_metadata_file(store_root_path)
+            if metadata_file_path:
+                headers = kwd.get("headers", {})
+                headers["content-type"] = "application/json"
+                return self._yield_user_file_content(trans, dataset, metadata_file_path, headers), headers
+
+        return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
+    def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> Optional[str]:
+        """Returns the name of the root folder where the Zarr store is located.
+
+        The Zarr store can be directly in the extra files folder or in a subfolder.
+        """
+        extra_files_path = dataset.extra_files_path
+        if self._find_zarr_metadata_file(extra_files_path):
+            return ""  # The store is in the root of the extra files folder
+        items_in_path = os.listdir(extra_files_path)
+        sub_folder_name = items_in_path[0]
+        zarr_store_path = os.path.join(extra_files_path, sub_folder_name)
+        if (
+            len(items_in_path) == 1
+            and os.path.isdir(zarr_store_path)
+            and self._find_zarr_metadata_file(zarr_store_path)
+        ):
+            return sub_folder_name  # The store is in a subfolder of the extra files folder
+        return None  # The directory structure does not look like Zarr format
+
+    def _load_zarr_metadata_file(self, store_root_path: str) -> Optional[Dict[str, Any]]:
+        """Returns the path to the metadata file in the Zarr store."""
+        meta_file = self._find_zarr_metadata_file(store_root_path)
+        if meta_file:
+            with open(meta_file) as f:
+                return json.load(f)
+        return None
+
+    def _find_zarr_metadata_file(self, store_root_path: str) -> Optional[str]:
+        """Returns the path to the metadata file in the Zarr store."""
+        meta_file = None
+        files_in_store = os.listdir(store_root_path)
+
+        # Depending on the Zarr version, the metadata file can be in different locations
+        # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
+        # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+        # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+        for meta_filename in ["meta", ".zarray", ".zgroup", "zarr.json"]:
+            if meta_filename in files_in_store:
+                meta_file = os.path.join(store_root_path, meta_filename)
+                break
+
+        if meta_file and os.path.isfile(meta_file):
+            return meta_file
+        return None
+
+    def _get_format_version(self, store_root_path: str) -> Optional[str]:
+        """Returns the Zarr format version from the metadata file in the Zarr store."""
+        metadata_file = self._load_zarr_metadata_file(store_root_path)
+        if metadata_file:
+            return metadata_file.get("zarr_format")
+        return None
 
 
 class GenericAsn1(Text):

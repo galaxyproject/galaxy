@@ -5,6 +5,7 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
+import re
 from typing import (
     List,
     Optional,
@@ -29,6 +30,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
 
 if TYPE_CHECKING:
     from io import TextIOBase
@@ -106,7 +108,7 @@ class Ply:
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 for line in fh:
                     line = line.strip()
                     if not line:
@@ -129,7 +131,7 @@ class Ply:
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
         else:
             dataset.peek = "File does not exist"
@@ -142,7 +144,7 @@ class Ply:
             return f"Ply file ({nice_size(dataset.get_size())})"
 
 
-class PlyAscii(Ply, data.Text):  # type: ignore[misc]
+class PlyAscii(Ply, data.Text):
     """
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.plyascii')
@@ -160,7 +162,7 @@ class PlyAscii(Ply, data.Text):  # type: ignore[misc]
         data.Text.__init__(self, **kwd)
 
 
-class PlyBinary(Ply, Binary):  # type: ignore[misc]
+class PlyBinary(Ply, Binary):
     file_ext = "plybinary"
     subtype = "binary"
 
@@ -189,10 +191,8 @@ class Vtk:
 
     Binary data must be placed into the file immediately after the newline
     ('\\n') character from the previous ASCII keyword and parameter sequence.
-
-    TODO: only legacy formats are currently supported and support for XML formats
-    should be added.
     """
+
     subtype = ""
     # Add metadata elements.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)
@@ -292,7 +292,7 @@ class Vtk:
             field_components = {}
             dataset_structure_complete = False
             processing_field_section = False
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
                     if not line:
@@ -463,7 +463,7 @@ class Vtk:
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = self.get_blurb(dataset)
         else:
             dataset.peek = "File does not exist"
@@ -476,7 +476,7 @@ class Vtk:
             return f"Vtk file ({nice_size(dataset.get_size())})"
 
 
-class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
+class VtkAscii(Vtk, data.Text):
     """
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.vtkascii')
@@ -494,7 +494,7 @@ class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
         data.Text.__init__(self, **kwd)
 
 
-class VtkBinary(Vtk, Binary):  # type: ignore[misc]
+class VtkBinary(Vtk, Binary):
     """
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.vtkbinary')
@@ -556,7 +556,7 @@ class NeperTess(data.Text):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
                     if not line or i > 6:
@@ -572,7 +572,7 @@ class NeperTess(data.Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, line_count=7)
+            dataset.peek = get_file_peek(dataset.get_file_name(), line_count=7)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
         else:
             dataset.peek = "File does not exist"
@@ -627,7 +627,7 @@ class NeperTesr(Binary):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 field = ""
                 for i, line in enumerate(fh):
                     line = line.strip()
@@ -659,7 +659,7 @@ class NeperTesr(Binary):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, line_count=9)
+            dataset.peek = get_file_peek(dataset.get_file_name(), line_count=9)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
         else:
             dataset.peek = "File does not exist"
@@ -681,7 +681,7 @@ class NeperPoints(data.Text):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data.Text.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
     def _get_dimension(self, fh: "TextIOBase", maxlines: int = 100, sep: Optional[str] = None) -> Optional[float]:
@@ -723,7 +723,7 @@ class NeperPointsTabular(NeperPoints, Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
@@ -768,7 +768,7 @@ class GmshMsh(Binary):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
-            with open(dataset.file_name, errors="ignore") as fh:
+            with open(dataset.get_file_name(), errors="ignore") as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
                     if not line or i > 1:
@@ -784,7 +784,7 @@ class GmshMsh(Binary):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, line_count=3)
+            dataset.peek = get_file_peek(dataset.get_file_name(), line_count=3)
             dataset.blurb = f"Gmsh verion: {str(dataset.metadata.version)} {str(dataset.metadata.format)}"
         else:
             dataset.peek = "File does not exist"
@@ -812,3 +812,59 @@ def get_next_line(fh):
         # Discard the rest of the line
         fh.readline()
     return line.strip()
+
+
+class VtkXml(GenericXml):
+    """Format for defining VTK (XML based) and its sub-datatypes. https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
+
+    edam_format = "edam:format_2332"
+    file_ext = "vtkxml"
+
+    # The same MetadataElements are also available for legacy VTK datatypes.
+    MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)
+    MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
+    MetadataElement(name="dataset_type", default=None, desc="Dataset type", readonly=True, optional=True, visible=True)
+
+    def extract_version(self, line: str) -> str:
+        match = re.search(r'version="([^"]+)"', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def extract_type(self, line: str) -> str:
+        match = re.search(r'type="([^"]+)"', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
+        dataset.metadata.file_format = "XML"
+        with open(dataset.get_file_name(), errors="ignore") as file:
+            # first line might be the xml header, so we take two
+            first_line = file.readline()
+            if first_line.startswith("<?xml"):
+                first_line = file.readline()
+            dataset.metadata.vtk_version = self.extract_version(first_line)
+            dataset.metadata.dataset_type = self.extract_type(first_line)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text for VTK dataset files."""
+        if not dataset.dataset.purged:
+            dataset.peek = "VTK Dataset file"
+            dataset.blurb = f"type {dataset.metadata.dataset_type} version {dataset.metadata.vtk_version}"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Check for the key string 'VTKFile' to determine if this is a VTK dataset file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('data.vtu')
+        >>> VtkXml().sniff(fname)
+        True
+        >>> fname = get_test_fname('1.phyloxml')
+        >>> VtkXml().sniff(fname)
+        False
+        """
+        return self._has_root_element_in_prefix(file_prefix, "VTKFile")

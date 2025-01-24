@@ -1,9 +1,10 @@
 """
-API operations around galaxy.web.short_term_storage infrastructure.
+API operations around galaxy.short_term_storage infrastructure.
 """
+
 from uuid import UUID
 
-from galaxy.web.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     ShortTermStorageServeCancelledInformation,
     ShortTermStorageServeCompletedInformation,
@@ -25,6 +26,7 @@ class FastAPIShortTermStorage:
         "/api/short_term_storage/{storage_request_id}/ready",
         summary="Determine if specified storage request ID is ready for download.",
         response_description="Boolean indicating if the storage is ready.",
+        public=True,
     )
     def is_ready(self, storage_request_id: UUID) -> bool:
         storage_target = self.short_term_storage_monitor.recover_target(storage_request_id)
@@ -32,6 +34,7 @@ class FastAPIShortTermStorage:
 
     @router.get(
         "/api/short_term_storage/{storage_request_id}",
+        public=True,
         summary="Serve the staged download specified by request ID.",
         response_description="Raw contents of the file.",
         response_class=GalaxyFileResponse,

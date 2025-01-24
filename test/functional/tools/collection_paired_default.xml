@@ -1,0 +1,40 @@
+<tool id="collection_paired_default" name="collection_paired_default" version="0.1.0">
+  <command>
+    cat $f1.forward $f1['reverse'] >> $out1;
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="paired" label="Input pair">
+      <default collection_type="paired">
+          <element name="forward" location="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed" />
+          <element name="reverse" location="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta" />
+      </default>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <output name="out1">
+        <assert_contents>
+          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r" />
+          <has_text text=">hg17" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

@@ -1,0 +1,15 @@
+- doc: |
+    Test to verify text parameters can be implicitly used as replacement parameters in workflow step PJAs.
+  job:
+    replaceme: 
+      value: moocow
+      type: raw
+  outputs:
+    out1:
+      class: File
+      metadata:
+        name: 'moocow name'
+    out2:
+      class: File
+      metadata:
+        name: 'moocow name 2'

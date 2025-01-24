@@ -21,6 +21,7 @@ and allow both predefined and user controlled key sets.
 ModelDeserializers control how a model validates and process an incoming
 attribute change to a model object.
 """
+
 # TODO: it may be there's a better way to combine the above three classes
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
@@ -54,9 +55,11 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.schema import ValueFilterQueryParams
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
     StorageItemsCleanupResult,
@@ -68,7 +71,6 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
 
@@ -108,6 +110,8 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
             raise exceptions.ItemOwnershipException(
                 f"{item.__class__.__name__} is not owned by the current user", type="error"
             )
+        # no need to check accessibility if we're the owner
+        return item
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -148,13 +152,10 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None):
+def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None) -> int:
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    if isinstance(id, DecodedDatabaseIdField):
-        return int(id)
-    else:
-        return decode_with_security(app.security, id, kind=kind)
+    return decode_with_security(app.security, id, kind=kind)
 
 
 def decode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
@@ -179,7 +180,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         item = trans.sa_session.query(item_class).get(decoded_id)
         assert item is not None
     except Exception:
-        log.exception(f"Invalid {class_name} id ( {id} ) specified.")
+        log.warning(f"Invalid {class_name} id ( {id} ) specified.")
         raise exceptions.MessageException(f"Invalid {class_name} id ( {id} ) specified", type="error")
 
     if check_ownership or check_accessible:
@@ -194,24 +195,6 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
 
 
 # =============================================================================
-def munge_lists(listA, listB):
-    """
-    Combine two lists into a single list.
-
-    (While allowing them to be None, non-lists, or lists.)
-    """
-    # TODO: there's nothing specifically filter or model-related here - move to util
-    if listA is None:
-        return listB
-    if listB is None:
-        return listA
-    if not isinstance(listA, list):
-        listA = [listA]
-    if not isinstance(listB, list):
-        listB = [listB]
-    return listA + listB
-
-
 U = TypeVar("U", bound=model._HasTable)
 
 
@@ -288,14 +271,6 @@ class ModelManager(Generic[U]):
             query = query.filter(filter)
         return query
 
-    def _munge_filters(self, filtersA, filtersB):
-        """
-        Combine two lists into a single list.
-
-        (While allowing them to be None, non-lists, or lists.)
-        """
-        return munge_lists(filtersA, filtersB)
-
     # .... order, limit, and offset
     def _apply_order_by(self, query: Query, order_by) -> Query:
         """
@@ -327,41 +302,31 @@ class ModelManager(Generic[U]):
         return query
 
     # .... query resolution
-    def one(self, **kwargs) -> Query:
+    def one(self, **kwargs) -> U:
         """
         Sends kwargs to build the query and returns one and only one model.
         """
         query = self.query(**kwargs)
         return self._one_with_recast_errors(query)
 
-    def _one_with_recast_errors(self, query: Query) -> Query:
+    def _one_with_recast_errors(self, query: Query) -> U:
         """
         Call sqlalchemy's one and recast errors to serializable errors if any.
 
         :raises exceptions.ObjectNotFound: if no model is found
         :raises exceptions.InconsistentDatabase: if more than one model is found
         """
+        check_database_connection(self.session())
         # overridden to raise serializable errors
         try:
             return query.one()
-        except sqlalchemy.orm.exc.NoResultFound:
+        except sqlalchemy.exc.NoResultFound:
             raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
-        except sqlalchemy.orm.exc.MultipleResultsFound:
+        except sqlalchemy.exc.MultipleResultsFound:
             raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
-    def _one_or_none(self, query):
-        """
-        Return the object if found, None if it's not.
-
-        :raises exceptions.InconsistentDatabase: if more than one model is found
-        """
-        try:
-            return self._one_with_recast_errors(query)
-        except exceptions.ObjectNotFound:
-            return None
-
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id: int) -> Query:
+    def by_id(self, id: int) -> U:
         """
         Gets a model by primary id.
         """
@@ -391,7 +356,7 @@ class ModelManager(Generic[U]):
         items = self._apply_fn_filters_gen(items, fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
-    def count(self, filters=None, **kwargs):
+    def count(self, filters=None, **kwargs) -> int:
         """
         Returns the number of objects matching the given filters.
 
@@ -441,7 +406,7 @@ class ModelManager(Generic[U]):
                 orm_filters.append(filter_.filter)
         return (orm_filters, fn_filters)
 
-    def _orm_list(self, query=None, **kwargs):
+    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> List[U]:
         """
         Sends kwargs to build the query return all models found.
         """
@@ -487,7 +452,7 @@ class ModelManager(Generic[U]):
         if not ids:
             return []
         ids_filter = parsed_filter("orm", self.model_class.__table__.c.id.in_(ids))
-        found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
+        found = self.list(filters=combine_lists(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -532,24 +497,24 @@ class ModelManager(Generic[U]):
                 session.commit()
         return item
 
-    def copy(self, item, **kwargs):
+    def copy(self, item, **kwargs) -> U:
         """
         Clone or copy an item.
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item, new_values, flush=True, **kwargs):
+    def update(self, item: U, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 
         ..note: NO validation or deserialization occurs here.
         """
-        self.session().add(item)
         for key, value in new_values.items():
             if hasattr(item, key):
                 setattr(item, key, value)
+        session = self.session()
+        session.add(item)
         if flush:
-            session = self.session()
             with transaction(session):
                 session.commit()
         return item
@@ -632,8 +597,14 @@ class SkipAttribute(Exception):
 
 
 class Serializer(Protocol):
-    def __call__(self, item: Any, key: str, **context) -> Any:
-        ...
+    def __call__(self, item: Any, key: str, **context) -> Any: ...
+
+
+# TODO: eventually all urls should be generated by the url builder and this can be safely removed.
+# Using it for now to identify in which contexts the url builder is not available
+def url_for_not_available(*args, **kwargs):
+    args_str = [str(arg) for arg in args]
+    raise NotImplementedError(f"url_for is not available in this context - args: {args_str} ")
 
 
 class ModelSerializer(HasAModelManager[T]):
@@ -683,7 +654,7 @@ class ModelSerializer(HasAModelManager[T]):
     @staticmethod
     def url_for(*args, context=None, **kwargs):
         trans = context and context.get("trans")
-        url_for = trans and trans.url_builder or gx_url_for
+        url_for = trans and trans.url_builder or url_for_not_available
         return url_for(*args, **kwargs)
 
     def add_serializers(self):
@@ -728,7 +699,7 @@ class ModelSerializer(HasAModelManager[T]):
                 try:
                     returned[key] = self.serializers[key](item, key, **context)
                 except SkipAttribute:
-                    # dont add this key if the deserializer threw this
+                    # don't add this key if the serializer threw this
                     pass
             elif key in self.serializable_keyset:
                 returned[key] = self.default_serializer(item, key, **context)
@@ -765,13 +736,13 @@ class ModelSerializer(HasAModelManager[T]):
         date = getattr(item, key)
         return date.isoformat() if date is not None else None
 
-    def serialize_id(self, item: Any, key: str, **context):
+    def serialize_id(self, item: Any, key: str, encode_id=True, **context):
         """
         Serialize an id attribute of `item`.
         """
         id = getattr(item, key)
         # Note: it may not be best to encode the id at this layer
-        return self.app.security.encode_id(id) if id is not None else None
+        return self.app.security.encode_id(id) if id is not None and encode_id else id
 
     def serialize_type_id(self, item: Any, key: str, **context):
         """
@@ -914,8 +885,7 @@ class ModelValidator:
 
 
 class Deserializer(Protocol):
-    def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any:
-        ...
+    def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any: ...
 
 
 class ModelDeserializer(HasAModelManager[T]):
@@ -1086,7 +1056,7 @@ class ModelFilterParser(HasAModelManager):
         Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
         """
         DEFAULT_OP = "eq"
-        qdict = query_params.dict(exclude_defaults=True)
+        qdict = query_params.model_dump(exclude_defaults=True)
         if filter_attr_key not in qdict:
             return []
         # precondition: attrs/value pairs are in-order in the qstring
@@ -1176,8 +1146,7 @@ class ModelFilterParser(HasAModelManager):
         if not filter_fn:
             return None
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
-        val_parser = attr_map.get("val", None)
-        if val_parser:
+        if val_parser := attr_map.get("val", None):
             val = val_parser(val)
 
         # curry/partial and fold the val in there now
@@ -1299,8 +1268,7 @@ class ModelFilterParser(HasAModelManager):
         except ValueError:
             pass
 
-        match = self.date_string_re.match(date_string)
-        if match:
+        if match := self.date_string_re.match(date_string):
             date_string = " ".join(group for group in match.groups() if group)
             return date_string
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
@@ -1324,13 +1292,6 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
 
 def raise_filter_err(attr, op, val, msg):
     raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
-
-
-def is_valid_slug(slug):
-    """Returns true iff slug is valid."""
-
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-    return VALID_SLUG_RE.match(slug)
 
 
 class SortableManager:
@@ -1389,3 +1350,24 @@ class StorageCleanerManager(Protocol):
     def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
         """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError
+
+
+def combine_lists(listA: Any, listB: Any) -> List:
+    """
+    Combine two lists into a single list.
+
+    Arguments can be None, non-lists, or lists. If an argument is None, it will
+    not be included in the returned list. If both arguments are None, an empty
+    list will be returned.
+    """
+
+    def make_list(item):
+        # Check for None explicitly: __bool__ may be overwritten.
+        if item is None:
+            return []
+        elif isinstance(item, list):
+            return item
+        else:
+            return [item]
+
+    return make_list(listA) + make_list(listB)

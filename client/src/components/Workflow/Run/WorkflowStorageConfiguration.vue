@@ -12,11 +12,7 @@
             :title-suffix="suffixPrimary"
             :invocation-preferred-object-store-id="selectedObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
-        <b-modal
-            v-model="showPreferredObjectStoreModal"
-            title="Invocation Preferred Object Store"
-            v-bind="modalProps"
-            hide-footer>
+        <b-modal v-model="showPreferredObjectStoreModal" :title="primaryModalTitle" v-bind="modalProps" hide-footer>
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
                 @updated="onUpdate" />
@@ -37,7 +33,7 @@
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
             v-model="showIntermediatePreferredObjectStoreModal"
-            title="Invocation Preferred Object Store (Intermediate Datasets)"
+            :title="intermediateModalTitle"
             v-bind="modalProps"
             hide-footer>
             <WorkflowSelectPreferredObjectStore
@@ -48,8 +44,13 @@
 </template>
 
 <script>
+import { mapState } from "pinia";
+
+import { useConfigStore } from "@/stores/configurationStore";
+
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
-import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";
+
+import WorkflowTargetPreferredObjectStorePopover from "@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue";
 
 export default {
     components: {
@@ -79,6 +80,20 @@ export default {
         };
     },
     computed: {
+        ...mapState(useConfigStore, ["config"]),
+        preferredOrEmptyString() {
+            if (this.config?.object_store_always_respect_user_selection) {
+                return "";
+            } else {
+                return "Preferred";
+            }
+        },
+        primaryModalTitle() {
+            return `Invocation ${this.preferredOrEmptyString} Storage Location`;
+        },
+        intermediateModalTitle() {
+            return `Invocation ${this.preferredOrEmptyString} Storage Location (Intermediate Datasets)`;
+        },
         suffixPrimary() {
             if (this.splitObjectStore) {
                 return ` (Workflow Output Datasets)`;

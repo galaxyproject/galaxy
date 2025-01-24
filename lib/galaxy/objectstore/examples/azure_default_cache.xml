@@ -1,0 +1,6 @@
+<object_store type="azure_blob">
+    <auth account_name="azureact" account_key="password123" />
+    <container name="unique_container_name" max_chunk_size="250"/><!-- max_chunk_size was never used, but keeping here to ensure we can parse old configs -->
+    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+    <extra_dir type="temp" path="database/tmp_azure"/>
+</object_store>

@@ -364,7 +364,7 @@ admins might want to control.
 
 .. note::
 
-   For the the execution of jobs Galaxy already implement the `support for using
+   For the execution of jobs Galaxy already implement the `support for using
    tarballs of container images
    <https://github.com/galaxyproject/galaxy/blob/c517e805771cc16807dfe675075a13fe6343f01f/lib/galaxy/tool_util/deps/container_classes.py#L319>`_.
    from ``container_image_cache_path`` (set in galaxy.yml) or the destination
@@ -379,7 +379,7 @@ Setting up Galaxy using docker / singularity on distributed compute resources
 (in particular in real user setups) requires careful planning.
 
 Other considerations
-====================
+--------------------
 
 Tools frequently use ``$TMP``, ``$TEMP``, or ``$TMPDIR`` (or simply use hardcoded
 ``/tmp``) for storing temporary data. In containerized environments ``/tmp``

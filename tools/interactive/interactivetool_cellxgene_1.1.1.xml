@@ -1,0 +1,122 @@
+<tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="1.1.1">
+    <requirements>
+	<container type="docker">quay.io/biocontainers/cellxgene:1.1.1--pyhdfd78af_0</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Cellxgene Single Cell Visualisation on $infile.display_name" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+    </entry_points>
+    <stdio>
+		<regex match="WARNING"
+			   source="both"
+			   level="warning"
+			   description="cellxgene warnings"
+			   />
+    </stdio>
+    <command><![CDATA[
+    #import re
+    #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $infile.element_identifier) + '.h5ad'
+
+    #if ($var_name and $make_unique) or $layer:
+    python '${anndata_unique_var_gene_symbols}' '${infile}' '${fancy_name}' '${var_name}' '${make_unique}' '${layer}'
+    #else  
+    cp '${infile}' '${fancy_name}'
+    #end if
+    &&
+    mkdir annotation_files
+    &&
+    cellxgene launch --host 0.0.0.0 --port 80 
+        --user-generated-data-dir annotation_files
+    #if $var_name and not $make_unique:
+        --var-names $var_name
+    #end if
+    '${fancy_name}'
+    ]]>
+    </command>
+    <configfiles>
+	    <configfile name="anndata_unique_var_gene_symbols"><![CDATA[
+import anndata as ad
+import sys
+
+def rn(df, field, suffix = '-duplicate-'):
+    appendents = (suffix + df.groupby(field).cumcount().astype(str).replace('0','')).replace(suffix, '')
+    df[f"{field}_u"] = df[field].astype(str) + appendents.astype(str)
+    return df
+
+adata = ad.read_h5ad(sys.argv[1])
+output = sys.argv[2]
+gene_symbol_field = sys.argv[3]
+make_unique = (sys.argv[4].lower() == "true")
+layer = sys.argv[5]
+
+if gene_symbol_field and make_unique:
+    if gene_symbol_field not in adata.var.keys():
+        sys.exit(f"Field {gene_symbol_field} set as var_name does not exist in the var object. AnnData object will be used as it was given")
+    
+    adata.var = rn(adata.var, gene_symbol_field, suffix = "_d")
+    adata.var["extra_gene_id"] = adata.var.index
+    adata.var = adata.var.set_index(f"{gene_symbol_field}_u")
+
+if layer:
+    if layer not in adata.layers.keys():
+        sys.exit(f"Layer {layer} is not present in AnnData, only available layers are: {', '.join(adata.layers.keys())}")
+    else:
+        adata.X = adata.layers[layer]
+
+adata.write_h5ad(output)
+]]></configfile>
+    </configfiles>
+    <inputs>
+	<param name="infile" type="data" format="h5ad" label="Concatenate Dataset"/>
+    <param name="var_name" type="text" optional="true" label="Var field for gene symbols" help="Optionaly specify the var field from the AnnData file provided where gene symbols are available. Usually the AnnData file var slot will be indexed with gene symbols and this is not required. Using this option will delay the startup of the cellxgene tool, as the AnnData needs to be modified and re-written to disk."/>
+    <param name="make_unique" type="boolean" checked="false" label="Make specified var field unique" help="It will copy the specified var field above and make its values unique. This means reading the AnnData object into Python and re-writing it again, increasing waiting time for the container to be up."/>
+    <param name="layer" type="text" optional="true" label="Specifies the AnnData layer to use as matrix" help="The layer name needs to be present in the AnnData file or this tool will fail"/>
+    </inputs>
+    <outputs>
+	<data name="out_file1" format="txt" />
+	<collection name="user_generated" type="list" label="Cellxgene user annotations and gene sets">
+            <discover_datasets pattern="__name_and_ext__" directory="annotation_files" />
+        </collection>
+    </outputs>
+    <tests>
+    </tests>
+<help><![CDATA[
+cellxgene - "Cell by gene" interactive viewer for single cell data in AnnData
+=============================================================================
+Purpose
+-------
+Enables interactive visualisation of Single Cell RNA-Seq datasets stored as 
+AnnData files (the format used by Scanpy).
+
+Selecting the Var name
+----------------------
+It can happen that the main index for the var element of AnnData is not the 
+gene symbol field, in which case search by genes will probably be by identifier.
+You can choose a different field and celxgene will use this. If in addition you choose "Make unique", 
+the AnnData is modified (in a new copy) so that that field is made unique and
+it is indexed by it. Making it unique entails though loading the object into memory, 
+modifying and writing it back, which can delay the execution of cellxgene.
+
+Then cellxgene will allow searches by genes in that field.
+
+Selecting the layer
+-------------------
+
+It can happen that the AnnData object contains multiple layers, for example
+one with the raw counts and another with the normalised counts. You can select
+which layer to use as the matrix for cellxgene. By default cellxgene will use the X slot, but
+that slot might not contain the matrix that you want to visualise.
+
+Outputs
+-------
+
+If you create gene sets or differential experession sets, this will be available as a collection of files under
+"Cellxgene user annotations and gene sets" at the end of the execution (when you stop the interactive environment).
+
+Tutorials
+---------
+
+You can find cellxgene tuorials `here <https://cellxgene.cziscience.com/docs/04__Analyze%20Public%20Data/4_1__Hosted%20Tutorials>`_ .
+]]></help>
+</tool>

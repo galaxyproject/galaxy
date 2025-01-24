@@ -77,14 +77,19 @@ class Torque(BaseJobExec):
                 tree = None
         if tree is None:
             log.warning(f"No valid qstat XML return from `qstat -x`, got the following: {status}")
-            return None
+            return {}
         else:
             for job in tree.findall("Job"):
-                id = job.find("Job_Id").text
-                if id in job_ids:
-                    state = job.find("job_state").text
+                job_id_elem = job.find("Job_Id")
+                assert job_id_elem is not None
+                id_ = job_id_elem.text
+                if id_ in job_ids:
+                    job_state_elem = job.find("job_state")
+                    assert job_state_elem is not None
+                    state = job_state_elem.text
+                    assert state
                     # map PBS job states to Galaxy job states.
-                    rval[id] = self._get_job_state(state)
+                    rval[id_] = self._get_job_state(state)
         return rval
 
     def parse_single_status(self, status, job_id):
@@ -95,11 +100,9 @@ class Torque(BaseJobExec):
         # no state found, job has exited
         return job_states.OK
 
-    def _get_job_state(self, state):
+    def _get_job_state(self, state: str) -> job_states:
         try:
-            return {"E": job_states.RUNNING, "R": job_states.RUNNING, "Q": job_states.QUEUED, "C": job_states.OK}.get(
-                state
-            )
+            return {"E": job_states.RUNNING, "R": job_states.RUNNING, "Q": job_states.QUEUED, "C": job_states.OK}[state]
         except KeyError:
             raise KeyError(f"Failed to map torque status code [{state}] to job state.")
 

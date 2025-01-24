@@ -57,7 +57,7 @@ from ..conda_compat import MetaData
 
 log = logging.getLogger(__name__)
 
-DIRNAME = os.path.dirname(__file__)
+INVFILE = os.environ.get("INVFILE", os.path.join(os.path.dirname(__file__), "invfile.lua"))
 DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base-glibc-busybox-bash:latest")
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
@@ -69,7 +69,7 @@ DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
-CONDA_IMAGE = os.environ.get("CONDA_IMAGE", None)
+CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -150,7 +150,7 @@ def get_affected_packages(args):
 def conda_versions(pkg_name, file_name):
     """Return all conda version strings for a specified package name."""
     j = json.load(open(file_name))
-    ret = list()
+    ret = []
     for pkg in j["packages"].values():
         if pkg["name"] == pkg_name:
             ret.append(f"{pkg['version']}--{pkg['build']}")
@@ -222,6 +222,7 @@ def mull_targets(
     singularity_image_dir="singularity_import",
     base_image=None,
     determine_base_image=True,
+    invfile=INVFILE,
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -266,7 +267,7 @@ def mull_targets(
     bind_str = ",".join(binds)
     involucro_args = [
         "-f",
-        f"{DIRNAME}/invfile.lua",
+        invfile,
         "-set",
         f"CHANNELS={channels_str}",
         "-set",
@@ -306,7 +307,7 @@ def mull_targets(
         conda_bin = "mamba"
         if mamba_version is None:
             mamba_version = ""
-    involucro_args.extend(["-set", "CONDA_BIN=%s" % conda_bin])
+    involucro_args.extend(["-set", f"CONDA_BIN={conda_bin}"])
     if conda_version is not None or mamba_version is not None:
         mamba_test = "true"
         specs = []
@@ -373,13 +374,12 @@ class CondaInDockerContext(CondaContext):
         condarc_override=None,
     ):
         if not conda_exec:
-            conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
             binds = []
             for channel in ensure_channels:
                 if channel.startswith("file://"):
                     bind_path = channel[7:]
                     binds.extend(["-v", f"{bind_path}:{bind_path}"])
-            conda_exec = docker_command_list("run", binds + [conda_image, "conda"])
+            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
         super().__init__(
             conda_prefix=conda_prefix,
             conda_exec=conda_exec,
@@ -470,6 +470,7 @@ def add_build_arguments(parser):
     parser.add_argument(
         "--singularity-image-dir", dest="singularity_image_dir", help="Directory to write singularity images too."
     )
+    parser.add_argument("--involucro-lua-file", dest="invfile", default=INVFILE, help="Path to invfile.lua")
     parser.add_argument("-n", "--namespace", dest="namespace", default="biocontainers", help="quay.io namespace.")
     parser.add_argument(
         "-r",
@@ -525,8 +526,8 @@ def add_single_image_arguments(parser):
     )
 
 
-def target_str_to_targets(targets_raw):
-    def parse_target(target_str):
+def target_str_to_targets(targets_raw: str) -> List[CondaTarget]:
+    def parse_target(target_str: str) -> CondaTarget:
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
             build = None
@@ -539,8 +540,10 @@ def target_str_to_targets(targets_raw):
             target = build_target(target_str)
         return target
 
-    targets = [parse_target(_) for _ in targets_raw.split(",")]
-    return targets
+    if targets_raw.strip() == "":
+        return []
+    else:
+        return [parse_target(_) for _ in targets_raw.split(",")]
 
 
 def args_to_mull_targets_kwds(args):
@@ -580,6 +583,8 @@ def args_to_mull_targets_kwds(args):
         kwds["hash_func"] = args.hash
     if hasattr(args, "singularity_image_dir") and args.singularity_image_dir:
         kwds["singularity_image_dir"] = args.singularity_image_dir
+    if hasattr(args, "invfile"):
+        kwds["invfile"] = args.invfile
 
     kwds["involucro_context"] = context_from_args(args)
 

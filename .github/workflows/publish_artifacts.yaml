@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
         matrix:
-            python-version: ['3.7']
+            python-version: ['3.8']
     steps:
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install script dependencies
         run: pip install galaxy-release-util
       - name: Build and publish

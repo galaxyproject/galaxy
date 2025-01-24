@@ -2,21 +2,44 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+
 import copy
+import json
 import logging
 import os
 import re
+from dataclasses import dataclass
 from io import StringIO
+from typing import (
+    Any,
+    cast,
+    Dict,
+    get_args,
+    Optional,
+)
+
+from typing_extensions import Literal
 
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
     MetadataFile,
     User,
 )
-from galaxy.util import string_as_bool
+from galaxy.tools.expressions import do_eval
+from galaxy.tools.parameters.workflow_utils import (
+    is_runtime_value,
+    workflow_building_modes,
+)
+from galaxy.util import (
+    Element,
+    string_as_bool,
+)
+from galaxy.util.template import fill_template
 from . import validation
+from .cancelable_request import request
 
 log = logging.getLogger(__name__)
 
@@ -264,14 +287,12 @@ class ParamValueFilter(Filter):
         return self.ref_name
 
     def filter_options(self, options, trans, other_values):
-        if trans is not None and trans.workflow_building_mode:
-            return []
         ref = other_values.get(self.ref_name, None)
-        if ref is None:
+        if ref is None or is_runtime_value(ref):
             ref = []
 
         # - for HDCAs the list of contained HDAs is extracted
-        # - single values are transformed in a single eleent list
+        # - single values are transformed in a single element list
         # - remaining cases are already lists (select and data parameters with multiple=true)
         if isinstance(ref, HistoryDatasetCollectionAssociation):
             ref = ref.to_hda_representative(multiple=True)
@@ -517,6 +538,61 @@ class SortByColumnFilter(Filter):
         return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
 
 
+class DataTableFilter(Filter):
+    """
+    Filters a list of options by entries present in a data table, i.e.
+    option[column] needs to be in the specified data table column
+
+    Type: data_table
+
+    Required Attributes:
+
+        - column: column in options to compare with
+        - table_name: data table to use
+        - data_table_column: data table column to use
+
+    Optional Attributes:
+
+        - keep: Keep options where option[column] is in the data table column (True)
+                Discard columns matching value (False)
+
+    """
+
+    def __init__(self, d_option, elem):
+        Filter.__init__(self, d_option, elem)
+        self.table_name = elem.get("table_name", None)
+        assert self.table_name is not None, "Required 'table_name' attribute missing from filter"
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter"
+        self.column = d_option.column_spec_to_index(column)
+        self.data_table_column = elem.get("data_table_column", None)
+        assert self.data_table_column is not None, "Required 'data_table_column' attribute missing from filter"
+        self.keep = string_as_bool(elem.get("keep", "True"))
+
+    def filter_options(self, options, trans, other_values):
+        # get column from data table, by index or column name
+        entries = None
+        try:
+            entries = {f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()}
+        except ValueError:
+            pass
+        try:
+            entries = {
+                f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()
+            }
+        except KeyError:
+            pass
+        if entries is None:
+            log.error(f"could not get data from column {self.data_table_column} from data_table {self.table_name}")
+            return options
+
+        rval = []
+        for o in options:
+            if self.keep == (o[self.column] in entries):
+                rval.append(o)
+        return rval
+
+
 filter_types = dict(
     data_meta=DataMetaFilter,
     param_value=ParamValueFilter,
@@ -528,13 +604,14 @@ filter_types = dict(
     add_value=AdditionalValueFilter,
     remove_value=RemoveValueFilter,
     sort_by=SortByColumnFilter,
+    data_table=DataTableFilter,
 )
 
 
 class DynamicOptions:
     """Handles dynamically generated SelectToolParameter options"""
 
-    def __init__(self, elem, tool_param):
+    def __init__(self, elem: Element, tool_param):
         def load_from_parameter(from_parameter, transform_lines=None):
             obj = self.tool_param
             for field in from_parameter.split("."):
@@ -544,7 +621,7 @@ class DynamicOptions:
             return self.parse_file_fields(obj)
 
         self.tool_param = tool_param
-        self.columns = {}
+        self.columns: Dict[str, int] = {}
         self.filters = []
         self.file_fields = None
         self.largest_index = 0
@@ -564,6 +641,7 @@ class DynamicOptions:
         dataset_file = elem.get("from_dataset", None)
         from_parameter = elem.get("from_parameter", None)
         self.tool_data_table_name = elem.get("from_data_table", None)
+        self.from_url_options = parse_from_url_options(elem)
         # Options are defined from a data table loaded by the app
         self._tool_data_table = None
         self.elem = elem
@@ -600,8 +678,9 @@ class DynamicOptions:
             self.filters.append(Filter.from_element(self, filter_elem))
 
         # Load Validators
-        for validator in elem.findall("validator"):
-            self.validators.append(validation.Validator.from_element(self.tool_param, validator))
+        validators = validation.parse_xml_validators(self.tool_param.tool.app, elem)
+        if validators:
+            self.validators = validators
 
         if self.dataset_ref_name:
             tool_param.data_ref = self.dataset_ref_name
@@ -666,8 +745,12 @@ class DynamicOptions:
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
                         log.warning(
-                            "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r"
-                            % (field_count, len(fields), name, self.separator, line)
+                            "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r",
+                            field_count,
+                            len(fields),
+                            name,
+                            self.separator,
+                            line,
                         )
                     rval.append(fields)
         return rval
@@ -714,21 +797,27 @@ class DynamicOptions:
                     if getattr(dataset, "purged", False) or getattr(dataset, "deleted", False):
                         log.warning(f"The metadata file inferred from key `{meta_file_key}` was deleted!")
                         continue
-                if not hasattr(dataset, "file_name"):
+                if not hasattr(dataset, "get_file_name"):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-                path = dataset.file_name
-                if os.path.getsize(path) < 1048576:
-                    with open(path) as fh:
-                        options += self.parse_file_fields(fh)
-                else:
-                    # Pass just the first megabyte to parse_file_fields.
-                    log.warning("Attempting to load options from large file, reading just first megabyte")
-                    with open(path) as fh:
-                        contents = fh.read(1048576)
-                    options += self.parse_file_fields(StringIO(contents))
+                try:
+                    path = dataset.get_file_name()
+                    if os.path.getsize(path) < 1048576:
+                        with open(path) as fh:
+                            options += self.parse_file_fields(fh)
+                    else:
+                        # Pass just the first megabyte to parse_file_fields.
+                        log.warning("Attempting to load options from large file, reading just first megabyte")
+                        with open(path) as fh:
+                            contents = fh.read(1048576)
+                        options += self.parse_file_fields(StringIO(contents))
+                except Exception as e:
+                    log.warning("Could not read contents from %s: %s", dataset, str(e))
+                    continue
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
+            if trans and trans.user and trans.workflow_building_mode != workflow_building_modes.ENABLED:
+                options += self.get_user_options(trans.user)
         elif self.file_fields:
             options = list(self.file_fields)
         else:
@@ -736,6 +825,46 @@ class DynamicOptions:
         for filter in self.filters:
             options = filter.filter_options(options, trans, other_values)
         return options
+
+    def get_user_options(self, user: User):
+        # stored metadata are key: value pairs, turn into flat lists of correct order
+        fields = []
+        if self.tool_data_table_name:
+            hdas = user.get_user_data_tables(self.tool_data_table_name)
+            by_dbkey = {}
+            for hda in hdas:
+                try:
+                    table_entries = self.hda_to_table_entries(hda, self.tool_data_table_name)
+                except Exception as e:
+                    # This is a bug, `hda_to_table_entries` is not generic enough for certain loc file
+                    # structures, such as for the dada2_species, which doesn't have a dbkey column
+                    table_entries = {}
+                    log.warning("Failed to read data table bundle entries: %s", e)
+                by_dbkey.update(table_entries)
+            for data_table_entry in by_dbkey.values():
+                field_entry = []
+                for column_key in self.tool_data_table.columns.keys():
+                    field_entry.append(data_table_entry[column_key])
+                fields.append(field_entry)
+        return fields
+
+    @staticmethod
+    def hda_to_table_entries(hda, table_name):
+        table_entries = {}
+        for value in hda._metadata["data_tables"][table_name]:
+            if dbkey := value.get("dbkey"):
+                table_entries[dbkey] = value
+            if path := value.get("path"):
+                # maybe a hack, should probably pass around dataset or src id combinations ?
+                value["path"] = os.path.join(hda.extra_files_path, path)
+                value["value"] = {"src": "hda", "id": hda.id}
+        return table_entries
+
+    def get_option_from_dataset(self, dataset):
+        # TODO: we may have to pass the name/id in case there are multiple entries produced by a single dm run
+        entries = self.hda_to_table_entries(dataset, self.tool_data_table_name)
+        assert len(entries) == 1, "Cannot pass tool data bundle with more than 1 data entry per table"
+        return next(iter(entries.values()))
 
     def get_fields_by_value(self, value, trans, other_values):
         """
@@ -766,7 +895,52 @@ class DynamicOptions:
         return rval
 
     def get_options(self, trans, other_values):
+
         rval = []
+
+        def to_triple(values):
+            if len(values) == 2:
+                return [str(values[0]), str(values[1]), False]
+            else:
+                return [str(values[0]), str(values[1]), bool(values[2])]
+
+        if from_url_options := self.from_url_options:
+            context = User.user_template_environment(trans.user)
+            url = fill_template(from_url_options.from_url, context)
+            request_body = template_or_none(from_url_options.request_body, context)
+            request_headers = template_or_none(from_url_options.request_headers, context)
+            try:
+                unset_value = object()
+                cached_value = trans.get_cache_value(
+                    (url, from_url_options.request_method, request_body, request_headers), unset_value
+                )
+                if cached_value is unset_value:
+                    data = request(
+                        url=url,
+                        method=from_url_options.request_method,
+                        data=json.loads(request_body) if request_body else None,
+                        headers=json.loads(request_headers) if request_headers else None,
+                        timeout=10,
+                    )
+                    trans.set_cache_value((url, from_url_options.request_method, request_body, request_headers), data)
+                else:
+                    data = cached_value
+            except Exception as e:
+                log.warning("Fetching from url '%s' failed: %s", url, str(e))
+                data = None
+
+            if from_url_options.postprocess_expression:
+                try:
+                    data = do_eval(
+                        from_url_options.postprocess_expression,
+                        data,
+                    )
+                except Exception as eval_error:
+                    log.warning("Failed to evaluate postprocess_expression: %s", str(eval_error))
+                    data = []
+
+            # We only support the very specific ["name", "value", "selected"] format for now.
+            rval = [to_triple(d) for d in data]
         if (
             self.file_fields is not None
             or self.tool_data_table is not None
@@ -794,6 +968,48 @@ class DynamicOptions:
         return int(column_spec)
 
 
+REQUEST_METHODS = Literal["GET", "POST"]
+
+
+@dataclass
+class FromUrlOptions:
+    from_url: str
+    request_method: REQUEST_METHODS
+    request_body: Optional[str]
+    request_headers: Optional[str]
+    postprocess_expression: Optional[str]
+
+
+def strip_or_none(maybe_string: Optional[Element]) -> Optional[str]:
+    if maybe_string is not None:
+        if maybe_string.text:
+            return maybe_string.text.strip()
+    return None
+
+
+def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
+    if from_url := elem.get("from_url"):
+        request_method = cast(Literal["GET", "POST"], elem.get("request_method", "GET"))
+        assert request_method in get_args(REQUEST_METHODS)
+        request_headers = strip_or_none(elem.find("request_headers"))
+        request_body = strip_or_none(elem.find("request_body"))
+        postprocess_expression = strip_or_none(elem.find("postprocess_expression"))
+        return FromUrlOptions(
+            from_url,
+            request_method=request_method,
+            request_headers=request_headers,
+            request_body=request_body,
+            postprocess_expression=postprocess_expression,
+        )
+    return None
+
+
+def template_or_none(template: Optional[str], context: Dict[str, Any]) -> Optional[str]:
+    if template:
+        return fill_template(template, context=context)
+    return None
+
+
 def _get_ref_data(other_values, ref_name):
     """
     get the list of data sets from ref_name
@@ -811,16 +1027,19 @@ def _get_ref_data(other_values, ref_name):
         (
             DatasetFilenameWrapper,
             HistoryDatasetAssociation,
+            LibraryDatasetDatasetAssociation,
             DatasetCollectionElement,
             DatasetListWrapper,
             HistoryDatasetCollectionAssociation,
             list,
         ),
     ):
+        if is_runtime_value(ref):
+            return []
         raise ValueError
     if isinstance(ref, DatasetCollectionElement) and ref.hda:
         ref = ref.hda
-    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
+    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
         ref = [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):
         ref = ref.to_hda_representative(multiple=True)

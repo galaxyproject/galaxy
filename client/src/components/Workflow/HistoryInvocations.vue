@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
-import InvocationsList from "@/components/Workflow/InvocationsList.vue";
+import GridInvocation from "../Grid/GridInvocation.vue";
 
 interface HistoryInvocationProps {
     historyId: string;
@@ -13,16 +11,14 @@ interface HistoryInvocationProps {
 
 const props = defineProps<HistoryInvocationProps>();
 
-const { currentUser } = storeToRefs(useUserStore());
 const { getHistoryNameById } = useHistoryStore();
 const historyName = computed(() => getHistoryNameById(props.historyId));
 </script>
 <template>
-    <div>
-        <InvocationsList
-            v-if="currentUser && historyName"
-            :user-id="currentUser.id"
-            :history-id="historyId"
-            :history-name="historyName" />
-    </div>
+    <GridInvocation
+        :filtered-for="{
+            type: 'History',
+            id: props.historyId,
+            name: historyName,
+        }" />
 </template>

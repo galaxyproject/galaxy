@@ -1,16 +1,28 @@
-import type { UseScrollReturn } from "@vueuse/core";
+import { type UseScrollReturn } from "@vueuse/core";
 import { select } from "d3-selection";
 import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
-import type { Ref } from "vue";
-import { ref, watch } from "vue";
+import { type Ref, ref, watch } from "vue";
 
-import type { XYPosition } from "@/stores/workflowEditorStateStore";
+import { type XYPosition } from "@/stores/workflowEditorStateStore";
 
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
-const filter = (event: any) => {
-    const preventZoom = event.target.classList.contains("prevent-zoom");
-    return !preventZoom;
+const filter = (event: D3ZoomEvent<HTMLElement, unknown>["sourceEvent"]) => {
+    const target = event.target as HTMLElement;
+
+    if (target.classList.contains("prevent-zoom")) {
+        return false;
+    }
+
+    if (event.type === "dblclick") {
+        const style = getComputedStyle(target);
+
+        if (style.getPropertyValue("--dblclick") === "prevent") {
+            return false;
+        }
+    }
+
+    return true;
 };
 
 export function useD3Zoom(

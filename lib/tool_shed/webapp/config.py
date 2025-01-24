@@ -1,6 +1,7 @@
 """
 Universe configuration builder.
 """
+
 import configparser
 import logging
 import logging.config
@@ -26,6 +27,7 @@ from galaxy.version import (
 log = logging.getLogger(__name__)
 
 TOOLSHED_APP_NAME = "tool_shed"
+SHED_API_VERSION = os.environ.get("TOOL_SHED_API_VERSION", "v1")
 
 
 class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):

@@ -14,7 +14,7 @@ SKIP_NODE=${GALAXY_SKIP_NODE:-0}
 INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 : "${YARN_INSTALL_OPTS:=--network-timeout 300000 --check-files}"
-: "${GALAXY_CONDA_PYTHON_VERSION:=3.7}"
+: "${GALAXY_CONDA_PYTHON_VERSION:=3.8}"
 
 for arg in "$@"; do
     if [ "$arg" = "--skip-venv" ]; then
@@ -34,14 +34,13 @@ done
 SAMPLES="
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/shared/ucsc/manual_builds.txt.sample
-    static/welcome.html.sample
 "
 
 RMFILES="
     lib/pkg_resources.pyc
 "
 
-MIN_PYTHON_VERSION=3.7
+MIN_PYTHON_VERSION=3.8
 MIN_PIP_VERSION=20.3
 
 # return true if $1 is in $2 else false

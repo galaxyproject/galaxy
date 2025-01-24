@@ -1,3 +1,69 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+
+import { type DatasetStorageDetails, GalaxyApi } from "@/api";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+
+import RelocateLink from "./RelocateLink.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
+
+interface DatasetStorageProps {
+    datasetId: string;
+    datasetType?: "hda" | "ldda";
+    includeTitle?: boolean;
+}
+
+const props = withDefaults(defineProps<DatasetStorageProps>(), {
+    datasetType: "hda",
+    includeTitle: true,
+});
+
+const storageInfo = ref<DatasetStorageDetails | null>(null);
+const errorMessage = ref<string | null>(null);
+
+const discarded = computed(() => {
+    return storageInfo.value?.dataset_state == "discarded";
+});
+
+const deferred = computed(() => {
+    return storageInfo.value?.dataset_state == "deferred";
+});
+
+const sourceUri = computed(() => {
+    const sources = storageInfo.value?.sources;
+    if (!sources) {
+        return null;
+    }
+    const rootSources = sources.filter((source) => !source.extra_files_path);
+    if (rootSources.length == 0) {
+        return null;
+    }
+    return rootSources[0]?.source_uri;
+});
+
+async function fetch() {
+    const datasetId = props.datasetId;
+    const datasetType = props.datasetType;
+    try {
+        const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/storage", {
+            params: {
+                path: { dataset_id: datasetId },
+                query: { hda_ldda: datasetType },
+            },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        storageInfo.value = data;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    }
+}
+
+watch(props, fetch, { immediate: true });
+</script>
+
 <template>
     <div>
         <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
@@ -18,74 +84,10 @@
         <div v-else>
             <DescribeObjectStore what="This dataset is stored in" :storage-info="storageInfo" />
         </div>
+        <RelocateLink
+            v-if="storageInfo"
+            :dataset-id="datasetId"
+            :dataset-storage-details="storageInfo"
+            @relocated="fetch" />
     </div>
 </template>
-
-<script>
-import axios from "axios";
-import LoadingSpan from "components/LoadingSpan";
-import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString } from "utils/simple-error";
-
-export default {
-    components: {
-        DescribeObjectStore,
-        LoadingSpan,
-    },
-    props: {
-        datasetId: {
-            type: String,
-        },
-        datasetType: {
-            type: String,
-            default: "hda",
-        },
-        includeTitle: {
-            type: Boolean,
-            default: true,
-        },
-    },
-    data() {
-        return {
-            storageInfo: null,
-            errorMessage: null,
-        };
-    },
-    computed: {
-        discarded() {
-            return this.storageInfo.dataset_state == "discarded";
-        },
-        deferred() {
-            return this.storageInfo.dataset_state == "deferred";
-        },
-        sourceUri() {
-            const sources = this.storageInfo.sources;
-            if (!sources) {
-                return null;
-            }
-            const rootSources = sources.filter((source) => !source.extra_files_path);
-            if (rootSources.length == 0) {
-                return null;
-            }
-            return rootSources[0].source_uri;
-        },
-    },
-    created() {
-        const datasetId = this.datasetId;
-        const datasetType = this.datasetType;
-        axios
-            .get(`${getAppRoot()}api/datasets/${datasetId}/storage`, { hda_ldda: datasetType })
-            .then(this.handleResponse)
-            .catch((errorMessage) => {
-                this.errorMessage = errorMessageAsString(errorMessage);
-            });
-    },
-    methods: {
-        handleResponse(response) {
-            const storageInfo = response.data;
-            this.storageInfo = storageInfo;
-        },
-    },
-};
-</script>

@@ -12,6 +12,7 @@ import sys
 import tempfile
 from copy import deepcopy
 from errno import EMFILE
+from typing import Dict
 
 import bx.align.maf
 import bx.interval_index_file
@@ -137,26 +138,23 @@ class RegionAlignment:
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
-    def __init__(self, size, species=None, temp_file_handler=None):
+    def __init__(self, size: int, species=None, temp_file_handler=None):
         assert (
             size <= self.MAX_SEQUENCE_SIZE
-        ), "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % (
-            size,
-            self.MAX_SEQUENCE_SIZE,
-        )
+        ), f"Maximum length allowed for an individual sequence has been exceeded ({size} > {self.MAX_SEQUENCE_SIZE})."
         species = species or []
         self.size = size
         if not temp_file_handler:
             temp_file_handler = TempFileHandler()
         self.temp_file_handler = temp_file_handler
-        self.sequences = {}
+        self.sequences: Dict[str, int] = {}
         if not isinstance(species, list):
             species = [species]
         for spec in species:
             self.add_species(spec)
 
     # add a species to the alignment
-    def add_species(self, species):
+    def add_species(self, species: str):
         # make temporary sequence files
         file_index, fh = self.temp_file_handler.get_open_tempfile()
         self.sequences[species] = file_index
@@ -176,14 +174,14 @@ class RegionAlignment:
         return names
 
     # returns the sequence for a species
-    def get_sequence(self, species):
+    def get_sequence(self, species: str):
         file_index, fh = self.temp_file_handler.get_open_tempfile(self.sequences[species])
         fh.seek(0)
         return fh.read()
 
     # returns the reverse complement of the sequence for a species
-    def get_sequence_reverse_complement(self, species):
-        complement = [base for base in self.get_sequence(species).translate(self.DNA_COMPLEMENT)]
+    def get_sequence_reverse_complement(self, species: str):
+        complement = list(self.get_sequence(species).translate(self.DNA_COMPLEMENT))
         complement.reverse()
         return "".join(complement)
 
@@ -195,9 +193,9 @@ class RegionAlignment:
 
     # sets a range for a species
 
-    def set_range(self, index, species, bases):
+    def set_range(self, index: int, species: str, bases):
         if index >= self.size or index < 0:
-            raise Exception("Your index (%i) is out of range (0 - %i)." % (index, self.size - 1))
+            raise Exception(f"Your index ({index}) is out of range (0 - {self.size - 1}).")
         if len(bases) == 0:
             raise Exception("A set of genomic positions can only have a positive length.")
         if species not in self.sequences.keys():
@@ -219,7 +217,7 @@ class RegionAlignment:
 class GenomicRegionAlignment(RegionAlignment):
     def __init__(self, start, end, species=None, temp_file_handler=None):
         species = species or []
-        RegionAlignment.__init__(self, end - start, species, temp_file_handler=temp_file_handler)
+        super().__init__(end - start, species, temp_file_handler=temp_file_handler)
         self.start = start
         self.end = end
 
@@ -274,7 +272,7 @@ class SplicedAlignment:
 
     # returns the reverse complement of the sequence for a species
     def get_sequence_reverse_complement(self, species):
-        complement = [base for base in self.get_sequence(species).translate(self.DNA_COMPLEMENT)]
+        complement = list(self.get_sequence(species).translate(self.DNA_COMPLEMENT))
         complement.reverse()
         return "".join(complement)
 
@@ -658,9 +656,6 @@ def get_starts_ends_fields_from_gene_bed(line):
     if len(fields) < 12:
         raise Exception(f"Not a proper 12 column BED line ({line}).")
     tx_start = int(fields[1])
-    strand = fields[5]
-    if strand != "-":
-        strand = "+"  # Default strand is +
     cds_start = int(fields[6])
     cds_end = int(fields[7])
 
@@ -686,7 +681,7 @@ def iter_components_by_src(block, src):
 
 
 def get_components_by_src(block, src):
-    return [value for value in iter_components_by_src(block, src)]
+    return list(iter_components_by_src(block, src))
 
 
 def iter_components_by_src_start(block, src):
@@ -696,7 +691,7 @@ def iter_components_by_src_start(block, src):
 
 
 def get_components_by_src_start(block, src):
-    return [value for value in iter_components_by_src_start(block, src)]
+    return list(iter_components_by_src_start(block, src))
 
 
 def sort_block_components_by_block(block1, block2):
@@ -737,12 +732,7 @@ def remove_temp_index_file(index_filename):
 
 def get_fasta_header(component, attributes=None, suffix=None):
     attributes = attributes or {}
-    header = ">%s(%s):%i-%i|" % (
-        component.src,
-        component.strand,
-        component.get_forward_strand_start(),
-        component.get_forward_strand_end(),
-    )
+    header = f">{component.src}({component.strand}):{component.get_forward_strand_start()}-{component.get_forward_strand_end()}|"
     for key, value in attributes.items():
         header = f"{header}{key}={value}|"
     if suffix:

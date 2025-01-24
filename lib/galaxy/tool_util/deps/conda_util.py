@@ -48,7 +48,7 @@ IS_OS_X = sys.platform == "darwin"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "conda-libmamba-solver", "'pyopenssl>=22.1.0'")
+CONDA_PACKAGE_SPECS = ("conda>=23.7.0", "conda-libmamba-solver", "pyopenssl>=22.1.0")
 CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
 
@@ -56,17 +56,14 @@ USE_LOCAL_DEFAULT = False
 def conda_link() -> str:
     if IS_OS_X:
         if "arm64" in platform.platform():
-            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-arm64.sh"
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh"
         else:
-            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-x86_64.sh"
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh"
     else:
-        if sys.maxsize > 2**32:
-            if "arm64" in platform.platform():
-                url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-aarch64.sh"
-            else:
-                url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh"
+        if "arm64" in platform.platform():
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
         else:
-            url = "https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86.sh"
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
     return url
 
 
@@ -75,28 +72,19 @@ def find_conda_prefix() -> str:
     for Miniconda installs.
     """
     home = os.path.expanduser("~")
-    miniconda_2_dest = os.path.join(home, "miniconda2")
-    miniconda_3_dest = os.path.join(home, "miniconda3")
-    anaconda_2_dest = os.path.join(home, "anaconda2")
-    anaconda_3_dest = os.path.join(home, "anaconda3")
-    # Prefer miniconda3 install if both available
-    if os.path.exists(miniconda_3_dest):
-        return miniconda_3_dest
-    elif os.path.exists(miniconda_2_dest):
-        return miniconda_2_dest
-    elif os.path.exists(anaconda_3_dest):
-        return anaconda_3_dest
-    elif os.path.exists(anaconda_2_dest):
-        return anaconda_2_dest
-    else:
-        return miniconda_3_dest
+    destinations = ["miniforge3", "miniconda3", "miniconda2", "anaconda3", "anaconda2"]
+    for destination in destinations:
+        destination = os.path.join(home, destination)
+        if os.path.exists(destination):
+            return destination
+    return os.path.join(home, "miniforge3")
 
 
 class CondaContext(installable.InstallableContext):
     installable_description = "Conda"
     _conda_build_available: Optional[bool]
     _conda_version: Optional[Version]
-    _experimental_solver_available: Optional[bool]
+    _libmamba_solver_available: Optional[bool]
 
     def __init__(
         self,
@@ -137,7 +125,7 @@ class CondaContext(installable.InstallableContext):
     def _reset_conda_properties(self) -> None:
         self._conda_version = None
         self._conda_build_available = None
-        self._experimental_solver_available = None
+        self._libmamba_solver_available = None
 
     @property
     def conda_version(self) -> Version:
@@ -175,13 +163,17 @@ class CondaContext(installable.InstallableContext):
         return override_channels_args
 
     @property
-    def _experimental_solver_args(self) -> List[str]:
-        if self._experimental_solver_available is None:
-            self._experimental_solver_available = self.conda_version >= Version("4.12.0") and self.is_package_installed(
+    def _solver_args(self) -> List[str]:
+        if self._libmamba_solver_available is None:
+            self._libmamba_solver_available = self.conda_version >= Version("4.12.0") and self.is_package_installed(
                 "conda-libmamba-solver"
             )
-        if self._experimental_solver_available:
-            return ["--experimental-solver", "libmamba"]
+        if self._libmamba_solver_available:
+            # The "--solver" option was introduced in conda 22.11.0, when the
+            # "--experimental-solver" option was deprecated.
+            # The "--experimental-solver" option was removed in conda 23.9.0 .
+            solver_option = "--solver" if self.conda_version >= Version("22.11.0") else "--experimental-solver"
+            return [solver_option, "libmamba"]
         else:
             return []
 
@@ -250,7 +242,7 @@ class CondaContext(installable.InstallableContext):
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
         cmd_string = shlex_join(cmd)
-        kwds = dict()
+        kwds: Dict[str, Any] = {}
         try:
             if stdout_path:
                 kwds["stdout"] = open(stdout_path, "w")
@@ -296,7 +288,7 @@ class CondaContext(installable.InstallableContext):
                     continue
             if allow_local and self.use_local:
                 create_args.append("--use-local")
-            create_args.extend(self._experimental_solver_args)
+            create_args.extend(self._solver_args)
             create_args.extend(self._override_channels_args)
             create_args.extend(args)
             ret = self.exec_command("create", create_args, stdout_path=stdout_path)
@@ -327,7 +319,7 @@ class CondaContext(installable.InstallableContext):
                     continue
             if allow_local and self.use_local:
                 install_args.append("--use-local")
-            install_args.extend(self._experimental_solver_args)
+            install_args.extend(self._solver_args)
             install_args.extend(self._override_channels_args)
             install_args.extend(args)
             ret = self.exec_command("install", install_args, stdout_path=stdout_path)
@@ -433,7 +425,7 @@ class CondaTarget:
     def __init__(
         self, package: str, version: Optional[str] = None, build: Optional[str] = None, channel: Optional[str] = None
     ) -> None:
-        if SHELL_UNSAFE_PATTERN.search(package) is not None:
+        if SHELL_UNSAFE_PATTERN.search(package) is not None or not package:
             raise ValueError(f"Invalid package [{package}] encountered.")
         self.capitalized_package = package
         self.package = package.lower()

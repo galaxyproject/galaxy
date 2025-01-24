@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
@@ -55,7 +56,7 @@ def persist_uploads(params, trans):
                 local_filename = util.mkstemp_ln(f.file.name, "upload_file_data_")
                 f.file.close()
                 upload_dataset["file_data"] = dict(filename=f.filename, local_filename=local_filename)
-            elif type(f) == dict and "local_filename" not in f:
+            elif isinstance(f, dict) and "local_filename" not in f:
                 raise Exception("Uploaded file was encoded in a way not understood by Galaxy.")
             if (
                 "url_paste" in upload_dataset
@@ -87,6 +88,7 @@ class LibraryParams:
 def handle_library_params(
     trans, params, folder_id: int, replace_dataset: Optional[LibraryDataset] = None
 ) -> LibraryParams:
+    session = trans.sa_session
     # FIXME: the received params has already been parsed by util.Params() by the time it reaches here,
     # so no complex objects remain.  This is not good because it does not allow for those objects to be
     # manipulated here.  The received params should be the original kwd from the initial request.
@@ -94,21 +96,21 @@ def handle_library_params(
     # See if we have any template field contents
     template_field_contents = {}
     template_id = params.get("template_id", None)
-    folder = trans.sa_session.query(LibraryFolder).get(folder_id)
+    folder = session.get(LibraryFolder, folder_id)
     # We are inheriting the folder's info_association, so we may have received inherited contents or we may have redirected
     # here after the user entered template contents ( due to errors ).
     template: Optional[FormDefinition] = None
     if template_id not in [None, "None"]:
-        template = trans.sa_session.query(FormDefinition).get(template_id)
-        assert template
-        for field in template.fields:
-            field_name = field["name"]
-            if params.get(field_name, False):
-                field_value = util.restore_text(params.get(field_name, ""))
-                template_field_contents[field_name] = field_value
+        template = session.get(FormDefinition, template_id)
+        if template and template.fields:
+            for field in template.fields:
+                field_name = field["name"]  # type:ignore[index]
+                if params.get(field_name, False):
+                    field_value = util.restore_text(params.get(field_name, ""))
+                    template_field_contents[field_name] = field_value
     roles: List[Role] = []
     for role_id in util.listify(params.get("roles", [])):
-        role = trans.sa_session.query(Role).get(role_id)
+        role = session.get(Role, role_id)
         roles.append(role)
     tags = params.get("tags", None)
     return LibraryParams(
@@ -138,8 +140,6 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
         hda.state = state
     else:
         hda.state = hda.states.QUEUED
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
@@ -194,10 +194,10 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
         tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag_from_filename, flush=False)
 
-    tags_list = uploaded_dataset.get("tags", False)
-    if tags_list:
-        for tag in tags_list:
-            tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag, flush=False)
+    if tags_list := uploaded_dataset.get("tags", False):
+        new_tags = tag_handler.parse_tags_list(tags_list)
+        for tag in new_tags:
+            tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1], flush=False)
 
     trans.sa_session.add(ldda)
     if state:
@@ -277,7 +277,13 @@ def new_upload(
                 )
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
-
+        tags_raw = getattr(uploaded_dataset, "tags", None)
+        if tags_raw:
+            new_tags = tag_handler.parse_tags_list(tags_raw.split(","))
+            for tag in new_tags:
+                tag_handler.apply_item_tag(
+                    user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1], flush=True
+                )
     if tag_list:
         tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list, flush=False)
 
@@ -391,7 +397,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
-    if type(galaxy_session) == trans.model.GalaxySession:
+    if isinstance(galaxy_session, trans.model.GalaxySession):
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id
@@ -409,7 +415,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
         job.add_parameter(name, value)
     job.add_parameter("paramfile", dumps(json_file_path))
     for i, output_object in enumerate(outputs):
-        output_name = "output%i" % i
+        output_name = f"output{i}"
         if hasattr(output_object, "collection"):
             job.add_output_dataset_collection(output_name, output_object)
             output_object.job = job
@@ -428,7 +434,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     output = {}
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
-            output["output%i" % i] = v
+            output[f"output{i}"] = v
     return job, output
 
 
@@ -436,10 +442,10 @@ def active_folders(trans, folder):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
-    return (
-        trans.sa_session.query(LibraryFolder)
+    stmt = (
+        select(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
         .options(joinedload(LibraryFolder.actions))
-        .order_by(LibraryFolder.table.c.name)
-        .all()
+        .order_by(LibraryFolder.name)
     )
+    return trans.sa_session.scalars(stmt).unique().all()

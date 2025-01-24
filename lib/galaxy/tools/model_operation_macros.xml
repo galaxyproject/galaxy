@@ -1,0 +1,72 @@
+<macros>
+    <xml name="uses_a_model_operation_action">
+        <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    </xml>
+    <token name="@QUOTA_USAGE_NOTE@">This tool will create new history datasets copied from your input collections but your quota usage will not increase.</token>
+    <token name="@CROSS_PRODUCT_INTRO@"><![CDATA[
+This tool organizes two dataset lists so that Galaxy's normal collection processing produces
+an all-vs-all style analyses of the initial inputs when applied to the outputs of this tool.
+
+While a description of what it does standalone is technical and math heavy, how
+it works within an ad-hoc analysis or workflow can be quite straight forward and hopefully is easier
+to understand. For this reason, the next section describes how to use this tool in context and
+the technical details follow after that. Hopefully, the "how it works" details aren't nessecary to
+understand the "how to use it" details of this tool - at least for simple things.
+]]>
+</token>
+    <token name="@GALAXY_DOT_PRODUCT_SEMANTICS@"><![CDATA[
+
+This tool can be used in and out of workflows, but workflows will be used to illustrate the ordering of
+tools and connections between them. Imagine a tool that compares two individual datasets and how
+that might be connected to list inputs in a workflow. This simiple case is shown below:
+
+.. image:: ${static_path}/images/tools/collection_ops/dot_product.png
+  :alt: The Dot Product of Two Collections
+  :width: 500
+
+In this configuration - the two datasets will be matched and compared element-wise. So the first dataset
+of "Input List 1" will be compared to the first dataset in "Input List 2" and the resulting
+dataset will be the first dataset in the output list generated using this comparison tool. In this configuration
+the lists need to have the same number of elements and ideally matching element identifiers.
+
+This matching up of elements is a very natural way to "map" an operation (or in Galaxy parlance, a tool)
+over two lists. However, sometimes the desire is to compare each element of the first list to each element of the
+second list. This tool enables that.
+
+]]></token>
+
+    <xml name="annotate_as_aggregation_operation">
+        <edam_operations>
+            <edam_operation>operation_3436</edam_operation> <!-- DataHandling -> Aggregation -->
+        </edam_operations>
+    </xml>
+    <xml name="join_identifier">
+        <param type="select" name="join_identifier" label="Join collection identifiers using" help="Separator for merging dataset identifiers">
+            <option value="_">underscore ( _ )</option>
+            <option value=":">colon ( : )</option>
+            <option value="-">dash ( - )</option>
+        </param>
+    </xml>
+    <xml name="assert_is_simple_line">
+        <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$" />
+        </assert_contents>        
+    </xml>
+    <xml name="assert_is_simple_line_alt">
+        <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$" />
+        </assert_contents>        
+    </xml>
+    <xml name="assert_is_1_dot_txt">
+        <assert_contents>
+            <has_text_matching expression="^chr1" />
+            <has_text_matching expression="42287290" />
+        </assert_contents>
+    </xml>
+    <xml name="assert_is_1_dot_fasta">
+        <assert_contents>
+            <has_text_matching expression="^>hg17\n" />
+        </assert_contents>
+    </xml>
+</macros>

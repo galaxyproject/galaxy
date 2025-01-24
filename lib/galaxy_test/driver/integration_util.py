@@ -4,15 +4,16 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
+
 import os
 import re
+import sys
 from typing import (
     ClassVar,
     Iterator,
     Optional,
     Type,
     TYPE_CHECKING,
-    TypeVar,
 )
 from unittest import (
     skip,
@@ -84,6 +85,15 @@ def skip_unless_fixed_port():
     return pytest.mark.skip("GALAXY_TEST_PORT must be set for this test.")
 
 
+def skip_for_older_python(min_python_version):
+    if min_python_version is None:
+        return _identity
+    if sys.version_info < min_python_version:
+        return pytest.mark.skip(f"Skipping tests for Python version less than {min_python_version}")
+
+    return _identity
+
+
 def skip_if_github_workflow():
     if os.environ.get("GITHUB_ACTIONS", None) is None:
         return _identity
@@ -130,8 +140,7 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
         cls._app_available = False
 
     def tearDown(self):
-        logs = self._test_driver.get_logs()
-        if logs:
+        if logs := self._test_driver.get_logs():
             print(logs)
         return super().tearDown()
 
@@ -198,16 +207,16 @@ class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-IntegrationInstanceObject = TypeVar("IntegrationInstanceObject", bound=IntegrationInstance)
-
-
-def integration_module_instance(clazz: Type[IntegrationInstanceObject]):
-    def _instance() -> Iterator[IntegrationInstanceObject]:
+def integration_module_instance(clazz: Type[IntegrationInstance]):
+    def _instance() -> Iterator[IntegrationInstance]:
         instance = clazz()
         instance.setUpClass()
         instance.setUp()
-        yield instance
-        instance.tearDownClass()
+        try:
+            yield instance
+        finally:
+            instance.tearDown()
+            instance.tearDownClass()
 
     return pytest.fixture(scope="module")(_instance)
 
@@ -224,13 +233,19 @@ class ConfiguresObjectStores:
     _test_driver: GalaxyTestDriver
 
     @classmethod
+    def write_object_store_config_file(cls, filename: str, contents: str) -> str:
+        temp_directory = cls.object_stores_parent
+        config_path = os.path.join(temp_directory, filename)
+        with open(config_path, "w") as f:
+            f.write(contents)
+        return config_path
+
+    @classmethod
     def _configure_object_store(cls, template, config):
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
         xml = template.safe_substitute({"temp_directory": temp_directory})
-        with open(config_path, "w") as f:
-            f.write(xml)
+        config_path = cls.write_object_store_config_file("object_store_conf.xml", xml)
         config["object_store_config_file"] = config_path
         for path in re.findall(r'files_dir path="([^"]*)"', xml):
             assert path.startswith(temp_directory)
@@ -239,8 +254,65 @@ class ConfiguresObjectStores:
             safe_makedirs(path)
             setattr(cls, f"{dir_name}_path", path)
 
+    @classmethod
+    def _configure_object_store_template_catalog(cls, catalog, config):
+        template = catalog.replace("/data", cls.object_stores_parent)
+        template_config_path = cls.write_object_store_config_file("templates.yml", template)
+        config["object_store_templates_config_file"] = template_config_path
+
+
+class ConfiguresFileSourceTemplates:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_file_source_template_catalog(cls, catalog: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "file_source_templates.yml")
+        with open(template_config_path, "w") as f:
+            f.write(catalog)
+
+        config["file_source_templates_config_file"] = template_config_path
+
+
+class ConfiguresObjectStoreTemplates:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_object_Store_template_catalog(cls, catalog: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "object_store_templates.yml")
+        with open(template_config_path, "w") as f:
+            f.write(catalog)
+
+        config["object_store_templates_config_file"] = template_config_path
+
 
 class ConfiguresDatabaseVault:
     @classmethod
     def _configure_database_vault(cls, config):
         config["vault_config_file"] = VAULT_CONF
+
+
+class ConfiguresWorkflowScheduling:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_workflow_schedulers(cls, schedulers_conf: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "workflow_schedulers.xml")
+        with open(template_config_path, "w") as f:
+            f.write(schedulers_conf)
+
+        config["workflow_schedulers_config_file"] = template_config_path
+
+    @classmethod
+    def _disable_workflow_scheduling(cls, config):
+        noop_schedulers_conf = """<?xml version="1.0"?>
+<workflow_schedulers default="core">
+  <core id="core" />
+  <handlers>
+    <handler id="a_fake_handler_should_prevent_the_real_process_from_scheduling" />
+  </handlers>
+</workflow_schedulers>
+"""
+        cls._configure_workflow_schedulers(noop_schedulers_conf, config)

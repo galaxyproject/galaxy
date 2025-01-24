@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
-import { errorMessageAsString } from "@/utils/simple-error";
+import { type ConcreteObjectStoreModel } from "@/api";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
-import { getSelectableObjectStores } from "./services";
-
+import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
+import ObjectStoreSelectButtonDescribePopover from "./ObjectStoreSelectButtonDescribePopover.vue";
+import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
-import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
@@ -23,45 +24,28 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
     parentError: null,
 });
 
-const loading = ref(true);
-const error = ref(props.parentError);
-const popoverProps = {
-    placement: "rightbottom",
-    boundary: "window", // don't warp the popover to squeeze it into this modal
-};
-const objectStores = ref<Array<object>>([]);
+const store = useObjectStoreStore();
+const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
+const { isOnlyPreference } = useStorageLocationConfiguration();
 
-const loadingObjectStoreInfoMessage = ref("Loading object store information");
-const whyIsSelectionPreferredText = ref(`
-Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.
-Select a preferred object store for new datasets. This is should be thought of as a preferred
-object store because depending the job and workflow configuration execution configuration of
-this Galaxy instance - a different object store may be selected. After a dataset is created,
-click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the correct place, contact your Galaxy administrator for more information.
-`);
-
-watch(
-    () => props.parentError,
-    () => {
-        error.value = props.parentError;
-    }
-);
-
-function handleError(e: unknown) {
-    const errorMessage = errorMessageAsString(e);
-    error.value = errorMessage;
-}
-
-onMounted(async () => {
-    try {
-        const data = await getSelectableObjectStores();
-        objectStores.value = data;
-        loading.value = false;
-    } catch (e) {
-        handleError(e);
+const selectableAndVisibleObjectStores = computed(() => {
+    const allSelectableObjectStores = selectableObjectStores.value;
+    if (allSelectableObjectStores != null) {
+        return allSelectableObjectStores.filter((item) => {
+            return "hidden" in item ? !item.hidden : true;
+        });
+    } else {
+        return [];
     }
 });
+
+const loadingObjectStoreInfoMessage = ref("Loading storage location information");
+const whyIsSelectionPreferredText = ref(`
+Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
+this Galaxy a different storage location may be ultimately used. After a dataset is created,
+click on the info icon in the history panel to view information about where it is stored. If it
+is not stored in the place you want, contact Galaxy administrator for more information.
+`);
 
 function variant(objectStoreId: string) {
     if (props.selectedObjectStoreId == objectStoreId) {
@@ -72,22 +56,28 @@ function variant(objectStoreId: string) {
 }
 
 const emit = defineEmits<{
-    (e: "onSubmit", id: string | null): void;
+    (e: "onSubmit", id: string | null, isPrivate: boolean): void;
 }>();
 
-async function handleSubmit(preferredObjectStoreId: string) {
-    emit("onSubmit", preferredObjectStoreId);
+const error = computed(() => {
+    return props.parentError || loadErrorMessage.value;
+});
+
+async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | null) {
+    const id: string | null = (preferredObjectStore ? preferredObjectStore.object_store_id : null) as string | null;
+    const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
+    emit("onSubmit", id, isPrivate);
 }
 </script>
 
 <template>
     <div>
-        <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
+        <LoadingSpan v-if="isLoading" :message="loadingObjectStoreInfoMessage" />
         <div v-else>
             <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
             </b-alert>
-            <b-row>
+            <b-row align-h="center">
                 <b-col cols="7">
                     <b-button-group vertical size="lg" style="width: 100%">
                         <b-button
@@ -98,42 +88,32 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             @click="handleSubmit(null)"
                             ><i>{{ defaultOptionTitle | localize }}</i></b-button
                         >
-                        <b-button
-                            v-for="object_store in objectStores"
-                            :id="`preferred-object-store-button-${object_store.object_store_id}`"
-                            :key="object_store.object_store_id"
-                            :variant="variant(object_store.object_store_id)"
+                        <ObjectStoreSelectButton
+                            v-for="objectStore in selectableAndVisibleObjectStores"
+                            :key="objectStore.object_store_id"
+                            id-prefix="preferred"
+                            :object-store="objectStore"
+                            :variant="variant(objectStore.object_store_id)"
                             class="preferred-object-store-select-button"
-                            :data-object-store-id="object_store.object_store_id"
-                            @click="handleSubmit(object_store.object_store_id)"
-                            >{{ object_store.name }}
-                            <ObjectStoreBadges :badges="object_store.badges" size="lg" :more-on-hover="false" />
-                            <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true">
-                            </ProvidedQuotaSourceUsageBar>
-                        </b-button>
+                            @click="handleSubmit(objectStore)" />
                     </b-button-group>
                 </b-col>
-                <b-col cols="5">
+                <b-col v-if="isOnlyPreference" cols="5">
                     <p v-localize style="float: right">
                         {{ whyIsSelectionPreferredText }}
                     </p>
                 </b-col>
             </b-row>
-            <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
-                <template v-slot:title
-                    ><span v-localize>{{ defaultOptionTitle }}</span></template
-                >
+            <ObjectStoreSelectButtonPopover target="no-preferred-object-store-button" :title="defaultOptionTitle">
                 <span v-localize>{{ defaultOptionDescription }}</span>
-            </b-popover>
-            <b-popover
-                v-for="object_store in objectStores"
-                :key="object_store.object_store_id"
-                :target="`preferred-object-store-button-${object_store.object_store_id}`"
-                triggers="hover"
-                v-bind="popoverProps">
-                <template v-slot:title>{{ object_store.name }}</template>
-                <DescribeObjectStore :what="forWhat" :storage-info="object_store"> </DescribeObjectStore>
-            </b-popover>
+            </ObjectStoreSelectButtonPopover>
+            <ObjectStoreSelectButtonDescribePopover
+                v-for="objectStore in selectableAndVisibleObjectStores"
+                :key="objectStore.object_store_id"
+                id-prefix="preferred"
+                :what="forWhat"
+                :object-store="objectStore">
+            </ObjectStoreSelectButtonDescribePopover>
         </div>
     </div>
 </template>

@@ -1,66 +1,66 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useDraggable } from "@vueuse/core";
-import { LastQueue } from "utils/promise-queue";
 import { computed, ref, watch } from "vue";
 
-import { determineWidth } from "./utilities";
+import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
-const lastQueue = new LastQueue(10);
+library.add(faChevronLeft, faChevronRight);
 
-library.add({
-    faChevronLeft,
-    faChevronRight,
-    faGripLinesVertical,
+interface Props {
+    collapsible?: boolean;
+    side?: "left" | "right";
+    minWidth?: number;
+    maxWidth?: number;
+    defaultWidth?: number;
+}
+const props = withDefaults(defineProps<Props>(), {
+    collapsible: true,
+    side: "right",
+    minWidth: 200,
+    maxWidth: 800,
+    defaultWidth: 300,
 });
 
-const props = defineProps({
-    collapsible: {
-        type: Boolean,
-        default: true,
-    },
-    side: {
-        type: String,
-        default: "right",
-    },
-});
+const panelWidth = ref(props.defaultWidth);
 
-const draggable = ref();
-const root = ref();
-const rangeWidth = [200, 300, 600];
-const panelWidth = ref(rangeWidth[1]);
+const root = ref<HTMLElement | null>(null);
 const show = ref(true);
 
-const { position, isDragging } = useDraggable(draggable, {
-    preventDefault: true,
-    exact: true,
-});
+const showToggle = ref(false);
+const hoverToggle = ref(false);
 
-const style = computed(() => {
-    return show.value ? { width: `${panelWidth.value}px` } : null;
-});
+const isHoveringDragHandle = ref(false);
+const isDragging = ref(false);
 
-function toggle() {
-    show.value = !show.value;
-}
+const hoverDraggableOrToggle = computed(() => (isHoveringDragHandle.value || hoverToggle.value) && !isDragging.value);
 
-/** Watch position changes and adjust width accordingly */
-watch(position, () => {
-    lastQueue.enqueue(() => {
-        const rectRoot = root.value.getBoundingClientRect();
-        const rectDraggable = draggable.value.getBoundingClientRect();
-        panelWidth.value = determineWidth(
-            rectRoot,
-            rectDraggable,
-            rangeWidth[0],
-            rangeWidth[2],
-            props.side,
-            position.value.x
-        );
-    });
-});
+const toggleLinger = 500;
+const toggleShowDelay = 600;
+let showToggleTimeout: ReturnType<typeof setTimeout> | undefined;
+
+watch(
+    () => hoverDraggableOrToggle.value,
+    (hover) => {
+        clearTimeout(showToggleTimeout);
+
+        if (hover) {
+            showToggleTimeout = setTimeout(() => {
+                showToggle.value = true;
+            }, toggleShowDelay);
+        } else {
+            showToggleTimeout = setTimeout(() => {
+                showToggle.value = false;
+            }, toggleLinger);
+        }
+    }
+);
+
+const sideClasses = computed(() => ({
+    left: props.side === "left",
+    right: props.side === "right",
+}));
 </script>
 
 <template>
@@ -68,103 +68,160 @@ watch(position, () => {
         v-if="show"
         :id="side"
         ref="root"
-        class="d-flex"
-        :class="{ 'flex-panel-left': side === 'left', 'flex-panel-right': side === 'right' }">
-        <div class="d-flex flex-column" :style="style">
-            <slot />
-            <div v-if="side === 'right'" class="flex-panel-footer d-flex px-2 py-1">
-                <div id="right-drag">
-                    <FontAwesomeIcon icon="grip-lines-vertical" />
-                    <div
-                        ref="draggable"
-                        class="interaction-area"
-                        :class="{
-                            'cursor-grab': !isDragging,
-                            'cursor-grabbing': isDragging,
-                        }" />
-                </div>
-                <div class="flex-fill" />
-                <div v-if="collapsible" class="cursor-pointer">
-                    <FontAwesomeIcon icon="chevron-right" />
-                    <div id="right-collapse" class="interaction-area" @click="toggle" />
-                </div>
-            </div>
-            <div v-else class="flex-panel-footer d-flex px-2 py-1">
-                <div v-if="collapsible" class="cursor-pointer">
-                    <FontAwesomeIcon icon="chevron-left" />
-                    <div id="left-collapse" class="interaction-area" @click="toggle" />
-                </div>
-                <div class="flex-fill" />
-                <div id="left-drag">
-                    <FontAwesomeIcon icon="grip-lines-vertical" />
-                    <div
-                        ref="draggable"
-                        class="interaction-area"
-                        :class="{
-                            'cursor-grab': !isDragging,
-                            'cursor-grabbing': isDragging,
-                        }" />
-                </div>
-            </div>
-        </div>
+        class="flex-panel"
+        :class="{ ...sideClasses }"
+        :style="`--width: ${panelWidth}px`">
+        <DraggableSeparator
+            :position="panelWidth"
+            :side="props.side"
+            :min="props.minWidth"
+            :max="props.maxWidth"
+            @positionChanged="(v) => (panelWidth = v)"
+            @visibilityChanged="(v) => (isHoveringDragHandle = v)"></DraggableSeparator>
+
+        <button
+            v-if="props.collapsible"
+            class="collapse-button open"
+            :class="{ ...sideClasses, show: showToggle }"
+            title="Close panel"
+            @click="show = false"
+            @mouseenter="hoverToggle = true"
+            @focusin="hoverToggle = true"
+            @mouseout="hoverToggle = false"
+            @focusout="hoverToggle = false">
+            <FontAwesomeIcon v-if="side === 'left'" fixed-width icon="fa-chevron-left" />
+            <FontAwesomeIcon v-else icon="fa-chevron-right" fixed-width />
+        </button>
+
+        <slot />
+
         <div v-if="isDragging" class="interaction-overlay" />
     </div>
     <div v-else>
-        <div v-if="side === 'right'" class="flex-panel-right-expand cursor-pointer px-2 py-1">
-            <FontAwesomeIcon icon="chevron-left" />
-            <div id="right-expand" class="interaction-area" @click="toggle" />
-        </div>
-        <div v-else class="flex-panel-left-expand cursor-pointer px-2 py-1">
-            <FontAwesomeIcon icon="chevron-right" />
-            <div id="left-expand" class="interaction-area" @click="toggle" />
-        </div>
+        <button
+            class="collapse-button closed"
+            :class="{ ...sideClasses, show: true }"
+            title="Open panel"
+            @click="
+                show = true;
+                hoverToggle = false;
+            ">
+            <FontAwesomeIcon v-if="side === 'right'" fixed-width icon="fa-chevron-left" />
+            <FontAwesomeIcon v-else icon="fa-chevron-right" fixed-width />
+        </button>
     </div>
 </template>
 
-<style>
+<style scoped lang="scss">
 @import "theme/blue.scss";
-.cursor-grab {
-    cursor: grab;
+
+$border-width: 6px;
+
+.flex-panel {
+    z-index: 100;
+    flex-shrink: 0;
+    display: flex;
+    width: var(--width);
+    position: relative;
+    border-color: transparent;
+    border-width: $border-width;
+    box-shadow: 1px 0 transparent;
+    transition: border-color 0.1s, box-shadow 0.1s;
+    align-items: stretch;
+    flex-direction: column;
+
+    &::after {
+        content: "";
+        position: absolute;
+        height: 100%;
+        width: 1px;
+        background-color: $border-color;
+    }
+
+    &.left {
+        border-right-style: solid;
+
+        &::after {
+            right: -1px;
+        }
+    }
+
+    &.right {
+        border-left-style: solid;
+
+        &::after {
+            left: -1px;
+        }
+    }
 }
-.cursor-grabbing {
-    cursor: grabbing;
-}
-.flex-panel-expand {
-    background: $panel-footer-bg-color;
-    border: $border-default;
-    bottom: 0;
+
+.collapse-button {
     position: absolute;
-    z-index: 1;
+    z-index: 100;
+
+    --width: 0px;
+
+    width: var(--width);
+    overflow: hidden;
+
+    transition: width 0.1s, left 0.1s, right 0.1s;
+    border-style: none;
+
+    &:hover,
+    &.show,
+    &:focus {
+        --width: 1.5rem;
+        border-style: solid;
+    }
+
+    height: 4rem;
+    top: calc(50% - 2rem);
+    padding: 0;
+    display: grid;
+    place-items: center;
+
+    &.left {
+        right: calc(var(--width) * -1);
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    &.right {
+        left: calc(var(--width) * -1);
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    &.closed {
+        --width: 0.75rem;
+        border-style: solid;
+
+        > * {
+            transform: translateX(-0.15rem);
+        }
+
+        &:hover,
+        &:focus {
+            --width: 1.5rem;
+        }
+
+        &.right {
+            left: unset;
+            right: 0;
+        }
+
+        &.left {
+            right: unset;
+            left: 0;
+        }
+    }
 }
-.flex-panel-footer {
-    background: $panel-footer-bg-color;
-}
-.flex-panel-left {
-    border-right: $border-default;
-}
-.flex-panel-right {
-    border-left: $border-default;
-}
-.flex-panel-left-expand {
-    @extend .flex-panel-expand;
-    border-top-right-radius: $border-radius-base;
-    left: 0;
-}
-.flex-panel-right-expand {
-    @extend .flex-panel-expand;
-    border-top-left-radius: $border-radius-base;
-    right: 0;
-}
-.interaction-area {
-    margin: -1.5rem;
-    padding: 1.5rem;
-    position: absolute;
-    z-index: 2;
-}
+
 .interaction-overlay {
     height: 100%;
     position: fixed;
     left: 0;
     width: 100%;
+    cursor: ew-resize;
 }
 </style>

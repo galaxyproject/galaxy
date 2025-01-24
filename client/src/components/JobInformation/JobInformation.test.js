@@ -1,11 +1,14 @@
+import "tests/jest/mockHelpPopovers";
+
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import JobInformation from "./JobInformation";
+import { useServerMock } from "@/api/client/__mocks__";
+
 import jobResponse from "./testData/jobInformationResponse.json";
+
+import JobInformation from "./JobInformation.vue";
 
 jest.mock("app");
 
@@ -13,19 +16,30 @@ const JOB_ID = "test_id";
 
 const localVue = getLocalVue();
 
+const { server, http } = useServerMock();
+
 describe("JobInformation/JobInformation.vue", () => {
     let wrapper;
     let jobInfoTable;
-    let axiosMock;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
-        axiosMock.onGet("/api/jobs/test_id?full=True").reply(200, jobResponse);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        server.use(
+            http.get("/api/configuration/decode/{encoded_id}", ({ response }) => {
+                return response(200).json({ decoded_id: 123 });
+            }),
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                return response(200).json(jobResponse);
+            }),
+            http.get("/api/invocations", ({ response }) => {
+                return response(200).json([]);
+            }),
+            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
+                return response(200).json({
+                    stdout: "stdout",
+                    stderr: "stderr",
+                });
+            })
+        );
     });
 
     const verifyValues = (rendered_entries, infoTable, backendResponse) => {
@@ -55,8 +69,8 @@ describe("JobInformation/JobInformation.vue", () => {
         // table should exist
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
-        // should contain 9 rows
-        expect(rows.length).toBe(9);
+        // should contain 10 rows
+        expect(rows.length).toBe(10);
     });
 
     it("stdout and stderr should be rendered", async () => {
@@ -68,7 +82,7 @@ describe("JobInformation/JobInformation.vue", () => {
     });
 
     it("job messages", async () => {
-        const rendered_link = jobInfoTable.findAll(`#job-messages li`);
+        const rendered_link = jobInfoTable.findAll(`#job-messages .job-message`);
         expect(rendered_link.length).toBe(jobResponse.job_messages.length);
         for (let i = 0; i < rendered_link.length; i++) {
             const msg = rendered_link.at(i).text();
@@ -84,5 +98,6 @@ describe("JobInformation/JobInformation.vue", () => {
             { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
         ];
         verifyValues(rendered_entries, jobInfoTable, jobResponse);
+        expect(wrapper.find('td[data-description="galaxy-job-state"]').exists()).toBe(true);
     });
 });

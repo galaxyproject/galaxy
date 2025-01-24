@@ -62,7 +62,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         # Is destination needed here, might these be serialized to the database?
         destination = resubmit.get("environment") or resubmit.get("destination")
         log.info(
-            "%s Job will be resubmitted to '%s' because %s at " "the '%s' destination",
+            "%s Job will be resubmitted to '%s' because %s at the '%s' destination",
             job_log_prefix,
             destination,
             MESSAGES[runner_state],
@@ -106,7 +106,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         if job.params is None:
             job.params = {}
         job_state.runner_state_handled = True
-        info = "This job was resubmitted to the queue because %s on its " "compute resource." % MESSAGES[runner_state]
+        info = f"This job was resubmitted to the queue because {MESSAGES[runner_state]} on its compute resource."
         job_runner.mark_as_resubmitted(job_state, info=info)
         return
 

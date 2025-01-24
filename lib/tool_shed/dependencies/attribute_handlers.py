@@ -5,13 +5,14 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
 )
 
 from galaxy.util import (
     asbool,
-    etree,
+    Element,
+    SubElement,
 )
-from galaxy.web import url_for
 from tool_shed.dependencies.tool import tag_attribute_handler
 from tool_shed.repository_types.util import (
     REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
@@ -24,12 +25,21 @@ from tool_shed.util import (
     xml_util,
 )
 
+if TYPE_CHECKING:
+    from tool_shed.context import ProvidesRepositoriesContext
+    from tool_shed.structured_app import ToolShedApp
+
+
 log = logging.getLogger(__name__)
 
 
 class RepositoryDependencyAttributeHandler:
-    def __init__(self, app, unpopulate):
-        self.app = app
+    trans: "ProvidesRepositoriesContext"
+    app: "ToolShedApp"
+
+    def __init__(self, trans: "ProvidesRepositoriesContext", unpopulate):
+        self.trans = trans
+        self.app = trans.app
         self.file_name = REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
         self.unpopulate = unpopulate
 
@@ -78,7 +88,7 @@ class RepositoryDependencyAttributeHandler:
         prior_installation_required = elem.get("prior_installation_required")
         if prior_installation_required is not None and not asbool(prior_installation_required):
             del elem.attrib["prior_installation_required"]
-        sub_elems = [child_elem for child_elem in list(elem)]
+        sub_elems = list(elem)
         if len(sub_elems) > 0:
             # At this point, a <repository> tag will point only to a package.
             # <package name="xorg_macros" version="1.17.1" />
@@ -111,7 +121,7 @@ class RepositoryDependencyAttributeHandler:
         # From here on we're populating the toolshed and changeset_revision attributes if necessary.
         if not toolshed:
             # Default the setting to the current tool shed.
-            toolshed = str(url_for("/", qualified=True)).rstrip("/")
+            toolshed = str(self.trans.url_builder("/", qualified=True)).rstrip("/")
             elem.attrib["toolshed"] = toolshed
             altered = True
         if not changeset_revision:
@@ -127,8 +137,8 @@ class RepositoryDependencyAttributeHandler:
                     elem.attrib["changeset_revision"] = lastest_installable_changeset_revision
                     altered = True
                 else:
-                    error_message = "Invalid latest installable changeset_revision %s " % str(
-                        lastest_installable_changeset_revision
+                    error_message = (
+                        f"Invalid latest installable changeset_revision {lastest_installable_changeset_revision} "
                     )
                     error_message += f"retrieved for repository {name} owned by {owner}.  "
             else:
@@ -188,8 +198,12 @@ class RepositoryDependencyAttributeHandler:
 
 
 class ToolDependencyAttributeHandler:
-    def __init__(self, app, unpopulate):
-        self.app = app
+    trans: "ProvidesRepositoriesContext"
+    app: "ToolShedApp"
+
+    def __init__(self, trans: "ProvidesRepositoriesContext", unpopulate):
+        self.trans = trans
+        self.app = trans.app
         self.file_name = TOOL_DEPENDENCY_DEFINITION_FILENAME
         self.unpopulate = unpopulate
 
@@ -198,7 +212,7 @@ class ToolDependencyAttributeHandler:
         Populate or unpopulate the tooshed and changeset_revision attributes of each <repository>
         tag defined within a tool_dependencies.xml file.
         """
-        rdah = RepositoryDependencyAttributeHandler(self.app, self.unpopulate)
+        rdah = RepositoryDependencyAttributeHandler(self.trans, self.unpopulate)
         tah = tag_attribute_handler.TagAttributeHandler(self.app, rdah, self.unpopulate)
         altered = False
         error_message = ""
@@ -215,13 +229,13 @@ def _create_element(
     tag: str,
     attributes: Optional[Dict[str, str]] = None,
     sub_elements: Optional[Dict[str, List[Tuple[str, str]]]] = None,
-) -> Optional[etree.Element]:
+) -> Optional[Element]:
     """
     Create a new element whose tag is the value of the received tag, and whose attributes are all
     key / value pairs in the received attributes and sub_elements.
     """
     if tag:
-        elem = etree.Element(tag)
+        elem = Element(tag)
         if attributes:
             # The received attributes is an odict to preserve ordering.
             for k, attribute_value in attributes.items():
@@ -234,14 +248,14 @@ def _create_element(
                 if v:
                     if k == "packages":
                         # The received sub_elements is an odict whose key is 'packages' and whose
-                        # value is a list of ( name, version ) tuples.
+                        # value is a list of (name, version) tuples.
                         for v_tuple in v:
-                            sub_elem = etree.SubElement(elem, "package")
+                            sub_elem = SubElement(elem, "package")
                             sub_elem_name, sub_elem_version = v_tuple
                             sub_elem.set("name", sub_elem_name)
                             sub_elem.set("version", sub_elem_version)
                     elif isinstance(v, list):
-                        sub_elem = etree.SubElement(elem, k)
+                        sub_elem = SubElement(elem, k)
                         # If v is a list, then it must be a list of tuples where the first
                         # item is the tag and the second item is the text value.
                         for v_tuple in v:
@@ -250,10 +264,10 @@ def _create_element(
                                 v_text = v_tuple[1]
                                 # Don't include fields that are blank.
                                 if v_text:
-                                    v_elem = etree.SubElement(sub_elem, v_tag)
+                                    v_elem = SubElement(sub_elem, v_tag)
                                     v_elem.text = v_text
                     else:
-                        sub_elem = etree.SubElement(elem, k)
+                        sub_elem = SubElement(elem, k)
                         sub_elem.text = v
         return elem
     return None

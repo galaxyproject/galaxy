@@ -617,6 +617,7 @@ inputs:
   int_input:
     type: integer
     default: 3
+    optional: true
 steps:
   random:
     tool_id: random_lines1
@@ -1147,3 +1148,93 @@ outputs:
   outer_output_2:
     outputSource: subworkflow/inner_output_2
 """
+
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+"""
+
+WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+"""
+
+WORKFLOW_FLAT_CROSS_PRODUCT = """
+class: GalaxyWorkflow
+inputs:
+  collection_a: collection
+  collection_b: collection
+steps:
+  cross_product:
+    tool_id: __CROSS_PRODUCT_FLAT__
+    in:
+      input_a:
+        collection_a
+      input_b:
+        collection_b
+outputs:
+  output_a:
+    outputSource: cross_product/output_a
+  output_b:
+    outputSource: cross_product/output_b
+"""
+
+WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
+    "a_galaxy_workflow": "true",
+    "annotation": null,
+    "comments": [],
+    "format-version": "0.1",
+    "name": "Export WF4 Assembly HiC (imported from URL) (imported from uploaded file)",
+    "steps": {
+        "0": {
+            "annotation": "With dataset tag : genomescope_model ",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "With dataset tag : genomescope_model ",
+                    "name": "Genomescope Model"
+                }
+            ],
+            "label": "Genomescope Model",
+            "name": "Input dataset",
+            "outputs": [],
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"txt\"], \"tag\": \"genomescope_model\"}",
+            "tool_version": null,
+            "type": "data_input",
+            "uuid": "a165c531-371f-4073-9cdd-85ce3506586f",
+            "when": null,
+            "workflow_outputs": []
+        }
+    },
+    "tags": [],
+    "uuid": "03a95ebe-af1e-4628-ac2f-e7553babfb2f",
+    "version": 3
+}"""

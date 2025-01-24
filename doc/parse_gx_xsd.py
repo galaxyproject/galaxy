@@ -34,7 +34,7 @@ def main():
 
 
 class Tag:
-    def __init__(self, line):
+    def __init__(self, line: str):
         assert line.startswith("$tag:")
         line_parts = line.split(" ")
         first_part = line_parts[0]
@@ -52,12 +52,12 @@ class Tag:
 
     @property
     def _pretty_title(self):
-        return " > ".join("``%s``" % p for p in self.title.split("|"))
+        return " > ".join(f"``{p}``" for p in self.title.split("|"))
 
     def build_help(self):
         tag = xmlschema_doc.find(self.xpath)
         if tag is None:
-            raise Exception("Could not find xpath for %s" % self.xpath)
+            raise Exception(f"Could not find xpath for {self.xpath}")
 
         tag_help = StringIO()
         tag_help.write("## " + self._pretty_title)
@@ -83,38 +83,28 @@ def _build_tag(tag, hide_attributes):
             assertions_buffer.write(_doc_or_none(assertions_tag))
             assertions_buffer.write("\n\n")
 
-            assertion_groups = assertions_tag.xpath(
-                "xs:choice/xs:group", namespaces={"xs": "http://www.w3.org/2001/XMLSchema"}
+            assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='TestAssertion']")
+            elements = assertion_tag.findall(
+                "{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element"
             )
-            for group in assertion_groups:
-                ref = group.attrib["ref"]
-                assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='" + ref + "']")
-                doc = _doc_or_none(assertion_tag)
-                assertions_buffer.write(f"### {doc}\n\n")
-                elements = assertion_tag.findall(
-                    "{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element"
-                )
-                for element in elements:
+            for element in elements:
+                doc = _doc_or_none(element)
+                if doc is None:
                     doc = _doc_or_none(element)
-                    if doc is None:
-                        doc = _doc_or_none(_type_el(element))
-                    assert doc is not None, "Documentation for %s is empty" % element.attrib["name"]
-                    doc = doc.strip()
+                assert doc is not None, f"Documentation for {element.attrib['name']} is empty"
+                doc = doc.strip()
 
-                    element_el = _find_tag_el(element)
-                    element_attributes = _find_attributes(element_el)
-                    doc = _replace_attribute_list(element_el, doc, element_attributes)
-                    assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
+                element_attributes = _find_attributes(element)
+                doc = _replace_attribute_list(element, doc, element_attributes)
+                assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
-    best_practices = _get_bp_link(annotation_el)
-    if best_practices:
+    if best_practices := _get_bp_link(annotation_el):
         tag_help.write("\n\n### Best Practices\n")
         tag_help.write(
-            """
-Find the Intergalactic Utilities Commision suggested best practices for this
-element [here](%s)."""
-            % best_practices
+            f"""
+Find the Intergalactic Utilities Commission suggested best practices for this
+element [here]({best_practices})."""
         )
     tag_help.write(_build_attributes_table(tag, attributes, hide_attributes))
 
@@ -141,7 +131,7 @@ def _get_bp_link(annotation_el):
     anchor = annotation_el.attrib.get("{http://galaxyproject.org/xml/1.0}best_practices", None)
     link = None
     if anchor:
-        link = "https://planemo.readthedocs.io/en/latest/standards/docs/best_practices/tool_xml.html#%s" % anchor
+        link = f"https://galaxy-iuc-standards.readthedocs.io/en/latest/best_practices/tool_xml.html#{anchor}"
     return link
 
 
@@ -150,7 +140,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
     attribute_table.write("\n\n")
     if attributes and not hide_attributes:
         header_prefix = "#" * header_level
-        attribute_table.write("\n%s Attributes\n\n" % header_prefix)
+        attribute_table.write(f"\n{header_prefix} Attributes\n\n")
         attribute_table.write("Attribute | Details | Required\n")
         attribute_table.write("--- | --- | ---\n")
         for attribute in attributes:
@@ -160,7 +150,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
             details = _doc_or_none(attribute)
             if details is None:
                 type_el = _type_el(attribute)
-                assert type_el is not None, "No details or type found for %s" % name
+                assert type_el is not None, f"No details or type found for {name}"
                 details = _doc_or_none(type_el)
                 annotation_el = type_el.find("{http://www.w3.org/2001/XMLSchema}annotation")
             else:
@@ -168,12 +158,10 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             details = details.replace("\n", " ").strip()
+            details = details.replace("|", "\\|").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:
-                details += (
-                    """ Find the Intergalactic Utilities Commision suggested best practices for this element [here](%s)."""
-                    % best_practices
-                )
+                details += f""" Find the Intergalactic Utilities Commission suggested best practices for this element [here]({best_practices})."""
 
             attribute_table.write(f"``{name}`` | {details} | {use}\n")
     return attribute_table.getvalue()
@@ -204,7 +192,7 @@ def _find_attributes(tag):
     for attribute_group in attribute_groups:
         attribute_group_name = attribute_group.get("ref")
         attribute_group_def = xmlschema_doc.find(
-            "//{http://www.w3.org/2001/XMLSchema}attributeGroup/[@name='%s']" % attribute_group_name
+            f"//{{http://www.w3.org/2001/XMLSchema}}attributeGroup/[@name='{attribute_group_name}']"
         )
         attributes.extend(_find_attributes(attribute_group_def))
     return attributes
@@ -219,9 +207,9 @@ def _find_tag_el(tag):
 
 def _type_el(tag):
     element_type = tag.attrib["type"]
-    type_el = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}complexType/[@name='%s']" % element_type)
+    type_el = xmlschema_doc.find(f"//{{http://www.w3.org/2001/XMLSchema}}complexType/[@name='{element_type}']")
     if type_el is None:
-        type_el = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}simpleType/[@name='%s']" % element_type)
+        type_el = xmlschema_doc.find(f"//{{http://www.w3.org/2001/XMLSchema}}simpleType/[@name='{element_type}']")
     return type_el
 
 

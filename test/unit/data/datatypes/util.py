@@ -5,41 +5,59 @@ from contextlib import contextmanager
 from typing import Optional
 
 from galaxy.datatypes.sniff import get_test_fname
+from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import md5_hash_file
 
 
 class MockDatasetDataset:
     def __init__(self, file_name):
-        self.file_name = file_name
         self.purged = False
+        self.file_name_ = file_name
+
+    def get_file_name(self, sync_cache=True):
+        return self.file_name_
+
+    def set_file_name(self, file_name):
+        self.file_name_ = file_name
 
 
-class MockMetadata:
-    file_name: Optional[str] = None
+class MockMetadata(Bunch):
+    file_name_: Optional[str] = None
+
+    def get_file_name(self, sync_cache=True):
+        return self.file_name_
+
+    def set_file_name(self, file_name):
+        self.file_name_ = file_name
 
 
 class MockDataset:
-    file_name: Optional[str] = None
-
     def __init__(self, id):
         self.id = id
         self.metadata = MockMetadata()
         self.dataset = None
+        self.file_name_: Optional[str] = None
+
+    def get_file_name(self, sync_cache=True):
+        return self.file_name_
+
+    def set_file_name(self, file_name):
+        self.file_name_ = file_name
 
     def has_data(self):
         return True
 
     def get_size(self):
-        return self.dataset and os.path.getsize(self.dataset.file_name)
+        return self.dataset and os.path.getsize(self.dataset.get_file_name())
 
 
 @contextmanager
 def get_dataset(filename, index_attr="bam_index", dataset_id=1, has_data=True):
     dataset = MockDataset(dataset_id)
     with get_input_files(filename) as input_files, get_tmp_path(should_exist=True) as index_path:
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
         index = MockMetadata()
-        index.file_name = index_path
+        index.set_file_name(index_path)
         setattr(dataset.metadata, index_attr, index)
         yield dataset
 

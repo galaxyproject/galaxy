@@ -1,6 +1,7 @@
 """
 Contains functionality needed in every web interface
 """
+
 import logging
 from typing import (
     Any,
@@ -8,7 +9,6 @@ from typing import (
     Optional,
 )
 
-from sqlalchemy import true
 from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
@@ -29,15 +29,25 @@ from galaxy.managers import (
     users,
     workflows,
 )
-from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.forms import (
+    get_filtered_form_definitions_current,
+    get_form_definitions,
+    get_form_definitions_current,
+)
+from galaxy.managers.sharable import (
+    slug_exists,
+    SlugBuilder,
+)
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -62,7 +72,7 @@ class BaseController:
     Base class for Galaxy web application controllers.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: BasicSharedApp):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
@@ -217,8 +227,7 @@ class BaseAPIController(BaseController):
 
     # TODO: this will be replaced by lib.galaxy.schema.FilterQueryParams.build_order_by
     def _parse_order_by(self, manager, order_by_string):
-        ORDER_BY_SEP_CHAR = ","
-        if ORDER_BY_SEP_CHAR in order_by_string:
+        if (ORDER_BY_SEP_CHAR := ",") in order_by_string:
             return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
         return manager.parse_order_by(order_by_string)
 
@@ -444,7 +453,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         Fetches the collection identified by `from_hcda_id` and dispatches individual collection elements to
         _copy_hda_to_library_folder
         """
-        hdca = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(from_hdca_id)
+        hdca = trans.sa_session.get(HistoryDatasetCollectionAssociation, from_hdca_id)
         if hdca.collection.collection_type != "list":
             raise exceptions.NotImplemented(
                 "Cannot add nested collections to library. Please flatten your collection first."
@@ -605,226 +614,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     slug_builder = SlugBuilder()
 
-    def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
-        """
-        Get a Visualization from the database by id, verifying ownership.
-        """
-        # Load workflow from database
-        try:
-            visualization = trans.sa_session.query(trans.model.Visualization).get(trans.security.decode_id(id))
-        except TypeError:
-            visualization = None
-        if not visualization:
-            error("Visualization not found")
-        else:
-            return self.security_check(trans, visualization, check_ownership, check_accessible)
-
-    def get_visualizations_by_user(self, trans, user, order_by=None, query_only=False):
-        """
-        Return query or query results of visualizations filtered by a user.
-
-        Set `order_by` to a column or list of columns to change the order
-        returned. Defaults to `DEFAULT_ORDER_BY`.
-        Set `query_only` to return just the query for further filtering or
-        processing.
-        """
-        # TODO: move into model (as class attr)
-        DEFAULT_ORDER_BY = [model.Visualization.title]
-        if not order_by:
-            order_by = DEFAULT_ORDER_BY
-        if not isinstance(order_by, list):
-            order_by = [order_by]
-        query = trans.sa_session.query(model.Visualization)
-        query = query.filter(model.Visualization.user == user)
-        if order_by:
-            query = query.order_by(*order_by)
-        if query_only:
-            return query
-        return query.all()
-
-    def get_visualizations_shared_with_user(self, trans, user, order_by=None, query_only=False):
-        """
-        Return query or query results for visualizations shared with the given user.
-
-        Set `order_by` to a column or list of columns to change the order
-        returned. Defaults to `DEFAULT_ORDER_BY`.
-        Set `query_only` to return just the query for further filtering or
-        processing.
-        """
-        DEFAULT_ORDER_BY = [model.Visualization.title]
-        if not order_by:
-            order_by = DEFAULT_ORDER_BY
-        if not isinstance(order_by, list):
-            order_by = [order_by]
-        query = trans.sa_session.query(model.Visualization).join(model.VisualizationUserShareAssociation)
-        query = query.filter(model.VisualizationUserShareAssociation.user_id == user.id)
-        # remove duplicates when a user shares with themselves?
-        query = query.filter(model.Visualization.user_id != user.id)
-        if order_by:
-            query = query.order_by(*order_by)
-        if query_only:
-            return query
-        return query.all()
-
-    def get_published_visualizations(self, trans, exclude_user=None, order_by=None, query_only=False):
-        """
-        Return query or query results for published visualizations optionally excluding
-        the user in `exclude_user`.
-
-        Set `order_by` to a column or list of columns to change the order
-        returned. Defaults to `DEFAULT_ORDER_BY`.
-        Set `query_only` to return just the query for further filtering or
-        processing.
-        """
-        DEFAULT_ORDER_BY = [model.Visualization.title]
-        if not order_by:
-            order_by = DEFAULT_ORDER_BY
-        if not isinstance(order_by, list):
-            order_by = [order_by]
-        query = trans.sa_session.query(model.Visualization)
-        query = query.filter(model.Visualization.published == true())
-        if exclude_user:
-            query = query.filter(model.Visualization.user != exclude_user)
-        if order_by:
-            query = query.order_by(*order_by)
-        if query_only:
-            return query
-        return query.all()
-
-    # TODO: move into model (to_dict)
-    def get_visualization_summary_dict(self, visualization):
-        """
-        Return a set of summary attributes for a visualization in dictionary form.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        # TODO: deleted
-        # TODO: importable
-        return {
-            "id": visualization.id,
-            "title": visualization.title,
-            "type": visualization.type,
-            "dbkey": visualization.dbkey,
-        }
-
-    def get_visualization_dict(self, visualization):
-        """
-        Return a set of detailed attributes for a visualization in dictionary form.
-        The visualization's latest_revision is returned in its own sub-dictionary.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        return {
-            "model_class": "Visualization",
-            "id": visualization.id,
-            "title": visualization.title,
-            "type": visualization.type,
-            "user_id": visualization.user.id,
-            "dbkey": visualization.dbkey,
-            "slug": visualization.slug,
-            # to_dict only the latest revision (allow older to be fetched elsewhere)
-            "latest_revision": self.get_visualization_revision_dict(visualization.latest_revision),
-            "revisions": [r.id for r in visualization.revisions],
-        }
-
-    def get_visualization_revision_dict(self, revision):
-        """
-        Return a set of detailed attributes for a visualization in dictionary form.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        return {
-            "model_class": "VisualizationRevision",
-            "id": revision.id,
-            "visualization_id": revision.visualization.id,
-            "title": revision.title,
-            "dbkey": revision.dbkey,
-            "config": revision.config,
-        }
-
-    def import_visualization(self, trans, id, user=None):
-        """
-        Copy the visualization with the given id and associate the copy
-        with the given user (defaults to trans.user).
-
-        Raises `ItemAccessibilityException` if `user` is not passed and
-        the current user is anonymous, and if the visualization is not `importable`.
-        Raises `ItemDeletionException` if the visualization has been deleted.
-        """
-        # default to trans.user, error if anon
-        if not user:
-            if not trans.user:
-                raise exceptions.ItemAccessibilityException("You must be logged in to import Galaxy visualizations")
-            user = trans.user
-
-        # check accessibility
-        visualization = self.get_visualization(trans, id, check_ownership=False)
-        if not visualization.importable:
-            raise exceptions.ItemAccessibilityException(
-                "The owner of this visualization has disabled imports via this link."
-            )
-        if visualization.deleted:
-            raise exceptions.ItemDeletionException("You can't import this visualization because it has been deleted.")
-
-        # copy vis and alter title
-        # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
-        trans.sa_session.add(imported_visualization)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return imported_visualization
-
-    def create_visualization(
-        self,
-        trans,
-        type,
-        title="Untitled Visualization",
-        slug=None,
-        dbkey=None,
-        annotation=None,
-        config=None,
-        save=True,
-    ):
-        """
-        Create visualiation and first revision.
-        """
-        config = config or {}
-        visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
-        # TODO: handle this error structure better either in _create or here
-        if isinstance(visualization, dict):
-            err_dict = visualization
-            raise ValueError(err_dict["title_err"] or err_dict["slug_err"])
-
-        # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision(
-            visualization=visualization, title=title, config=config, dbkey=dbkey
-        )
-        visualization.latest_revision = revision
-
-        if save:
-            session = trans.sa_session
-            session.add(revision)
-            with transaction(session):
-                session.commit()
-
-        return visualization
-
-    def add_visualization_revision(self, trans, visualization, config, title, dbkey):
-        """
-        Adds a new `VisualizationRevision` to the given `visualization` with
-        the given parameters and set its parent visualization's `latest_revision`
-        to the new revision.
-        """
-        # precondition: only add new revision on owned vis's
-        # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(
-            visualization=visualization, title=title, dbkey=dbkey, config=config
-        )
-
-        visualization.latest_revision = revision
-        # TODO:?? does this automatically add revision to visualzation.revisions?
-        trans.sa_session.add(revision)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return revision
-
     def save_visualization(self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None):
         session = trans.sa_session
 
@@ -834,7 +623,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             vis = self._create_visualization(trans, title, type, dbkey, slug, annotation)
         else:
             decoded_id = trans.security.decode_id(id)
-            vis = session.query(trans.model.Visualization).get(decoded_id)
+            vis = session.get(model.Visualization, decoded_id)
             # TODO: security check?
 
         # Create new VisualizationRevision that will be attached to the viz
@@ -1068,7 +857,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         try:
-            data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
+            data = trans.sa_session.get(HistoryDatasetAssociation, int(dataset_id))
         except Exception:
             raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
@@ -1095,47 +884,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 )
         return data
 
-    # -- Helper functions --
-
-    def _create_visualization(self, trans, title, type, dbkey=None, slug=None, annotation=None, save=True):
-        """Create visualization but not first revision. Returns Visualization object."""
-        user = trans.get_user()
-
-        # Error checking.
-        title_err = slug_err = ""
-        if not title:
-            title_err = "visualization name is required"
-        elif slug and not managers_base.is_valid_slug(slug):
-            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif (
-            slug
-            and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first()
-        ):
-            slug_err = "visualization identifier must be unique"
-
-        if title_err or slug_err:
-            return {"title_err": title_err, "slug_err": slug_err}
-
-        # Create visualization
-        visualization = trans.model.Visualization(user=user, title=title, dbkey=dbkey, type=type)
-        if slug:
-            visualization.slug = slug
-        else:
-            self.slug_builder.create_item_slug(trans.sa_session, visualization)
-        if annotation:
-            annotation = sanitize_html(annotation)
-            # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
-            #   right now this is depending on the classes that include this mixin to have UsesAnnotations
-            self.add_item_annotation(trans.sa_session, trans.user, visualization, annotation)
-
-        if save:
-            session = trans.sa_session
-            session.add(visualization)
-            with transaction(session):
-                session.commit()
-
-        return visualization
-
     def _get_genome_data(self, trans, dataset, dbkey=None):
         """
         Returns genome-wide data for dataset if available; if not, message is returned.
@@ -1151,8 +899,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # If there are no messages (messages indicate data is not ready/available), get data.
         messages_list = [data_source_dict["message"] for data_source_dict in data_sources.values()]
-        message = self._get_highest_priority_msg(messages_list)
-        if message:
+        if message := self._get_highest_priority_msg(messages_list):
             rval = message
         else:
             # HACK: chromatin interactions tracks use data as source.
@@ -1227,7 +974,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored):
+    def _import_shared_workflow(self, trans, stored: model.StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
@@ -1257,7 +1004,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
+        workflow_contents_manager = workflows.WorkflowContentsManager(self.app, self.app.trs_proxy)
         return workflow_contents_manager.workflow_to_dict(
             trans,
             stored,
@@ -1274,11 +1021,11 @@ class UsesFormDefinitionsMixin:
         of all the forms from the form_definition table.
         """
         if all_versions:
-            return trans.sa_session.query(trans.app.model.FormDefinition)
+            return get_form_definitions(trans.sa_session)
         if filter:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).filter_by(**filter)
+            fdc_list = get_filtered_form_definitions_current(trans.sa_session, filter)
         else:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent)
+            fdc_list = get_form_definitions_current(trans.sa_session)
         if form_type == "All":
             return [fdc.latest_form for fdc in fdc_list]
         else:
@@ -1344,7 +1091,7 @@ class SharableMixin:
 
     def _is_valid_slug(self, slug):
         """Returns true if slug is valid."""
-        return managers_base.is_valid_slug(slug)
+        return SlugBuilder.is_valid_slug(slug)
 
     @web.expose
     @web.require_login("modify Galaxy items")
@@ -1352,7 +1099,7 @@ class SharableMixin:
         item = self.get_item(trans, id)
         if item:
             # Only update slug if slug is not already in use.
-            if trans.sa_session.query(item.__class__).filter_by(user=item.user, slug=new_slug).count() == 0:
+            if not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
                 item.slug = new_slug
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
@@ -1377,6 +1124,11 @@ class SharableMixin:
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display item by username and slug."""
+        # Ensure slug is in the correct format.
+        slug = slug.encode("latin1").decode("utf-8")
+        self._display_by_username_and_slug(trans, username, slug, **kwargs)
+
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         raise NotImplementedError()
 
     def get_item(self, trans, id):
@@ -1546,7 +1298,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
-                yield from self._scan_json_block(a, prefix + "[%d]" % (i))
+                yield from self._scan_json_block(a, prefix + f"[{i}]")
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True

@@ -24,3 +24,10 @@ export function ensureDefined<T>(value: T, error?: string | Error): NonNullable<
     assertDefined(value, error);
     return value;
 }
+
+export function assertArray(value: unknown, error?: string | Error): asserts value is Array<unknown> {
+    if (!(typeof value === "object" && Array.isArray(value))) {
+        const message = error ?? TypeError(`Value is not an Array`);
+        throw message instanceof Error ? message : TypeError(message);
+    }
+}

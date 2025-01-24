@@ -1,6 +1,7 @@
 """
 Fencepost-simple graph structure implementation.
 """
+
 # Currently (2013.7.12) only used in easing the parsing of graph datatype data.
 
 

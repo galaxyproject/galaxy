@@ -1,8 +1,10 @@
-import type { MessageNotification, SharedItemNotification, UserNotification } from "@/components/Notifications/index";
-import type { components } from "@/schema";
-
-type NotificationVariants = components["schemas"]["NotificationVariant"];
-type NewSharedItemNotificationContentItemType = components["schemas"]["NewSharedItemNotificationContent"]["item_type"];
+import {
+    type MessageNotification,
+    type NewSharedItemNotificationContentItemType,
+    type NotificationVariants,
+    type SharedItemNotification,
+    type UserNotification,
+} from "@/api/notifications";
 
 export function generateRandomItemType() {
     const itemTypes = ["history", "workflow", "visualization", "page"];

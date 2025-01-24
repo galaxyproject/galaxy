@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronCircleRight, faMinusSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { useDebounce, type UseElementBoundingReturn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import {
     computed,
@@ -70,6 +70,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    blank: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 onBeforeUnmount(() => {
@@ -90,7 +94,8 @@ const position = useRelativePosition(
     computed(() => props.parentNode)
 );
 
-const { connectionStore, stateStore, stepStore } = useWorkflowStores();
+const stores = useWorkflowStores();
+const { connectionStore, stateStore } = stores;
 const hasTerminals = ref(false);
 watchEffect(() => {
     hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
@@ -144,7 +149,7 @@ const label = computed(() => props.input.label || props.input.name);
 const hasConnections = computed(() => connections.value.length > 0);
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "input-data-row"];
-    if (props.input?.valid === false) {
+    if (!props.blank && props.input?.valid === false) {
         classes.push("form-row-error");
     }
     return classes;
@@ -178,8 +183,7 @@ function onDrop(event: DragEvent) {
         stepOut.stepId,
         stepOut.output,
         props.datatypesMapper,
-        connectionStore,
-        stepStore
+        stores
     ) as OutputCollectionTerminal;
 
     showTooltip.value = false;
@@ -188,10 +192,31 @@ function onDrop(event: DragEvent) {
         terminal.value.connect(droppedTerminal);
     }
 }
+
+const draggedOver = ref(false);
+const draggedOverDebounced = useDebounce(draggedOver, 50);
+
+function nodeDragOver() {
+    draggedOver.value = true && Boolean(draggingTerminal.value);
+}
+
+function nodeDragOut() {
+    draggedOver.value = false;
+}
+
+watch(
+    () => draggingTerminal.value,
+    () => {
+        if (!draggingTerminal.value) {
+            draggedOver.value = false;
+        }
+    }
+);
 </script>
 
 <template>
-    <div class="node-input" :class="rowClass">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+    <div class="node-input" :class="rowClass" @drop.prevent="onDrop" @dragover="nodeDragOver" @dragleave="nodeDragOut">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             :id="id"
@@ -202,12 +227,13 @@ function onDrop(event: DragEvent) {
                 'can-accept': acceptsInput,
                 'can-not-accept': !acceptsInput,
                 'mapped-over': isMultiple,
+                'is-dragging': Boolean(draggingTerminal),
+                'is-dragover': draggedOverDebounced,
             }"
             :input-name="input.name"
-            @drop.prevent="onDrop"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <b-tooltip :target="id" :show="showTooltip">
+            <b-tooltip v-if="reason" :target="id" :show="showTooltip">
                 {{ reason }}
             </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
@@ -220,7 +246,7 @@ function onDrop(event: DragEvent) {
             @click="onRemove">
             <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
         </button>
-        {{ label }}
+        <span v-if="!blank">{{ label }}</span>
         <span
             v-if="!input.optional && !hasTerminals"
             v-b-tooltip.hover
@@ -257,6 +283,19 @@ function onDrop(event: DragEvent) {
 
         &.can-not-accept {
             color: $brand-warning;
+        }
+
+        // expand size on drag
+        &.is-dragging {
+            --offset-extra: 10px;
+        }
+
+        &.mapped-over.is-dragging {
+            --offset-extra: 5px;
+        }
+
+        &.is-dragover.can-accept::after {
+            outline: solid 3px $brand-primary;
         }
     }
 }

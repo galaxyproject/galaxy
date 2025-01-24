@@ -1,71 +1,89 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BForm, BFormGroup, BFormSelect, BInputGroup } from "bootstrap-vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { useConfirmDialog } from "@/composables/confirmDialog";
-import { useToast } from "@/composables/toast";
+import { useSelectableObjectStores } from "@/composables/useObjectStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
-import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
+import { fetchHistoryContentsSizeSummary, type ItemSizeSummary } from "./service";
 import {
-    fetchHistoryContentsSizeSummary,
-    type ItemSizeSummary,
-    purgeDatasetById,
-    undeleteDatasetById,
-} from "./service";
+    buildTopNDatasetsBySizeData,
+    byteFormattingForChart,
+    useAdvancedFiltering,
+    useDataLoading,
+    useDatasetsToDisplay,
+} from "./util";
 
 import BarChart from "./Charts/BarChart.vue";
+import OverviewPage from "./OverviewPage.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import Heading from "@/components/Common/Heading.vue";
+import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
+import FilterObjectStoreLink from "@/components/Common/FilterObjectStoreLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
-const { success: successToast, error: errorToast } = useToast();
-const { confirm } = useConfirmDialog();
-const { getHistoryNameById } = useHistoryStore();
+const { getHistoryNameById, getHistoryById } = useHistoryStore();
 
-const props = defineProps({
-    historyId: {
-        type: String,
-        required: true,
-    },
+interface Props {
+    historyId: string;
+}
+
+const props = defineProps<Props>();
+
+const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
+const {
+    numberOfDatasetsToDisplayOptions,
+    numberOfDatasetsToDisplay,
+    numberOfDatasetsLimit,
+    datasetsSizeSummaryMap,
+    topNDatasetsBySizeData,
+    isRecoverableDataPoint,
+    onUndeleteDataset,
+    onPermanentlyDeleteDataset,
+} = useDatasetsToDisplay();
+
+const { isLoading, loadDataOnMount } = useDataLoading();
+const { isAdvanced, toggleAdvanced, inputGroupClasses, faAngleDoubleDown, faAngleDoubleUp } = useAdvancedFiltering();
+const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
+
+const objectStore = ref<string>();
+
+const canEditHistory = computed(() => {
+    const history = getHistoryById(props.historyId);
+    return (history && !history.purged && !history.archived) ?? false;
 });
 
-const datasetsSizeSummaryMap = new Map<string, ItemSizeSummary>();
-const topTenDatasetsBySizeData = ref<DataValuePoint[] | null>(null);
-const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
-const isLoading = ref(true);
-const numberOfDatasetsToDisplayOptions = [10, 20, 50];
-const numberOfDatasetsToDisplay = ref(numberOfDatasetsToDisplayOptions[0]);
+function onChangeObjectStore(value?: string) {
+    objectStore.value = value;
+    reloadDataFromServer();
+}
 
-onMounted(async () => {
-    isLoading.value = true;
-    const limit = Math.max(...numberOfDatasetsToDisplayOptions);
-    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(props.historyId, limit);
+async function reloadDataFromServer() {
+    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(
+        props.historyId,
+        numberOfDatasetsLimit,
+        objectStore.value
+    );
+    datasetsSizeSummaryMap.clear();
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
     buildGraphsData();
-    isLoading.value = false;
-});
+}
+
+loadDataOnMount(reloadDataFromServer);
 
 function buildGraphsData() {
     const allDatasetsInHistorySizeSummary = Array.from(datasetsSizeSummaryMap.values());
-    topTenDatasetsBySizeData.value = buildTopTenDatasetsBySizeData(allDatasetsInHistorySizeSummary);
+    topNDatasetsBySizeData.value = buildTopNDatasetsBySizeData(
+        allDatasetsInHistorySizeSummary,
+        numberOfDatasetsToDisplay.value
+    );
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
-}
-
-function buildTopTenDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
-    const topTenDatasetsBySize = datasetsSizeSummary
-        .sort((a, b) => b.size - a.size)
-        .slice(0, numberOfDatasetsToDisplay.value);
-    return topTenDatasetsBySize.map((dataset) => ({
-        id: dataset.id,
-        label: dataset.name,
-        value: dataset.size,
-    }));
 }
 
 function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
@@ -89,14 +107,6 @@ function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[
     ];
 }
 
-function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
-    if (dataPoint) {
-        const historiesSizeSummary = datasetsSizeSummaryMap.get(dataPoint.id || "");
-        return historiesSizeSummary?.deleted || dataPoint.id === "deleted";
-    }
-    return false;
-}
-
 async function onViewDataset(datasetId: string) {
     router.push({
         name: "DatasetDetails",
@@ -107,51 +117,16 @@ async function onViewDataset(datasetId: string) {
     });
 }
 
-async function onUndeleteDataset(datasetId: string) {
-    try {
-        const result = await undeleteDatasetById(props.historyId, datasetId);
-        const dataset = datasetsSizeSummaryMap.get(datasetId);
-        if (dataset && !result.deleted) {
-            dataset.deleted = result.deleted;
-            datasetsSizeSummaryMap.set(datasetId, dataset);
-            successToast(localize("Dataset undeleted successfully."));
-            buildGraphsData();
-        }
-    } catch (error) {
-        errorToast(`${error}`, localize("An error occurred while undeleting the dataset."));
-    }
+function onPermDelete(datasetId: string) {
+    onPermanentlyDeleteDataset(buildGraphsData, datasetId);
 }
 
-async function onPermanentlyDeleteDataset(datasetId: string) {
-    const confirmed = await confirm(
-        localize("Are you sure you want to permanently delete this dataset? This action cannot be undone."),
-        {
-            title: localize("Permanently delete dataset?"),
-            okVariant: "danger",
-            okTitle: localize("Permanently delete"),
-            cancelTitle: localize("Cancel"),
-        }
-    );
-    if (!confirmed) {
-        return;
-    }
-    try {
-        const result = await purgeDatasetById(props.historyId, datasetId);
-        const dataset = datasetsSizeSummaryMap.get(datasetId);
-        if (dataset && result) {
-            datasetsSizeSummaryMap.delete(datasetId);
-            successToast(localize("Dataset permanently deleted successfully."));
-            buildGraphsData();
-        }
-    } catch (error) {
-        errorToast(`${error}`, localize("An error occurred while permanently deleting the dataset."));
-    }
+function onUndelete(datasetId: string) {
+    onUndeleteDataset(buildGraphsData, datasetId);
 }
 </script>
 <template>
-    <div class="mx-3 history-storage-overview">
-        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <Heading h1 bold class="my-3"> History Storage Overview </Heading>
+    <OverviewPage class="history-storage-overview" title="History Storage Overview">
         <p class="text-justify">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
             <b>{{ getHistoryNameById(props.historyId) }}</b
@@ -160,52 +135,89 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
             <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
             the storage taken by <b>all your histories</b>.
         </p>
-        <p class="text-justify">
-            Note: these graphs include <b>deleted datasets</b>. Remember that, even if you delete datasets, they still
-            take up storage space. However, you can free up the storage space by permanently deleting them from the
-            <i>Discarded Items</i> section of the
-            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
-            individually in the graph and clicking the <b>Permanently Delete</b> button.
-        </p>
-
+        <WarnDeletedDatasets />
         <div v-if="isLoading" class="text-center">
             <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
         </div>
         <div v-else>
             <BarChart
-                v-if="topTenDatasetsBySizeData"
+                v-if="topNDatasetsBySizeData"
                 :description="
                     localize(
-                        'These are the 10 datasets that take the most space in this history. Click on a bar to see more information about the dataset.'
+                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
                     )
                 "
+                :data="topNDatasetsBySizeData"
                 :enable-selection="true"
-                :data="topTenDatasetsBySizeData"
-                :label-formatter="bytesLabelFormatter"
-                :value-formatter="bytesValueFormatter">
+                v-bind="byteFormattingForChart">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
-                    <b-form-select
-                        v-model="numberOfDatasetsToDisplay"
-                        :options="numberOfDatasetsToDisplayOptions"
-                        :disabled="isLoading"
-                        title="Number of histories to show"
-                        class="float-right w-auto"
-                        size="sm"
-                        @change="buildGraphsData()">
-                    </b-form-select>
+                    <BInputGroup size="sm" :class="inputGroupClasses">
+                        <BFormSelect
+                            v-if="!isAdvanced"
+                            v-model="numberOfDatasetsToDisplay"
+                            :options="numberOfDatasetsToDisplayOptions"
+                            :disabled="isLoading"
+                            title="Number of histories to show"
+                            size="sm"
+                            @change="buildGraphsData()">
+                        </BFormSelect>
+                        <BButton
+                            v-b-tooltip.hover.bottom.noninteractive
+                            aria-haspopup="true"
+                            size="sm"
+                            title="Toggle Advanced Filtering"
+                            data-description="wide toggle advanced filter"
+                            @click="toggleAdvanced">
+                            <FontAwesomeIcon :icon="isAdvanced ? faAngleDoubleUp : faAngleDoubleDown" />
+                        </BButton>
+                    </BInputGroup>
+                </template>
+                <template v-slot:options>
+                    <div v-if="isAdvanced" class="clear-fix">
+                        <BForm>
+                            <BFormGroup
+                                id="input-group-num-histories"
+                                label="Number of histories:"
+                                label-for="input-num-histories"
+                                description="This is the maximum number of histories that will be displayed.">
+                                <BFormSelect
+                                    v-model="numberOfDatasetsToDisplay"
+                                    :options="numberOfDatasetsToDisplayOptions"
+                                    :disabled="isLoading"
+                                    title="Number of histories to show"
+                                    @change="buildGraphsData()">
+                                </BFormSelect>
+                            </BFormGroup>
+                            <BFormGroup
+                                v-if="selectableObjectStores && hasSelectableObjectStores"
+                                id="input-group-object-store"
+                                label="Storage location:"
+                                label-for="input-object-store"
+                                description="This will constrain history size calculations to a particular storage location.">
+                                <FilterObjectStoreLink
+                                    :object-stores="selectableObjectStores"
+                                    :value="objectStore"
+                                    @change="onChangeObjectStore" />
+                            </BFormGroup>
+                        </BForm>
+                    </div>
                 </template>
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
                         item-type="dataset"
                         :is-recoverable="isRecoverableDataPoint(data)"
+                        :can-edit="canEditHistory"
                         @view-item="onViewDataset"
-                        @undelete-item="onUndeleteDataset"
-                        @permanently-delete-item="onPermanentlyDeleteDataset" />
+                        @undelete-item="onUndelete"
+                        @permanently-delete-item="onPermDelete" />
                 </template>
             </BarChart>
 
@@ -218,12 +230,14 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"
-                :label-formatter="bytesLabelFormatter"
-                :value-formatter="bytesValueFormatter">
+                v-bind="byteFormattingForChart">
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
             </BarChart>
         </div>
-    </div>
+    </OverviewPage>
 </template>

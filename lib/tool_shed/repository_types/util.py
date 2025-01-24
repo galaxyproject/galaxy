@@ -43,26 +43,18 @@ def generate_message_for_repository_type_change(app, repository):
         repository_suite_definition_type_class = app.repository_types_registry.get_class_by_label(
             REPOSITORY_SUITE_DEFINITION
         )
-        message += (
-            "This repository currently contains a single file named <b>%s</b>.  If the intent of this repository is "
-            % REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
-        )
-        message += "to define relationships to a collection of repositories that contain related Galaxy utilities with "
-        message += (
-            "no plans to add additional files, consider setting its type to <b>%s</b>.<br/>"
-            % repository_suite_definition_type_class.label
+        message = (
+            f"This repository currently contains a single file named <b>{REPOSITORY_DEPENDENCY_DEFINITION_FILENAME}</b>.  If the intent of this repository is "
+            "to define relationships to a collection of repositories that contain related Galaxy utilities with "
+            f"no plans to add additional files, consider setting its type to <b>{repository_suite_definition_type_class.label}</b>.<br/>"
         )
     elif repository.can_change_type_to(app, TOOL_DEPENDENCY_DEFINITION):
         tool_dependency_definition_type_class = app.repository_types_registry.get_class_by_label(
             TOOL_DEPENDENCY_DEFINITION
         )
-        message += (
-            "This repository currently contains a single file named <b>%s</b>.  If additional files will "
-            % TOOL_DEPENDENCY_DEFINITION_FILENAME
-        )
-        message += (
-            "not be added to this repository, consider setting its type to <b>%s</b>.<br/>"
-            % tool_dependency_definition_type_class.label
+        message = (
+            f"This repository currently contains a single file named <b>{TOOL_DEPENDENCY_DEFINITION_FILENAME}</b>.  If additional files will "
+            f"not be added to this repository, consider setting its type to <b>{tool_dependency_definition_type_class.label}</b>.<br/>"
         )
     return message
 

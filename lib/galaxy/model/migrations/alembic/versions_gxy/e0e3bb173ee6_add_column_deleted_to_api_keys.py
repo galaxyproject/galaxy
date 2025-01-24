@@ -5,6 +5,7 @@ Revises: 186d4835587b
 Create Date: 2022-09-27 14:09:05.890227
 
 """
+
 from sqlalchemy import (
     Boolean,
     Column,

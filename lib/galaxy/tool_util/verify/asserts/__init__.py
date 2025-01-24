@@ -5,19 +5,21 @@ from inspect import (
     getmembers,
 )
 from tempfile import NamedTemporaryFile
+from typing import (
+    Callable,
+    Dict,
+    Tuple,
+)
 
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size"]
+assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size", "image"]
 
-# Code for loading modules containing assertion checking functions, to
-# create a new module of assertion functions, create the needed python
-# source file "test/base/asserts/<MODULE_NAME>.py" and add
-# <MODULE_NAME> to the list of assertion module names defined above.
-assertion_functions = {}
+assertion_module_and_functions: Dict[str, Tuple[str, Callable]] = {}
+
 for assertion_module_name in assertion_module_names:
     full_assertion_module_name = f"galaxy.tool_util.verify.asserts.{assertion_module_name}"
     try:
@@ -29,10 +31,17 @@ for assertion_module_name in assertion_module_names:
         continue
     for member, value in getmembers(assertion_module):
         if member.startswith("assert_"):
-            assertion_functions[member] = value
+            assertion_module_and_functions[member] = (f"{full_assertion_module_name}.{member}", value)
 
 
-def verify_assertions(data: bytes, assertion_description_list, decompress=None):
+# Code for loading modules containing assertion checking functions, to
+# create a new module of assertion functions, create the needed python
+# source file "test/base/asserts/<MODULE_NAME>.py" and add
+# <MODULE_NAME> to the list of assertion module names defined above.
+assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
+
+
+def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False):
     """This function takes a list of assertions and a string to check
     these assertions against."""
     if decompress:

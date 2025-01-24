@@ -1,0 +1,17 @@
+type: azure_blob
+auth:
+  account_name: azureact
+  account_key: password123
+
+container:
+  name: unique_container_name
+
+cache:
+  path: database/object_store_cache
+  size: 100
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure

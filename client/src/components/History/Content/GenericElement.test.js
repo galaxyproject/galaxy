@@ -1,9 +1,15 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
 
 import GenericElement from "./GenericElement";
 
+jest.mock("components/History/model/queries");
+
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
 describe("GenericElement", () => {
     let wrapper;
@@ -14,7 +20,7 @@ describe("GenericElement", () => {
                 dsc: {
                     elements: [
                         {
-                            element_index: 1,
+                            element_index: 0,
                             element_identifier: "element-1",
                             element_type: "hda",
                             object: {
@@ -22,17 +28,17 @@ describe("GenericElement", () => {
                             },
                         },
                         {
-                            element_index: 2,
+                            element_index: 1,
                             element_identifier: "element-2",
                             element_type: "hdca",
                             object: {
                                 id: "item-2",
                                 collection_type: "list",
-                                element_count: 2,
+                                element_count: 1,
                                 elements_datatypes: ["txt"],
                                 elements: [
                                     {
-                                        element_index: 3,
+                                        element_index: 2,
                                         element_identifier: "element-3",
                                         element_type: "hda",
                                         object: {
@@ -40,7 +46,7 @@ describe("GenericElement", () => {
                                         },
                                     },
                                     {
-                                        element_index: 4,
+                                        element_index: 3,
                                         element_identifier: "element-4",
                                         element_type: "hda",
                                         object: {
@@ -54,6 +60,8 @@ describe("GenericElement", () => {
                 },
             },
             localVue,
+            router,
+            pinia: createTestingPinia(),
         });
     });
 

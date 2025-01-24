@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import os
 import os.path
 import subprocess
 import tempfile
@@ -11,10 +10,10 @@ from typing import (
     Any,
     Dict,
     List,
-    Union,
 )
 
 from galaxy.util import unicodify
+from galaxy.util.path import StrPath
 from .get_tests import (
     hashed_test_search,
     import_test_to_command_list,
@@ -46,7 +45,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
 
 
 def singularity_container_test(
-    tests: Dict[str, Dict[str, Any]], installation: str, filepath: Union[str, os.PathLike]
+    tests: Dict[str, Dict[str, Any]], installation: str, filepath: StrPath
 ) -> Dict[str, List]:
     """
     Run tests, record if they pass or fail

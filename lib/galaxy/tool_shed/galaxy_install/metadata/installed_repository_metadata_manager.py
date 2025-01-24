@@ -1,14 +1,19 @@
 import logging
 import os
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 from sqlalchemy import false
 
 from galaxy import util
 from galaxy.model.base import transaction
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
-from galaxy.tool_shed.metadata.metadata_generator import MetadataGenerator
+from galaxy.tool_shed.metadata.metadata_generator import GalaxyMetadataGenerator
 from galaxy.tool_shed.util.repository_util import (
     get_installed_tool_shed_repository,
     get_repository_owner,
@@ -24,21 +29,22 @@ from galaxy.web.form_builder import SelectField
 log = logging.getLogger(__name__)
 
 
-class InstalledRepositoryMetadataManager(MetadataGenerator):
+class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
+
     def __init__(
         self,
-        app: MinimalManagerApp,
+        app: InstallationTarget,
         tpm: Optional[tool_panel_manager.ToolPanelManager] = None,
-        repository=None,
-        changeset_revision=None,
-        repository_clone_url=None,
-        shed_config_dict=None,
-        relative_install_dir=None,
-        repository_files_dir=None,
-        resetting_all_metadata_on_repository=False,
-        updating_installed_repository=False,
-        persist=False,
-        metadata_dict=None,
+        repository: Optional[ToolShedRepository] = None,
+        changeset_revision: Optional[str] = None,
+        repository_clone_url: Optional[str] = None,
+        shed_config_dict: Optional[Dict[str, Any]] = None,
+        relative_install_dir: Optional[str] = None,
+        repository_files_dir: Optional[str] = None,
+        resetting_all_metadata_on_repository: bool = False,
+        updating_installed_repository: bool = False,
+        persist: bool = False,
+        metadata_dict: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
             app,
@@ -79,15 +85,15 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         if order:
             return (
                 self.app.install_model.context.query(self.app.install_model.ToolShedRepository)
-                .filter(self.app.install_model.ToolShedRepository.table.c.uninstalled == false())
+                .filter(self.app.install_model.ToolShedRepository.uninstalled == false())
                 .order_by(
-                    self.app.install_model.ToolShedRepository.table.c.name,
-                    self.app.install_model.ToolShedRepository.table.c.owner,
+                    self.app.install_model.ToolShedRepository.name,
+                    self.app.install_model.ToolShedRepository.owner,
                 )
             )
         else:
             return self.app.install_model.context.query(self.app.install_model.ToolShedRepository).filter(
-                self.app.install_model.ToolShedRepository.table.c.uninstalled == false()
+                self.app.install_model.ToolShedRepository.uninstalled == false()
             )
 
     def get_repository_tools_tups(self):
@@ -120,10 +126,11 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
     def reset_all_metadata_on_installed_repository(self):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         if self.relative_install_dir:
+            assert self.repository
             original_metadata_dict = self.repository.metadata_
             self.generate_metadata_for_changeset_revision()
             if self.metadata_dict != original_metadata_dict:
-                self.repository.metadata_ = self.metadata_dict
+                self.repository.metadata_ = self.metadata_dict  # type:ignore[assignment]
                 self.update_in_shed_tool_config()
 
                 session = self.app.install_model.context
@@ -135,17 +142,18 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
             else:
                 log.debug(f"Metadata did not need to be reset on repository {self.repository.name}.")
         else:
-            log.debug(f"Error locating installation directory for repository {self.repository.name}.")
+            log.debug(
+                f"Error locating installation directory for repository {self.repository and self.repository.name}."
+            )
 
     def reset_metadata_on_selected_repositories(self, user, **kwd):
         """
         Inspect the repository changelog to reset metadata for all appropriate changeset revisions.
         This method is called from both Galaxy and the Tool Shed.
         """
-        repository_ids = util.listify(kwd.get("repository_ids", None))
         message = ""
         status = "done"
-        if repository_ids:
+        if repository_ids := util.listify(kwd.get("repository_ids", None)):
             successful_count = 0
             unsuccessful_count = 0
             for repository_id in repository_ids:
@@ -169,12 +177,12 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                 except Exception:
                     log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
                     unsuccessful_count += 1
-            message = "Successfully reset metadata on %d %s.  " % (
+            message = "Successfully reset metadata on {} {}.  ".format(
                 successful_count,
                 inflector.cond_plural(successful_count, "repository"),
             )
             if unsuccessful_count:
-                message += "Error setting metadata on %d %s - see the galaxy log for details.  " % (
+                message += "Error setting metadata on {} {} - see the galaxy log for details.  ".format(
                     unsuccessful_count,
                     inflector.cond_plural(unsuccessful_count, "repository"),
                 )
@@ -183,13 +191,17 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
             status = "error"
         return message, status
 
-    def set_repository(self, repository):
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
         super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)
 
-    def tool_shed_from_repository_clone_url(self):
+    def tool_shed_from_repository_clone_url(self) -> str:
         """Given a repository clone URL, return the tool shed that contains the repository."""
-        cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url(self.repository_clone_url)
+        repository_clone_url = self.repository_clone_url
+        assert repository_clone_url
+        cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
         return (
             common_util.remove_protocol_and_user_from_clone_url(cleaned_repository_clone_url)
             .split("/repos/")[0]
@@ -201,6 +213,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config
         file to generate the entire list of config_elems instead of using the in-memory list.
         """
+        assert self.repository
         shed_conf_dict = self.shed_config_dict or self.repository.get_shed_config_dict(self.app)
         shed_tool_conf = shed_conf_dict["config_filename"]
         tool_path = shed_conf_dict["tool_path"]

@@ -2,6 +2,7 @@
 Deserialize Galaxy resources (hdas, ldas, datasets, genomes, etc.) from
 a dictionary of string data/ids (often from a query string).
 """
+
 import json
 import logging
 import weakref
@@ -134,8 +135,11 @@ class ResourceParser:
 
                 except Exception as exception:
                     log.warning(
-                        "Exception parsing visualization param from query: "
-                        + f"{param_name}, {config_val}, ({str(type(exception))}) {str(exception)}"
+                        "Exception parsing visualization param from query: %s, %s, (%s) %s",
+                        param_name,
+                        config_val,
+                        type(exception),
+                        exception,
                     )
                     config_val = None
 

@@ -1,9 +1,11 @@
 """
 Mixins for Ratable model managers and serializers.
 """
+
 import logging
 from typing import Type
 
+from sqlalchemy import select
 from sqlalchemy.sql.expression import func
 
 from galaxy.model import ItemRatingAssociation
@@ -35,13 +37,14 @@ class RatableManagerMixin:
     def ratings_avg(self, item):
         """Returns the average of all ratings given to this item."""
         foreign_key = self._foreign_key(self.rating_assoc)
-        avg = self.session().query(func.avg(self.rating_assoc.rating)).filter(foreign_key == item).scalar()
-        return avg or 0.0
+        stmt = select(func.avg(self.rating_assoc.rating)).where(foreign_key == item)
+        return self.session().scalar(stmt) or 0.0
 
     def ratings_count(self, item):
         """Returns the number of ratings given to this item."""
         foreign_key = self._foreign_key(self.rating_assoc)
-        return self.session().query(func.count(self.rating_assoc.rating)).filter(foreign_key == item).scalar()
+        stmt = select(func.count(self.rating_assoc.rating)).where(foreign_key == item)
+        return self.session().scalar(stmt)
 
     def rate(self, item, user, value, flush=True):
         """Updates or creates a rating for this item and user. Returns the rating"""

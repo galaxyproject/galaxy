@@ -1,6 +1,7 @@
 """
 Determine if installed tool shed repositories have updates available in their respective tool sheds.
 """
+
 import logging
 import threading
 from typing import NamedTuple
@@ -74,7 +75,7 @@ class UpdateRepositoryManager:
             # the repository revision is the latest installable revision, and whether the repository
             # has been deprecated in the Tool Shed.
             for repository in self.context.query(self.app.install_model.ToolShedRepository).filter(
-                self.app.install_model.ToolShedRepository.table.c.deleted == false()
+                self.app.install_model.ToolShedRepository.deleted == false()
             ):
                 tool_shed_status_dict = get_tool_shed_status_for_installed_repository(self.app, repository)
                 if tool_shed_status_dict:
@@ -115,7 +116,7 @@ class UpdateRepositoryManager:
         if tool_shed_status_dict:
             repository.tool_shed_status = tool_shed_status_dict
         else:
-            repository.tool_shed_status = None
+            repository.tool_shed_status = None  # type:ignore[assignment]
         session = self.app.install_model.context
         session.add(repository)
         with transaction(session):

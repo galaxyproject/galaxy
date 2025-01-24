@@ -46,6 +46,7 @@ from galaxy.util.properties import (
     nice_config_parser,
     NicerConfigParser,
 )
+from galaxy.util.resources import Traversable
 from galaxy.util.yaml_util import (
     ordered_dump,
     ordered_load,
@@ -56,7 +57,6 @@ DESCRIPTION = "Convert configuration files."
 APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
-USING_SAMPLE_MESSAGE = "Config file not found, using sample."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(
     initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False
@@ -72,7 +72,7 @@ class App(NamedTuple):
     default_port: str
     expected_app_factories: List[str]
     destination: str
-    schema_path: str
+    schema_path: Traversable
 
     @property
     def app_name(self) -> str:
@@ -203,6 +203,8 @@ OPTION_ACTIONS: Dict[str, _OptionAction] = {
     "legacy_eager_objectstore_initialization": _DeprecatedAndDroppedAction(),
     "enable_openid": _DeprecatedAndDroppedAction(),
     "openid_consumer_cache_path": _DeprecatedAndDroppedAction(),
+    "ga4gh_service_organization_name": _RenameAction("organization_name"),
+    "ga4gh_service_organization_url": _RenameAction("organization_url"),
 }
 
 
@@ -217,21 +219,21 @@ GALAXY_APP = App(
     "8080",
     ["galaxy.web.buildapp:app_factory"],
     "config/galaxy.yml",
-    str(GALAXY_CONFIG_SCHEMA_PATH),
+    GALAXY_CONFIG_SCHEMA_PATH,
 )
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    str(REPORTS_CONFIG_SCHEMA_PATH),
+    REPORTS_CONFIG_SCHEMA_PATH,
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
@@ -303,9 +305,11 @@ def _find_config(args: Namespace, app_desc: App) -> str:
             if os.path.exists(possible_ini_config):
                 path = possible_ini_config
 
-    if not path:
-        _warn(USING_SAMPLE_MESSAGE)
+    if path:
+        print(f"Found config file {path}")
+    else:
         path = os.path.join(args.galaxy_root, app_desc.sample_destination)
+        _warn(f"Config file not found, using sample {path}")
 
     return path
 
@@ -351,8 +355,8 @@ def _validate(args: Namespace, app_desc: App) -> None:
     path = _find_config(args, app_desc)
     # Allow empty mapping (not allowed by pykwalify)
     raw_config = _order_load_path(path)
-    if raw_config.get(app_desc.app_name) is None:
-        raw_config[app_desc.app_name] = {}
+    # Drop top-level keys (e.g. "gravity") except for app_desc.app_name
+    raw_config = {app_desc.app_name: raw_config.get(app_desc.app_name) or {}}
     # Rewrite the file any way to merge any duplicate keys
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
@@ -426,8 +430,7 @@ def _replace_file(args: Namespace, f: StringIO, app_desc: App, from_path: str, t
 def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     schema = app_desc.schema
     f = StringIO()
-    description = getattr(schema, "description", None)
-    if description:
+    if description := getattr(schema, "description", None):
         description = description.lstrip()
         as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
@@ -517,8 +520,7 @@ def _warn(message: str) -> None:
 
 def _get_option_desc(option: Dict[str, Any]) -> str:
     desc = option["desc"]
-    parent_dir = option.get("path_resolves_to")
-    if parent_dir:
+    if parent_dir := option.get("path_resolves_to"):
         path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
         return f"{desc}\n{path_resolves}" if desc else path_resolves
     return desc

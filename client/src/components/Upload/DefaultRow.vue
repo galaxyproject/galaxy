@@ -3,13 +3,15 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { bytesToString } from "utils/utils";
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSettings from "./UploadSettings.vue";
 
 library.add(faEdit, faLaptop, faFolderOpen);
+
+const fileField = ref(null);
 
 const props = defineProps({
     deferred: {
@@ -104,6 +106,14 @@ function removeUpload() {
         emit("remove", props.index);
     }
 }
+
+onMounted(() => {
+    autoSelectFileInput();
+});
+
+function autoSelectFileInput() {
+    fileField.value.select();
+}
 </script>
 
 <template>
@@ -115,6 +125,7 @@ function removeUpload() {
                 <FontAwesomeIcon v-if="fileMode == 'url'" icon="fa-folder-open" fixed-width />
             </div>
             <b-input
+                ref="fileField"
                 :value="fileName"
                 class="upload-title p-1 border rounded"
                 :disabled="isDisabled"

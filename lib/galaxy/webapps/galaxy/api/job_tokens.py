@@ -1,5 +1,6 @@
 """ API asynchronous job running mechanisms can use to get a fresh OIDC token.
 """
+
 import logging
 
 from fastapi import Query
@@ -7,11 +8,11 @@ from fastapi.responses import PlainTextResponse
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
@@ -38,7 +39,7 @@ class FastAPIJobTokens:
         job_id: EncodedDatabaseIdField,
         job_key: str = Query(
             description=(
-                "A key used to authenticate this request as acting on" "behalf or a job runner for the specified job"
+                "A key used to authenticate this request as acting on behalf or a job runner for the specified job"
             ),
         ),
         provider: str = Query(
@@ -52,8 +53,9 @@ class FastAPIJobTokens:
         return tokens["id"]
 
     def __authorize_job_access(self, trans, encoded_job_id, job_key):
+        session = trans.sa_session
         job_id = trans.security.decode_id(encoded_job_id)
-        job = trans.sa_session.query(model.Job).get(job_id)
+        job = session.get(Job, job_id)
         secret = job.destination_params.get("job_secret_base", "jobs_token")
 
         job_key_internal = trans.security.encode_id(job_id, kind=secret)
@@ -61,8 +63,8 @@ class FastAPIJobTokens:
             raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
 
         # Verify job is active
-        job = trans.sa_session.query(model.Job).get(job_id)
-        if job.finished:
+        job = session.get(Job, job_id)
+        if job.state not in Job.non_ready_states:
             error_message = "Attempting to get oidc token for a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job

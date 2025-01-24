@@ -1,11 +1,14 @@
 """Integration tests for the Pulsar embedded runner."""
+
 from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
 )
 from galaxy_test.driver import integration_util
+from .objectstore._purged_handling import purge_while_job_running
 
 TEST_TOOL_IDS = [
+    "from_work_dir_glob",
     "job_properties",
     "multi_output",
     "multi_output_configured",
@@ -40,11 +43,13 @@ TEST_TOOL_IDS = [
     "collection_creates_dynamic_nested_from_json_elements",
     "implicit_conversion",
     "environment_variables",
+    "all_output_types",
 ]
 
 
 class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
 
     def setUp(self):
         super().setUp()
@@ -92,6 +97,11 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
         assert dataset["misc_info"] == "my cool bed", dataset
         assert dataset["file_ext"] == "bed", dataset
         assert dataset["created_from_basename"] == "4.bed"
+
+    def test_purge_while_job_running(self):
+        # pass extra_sleep, since templating the command line will fail if the output
+        # is deleted before remote_tool_eval runs.
+        purge_while_job_running(self.dataset_populator, extra_sleep=10)
 
 
 class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCase):

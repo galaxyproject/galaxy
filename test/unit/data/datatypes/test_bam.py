@@ -48,7 +48,9 @@ def test_set_meta_presorted():
     with get_dataset("1.bam") as dataset:
         b.set_meta(dataset=dataset)
         assert dataset.metadata.sort_order == "coordinate"
-        bam_file = AlignmentFile(dataset.file_name, mode="rb", index_filename=dataset.metadata.bam_index.file_name)
+        bam_file = AlignmentFile(
+            dataset.get_file_name(), mode="rb", index_filename=dataset.metadata.bam_index.get_file_name()
+        )
         assert bam_file.has_index() is True
 
 

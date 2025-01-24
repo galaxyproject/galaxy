@@ -5,22 +5,22 @@ from typing import (
 
 from pydantic import BaseModel
 from sqlalchemy import (
-    and_,
     cast,
     Integer,
+    select,
 )
 
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.schema.schema import (
     CheckForUpdatesResponse,
     InstalledToolShedRepository,
 )
-from galaxy.tool_shed.util.repository_util import (
-    check_for_updates,
-    get_tool_shed_repository_by_decoded_id,
-)
+from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.web import url_for
 
@@ -43,31 +43,21 @@ class ToolShedRepositoriesService:
         self._tool_shed_registry = tool_shed_registry
 
     def index(self, request: InstalledToolShedRepositoryIndexRequest) -> List[InstalledToolShedRepository]:
-        clause_list = []
-        if request.name is not None:
-            clause_list.append(ToolShedRepository.table.c.name == request.name)
-        if request.owner is not None:
-            clause_list.append(ToolShedRepository.table.c.owner == request.owner)
-        if request.changeset is not None:
-            clause_list.append(ToolShedRepository.table.c.changeset_revision == request.changeset)
-        if request.deleted is not None:
-            clause_list.append(ToolShedRepository.table.c.deleted == request.deleted)
-        if request.uninstalled is not None:
-            clause_list.append(ToolShedRepository.table.c.uninstalled == request.uninstalled)
-        query = (
-            self._install_model_context.query(ToolShedRepository)
-            .order_by(ToolShedRepository.table.c.name)
-            .order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
+        repositories = self._get_tool_shed_repositories(
+            name=request.name,
+            owner=request.owner,
+            changeset_revision=request.changeset,
+            deleted=request.deleted,
+            uninstalled=request.uninstalled,
         )
-        if len(clause_list) > 0:
-            query = query.filter(and_(*clause_list))
         index = []
-        for repository in query.all():
+        for repository in repositories:
             index.append(self._show(repository))
         return index
 
     def show(self, repository_id: DecodedDatabaseIdField) -> InstalledToolShedRepository:
-        tool_shed_repository = get_tool_shed_repository_by_decoded_id(self._install_model_context, int(repository_id))
+        tool_shed_repository = self._install_model_context.get(ToolShedRepository, repository_id)
+        assert tool_shed_repository
         return self._show(tool_shed_repository)
 
     def check_for_updates(self, repository_id: Optional[int]) -> CheckForUpdatesResponse:
@@ -76,8 +66,17 @@ class ToolShedRepositoriesService:
 
     def _show(self, tool_shed_repository: ToolShedRepository) -> InstalledToolShedRepository:
         tool_shed_repository_dict = tool_shed_repository.as_dict()
-        encoded_id = DecodedDatabaseIdField.encode(tool_shed_repository.id)
-        tool_shed_repository_dict["id"] = encoded_id
+        encoded_id = Security.security.encode_id(tool_shed_repository.id)
         tool_shed_repository_dict["error_message"] = tool_shed_repository.error_message or ""
         tool_shed_repository_dict["url"] = url_for("tool_shed_repositories", id=encoded_id)
         return InstalledToolShedRepository(**tool_shed_repository_dict)
+
+    def _get_tool_shed_repositories(self, **kwd):
+        stmt = select(ToolShedRepository)
+        for key, value in kwd.items():
+            if value is not None:
+                column = ToolShedRepository.__table__.c[key]  # type:ignore[attr-defined]
+                stmt = stmt.filter(column == value)
+        stmt = stmt.order_by(ToolShedRepository.name).order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
+        session = self._install_model_context
+        return session.scalars(stmt).all()

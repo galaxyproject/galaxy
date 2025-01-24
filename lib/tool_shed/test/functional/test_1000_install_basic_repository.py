@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 repo_name = "filtering_0000"
 repo_description = "Galaxy's filtering tool"
@@ -10,11 +8,12 @@ repo_description = "Galaxy's filtering tool"
 class TestBasicToolShedFeatures(ShedTwillTestCase):
     """Test installing a basic repository."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0000 category and upload the filtering repository to it, if necessary."""
@@ -36,54 +35,17 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
             category=category,
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
-            self.upload_file(
-                repository,
-                filename="filtering/filtering_0000.txt",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded readme for 1.1.0",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="filtering/filtering_2.2.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded filtering 2.2.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="readme.txt",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded readme for 2.2.0",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.add_file_to_repository(repository, "filtering/filtering_0000.txt")
+            self.add_tar_to_repository(repository, "filtering/filtering_2.2.0.tar")
+            self.add_file_to_repository(repository, "readme.txt")
 
     def test_0010_browse_tool_sheds(self):
         """Browse the available tool sheds in this Galaxy instance."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(
             url=self.url,
             strings_displayed=["Test 0000 Basic Repository Features 1", "Test 0000 Basic Repository Features 2"],
@@ -107,19 +69,15 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
             "Test 0000 Basic Repository Features 1",
             new_tool_panel_section_label="test_1000",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repo_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repo_name, common.test_user_1_name)
         changeset = str(installed_repository.installed_changeset_revision)
-        assert self.get_installed_repository_for(common.test_user_1, repo_name, changeset)
+        assert self._get_installed_repository_for(common.test_user_1, repo_name, changeset)
         self._assert_has_valid_tool_with_name("Filter1")
         self._assert_repo_has_tool_with_id(installed_repository, "Filter1")
 
     def test_0030_install_filtering_repository_again(self):
         """Attempt to install the already installed filtering repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repo_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repo_name, common.test_user_1_name)
         # Just make sure the repo is still installed, used to monitoring tests but we've
         # removed that page.
         self._install_repository(
@@ -128,7 +86,7 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
             "Test 0000 Basic Repository Features 1",
         )
         changeset = str(installed_repository.installed_changeset_revision)
-        assert self.get_installed_repository_for(common.test_user_1, repo_name, changeset)
+        assert self._get_installed_repository_for(common.test_user_1, repo_name, changeset)
 
     def test_0035_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

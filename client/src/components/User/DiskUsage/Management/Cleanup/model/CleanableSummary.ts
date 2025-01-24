@@ -1,4 +1,4 @@
-import type { components } from "@/schema";
+import { type components } from "@/api/schema";
 import { bytesToString } from "@/utils/utils";
 
 type CleanableItemsSummaryResponse = components["schemas"]["CleanableItemsSummary"];

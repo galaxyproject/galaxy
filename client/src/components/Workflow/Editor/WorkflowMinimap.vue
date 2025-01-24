@@ -6,12 +6,21 @@ import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type {
+    FrameWorkflowComment,
+    FreehandWorkflowComment,
+    MarkdownWorkflowComment,
+    TextWorkflowComment,
+    WorkflowComment,
+} from "@/stores/workflowEditorCommentStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
 
+import { drawBoxComments, drawFreehandComments, drawSteps } from "./modules/canvasDraw";
 import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const props = defineProps<{
     steps: Steps;
+    comments: WorkflowComment[];
     viewportBounds: UseElementBoundingReturn;
     viewportBoundingBox: AxisAlignedBoundingBox;
 }>();
@@ -21,7 +30,8 @@ const emit = defineEmits<{
     (e: "moveTo", position: { x: number; y: number }): void;
 }>();
 
-const { stateStore } = useWorkflowStores();
+const { stateStore, commentStore, toolbarStore } = useWorkflowStores();
+const { isJustCreated } = commentStore;
 
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
@@ -60,6 +70,15 @@ function recalculateAABB() {
         }
     });
 
+    props.comments.forEach((comment) => {
+        aabb.fitRectangle({
+            x: comment.position[0],
+            y: comment.position[1],
+            width: comment.size[0],
+            height: comment.size[1],
+        });
+    });
+
     aabb.squareCenter();
     aabb.expand(120);
 
@@ -70,12 +89,14 @@ function recalculateAABB() {
     }
 }
 
-// redraw if any steps change
+// redraw if any steps or comments change
 watch(
-    props.steps,
+    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed],
     () => {
-        redraw = true;
-        aabbChanged = true;
+        if (!toolbarStore.inputCatcherPressed) {
+            redraw = true;
+            aabbChanged = true;
+        }
     },
     { deep: true }
 );
@@ -140,12 +161,32 @@ function renderMinimap() {
     // apply global to local transform
     canvasTransform.applyToContext(ctx);
 
+    // sort comments by type
+    const frameComments: FrameWorkflowComment[] = [];
+    const markdownComments: MarkdownWorkflowComment[] = [];
+    const textComments: TextWorkflowComment[] = [];
+    const freehandComments: FreehandWorkflowComment[] = [];
+
+    props.comments.forEach((comment) => {
+        if (comment.type === "frame") {
+            frameComments.push(comment);
+        } else if (comment.type === "markdown") {
+            markdownComments.push(comment);
+        } else if (comment.type === "text") {
+            textComments.push(comment);
+        } else {
+            if (!isJustCreated(comment.id)) {
+                freehandComments.push(comment);
+            }
+        }
+    });
+
+    // sort steps by error state
     const allSteps = Object.values(props.steps);
     const okSteps: Step[] = [];
     const errorSteps: Step[] = [];
     let selectedStep: Step | undefined;
 
-    // sort steps into different arrays
     allSteps.forEach((step) => {
         if (stateStore.activeNodeId === step.id) {
             selectedStep = step;
@@ -159,27 +200,15 @@ function renderMinimap() {
     });
 
     // draw rects
-    ctx.beginPath();
-    ctx.fillStyle = colors.node;
-    okSteps.forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
+    drawBoxComments(ctx, frameComments, 2 / canvasTransform.scaleX, colors.node, true);
+    ctx.fillStyle = "white";
+    drawBoxComments(ctx, markdownComments, 2 / canvasTransform.scaleX, colors.node);
+    ctx.fillStyle = "rgba(0, 0, 0, 0)";
+    drawBoxComments(ctx, textComments, 1 / canvasTransform.scaleX, colors.node);
+    drawSteps(ctx, okSteps, colors.node, stateStore);
+    drawSteps(ctx, errorSteps, colors.error, stateStore);
 
-        if (rect) {
-            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
-        }
-    });
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.fillStyle = colors.error;
-    errorSteps.forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
-
-        if (rect) {
-            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
-        }
-    });
-    ctx.fill();
+    drawFreehandComments(ctx, freehandComments, colors.node);
 
     // draw selected
     if (selectedStep) {

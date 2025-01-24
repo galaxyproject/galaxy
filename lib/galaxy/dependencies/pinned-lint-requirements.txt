@@ -1,10 +1,7 @@
-attrs==23.1.0
-flake8==5.0.4
-flake8-bugbear==23.3.12
-importlib-metadata==4.2.0
+attrs==24.3.0
+flake8==7.1.1
+flake8-bugbear==24.12.12
 mccabe==0.7.0
-pycodestyle==2.9.1
-pyflakes==2.5.0
-ruff==0.0.284
-typing_extensions==4.7.1
-zipp==3.15.0
+pycodestyle==2.12.1
+pyflakes==3.2.0
+ruff==0.9.2

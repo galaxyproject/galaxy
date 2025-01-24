@@ -1,9 +1,11 @@
 """
 """
+
 import logging
 import os
 import threading
 import time
+from math import inf
 from typing import (
     List,
     Optional,
@@ -12,7 +14,10 @@ from typing import (
 
 from typing_extensions import NamedTuple
 
-from galaxy.util import nice_size
+from galaxy.util import (
+    nice_size,
+    string_as_bool,
+)
 from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
@@ -72,6 +77,11 @@ def check_cache(cache_target: CacheTarget):
         _clean_cache(file_list, delete_this_much)
 
 
+def reset_cache(cache_target: CacheTarget):
+    _, file_list = _get_cache_size_files(cache_target.path)
+    _clean_cache(file_list, inf)
+
+
 def _clean_cache(file_list: FileListT, delete_this_much: float) -> None:
     """Keep deleting files from the file_list until the size of the deleted
     files is greater than the value in delete_this_much parameter.
@@ -124,11 +134,13 @@ def parse_caching_config_dict_from_xml(config_xml):
         cache_size = float(c_xml.get("size", -1))
         staging_path = c_xml.get("path", None)
         monitor = c_xml.get("monitor", "auto")
+        cache_updated_data = string_as_bool(c_xml.get("cache_updated_data", "True"))
 
         cache_dict = {
             "size": cache_size,
             "path": staging_path,
             "monitor": monitor,
+            "cache_updated_data": cache_updated_data,
         }
     else:
         cache_dict = {}

@@ -1,26 +1,20 @@
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import SelectionOperations from "./SelectionOperations.vue";
 
-jest.mock("@/schema");
-
 const localVue = getLocalVue();
+
+const { server, http } = useServerMock();
 
 const FAKE_HISTORY_ID = "fake_history_id";
 const FAKE_HISTORY = { id: FAKE_HISTORY_ID, update_time: new Date() };
-const BULK_OPERATIONS_ENDPOINT = new RegExp(`/api/histories/${FAKE_HISTORY_ID}/contents/bulk`);
 const BULK_SUCCESS_RESPONSE = { success_count: 1, errors: [] };
-const BULK_ERROR_RESPONSE = {
-    success_count: 0,
-    errors: [{ error: "Error reason", item: { history_content_type: "dataset", id: "dataset_id" } }],
-};
 
 const NO_TASKS_CONFIG = {
     enable_celery_tasks: false,
@@ -29,11 +23,18 @@ const TASKS_CONFIG = {
     enable_celery_tasks: true,
 };
 
-const getPurgedContentSelection = () => new Map([["FAKE_ID", { purged: true }]]);
-const getNonPurgedContentSelection = () => new Map([["FAKE_ID", { purged: false }]]);
+const getMenuSelectorFor = (option) => `[data-description="${option} option"]`;
+
+const getPurgedSelection = () => new Map([["FAKE_ID", { purged: true }]]);
+const getNonPurgedSelection = () => new Map([["FAKE_ID", { purged: false }]]);
+const getVisibleSelection = () => new Map([["FAKE_ID", { visible: true }]]);
+const getHiddenSelection = () => new Map([["FAKE_ID", { visible: false }]]);
+const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
+const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
 async function mountSelectionOperationsWrapper(config) {
-    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    setupMockConfig(config);
+
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
         propsData: {
@@ -43,6 +44,7 @@ async function mountSelectionOperationsWrapper(config) {
             selectionSize: 1,
             isQuerySelection: false,
             totalItemsInQuery: 5,
+            isMultiViewItem: false,
         },
         localVue,
         pinia,
@@ -52,18 +54,12 @@ async function mountSelectionOperationsWrapper(config) {
 }
 
 describe("History Selection Operations", () => {
-    let axiosMock;
     let wrapper;
 
     describe("With Celery Enabled", () => {
         beforeEach(async () => {
-            axiosMock = new MockAdapter(axios);
             wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG);
             await flushPromises();
-        });
-
-        afterEach(() => {
-            axiosMock.restore();
         });
 
         describe("Dropdown Menu", () => {
@@ -77,79 +73,153 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find('[data-description="selected count"]').text()).toContain("10");
             });
 
-            it("should display 'hide' option only on visible items", async () => {
-                const option = '[data-description="hide option"]';
+            it("should display 'hide' option on visible items", async () => {
+                const option = getMenuSelectorFor("hide");
                 expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "visible:true" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display 'hide' option when visible and hidden items are mixed", async () => {
+                const option = getMenuSelectorFor("hide");
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "visible:any" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should not display 'hide' option when only hidden items are selected", async () => {
+                const option = getMenuSelectorFor("hide");
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "visible:any", contentSelection: getHiddenSelection() });
+                expect(wrapper.find(option).exists()).toBe(false);
                 await wrapper.setProps({ filterText: "visible:false" });
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
-            it("should display 'unhide' option only on hidden items", async () => {
-                const option = '[data-description="unhide option"]';
-                expect(wrapper.find(option).exists()).toBe(false);
+            it("should display 'unhide' option on hidden items", async () => {
+                const option = getMenuSelectorFor("unhide");
                 await wrapper.setProps({ filterText: "visible:false" });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should display 'delete' option only on non-deleted items", async () => {
-                const option = '[data-description="delete option"]';
+            it("should display 'unhide' option when hidden and visible items are mixed", async () => {
+                const option = getMenuSelectorFor("unhide");
+                await wrapper.setProps({ filterText: "visible:any" });
                 expect(wrapper.find(option).exists()).toBe(true);
-                await wrapper.setProps({ filterText: "deleted:true" });
+            });
+
+            it("should not display 'unhide' option when only visible items are selected", async () => {
+                const option = getMenuSelectorFor("unhide");
+                await wrapper.setProps({
+                    filterText: "visible:any",
+                    contentSelection: getVisibleSelection(),
+                });
+                expect(wrapper.find(option).exists()).toBe(false);
+            });
+
+            it("should display 'delete' option on non-deleted items", async () => {
+                const option = getMenuSelectorFor("delete");
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "deleted:false" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display 'delete' option on non-deleted items", async () => {
+                const option = getMenuSelectorFor("delete");
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "deleted:false" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display 'delete' option when non-deleted and deleted items are mixed", async () => {
+                const option = getMenuSelectorFor("delete");
+                await wrapper.setProps({ filterText: "deleted:any" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should not display 'delete' option when only deleted items are selected", async () => {
+                const option = getMenuSelectorFor("delete");
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "deleted:any", contentSelection: getDeletedSelection() });
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
             it("should display 'permanently delete' option always", async () => {
-                const option = '[data-description="purge option"]';
+                const option = getMenuSelectorFor("purge");
                 expect(wrapper.find(option).exists()).toBe(true);
-                await wrapper.setProps({ filterText: "deleted:true" });
+                await wrapper.setProps({ filterText: "deleted:any visible:any" });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should display 'undelete' option only on deleted and non-purged items", async () => {
-                const option = '[data-description="undelete option"]';
+            it("should display 'undelete' option on deleted and non-purged items", async () => {
+                const option = getMenuSelectorFor("undelete");
                 expect(wrapper.find(option).exists()).toBe(false);
                 await wrapper.setProps({
                     filterText: "deleted:true",
-                    contentSelection: getNonPurgedContentSelection(),
+                    contentSelection: getNonPurgedSelection(),
                 });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should not display 'undelete' when is manual selection mode and all selected items are purged", async () => {
-                const option = '[data-description="undelete option"]';
+            it("should display 'undelete' option when non-purged items (deleted or not) are mixed", async () => {
+                const option = getMenuSelectorFor("undelete");
                 await wrapper.setProps({
-                    filterText: "deleted:true",
-                    contentSelection: getPurgedContentSelection(),
+                    filterText: "deleted:any",
+                    contentSelection: getNonPurgedSelection(),
+                });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should not display 'undelete' when only non-deleted items are selected", async () => {
+                const option = getMenuSelectorFor("undelete");
+                await wrapper.setProps({
+                    filterText: "deleted:any",
+                    contentSelection: getActiveSelection(),
+                });
+                expect(wrapper.find(option).exists()).toBe(false);
+            });
+
+            it("should not display 'undelete' when only purged items are selected", async () => {
+                const option = getMenuSelectorFor("undelete");
+                await wrapper.setProps({
+                    contentSelection: getPurgedSelection(),
                     isQuerySelection: false,
                 });
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
             it("should display 'undelete' option when is query selection mode and filtering by deleted", async () => {
-                const option = '[data-description="undelete option"]';
+                const option = getMenuSelectorFor("undelete");
                 // In query selection mode we don't know if some items may not be purged, so we allow to undelete
                 await wrapper.setProps({
                     filterText: "deleted:true",
-                    contentSelection: getPurgedContentSelection(),
+                    contentSelection: getPurgedSelection(),
                     isQuerySelection: true,
                 });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should display collection building options only on visible and non-deleted items", async () => {
+            it("should display 'undelete' option when is query selection mode and filtering by any deleted state", async () => {
+                const option = getMenuSelectorFor("undelete");
+                // In query selection mode we don't know if some items may not be purged, so we allow to undelete
+                await wrapper.setProps({ filterText: "deleted:any", isQuerySelection: true });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display collection building options only on active (non-deleted) items", async () => {
                 const buildListOption = '[data-description="build list"]';
-                const buildPairOption = '[data-description="build pair"]';
                 const buildListOfPairsOption = '[data-description="build list of pairs"]';
+                await wrapper.setProps({ filterText: "visible:true deleted:false" });
                 expect(wrapper.find(buildListOption).exists()).toBe(true);
-                expect(wrapper.find(buildPairOption).exists()).toBe(true);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
-                await wrapper.setProps({ filterText: "visible:false" });
-                expect(wrapper.find(buildListOption).exists()).toBe(false);
-                expect(wrapper.find(buildPairOption).exists()).toBe(false);
-                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
                 await wrapper.setProps({ filterText: "deleted:true" });
                 expect(wrapper.find(buildListOption).exists()).toBe(false);
-                expect(wrapper.find(buildPairOption).exists()).toBe(false);
+                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
+                await wrapper.setProps({ filterText: "visible:any deleted:false" });
+                expect(wrapper.find(buildListOption).exists()).toBe(true);
+                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "deleted:any" });
+                expect(wrapper.find(buildListOption).exists()).toBe(false);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
             });
 
@@ -164,7 +234,11 @@ describe("History Selection Operations", () => {
 
         describe("Operation Run", () => {
             it("should emit event to disable selection", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_SUCCESS_RESPONSE);
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response(200).json(BULK_SUCCESS_RESPONSE);
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:show-selection");
                 wrapper.vm.hideSelected();
@@ -174,7 +248,11 @@ describe("History Selection Operations", () => {
             });
 
             it("should update operation-running state when running any operation that succeeds", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_SUCCESS_RESPONSE);
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response(200).json(BULK_SUCCESS_RESPONSE);
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
                 wrapper.vm.hideSelected();
@@ -188,7 +266,12 @@ describe("History Selection Operations", () => {
             });
 
             it("should update operation-running state to null when the operation fails", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(400);
+                suppressDebugConsole(); // expected error messages since we're testing errors.
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
                 wrapper.vm.hideSelected();
@@ -205,7 +288,13 @@ describe("History Selection Operations", () => {
             });
 
             it("should emit operation error event when the operation fails", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(400);
+                suppressDebugConsole(); // expected error messages since we're testing errors.
+
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");
                 wrapper.vm.hideSelected();
@@ -214,7 +303,15 @@ describe("History Selection Operations", () => {
             });
 
             it("should emit operation error event with the result when any item fail", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_ERROR_RESPONSE);
+                const BULK_ERROR_RESPONSE = {
+                    success_count: 0,
+                    errors: [{ error: "Error reason", item: { history_content_type: "dataset", id: "dataset_id" } }],
+                };
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response(200).json(BULK_ERROR_RESPONSE);
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");
                 wrapper.vm.hideSelected();
@@ -232,13 +329,8 @@ describe("History Selection Operations", () => {
 
     describe("With Celery Disabled", () => {
         beforeEach(async () => {
-            axiosMock = new MockAdapter(axios);
             wrapper = await mountSelectionOperationsWrapper(NO_TASKS_CONFIG);
             await flushPromises();
-        });
-
-        afterEach(() => {
-            axiosMock.restore();
         });
 
         describe("Dropdown Menu", () => {

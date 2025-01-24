@@ -19,7 +19,10 @@ def main(argv):
     if not DEV_RELEASE:
         # Discard epoch, release numbers after micro, pre-, post-, dev-release segments and local version
         new_version_tuple = list(version_obj.release[:3])
-        new_version_tuple[2] += 1
+        if len(new_version_tuple) < 3:
+            new_version_tuple.append(0)
+        else:
+            new_version_tuple[2] += 1
         new_version = ".".join(map(str, new_version_tuple))
     else:
         dev_number = version_obj.dev

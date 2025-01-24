@@ -2,15 +2,8 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import type { JobMetric } from "@/api/jobs";
 import { prependPath } from "@/utils/redirect";
-
-interface JobMetric {
-    title: string;
-    value: string;
-    plugin: string;
-    name: string;
-    raw_value: string;
-}
 
 export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
     const jobMetricsByHdaId = ref<Record<string, JobMetric[]>>({});

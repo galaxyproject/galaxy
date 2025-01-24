@@ -1,16 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from "bootstrap-vue";
-import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
-import { AVAILABLE_EXPORT_FORMATS } from "./services";
+import { AVAILABLE_EXPORT_FORMATS } from "@/api/histories.export";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 
-const props = defineProps({
-    exportParams: {
-        type: ExportParamsModel,
-        required: true,
-    },
-});
+interface Props {
+    exportParams: ExportParams;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits(["onValueChanged"]);
 
@@ -38,6 +37,7 @@ function onValueChanged() {
             @click="isExpanded = !isExpanded">
             {{ title }}
         </BLink>
+
         <BCollapse id="collapse-options" v-model="isExpanded">
             <BCard>
                 <BFormGroup label="Export Format:" label-for="format">

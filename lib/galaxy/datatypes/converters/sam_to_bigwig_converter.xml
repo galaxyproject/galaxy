@@ -1,8 +1,8 @@
-<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.2" hidden="true">
+<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.3" hidden="true">
     <requirements>
-        <requirement type="package" version="357">ucsc-bedgraphtobigwig</requirement>
-        <requirement type="package" version="1.6">samtools</requirement>
-        <requirement type="package" version="2.27.1">bedtools</requirement>
+        <requirement type="package" version="445">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="1.17">samtools</requirement>
+        <requirement type="package" version="2.31.0">bedtools</requirement>
     </requirements>
     <command detect_errors="aggressive"><![CDATA[
 samtools view -bh '$input' | bedtools genomecov -bg -split -ibam stdin

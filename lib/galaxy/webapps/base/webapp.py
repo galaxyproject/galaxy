@@ -1,5 +1,6 @@
 """
 """
+
 import datetime
 import inspect
 import logging
@@ -7,11 +8,13 @@ import os
 import re
 import socket
 import time
+from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
     Dict,
     Optional,
+    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -21,9 +24,10 @@ from apispec import APISpec
 from paste.urlmap import URLMap
 from sqlalchemy import (
     and_,
+    select,
     true,
 )
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
 from galaxy import util
 from galaxy.exceptions import (
@@ -36,7 +40,10 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -46,6 +53,10 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web.framework import (
@@ -54,12 +65,6 @@ from galaxy.web.framework import (
     url_for,
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +120,7 @@ class WebApplication(base.WebApplication):
 
         # We need this to set the REQUEST_ID contextvar in model.base *BEFORE* a GalaxyWebTransaction is created.
         # This will ensure a SQLAlchemy session is request-scoped for legacy (non-fastapi) endpoints.
-        self._model = galaxy_app.model
+        self.session_factories.append(galaxy_app.model)
 
     def build_apispec(self):
         """
@@ -140,7 +145,7 @@ class WebApplication(base.WebApplication):
             if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
                 continue
             # Try to replace routes various ways to encode variables with simple swagger {form}
-            swagger_path = "/%s" % RE_URL.sub(r"{\1}", rule.routepath)
+            swagger_path = "/{}".format(RE_URL.sub(r"{\1}", rule.routepath))
             controller = rule.defaults.get("controller", "")
             action = rule.defaults.get("action", "")
             # Get the list of methods for the route
@@ -176,18 +181,21 @@ class WebApplication(base.WebApplication):
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
         base_package = (
-            "tool_shed.webapp" if galaxy_app.name == "tool_shed" else "galaxy.webapps.base"
+            "tool_shed.webapp" if galaxy_app.name == "tool_shed" else __name__
         )  # reports has templates in galaxy package
-        base_template_path = files(base_package) / "templates"
-        # First look in webapp specific directory
-        if name is not None:
-            paths.append(base_template_path / "webapps" / name)
-        # Then look in root directory
-        paths.append(base_template_path)
-        # Create TemplateLookup with a small cache
-        return mako.lookup.TemplateLookup(
-            directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
-        )
+        base_template_path = resource_path(base_package, "templates")
+        with ExitStack() as stack:
+            # First look in webapp specific directory
+            if name is not None:
+                path = stack.enter_context(as_file(base_template_path / "webapps" / name))
+                paths.append(path)
+            # Then look in root directory
+            path = stack.enter_context(as_file(base_template_path))
+            paths.append(path)
+            # Create TemplateLookup with a small cache
+            return mako.lookup.TemplateLookup(
+                directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
+            )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
         if isinstance(e, TypeError):
@@ -308,8 +316,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         super().__init__(environ)
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
-        x_frame_options = getattr(config, "x_frame_options", None)
-        if x_frame_options:
+        if x_frame_options := getattr(config, "x_frame_options", None):
             self.response.headers["X-Frame-Options"] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
@@ -319,6 +326,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
+        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -339,7 +347,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self._ensure_valid_session(session_cookie)
 
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
-            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)  # type: ignore[attr-defined]
+            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
 
         if self.galaxy_session:
             # When we've authenticated by session, we have to check the
@@ -531,6 +539,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         """
         Authenticate for the API via key or session (if available).
         """
+        oidc_access_token = self.request.headers.get("Authorization", None)
+        oidc_token_supplied = (
+            self.environ.get("is_api_request", False) and oidc_access_token and "Bearer " in oidc_access_token
+        )
         api_key = self.request.params.get("key", None) or self.request.headers.get("x-api-key", None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get("is_api_request", False) and api_key
@@ -553,6 +565,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 )
                 self.user = None
                 self.galaxy_session = None
+        elif oidc_token_supplied:
+            # Sessionless API transaction with oidc token, we just need to associate a user.
+            oidc_access_token = oidc_access_token.replace("Bearer ", "")
+            try:
+                user = self.user_manager.by_oidc_access_token(oidc_access_token)
+            except AuthenticationFailed as e:
+                return str(e)
+            self.set_user(user)
         else:
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
@@ -652,6 +672,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self.__update_session_cookie(name=session_cookie)
         else:
             self.galaxy_session = galaxy_session
+            if self.webapp.name == "galaxy":
+                self.get_or_create_default_history()
         # Do we need to flush the session?
         if galaxy_session_requires_flush:
             self.sa_session.add(galaxy_session)
@@ -661,10 +683,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 self.sa_session.add(prev_galaxy_session)
             with transaction(self.sa_session):
                 self.sa_session.commit()
-        # If the old session was invalid, get a new (or existing default,
-        # unused) history with our new session
-        if invalidate_existing_session:
-            self.get_or_create_default_history()
 
     def _ensure_logged_in_user(self, session_cookie: str) -> None:
         # The value of session_cookie can be one of
@@ -735,21 +753,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
         Caller is responsible for flushing the returned session.
         """
-        session_key = self.security.get_new_guid()
-        galaxy_session = self.app.model.GalaxySession(
-            session_key=session_key,
-            is_valid=True,
-            remote_host=self.request.remote_host,
-            remote_addr=self.request.remote_addr,
-            referer=self.request.headers.get("Referer", None),
+        return create_new_session(
+            self, prev_galaxy_session=prev_galaxy_session, user_for_new_session=user_for_new_session
         )
-        if prev_galaxy_session:
-            # Invalidated an existing session for some reason, keep track
-            galaxy_session.prev_session_id = prev_galaxy_session.id
-        if user_for_new_session:
-            # The new session should be associated with the user
-            galaxy_session.user = user_for_new_session
-        return galaxy_session
 
     @property
     def cookie_path(self):
@@ -812,10 +818,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             and not users_last_session.current_history.deleted
         ):
             history = users_last_session.current_history
-        elif not history:
-            history = self.get_history(create=True, most_recent=True)
         if history not in self.galaxy_session.histories:
             self.galaxy_session.add_history(history)
+        if not history:
+            history = self.new_history()
         if history.user is None:
             history.user = user
         self.galaxy_session.current_history = history
@@ -865,13 +871,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
         galaxy_user_id = prev_galaxy_session.user_id
         if logout_all and galaxy_user_id is not None:
-            for other_galaxy_session in self.sa_session.query(self.app.model.GalaxySession).filter(
+            stmt = select(self.app.model.GalaxySession).filter(
                 and_(
-                    self.app.model.GalaxySession.table.c.user_id == galaxy_user_id,
-                    self.app.model.GalaxySession.table.c.is_valid == true(),
-                    self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id,
+                    self.app.model.GalaxySession.user_id == galaxy_user_id,
+                    self.app.model.GalaxySession.is_valid == true(),
+                    self.app.model.GalaxySession.id != prev_galaxy_session.id,
                 )
-            ):
+            )
+            for other_galaxy_session in self.sa_session.scalars(stmt):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add(other_galaxy_session)
         with transaction(self.sa_session):
@@ -925,31 +932,31 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         session.
         """
 
-        # There must be a user to fetch a default history.
-        if not self.galaxy_session.user:
-            return self.new_history()
+        # Just return the current history if one exists and is not deleted.
+        history = self.galaxy_session.current_history
+        if history and not history.deleted:
+            return history
 
-        # Look for default history that (a) has default name + is not deleted and
-        # (b) has no datasets. If suitable history found, use it; otherwise, create
-        # new history.
-        unnamed_histories = self.sa_session.query(self.app.model.History).filter_by(
-            user=self.galaxy_session.user, name=self.app.model.History.default_name, deleted=False
-        )
-        default_history = None
-        for history in unnamed_histories:
-            if history.empty:
-                # Found suitable default history.
-                default_history = history
-                break
+        # Look for an existing history that has the default name, is not
+        # deleted, and is empty. If this exists, we associate it with the
+        # current session and return it.
+        user = self.galaxy_session.user
+        if user:
+            stmt = select(self.app.model.History).filter_by(
+                user=user, name=self.app.model.History.default_name, deleted=False
+            )
+            unnamed_histories = self.sa_session.scalars(stmt)
+            for history in unnamed_histories:
+                if history.empty:
+                    self.set_history(history)
+                    return history
 
-        # Set or create history.
-        if default_history:
-            history = default_history
-            self.set_history(history)
-        else:
-            history = self.new_history()
+        # Don't create new history if login required and user is anonymous
+        if self.app.config.require_login and not self.user:
+            return None
 
-        return history
+        # No suitable history found, create a new one.
+        return self.new_history()
 
     def get_most_recent_history(self):
         """
@@ -961,12 +968,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not user:
             return None
         try:
-            recent_history = (
-                self.sa_session.query(self.app.model.History)
+            stmt = (
+                select(self.app.model.History)
                 .filter_by(user=user, deleted=False)
                 .order_by(self.app.model.History.update_time.desc())
-                .first()
+                .limit(1)
             )
+            recent_history = self.sa_session.scalars(stmt).first()
         except NoResultFound:
             return None
         self.set_history(recent_history)
@@ -1000,7 +1008,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
     @base.lazy_property
     def template_context(self):
-        return dict()
+        return {}
 
     def set_message(self, message, type=None):
         """
@@ -1106,6 +1114,32 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return url_for(path, qualified=True)
 
 
+def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=None):
+    """
+    Create a new GalaxySession for this request, possibly with a connection
+    to a previous session (in `prev_galaxy_session`) and an existing user
+    (in `user_for_new_session`).
+
+    Caller is responsible for flushing the returned session.
+    """
+    session_key = trans.security.get_new_guid()
+    galaxy_session = trans.app.model.GalaxySession(
+        session_key=session_key,
+        is_valid=True,
+        remote_host=trans.request.remote_host,
+        remote_addr=trans.request.remote_addr,
+        referer=trans.request.headers.get("Referer", None),
+    )
+    if prev_galaxy_session:
+        # Invalidated an existing session for some reason, keep track
+        galaxy_session.prev_session_id = prev_galaxy_session.id
+    if user_for_new_session:
+        # The new session should be associated with the user
+        galaxy_session.user = user_for_new_session
+        ensure_object_added_to_session(galaxy_session, object_in_session=user_for_new_session)
+    return galaxy_session
+
+
 def default_url_path(path):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
 
@@ -1122,19 +1156,34 @@ def build_url_map(app, global_conf, **local_conf):
     # Send to dynamic app by default
     urlmap["/"] = app
 
-    def get_static_from_config(option_name, default_path):
-        config_val = conf.get(option_name, default_url_path(default_path))
+    def get_static_from_config(option_name, default_path, sample=None):
+        config_val = conf.get(option_name)
+        default = default_url_path(default_path)
+        if not config_val:
+            if not os.path.exists(default) and sample:
+                config_val = os.path.abspath(f"{sample}")
+            else:
+                config_val = default
         per_host_config_option = f"{option_name}_by_host"
         per_host_config = conf.get(per_host_config_option)
         return Static(config_val, cache_time, directory_per_host=per_host_config)
 
     # Define static mappings from config
-    urlmap["/static"] = get_static_from_config("static_dir", "static/")
-    urlmap["/images"] = get_static_from_config("static_images_dir", "static/images")
-    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", "static/scripts/")
-    urlmap["/static/welcome.html"] = get_static_from_config("static_welcome_html", "static/welcome.html")
-    urlmap["/favicon.ico"] = get_static_from_config("static_favicon_dir", "static/favicon.ico")
-    urlmap["/robots.txt"] = get_static_from_config("static_robots_txt", "static/robots.txt")
+    static_dir = get_static_from_config("static_dir", "static/")
+    static_dir_bare = static_dir.directory.rstrip("/")
+    urlmap["/static"] = static_dir
+    urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
+    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", f"{static_dir_bare}/scripts/")
+
+    urlmap["/static/welcome.html"] = get_static_from_config(
+        "static_welcome_html", f"{static_dir_bare}/welcome.html", sample=default_url_path("static/welcome.sample.html")
+    )
+    urlmap["/favicon.ico"] = get_static_from_config(
+        "static_favicon_dir", f"{static_dir_bare}/favicon.ico", sample=default_url_path("static/favicon.ico")
+    )
+    urlmap["/robots.txt"] = get_static_from_config(
+        "static_robots_txt", f"{static_dir_bare}/robots.txt", sample=default_url_path("static/robots.txt")
+    )
 
     if "static_local_dir" in conf:
         urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)

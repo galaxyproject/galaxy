@@ -99,6 +99,10 @@ button {
     overflow: auto;
 }
 
+.modal-title {
+    word-break: break-all;
+}
+
 // Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
 
 .nav-tabs {
@@ -150,6 +154,10 @@ table.info_data_table td:nth-child(1) {
 }
 table.info_data_table th:nth-child(1) {
     width: 25%;
+}
+table thead.thead-dark tr th[role="columnheader"] {
+    position: sticky;
+    top: 0;
 }
 
 // increase visibility of links within alert boxes
@@ -216,5 +224,10 @@ table.info_data_table th:nth-child(1) {
 
 // show sticky elements behind dropdown-menus
 .sticky-top {
-    z-index: 800;
+    z-index: 100;
+}
+
+// remove margin for labels with for attribute
+label[for] {
+    margin-bottom: 0;
 }

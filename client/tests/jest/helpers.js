@@ -1,19 +1,26 @@
 /**
  * Unit test debugging utilities
  */
-import { timer, fromEventPattern } from "rxjs";
-import { take, debounceTime, takeUntil } from "rxjs/operators";
 import { createLocalVue, shallowMount } from "@vue/test-utils";
+import BootstrapVue from "bootstrap-vue";
+import { iconPlugin } from "components/plugins/icons";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
-import { eventHubPlugin } from "components/plugins/eventHub";
-import { iconPlugin } from "components/plugins/icons";
-import BootstrapVue from "bootstrap-vue";
-import Vuex from "vuex";
-import _l from "utils/localization";
 import { PiniaVuePlugin } from "pinia";
+import { fromEventPattern, timer } from "rxjs";
+import { debounceTime, take, takeUntil } from "rxjs/operators";
+import _l from "utils/localization";
+
+import _short from "@/components/plugins/short";
+import VueRouter from "vue-router";
 
 const defaultComparator = (a, b) => a == b;
+
+export function dispatchEvent(wrapper, type, props = {}) {
+    const event = new Event(type, { bubbles: true });
+    Object.assign(event, props);
+    wrapper.element.dispatchEvent(event);
+}
 
 export function findViaNavigation(wrapper, component) {
     return wrapper.find(component.selector);
@@ -179,12 +186,10 @@ export function getLocalVue(instrumentLocalization = false) {
         bind() {},
     };
     localVue.use(PiniaVuePlugin);
-    localVue.use(Vuex);
     localVue.use(BootstrapVue);
     const l = instrumentLocalization ? testLocalize : _l;
     localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
-    localVue.use(eventHubPlugin);
     localVue.use(iconPlugin);
     localVue.directive("b-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
@@ -258,4 +263,38 @@ export function mockModule(storeModule, state = {}) {
         actions,
         namespaced: true,
     };
+}
+
+/**
+ * Expect and mock out an API request to /api/configuration. In general, useConfig
+ * and using tests/jest/mockConfig is better since components since be talking to the API
+ * directly in this way but some older components are not using the latest composables.
+ */
+export function expectConfigurationRequest(http, config) {
+    return http.get("/api/configuration", ({ response }) => {
+        return response(200).json(config);
+    });
+}
+
+/**
+ * Return a new mocked out router attached the specified localVue instance.
+ */
+export function injectTestRouter(localVue) {
+    localVue.use(VueRouter);
+    const router = new VueRouter();
+    return router;
+}
+
+export function suppressDebugConsole() {
+    jest.spyOn(console, "debug").mockImplementation(jest.fn());
+}
+
+export function suppressBootstrapVueWarnings() {
+    jest.spyOn(console, "warn").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("BootstrapVue warn") < 0) {
+                console.warn(msg);
+            }
+        })
+    );
 }

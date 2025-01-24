@@ -48,8 +48,8 @@ class TagsManager:
         """Apply a new set of tags to an item; previous tags are deleted."""
         user = trans.user
         new_tags: Optional[str] = None
-        if payload.item_tags and len(payload.item_tags.__root__) > 0:
-            new_tags = ",".join(payload.item_tags.__root__)
+        if payload.item_tags and len(payload.item_tags.root) > 0:
+            new_tags = ",".join(payload.item_tags.root)
         item = self._get_item(trans.tag_handler, payload)
         trans.tag_handler.delete_item_tags(user, item)
         trans.tag_handler.apply_item_tags(user, item, new_tags)
@@ -62,5 +62,4 @@ class TagsManager:
         """
         item_class_name = str(payload.item_class)
         item_class = tag_handler.item_tag_assoc_info[item_class_name].item_class
-        item = tag_handler.sa_session.query(item_class).filter(item_class.id == payload.item_id).first()
-        return item
+        return tag_handler.sa_session.get(item_class, payload.item_id)

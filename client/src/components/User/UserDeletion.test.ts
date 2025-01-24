@@ -23,6 +23,7 @@ describe("UserDeletion.vue", () => {
     it("contains a localized link", async () => {
         const wrapper = mountComponent();
         const el = await wrapper.find(ROOT_COMPONENT.preferences.delete_account.selector);
-        expect(el.text()).toBeLocalizationOf("Delete Account");
+        // todo: fix typing, see note in ExportForm.test.ts
+        (expect(el.text()) as any).toBeLocalizationOf("Delete Account");
     });
 });

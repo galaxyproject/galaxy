@@ -1,3 +1,7 @@
+import json
+from uuid import uuid4
+
+import yaml
 from selenium.webdriver.common.by import By
 
 from galaxy_test.base import rules_test_data
@@ -11,6 +15,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+    WORKFLOW_WITH_DATA_TAG_FILTER,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
@@ -26,6 +31,54 @@ from .framework import (
 
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
     ensure_registered = True
+
+    @selenium_test
+    @managed_history
+    def test_workflow_export_file_rocrate(self):
+        self._setup_simple_invocation_for_export_testing()
+        invocations = self.components.invocations
+        self.workflow_run_wait_for_ok(hid=2)
+        invocations.export_tab.wait_for_and_click()
+        self.screenshot("invocation_export_formats")
+        invocations.export_output_format(type="ro-crate").wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        download_option = invocations.export_destination(destination="download")
+        download_option.wait_for_present()
+        self.screenshot("invocation_export_rocrate_destinations")
+        download_option.wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        export_button = invocations.wizard_export_button
+        export_button.wait_for_present()
+        self.screenshot("invocation_export_rocrate_download_options")
+        export_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("invocation_export_crate_preparing_download")
+        invocations.export_download_link.wait_for_present()
+        self.screenshot("invocation_export_crate_download_ready")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_export_file_native(self):
+        self._setup_simple_invocation_for_export_testing()
+        invocations = self.components.invocations
+        self.workflow_run_wait_for_ok(hid=2)
+        invocations.export_tab.wait_for_and_click()
+        self.screenshot("invocation_export_formats")
+        invocations.export_output_format(type="default-file").wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        download_option = invocations.export_destination(destination="download")
+        download_option.wait_for_present()
+        self.screenshot("invocation_export_native_destinations")
+        download_option.wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        export_button = invocations.wizard_export_button
+        export_button.wait_for_present()
+        self.screenshot("invocation_export_native_download_options")
+        export_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("invocation_export_native_preparing_download")
+        invocations.export_download_link.wait_for_present()
+        self.screenshot("invocation_export_native_download_ready")
 
     @selenium_test
     @managed_history
@@ -69,6 +122,29 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.workflow_run_submit()
 
         self._assert_has_3_lines_after_run(hid=2)
+
+    @selenium_test
+    @managed_history
+    def test_runtime_parameters_simple_optional(self):
+        self.workflow_run_open_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  int_step:
+    tool_id: expression_null_handling_integer
+    runtime_inputs:
+      - int_input
+"""
+        )
+        self.tool_parameter_div("int_input")
+        self._set_num_lines_to_3("int_input")
+        self.screenshot("workflow_run_optional_runtime_parameters_modified")
+        self.workflow_run_submit()
+        self.workflow_run_wait_for_ok(hid=1)
+        history_id = self.current_history_id()
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert json.loads(content) == 3
 
     @selenium_test
     @managed_history
@@ -174,8 +250,27 @@ steps:
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
-        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         self.screenshot("workflow_run_tool_upgrade")
+
+    @selenium_test
+    def test_run_form_safe_upgrade_handling(self):
+        workflow_with_rules = yaml.safe_load(WORKFLOW_WITH_RULES_1)
+        # 0.9.0 is a version that does not exist in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "0.9.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
+        # 1.0.0 is a version that exists in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "1.0.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        # Check that this tool form does not contain a warning about different versions.
+        assert self.components.workflow_run.warning.is_absent
 
     @selenium_test
     @managed_history
@@ -255,6 +350,55 @@ steps:
         )
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
+    @selenium_test
+    @managed_history
+    def test_workflow_run_button_disabled_when_required_input_missing(self):
+        self.workflow_run_open_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    optional: false
+  data_param:
+    type: data
+  collection_param:
+    type: data_collection
+steps: {}
+"""
+        )
+        workflow_run = self.components.workflow_run
+        # None of the required parameters are present
+        workflow_run.run_workflow_disabled.wait_for_present()
+        # upload datasets and collections
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_collection_populator.create_list_in_history(history_id, wait=True)
+        input_element = workflow_run.simplified_input(label="text_param").wait_for_and_click()
+        input_element.send_keys("3")
+        # Everything is set, workflow is runnable, disabled class should be removed
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        input_element.clear()
+        workflow_run.run_workflow_disabled.wait_for_present()
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_tag_filter(self):
+        history_id = self.current_history_id()
+        dataset = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.tag_dataset(history_id, dataset["id"], tags=["genomescope_model"])
+        # Add another possible input that should not be selected
+        self.dataset_populator.new_dataset(history_id, wait=True)
+        wf = json.loads(WORKFLOW_WITH_DATA_TAG_FILTER)
+        wf["name"] = str(uuid4())
+        workflow_id = self.workflow_populator.create_workflow(wf)
+        self.workflow_run_with_name(wf["name"])
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.HISTORY_POLL)
+        invocations = self.workflow_populator.workflow_invocations(workflow_id=workflow_id)
+        invocation = self.workflow_populator.get_invocation(invocations[-1]["id"])
+        assert invocation["inputs"]["0"]["id"] == dataset["id"]
+
     def _assert_has_3_lines_after_run(self, hid):
         self.workflow_run_wait_for_ok(hid=hid)
         history_id = self.current_history_id()
@@ -280,3 +424,13 @@ steps:
         assert initial_value == "", initial_value
         input_element.clear()
         input_element.send_keys(value)
+
+    def _setup_simple_invocation_for_export_testing(self):
+        # precondition: refresh history
+        self.perform_upload(self.get_filename("1.fasta"))
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        return self.workflow_populator.history_invocations(history_id)[0]

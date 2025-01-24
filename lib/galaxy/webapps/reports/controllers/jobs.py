@@ -24,6 +24,8 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.model import Job
+from galaxy.model.db.user import get_user_by_email
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,
@@ -265,7 +267,6 @@ class SpecifiedDateListGrid(grids.Grid):
 
 
 class Jobs(BaseUIController, ReportQueryBuilder):
-
     """
     Class contains functions for querying data requested by user via the webapp. It exposes the functions and
     responds to requests with the filled .mako templates.
@@ -323,7 +324,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         return self.specified_date_list_grid(trans, **kwd)
 
     def _calculate_trends_for_jobs(self, sa_session, jobs_query):
-        trends = dict()
+        trends = {}
         for job in sa_session.execute(jobs_query):
             job_day = int(job.date.strftime("%-d")) - 1
             job_month = int(job.date.strftime("%-m"))
@@ -445,7 +446,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             )
         )
 
-        trends = dict()
+        trends = {}
         for job in trans.sa_session.execute(all_jobs):
             job_hour = int(job.date.strftime("%-H"))
             job_day = job.date.strftime("%d")
@@ -557,7 +558,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             )
         )
 
-        trends = dict()
+        trends = {}
         for job in trans.sa_session.execute(all_jobs_in_error):
             job_hour = int(job.date.strftime("%-H"))
             job_day = job.date.strftime("%d")
@@ -870,7 +871,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         )
 
         currday = datetime.today()
-        trends = dict()
+        trends = {}
         q_time.start()
         for job in trans.sa_session.execute(all_jobs_per_user):
             if job.user_email is None:
@@ -969,7 +970,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             .select_from(sa.join(model.Job.table, model.User.table))
         )
 
-        trends = dict()
+        trends = {}
         for job in trans.sa_session.execute(all_jobs_per_user):
             job_day = int(job.date.strftime("%-d")) - 1
             job_month = int(job.date.strftime("%-m"))
@@ -1083,7 +1084,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         ).where(model.Job.table.c.user_id != monitor_user_id)
 
         currday = date.today()
-        trends = dict()
+        trends = {}
         for job in trans.sa_session.execute(all_jobs_per_tool):
             curr_tool = re.sub(r"\W+", "", str(job.tool_id))
             try:
@@ -1181,7 +1182,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         ).where(sa.and_(model.Job.table.c.state == "error", model.Job.table.c.user_id != monitor_user_id))
 
         currday = date.today()
-        trends = dict()
+        trends = {}
         for job in trans.sa_session.execute(all_jobs_per_tool_errors):
             curr_tool = re.sub(r"\W+", "", str(job.tool_id))
             try:
@@ -1253,7 +1254,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             self.select_day(model.Job.table.c.create_time).label("day"),
             model.Job.table.c.id.label("id"),
         ).where(sa.and_(model.Job.table.c.tool_id == tool_id, model.Job.table.c.user_id != monitor_user_id))
-        trends = dict()
+        trends = {}
         for job in trans.sa_session.execute(all_jobs_for_tool):
             job_day = int(job.day.strftime("%-d")) - 1
             job_month = int(job.month.strftime("%-m"))
@@ -1288,7 +1289,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
     @web.expose
     def job_info(self, trans, **kwd):
         message = ""
-        job = trans.sa_session.query(model.Job).get(trans.security.decode_id(kwd.get("id", "")))
+        job = trans.sa_session.get(Job, trans.security.decode_id(kwd.get("id", "")))
         return trans.fill_template("/webapps/reports/job_info.mako", job=job, message=message)
 
 
@@ -1296,7 +1297,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
 
 def get_job(trans, id):
-    return trans.sa_session.query(trans.model.Job).get(trans.security.decode_id(id))
+    return trans.sa_session.get(Job, trans.security.decode_id(id))
 
 
 def get_monitor_id(trans, monitor_email):
@@ -1304,9 +1305,6 @@ def get_monitor_id(trans, monitor_email):
     A convenience method to obtain the monitor job id.
     """
     monitor_user_id = None
-    monitor_row = (
-        trans.sa_session.query(trans.model.User.id).filter(trans.model.User.table.c.email == monitor_email).first()
-    )
-    if monitor_row is not None:
+    if (monitor_row := get_user_by_email(trans.sa_session, monitor_email)) is not None:
         monitor_user_id = monitor_row[0]
     return monitor_user_id

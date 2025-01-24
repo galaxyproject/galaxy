@@ -48,13 +48,13 @@ describe("SharingIndicators.vue", () => {
         it("should fire a is:published filter on published click", async () => {
             await wrapper.find(".sharing-indicator-published").trigger("click");
             const emitted = wrapper.emitted("filter");
-            expect(emitted[0][0]).toBe("is:published");
+            expect(emitted[0][0]).toBe("published");
         });
 
         it("should fire a is:shared_with_me filter on shared click", async () => {
             await wrapper.find(".sharing-indicator-shared").trigger("click");
             const emitted = wrapper.emitted("filter");
-            expect(emitted[0][0]).toBe("is:shared_with_me");
+            expect(emitted[0][0]).toBe("shared_with_me");
         });
     });
 });

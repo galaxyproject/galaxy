@@ -70,7 +70,7 @@ class BlastXml(GenericXml):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "NCBI Blast XML data"
         else:
             dataset.peek = "file does not exist"
@@ -246,7 +246,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.file_name, encoding="utf-8") as handle:
+            with open(dataset.get_file_name(), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -261,7 +261,7 @@ class _BlastDb(Data):
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a BLAST database (not implemented for now)."""
         if split_params is None:
             return None

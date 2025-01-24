@@ -1,0 +1,149 @@
+unix:
+  commandLine: |
+    Galaxy typically runs a class of software called "command-line applications". A command
+    line is essentially a string that describes what application should be run and what parameters
+    it should be run with.
+
+    More information on command lines can be found on [Wikipedia](https://en.wikipedia.org/wiki/Command-line_interface).
+  exitCode: |
+    An exit code is a numeric representation of how an application execution has completed. An exit code of value 0 typically indicates successful execution of an application, while other values indicate a failure.
+
+    More information on exit codes can be found on [Wikipedia](https://en.wikipedia.org/wiki/Exit_status).
+  stdout: |
+    When an application is executed most of its reporting, diagnostic, and logging messages are printed to a stream of
+    data called the "standard output" (often abbreviated as stdout). Error messages are more typically
+    printed to an alternative stream called "standard error".
+
+    More information on standard output can be found on [Wikipedia](https://en.wikipedia.org/wiki/Standard_streams).
+  stderr: |
+    When an application is executed most of its error messages are typically printed to a stream of
+    data called the "standard error" (often abbreviated as stderr). Other reporting, diagnostic, and
+    logging messages are typically printed to an alternative stream called "standard output".
+
+    More information on standard error can be found on [Wikipedia](https://en.wikipedia.org/wiki/Standard_streams).
+  traceback: |
+    A "traceback" is also often called a "stack trace". This is typically used to describe what is
+    happening at various levels of an application at an instant in time and can sometimes be used to
+    debug what is wrong with the execution of an application.
+
+    More information on stack traces can be found on [Wikipedia](https://en.wikipedia.org/wiki/Stack_trace).
+programming:
+  python:
+    regex: |
+      Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in [this Python for Biologists tutorial](https://pythonforbiologists.com/tutorial/regex.html).
+
+      The website [regex101](https://regex101.com/) is a useful playground to explore regular expressions (be sure to enable "Python" as your flavor) and language models such as ChatGPT can help interactively build up and explain regular expressions from natural language prompts or examples.
+galaxy:
+  collections:
+    flatList: |
+      A flat list is just a simple dataset collection of type ``list`` that contains only datasets and not
+      other collections.
+    mapOver: |
+      When a tool consumes a dataset but is run with a collection, the collection *maps over* the collection.
+      This means instead of just running the tool once - the tool will be run once for each element of the
+      provided collection. Additionally, the outputs of the tool will be collected into a collection that
+      matches the structure of the provided collection. This matching structure means the output collections
+      will have the same element identifiers as the provided collection and they will appear in the same order.
+
+      It is easiest to visualize "mapping over" a collection is in the context of a tool that consumes a dataset
+      and produces a dataset, but the semantics apply rather naturally to tools that consume collections or
+      produce collections as well.
+      
+      For instance, consider a tool that consumes a ``paired`` collection and produces an output dataset.
+      If a list of paired collections (collection type ``list:paired``) is passed to the tool - it will
+      will produce a flat list (collection type ``list``) of output datasets with the same number of elements
+      in the same order as the provided list of ``paired`` collections.
+
+      In the case of outputs, consider a tool that takes in a dataset and produces a flat list. If this tool
+      is run over a flat list of datasets - that list will be "mapped over" and each element will produce a list.
+      These lists will be gathered together in a nested list structured (collection type ``list:list``) where
+      the outer element count and structure matches that of the input and the inner list for each of those
+      is just the outputs of the tool for the corresponding element of the input.
+    collectionBuilder:
+      hideOriginalElements: |
+        Toggling this on means that the original history items that will become a part of the collection
+        will be hidden from the history panel (they will still be searchable via the 'visible: false' filter).
+      filteredExtensions: |
+        The history is filtered for the extensions that are required for this collection. You might see some
+        items with other extensions since those can still be valid inputs via implicit conversion.
+      requiredUploadExtensions: |
+        The extensions that are required for this collection. The files you upload will be assumed to have
+        these extensions. In the case of more than one extension, you can select a specific extension for
+        each individual file above. If there is only one extension, Galaxy will attempt to set that as the
+        extension for each file.
+
+  jobs:
+    metrics:
+      cores: |
+        This is how many [cores](https://en.wikipedia.org/wiki/Central_processing_unit) (or distinct central processing units (CPUs)) are
+        allocated to run the job for the tool. This value is generally configured for the tool by the Galaxy administrator. This value
+        does not guarantee how many cores the job actually used - the job may have used more and less based on how Galaxy is configured
+        and how the tool is programmed.
+
+      walltime: |
+        This is estimate of the length of time the job ran created by recording the start and stop of the job in the job script
+        created for the tool execution and subtracting these values. 
+
+      allocated_core_time: |
+        This is the number of cores Galaxy believes is allocated for the job times the estimated walltime for the job. This can be thought
+        of as scaling the runtime/walltime metric by the number of cores allocated - when purchasing compute time per core hour or consuming
+        compute time from a compute center's allocation - this is likely to be a more interesting and useful number than the walltime.
+
+    states:
+      # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.
+      ok: |
+        This state indicates the job completed normally and Galaxy did not detect any errors with execution. 
+      new: |
+        This state indicates the job is ready to be run. Typically this means a Galaxy job handler will schedule
+        the job and place it into a queued state on its next iteration.
+      queued: |
+        This state indicates that Galaxy has scheduled the job and some external resource has placed it in a queue.
+        Typically, once the job has reached the front of that queue it will be executed and transitioned to the
+        'running' state.
+      error: |
+        This state indicates that Galaxy has attempted to execute this job and there was some issue.
+      failed: |
+        This state indicates that Galaxy has attempted to execute this job and it completed but Galaxy
+        detected some issue with the execution.
+      running: |
+        This state indicates that Galaxy is currently running this job. After the job is complete, it will
+        likely be transitioned to a 'failed' or 'ok' state.
+      paused: |
+        This state indicates that Galaxy has paused attempts to execute this job. This can be because
+        upstream jobs have failed and so inputs will not become available or because job or quota limits
+        have been reached.
+
+  invocations:
+    states:
+      scheduled: |
+        This state indicates the workflow invocation has had all of its jobs scheduled. This means all the
+        datasets are likely created and Galaxy has created the stubs for the jobs in the workflow. *The jobs
+        themselves might not have been queued or running.*
+
+      ready: |
+        This state indicates the workflow invocation is ready for additional scheduling steps. This means
+        the workflow will likely result in additional datasets and jobs being created over time.
+
+      new: |
+        This state indicates the workflow invocation has been queued up but no datasets or jobs have been
+        created.
+
+      cancelled: |
+        This state indicates the workflow invocation has been cancelled and new jobs or datasets won't
+        be created for this workflow. Most cancellations are caused by user interactions. If problems
+        scheduling the workflow cause a failure that cannot be recovered from, the state will be failed
+        instead of cancelled.
+
+      cancelling: |
+        This state indicates the workflow invocation will be cancelled shortly by Galaxy.
+
+      failed: |
+        This state indicates there was a problem scheduling the workflow invocation. No additional datasets
+        or jobs will be created for this workflow invocation.
+  upload:
+    galaxyUploadUtil: |
+      A utility for uploading files to a Galaxy server from the command line. Use ``galaxy-upload`` to upload
+      file(s) to a Galaxy server, and ``galaxy-history-search``, a helper utility to find Galaxy histories
+      to pass to the ``galaxy-upload`` command.
+    ruleBased: |
+      Galaxy can bulk import lists & tables of URLs into datasets or collections using reproducible rules.

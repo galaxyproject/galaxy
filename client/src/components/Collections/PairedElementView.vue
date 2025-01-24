@@ -1,58 +1,58 @@
+<script setup lang="ts">
+import { faArrowLeft, faArrowRight, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+import { ref, watch } from "vue";
+
+import type { HDASummary } from "@/api";
+import localize from "@/utils/localization";
+
+import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
+
+interface Props {
+    pair: {
+        name: string;
+        forward: HDASummary;
+        reverse: HDASummary;
+    };
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (event: "onPairRename", name: string): void;
+    (event: "onUnpair"): void;
+}>();
+
+const elementName = ref(props.pair.name);
+
+watch(elementName, () => {
+    emit("onPairRename", elementName.value);
+});
+</script>
+
 <template>
-    <div>
-        <li class="dataset paired">
-            <span class="forward-dataset-name flex-column">{{ pair.forward.name }}</span>
+    <li class="d-flex align-items-center justify-content-between">
+        <div class="dataset paired w-100">
+            <span class="forward-dataset-name flex-column">
+                {{ pair.forward.name }}
+                <FontAwesomeIcon :icon="faArrowRight" fixed-width />
+            </span>
+
             <span class="pair-name-column flex-column">
                 <span class="pair-name">
-                    <ClickToEdit v-model="name" :title="titlePairName" />
+                    <ClickToEdit v-model="elementName" :title="localize('Click to rename')" />
                 </span>
             </span>
-            <span class="reverse-dataset-name flex-column">{{ pair.reverse.name }}</span>
-        </li>
-        <button class="unpair-btn" @click="unlinkFn">
-            <span class="fa fa-unlink" :title="unpairButtonTitle"></span>
-        </button>
-    </div>
+
+            <span class="reverse-dataset-name flex-column">
+                <FontAwesomeIcon :icon="faArrowLeft" fixed-width />
+                {{ pair.reverse.name }}
+            </span>
+        </div>
+
+        <BButton class="unpair-btn" variant="link" @click="emit('onUnpair')">
+            <FontAwesomeIcon :icon="faUnlink" :title="localize('Unpair')" />
+        </BButton>
+    </li>
 </template>
-<script>
-import _l from "utils/localization";
-
-import ClickToEdit from "./common/ClickToEdit.vue";
-
-export default {
-    components: { ClickToEdit },
-    props: {
-        pair: {
-            required: true,
-        },
-        unlinkFn: {
-            required: true,
-            type: Function,
-        },
-    },
-    data: function () {
-        return {
-            unpairButtonTitle: _l("Unpair"),
-            titlePairName: _l("Click to rename"),
-            name: "",
-        };
-    },
-    watch: {
-        pair() {
-            this.name = this.pair.name;
-        },
-        name() {
-            this.$emit("onPairRename", this.name);
-        },
-    },
-    created: function () {
-        this.name = this.pair.name;
-    },
-    methods: {
-        l(str) {
-            // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
-        },
-    },
-};
-</script>

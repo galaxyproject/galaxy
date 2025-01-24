@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -17,7 +19,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.screenshot("histories_saved_grid")
-        self.click_grid_popup_option(self.history2_name, "Switch")
+        self.select_grid_operation(self.history2_name, "Switch")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         @retry_assertion_during_transitions
@@ -30,7 +32,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_history_view(self):
         self._login()
         self.navigate_to_histories_page()
-        self.click_grid_popup_option(self.history2_name, "View")
+        self.select_grid_operation(self.history2_name, "View")
         history_name = self.wait_for_selector("[data-description='name display']")
         assert history_name.text == self.history2_name
 
@@ -40,13 +42,12 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Publish the history
-        self.click_grid_popup_option(self.history2_name, "Share or Publish")
+        self.select_grid_operation(self.history2_name, "Share and Publish")
         self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
-
-        self.histories_click_advanced_search()
-        self.select_filter("sharing", "published")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("published")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history2_name])
@@ -56,7 +57,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.click_grid_popup_option("Unnamed history", "Rename")
+        self.select_grid_operation("Unnamed history", "Rename")
 
         # Rename the history
         history_name_input = self.wait_for_selector(".ui-form-element input.ui-input")
@@ -75,19 +76,22 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Delete the history
-        self.click_grid_popup_option(self.history2_name, "Delete")
+        self.select_grid_operation(self.history2_name, "Delete")
+        alert = self.driver.switch_to.alert
+        alert.accept()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_grid([self.history2_name], False)
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("deleted")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
-        self.click_grid_popup_option(self.history2_name, "Undelete")
+        self.select_grid_operation(self.history2_name, "Restore")
 
         self.assert_grid_histories_are([])
-        self.select_filter("status", "active")
+        self.components.histories.reset_input.wait_for_and_click()
 
         self.assert_histories_in_grid([self.history2_name])
 
@@ -99,14 +103,16 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
         self.assert_histories_in_grid([self.history4_name])
 
-        self.click_grid_popup_option(self.history4_name, "Delete Permanently")
+        self.select_grid_operation(self.history4_name, "Delete Permanently")
         alert = self.driver.switch_to.alert
         alert.accept()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_grid([self.history4_name], False)
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("purged")
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history4_name])
 
@@ -115,28 +121,32 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        delete_button_selector = 'input[type="button"][value="Delete"]'
-        undelete_button_selector = 'input[type="button"][value="Undelete"]'
+        delete_button_selector = 'button[data-description="grid batch delete"]'
+        undelete_button_selector = 'button[data-description="grid batch restore"]'
+
+        # Select multiple histories
+        self.check_grid_rows("#histories-grid", [self.history2_name, self.history3_name])
 
         # Delete multiple histories
-        self.check_histories([self.history2_name, self.history3_name])
         self.wait_for_and_click_selector(delete_button_selector)
+        alert = self.driver.switch_to.alert
+        alert.accept()
 
-        self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
+        # Display deleted histories
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("deleted")
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        # Select multiple histories
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.check_grid_rows("#histories-grid", [self.history2_name, self.history3_name])
 
-        # Restore multiple histories
-        self.check_histories([self.history2_name, self.history3_name])
+        # Undelete multiple histories
         self.wait_for_and_click_selector(undelete_button_selector)
+        alert = self.driver.switch_to.alert
+        alert.accept()
 
-        self.assert_grid_histories_are([])
-        # Following msg popups but goes away and so can cause transient errors.
-        # self.wait_for_selector_visible('.donemessage')
-        self.select_filter("status", "active")
-
+        # Verify deleted histories have been undeleted
+        self.components.histories.reset_input.wait_for_and_click()
         self.assert_histories_in_grid([self.history2_name, self.history3_name])
 
     @selenium_test
@@ -144,7 +154,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
+        self.wait_for_and_click_selector('[data-description="grid sort key name"]')
         actual_histories = self.get_histories()
 
         expected_histories = [self.history2_name, self.history3_name]
@@ -161,51 +171,56 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_standard_search(self):
         self._login()
         self.navigate_to_histories_page()
-
-        search_input = self.components.grids.free_text_search.wait_for_visible()
-        search_input.send_keys(self.history2_name)
-        self.send_enter(search_input)
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
+        self.components.histories.search_input.wait_for_and_send_keys(self.history2_name)
         self.assert_grid_histories_are([self.history2_name])
-
-        self.unset_filter("free-text-search", self.history2_name)
-        search_input = self.components.grids.free_text_search.wait_for_visible()
-        search_input.send_keys(self.history4_name)
-        self.send_enter(search_input)
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
+        self.components.histories.reset_input.wait_for_and_click()
+        self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
         self.assert_grid_histories_are([])
 
     @selenium_test
     def test_advanced_search(self):
         self._login()
         self.navigate_to_histories_page()
+        # search by name
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history3_name)
+        self.assert_histories_present([self.history3_name])
 
-        self.histories_click_advanced_search()
+        self.components.histories.reset_input.wait_for_and_click()
 
-        name_filter_selector = "#input-name-filter"
-        tags_filter_selector = "#input-tags-filter"
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history2_name)
+        self.assert_histories_present([self.history2_name])
 
-        # Search by name
-        self.set_filter(name_filter_selector, self.history2_name)
-        self.assert_grid_histories_are([self.history2_name])
-        self.unset_filter("name", self.history2_name)
+        self.components.histories.reset_input.wait_for_and_click()
 
-        self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are([])
-        self.unset_filter("name", self.history4_name)
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history4_name)
+        self.assert_histories_present([])
 
-        # Search by tags
-        self.set_filter(tags_filter_selector, self.history3_tags[0])
-        self.assert_grid_histories_are([self.history3_name])
-        self.unset_filter("tags", self.history3_tags[0])
+        self.components.histories.reset_input.wait_for_and_click()
 
-        self.set_filter(tags_filter_selector, self.history4_tags[0])
-        self.assert_grid_histories_are([])
-        self.unset_filter("tags", self.history4_tags[0])
+        # search by tags
+        self.components.histories.advanced_search_tag_area.wait_for_and_click()
+        input_element = self.components.histories.advanced_search_tag_input.wait_for_visible()
+        input_element.send_keys(self.history3_tags[0])
+        self.send_enter(input_element)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_histories_present([self.history3_name])
+
+    @retry_assertion_during_transitions
+    def assert_histories_present(self, expected_histories, sort_by_matters=False):
+        present_histories = self.get_present_histories()
+        assert len(present_histories) == len(expected_histories)
+        name_column = 1
+        for index, row in enumerate(present_histories):
+            cell = row.find_elements(By.TAG_NAME, "td")[name_column]
+            if not sort_by_matters:
+                assert cell.text in expected_histories
+            else:
+                assert cell.text == expected_histories[index]
+
+    def get_present_histories(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        return self.components.histories.histories.all()
 
     @selenium_test
     def test_tags(self):
@@ -213,17 +228,13 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Insert a tag
-        tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_area = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-new-tag-input-wrapper input")
-        tag_area.click()
-        tag_area.send_keys(self.history2_tags[0])
-        self.send_enter(tag_area)
-
-        self.sleep_for(self.wait_types.UX_RENDER)
+        tag_column = 4
+        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, tag_column)
+        self.add_tag(tags_cell, self.history2_tags[0])
 
         # Search by tag
-        tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-tag-center")
+        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, tag_column)
+        tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
         self.assert_grid_histories_are([self.history2_name], False)
@@ -250,17 +261,15 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
             assert intersection == set()
 
     def get_histories(self):
-        return self.histories_get_history_names()
+        return self.get_grid_entry_names("#histories-grid")
 
-    def set_filter(self, selector, value):
-        filter_input = self.wait_for_selector_clickable(selector)
-        filter_input.send_keys(value)
-        self.send_enter(filter_input)
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-    def unset_filter(self, filter_key, filter_value):
-        close_button_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
-        self.wait_for_and_click_selector(close_button_selector)
+    def add_tag(self, tags_cell, tag):
+        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
+        tag_button.click()
+        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags input")
+        tag_input.send_keys(tag)
+        self.send_enter(tag_input)
+        self.send_escape(tag_input)
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def setup_shared_state(self):
@@ -282,30 +291,3 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def create_history(self, name):
         self.home()
         self.history_panel_create_new_with_name(name)
-
-    def select_filter(self, filter_key, filter_value):
-        filter_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
-        self.wait_for_and_click_selector(filter_selector)
-
-    def get_history_tags_cell(self, history_name):
-        tags_cell = None
-        grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
-            td = row.find_elements(self.by.CSS_SELECTOR, "td")
-            if td[1].text == history_name:
-                tags_cell = td[4]
-                break
-
-        if tags_cell is None:
-            raise AssertionError(f"Failed to find history with name [{history_name}]")
-
-        return tags_cell
-
-    def check_histories(self, histories):
-        grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
-            td = row.find_elements(self.by.CSS_SELECTOR, "td")
-            history_name = td[1].text
-            if history_name in histories:
-                checkbox = td[0].find_element(self.by.CSS_SELECTOR, "input")
-                checkbox.click()

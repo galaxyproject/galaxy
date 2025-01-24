@@ -17,14 +17,15 @@ from typing import (
     Callable,
     Dict,
     IO,
+    Iterable,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
 from typing_extensions import Protocol
 
-from galaxy import util
 from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
 from galaxy.util import (
     compression_utils,
@@ -38,9 +39,15 @@ from galaxy.util.checkers import (
 )
 from galaxy.util.path import StrPath
 
-import pylibmagic  # noqa: F401  # isort:skip
+try:
+    import pylibmagic  # noqa: F401  # isort:skip
+except ImportError:
+    # Not available in conda, but docker image contains libmagic
+    pass
 import magic  # isort:skip
 
+if TYPE_CHECKING:
+    from .data import Data
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +57,9 @@ BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedoc
 
 def get_test_fname(fname):
     """Returns test data filename"""
-    path, name = os.path.split(__file__)
+    path = os.path.dirname(__file__)
     full_path = os.path.join(path, "test", fname)
+    assert os.path.isfile(full_path), f"{full_path} is not a file"
     return full_path
 
 
@@ -91,8 +99,7 @@ class ConvertResult(NamedTuple):
 class ConvertFunction(Protocol):
     def __call__(
         self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
-    ) -> ConvertResult:
-        ...
+    ) -> ConvertResult: ...
 
 
 def convert_newlines(
@@ -399,6 +406,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.cif')
     >>> guess_ext(fname, sniff_order)
     'cif'
+    >>> fname = get_test_fname('LaMnO3.cif')
+    >>> guess_ext(fname, sniff_order)
+    'cif'
     >>> fname = get_test_fname('Si.xyz')
     >>> guess_ext(fname, sniff_order)
     'xyz'
@@ -420,6 +430,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.den_fmt')
     >>> guess_ext(fname, sniff_order)
     'den_fmt'
+    >>> fname = get_test_fname('ethanol.magres')
+    >>> guess_ext(fname, sniff_order)
+    'magres'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
@@ -680,7 +693,7 @@ def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix], auto_decom
     return filename_or_file_prefix
 
 
-def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
+def run_sniffers_raw(file_prefix: FilePrefix, sniff_order: Iterable["Data"]):
     """Run through sniffers specified by sniff_order, return None of None match."""
     fname = file_prefix.filename
     file_ext = None
@@ -709,15 +722,16 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
                 continue
         try:
             if hasattr(datatype, "sniff_prefix"):
-                if file_prefix.compressed_format and getattr(datatype, "compressed_format", None):
+                datatype_compressed_format = getattr(datatype, "compressed_format", None)
+                if file_prefix.compressed_format and datatype_compressed_format:
                     # Compare the compressed format detected
                     # to the expected.
-                    if file_prefix.compressed_format != datatype.compressed_format:
+                    if file_prefix.compressed_format != datatype_compressed_format:
                         continue
                 if datatype.sniff_prefix(file_prefix):
                     file_ext = datatype.file_ext
                     break
-            elif datatype.sniff(fname):
+            elif hasattr(datatype, "sniff") and datatype.sniff(fname):
                 file_ext = datatype.file_ext
                 break
         except Exception:
@@ -832,9 +846,7 @@ def handle_compressed_file(
                 except OSError as e:
                     os.remove(uncompressed.name)
                     raise OSError(
-                        "Problem uncompressing {} data, please try retrieving the data uncompressed: {}".format(
-                            compressed_type, util.unicodify(e)
-                        )
+                        f"Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {e}"
                     )
                 finally:
                     is_compressed = False

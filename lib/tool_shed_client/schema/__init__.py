@@ -10,7 +10,9 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
+    RootModel,
 )
 from typing_extensions import (
     Literal,
@@ -24,8 +26,8 @@ class Repository(BaseModel):
     name: str
     owner: str
     type: str  # TODO: enum
-    remote_repository_url: Optional[str]
-    homepage_url: Optional[str]
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
     description: str
     user_id: str
     private: bool
@@ -33,6 +35,21 @@ class Repository(BaseModel):
     times_downloaded: int
     deprecated: bool
     create_time: str
+    update_time: str
+
+
+class DetailedRepository(Repository):
+    long_description: Optional[str]
+
+
+class RepositoryPermissions(BaseModel):
+    allow_push: List[str]
+    can_manage: bool  # can the requesting user manage the repository
+    can_push: bool
+
+
+class RepositoryRevisionReadmes(RootModel):
+    root: Dict[str, str]
 
 
 class CreateUserRequest(BaseModel):
@@ -46,9 +63,16 @@ class User(BaseModel):
     username: str
 
 
+class UserV2(User):
+    is_admin: bool
+
+
 class Category(BaseModel):
     id: str
     name: str
+    description: str
+    deleted: bool
+    repositories: int
 
 
 class CreateCategoryRequest(BaseModel):
@@ -69,8 +93,8 @@ class GetOrderedInstallableRevisionsRequest(BaseModel):
     owner: str
 
 
-class OrderedInstallableRevisions(BaseModel):
-    __root__: List[str]
+class OrderedInstallableRevisions(RootModel):
+    root: List[str]
 
 
 RepositoryType = Literal[
@@ -91,41 +115,67 @@ class CreateRepositoryRequest(BaseModel):
         alias="type",
         title="Type",
     )
-    category_ids: str = Field(
+    category_ids: Optional[Union[List[str], str]] = Field(
         ...,
         alias="category_ids[]",
         title="Category IDs",
     )
+    model_config = ConfigDict(populate_by_name=True)
 
-    class Config:
-        allow_population_by_field_name = True
+
+class UpdateRepositoryRequest(BaseModel):
+    name: Optional[str] = None
+    synopsis: Optional[str] = None
+    type_: Optional[RepositoryType] = Field(
+        None,
+        alias="type",
+        title="Type",
+    )
+    description: Optional[str] = None
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
+    category_ids: Optional[List[str]] = Field(
+        None,
+        alias="category_ids",
+        title="Category IDs",
+    )
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RepositoryUpdateRequest(BaseModel):
     commit_message: Optional[str] = None
 
 
-class RepositoryUpdate(BaseModel):
-    __root__: Union[ValidRepostiroyUpdateMessage, FailedRepositoryUpdateMessage]
+class RepositoryUpdate(RootModel):
+    root: Union[ValidRepostiroyUpdateMessage, FailedRepositoryUpdateMessage]
 
     @property
     def is_ok(self):
-        return isinstance(self.__root__, ValidRepostiroyUpdateMessage)
-
-
-class RepositoryDependency(BaseModel):
-    pass
+        return isinstance(self.root, ValidRepostiroyUpdateMessage)
 
 
 class RepositoryTool(BaseModel):
-    pass
+    # Added back in post v2 in order for the frontend to render
+    # tool descriptions on the repository page.
+    description: str
+    guid: str
+    id: str
+    name: str
+    requirements: list
+    tool_config: str
+    tool_type: str
+    version: str
+    # add_to_tool_panel: bool
+    # tests: list
+    # version_string_cmd: Optional[str]
 
 
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
-    repository_dependencies: List[RepositoryDependency]
-    tools: Optional[List[RepositoryTool]]
+    repository_dependencies: List["RepositoryDependency"]
+    tools: Optional[List["RepositoryTool"]] = None
+    invalid_tools: List[str]  # added for rendering list of invalid tools in 2.0 frontend
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -136,17 +186,23 @@ class RepositoryRevisionMetadata(BaseModel):
     includes_tools: bool
     includes_tools_for_display_in_tool_panel: bool
     # Deprecate these...
-    includes_tool_dependencies: Optional[bool]
-    includes_datatypes: Optional[bool]
-    includes_workflows: Optional[bool]
+    includes_tool_dependencies: Optional[bool] = None
+    includes_datatypes: Optional[bool] = None
+    includes_workflows: Optional[bool] = None
 
 
-class RepositoryMetadata(BaseModel):
-    __root__: Dict[str, RepositoryRevisionMetadata]
+class RepositoryDependency(RepositoryRevisionMetadata):
+    # This only needs properties for tests it seems?
+    # e.g. test_0550_metadata_updated_dependencies.py
+    pass
+
+
+class RepositoryMetadata(RootModel):
+    root: Dict[str, RepositoryRevisionMetadata]
 
     @property
     def latest_revision(self) -> RepositoryRevisionMetadata:
-        return list(self.__root__.values())[-1]
+        return list(self.root.values())[-1]
 
     @property
     def tip(self) -> str:
@@ -157,7 +213,7 @@ class RepositoryMetadata(BaseModel):
 
     @property
     def is_new(self) -> bool:
-        return len(self.__root__) == 0
+        return len(self.root) == 0
 
 
 class ResetMetadataOnRepositoryRequest(BaseModel):
@@ -173,8 +229,8 @@ class ResetMetadataOnRepositoryResponse(BaseModel):
 
 class ToolSearchRequest(BaseModel):
     q: str
-    page: Optional[int]
-    page_size: Optional[int]
+    page: Optional[int] = None
+    page_size: Optional[int] = None
 
 
 class ToolSearchHitTool(BaseModel):
@@ -213,24 +269,27 @@ class ToolSearchResults(BaseModel):
 
 
 class RepositoryIndexRequest(BaseModel):
-    owner: Optional[str]
-    name: Optional[str]
+    owner: Optional[str] = None
+    name: Optional[str] = None
     deleted: str = "false"
 
 
-class RepositoriesByCategory(Category):
+class RepositoriesByCategory(BaseModel):
+    id: str
+    name: str
+    description: str
     repository_count: int
     repositories: List[Repository]
 
 
-class RepositoryIndexResponse(BaseModel):
-    __root__: List[Repository]
+class RepositoryIndexResponse(RootModel):
+    root: List[Repository]
 
 
 class RepositorySearchRequest(BaseModel):
     q: str
-    page: Optional[int]
-    page_size: Optional[int]
+    page: Optional[int] = None
+    page_size: Optional[int] = None
 
 
 class RepositorySearchResult(BaseModel):
@@ -238,10 +297,10 @@ class RepositorySearchResult(BaseModel):
     name: str
     repo_owner_username: str
     description: str
-    long_description: Optional[str]
-    remote_repository_url: Optional[str]
-    homepage_url: Optional[str]
-    last_update: Optional[str]
+    long_description: Optional[str] = None
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
+    last_update: Optional[str] = None
     full_last_updated: str
     repo_lineage: str
     approved: bool
@@ -331,7 +390,7 @@ class RepositoryExtraInstallInfo(BaseModel):
     changeset_revision: str
     ctx_rev: str
     repository_owner: str
-    repository_dependencies: Optional[Dict]
+    repository_dependencies: Optional[Dict] = None
     # tool dependencies not longer work so don't transmit them in v2?
     # tool_dependencies: Optional[Dict]
 
@@ -362,7 +421,7 @@ class ValidTool(BaseModel):
     tool_config: str
     tool_type: str
     version: str
-    version_string_cmd: Optional[str]
+    version_string_cmd: Optional[str] = None
 
     @staticmethod
     def from_legacy_dict(as_dict: ValidToolDict) -> "ValidTool":
@@ -370,7 +429,7 @@ class ValidTool(BaseModel):
 
     @staticmethod
     def from_legacy_list(as_dicts: List[ValidToolDict]) -> List["ValidTool"]:
-        return list(ValidTool.from_legacy_dict(d) for d in as_dicts)
+        return [ValidTool.from_legacy_dict(d) for d in as_dicts]
 
 
 class RepositoryMetadataInstallInfo(BaseModel):
@@ -383,7 +442,7 @@ class RepositoryMetadataInstallInfo(BaseModel):
     malicious: bool
     repository_id: str
     url: str
-    valid_tools: List[ValidToolDict]
+    valid_tools: List[ValidTool]
     # no longer used, don't transmit.
     # has_repository_dependencies_only_if_compiling_contained_td: bool
     # includes_datatypes: bool
@@ -402,13 +461,13 @@ class RepositoryMetadataInstallInfo(BaseModel):
             malicious=as_dict["malicious"],
             repository_id=as_dict["repository_id"],
             url=as_dict["url"],
-            valid_tools=ValidTool.from_legacy_list(as_dict["valid_tools"]),
+            valid_tools=ValidTool.from_legacy_list(as_dict.get("valid_tools", [])),
         )
 
 
 class InstallInfo(BaseModel):
-    metadata_info: Optional[RepositoryMetadataInstallInfo]
-    repo_info: Optional[RepositoryExtraInstallInfo]
+    metadata_info: Optional[RepositoryMetadataInstallInfo] = None
+    repo_info: Optional[RepositoryExtraInstallInfo] = None
 
 
 def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> InstallInfo:
@@ -429,3 +488,14 @@ def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> Ins
         metadata_info=metadata_info,
         repo_info=repo_info,
     )
+
+
+class BuildSearchIndexResponse(BaseModel):
+    repositories_indexed: int
+    tools_indexed: int
+
+
+class Version(BaseModel):
+    version_major: str
+    version: str
+    api_version: str = "v1"

@@ -55,7 +55,6 @@ def add_selenium_arguments(parser):
 
 
 class DriverWrapper(NavigatesGalaxy):
-
     """Adapt argparse command-line options to a concrete Selenium driver."""
 
     def __init__(self, args):
@@ -74,7 +73,7 @@ class DriverWrapper(NavigatesGalaxy):
         self.driver = driver
         self.target_url = args.galaxy_url
 
-    def build_url(self, url=""):
+    def build_url(self, url="", for_selenium: bool = True):
         return urljoin(self.target_url, url)
 
     def screenshot(self, label: str) -> None:

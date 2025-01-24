@@ -43,7 +43,10 @@ from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (ur
     drop_existing_database,
     url_factory,
 )
-from galaxy.util.resources import resource_path
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 
 # Revision numbers from test versions directories
 GXY_REVISION_0 = "62695fac6cc0"  # oldest/base
@@ -187,7 +190,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert DatabaseStateCache(engine).is_database_empty()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert not DatabaseStateCache(engine).is_database_empty()
 
@@ -196,7 +199,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert not DatabaseStateCache(engine).has_alembic_version_table()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert DatabaseStateCache(engine).has_alembic_version_table()
 
@@ -205,7 +208,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert not DatabaseStateCache(engine).has_sqlalchemymigrate_version_table()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert DatabaseStateCache(engine).has_sqlalchemymigrate_version_table()
 
@@ -226,7 +229,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert DatabaseStateCache(engine).is_database_empty()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert not DatabaseStateCache(engine).is_database_empty()
                 assert DatabaseStateCache(engine).contains_only_kombu_tables()
@@ -730,7 +733,7 @@ def _get_paths_to_version_locations():
 
 def load_sqlalchemymigrate_version(db_url, version):
     with disposing_engine(db_url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             sql_delete = text(f"delete from {SQLALCHEMYMIGRATE_TABLE}")  # there can be only 1 row
             sql_insert = text(f"insert into {SQLALCHEMYMIGRATE_TABLE} values('_', '_', {version})")
             conn.execute(sql_delete)
@@ -744,7 +747,7 @@ def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):  # no
             load_metadata(metadata_state2_gxy, engine)
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             version = 42
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 result = conn.execute(sql).scalar()
                 assert result != version
                 load_sqlalchemymigrate_version(db_url, version)
@@ -763,7 +766,7 @@ def database_is_empty_or_contains_kombu_tables(db_url):
     (ref: https://github.com/galaxyproject/galaxy/issues/13689)
     """
     with disposing_engine(db_url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             metadata = MetaData()
             metadata.reflect(bind=conn)
             return not bool(metadata.tables) or metadata_contains_only_kombu_tables(metadata)
@@ -862,7 +865,7 @@ def is_metadata_loaded(db_url, metadata):
     # True if the set of tables from the up-to-date state metadata (state6)
     # is a subset of the metadata reflected from `db_url`.
     with disposing_engine(db_url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             db_metadata = MetaData()
             db_metadata.reflect(bind=conn)
             tables = _get_tablenames(metadata)
@@ -882,7 +885,7 @@ def test_is_metadata_loaded(url_factory, metadata_state1_gxy):  # noqa F811
     with create_and_drop_database(db_url):
         assert not is_metadata_loaded(db_url, metadata)
         with disposing_engine(db_url) as engine:
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 metadata.create_all(bind=conn)
         assert is_metadata_loaded(db_url, metadata)
 
@@ -893,7 +896,7 @@ def test_is_multiple_metadata_loaded(url_factory, metadata_state1_gxy, metadata_
     with create_and_drop_database(db_url):
         assert not is_metadata_loaded(db_url, metadata)
         with disposing_engine(db_url) as engine:
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 metadata_state1_gxy.create_all(bind=conn)
                 metadata_state1_tsi.create_all(bind=conn)
         assert is_metadata_loaded(db_url, metadata)
@@ -1128,10 +1131,13 @@ def db_state6_gxy_state3_tsi_no_sam(url_factory, metadata_state6_gxy_state3_tsi_
 @pytest.fixture(autouse=True)
 def legacy_manage_db(monkeypatch):
     def get_alembic_cfg():
-        path = resource_path("galaxy.model.migrations", "alembic.ini")
-        config = Config(path)
-        path1, path2 = _get_paths_to_version_locations()
-        config.set_main_option("version_locations", f"{path1};{path2}")
+        traversable = resource_path("galaxy.model.migrations", "alembic.ini")
+        with as_file(traversable) as path:
+            config = Config(path)
+            path1, path2 = _get_paths_to_version_locations()
+            config.set_main_option("version_locations", f"{path1};{path2}")
+            # config.set_main_option() calls config.file_config() which memoizes
+            # the temporary file path from the as_file() contextmanager
         return config
 
     monkeypatch.setattr(galaxy.model.migrations.scripts, "get_alembic_cfg", get_alembic_cfg)

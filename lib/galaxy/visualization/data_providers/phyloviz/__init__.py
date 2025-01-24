@@ -1,4 +1,5 @@
 """ Data providers code for PhyloViz """
+
 from typing import (
     Any,
     Dict,
@@ -23,7 +24,7 @@ class PhylovizDataProvider(BaseDataProvider):
         """
 
         file_ext = self.original_dataset.datatype.file_ext
-        file_name = self.original_dataset.file_name
+        file_name = self.original_dataset.get_file_name()
         parseMsg = None
         jsonDicts = []
         rval: Dict[str, Any] = {"dataset_type": self.dataset_type}

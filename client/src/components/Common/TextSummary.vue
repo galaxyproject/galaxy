@@ -2,63 +2,77 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
-
-const props = defineProps({
-    description: {
-        type: String,
-        required: true,
-    },
-    showDetails: {
-        type: Boolean,
-        default: false,
-    },
-    maxLength: {
-        type: Number,
-        default: 150,
-    },
-});
-
-const emit = defineEmits<{
-    (e: "update:show-details", showDetails: boolean): void;
-}>();
-
-const propShowDetails = computed({
-    get: () => {
-        return props.showDetails;
-    },
-    set: (val) => {
-        emit("update:show-details", val);
-    },
-});
+import { computed, ref } from "vue";
 
 library.add(faChevronUp, faChevronDown);
-const collapsedEnableIcon = "fas fa-chevron-down";
-const collapsedDisableIcon = "fas fa-chevron-up";
 
-// summarized length
-const x = Math.round(props.maxLength - props.maxLength / 2);
+interface Props {
+    /** The maximum length of the unexpanded text / summary */
+    maxLength?: number;
+    /** The text to summarize */
+    description: string;
+    /** If `true`, doesn't let unexpanded text go beyond height of one line
+     * and ignores `maxLength` */
+    oneLineSummary?: boolean;
+    /** If `true`, doesn't show expand/collapse buttons */
+    noExpand?: boolean;
+    /** The component to use for the summary, default = `<p>` */
+    component?: string;
+}
 
-const summary = computed(() => props.description.length > props.maxLength);
+const props = withDefaults(defineProps<Props>(), {
+    maxLength: 150,
+    component: "p",
+});
+
+const showDetails = ref(false);
+const refOneLineSummary = ref<HTMLElement | null>(null);
+
+const textTooLong = computed(() => {
+    if (!props.oneLineSummary) {
+        return props.description.length > props.maxLength;
+    } else if (refOneLineSummary.value) {
+        return refOneLineSummary.value.scrollWidth > refOneLineSummary.value.clientWidth;
+    } else {
+        return false;
+    }
+});
 const text = computed(() =>
-    props.description.length > props.maxLength ? props.description.slice(0, x) : props.description
+    textTooLong.value && !showDetails.value
+        ? props.description.slice(0, Math.round(props.maxLength - props.maxLength / 2)) + "..."
+        : props.description
 );
 </script>
 
 <template>
-    <div>
-        {{ text }}
-        <span v-if="summary">
-            <a
-                v-if="!propShowDetails"
-                class="text-summary-expand"
-                href="javascript:void(0)"
-                @click.stop="propShowDetails = true">
-                ... <FontAwesomeIcon :icon="collapsedEnableIcon" />
-            </a>
-            <a v-else href="javascript:void(0)" @click.stop="propShowDetails = false">
-                ... <FontAwesomeIcon :icon="collapsedDisableIcon" />
-            </a>
+    <div :class="{ 'd-flex': props.oneLineSummary && !noExpand }">
+        <component
+            :is="props.component"
+            v-if="props.oneLineSummary"
+            ref="refOneLineSummary"
+            :class="{ 'one-line-summary': !showDetails }">
+            {{ props.description }}
+        </component>
+        <span v-else>{{ text }}</span>
+        <span
+            v-if="!noExpand && textTooLong"
+            v-b-tooltip.hover
+            class="info-icon cursor-pointer"
+            :title="showDetails ? 'Show less' : 'Show more'"
+            role="button"
+            tabindex="0"
+            @keyup.enter="showDetails = !showDetails"
+            @click="showDetails = !showDetails">
+            <FontAwesomeIcon :icon="showDetails ? 'chevron-up' : 'chevron-down'" />
         </span>
     </div>
 </template>
+
+<style scoped>
+.one-line-summary {
+    max-height: 2em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>

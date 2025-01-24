@@ -21,7 +21,7 @@ export const NULL_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     isCollection: false,
     collectionType: null,
     rank: 0,
-    canMatch: function (other) {
+    canMatch: function (_other) {
         return false;
     },
     canMapOver: function () {
@@ -36,7 +36,7 @@ export const NULL_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     equal: function (other) {
         return other === this;
     },
-    effectiveMapOver: function (other: CollectionTypeDescriptor) {
+    effectiveMapOver: function (_other: CollectionTypeDescriptor) {
         return NULL_COLLECTION_TYPE_DESCRIPTION;
     },
 };
@@ -60,7 +60,7 @@ export const ANY_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     equal: function (other) {
         return other === this;
     },
-    effectiveMapOver: function (other: CollectionTypeDescriptor) {
+    effectiveMapOver: function (_other: CollectionTypeDescriptor) {
         return NULL_COLLECTION_TYPE_DESCRIPTION;
     },
 };
