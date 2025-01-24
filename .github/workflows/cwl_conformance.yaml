@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
 concurrency:
@@ -22,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
         marker: ['green', 'red and required', 'red and not required']
         conformance-version: ['cwl_conformance_v1_0'] #, 'cwl_conformance_v1_1', 'cwl_conformance_v1_2']
     services:
@@ -35,31 +37,28 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.12.1'
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache pip dir
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
         run: ./run_tests.sh --coverage --skip_flakey_fails -cwl lib/galaxy_test/api/cwl -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}"
         working-directory: 'galaxy root'
@@ -67,7 +66,7 @@ jobs:
         with:
           flags: cwl-conformance
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: CWL conformance test results (${{ matrix.python-version }}, ${{ matrix.marker }}, ${{ matrix.conformance-version }})

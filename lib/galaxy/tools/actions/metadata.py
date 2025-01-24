@@ -1,10 +1,32 @@
 import logging
 import os
 from json import dumps
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model import (
+    History,
+    Job,
+    User,
+)
 from galaxy.model.base import transaction
+from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
+from galaxy.tools.execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    JobCallbackT,
+)
+from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import asbool
 from . import ToolAction
 
@@ -14,27 +36,35 @@ log = logging.getLogger(__name__)
 class SetMetadataToolAction(ToolAction):
     """Tool action used for setting external metadata on an existing dataset"""
 
-    produces_real_jobs = False
+    produces_real_jobs: bool = False
+    set_output_hid: bool = False
 
     def execute(
-        self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs
+        self,
+        tool,
+        trans,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        history: Optional[History] = None,
+        job_params=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
     ):
         """
         Execute using a web transaction.
         """
-        trans.check_user_activation()
-        session = trans.get_galaxy_session()
-        session_id = session and session.id
-        history_id = trans.history and trans.history.id
-        incoming = incoming or {}
-        job, odict = self.execute_via_app(
+        overwrite = True
+        job, odict = self.execute_via_trans(
             tool,
-            trans.app,
-            session_id,
-            history_id,
-            trans.user,
+            trans,
             incoming,
-            set_output_hid,
             overwrite,
             history,
             job_params,
@@ -43,18 +73,43 @@ class SetMetadataToolAction(ToolAction):
         trans.log_event(f"Added set external metadata job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
         return job, odict
 
+    def execute_via_trans(
+        self,
+        tool,
+        trans,
+        incoming: Optional[Dict[str, Any]],
+        overwrite: bool = True,
+        history: Optional[History] = None,
+        job_params: Optional[Dict[str, Any]] = None,
+    ):
+        trans.check_user_activation()
+        session = trans.get_galaxy_session()
+        session_id = session and session.id
+        history_id = trans.history and trans.history.id
+        incoming = incoming or {}
+        return self.execute_via_app(
+            tool,
+            trans.app,
+            session_id,
+            history_id,
+            trans.user,
+            incoming,
+            overwrite,
+            history,
+            job_params,
+        )
+
     def execute_via_app(
         self,
         tool,
         app,
-        session_id,
-        history_id,
-        user=None,
-        incoming=None,
-        set_output_hid=False,
-        overwrite=True,
-        history=None,
-        job_params=None,
+        session_id: Optional[int],
+        history_id: Optional[int],
+        user: Optional[User] = None,
+        incoming: Optional[Dict[str, Any]] = None,
+        overwrite: bool = True,
+        history: Optional[History] = None,
+        job_params: Optional[Dict[str, Any]] = None,
     ):
         """
         Execute using application.
@@ -106,7 +161,7 @@ class SetMetadataToolAction(ToolAction):
         # add parameters to job_parameter table
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
         incoming["__ORIGINAL_DATASET_STATE__"] = dataset.state
-        input_paths = [DatasetPath(dataset.id, real_path=dataset.file_name, mutable=False)]
+        input_paths = [DatasetPath(dataset.id, real_path=dataset.get_file_name(), mutable=False)]
         app.object_store.create(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
         job_working_dir = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, "registry.xml")
@@ -145,7 +200,7 @@ class SetMetadataToolAction(ToolAction):
             job.add_input_library_dataset(dataset_name, dataset)
         # Need a special state here to show that metadata is being set and also allow the job to run
         # i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
-        dataset._state = dataset.states.SETTING_METADATA
+        dataset.state = dataset.states.SETTING_METADATA
         job.state = start_job_state  # job inputs have been configured, restore initial job state
         with transaction(sa_session):
             sa_session.commit()

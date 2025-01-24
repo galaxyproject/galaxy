@@ -1,4 +1,6 @@
 """The module describes the ``core`` job metrics plugin."""
+
+import json
 import logging
 import time
 from typing import (
@@ -22,15 +24,21 @@ GALAXY_MEMORY_MB_KEY = "galaxy_memory_mb"
 START_EPOCH_KEY = "start_epoch"
 END_EPOCH_KEY = "end_epoch"
 RUNTIME_SECONDS_KEY = "runtime_seconds"
+CONTAINER_ID = "container_id"
+CONTAINER_TYPE = "container_type"
 
 
 class CorePluginFormatter(JobMetricFormatter):
     def format(self, key: str, value: Any) -> FormattedMetric:
+        if key == CONTAINER_ID:
+            return FormattedMetric("Container ID", value)
+        if key == CONTAINER_TYPE:
+            return FormattedMetric("Container Type", value)
         value = int(value)
         if key == GALAXY_SLOTS_KEY:
-            return FormattedMetric("Cores Allocated", "%d" % value)
+            return FormattedMetric("Cores Allocated", f"{value}")
         elif key == GALAXY_MEMORY_MB_KEY:
-            return FormattedMetric("Memory Allocated (MB)", "%d" % value)
+            return FormattedMetric("Memory Allocated (MB)", f"{value}")
         elif key == RUNTIME_SECONDS_KEY:
             return FormattedMetric("Job Runtime (Wall Clock)", seconds_to_str(value))
         else:
@@ -72,11 +80,22 @@ class CorePlugin(InstrumentPlugin):
         properties[GALAXY_MEMORY_MB_KEY] = self.__read_integer(galaxy_memory_mb_file)
         start = self.__read_seconds_since_epoch(job_directory, "start")
         end = self.__read_seconds_since_epoch(job_directory, "end")
+        properties.update(self.__read_container_details(job_directory))
         if start is not None and end is not None:
             properties[START_EPOCH_KEY] = start
             properties[END_EPOCH_KEY] = end
             properties[RUNTIME_SECONDS_KEY] = end - start
         return properties
+
+    def get_container_file_path(self, job_directory):
+        return self._instrument_file_path(job_directory, "container")
+
+    def __read_container_details(self, job_directory) -> Dict[str, str]:
+        try:
+            with open(self.get_container_file_path(job_directory)) as fh:
+                return json.load(fh)
+        except FileNotFoundError:
+            return {}
 
     def __record_galaxy_slots_command(self, job_directory):
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCheckCircle, faExclamationCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { GalaxyApi } from "@/api";
 import {
-    getNotificationsPreferencesFromServer,
-    updateNotificationsPreferencesOnServer,
-} from "@/components/User/Notifications/model/services";
+    type NotificationCategory,
+    type NotificationChannel,
+    type UserNotificationPreferences,
+} from "@/api/notifications";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import {
@@ -16,69 +18,72 @@ import {
     pushNotificationsEnabled,
     togglePushNotifications,
 } from "@/composables/utils/pushNotifications";
-import type { components } from "@/schema";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import NotificationsCategorySettings from "./NotificationsCategorySettings.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faExclamationCircle);
+library.add(faCheckCircle, faExclamationCircle, faSave);
 
-defineProps({
-    headerSize: {
-        type: String,
-        default: "h-lg",
-    },
+interface NotificationsPreferencesProps {
+    embedded?: boolean;
+    headerSize?: string;
+}
+
+const props = withDefaults(defineProps<NotificationsPreferencesProps>(), {
+    embedded: true,
+    headerSize: "h-lg",
 });
-
-type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
 
 const { config } = useConfig(true);
 
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const pushNotificationsGranted = ref(pushNotificationsEnabled());
-const notificationsPreferences = ref<UserNotificationPreferences["preferences"]>({});
+const notificationsPreferences = ref<UserNotificationPreferences>({});
+const supportedChannels = ref<NotificationChannel[]>([]);
 
-const categories = computed(() => Object.keys(notificationsPreferences.value));
+const categories = computed<NotificationCategory[]>(
+    () => Object.keys(notificationsPreferences.value) as NotificationCategory[]
+);
 const showPreferences = computed(() => {
     return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;
 });
 
-const categoryDescriptionMap = {
-    message: "You will receive notifications when someone sends you a message.",
-    new_shared_item: "You will receive notifications when someone shares an item with you.",
-};
-
 async function getNotificationsPreferences() {
     loading.value = true;
-    await getNotificationsPreferencesFromServer()
-        .then((data) => {
-            notificationsPreferences.value = data.preferences;
-        })
-        .catch((error: any) => {
-            errorMessage.value = error;
-        })
-        .finally(() => {
-            loading.value = false;
-        });
+    try {
+        const { response, data, error } = await GalaxyApi().GET("/api/notifications/preferences");
+
+        if (error) {
+            errorMessage.value = errorMessageAsString(error);
+            return;
+        }
+
+        const serverSupportedChannels = response.headers.get("supported-channels")?.split(",") ?? [];
+        supportedChannels.value = serverSupportedChannels as NotificationChannel[];
+        notificationsPreferences.value = data.preferences;
+    } finally {
+        loading.value = false;
+    }
 }
 
 async function updateNotificationsPreferences() {
-    await updateNotificationsPreferencesOnServer({ preferences: notificationsPreferences.value })
-        .then((data) => {
-            notificationsPreferences.value = data.preferences;
-            Toast.success("Notifications preferences updated");
-        })
-        .catch((error: any) => {
-            errorMessage.value = error;
-        });
-}
+    const { data, error } = await GalaxyApi().PUT("/api/notifications/preferences", {
+        body: {
+            preferences: notificationsPreferences.value,
+        },
+    });
 
-function capitalizeWords(str: string): string {
-    return str
-        .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
+    }
+
+    notificationsPreferences.value = data.preferences;
+    Toast.success("Notifications preferences updated");
 }
 
 async function onTogglePushNotifications() {
@@ -94,16 +99,35 @@ watch(
     },
     { immediate: true }
 );
+
+function onCategoryEnabledChange(category: NotificationCategory, value: boolean) {
+    notificationsPreferences.value[category]!.enabled = value;
+}
+
+function onChannelChange(category: NotificationCategory, channel: NotificationChannel, value: boolean) {
+    notificationsPreferences.value[category]!.channels[channel] = value;
+}
 </script>
 
 <template>
     <section class="notifications-preferences">
-        <h1 v-localize :class="headerSize">Manage notifications preferences</h1>
+        <Heading
+            h1
+            :separator="props.embedded"
+            inline
+            size="xl"
+            class="notifications-preferences-header"
+            :class="headerSize">
+            Manage notifications preferences
+        </Heading>
 
-        <span v-if="config.enable_notification_system" v-localize class="mb-2">
+        <div v-if="config.enable_notification_system" v-localize class="notifications-preferences-description">
             You can manage notifications channels and preferences here.
-        </span>
-        <span v-else v-localize class="mb-2"> You can manage push notifications preferences here. </span>
+        </div>
+
+        <div v-else v-localize class="notifications-preferences-description">
+            You can manage push notifications preferences here.
+        </div>
 
         <BAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
@@ -113,95 +137,75 @@ watch(
             <LoadingSpan message="Loading notifications preferences" />
         </BAlert>
 
-        <BRow v-else-if="showPreferences" class="mx-1">
-            <BCol v-for="category in categories" :key="category">
-                <BCard class="my-2 px-2">
-                    <BRow align-h="between" align-v="center">
-                        <BCol cols="auto" class="mx-2">
-                            <BRow>
-                                <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
-                            </BRow>
-                            <BRow v-if="categoryDescriptionMap[category]">
-                                <span v-localize class="category-description">
-                                    {{ categoryDescriptionMap[category] }}
-                                </span>
-                            </BRow>
-                        </BCol>
-                        <BCol cols="auto" class="p-0">
-                            <BFormCheckbox
-                                v-model="notificationsPreferences[category].enabled"
-                                v-b-tooltip.hover
-                                :title="
-                                    notificationsPreferences[category].enabled
-                                        ? 'Disable notifications'
-                                        : 'Enable notifications'
-                                "
-                                switch />
-                        </BCol>
-                    </BRow>
-                    <BRow class="p-2">
-                        <BCol
-                            v-for="channel in Object.keys(notificationsPreferences[category].channels)"
-                            :key="channel"
-                            class="d-flex align-items-center">
-                            <BFormCheckbox
-                                v-model="notificationsPreferences[category].channels[channel]"
-                                v-localize
-                                :disabled="!notificationsPreferences[category].enabled">
-                                {{ capitalizeWords(channel) }}
-                            </BFormCheckbox>
-                            <FontAwesomeIcon
-                                v-if="channel === 'push'"
-                                v-b-tooltip.hover="'Push notifications need to be enabled'"
-                                class="mx-2"
-                                icon="exclamation-circle" />
-                        </BCol>
-                    </BRow>
-                </BCard>
-            </BCol>
-        </BRow>
+        <div v-else-if="showPreferences" class="notifications-preferences-body">
+            <div v-for="category in categories" :key="category" class="card-container">
+                <NotificationsCategorySettings
+                    :preferences="notificationsPreferences"
+                    :supported-channels="supportedChannels"
+                    :category="category"
+                    @onCategoryEnabledChange="onCategoryEnabledChange"
+                    @onChannelChange="onChannelChange" />
+            </div>
+        </div>
 
-        <BRow v-if="!loading" class="m-1" align-h="center">
-            <BCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
-                Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
-                <BButton
-                    v-b-tooltip.hover
-                    class="mx-2"
-                    title="Enable push notifications"
-                    @click="onTogglePushNotifications">
-                    Enable push notifications
-                </BButton>
-            </BCard>
-            <BAlert
-                v-else-if="browserSupportsPushNotifications() && pushNotificationsGranted"
-                show
-                variant="info"
-                class="my-2">
-                <FontAwesomeIcon icon="check-circle" />
-                Push notifications are enabled. You can disable them by revoking the site notification privilege in your
-                browser.
-            </BAlert>
-            <BAlert v-else show variant="warning" class="my-2">
-                <FontAwesomeIcon icon="exclamation-circle" />
-                Push notifications are not supported by this browser. You can still receive in-app notifications.
-            </BAlert>
-        </BRow>
+        <div
+            v-if="!loading && browserSupportsPushNotifications() && !pushNotificationsGranted"
+            class="card-container push-notifications-notice">
+            Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
+            <BButton
+                v-b-tooltip.hover
+                class="mx-2"
+                title="Enable push notifications"
+                @click="onTogglePushNotifications">
+                Enable push notifications
+            </BButton>
+        </div>
 
-        <BRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">
-            <AsyncButton :action="updateNotificationsPreferences" icon="save" variant="primary" size="md">
+        <BAlert
+            v-else-if="!loading && browserSupportsPushNotifications() && pushNotificationsGranted"
+            show
+            variant="info"
+            class="my-2">
+            <FontAwesomeIcon :icon="faCheckCircle" />
+            Push notifications are enabled. You can disable them by revoking the site notification privilege in your
+            browser.
+        </BAlert>
+
+        <BAlert v-else-if="!loading" show variant="warning" class="my-2">
+            <FontAwesomeIcon :icon="faExclamationCircle" />
+            Push notifications are not supported by this browser. You can still receive in-app notifications.
+        </BAlert>
+
+        <div v-if="!loading && config.enable_notification_system" class="d-flex justify-content-center">
+            <AsyncButton :action="updateNotificationsPreferences" :icon="faSave" variant="primary" size="md">
                 <span v-localize>Save</span>
             </AsyncButton>
-        </BRow>
+        </div>
     </section>
 </template>
 
 <style scoped lang="scss">
-.category-title {
-    font-weight: bold;
+.notifications-preferences {
+    .notifications-preferences-header {
+        flex-grow: 1;
+    }
+
+    .notifications-preferences-description {
+        margin-bottom: 1rem;
+    }
+
+    .notifications-preferences-body {
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .push-notifications-notice {
+        margin: 0.5rem auto;
+        width: fit-content;
+    }
 }
 
-.category-description {
-    font-size: 0.8rem;
-    font-style: italic;
+.card-container {
+    margin: 0.5rem;
 }
 </style>

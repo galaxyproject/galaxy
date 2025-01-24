@@ -7,9 +7,9 @@ from typing import (
 )
 
 from galaxy.util import (
-    etree,
+    Element,
+    ElementTree,
     parse_xml as galaxy_parse_xml,
-    unicodify,
     xml_to_string,
 )
 from galaxy.util.path import StrPath
@@ -17,7 +17,7 @@ from galaxy.util.path import StrPath
 log = logging.getLogger(__name__)
 
 
-def create_and_write_tmp_file(elem: etree.Element) -> str:
+def create_and_write_tmp_file(elem: Element) -> str:
     tmp_str = xml_to_string(elem, pretty=True)
     with tempfile.NamedTemporaryFile(prefix="tmp-toolshed-cawrf", delete=False) as fh:
         tmp_filename = fh.name
@@ -26,7 +26,7 @@ def create_and_write_tmp_file(elem: etree.Element) -> str:
     return tmp_filename
 
 
-def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[etree.ElementTree], str]:
+def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[ElementTree], str]:
     """Returns a parsed xml tree with comments intact."""
     error_message = ""
     if check_exists and not os.path.exists(file_name):
@@ -36,7 +36,7 @@ def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[etree.Ele
     except OSError:
         raise
     except Exception as e:
-        error_message = f"Exception attempting to parse {str(file_name)}: {unicodify(e)}"
+        error_message = f"Exception attempting to parse {file_name}: {e}"
         log.exception(error_message)
         return None, error_message
     return tree, error_message

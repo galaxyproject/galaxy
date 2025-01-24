@@ -261,7 +261,7 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
         histories = (
             app.sa_session.query(app.model.History)
             .filter(and_(app.model.History.__table__.c.deleted == true(), app.model.History.update_time < cutoff_time))
-            .options(joinedload("datasets"))
+            .options(joinedload(app.model.History.datasets))
         )
     else:
         histories = (
@@ -273,7 +273,7 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
                     app.model.History.update_time < cutoff_time,
                 )
             )
-            .options(joinedload("datasets"))
+            .options(joinedload(app.model.History.datasets))
         )
     for history in histories:
         log.info("### Processing history id %d (%s)", history.id, unicodify(history.name))
@@ -599,13 +599,13 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
                 )
                 if remove_from_disk:
                     try:
-                        log.info("Removing disk file %s", metadata_file.file_name)
-                        os.unlink(metadata_file.file_name)
+                        log.info("Removing disk file %s", metadata_file.get_file_name())
+                        os.unlink(metadata_file.get_file_name())
                     except Exception as e:
                         log.info(
                             "Error, exception: %s caught attempting to purge metadata file %s\n",
                             unicodify(e),
-                            metadata_file.file_name,
+                            metadata_file.get_file_name(),
                         )
                     metadata_file.purged = True
                     app.sa_session.add(metadata_file)
@@ -615,7 +615,7 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
                 app.sa_session.add(metadata_file)
                 with transaction(session):
                     session.commit()
-            log.info(metadata_file.file_name)
+            log.info(metadata_file.get_file_name())
         if not info_only:
             log.info("Deleting dataset id %d", dataset.id)
             dataset.deleted = True
@@ -635,8 +635,8 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
                     # Remove files from disk and update the database
                     if remove_from_disk:
                         # TODO: should permissions on the dataset be deleted here?
-                        log.info("Removing disk, file %s", dataset.file_name)
-                        os.unlink(dataset.file_name)
+                        log.info("Removing disk, file %s", dataset.get_file_name())
+                        os.unlink(dataset.get_file_name())
                         # Remove associated extra files from disk if they exist
                         if dataset.extra_files_path and os.path.exists(dataset.extra_files_path):
                             shutil.rmtree(
@@ -662,7 +662,7 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
                 log.info(
                     "This dataset (%d) is not purgable, the file (%s) will not be removed.\n",
                     dataset.id,
-                    dataset.file_name,
+                    dataset.get_file_name(),
                 )
         except OSError as exc:
             log.error("Error, dataset file has already been removed: %s", unicodify(exc))
@@ -674,9 +674,9 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
         except ObjectNotFound:
             log.error("Dataset %d cannot be found in the object store", dataset.id)
         except Exception as exc:
-            log.error("Error attempting to purge data file: %s error: %s", dataset.file_name, unicodify(exc))
+            log.error("Error attempting to purge data file: %s error: %s", dataset.get_file_name(), unicodify(exc))
     else:
-        log.info("Error: '%s' has not previously been deleted, so it cannot be purged\n", dataset.file_name)
+        log.info("Error: '%s' has not previously been deleted, so it cannot be purged\n", dataset.get_file_name())
 
 
 def _purge_folder(folder, app, remove_from_disk, info_only=False):

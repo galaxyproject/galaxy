@@ -1,6 +1,7 @@
 """ Unit test logic related to finding externally referenced files in tool
 descriptions.
 """
+
 import os
 import shutil
 import tempfile

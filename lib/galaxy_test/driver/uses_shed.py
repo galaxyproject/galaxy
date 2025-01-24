@@ -4,9 +4,12 @@ import shutil
 import string
 import tempfile
 from typing import ClassVar
+from unittest import SkipTest
 
 from galaxy.app import UniverseApplication
 from galaxy.model.base import transaction
+from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
+from galaxy.util.unittest_utils import is_site_up
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver.driver_util import (
@@ -38,8 +41,7 @@ SHED_DATA_TABLES = """<?xml version="1.0"?>
 class UsesShed(UsesShedApi):
     @property
     @abc.abstractmethod
-    def _app(self) -> UniverseApplication:
-        ...
+    def _app(self) -> UniverseApplication: ...
 
     shed_tools_dir: ClassVar[str]
     shed_tool_data_dir: ClassVar[str]
@@ -48,6 +50,8 @@ class UsesShed(UsesShedApi):
 
     @classmethod
     def configure_shed(cls, config):
+        if not is_site_up(DEFAULT_TOOL_SHED_URL):
+            raise SkipTest(f"Test depends on [{DEFAULT_TOOL_SHED_URL}] being up and it appears to be down.")
         cls.shed_tools_dir = tempfile.mkdtemp()
         cls.shed_tool_data_dir = tempfile.mkdtemp()
         cls._test_driver.temp_directories.extend([cls.shed_tool_data_dir, cls.shed_tools_dir])

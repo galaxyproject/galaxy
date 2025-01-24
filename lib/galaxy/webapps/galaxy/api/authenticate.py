@@ -15,6 +15,7 @@ Returns
     }
 
 """
+
 from fastapi import Request
 
 from galaxy.web import expose_api_anonymous_and_sessionless
@@ -59,6 +60,7 @@ class FastAPIAuthenticate:
         summary="Returns returns an API key for authenticated user based on BaseAuth headers.",
     )
     def get_api_key(self, request: Request) -> APIKeyResponse:
+        # TODO: use fastapi.security mechanism
         authorization = request.headers.get("Authorization")
         auth = {"HTTP_AUTHORIZATION": authorization}
         return self.authentication_service.get_api_key(auth, request)

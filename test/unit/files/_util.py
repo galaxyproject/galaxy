@@ -1,18 +1,22 @@
 """Utilities for unit test suite for galaxy.files."""
+
 import os
 import tempfile
+from typing import Optional
 
 from galaxy.files import (
     ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
+    ConfiguredFileSourcesConf,
     DictFileSourcesUserContext,
+    OptionalUserContext,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
 
 
-def serialize_and_recover(file_sources_o, user_context=None):
+def serialize_and_recover(file_sources_o: ConfiguredFileSources, user_context: OptionalUserContext = None):
     as_dict = file_sources_o.to_dict(for_serialization=True, user_context=user_context)
     file_sources = ConfiguredFileSources.from_dict(as_dict)
     return file_sources
@@ -32,19 +36,29 @@ def find(dir_list, class_=None, name=None):
     return None
 
 
-def list_root(file_sources, uri, recursive, user_context=None):
+def list_root(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    recursive: bool,
+    user_context: OptionalUserContext = None,
+):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
-    res = file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     return res
 
 
-def list_dir(file_sources, uri, recursive, user_context=None):
+def list_dir(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    recursive: bool,
+    user_context: OptionalUserContext = None,
+):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
     print(file_source_pair.path)
     print(uri)
-    res = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
+    res, _ = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
     return res
 
 
@@ -81,7 +95,9 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
     return user_context
 
 
-def realize_to_temp_file(file_sources, uri, user_context=None):
+def realize_to_temp_file(
+    file_sources: ConfiguredFileSources, uri: str, user_context: OptionalUserContext = None
+) -> str:
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode="r") as temp:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
@@ -90,29 +106,35 @@ def realize_to_temp_file(file_sources, uri, user_context=None):
             return realized_contents
 
 
-def assert_realizes_as(file_sources, uri, expected, user_context=None):
+def assert_realizes_as(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    expected: str,
+    user_context: OptionalUserContext = None,
+):
     realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
     if realized_contents != expected:
-        message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
-            uri,
-            expected,
-            realized_contents,
+        raise AssertionError(
+            f"Expected to realize contents at [{uri}] as [{expected}], instead found [{realized_contents}]"
         )
-        raise AssertionError(message)
 
 
-def assert_realizes_contains(file_sources, uri, expected, user_context=None):
+def assert_realizes_contains(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    expected: str,
+    user_context: OptionalUserContext = None,
+):
     realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
     if expected not in realized_contents:
-        message = "Expected to realize contents at [{}] to contain [{}], instead found [{}]".format(
-            uri,
-            expected,
-            realized_contents,
+        raise AssertionError(
+            f"Expected to realize contents at [{uri}] to contain [{expected}], instead found [{realized_contents}]"
         )
-        raise AssertionError(message)
 
 
-def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Exception:
+def assert_realizes_throws_exception(
+    file_sources: ConfiguredFileSources, uri: str, user_context: OptionalUserContext = None
+) -> Exception:
     exception = None
     try:
         realize_to_temp_file(file_sources, uri, user_context=user_context)
@@ -122,17 +144,46 @@ def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Ex
     return exception
 
 
-def write_from(file_sources, uri, content, user_context=None):
+def write_from(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    content: str,
+    user_context: OptionalUserContext = None,
+) -> str:
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
         f.flush()
-        file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
+        return file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
 
 
-def configured_file_sources(conf_file):
-    file_sources_config = ConfiguredFileSourcesConfig()
-    return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
+def configured_file_sources(conf_file, file_sources_config: Optional[FileSourcePluginsConfig] = None):
+    file_sources_config = file_sources_config or FileSourcePluginsConfig()
+    assert file_sources_config
+    if isinstance(conf_file, str):
+        conf = ConfiguredFileSourcesConf(conf_file=conf_file)
+    else:
+        conf = ConfiguredFileSourcesConf(conf_dict=conf_file)
+    return ConfiguredFileSources(file_sources_config, conf)
+
+
+def assert_can_write_and_read_to_conf(conf: dict):
+    test_filename = "moo.txt"
+    test_contents = "Hello World from Files Testing!"
+
+    file_source_id = conf["id"]
+    file_sources = configured_file_sources([conf])
+    test_uri = f"gxfiles://{file_source_id}/{test_filename}"
+    actual_uri = write_from(
+        file_sources,
+        test_uri,
+        test_contents,
+    )
+    assert_realizes_contains(
+        file_sources,
+        actual_uri,
+        test_contents,
+    )
 
 
 def assert_simple_file_realize(conf_file, recursive=False, filename="a", contents="a\n", contains=False):
@@ -142,7 +193,7 @@ def assert_simple_file_realize(conf_file, recursive=False, filename="a", content
 
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
-    res = file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     a_file = find(res, class_="File", name=filename)
     assert a_file
 

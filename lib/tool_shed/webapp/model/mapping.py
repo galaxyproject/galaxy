@@ -2,6 +2,7 @@
 Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
+
 import logging
 from typing import (
     Any,
@@ -34,16 +35,19 @@ def init(
     engine_options = engine_options or {}
     # Create the database engine
     engine = build_engine(url, engine_options)
-    # Connect the metadata to the database.
-    metadata.bind = engine
 
     result = ToolShedModelMapping([tool_shed.webapp.model], engine=engine)
 
     if create_tables:
-        metadata.create_all()
+        metadata.create_all(bind=engine)
 
     result.create_tables = create_tables
 
     result.security_agent = CommunityRBACAgent(result)
     result.shed_counter = shed_statistics.ShedCounter(result)
+
+    session = result.session()
+    with session.begin():
+        result.shed_counter.generate_statistics(session)
+
     return result

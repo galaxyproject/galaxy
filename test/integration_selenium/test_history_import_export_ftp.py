@@ -82,7 +82,7 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         history_import.success_message.wait_for_visible()
 
         gx_selenium_context.navigate_to_histories_page()
-        newest_history_name = gx_selenium_context.histories_get_history_names()[0]
+        newest_history_name = gx_selenium_context.get_grid_entry_names("#histories-grid")[0]
         assert newest_history_name.startswith("imported from archive")
 
 
@@ -115,6 +115,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
         history_export_tasks.toggle_options_link.wait_for_and_click()
 
         # Export to FTP file source
+        history_export_tasks.file_source_tab.wait_for_present()
         history_export_tasks.file_source_tab.wait_for_and_click()
         self._export_to_ftp_with_filename("my_export.tar.gz")
 

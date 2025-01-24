@@ -1,7 +1,6 @@
 """This module defines the common functions for error reporting for Galaxy jobs towards Git applications (e.g. Github/GitLab).
 """
 
-
 import logging
 from abc import (
     ABCMeta,
@@ -9,11 +8,10 @@ from abc import (
 )
 from typing import Dict
 
-import requests
-
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
     unicodify,
 )
 from . import ErrorPlugin

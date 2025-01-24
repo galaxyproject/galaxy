@@ -6,7 +6,10 @@ import logging
 
 from webob.exc import HTTPNotFound
 
-from galaxy import web
+from galaxy import (
+    exceptions,
+    web,
+)
 from galaxy.managers.histories import HistoryManager
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
@@ -23,6 +26,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
 
+    app: StructuredApp
     history_manager: HistoryManager = depends(HistoryManager)
 
     def __init__(self, app: StructuredApp):
@@ -96,25 +100,30 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         # TODO: unencoded id
         data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        authz_method = "rbac"
-        if "authz_method" in kwd:
-            authz_method = kwd["authz_method"]
+        authz_method = kwd.get("authz_method", "rbac")
         if data:
             if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), data.dataset
             ):
-                trans.response.set_content_type(data.get_mime())
-                trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
-                return data.as_display_type(display_app, **kwd)
+                pass
             elif authz_method == "display_at" and trans.app.host_security_agent.allow_action(
                 trans.request.remote_addr, data.permitted_actions.DATASET_ACCESS, dataset=data
             ):
-                trans.response.set_content_type(data.get_mime())
-                return data.as_display_type(display_app, **kwd)
+                pass
             else:
+                trans.response.status = "403"
                 return "You are not allowed to access this dataset."
+            try:
+                self.app.hda_manager.ensure_dataset_on_disk(trans, data)
+            except exceptions.MessageException as e:
+                trans.response.status = str(e.status_code)
+                return str(e)
+            trans.response.set_content_type(data.get_mime())
+            trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
+            return data.as_display_type(display_app, **kwd)
         else:
-            return "No data with id=%d" % id
+            trans.response.status = "400"
+            return f"No data with id={id}"
 
     @web.expose
     def welcome(self, trans: GalaxyWebTransaction, **kwargs):

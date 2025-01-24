@@ -3,6 +3,10 @@ from time import (
     strftime,
 )
 
+from sqlalchemy import select
+
+from tool_shed.webapp.model import Repository
+
 
 class ShedCounter:
     def __init__(self, model):
@@ -19,14 +23,8 @@ class ShedCounter:
         self.unique_owners = 0
         self.unique_valid_tools = 0
         self.workflows = 0
-        self.generate_statistics()
 
-    @property
-    def sa_session(self):
-        """Returns a SQLAlchemy session"""
-        return self.model.context
-
-    def generate_statistics(self):
+    def generate_statistics(self, sa_session):
         self.custom_datatypes = 0
         self.deleted_repositories = 0
         self.deprecated_repositories = 0
@@ -38,7 +36,7 @@ class ShedCounter:
         self.unique_valid_tools = 0
         self.workflows = 0
         unique_user_ids = []
-        for repository in self.sa_session.query(self.model.Repository):
+        for repository in sa_session.scalars(select(Repository)):
             self.repositories += 1
             self.total_clones += repository.times_downloaded
             is_deleted = repository.deleted

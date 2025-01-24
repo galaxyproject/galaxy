@@ -1,10 +1,28 @@
 import logging
 import os
 import tempfile
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
-from sqlalchemy import and_
+from typing_extensions import (
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
+from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    InstallationTarget,
+)
 from galaxy.tool_shed.repository_type import (
     REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
     TOOL_DEPENDENCY_DEFINITION_FILENAME,
@@ -24,123 +42,94 @@ from galaxy.tool_shed.util.metadata_util import get_updated_changeset_revisions_
 from galaxy.tool_shed.util.repository_util import get_repository_for_dependency_relationship
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.parser.interface import TestCollectionDef
-from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.repositories import ValidationContext
 from galaxy.util.tool_shed.common_util import (
     generate_clone_url_for_installed_repository,
-    generate_clone_url_for_repository_in_tool_shed,
     remove_protocol_and_user_from_clone_url,
     remove_protocol_from_tool_shed_url,
 )
 from galaxy.util.tool_shed.xml_util import parse_xml
-from galaxy.web import url_for
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import BasicSharedApp
+
 
 log = logging.getLogger(__name__)
 
+InvalidFileT = Tuple[str, str]
+HandleResultT = Tuple[List, bool, str]
 
-class MetadataGenerator:
-    def __init__(
-        self,
-        app,
-        repository=None,
-        changeset_revision=None,
-        repository_clone_url=None,
-        shed_config_dict=None,
-        relative_install_dir=None,
-        repository_files_dir=None,
-        resetting_all_metadata_on_repository=False,
-        updating_installed_repository=False,
-        persist=False,
-        metadata_dict=None,
-        user=None,
-    ):
-        self.app = app
-        self.user = user
-        self.repository = repository
-        if self.app.name == "galaxy":
-            if changeset_revision is None and self.repository is not None:
-                self.changeset_revision = self.repository.changeset_revision
-            else:
-                self.changeset_revision = changeset_revision
+NOT_TOOL_CONFIGS = [
+    suc.DATATYPES_CONFIG_FILENAME,
+    REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+    TOOL_DEPENDENCY_DEFINITION_FILENAME,
+    suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
+]
 
-            if repository_clone_url is None and self.repository is not None:
-                self.repository_clone_url = generate_clone_url_for_installed_repository(self.app, self.repository)
-            else:
-                self.repository_clone_url = repository_clone_url
-            if shed_config_dict is None:
-                if self.repository is not None:
-                    self.shed_config_dict = self.repository.get_shed_config_dict(self.app)
-                else:
-                    self.shed_config_dict = {}
-            else:
-                self.shed_config_dict = shed_config_dict
-            if relative_install_dir is None and self.repository is not None:
-                tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
-            if repository_files_dir is None and self.repository is not None:
-                repository_files_dir = self.repository.repo_files_directory(self.app)
-            if metadata_dict is None:
-                # Shed related tool panel configs are only relevant to Galaxy.
-                self.metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename", None)}
-            else:
-                self.metadata_dict = metadata_dict
-        else:
-            # We're in the Tool Shed.
-            if changeset_revision is None and self.repository is not None:
-                self.changeset_revision = self.repository.tip()
-            else:
-                self.changeset_revision = changeset_revision
-            if repository_clone_url is None and self.repository is not None:
-                self.repository_clone_url = generate_clone_url_for_repository_in_tool_shed(self.user, self.repository)
-            else:
-                self.repository_clone_url = repository_clone_url
-            if shed_config_dict is None:
-                self.shed_config_dict = {}
-            else:
-                self.shed_config_dict = shed_config_dict
-            if relative_install_dir is None and self.repository is not None:
-                relative_install_dir = self.repository.repo_path(self.app)
-            if repository_files_dir is None and self.repository is not None:
-                repository_files_dir = self.repository.repo_path(self.app)
-            if metadata_dict is None:
-                self.metadata_dict = {}
-            else:
-                self.metadata_dict = metadata_dict
-        self.relative_install_dir = relative_install_dir
-        self.repository_files_dir = repository_files_dir
-        self.resetting_all_metadata_on_repository = resetting_all_metadata_on_repository
-        self.updating_installed_repository = updating_installed_repository
-        self.persist = persist
-        self.invalid_file_tups = []
-        self.sa_session = app.model.session
-        self.NOT_TOOL_CONFIGS = [
-            suc.DATATYPES_CONFIG_FILENAME,
-            REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-            TOOL_DEPENDENCY_DEFINITION_FILENAME,
-            suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
-        ]
+
+class RepositoryMetadataToolDict(TypedDict):
+    id: str
+    guid: str
+    name: str
+    version: str
+    profile: str
+    description: Optional[str]
+    version_string_cmd: Optional[str]
+    tool_config: str
+    tool_type: str
+    requirements: Optional[Any]
+    tests: Optional[Any]
+    add_to_tool_panel: bool
+
+
+class RepositoryProtocol(Protocol):
+    name: str
+    id: str
+
+    def repo_path(self, app) -> Optional[str]: ...
+
+
+class BaseMetadataGenerator:
+    app: Union["BasicSharedApp", InstallationTarget]
+    repository: Optional[RepositoryProtocol]
+    invalid_file_tups: List[InvalidFileT]
+    changeset_revision: Optional[str]
+    repository_clone_url: Optional[str]
+    shed_config_dict: Dict[str, Any]
+    metadata_dict: Dict[str, Any]
+    relative_install_dir: Optional[str]
+    repository_files_dir: Optional[str]
+    persist: bool
+
+    def initial_metadata_dict(self) -> Dict[str, Any]:
+        raise NotImplementedError()
+
+    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
+        raise NotImplementedError()
 
     def _generate_data_manager_metadata(
-        self, repo_dir, data_manager_config_filename, metadata_dict, shed_config_dict=None
-    ):
+        self, repo_dir, data_manager_config_filename, metadata_dict: Dict[str, Any], shed_config_dict=None
+    ) -> Dict[str, Any]:
         """
         Update the received metadata_dict with information from the parsed data_manager_config_filename.
         """
         if data_manager_config_filename is None:
             return metadata_dict
+        assert self.repository
         repo_path = self.repository.repo_path(self.app)
-        try:
+        if hasattr(self.repository, "repo_files_directory"):
             # Galaxy Side.
             repo_files_directory = self.repository.repo_files_directory(self.app)
             repo_dir = repo_files_directory
-        except AttributeError:
+        else:
             # Tool Shed side.
             repo_files_directory = repo_path
         relative_data_manager_dir = util.relpath(os.path.split(data_manager_config_filename)[0], repo_dir)
         rel_data_manager_config_filename = os.path.join(
             relative_data_manager_dir, os.path.split(data_manager_config_filename)[1]
         )
-        data_managers = {}
-        invalid_data_managers = []
+        data_managers: Dict[str, dict] = {}
+        invalid_data_managers: List[dict] = []
         data_manager_metadata = {
             "config_filename": rel_data_manager_config_filename,
             "data_managers": data_managers,
@@ -163,8 +152,7 @@ class MetadataGenerator:
                 tool_conf_name = os.path.join(tool_path, tool_conf_name)
             tools[tool_conf_name] = tool
         root = tree.getroot()
-        data_manager_tool_path = root.get("tool_path", None)
-        if data_manager_tool_path:
+        if data_manager_tool_path := root.get("tool_path", None):
             relative_data_manager_dir = os.path.join(relative_data_manager_dir, data_manager_tool_path)
         for i, data_manager_elem in enumerate(root.findall("data_manager")):
             tool_file = data_manager_elem.get("tool_file", None)
@@ -177,8 +165,8 @@ class MetadataGenerator:
                 continue
             # FIXME: default behavior is to fall back to tool.name.
             data_manager_name = data_manager_elem.get("name", data_manager_id)
-            version = data_manager_elem.get("version", DataManager.DEFAULT_VERSION)
-            guid = self.generate_guid_for_object(DataManager.GUID_TYPE, data_manager_id, version)
+            version = data_manager_elem.get("version", DataManagerInterface.DEFAULT_VERSION)
+            guid = self._generate_guid_for_object(DataManagerInterface.GUID_TYPE, data_manager_id, version)
             data_tables = []
             if tool_file is None:
                 log.error(f'Data Manager entry is missing tool_file attribute in "{data_manager_config_filename}".')
@@ -243,7 +231,8 @@ class MetadataGenerator:
                     valid_tool_dependencies_dict["set_environment"] = [requirements_dict]
         return valid_tool_dependencies_dict
 
-    def generate_guid_for_object(self, guid_type, obj_id, version):
+    def _generate_guid_for_object(self, guid_type, obj_id, version) -> str:
+        assert self.repository_clone_url
         tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
         return f"{tmp_url}/{guid_type}/{obj_id}/{version}"
 
@@ -263,18 +252,16 @@ class MetadataGenerator:
         """
         if self.shed_config_dict is None:
             self.shed_config_dict = {}
+        assert self.repository
         if self.updating_installed_repository:
             # Keep the original tool shed repository metadata if setting metadata on a repository
             # installed into a local Galaxy instance for which we have pulled updates.
-            original_repository_metadata = self.repository.metadata_
+            gx_repository = cast(ToolShedRepository, self.repository)  # definitely in Galaxy version
+            original_repository_metadata = gx_repository.metadata_
         else:
             original_repository_metadata = None
         readme_file_names = _get_readme_file_names(str(self.repository.name))
-        if self.app.name == "galaxy":
-            # Shed related tool panel configs are only relevant to Galaxy.
-            metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
-        else:
-            metadata_dict = {}
+        metadata_dict = self.initial_metadata_dict()
         readme_files = []
         invalid_tool_configs = []
         if self.resetting_all_metadata_on_repository:
@@ -294,9 +281,11 @@ class MetadataGenerator:
             work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-gmfcr")
             # All other files are on disk in the repository's repo_path, which is the value of
             # self.relative_install_dir.
+            assert self.relative_install_dir
             files_dir = self.relative_install_dir
             if self.shed_config_dict.get("tool_path"):
                 files_dir = os.path.join(self.shed_config_dict["tool_path"], files_dir)
+        assert files_dir
         # Create ValidationContext to load and validate tools, data tables and datatypes
         with ValidationContext.from_app(app=self.app, work_dir=work_dir) as validation_context:
             tv = ToolValidator(validation_context)
@@ -351,7 +340,7 @@ class MetadataGenerator:
                             )
                             readme_files.append(relative_path_to_readme)
                         # See if we have a tool config.
-                        elif looks_like_a_tool(os.path.join(root, name), invalid_names=self.NOT_TOOL_CONFIGS):
+                        elif looks_like_a_tool(os.path.join(root, name), invalid_names=NOT_TOOL_CONFIGS):
                             full_path = str(os.path.abspath(os.path.join(root, name)))  # why the str, seems very odd
                             element_tree, error_message = parse_xml(full_path)
                             if element_tree is None:
@@ -416,7 +405,7 @@ class MetadataGenerator:
         """
         # TODO: make this function a class.
         repository_dependency_is_valid = True
-        repository_dependency_tup = []
+        repository_dependency_tup: list = []
         requirements_dict = {}
         error_message = ""
         package_name = elem.get("name", None)
@@ -520,9 +509,9 @@ class MetadataGenerator:
             root = tree.getroot()
             xml_is_valid = root.tag == "repositories"
         if xml_is_valid:
-            invalid_repository_dependencies_dict = dict(description=root.get("description"))
+            invalid_repository_dependencies_dict: Dict[str, Any] = dict(description=root.get("description"))
             invalid_repository_dependency_tups = []
-            valid_repository_dependencies_dict = dict(description=root.get("description"))
+            valid_repository_dependencies_dict: Dict[str, Any] = dict(description=root.get("description"))
             valid_repository_dependency_tups = []
             for repository_elem in root.findall("repository"):
                 repository_dependency_tup, repository_dependency_is_valid, err_msg = self.handle_repository_elem(
@@ -540,7 +529,7 @@ class MetadataGenerator:
                         prior_installation_required,
                         only_if_compiling_contained_td,
                     ) = repository_dependency_tup
-                    repository_dependency_tup = (
+                    invalid_repository_dependency_tup = (
                         toolshed,
                         name,
                         owner,
@@ -549,7 +538,7 @@ class MetadataGenerator:
                         only_if_compiling_contained_td,
                         err_msg,
                     )
-                    invalid_repository_dependency_tups.append(repository_dependency_tup)
+                    invalid_repository_dependency_tups.append(invalid_repository_dependency_tup)
                     error_message += err_msg
             if invalid_repository_dependency_tups:
                 invalid_repository_dependencies_dict["repository_dependencies"] = invalid_repository_dependency_tups
@@ -626,7 +615,7 @@ class MetadataGenerator:
         # should not be displayed in the tool panel are datatypes converters and DataManager tools
         # (which are of type 'manage_data').
         add_to_tool_panel_attribute = self._set_add_to_tool_panel_attribute_for_tool(tool)
-        tool_dict = dict(
+        tool_dict = RepositoryMetadataToolDict(
             id=tool.id,
             guid=guid,
             name=tool.name,
@@ -667,11 +656,10 @@ class MetadataGenerator:
         root = tree.getroot()
 
         class RecurserValueStore:
-            pass
+            valid_tool_dependencies_dict = {}
+            invalid_tool_dependencies_dict = {}
 
         rvs = RecurserValueStore()
-        rvs.valid_tool_dependencies_dict = {}
-        rvs.invalid_tool_dependencies_dict = {}
         valid_repository_dependency_tups = []
         invalid_repository_dependency_tups = []
         description = root.get("description")
@@ -734,25 +722,25 @@ class MetadataGenerator:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
                 # into a Galaxy instance, so handle changes to tool dependencies appropriately.
+                assert isinstance(self.app, InstallationTarget)
                 irm = self.app.installed_repository_manager
-                (
-                    updated_tool_dependency_names,
-                    deleted_tool_dependency_names,
-                ) = irm.handle_existing_tool_dependencies_that_changed_in_update(
-                    self.repository, original_valid_tool_dependencies_dict, rvs.valid_tool_dependencies_dict
+                assert self.repository
+                gx_repository = cast(ToolShedRepository, self.repository)
+                irm.handle_existing_tool_dependencies_that_changed_in_update(
+                    gx_repository, original_valid_tool_dependencies_dict, rvs.valid_tool_dependencies_dict
                 )
             metadata_dict["tool_dependencies"] = rvs.valid_tool_dependencies_dict
         if rvs.invalid_tool_dependencies_dict:
             metadata_dict["invalid_tool_dependencies"] = rvs.invalid_tool_dependencies_dict
         if valid_repository_dependency_tups:
-            metadata_dict = self.update_repository_dependencies_metadata(
+            metadata_dict = self._update_repository_dependencies_metadata(
                 metadata=metadata_dict,
                 repository_dependency_tups=valid_repository_dependency_tups,
                 is_valid=True,
                 description=description,
             )
         if invalid_repository_dependency_tups:
-            metadata_dict = self.update_repository_dependencies_metadata(
+            metadata_dict = self._update_repository_dependencies_metadata(
                 metadata=metadata_dict,
                 repository_dependency_tups=invalid_repository_dependency_tups,
                 is_valid=False,
@@ -820,180 +808,6 @@ class MetadataGenerator:
                         sample_file_metadata_paths.append(relative_path_to_sample_file)
         return sample_file_metadata_paths, sample_file_copy_paths
 
-    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False):
-        """
-        Process the received repository_elem which is a <repository> tag either from a
-        repository_dependencies.xml file or a tool_dependencies.xml file.  If the former,
-        we're generating repository dependencies metadata for a repository in the Tool Shed.
-        If the latter, we're generating package dependency metadata within Galaxy or the
-        Tool Shed.
-        """
-        is_valid = True
-        error_message = ""
-        toolshed = repository_elem.get("toolshed", None)
-        name = repository_elem.get("name", None)
-        owner = repository_elem.get("owner", None)
-        changeset_revision = repository_elem.get("changeset_revision", None)
-        prior_installation_required = str(repository_elem.get("prior_installation_required", False))
-        repository_dependency_tup = [
-            toolshed,
-            name,
-            owner,
-            changeset_revision,
-            prior_installation_required,
-            str(only_if_compiling_contained_td),
-        ]
-        if self.app.name == "galaxy":
-            if self.updating_installed_repository:
-                pass
-            else:
-                # We're installing a repository into Galaxy, so make sure its contained repository
-                # dependency definition is valid.
-                if toolshed is None or name is None or owner is None or changeset_revision is None:
-                    # Several packages exist in the Tool Shed that contain invalid repository
-                    # definitions, but will still install. We will report these errors to the
-                    # installing user. Previously, we would:
-                    # Raise an exception here instead of returning an error_message to keep the
-                    # installation from proceeding.  Reaching here implies a bug in the Tool Shed
-                    # framework.
-                    error_message = "Installation encountered an invalid repository dependency definition:\n"
-                    error_message += util.xml_to_string(repository_elem, pretty=True)
-                    log.error(error_message)
-                    return repository_dependency_tup, False, error_message
-        if not toolshed:
-            # Default to the current tool shed.
-            toolshed = str(url_for("/", qualified=True)).rstrip("/")
-            repository_dependency_tup[0] = toolshed
-        toolshed = remove_protocol_from_tool_shed_url(toolshed)
-        if self.app.name == "galaxy":
-            # We're in Galaxy.  We reach here when we're generating the metadata for a tool
-            # dependencies package defined for a repository or when we're generating metadata
-            # for an installed repository.  See if we can locate the installed repository via
-            # the changeset_revision defined in the repository_elem (it may be outdated).  If
-            # we're successful in locating an installed repository with the attributes defined
-            # in the repository_elem, we know it is valid.
-            repository = get_repository_for_dependency_relationship(self.app, toolshed, name, owner, changeset_revision)
-            if repository:
-                return repository_dependency_tup, is_valid, error_message
-            else:
-                # Send a request to the tool shed to retrieve appropriate additional changeset
-                # revisions with which the repository
-                # may have been installed.
-                text = get_updated_changeset_revisions_from_tool_shed(
-                    self.app, toolshed, name, owner, changeset_revision
-                )
-                if text:
-                    updated_changeset_revisions = util.listify(text)
-                    for updated_changeset_revision in updated_changeset_revisions:
-                        repository = get_repository_for_dependency_relationship(
-                            self.app, toolshed, name, owner, updated_changeset_revision
-                        )
-                        if repository:
-                            return repository_dependency_tup, is_valid, error_message
-                        if self.updating_installed_repository:
-                            # The repository dependency was included in an update to the installed
-                            # repository, so it will not yet be installed.  Return the tuple for later
-                            # installation.
-                            return repository_dependency_tup, is_valid, error_message
-                if self.updating_installed_repository:
-                    # The repository dependency was included in an update to the installed repository,
-                    # so it will not yet be installed.  Return the tuple for later installation.
-                    return repository_dependency_tup, is_valid, error_message
-                # Don't generate an error message for missing repository dependencies that are required
-                # only if compiling the dependent repository's tool dependency.
-                if not only_if_compiling_contained_td:
-                    # We'll currently default to setting the repository dependency definition as invalid
-                    # if an installed repository cannot be found.  This may not be ideal because the tool
-                    # shed may have simply been inaccessible when metadata was being generated for the
-                    # installed tool shed repository.
-                    error_message = (
-                        f"Ignoring invalid repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
-                        f"changeset revision {changeset_revision}."
-                    )
-                    log.debug(error_message)
-                    is_valid = False
-                    return repository_dependency_tup, is_valid, error_message
-        else:
-            # We're in the tool shed.
-            if suc.tool_shed_is_this_tool_shed(toolshed):
-                try:
-                    user = (
-                        self.sa_session.query(self.app.model.User)
-                        .filter(self.app.model.User.table.c.username == owner)
-                        .one()
-                    )
-                except Exception:
-                    error_message = (
-                        f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
-                        f"changeset revision {changeset_revision} because the owner is invalid."
-                    )
-                    log.debug(error_message)
-                    is_valid = False
-                    return repository_dependency_tup, is_valid, error_message
-                try:
-                    repository = (
-                        self.sa_session.query(self.app.model.Repository)
-                        .filter(
-                            and_(
-                                self.app.model.Repository.table.c.name == name,
-                                self.app.model.Repository.table.c.user_id == user.id,
-                            )
-                        )
-                        .one()
-                    )
-                except Exception:
-                    error_message = (
-                        f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
-                        f"changeset revision {changeset_revision} because the name is invalid.  "
-                    )
-                    log.debug(error_message)
-                    is_valid = False
-                    return repository_dependency_tup, is_valid, error_message
-                repo = repository.hg_repo
-
-                # The received changeset_revision may be None since defining it in the dependency definition is optional.
-                # If this is the case, the default will be to set its value to the repository dependency tip revision.
-                # This probably occurs only when handling circular dependency definitions.
-                tip_ctx = repo[repo.changelog.tip()]
-                # Make sure the repo.changlog includes at least 1 revision.
-                if changeset_revision is None and tip_ctx.rev() >= 0:
-                    changeset_revision = str(tip_ctx)
-                    repository_dependency_tup = [
-                        toolshed,
-                        name,
-                        owner,
-                        changeset_revision,
-                        prior_installation_required,
-                        str(only_if_compiling_contained_td),
-                    ]
-                    return repository_dependency_tup, is_valid, error_message
-                else:
-                    # Find the specified changeset revision in the repository's changelog to see if it's valid.
-                    found = False
-                    for changeset in repo.changelog:
-                        changeset_hash = str(repo[changeset])
-                        if changeset_hash == changeset_revision:
-                            found = True
-                            break
-                    if not found:
-                        error_message = (
-                            f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
-                            f"changeset revision {changeset_revision} because the changeset revision is invalid.  "
-                        )
-                        log.debug(error_message)
-                        is_valid = False
-                        return repository_dependency_tup, is_valid, error_message
-            else:
-                # Repository dependencies are currently supported within a single tool shed.
-                error_message = (
-                    "Repository dependencies are currently supported only within the same tool shed.  Ignoring "
-                    f"repository dependency definition  for tool shed {toolshed}, name {name}, owner {owner}, changeset revision {changeset_revision}.  "
-                )
-                log.debug(error_message)
-                is_valid = False
-                return repository_dependency_tup, is_valid, error_message
-        return repository_dependency_tup, is_valid, error_message
-
     def _set_add_to_tool_panel_attribute_for_tool(self, tool):
         """
         Determine if a tool should be loaded into the Galaxy tool panel.  Examples of valid tools that
@@ -1005,33 +819,14 @@ class MetadataGenerator:
                 return False
         return True
 
-    def set_changeset_revision(self, changeset_revision):
+    def set_changeset_revision(self, changeset_revision: Optional[str]):
         self.changeset_revision = changeset_revision
 
-    def set_relative_install_dir(self, relative_install_dir):
+    def set_relative_install_dir(self, relative_install_dir: Optional[str]):
         self.relative_install_dir = relative_install_dir
 
-    def set_repository(self, repository, relative_install_dir=None, changeset_revision=None):
-        self.repository = repository
-        # Shed related tool panel configs are only relevant to Galaxy.
-        if self.app.name == "galaxy":
-            if relative_install_dir is None and self.repository is not None:
-                tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
-            if changeset_revision is None and self.repository is not None:
-                self.set_changeset_revision(self.repository.changeset_revision)
-            else:
-                self.set_changeset_revision(changeset_revision)
-            self.shed_config_dict = repository.get_shed_config_dict(self.app)
-            self.metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename", None)}
-        else:
-            if relative_install_dir is None and self.repository is not None:
-                relative_install_dir = repository.repo_path(self.app)
-            if changeset_revision is None and self.repository is not None:
-                self.set_changeset_revision(self.repository.tip())
-            else:
-                self.set_changeset_revision(changeset_revision)
-            self.shed_config_dict = {}
-            self.metadata_dict = {}
+    def _reset_attributes_after_repository_update(self, relative_install_dir: Optional[str]):
+        self.metadata_dict = self.initial_metadata_dict()
         self.set_relative_install_dir(relative_install_dir)
         self.set_repository_files_dir()
         self.resetting_all_metadata_on_repository = False
@@ -1039,13 +834,16 @@ class MetadataGenerator:
         self.persist = False
         self.invalid_file_tups = []
 
-    def set_repository_clone_url(self, repository_clone_url):
-        self.repository_clone_url = repository_clone_url
-
-    def set_repository_files_dir(self, repository_files_dir=None):
+    def set_repository_files_dir(self, repository_files_dir: Optional[str] = None):
         self.repository_files_dir = repository_files_dir
 
-    def update_repository_dependencies_metadata(self, metadata, repository_dependency_tups, is_valid, description):
+    def _update_repository_dependencies_metadata(
+        self,
+        metadata: Dict[str, Any],
+        repository_dependency_tups: List[tuple],
+        is_valid: bool,
+        description: Optional[str],
+    ) -> Dict[str, Any]:
         if is_valid:
             repository_dependencies_dict = metadata.get("repository_dependencies", None)
         else:
@@ -1069,7 +867,172 @@ class MetadataGenerator:
         return metadata
 
 
-def _get_readme_file_names(repository_name):
+class GalaxyMetadataGenerator(BaseMetadataGenerator):
+    """A MetadataGenerator building on Galaxy's app and repository constructs."""
+
+    app: InstallationTarget
+    repository: Optional[ToolShedRepository]  # type:ignore[assignment]
+
+    def __init__(
+        self,
+        app: InstallationTarget,
+        repository=None,
+        changeset_revision: Optional[str] = None,
+        repository_clone_url: Optional[str] = None,
+        shed_config_dict: Optional[Dict[str, Any]] = None,
+        relative_install_dir=None,
+        repository_files_dir=None,
+        resetting_all_metadata_on_repository=False,
+        updating_installed_repository=False,
+        persist=False,
+        metadata_dict=None,
+        user=None,
+    ):
+        self.app = app
+        self.user = user
+        self.repository = repository
+        if changeset_revision is None and self.repository is not None:
+            self.changeset_revision = self.repository.changeset_revision
+        else:
+            self.changeset_revision = changeset_revision
+
+        if repository_clone_url is None and self.repository is not None:
+            self.repository_clone_url = generate_clone_url_for_installed_repository(self.app, self.repository)
+        else:
+            self.repository_clone_url = repository_clone_url
+        if shed_config_dict is None:
+            if self.repository is not None:
+                self.shed_config_dict = self.repository.get_shed_config_dict(self.app)
+            else:
+                self.shed_config_dict = {}
+        else:
+            self.shed_config_dict = shed_config_dict
+        if relative_install_dir is None and self.repository is not None:
+            tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
+        if repository_files_dir is None and self.repository is not None:
+            repository_files_dir = self.repository.repo_files_directory(self.app)
+        if metadata_dict is None:
+            # Shed related tool panel configs are only relevant to Galaxy.
+            self.metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename", None)}
+        else:
+            self.metadata_dict = metadata_dict
+        self.relative_install_dir = relative_install_dir
+        self.repository_files_dir = repository_files_dir
+        self.resetting_all_metadata_on_repository = resetting_all_metadata_on_repository
+        self.updating_installed_repository = updating_installed_repository
+        self.persist = persist
+        self.invalid_file_tups = []
+
+    def initial_metadata_dict(self) -> Dict[str, Any]:
+        # Shed related tool panel configs are only relevant to Galaxy.
+        metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
+        return metadata_dict
+
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
+        self.repository = repository
+        if relative_install_dir is None and self.repository is not None:
+            tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
+        if changeset_revision is None and self.repository is not None:
+            self.set_changeset_revision(self.repository.changeset_revision)
+        else:
+            self.set_changeset_revision(changeset_revision)
+        self.shed_config_dict = repository.get_shed_config_dict(self.app)
+        self._reset_attributes_after_repository_update(relative_install_dir)
+
+    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
+        """
+        Process the received repository_elem which is a <repository> tag either from a
+        repository_dependencies.xml file or a tool_dependencies.xml file.  If the former,
+        we're generating repository dependencies metadata for a repository in the Tool Shed.
+        If the latter, we're generating package dependency metadata within Galaxy or the
+        Tool Shed.
+        """
+        is_valid = True
+        error_message = ""
+        toolshed = repository_elem.get("toolshed", None)
+        name = repository_elem.get("name", None)
+        owner = repository_elem.get("owner", None)
+        changeset_revision = repository_elem.get("changeset_revision", None)
+        prior_installation_required = str(repository_elem.get("prior_installation_required", False))
+        repository_dependency_tup = [
+            toolshed,
+            name,
+            owner,
+            changeset_revision,
+            prior_installation_required,
+            str(only_if_compiling_contained_td),
+        ]
+        if self.updating_installed_repository:
+            pass
+        else:
+            # We're installing a repository into Galaxy, so make sure its contained repository
+            # dependency definition is valid.
+            if toolshed is None or name is None or owner is None or changeset_revision is None:
+                # Several packages exist in the Tool Shed that contain invalid repository
+                # definitions, but will still install. We will report these errors to the
+                # installing user. Previously, we would:
+                # Raise an exception here instead of returning an error_message to keep the
+                # installation from proceeding.  Reaching here implies a bug in the Tool Shed
+                # framework.
+                error_message = "Installation encountered an invalid repository dependency definition:\n"
+                error_message += util.xml_to_string(repository_elem, pretty=True)
+                log.error(error_message)
+                return repository_dependency_tup, False, error_message
+
+        # Must be present in Galaxy side code I think.
+        assert toolshed
+
+        toolshed = remove_protocol_from_tool_shed_url(toolshed)
+
+        # We're in Galaxy.  We reach here when we're generating the metadata for a tool
+        # dependencies package defined for a repository or when we're generating metadata
+        # for an installed repository.  See if we can locate the installed repository via
+        # the changeset_revision defined in the repository_elem (it may be outdated).  If
+        # we're successful in locating an installed repository with the attributes defined
+        # in the repository_elem, we know it is valid.
+        repository = get_repository_for_dependency_relationship(self.app, toolshed, name, owner, changeset_revision)
+        if repository:
+            return repository_dependency_tup, is_valid, error_message
+        else:
+            # Send a request to the tool shed to retrieve appropriate additional changeset
+            # revisions with which the repository
+            # may have been installed.
+            text = get_updated_changeset_revisions_from_tool_shed(self.app, toolshed, name, owner, changeset_revision)
+            if text:
+                updated_changeset_revisions = util.listify(text)
+                for updated_changeset_revision in updated_changeset_revisions:
+                    repository = get_repository_for_dependency_relationship(
+                        self.app, toolshed, name, owner, updated_changeset_revision
+                    )
+                    if repository:
+                        return repository_dependency_tup, is_valid, error_message
+                    if self.updating_installed_repository:
+                        # The repository dependency was included in an update to the installed
+                        # repository, so it will not yet be installed.  Return the tuple for later
+                        # installation.
+                        return repository_dependency_tup, is_valid, error_message
+            if self.updating_installed_repository:
+                # The repository dependency was included in an update to the installed repository,
+                # so it will not yet be installed.  Return the tuple for later installation.
+                return repository_dependency_tup, is_valid, error_message
+            # Don't generate an error message for missing repository dependencies that are required
+            # only if compiling the dependent repository's tool dependency.
+            if not only_if_compiling_contained_td:
+                # We'll currently default to setting the repository dependency definition as invalid
+                # if an installed repository cannot be found.  This may not be ideal because the tool
+                # shed may have simply been inaccessible when metadata was being generated for the
+                # installed tool shed repository.
+                error_message = f"Ignoring invalid repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
+                error_message += f"changeset revision {changeset_revision}."
+                log.debug(error_message)
+                is_valid = False
+                return repository_dependency_tup, is_valid, error_message
+        return repository_dependency_tup, is_valid, error_message
+
+
+def _get_readme_file_names(repository_name: str) -> List[str]:
     """Return a list of file names that will be categorized as README files for the received repository_name."""
     readme_files = ["readme", "read_me", "install"]
     valid_filenames = [f"{f}.txt" for f in readme_files]

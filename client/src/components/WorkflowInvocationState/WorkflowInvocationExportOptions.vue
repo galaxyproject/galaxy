@@ -1,12 +1,9 @@
 <script setup>
 import { BCard } from "bootstrap-vue";
-import { AVAILABLE_INVOCATION_EXPORT_PLUGINS } from "components/Workflow/Invocation/Export/Plugins";
 import { useConfig } from "composables/config";
 
-import InvocationExportPluginCard from "components/Workflow/Invocation/Export/InvocationExportPluginCard.vue";
-import BioComputeObjectExportCard from "components/Workflow/Invocation/Export/Plugins/BioComputeObject/BioComputeObjectExportCard.vue";
-
-const exportPlugins = AVAILABLE_INVOCATION_EXPORT_PLUGINS;
+import InvocationExportWizard from "@/components/Workflow/Invocation/Export/InvocationExportWizard.vue";
+import BioComputeObjectExportCard from "@/components/Workflow/Invocation/Export/Plugins/BioComputeObject/BioComputeObjectExportCard.vue";
 
 const { config } = useConfig(true);
 
@@ -20,9 +17,7 @@ defineProps({
 
 <template>
     <div v-if="config.enable_celery_tasks">
-        <div v-for="(plugin, index) in exportPlugins" :key="index" class="mb-2">
-            <InvocationExportPluginCard :export-plugin="plugin" :invocation-id="invocationId" />
-        </div>
+        <InvocationExportWizard :invocation-id="invocationId" />
     </div>
     <div v-else>
         <!--

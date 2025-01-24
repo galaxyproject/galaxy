@@ -27,6 +27,9 @@
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
+                    <h2 v-if="workflowVersions" class="text-break align-middle">
+                        Workflow Checkpoint: {{ workflowVersions.version }}
+                    </h2>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -51,7 +54,6 @@
                     :collections="collections"
                     :histories="histories"
                     :invocations="invocations"
-                    :jobs="jobs"
                     :time="time"
                     :version="version"
                     :workflows="workflows" />
@@ -67,17 +69,16 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
-import store from "store";
+import { mapActions } from "pinia";
 import Vue from "vue";
+
+import { useWorkflowStore } from "@/stores/workflowStore";
+
+import { splitMarkdown as splitMarkdownUnrendered } from "./parse";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
-
-const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
-const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
-const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_CALL})(,${FUNCTION_CALL})*)?\\s*\\)\\s*`;
-const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 const mdNewline = markdownItRegexp(/<br>/, () => {
     return "<div style='clear:both;'/><br>";
@@ -91,7 +92,6 @@ Vue.use(BootstrapVue);
 library.add(faDownload, faEdit);
 
 export default {
-    store: store,
     components: {
         MarkdownContainer,
         FontAwesomeIcon,
@@ -128,9 +128,9 @@ export default {
             histories: {},
             collections: {},
             workflows: {},
-            jobs: {},
             invocations: {},
             loading: true,
+            workflowID: "",
         };
     },
     computed: {
@@ -138,8 +138,13 @@ export default {
             return this.enable_beta_markdown_export ? this.exportLink : null;
         },
         time() {
-            const generateTime = this.markdownConfig.generate_time;
+            let generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
+                if (!generateTime.endsWith("Z")) {
+                    // We don't have tzinfo, but this will always be UTC coming
+                    // from Galaxy so append Z to assert that prior to parsing
+                    generateTime += "Z";
+                }
                 const date = new Date(generateTime);
                 return date.toLocaleString("default", {
                     day: "numeric",
@@ -147,9 +152,14 @@ export default {
                     year: "numeric",
                     minute: "numeric",
                     hour: "numeric",
+                    timeZone: "UTC",
+                    timeZoneName: "short",
                 });
             }
             return "unavailable";
+        },
+        workflowVersions() {
+            return this.getStoredWorkflowByInstanceId(this.workflowID);
         },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
@@ -162,87 +172,34 @@ export default {
     },
     created() {
         this.initConfig();
+        this.fetchWorkflowForInstanceId(this.workflowID);
     },
     methods: {
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
-                const markdown = config.content || config.markdown;
+                const markdown = config.content || config.markdown || "";
                 this.markdownErrors = config.errors || [];
                 this.markdownObjects = this.splitMarkdown(markdown);
                 this.datasets = config.history_datasets || {};
                 this.histories = config.histories || {};
                 this.collections = config.history_dataset_collections || {};
                 this.workflows = config.workflows || {};
-                this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
+                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
             }
         },
         splitMarkdown(markdown) {
-            const sections = [];
-            let digest = markdown;
-            while (digest.length > 0) {
-                const galaxyStart = digest.indexOf("```galaxy");
-                if (galaxyStart != -1) {
-                    const galaxyEnd = digest.substr(galaxyStart + 1).indexOf("```");
-                    if (galaxyEnd != -1) {
-                        if (galaxyStart > 0) {
-                            const defaultContent = digest.substr(0, galaxyStart).trim();
-                            if (defaultContent) {
-                                sections.push({
-                                    name: "default",
-                                    content: md.render(defaultContent),
-                                });
-                            }
-                        }
-                        const galaxyEndIndex = galaxyEnd + 4;
-                        const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
-                        let args = null;
-                        try {
-                            args = this.getArgs(galaxySection);
-                            sections.push(args);
-                        } catch (e) {
-                            this.markdownErrors.push({
-                                error: "Found an unresolved tag.",
-                                line: galaxySection,
-                            });
-                        }
-                        digest = digest.substr(galaxyStart + galaxyEndIndex);
-                    } else {
-                        digest = digest.substr(galaxyStart + 1);
-                    }
-                } else {
-                    sections.push({
-                        name: "default",
-                        content: md.render(digest),
-                    });
-                    break;
+            const { sections, markdownErrors } = splitMarkdownUnrendered(markdown);
+            markdownErrors.forEach((error) => markdownErrors.push(error));
+            sections.forEach((section) => {
+                if (section.name == "default") {
+                    section.content = md.render(section.content);
                 }
-            }
+            });
             return sections;
-        },
-        getArgs(content) {
-            const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
-            const args = {};
-            const function_name = galaxy_function[1];
-            // we need [... ] to return empty string, if regex doesn't match
-            const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
-            for (let i = 0; i < function_arguments.length; i++) {
-                if (function_arguments[i] === undefined) {
-                    continue;
-                }
-                const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
-                if (arguments_str) {
-                    const [key, val] = arguments_str.split("=");
-                    args[key.trim()] = val.replace(/['"]+/g, "").trim();
-                }
-            }
-            return {
-                name: function_name,
-                args: args,
-                content: content,
-            };
         },
     },
 };

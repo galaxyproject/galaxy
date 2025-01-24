@@ -2,6 +2,7 @@
     <FormInputs
         :key="id"
         :inputs="formInputs"
+        :loading="loading"
         :prefix="prefix"
         :sustain-repeats="sustainRepeats"
         :sustain-conditionals="sustainConditionals"
@@ -36,6 +37,10 @@ export default {
         errors: {
             type: Object,
             default: null,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
         },
         prefix: {
             type: String,
@@ -81,6 +86,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        allowEmptyValueOnRequiredInput: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -91,7 +100,7 @@ export default {
     },
     computed: {
         validation() {
-            return validateInputs(this.formIndex, this.formData);
+            return validateInputs(this.formIndex, this.formData, this.allowEmptyValueOnRequiredInput);
         },
     },
     watch: {
@@ -106,7 +115,7 @@ export default {
             visitInputs(this.formInputs, (input, name) => {
                 const newValue = newAttributes[name];
                 if (newValue != undefined) {
-                    input.attributes = newValue;
+                    Vue.set(input, "attributes", newValue);
                 }
             });
             this.onChangeForm();
@@ -200,7 +209,7 @@ export default {
                 }
             }
         },
-        getOffsetTop(element, padding = 150) {
+        getOffsetTop(element, padding = 200) {
             let offsetTop = 0;
             while (element) {
                 offsetTop += element.offsetTop;
@@ -218,7 +227,7 @@ export default {
                     if (element) {
                         const centerPanel = document.querySelector("#center");
                         if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element) - 50);
+                            centerPanel.scrollTo(0, this.getOffsetTop(element));
                         }
                     }
                 }

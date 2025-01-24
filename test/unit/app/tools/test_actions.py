@@ -14,8 +14,8 @@ from galaxy.tool_util.parser.xml import parse_change_format
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
-    on_text_for_names,
 )
+from galaxy.tools.execution_helpers import on_text_for_names
 from galaxy.util import XML
 from galaxy.util.unittest import TestCase
 
@@ -140,7 +140,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _ = self.action.execute(
+        job, out_data, *_ = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,
@@ -231,7 +231,7 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
         )
         c1.elements = [dce1, dce2]
 
-        input_collections["hdcai"] = [(hc1, False)]
+        input_collections["hdcai"] = hc1
 
     actual_format = determine_output_format(output, param_context, inputs, input_collections, last_ext)
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"

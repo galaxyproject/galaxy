@@ -4,12 +4,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import (
-    false,
-    or_,
-    true,
-)
-
 import galaxy.managers.base as managers_base
 from galaxy import (
     exceptions as glx_exceptions,
@@ -26,6 +20,7 @@ from galaxy.managers.users import (
     UserSerializer,
 )
 from galaxy.model import User
+from galaxy.model.db.user import get_users_for_index
 from galaxy.queue_worker import send_local_control_task
 from galaxy.quota import QuotaAgent
 from galaxy.schema import APIKeyModel
@@ -34,6 +29,8 @@ from galaxy.schema.schema import (
     DetailedUserModel,
     FlexibleUserIdType,
     LimitedUserModel,
+    MaybeLimitedUserModel,
+    RoleListResponse,
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -41,6 +38,7 @@ from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ServiceBase,
 )
+from galaxy.webapps.galaxy.services.roles import role_to_model
 
 
 class UsersService(ServiceBase):
@@ -69,20 +67,21 @@ class UsersService(ServiceBase):
     def recalculate_disk_usage(
         self,
         trans: ProvidesUserContext,
+        user_id: int,
     ):
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
         if trans.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import recalculate_user_disk_usage
 
-            result = recalculate_user_disk_usage.delay(task_user_id=getattr(trans.user, "id", None))
+            result = recalculate_user_disk_usage.delay(task_user_id=user_id)
             return async_task_summary(result)
         else:
             send_local_control_task(
                 trans.app,
                 "recalculate_user_disk_usage",
                 kwargs={
-                    "user_id": trans.user.id,
+                    "user_id": user_id,
                 },
             )
             return None
@@ -91,7 +90,7 @@ class UsersService(ServiceBase):
         """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
-        return APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
+        return APIKeyModel.model_construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
 
     def get_or_create_api_key(self, trans: ProvidesUserContext, user_id: int) -> str:
         """Returns the current API key (as plain string) or creates a new one."""
@@ -102,7 +101,7 @@ class UsersService(ServiceBase):
         """Creates a new API key for the given user"""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.create_api_key(user)
-        result = APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time)
+        result = APIKeyModel.model_construct(key=api_key.key, create_time=api_key.create_time)
         return result
 
     def delete_api_key(self, trans: ProvidesUserContext, user_id: int) -> None:
@@ -120,11 +119,11 @@ class UsersService(ServiceBase):
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            # Can't return info about this user, may not have a history yet.
-            # return {}
-            raise glx_exceptions.MessageException(err_msg="The user has no history, which should always be the case.")
-        usage = self.quota_agent.get_usage(trans, history=trans.history)
-        percent = self.quota_agent.get_percent(trans=trans, usage=usage)
+            usage: Optional[float] = 0.0
+            percent: Optional[int] = 0
+        else:
+            usage = self.quota_agent.get_usage(trans, history=trans.history)
+            percent = self.quota_agent.get_percent(trans=trans, usage=usage)
         usage = usage or 0
         return {
             "total_disk_usage": int(usage),
@@ -192,7 +191,7 @@ class UsersService(ServiceBase):
         self,
         user: User,
     ) -> DetailedUserModel:
-        user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+        user_response = self.user_serializer.serialize_to_view(user, view="detailed", encode_id=False)
         return DetailedUserModel(**user_response)
 
     def get_index(
@@ -202,32 +201,12 @@ class UsersService(ServiceBase):
         f_email: Optional[str],
         f_name: Optional[str],
         f_any: Optional[str],
-    ) -> List[Union[UserModel, LimitedUserModel]]:
-        rval = []
-        query = trans.sa_session.query(User)
-
-        if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            query = query.filter(User.email.like(f"%{f_email}%"))
-
-        if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            query = query.filter(User.username.like(f"%{f_name}%"))
-
-        if f_any:
-            if trans.user_is_admin:
-                query = query.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-            else:
-                if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
-                    query = query.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-                elif trans.app.config.expose_user_email:
-                    query = query.filter(User.email.like(f"%{f_any}%"))
-                elif trans.app.config.expose_user_name:
-                    query = query.filter(User.username.like(f"%{f_any}%"))
-
+    ) -> List[MaybeLimitedUserModel]:
+        # check for early return conditions
         if deleted:
-            # only admins can see deleted users
             if not trans.user_is_admin:
+                # only admins can see deleted users
                 return []
-            query = query.filter(User.table.c.deleted == true())
         else:
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
@@ -237,11 +216,24 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_name
                 and not trans.app.config.expose_user_email
             ):
-                item = trans.user.to_dict(value_mapper={"id": trans.security.encode_id})
-                return [item]
-            query = query.filter(User.table.c.deleted == false())
-        for user in query:
-            item = user.to_dict(value_mapper={"id": trans.security.encode_id})
+                if trans.user:
+                    return [UserModel(**trans.user.to_dict())]
+                else:
+                    return []
+
+        users = get_users_for_index(
+            trans.sa_session,
+            deleted,
+            f_email,
+            f_name,
+            f_any,
+            trans.user_is_admin,
+            trans.app.config.expose_user_email,
+            trans.app.config.expose_user_name,
+        )
+        rval: List[MaybeLimitedUserModel] = []
+        for user in users:
+            user_dict = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin
             if user is not trans.user and not trans.user_is_admin:
@@ -250,12 +242,16 @@ class UsersService(ServiceBase):
                     expose_keys.append("username")
                 if trans.app.config.expose_user_email:
                     expose_keys.append("email")
-                new_item = {}
-                for key, value in item.items():
+                limited_user = {}
+                for key, value in user_dict.items():
                     if key in expose_keys:
-                        new_item[key] = value
-                item = new_item
-
-            # TODO: move into api_values
-            rval.append(item)
+                        limited_user[key] = value
+                rval.append(LimitedUserModel(**limited_user))
+            else:
+                rval.append(UserModel(**user_dict))
         return rval
+
+    def get_user_roles(self, trans, user_id):
+        user = self.get_user(trans, user_id)
+        roles = [ura.role for ura in user.roles]
+        return RoleListResponse(root=[role_to_model(r) for r in roles])

@@ -1,9 +1,15 @@
+from typing import cast
+
 from galaxy import model
 from galaxy.model.base import transaction
 from galaxy.util.unittest import TestCase
-from galaxy.workflow.run import WorkflowProgress
+from galaxy.workflow.run import (
+    ModuleInjector,
+    WorkflowProgress,
+)
 from .workflow_support import (
     MockApp,
+    MockTrans,
     yaml_to_model,
 )
 
@@ -76,7 +82,8 @@ class TestWorkflowProgress(TestCase):
         self.invocation.workflow = workflow
 
     def _new_workflow_progress(self):
-        return WorkflowProgress(self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {})
+        mock_injector: ModuleInjector = cast(ModuleInjector, MockModuleInjector(self.progress))
+        return WorkflowProgress(self.invocation, self.inputs_by_step_id, mock_injector, {})
 
     def _set_previous_progress(self, outputs):
         for i, (step_id, step_value) in enumerate(outputs):
@@ -93,7 +100,7 @@ class TestWorkflowProgress(TestCase):
 
             workflow_invocation_step_state = model.WorkflowRequestStepState()
             workflow_invocation_step_state.workflow_step_id = step_id
-            workflow_invocation_step_state.value = True
+            workflow_invocation_step_state.value = cast(bytes, True)
             self.invocation.step_states.append(workflow_invocation_step_state)
 
     def _step(self, index):
@@ -132,7 +139,7 @@ class TestWorkflowProgress(TestCase):
             "input_type": "dataset",
             "multiple": False,
         }
-        replacement = progress.replacement_for_input(self._step(2), step_dict)
+        replacement = progress.replacement_for_input(None, self._step(2), step_dict)
         assert replacement is hda
 
     def test_connect_tool_output(self):
@@ -169,7 +176,7 @@ class TestWorkflowProgress(TestCase):
             "input_type": "dataset",
             "multiple": False,
         }
-        replacement = progress.replacement_for_input(self._step(4), step_dict)
+        replacement = progress.replacement_for_input(None, self._step(4), step_dict)
         assert replacement is hda3
 
     # TODO: Replace multiple true HDA with HDCA
@@ -216,6 +223,7 @@ class TestWorkflowProgress(TestCase):
             "multiple": False,
         }
         assert hda is subworkflow_progress.replacement_for_input(
+            None,
             subworkflow_cat_step,
             step_dict,
         )
@@ -241,8 +249,9 @@ class MockModuleInjector:
 class MockModule:
     def __init__(self, progress):
         self.progress = progress
+        self.trans = MockTrans()
 
-    def decode_runtime_state(self, runtime_state):
+    def decode_runtime_state(self, step, runtime_state):
         return True
 
     def recover_mapping(self, invocation_step, progress):

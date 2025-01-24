@@ -12,6 +12,15 @@
   root: ${user.preferences['owncloud|root']}
   login: ${user.preferences['owncloud|username']}
   password: ${user.preferences['owncloud|password']}
+  # for accessing passwords stored in a vault:
+  # password: ${user.user_vault.read_secret('preferences/owncloud/password')}
+
+  # By default, the plugin will use temp files to avoid loading entire files into memory. 
+  # You can change the directory here or omit to use the default temp directory.
+  temp_path: /your/temp/path
+  # Set writable to true if you have write access to this source
+  # and want to allow exporting files to it, by default is read only.
+  writable: false
 
 - type: posix
   root: '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/'
@@ -193,7 +202,39 @@
   doc: Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.
 
 - type: inveniordm
-  id: invenio
-  doc: Invenio RDM turn-key research data management repository
-  label: Invenio RDM Demo Repository
+  id: invenio_sandbox
+  doc: This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Invenio RDM Sandbox Repository (TESTING ONLY)
   url: https://inveniordm.web.cern.ch/
+  token: ${user.user_vault.read_secret('preferences/invenio_sandbox/token')}
+  # token: ${user.preferences['invenio_sandbox|token']} # Alternatively use this for retrieving the token from user preferences instead of the Vault
+  public_name: ${user.preferences['invenio_sandbox|public_name']}
+  writable: true
+
+- type: zenodo
+  id: zenodo
+  doc: Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.
+  label: Zenodo
+  url: https://zenodo.org
+  token: ${user.user_vault.read_secret('preferences/zenodo/token')}
+  public_name: ${user.preferences['zenodo|public_name']}
+  writable: true
+
+- type: zenodo
+  id: zenodo_sandbox
+  doc: This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Zenodo Sandbox (TESTING ONLY)
+  url: https://sandbox.zenodo.org
+  token: ${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}
+  public_name: ${user.preferences['zenodo_sandbox|public_name']}
+  writable: true
+
+# Note for developers: you can easily set up a minimal, dockerized Onedata environment
+# using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
+- type: onedata
+  id: onedata1
+  label: Onedata
+  doc: Your Onedata files - configure an access token via user preferences
+  access_token: ${user.preferences['onedata|access_token']}
+  onezone_domain: ${user.preferences['onedata|onezone_domain']}
+  disable_tls_certificate_validation: ${user.preferences['onedata|disable_tls_certificate_validation']}

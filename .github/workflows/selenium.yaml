@@ -23,14 +23,16 @@ concurrency:
 jobs:
   setup-selenium:
     uses: ./.github/workflows/setup_selenium.yaml
+  build-client:
+    uses: ./.github/workflows/build_client.yaml
   test:
     name: Test
-    needs: setup-selenium
+    needs: [setup-selenium, build-client]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
         chunk: [0, 1, 2]
     services:
       postgres:
@@ -46,31 +48,33 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.12.1'
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache pip dir
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium
+      - name: Restore client cache
+        uses: actions/cache@v4
+        with:
+          key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
+          path: 'galaxy root/static'
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
@@ -78,12 +82,12 @@ jobs:
         with:
           flags: selenium
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_selenium_tests.html'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: Selenium debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})

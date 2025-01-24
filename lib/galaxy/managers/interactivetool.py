@@ -1,104 +1,92 @@
+import json
 import logging
-import sqlite3
+from urllib.parse import (
+    urlsplit,
+    urlunsplit,
+)
 
-from sqlalchemy import or_
+from sqlalchemy import (
+    Column,
+    create_engine,
+    delete,
+    insert,
+    Integer,
+    MetaData,
+    or_,
+    select,
+    String,
+    Table,
+    Text,
+)
 
-from galaxy import (
-    exceptions,
-    model,
+from galaxy import exceptions
+from galaxy.model import (
+    InteractiveToolEntryPoint,
+    Job,
 )
 from galaxy.model.base import transaction
-from galaxy.util.filelock import FileLock
+from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 
 log = logging.getLogger(__name__)
 
-DATABASE_TABLE_NAME = "gxitproxy"
+gxitproxy = Table(
+    "gxitproxy",
+    MetaData(),
+    Column("key", String(16), primary_key=True),
+    Column("key_type", Text(), primary_key=True),
+    Column("token", String(32)),
+    Column("host", Text()),
+    Column("port", Integer()),
+    Column("info", Text()),
+)
 
 
-class InteractiveToolSqlite:
-    def __init__(self, sqlite_filename, encode_id):
-        self.sqlite_filename = sqlite_filename
-        self.encode_id = encode_id
+class InteractiveToolPropagatorSQLAlchemy:
+    """
+    Propagator for InteractiveToolManager implemented using SQLAlchemy.
+    """
 
-    def get(self, key, key_type):
-        with FileLock(self.sqlite_filename):
-            conn = sqlite3.connect(self.sqlite_filename)
-            try:
-                c = conn.cursor()
-                select = f"""SELECT token, host, port, info
-                            FROM {DATABASE_TABLE_NAME}
-                            WHERE key=? and key_type=?"""
-                c.execute(
-                    select,
-                    (
-                        key,
-                        key_type,
-                    ),
-                )
-                try:
-                    token, host, port, info = c.fetchone()
-                except TypeError:
-                    log.warning("get(): invalid key: %s key_type %s", key, key_type)
-                    return None
-                return dict(key=key, key_type=key_type, token=token, host=host, port=port, info=info)
-            finally:
-                conn.close()
+    def __init__(self, database_url, encode_id):
+        """
+        Constructor that sets up the propagator using a SQLAlchemy database URL.
+
+        :param database_url: SQLAlchemy database URL, read more on the SQLAlchemy documentation
+                             https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls.
+        :param encode_id: A helper class that can encode ids as lowercase alphanumeric strings and vice versa.
+        """
+        self._engine = create_engine(database_url)
+        self._encode_id = encode_id
 
     def save(self, key, key_type, token, host, port, info=None):
         """
-        Writeout a key, key_type, token, value store that is can be used for coordinating
-        with external resources.
+        Write out a key, key_type, token, value store that is can be used for coordinating with external resources.
         """
         assert key, ValueError("A non-zero length key is required.")
         assert key_type, ValueError("A non-zero length key_type is required.")
         assert token, ValueError("A non-zero length token is required.")
-        with FileLock(self.sqlite_filename):
-            conn = sqlite3.connect(self.sqlite_filename)
-            try:
-                c = conn.cursor()
-                try:
-                    # Create table
-                    c.execute(
-                        """CREATE TABLE %s
-                                 (key text,
-                                  key_type text,
-                                  token text,
-                                  host text,
-                                  port integer,
-                                  info text,
-                                  PRIMARY KEY (key, key_type)
-                                  )"""
-                        % (DATABASE_TABLE_NAME)
-                    )
-                except Exception:
-                    pass
-                delete = f"""DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?"""
-                c.execute(
-                    delete,
-                    (
-                        key,
-                        key_type,
-                    ),
-                )
-                insert = """INSERT INTO %s
-                            (key, key_type, token, host, port, info)
-                            VALUES (?, ?, ?, ?, ?, ?)""" % (
-                    DATABASE_TABLE_NAME
-                )
-                c.execute(
-                    insert,
-                    (
-                        key,
-                        key_type,
-                        token,
-                        host,
-                        port,
-                        info,
-                    ),
-                )
-                conn.commit()
-            finally:
-                conn.close()
+        with self._engine.connect() as conn:
+            # create database table if not exists
+            gxitproxy.create(conn, checkfirst=True)
+
+            # delete existing data with same key
+            stmt_delete = delete(gxitproxy).where(
+                gxitproxy.c.key == key,
+                gxitproxy.c.key_type == key_type,
+            )
+            conn.execute(stmt_delete)
+
+            # save data
+            stmt_insert = insert(gxitproxy).values(
+                key=key,
+                key_type=key_type,
+                token=token,
+                host=host,
+                port=port,
+                info=info,
+            )
+            conn.execute(stmt_insert)
+
+            conn.commit()
 
     def remove(self, **kwd):
         """
@@ -106,40 +94,32 @@ class InteractiveToolSqlite:
         with external resources. Remove entries that match all provided key=values
         """
         assert kwd, ValueError("You must provide some values to key upon")
-        delete = f"DELETE FROM {DATABASE_TABLE_NAME} WHERE"
-        value_list = []
-        for i, (key, value) in enumerate(kwd.items()):
-            if i != 0:
-                delete += " and"
-            delete += f" {key}=?"
-            value_list.append(value)
-        with FileLock(self.sqlite_filename):
-            conn = sqlite3.connect(self.sqlite_filename)
-            try:
-                c = conn.cursor()
-                try:
-                    # Delete entry
-                    c.execute(delete, tuple(value_list))
-                except Exception as e:
-                    log.debug("Error removing entry (%s): %s", delete, e)
-                conn.commit()
-            finally:
-                conn.close()
+        with self._engine.connect() as conn:
+            stmt = delete(gxitproxy).where(
+                *(gxitproxy.c[key] == value for key, value in kwd.items()),
+            )
+            conn.execute(stmt)
+            conn.commit()
 
     def save_entry_point(self, entry_point):
         """Convenience method to easily save an entry_point."""
         return self.save(
-            self.encode_id(entry_point.id),
+            self._encode_id(entry_point.id),
             entry_point.__class__.__name__.lower(),
             entry_point.token,
             entry_point.host,
             entry_point.port,
-            None,
+            json.dumps(
+                {
+                    "requires_path_in_url": entry_point.requires_path_in_url,
+                    "requires_path_in_header_named": entry_point.requires_path_in_header_named,
+                }
+            ),
         )
 
     def remove_entry_point(self, entry_point):
         """Convenience method to easily remove an entry_point."""
-        return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
+        return self.remove(key=self._encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
 class InteractiveToolManager:
@@ -153,7 +133,11 @@ class InteractiveToolManager:
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, app.security.encode_id)
+        self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
+        self.propagator = InteractiveToolPropagatorSQLAlchemy(
+            app.config.interactivetoolsproxy_map or app.config.interactivetools_map,
+            self.encoder.encode_id,
+        )
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
@@ -163,8 +147,10 @@ class InteractiveToolManager:
                 tool_port=entry["port"],
                 entry_url=entry["url"],
                 name=entry["name"],
+                label=entry["label"],
                 requires_domain=entry["requires_domain"],
-                short_token=self.app.config.interactivetools_shorten_url,
+                requires_path_in_url=entry["requires_path_in_url"],
+                requires_path_in_header_named=entry["requires_path_in_header_named"],
             )
             self.sa_session.add(ep)
         if flush:
@@ -217,30 +203,19 @@ class InteractiveToolManager:
         if trans.user is None and trans.get_galaxy_session() is None:
             return []
 
-        if trans.user:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
-        else:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(
-                trans.app.model.Job.session_id == trans.get_galaxy_session().id
-            )
+        def build_subquery():
+            if trans.user:
+                stmt = select(Job.id).where(Job.user == trans.user)
+            else:
+                stmt = select(Job.id).where(Job.session_id == trans.get_galaxy_session().id)
+            filters = []
+            for state in Job.non_ready_states:
+                filters.append(Job.state == state)
+            stmt = stmt.where(or_(*filters))
+            return stmt.subquery()
 
-        def build_and_apply_filters(query, objects, filter_func):
-            if objects is not None:
-                if isinstance(objects, str):
-                    query = query.filter(filter_func(objects))
-                elif isinstance(objects, list):
-                    t = []
-                    for obj in objects:
-                        t.append(filter_func(obj))
-                    query = query.filter(or_(*t))
-            return query
-
-        jobs = build_and_apply_filters(
-            jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s
-        )
-        return trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).filter(
-            trans.app.model.InteractiveToolEntryPoint.job_id.in_([job.id for job in jobs])
-        )
+        stmt = select(InteractiveToolEntryPoint).where(InteractiveToolEntryPoint.job_id.in_(build_subquery()))
+        return trans.sa_session.scalars(stmt)
 
     def can_access_job(self, trans, job):
         if job:
@@ -294,47 +269,58 @@ class InteractiveToolManager:
 
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
-            request_host = trans.request.host
-            if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                request_host = self.app.config.interactivetools_proxy_host
-            protocol = trans.request.host_url.split("//", 1)[0]
+            use_it_proxy_host_cfg = (
+                not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host
+            )
+
+            url_parts = urlsplit(trans.request.host_url)
+            url_host = self.app.config.interactivetools_proxy_host if use_it_proxy_host_cfg else trans.request.host
+            url_path = url_parts.path
+
             if entry_point.requires_domain:
-                rval = f"{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/"
+                url_host = f"{self.get_entry_point_subdomain(trans, entry_point)}.{url_host}"
                 if entry_point.entry_url:
-                    rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
+                    url_path = f"{url_path.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
             else:
-                rval = self.get_entry_point_path(trans, entry_point)
-                if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                    rval = f"{protocol}//{request_host}{rval}"
-            return rval
+                url_path = self.get_entry_point_path(trans, entry_point)
+                if not use_it_proxy_host_cfg:
+                    return url_path
+
+            return urlunsplit((url_parts.scheme, url_host, url_path, "", ""))
+
+    def _get_entry_point_url_elements(self, trans, entry_point):
+        encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+        ep_encoded_id = encoder.encode_id(entry_point.id)
+        ep_class_id = entry_point.class_id
+        ep_prefix = self.app.config.interactivetools_prefix
+        ep_token = entry_point.token
+        return ep_encoded_id, ep_class_id, ep_prefix, ep_token
 
     def get_entry_point_subdomain(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        entry_point_token = entry_point.token
-        if self.app.config.interactivetools_shorten_url:
-            return f"{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}"
-        return f"{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}"
+        ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+        return f"{ep_encoded_id}-{ep_token}.{ep_class_id}.{ep_prefix}"
 
     def get_entry_point_path(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        rval = "/"
+        url_path = "/"
         if not entry_point.requires_domain:
-            rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
-            if self.app.config.interactivetools_shorten_url:
-                rval = f"/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/"
-            else:
-                rval = f"/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/"
+            ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+            path_parts = [
+                part.strip("/")
+                for part in (
+                    str(self.app.config.interactivetools_base_path),
+                    ep_prefix,
+                    ep_class_id,
+                    ep_encoded_id,
+                    ep_token,
+                )
+            ]
+            url_path += "/".join(part for part in path_parts if part) + "/"
         if entry_point.entry_url:
-            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
-        rval = "/" + rval.lstrip("/")
-        return rval
+            url_path += entry_point.entry_url.lstrip("/")
+        return url_path
 
     def access_entry_point_target(self, trans, entry_point_id):
-        entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)
+        entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
                 return self.target_if_active(trans, entry_point)

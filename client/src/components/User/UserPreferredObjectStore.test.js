@@ -1,9 +1,11 @@
+import "tests/jest/mockHelpPopovers";
+
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation";
 
 import { setupSelectableMock } from "../ObjectStore/mockServices";
@@ -14,9 +16,17 @@ setupSelectableMock();
 
 const localVue = getLocalVue(true);
 
+const { server, http } = useServerMock();
+
 const TEST_USER_ID = "myTestUserId";
 
 function mountComponent() {
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json({});
+        })
+    );
+
     const wrapper = mount(UserPreferredObjectStore, {
         propsData: { userId: TEST_USER_ID },
         localVue,
@@ -26,21 +36,11 @@ function mountComponent() {
 }
 
 describe("UserPreferredObjectStore.vue", () => {
-    let axiosMock;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(async () => {
-        axiosMock.restore();
-    });
-
     it("contains a localized link", async () => {
         const wrapper = mountComponent();
         expect(wrapper.vm.$refs["modal"].isHidden).toBeTruthy();
         const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-        expect(el.text()).toBeLocalizationOf("Preferred Object Store");
+        expect(el.text()).toBeLocalizationOf("Preferred Storage Location");
         await el.trigger("click");
         expect(wrapper.vm.$refs["modal"].isHidden).toBeFalsy();
     });
@@ -56,7 +56,13 @@ describe("UserPreferredObjectStore.vue", () => {
             ROOT_COMPONENT.preferences.object_store_selection.option_button({ object_store_id: "__null__" }).selector
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
-        axiosMock.onPut("/api/users/current", expect.objectContaining({ preferred_object_store_id: null })).reply(202);
+
+        server.use(
+            http.put("/api/users/{user_id}", ({ response }) => {
+                return response(200).json(getFakeRegisteredUser({ preferred_object_store_id: null }));
+            })
+        );
+
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
         const errorEl = wrapper.find(".object-store-selection-error");
@@ -72,9 +78,13 @@ describe("UserPreferredObjectStore.vue", () => {
                 .selector
         );
         expect(objectStore2Option.exists()).toBeTruthy();
-        axiosMock
-            .onPut("/api/users/current", expect.objectContaining({ preferred_object_store_id: "object_store_2" }))
-            .reply(202);
+
+        server.use(
+            http.put("/api/users/{user_id}", ({ response }) => {
+                return response(200).json(getFakeRegisteredUser({ preferred_object_store_id: "object_store_2" }));
+            })
+        );
+
         await objectStore2Option.trigger("click");
         await flushPromises();
         const errorEl = wrapper.find(".object-store-selection-error");
@@ -89,9 +99,13 @@ describe("UserPreferredObjectStore.vue", () => {
             ROOT_COMPONENT.preferences.object_store_selection.option_button({ object_store_id: "__null__" }).selector
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
-        axiosMock
-            .onPut("/api/users/current", expect.objectContaining({ preferred_object_store_id: null }))
-            .reply(400, { err_msg: "problem with selection.." });
+
+        server.use(
+            http.put("/api/users/{user_id}", ({ response }) => {
+                return response("4XX").json({ err_msg: "problem with selection.." }, { status: 400 });
+            })
+        );
+
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
         const errorEl = await wrapper.find(".object-store-selection-error");

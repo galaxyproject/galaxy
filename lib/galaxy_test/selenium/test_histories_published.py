@@ -19,8 +19,9 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def test_published_histories_sort_by_name(self):
         self._login()
         self.navigate_to_published_histories()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.published_histories.column_header(column_number=1).wait_for_and_click()
+
+        self.wait_for_and_click_selector('[data-description="grid sort key name"]')
+
         sorted_histories = self.get_published_history_names_from_server(sort_by="name")
         self.assert_histories_present(sorted_histories, sort_by_matters=True)
 
@@ -28,8 +29,9 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def test_published_histories_sort_by_last_update(self):
         self._login()
         self.navigate_to_published_histories()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.published_histories.column_header(column_number=5).wait_for_and_click()
+
+        self.wait_for_and_click_selector('[data-description="grid sort key update_time"]')
+
         expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
         self.assert_histories_present(expected_history_names, sort_by_matters=True)
 
@@ -37,17 +39,12 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def test_published_histories_tag_click(self):
         self._login()
         self.navigate_to_published_histories()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        present_histories = self.get_present_histories()
-        clicked = False
-        for row in present_histories:
-            his = row.find_elements(By.TAG_NAME, "td")[0]
-            if self.history3_name in his.text:
-                row.find_elements(By.TAG_NAME, "td")[3].find_elements(By.CSS_SELECTOR, ".tag")[0].click()
-                clicked = True
-                break
 
-        assert clicked
+        # Search by tag
+        tags_cell = self.select_grid_cell("#histories-published-grid", self.history3_name)
+        tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
+        tag.click()
+
         text = self.components.published_histories.search_input.wait_for_value()
         if text == "":
             raise AssertionError("Failed to update search filter on tag click")
@@ -55,10 +52,17 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_present([self.history3_name, self.history1_name])
 
     @selenium_test
+    def test_published_histories_username_filter(self):
+        self._login()
+        self.navigate_to_published_histories()
+        username = self.user2_email.split("@")[0]
+        self.components.published_histories.search_input.wait_for_and_send_keys(f"user:{username}")
+        self.assert_histories_present([self.history2_name])
+
+    @selenium_test
     def test_published_histories_search_standard(self):
         self._login()
         self.navigate_to_published_histories()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.published_histories.search_input.wait_for_and_send_keys(self.history1_name)
         self.assert_histories_present([self.history1_name])
 
@@ -66,24 +70,27 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def test_published_histories_search_advanced(self):
         self._login()
         self.navigate_to_published_histories()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.published_histories.advanced_search_toggle.wait_for_and_click()
-        # search by tag and name
-        self.components.published_histories.advanced_search_tag_input.wait_for_and_send_keys(self.history3_tags)
         self.components.published_histories.advanced_search_name_input.wait_for_and_send_keys(self.history3_name)
-        self.components.published_histories.advanced_search_submit.wait_for_and_click()
+
+        self.components.published_histories.advanced_search_tag_area.wait_for_and_click()
+        input_element = self.components.published_histories.advanced_search_tag_input.wait_for_visible()
+        input_element.send_keys(self.history3_tags[0])
+        self.send_enter(input_element)
+        self.send_escape(input_element)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         self.assert_histories_present([self.history3_name])
 
     @retry_assertion_during_transitions
     def assert_histories_present(self, expected_histories, sort_by_matters=False):
-        present_histories = self.get_present_histories()
+        present_histories = self.get_grid_entry_names("#histories-published-grid")
         assert len(present_histories) == len(expected_histories)
-        for index, row in enumerate(present_histories):
-            cell = row.find_elements(By.TAG_NAME, "td")[0]
+        for index, history_name in enumerate(present_histories):
             if not sort_by_matters:
-                assert cell.text in expected_histories
+                assert history_name in expected_histories
             else:
-                assert cell.text == expected_histories[index]
+                assert history_name == expected_histories[index]
 
     def get_published_history_names_from_server(self, sort_by=None):
         published_histories = self.dataset_populator._get("histories/published").json()
@@ -97,11 +104,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def get_present_histories(self):
         self.sleep_for(self.wait_types.UX_RENDER)
         return self.components.published_histories.histories.all()
-
-    def navigate_to_published_histories(self):
-        self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
 
     def create_history(self, name):
         self.home()

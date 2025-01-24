@@ -6,6 +6,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 from galaxy.datatypes.binary import Binary
@@ -56,12 +57,12 @@ class InfernalCM(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 model"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_models} models"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
@@ -82,8 +83,8 @@ class InfernalCM(Text):
         """
         Set the number of models and the version of CM file in dataset.
         """
-        dataset.metadata.number_of_models = generic_util.count_special_lines("^INFERNAL", dataset.file_name)
-        with open(dataset.file_name) as f:
+        dataset.metadata.number_of_models = generic_util.count_special_lines("^INFERNAL", dataset.get_file_name())
+        with open(dataset.get_file_name()) as f:
             first_line = f.readline()
             if first_line.startswith("INFERNAL"):
                 dataset.metadata.cm_version = (first_line.split()[0]).replace("INFERNAL", "")
@@ -96,7 +97,7 @@ class Hmmer(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "HMMER Database"
         else:
             dataset.peek = "file does not exist"
@@ -187,7 +188,7 @@ class Stockholm_1_0(Text):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
@@ -201,11 +202,11 @@ class Stockholm_1_0(Text):
         Set the number of models in dataset.
         """
         dataset.metadata.number_of_models = generic_util.count_special_lines(
-            "^#[[:space:]+]STOCKHOLM[[:space:]+]1.0", dataset.file_name
+            "^#[[:space:]+]STOCKHOLM[[:space:]+]1.0", dataset.get_file_name()
         )
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
 
         Split the input files by model records.
@@ -215,7 +216,7 @@ class Stockholm_1_0(Text):
 
         if len(input_datasets) > 1:
             raise Exception("STOCKHOLM-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
@@ -277,7 +278,7 @@ class MauveXmfa(Text):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
@@ -287,7 +288,7 @@ class MauveXmfa(Text):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         dataset.metadata.number_of_models = generic_util.count_special_lines(
-            "^#Sequence([[:digit:]]+)Entry", dataset.file_name
+            "^#Sequence([[:digit:]]+)Entry", dataset.get_file_name()
         )
 
 

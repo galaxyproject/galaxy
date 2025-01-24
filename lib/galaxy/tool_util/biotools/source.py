@@ -8,9 +8,10 @@ from typing import (
     Optional,
 )
 
-import requests
-
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from .interface import BiotoolsEntry
 
 
@@ -54,12 +55,13 @@ class ApiBiotoolsMetadataSource(BiotoolsMetadataSource):
 
     def _raw_get_metadata(self, biotools_reference) -> Optional[str]:
         api_url = f"https://bio.tools/api/tool/{biotools_reference}?format=json"
-        req = requests.get(api_url, timeout=DEFAULT_SOCKET_TIMEOUT)
-        req.encoding = req.apparent_encoding
-        if req.status_code == 404:
-            return None
-        else:
+        try:
+            req = requests.get(api_url, timeout=DEFAULT_SOCKET_TIMEOUT)
+            req.raise_for_status()
+            req.encoding = req.apparent_encoding
             return req.text
+        except Exception:
+            return None
 
     def get_biotools_metadata(self, biotools_reference: str) -> Optional[BiotoolsEntry]:
         createfunc = functools.partial(self._raw_get_metadata, biotools_reference)

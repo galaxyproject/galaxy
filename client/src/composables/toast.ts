@@ -1,5 +1,6 @@
 import type Vue from "vue";
-import { type Ref, ref } from "vue";
+import { type Ref } from "vue";
+import { ref } from "vue";
 
 import type ToastComponentFile from "@/components/Toast";
 

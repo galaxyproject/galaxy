@@ -39,16 +39,19 @@ from galaxy.datatypes.util.gff_util import (
     GFFReaderWrapper,
     parse_gff_attributes,
 )
+from galaxy.exceptions import MessageException
 from galaxy.model import DatasetInstance
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
+
+IntWebParam = Union[str, int]
 
 #
 # Utility functions.
 #
 
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
-# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
+# Can be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
 
 PAYLOAD_LIST_TYPE = List[Optional[Union[str, int, float, List[Tuple[int, int]]]]]
@@ -97,7 +100,10 @@ def _chrom_naming_matches(chrom1, chrom2):
     )
 
 
-class FeatureLocationIndexDataProvider(BaseDataProvider):
+# Was previously a BaseDataProvider but it doesn't have the same interface or use any of
+# the parent methods. It is also only used explicitly, constructed by name, and access with
+# get_data directly using a specified query.
+class FeatureLocationIndexDataProvider:
     """
     Reads/writes/queries feature location index (FLI) datasets.
     """
@@ -106,43 +112,53 @@ class FeatureLocationIndexDataProvider(BaseDataProvider):
         self.converted_dataset = converted_dataset
 
     def get_data(self, query):
+        if self.converted_dataset is None or not self.converted_dataset.is_ok:
+            raise MessageException("The dataset is not available or is in an error state.")
         # Init.
-        textloc_file = open(self.converted_dataset.file_name)
-        line_len = int(textloc_file.readline())
-        file_len = os.path.getsize(self.converted_dataset.file_name)
-        query = query.lower()
+        result = []
+        with open(self.converted_dataset.get_file_name()) as textloc_file:
+            line = textloc_file.readline()
+            if not line:
+                raise MessageException("The dataset is empty.")
+            try:
+                line_len = int(line)
+            except ValueError:
+                raise MessageException(f"Expected an integer at first line, but found: '{line}'")
+            if line_len < 1:
+                raise MessageException(f"The first line must be a positive integer, but found: {line_len}")
 
-        # Find query in file using binary search.
-        low = 0
-        high = int(file_len / line_len)
-        while low < high:
-            mid: int = (low + high) // 2
-            position = mid * line_len
+            file_len = os.path.getsize(self.converted_dataset.get_file_name())
+            query = query.lower()
+
+            # Find query in file using binary search.
+            low = 0
+            high = int(file_len / line_len)
+            while low < high:
+                mid: int = (low + high) // 2
+                position = mid * line_len
+                textloc_file.seek(position)
+
+                # Compare line with query and update low, high.
+                line = textloc_file.readline()
+                if line < query:
+                    low = mid + 1
+                else:
+                    high = mid
+
+            # Need to move back one line because last line read may be included in
+            # results.
+            position = low * line_len
             textloc_file.seek(position)
 
-            # Compare line with query and update low, high.
-            line = textloc_file.readline()
-            if line < query:
-                low = mid + 1
-            else:
-                high = mid
+            # At right point in file, generate hits.
+            while True:
+                line = textloc_file.readline()
+                if not line.startswith(query):
+                    break
+                if line[-1:] == "\n":
+                    line = line[:-1]
+                result.append(line.split()[1:])
 
-        # Need to move back one line because last line read may be included in
-        # results.
-        position = low * line_len
-        textloc_file.seek(position)
-
-        # At right point in file, generate hits.
-        result = []
-        while True:
-            line = textloc_file.readline()
-            if not line.startswith(query):
-                break
-            if line[-1:] == "\n":
-                line = line[:-1]
-            result.append(line.split()[1:])
-
-        textloc_file.close()
         return result
 
 
@@ -174,19 +190,13 @@ class GenomeDataProvider(BaseDataProvider):
             error_max_vals=error_max_vals,
         )
 
-    def write_data_to_file(self, regions, filename):
-        """
-        Write data in region defined by chrom, start, and end to a file.
-        """
-        raise Exception("Unimplemented Function")
-
     def valid_chroms(self):
         """
         Returns chroms/contigs that the dataset contains
         """
         return None  # by default
 
-    def has_data(self, chrom, start, end, **kwargs):
+    def has_data(self, chrom):
         """
         Returns true if dataset has data in the specified genome window, false
         otherwise.
@@ -206,13 +216,13 @@ class GenomeDataProvider(BaseDataProvider):
         """
         raise Exception("Unimplemented Function")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Process data from an iterator to a format that can be provided to client.
         """
         raise Exception("Unimplemented Function")
 
-    def get_data(self, chrom=None, low=None, high=None, start_val=0, max_vals=sys.maxsize, **kwargs):
+    def get_data(self, chrom: str, start: IntWebParam, end: IntWebParam, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns data in region defined by chrom, start, and end. start_val and
         max_vals are used to denote the data to return: start_val is the first element to
@@ -221,7 +231,7 @@ class GenomeDataProvider(BaseDataProvider):
         Return value must be a dictionary with the following attributes:
             dataset_type, data
         """
-        start, end = int(low), int(high)
+        start, end = int(start), int(end)
         with self.open_data_file() as data_file:
             iterator = self.get_iterator(data_file, chrom, start, end, **kwargs)
             data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
@@ -241,7 +251,7 @@ class GenomeDataProvider(BaseDataProvider):
             # create a dummy dict if necessary.
             if not chrom_data:
                 chrom_data = {"data": None}
-            chrom_data["region"] = "%s:%i-%i" % (chrom, 0, chrom_len)
+            chrom_data["region"] = f"{chrom}:{0}-{chrom_len}"
             genome_data.append(chrom_data)
 
         return {"data": genome_data, "dataset_type": self.dataset_type}
@@ -349,8 +359,8 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     def open_data_file(self):
         # We create a symlink to the index file. This is
         # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
-        index_path = self.converted_dataset.file_name
-        with pysam.TabixFile(self.dependencies["bgzip"].file_name, index=index_path) as f:
+        index_path = self.converted_dataset.get_file_name()
+        with pysam.TabixFile(self.dependencies["bgzip"].get_file_name(), index=index_path) as f:
             yield f
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
@@ -373,14 +383,6 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
 
         return iterator
 
-    def write_data_to_file(self, regions, filename):
-        with self.open_data_file() as data_file, open(filename, "w") as out:
-            for region in regions:
-                # Write data in region.
-                iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
-                for line in iterator:
-                    out.write(f"{line}\n")
-
 
 #
 # -- Interval data providers --
@@ -399,7 +401,7 @@ class IntervalDataProvider(GenomeDataProvider):
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Function")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
@@ -457,9 +459,6 @@ class IntervalDataProvider(GenomeDataProvider):
 
         return {"data": rval, "message": message}
 
-    def write_data_to_file(self, regions, filename):
-        raise Exception("Unimplemented Function")
-
 
 class IntervalTabixDataProvider(TabixDataProvider, IntervalDataProvider):
     """
@@ -484,7 +483,7 @@ class BedDataProvider(GenomeDataProvider):
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Method")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
@@ -550,18 +549,6 @@ class BedDataProvider(GenomeDataProvider):
 
         return {"data": rval, "dataset_type": self.dataset_type, "message": message}
 
-    def write_data_to_file(self, regions, filename):
-        with open(filename, "w") as out:
-            for region in regions:
-                # Write data in region.
-                chrom = region.chrom
-                start = region.start
-                end = region.end
-                with self.open_data_file() as data_file:
-                    iterator = self.get_iterator(data_file, chrom, start, end)
-                    for line in iterator:
-                        out.write(f"{line}\n")
-
 
 class BedTabixDataProvider(TabixDataProvider, BedDataProvider):
     """
@@ -587,7 +574,7 @@ class RawBedDataProvider(BedDataProvider):
         data_file.seek(0)
 
         def line_filter_iter():
-            with open(self.original_dataset.file_name) as data_file:
+            with open(self.original_dataset.get_file_name()) as data_file:
                 for line in data_file:
                     if line.startswith("track") or line.startswith("browser"):
                         continue
@@ -634,7 +621,7 @@ class VcfDataProvider(GenomeDataProvider):
 
     dataset_type = "variant"
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns a dict with the following attributes::
 
@@ -746,15 +733,6 @@ class VcfDataProvider(GenomeDataProvider):
 
         return {"data": data, "message": message}
 
-    def write_data_to_file(self, regions, filename):
-        out = open(filename, "w")
-        with self.open_data_file() as data_file:
-            for region in regions:
-                # Write data in region.
-                iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
-                for line in iterator:
-                    out.write(f"{line}\n")
-
 
 class VcfTabixDataProvider(TabixDataProvider, VcfDataProvider):
     """
@@ -774,7 +752,7 @@ class RawVcfDataProvider(VcfDataProvider):
 
     @contextmanager
     def open_data_file(self):
-        with open(self.original_dataset.file_name) as f:
+        with open(self.original_dataset.get_file_name()) as f:
             yield f
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
@@ -833,48 +811,11 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         filters.append({"name": "Mapping Quality", "type": "number", "index": filter_col})
         return filters
 
-    def write_data_to_file(self, regions, filename):
-        """
-        Write reads in regions to file.
-        """
-
-        # Open current BAM file using index.
-        bamfile = pysam.AlignmentFile(
-            self.original_dataset.file_name, mode="rb", index_filename=self.converted_dataset.file_name
-        )
-
-        # TODO: write headers as well?
-        new_bamfile = pysam.AlignmentFile(filename, template=bamfile, mode="wb")
-
-        for region in regions:
-            # Write data from region.
-            chrom = region.chrom
-            start = region.start
-            end = region.end
-
-            try:
-                data = bamfile.fetch(start=start, end=end, reference=chrom)
-            except ValueError:
-                # Try alternative chrom naming.
-                chrom = _convert_between_ucsc_and_ensemble_naming(chrom)
-                try:
-                    data = bamfile.fetch(start=start, end=end, reference=chrom)
-                except ValueError:
-                    return None
-
-            # Write reads in region.
-            for read in data:
-                new_bamfile.write(read)
-
-        # Cleanup.
-        new_bamfile.close()
-        bamfile.close()
-
     @contextmanager
     def open_data_file(self):
         # Attempt to open the BAM file with index
         with pysam.AlignmentFile(
-            self.original_dataset.file_name, mode="rb", index_filename=self.converted_dataset.file_name
+            self.original_dataset.get_file_name(), mode="rb", index_filename=self.converted_dataset.get_file_name()
         ) as f:
             yield f
 
@@ -902,7 +843,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         self,
         iterator,
         start_val=0,
-        max_vals=None,
+        max_vals=sys.maxsize,
         ref_seq=None,
         iterator_type="nth",
         mean_depth=None,
@@ -1029,7 +970,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                     pair = paired_pending[qname]
                     results.append(
                         [
-                            hash("%i_%s" % (pair["start"], qname)),
+                            hash("{}_{}".format(pair["start"], qname)),
                             pair["start"],
                             read.pos + read_len,
                             qname,
@@ -1056,7 +997,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             else:
                 results.append(
                     [
-                        hash("%i_%s" % (read.pos, qname)),
+                        hash(f"{read.pos}_{qname}"),
                         read.pos,
                         read.pos + read_len,
                         qname,
@@ -1087,9 +1028,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                 r1 = [read["start"], read["end"], read["cigar"], read["strand"], read["seq"]]
                 r2 = [read["mate_start"], read["mate_start"]]
 
-            results.append(
-                [hash("%i_%s" % (read_start, qname)), read_start, read_end, qname, r1, r2, [read["mapq"], 125]]
-            )
+            results.append([hash(f"{read_start}_{qname}"), read_start, read_end, qname, r1, r2, [read["mapq"], 125]])
 
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
@@ -1111,7 +1050,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             cigar_ops = "MIDNSHP=X"
             read_cigar = ""
             for op_tuple in read[cigar_field]:
-                read_cigar += "%i%s" % (op_tuple[1], cigar_ops[op_tuple[0]])
+                read_cigar += f"{op_tuple[1]}{cigar_ops[op_tuple[0]]}"
             read[cigar_field] = read_cigar
 
         # Choose method for processing reads. Use reference-based compression
@@ -1164,8 +1103,7 @@ class BBIDataProvider(GenomeDataProvider):
     dataset_type = "bigwig"
 
     @abc.abstractmethod
-    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]:
-        ...
+    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]: ...
 
     def valid_chroms(self):
         # No way to return this info as of now
@@ -1179,7 +1117,7 @@ class BBIDataProvider(GenomeDataProvider):
         f.close()
         return all_dat is not None
 
-    def get_data(self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs):
+    def get_data(self, chrom: str, start, end, start_val=0, max_vals=sys.maxsize, **kwargs):
         start = int(start)
         end = int(end)
 
@@ -1233,8 +1171,7 @@ class BBIDataProvider(GenomeDataProvider):
             # Get summary; this samples at intervals of length
             # (end - start)/num_points -- i.e. drops any fractional component
             # of interval length.
-            summary = _summarize_bbi(bbi, chrom, start, end, num_points)
-            if summary:
+            if summary := _summarize_bbi(bbi, chrom, start, end, num_points):
                 # mean = summary.sum_data / summary.valid_count
 
                 # Standard deviation by bin, not yet used
@@ -1252,7 +1189,7 @@ class BBIDataProvider(GenomeDataProvider):
             return result
 
         # Approach is different depending on region size.
-        num_samples = int(num_samples)
+        num_samples = int(kwargs.get("num_samples", 100))
         if end - start < num_samples:
             # Get values for individual bases in region, including start and end.
             # To do this, need to increase end to next base and request number of points.
@@ -1292,7 +1229,7 @@ class BBIDataProvider(GenomeDataProvider):
 class BigBedDataProvider(BBIDataProvider):
     def _get_dataset(self):
         # Nothing converts to bigBed so we don't consider converted dataset
-        f = open(self.original_dataset.file_name, "rb")
+        f = open(self.original_dataset.get_file_name(), "rb")
         return f, BigBedFile(file=f)
 
 
@@ -1304,9 +1241,9 @@ class BigWigDataProvider(BBIDataProvider):
 
     def _get_dataset(self):
         if self.converted_dataset is not None:
-            f = open(self.converted_dataset.file_name, "rb")
+            f = open(self.converted_dataset.get_file_name(), "rb")
         else:
-            f = open(self.original_dataset.file_name, "rb")
+            f = open(self.original_dataset.get_file_name(), "rb")
         return f, BigWigFile(file=f)
 
 
@@ -1319,30 +1256,9 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
 
     dataset_type = "interval_index"
 
-    def write_data_to_file(self, regions, filename):
-        index = Indexes(self.converted_dataset.file_name)
-        with open(self.original_dataset.file_name) as source, open(filename, "w") as out:
-            for region in regions:
-                # Write data from region.
-                chrom = region.chrom
-                start = region.start
-                end = region.end
-                for _start, _end, offset in index.find(chrom, start, end):
-                    source.seek(offset)
-
-                    # HACK: write differently depending on original dataset format.
-                    if self.original_dataset.ext not in ["gff", "gff3", "gtf"]:
-                        line = source.readline()
-                        out.write(line)
-                    else:
-                        reader = GFFReaderWrapper(source, fix_strand=True)
-                        feature = next(reader)
-                        for interval in feature.intervals:
-                            out.write("\t".join(interval.fields) + "\n")
-
     @contextmanager
     def open_data_file(self):
-        i = Indexes(self.converted_dataset.file_name)
+        i = Indexes(self.converted_dataset.get_file_name())
         yield i
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
@@ -1355,10 +1271,10 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
 
         return data_file.find(chrom, start, end)
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         results = []
         message = None
-        with open(self.original_dataset.file_name) as source:
+        with open(self.original_dataset.get_file_name()) as source:
             # Build data to return. Payload format is:
             # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
             #   <thick_end>, <blocks> ]
@@ -1402,7 +1318,7 @@ class RawGFFDataProvider(GenomeDataProvider):
         Returns an iterator that provides data in the region chrom:start-end as well as
         a file offset.
         """
-        source = open(self.original_dataset.file_name)
+        source = open(self.original_dataset.get_file_name())
 
         # Read first line in order to match chrom naming format.
         line = source.readline()
@@ -1429,7 +1345,7 @@ class RawGFFDataProvider(GenomeDataProvider):
 
         return features_in_region_iter()
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Process data from an iterator to a format that can be provided to client.
         """
@@ -1457,7 +1373,7 @@ class GtfTabixDataProvider(TabixDataProvider):
     Returns data from GTF datasets that are indexed via tabix.
     """
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         # Loop through lines and group by transcript_id; each group is a feature.
 
         # TODO: extend this code or use code in gff_util to process GFF/3 as well
@@ -1512,7 +1428,7 @@ class ENCODEPeakDataProvider(GenomeDataProvider):
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Method")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
@@ -1612,7 +1528,7 @@ class ENCODEPeakTabixDataProvider(TabixDataProvider, ENCODEPeakDataProvider):
 
 
 class ChromatinInteractionsDataProvider(GenomeDataProvider):
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """

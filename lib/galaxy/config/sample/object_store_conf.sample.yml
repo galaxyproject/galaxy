@@ -1,0 +1,659 @@
+---
+###
+### Sample Object Store configuration file
+###
+
+# There should only be one root object store, multiple are shown here to show different configuration options. Any
+# object store can be used as backends to the distributed and hierarchical object stores (including distributed and
+# hierarchical themselves).
+
+# Most non-disk object store types have a `cache` option like:
+#
+# cache:
+#   # local path to store cached data,
+#   path: "database/object_store_cache"
+#   # size of the cache in gigabytes
+#   size: 1000
+#   # optional parameter that allows to control data is being sent directly to an object store without storing it in the
+#   # cache. By default (true) data is also copied to the cache.
+#   cache_updated_data: true
+#
+# Most object store types have a `store_by` option which can be set to either `uuid` or `id`. Older Galaxy servers
+# stored datasets by their numeric id (000/dataset_1.dat, 00/dataset_2.dat, ...), whereas newer Galaxy servers store
+# them by UUID (b/5/e/dataset_b5e0301c-4c2e-41ac-b2c1-3c243f91b6ec.dat, ...). Storing by UUID is preferred, storing by
+# ID should only be used for preexisting store-by-id backends.
+
+#
+# Sample Disk Object Store configuration
+#
+
+# This mirrors the default configuration if there is no object store configuration file. The default uses the values of
+# file_path, new_file_path, and job_working_directory in galaxy.yml.
+
+type: disk
+store_by: uuid
+files_dir: database/objects
+extra_dirs:
+  - type: job_work
+    path: database/jobs_directory
+
+
+#
+# Sample Hierarchical Object Store with disk backends configuration
+#
+
+# In the hierarchical object store, existing datasets will be searched for in backends in the order of the list of
+# specified backends, until the dataset is found. New datasets are always created in the first backend in the list.
+
+type: hierarchical
+backends:
+  - type: disk
+    store_by: uuid
+    files_dir: /new-fs/galaxy/files
+    extra_dirs:
+      - type: job_work
+        path: /new-fs/galaxy/jobs
+  - type: disk
+    store_by: id
+    files_dir: /old-fs/galaxy/files
+
+#
+# Sample Distributed Object Store with disk backends configuration
+#
+
+# In the distributed object store, existing datasets will be located by the `object_store_id` column in the `dataset`
+# table of the Galaxy database, which corresponds to the `id` option on the backend. New datasets are created based on
+# the `weight` option: a backend with weight "2" has twice the chance of being (randomly) selected for new datasets as a
+# backend with weight "1". A weight of "0" will still allow datasets in that backend to be read, but no new datasets
+# will be written to that backend.
+#
+# In distributed and hierarchical configurations, you can choose that some backends are automatically unused whenever
+# they become too full. Setting the `global_max_percent_full` option on the top level backends config enables this, or
+# it can be applied to individual backends with `max_percent_full` to override the global setting. This only applies to
+# disk based backends and not remote object stores.
+#
+# By default, if a dataset should exist but its object_store_id is null, all backends will be searched until it is
+# found. This is to aid in Galaxy servers moving from non-distributed to distributed object stores, but this behavior
+# can be disabled by setting `search_for_missing` to "false" on the top level backends config.
+
+type: distributed
+global_max_percent_full: 90
+search_for_missing: true
+backends:
+  - id: new-big
+    type: disk
+    store_by: uuid
+    weight: 3
+    files_dir: /new-big-fs/galaxy/files
+    extra_dirs:
+      - type: job_work
+        path: /new-big-fs/galaxy/jobs
+  - id: new-small
+    type: disk
+    store_by: uuid
+    weight: 1
+    max_percent_full: 80
+    files_dir: /new-small-fs/galaxy/files
+    extra_dirs:
+      - type: job_work
+        path: /new-small-fs/galaxy/jobs
+  - id: old
+    type: disk
+    store_by: uuid
+    weight: 0
+    files_dir: /old-fs/galaxy/files
+
+#
+# Sample Nested (Distributed in Hierarchical) Object Store configuration
+#
+
+# These object stores support nesting object stores inside object stores. In this example, new data are created in the
+# distributed object store, but old data will be searched for in a disk object store. This is useful if moving from
+# non-distributed to distributed since you don't have to set `object_store_id` for old data in the database.
+#
+# In this example, new dataset creation is distributed evenly between two backends.
+
+type: hierarchical
+backends:
+  - type: distributed
+    backends:
+      - id: new1
+        store_by: uuid
+        weight: 1
+        files_dir: /new-fs/galaxy/files1
+        extra_dirs:
+          - type: job_work
+            path: /new-fs/galaxy/jobs1
+      - id: new2
+        store_by: uuid
+        weight: 1
+        files_dir: /new-fs/galaxy/files2
+        extra_dirs:
+          - type: job_work
+            path: /new-fs/galaxy/jobs2
+  - type: disk
+    store_by: uuid
+    files_dir: /old-fs/galaxy/files
+
+
+# There are now four ways to access S3 related services. Two are
+# suitable just for AWS services (aws_s3 & cloud), one is
+# more suited for non-AWS S3 compatible services (generic_s3),
+# and finally boto3 gracefully handles either scenario.
+# 
+# boto3 is built on the newest and most widely used Python client
+# outside of Galaxy. It has advanced transfer options and is likely
+# the client you should use for new setup. generic_s3 and aws_s3
+# have existed in Galaxy for longer and could perhaps be considered
+# more battle tested. Both boto3 and generic_s3 have been tested
+# with multiple non-AWS APIs including minio and GCP. The cloud
+# implementation is based on CloudBridge and is still supported
+# and has been recently tested - the downside is mostly the advanced
+# multi-threaded processing options of boto3 are not available
+# and it has not been battle tested like aws_s3.
+
+#
+# Sample AWS S3 Object Store configuration (newest boto3 client)
+#
+type: boto3
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name_all_lowercase
+connection:  # not strictly needed but more of the API works with this.
+  region: us-east-1
+transfer:
+  multipart_threshold: 10000000
+  download_max_concurrency: 5
+  upload_max_concurrency: 10
+  # any of these options:
+  # multipart_threshold, max_concurrency, multipart_chunksize,
+  # num_download_attempts, max_io_queue, io_chunksize, use_threads,
+  # and max_bandwidth
+  # can be set. By default they will apply to uploads and downloads
+  # but they can be prefixed with upload_ or download_ as shown above
+  # to apply to just one scenario. More information about these parameters
+  # can be found at:
+  # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
+
+cache:
+  path: database/object_store_cache_s3
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_s3
+
+
+
+#
+# Sample AWS S3 Object Store configuration (legacy boto implementation)
+#
+# This implementation will use axel automatically for file transfers if it is on
+# Galaxy's path. Otherwise, it will use various python-based strategies for multi-part
+# upload of large uploads but all downloads will be single threaded.
+type: aws_s3
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+  max_chunk_size: 250
+connection:  # not strictly needed but more of the API works with this.
+  region: us-east-1
+cache:
+  path: database/object_store_cache_s3
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_s3
+
+#
+# Sample Onedata Object Store
+#
+# Note for developers: you can easily set up a minimal, dockerized Onedata environment
+# using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
+#
+
+type: onedata
+auth:
+  # An access token suitable for data access (allowing calls to the Oneprovider REST API).
+  access_token: ...
+connection:
+  # The domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
+  # devel instances (see above). The minimal supported Onezone version is 21.02.4.
+  onezone_domain: datahub.egi.eu
+  # Allows connection to Onedata servers that do not present trusted SSL certificates. 
+  # SHOULD NOT be used unless you really know what you are doing.
+  disable_tls_certificate_validation: false
+space:
+  # The name of the Onedata space where the Galaxy data will be stored.
+  # If there is more than one space with the same name, you can explicitly
+  # specify which one to select by using the format <space_name>@<space_id>
+  # (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
+  name: demo-space
+  # The relative directory path in the space at which the Galaxy data will be stored.
+  # Optional, if not provided, the data will be stored in the root of space.
+  galaxy_root_dir: galaxy-data
+cache:
+  path: database/object_store_cache_s3
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_s3
+
+#
+# Sample iRODS Object Store configuration
+#
+
+type: irods
+auth:
+  username: rods
+  password: rods
+resource:
+  name: demoResc
+zone:
+  name: tempZone
+connection:
+  host: localhost
+  port: 1247
+  timeout: 30
+  refresh_time: 300
+  connection_pool_monitor_interval: 3600
+# ssl section is optional
+ssl:
+  client_server_negotiation: request_server_negotiation
+  client_server_policy: CS_NEG_REQUIRE
+  encryption_algorithm: AES-256-CBC
+  encryption_key_size: 32
+  encryption_num_hash_rounds: 16
+  encryption_salt_size: 8
+  ssl_verify_server: cert
+  ssl_ca_certificate_file: /etc/irods/ssl/irods.crt
+# The logical section is optional and is meant for defining the remote path
+# if not defined the default path is: /zone_name/home/username
+logical:
+  path: /tempZone/home/rods
+cache:
+  path: database/object_store_cache_irods
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_irods
+
+#
+# Sample non-AWS S3 Object Store (e.g. swift) configuration (boto3)
+#
+
+type: boto3
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name_all_lowercase
+connection:
+  endpoint_url: https://swift.example.org:6000/
+  # region: some services may make use of region is specified.
+  # older style host, port, secure, and conn_path available to generic_s3 work
+  # here also - Galaxy will just infer a endpoint_url from those.
+cache:
+  path: database/object_store_cache_swift
+  size: 1000
+  cache_updated_data: true
+# transfer:   # see transfer options for boto3 above in AWS configuration.
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_swift
+
+
+#
+# Sample non-AWS S3 Object Store (e.g. swift) configuration (legacy boto client)
+#
+
+type: generic_s3
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+  max_chunk_size: 250
+connection:
+  host: swift.example.org
+  port: 6000
+  conn_path: /
+  multipart: true
+cache:
+  path: database/object_store_cache_swift
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_swift
+
+#
+# Sample Azure Object Store configuration
+#
+
+type: azure_blob
+auth:
+  account_name: ...
+  account_key: ...
+container:
+  name: unique_container_name
+  max_chunk_size: 250
+cache:
+  path: database/object_store_cache_azure
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure
+
+#
+# Cloud Object Store
+#
+
+# The Cloud Object Store uses the cloud-provider-agnostic CloudBridge (http://cloudbridge.cloudve.org/) library to
+# interface with cloud storage rather than the cloud-native libraries directly.
+
+# Sample Cloud Object Store with Amazon Simple Storage Service (S3) configuration
+
+type: cloud
+provider: aws
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name
+  use_reduced_redundancy: false
+cache:
+  path: database/object_store_cache_cloud
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_cloud
+
+# Sample Cloud Object Store with Microsoft Azure Blob Storage configuration
+
+type: cloud
+provider: azure
+auth:
+  subscription_id: ...
+  client_id: ...
+  secret: ...
+  tenant: ...
+bucket:
+  name: unique_bucket_name
+  use_reduced_redundancy: false
+cache:
+  path: database/object_store_cache_cloud
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_cloud
+
+# Sample Cloud Object Store with Google Compute Platform (GCP) configuration
+
+type: cloud
+provider: google
+auth:
+  credentials_file: ...
+bucket:
+  name: unique_bucket_name
+  use_reduced_redundancy: false
+cache:
+  path: database/object_store_cache_cloud
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_cloud
+
+#
+# Sample User-Selectable Scratch Storage configuration
+#
+
+# This distributed object store will default to a normal path on disk using the default quota but sets up a second path
+# with user-private storage a larger quota and warns the user the disk is routinely cleaned. Relative speed and
+# stability differences are communicated to the user using object store badges - as well as how data is backed up (in
+# the default case) and not backed up for scratch storage.
+#
+# The admin is responsible for routinely cleaning that storage using Galaxy's admin scripts - this object store
+# configuration just allows the user selection and communicates expectations to the user. Training related to Galaxy
+# cleanup scripts can be found in the Galaxy Training Network:
+#
+# Slides: https://gxy.io/GTN:S00103
+# Tutorial: https://gxy.io/GTN:T00324
+#
+# In this example, the scratch storage is marked as user-private by setting the `private` option to "true" on the
+# backend definition. This means it cannot be used in public datasets, shared between users, etc.. This is for example
+# purposes - you may very well not want scratch storage to be defined as private as it prevents a lot of regular
+# functionality and Galaxy handles regularly cleaned datasets fairly gracefully when the appropriate admin scripts are
+# used.
+#
+# It is safe to just relabel the object store that a dataset belongs to if the underlying paths mapped to by the object
+# stores are the same and the dataset has not been copied. To enable users to relocate datasets this way set the
+# backends' `device` property to the same value.
+
+type: distributed
+backends:
+  - id: default
+    type: disk
+    device: device1
+    weight: 1
+    allow_selection: true
+    name: Default Galaxy Storage
+    description: >
+      This is Galaxy's default object store - this disk space is regularly backed up and all users have a default quota
+      of 200 GB.
+    files_dir: database/objects/default
+    badges:
+      - type: slower
+      - type: more_stable
+      - type: backed_up
+        message: >
+          Backed up to Galaxy's institutional long term tape drive nightly. More information about our tape drive can be
+          found on our [Archive Tier Storage](https://www.msi.umn.edu/content/archive-tier-storage) page.
+  - id: scratch
+    type: disk
+    device: device2
+    weight: 0
+    allow_selection: true
+    private: true
+    name: Scratch Storage
+    description: >
+      This object store is connected to institutional scratch storage. This disk space is not backed up and private to
+      your user, and datasets belonging to this storage will be automatically deleted after one month.
+    quota:
+      source: second_tier
+    files_dir: database/objects/temp
+    badges:
+      - type: faster
+      - type: less_stable
+      - type: not_backed_up
+      - type: short_term
+        message: The data stored here is purged after a month.
+
+#
+# Sample User-Selectable Experimental Storage configuration
+#
+
+# This distributed object store will default to a normal path on disk using the default quota but sets up a second path
+# with more experimental storage (here iRODS) and a higher quota. The different backup strategies for normal disk and
+# iRODS as well as their respective stability are communicated to the user using object store badges.
+
+type: distributed
+backends:
+  - id: default
+    type: disk
+    weight: 1
+    allow_selection: true
+    name: Default Galaxy Storage
+    description: >
+      This is Galaxy's default object store - this disk space is regularly backed up and all users have a default quota
+      of 200 GB.
+    files_dir: database/objects/default
+    badges:
+      - type: more_stable
+      - type: backed_up
+        message: >
+          Backed up to Galaxy's institutional long term tape drive nightly. More information about our tape drive can be
+          found on our [Archive Tier Storage](https://www.msi.umn.edu/content/archive-tier-storage) page.
+  - id: experimental
+    type: irods
+    weight: 0
+    allow_selection: true
+    name: Experimental iRODS Storage
+    description: >
+      This object store uses our experimental instituional iRODS service. This disk has larger quotas but is more
+      experimental and expected job failure rates are higher.
+    quota:
+      source: irods_quota
+    auth:
+      username: rods
+      password: rods
+    resource:
+      name: demoResc
+    zone:
+      name: tempZone
+    connection:
+      host: localhost
+      port: 1247
+      timeout: 30
+      refresh_time: 300
+      connection_pool_monitor_interval: 3600
+    cache:
+      path: database/object_store_cache_irods
+      size: 1000
+      cache_updated_data: true
+    badges:
+      - type: less_stable
+      - type: backed_up
+        message: >
+          This data is backed up using iRODS native hierarchal storage management mechanisms. The rules describing how
+          data is stored and backed up in iRODS can be found in our institutional
+          [iRODS documentation](https://irods.org/uploads/2018/Saum-SURFsara-Data_Archiving_in_iRODS-slides.pdf)
+
+#
+# User-Selectable Storage - A Complex Institutional Example
+#
+
+# Huge chunks of text were stolen wholesale from MSI's data storage website
+# (https://www.msi.umn.edu/content/data-storage). Large changes were made and adapted this for demonstration purposes -
+# none of the text or policies or guarantees reflect actual current MSI or UMN policies.
+
+type: distributed
+backends:
+  - id: high_performance
+    type: disk
+    weight: 1
+    allow_selection: true
+    name: High Performance Storage
+    description: >
+      All MSI researchers have access to a high-performance, high capacity primary storage platform. This system
+      currently provides 3.5 PB (petabytes) of storage. The integrity of the data is protected by daily snapshots and
+      tape backups. It has sustained read and write speeds of up to 25 GB/sec.
+
+      There is default access to this storage by any MSI group with an active account. Very large needs can be also met,
+      but need to be approved by the MSI HPC Allocation Committee. More details are available on the
+      [Storage Allocations](https://www.msi.umn.edu/content/storage-allocations) page.
+    files_dir: /hps/galaxy/objects
+    badges:
+      - type: faster
+      - type: more_stable
+      - type: backed_up
+        message: >
+          Backed up to MSI's long term tape drive nightly. More information about our tape drive can be found on our
+          [Archive Tier Storage](https://www.msi.umn.edu/content/archive-tier-storage) page.
+  - id: second_tier
+    type: disk
+    weight: 0
+    allow_selection: true
+    name: Second Tier Storage
+    description: >
+      MSI first added a Ceph object storage system in November 2014 as a second tier storage option. The system
+      currently has around 10 PB of usable storage installed.
+
+      MSI's second tier storage is designed to address the growing need for resources that support data-intensive
+      research. It is tightly integrated with other MSI storage and computing resources in order to support a wide
+      variety of research data life cycles and data analysis workflows. In addition, this object storage platform offers
+      new access modes, such as Amazon’s S3 (Simple Storage Service) interface, so that researchers can better manage
+      their data and more seamlessly share data with other researchers whether or not the other researcher has an MSI
+      account or is at the University of Minnesota.
+
+      More information about MSI Storage can be found [here](https://www.msi.umn.edu/content/data-storage).
+    quota:
+      source: second_tier_quota
+    files_dir: /ceph/galaxy/objects
+    badges:
+      - type: faster
+      - type: less_stable
+      - type: not_backed_up
+      - type: less_secure
+        message: >
+          MSI's enterprise level data security policies and montioring have not yet been integrated with Ceph storage.
+      - type: short_term
+        message: >
+          The data stored here is purged after a month.
+  - id: experimental
+    type: disk
+    weight: 0
+    allow_selection: true
+    private: true
+    name: Experimental Scratch
+    description: >
+      MSI Ceph storage that is purged more aggressively (weekly instead of monthly) and so it only appropriate for short
+      term methods development and such. The rapid deletion of stored data enables us to provide this storage without a
+      quota.
+
+      More information about MSI Storage can be found [here](https://www.msi.umn.edu/content/data-storage).
+    quota:
+      enabled: false
+    files_dir: /ceph/galaxy/scratch
+    badges:
+      - type: faster
+      - type: less_stable
+      - type: not_backed_up
+      - type: less_secure
+        message: >
+          MSI's enterprise level data security policies and montioring have not yet been integrated with Ceph storage.
+      - type: short_term
+        message: >
+          The data stored here is purged after a week.
+  - id: surfs
+    type: disk
+    weight: 0
+    allow_selection: true
+    name: SURFS
+    description: >
+      Much of the data analysis conducted on MSI’s high-performance computing resources uses data gathered from UMN
+      shared research facilities (SRFs). In recognition of the need for short to medium term storage for this data, MSI
+      provides a service, Shared User Research Facilities Storage (SURFS), enabling SRFs to deliver data directly to MSI
+      users. By providing a designated location for this data, MSI can focus data backup and other processes to these
+      key datasets.  As part of this service, MSI will provide the storage of the data for one year from its delivery
+      date.
+
+      It's expected that the consumers of these data sets will be responsible for discerning which data they may wish to
+      keep past the 1-year term, and finding an appropriate place to keep it. There are several possible storage options
+      both at MSI and the wider university. You can explore your options using OIT’s digital [storage options chooser
+      tool](https://it.umn.edu/services-technologies/comparisons/select-digital-storage-options).
+
+      More information about MSI Storage can be found [here](https://www.msi.umn.edu/content/data-storage).
+    quota:
+      source: umn_surfs
+    files_dir: /surfs/galaxy/objecs
+    badges:
+      - type: slower
+      - type: more_stable
+      - type: backed_up
+      - type: more_secure
+        message: >
+          University of Minnesota data security analysist's have authorized this storage for the storage of human data.

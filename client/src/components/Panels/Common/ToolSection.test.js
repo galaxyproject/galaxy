@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { useConfig } from "composables/config";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import ToolSection from "./ToolSection";
@@ -13,6 +14,11 @@ useConfig.mockReturnValue({
 });
 
 const localVue = getLocalVue();
+const pinia = createPinia();
+
+function sectionIsOpened(wrapper) {
+    return wrapper.find("[data-description='opened tool panel section']").exists();
+}
 
 describe("ToolSection", () => {
     test("test tool section", () => {
@@ -23,6 +29,7 @@ describe("ToolSection", () => {
                 },
             },
             localVue,
+            pinia,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("name");
@@ -46,8 +53,9 @@ describe("ToolSection", () => {
                 },
             },
             localVue,
+            pinia,
         });
-        expect(wrapper.vm.opened).toBe(false);
+        expect(sectionIsOpened(wrapper)).toBe(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).toBe("tool_section");
         await $sectionName.trigger("click");
@@ -76,22 +84,23 @@ describe("ToolSection", () => {
                 queryFilter: "test",
             },
             localVue,
+            pinia,
         });
-        expect(wrapper.vm.opened).toBe(true);
+        expect(sectionIsOpened(wrapper)).toBe(true);
         const $sectionName = wrapper.find(".name");
         await $sectionName.trigger("click");
-        expect(wrapper.vm.opened).toBe(false);
+        expect(sectionIsOpened(wrapper)).toBe(false);
         await wrapper.setProps({ queryFilter: "" });
-        expect(wrapper.vm.opened).toBe(false);
+        expect(sectionIsOpened(wrapper)).toBe(false);
         await wrapper.setProps({ queryFilter: "test" });
-        expect(wrapper.vm.opened).toBe(true);
+        expect(sectionIsOpened(wrapper)).toBe(true);
         await wrapper.setProps({ disableFilter: true });
-        expect(wrapper.vm.opened).toBe(true);
+        expect(sectionIsOpened(wrapper)).toBe(true);
         await wrapper.setProps({ queryFilter: "" });
-        expect(wrapper.vm.opened).toBe(false);
+        expect(sectionIsOpened(wrapper)).toBe(false);
         await $sectionName.trigger("click");
-        expect(wrapper.vm.opened).toBe(true);
+        expect(sectionIsOpened(wrapper)).toBe(true);
         await wrapper.setProps({ queryFilter: "test" });
-        expect(wrapper.vm.opened).toBe(false);
+        expect(sectionIsOpened(wrapper)).toBe(false);
     });
 });

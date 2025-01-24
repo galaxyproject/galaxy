@@ -8,10 +8,12 @@
     ],
     "license": "AFL-3.0",
     "dependencies": {
-        "bio-pv": "^1.8.1",
-        "parcel-bundler": "^1.12.4"
+        "bio-pv": "^1.8.1"
     },
     "scripts": {
-        "build": "parcel build src/pv.js -d static/dist"
+        "build": "parcel build src/pv.js --dist-dir static/dist"
+    },
+    "devDependencies": {
+        "parcel": "^2.12.0"
     }
 }

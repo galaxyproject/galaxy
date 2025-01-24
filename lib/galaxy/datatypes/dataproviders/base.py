@@ -1,6 +1,7 @@
 """
 Base class(es) for all DataProviders.
 """
+
 # there's a blurry line between functionality here and functionality in datatypes module
 # attempting to keep parsing to a minimum here and focus on chopping/pagination/reformat(/filtering-maybe?)
 #   and using as much pre-computed info/metadata from the datatypes module as possible
@@ -35,6 +36,7 @@ datasets API entry point:
         Building a giant list by sweeping all possible dprov classes doesn't make sense
     For now - I'm burying them in the class __init__s - but I don't like that
 """
+MAX_LIMIT = 10000
 
 
 # ----------------------------------------------------------------------------- base classes
@@ -56,8 +58,7 @@ class HasSettings(type):
             if base_settings:
                 settings.update(base_settings)
         # get settings defined in this class
-        new_settings = attributes.pop("settings", None)
-        if new_settings:
+        if new_settings := attributes.pop("settings", None):
             settings.update(new_settings)
         attributes["settings"] = settings
         return type.__new__(cls, name, base_classes, attributes)
@@ -128,7 +129,7 @@ class DataProvider(metaclass=HasSettings):
     # def readline( self ):
     #    return self.next()
     def readlines(self):
-        return [line for line in self]
+        return list(self)
 
     # iterator interface
     def __iter__(self):
@@ -233,21 +234,20 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     settings = {"limit": "int", "offset": "int"}
 
     # TODO: may want to squash this into DataProvider
-    def __init__(self, source, offset=0, limit=None, **kwargs):
+    def __init__(self, source, offset=0, limit=MAX_LIMIT, **kwargs):
         """
         :param offset:  the number of data to skip before providing.
         :param limit:   the final number of data to provide.
         """
         super().__init__(source, **kwargs)
 
-        # how many valid data to skip before we start outputing data - must be positive
-        #   (diff to support neg. indeces - must be pos.)
-        self.offset = max(offset, 0)
+        # how many valid data to skip before we start outputting data - must be positive
+        self.offset = offset
 
-        # how many valid data to return - must be positive (None indicates no limit)
+        # how many valid data to return - must be positive
+        if limit is None:
+            limit = MAX_LIMIT
         self.limit = limit
-        if self.limit is not None:
-            self.limit = max(self.limit, 0)
 
     def __iter__(self):
         """

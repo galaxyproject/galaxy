@@ -47,7 +47,7 @@ def run_tool(tool_id, history_id, params, api_key, galaxy_url, wait=True, sleep_
 
 
 def get_dataset_state(hda_id, api_key, galaxy_url):
-    datasets_url = urljoin(galaxy_url, "api/datasets/%s" % hda_id)
+    datasets_url = urljoin(galaxy_url, f"api/datasets/{hda_id}")
     dataset_info = get(api_key, datasets_url)
     return dataset_info["state"]
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                 wait=False,
             )
         else:
-            "dbkey (%s) was specified more than once, skipping additional specification." % (dbkey)
+            f"dbkey ({dbkey}) was specified more than once, skipping additional specification."
 
     print("Genomes Queued for downloading.")
 

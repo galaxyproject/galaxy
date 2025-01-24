@@ -11,14 +11,12 @@ class TestPagesIndex(SeleniumTestCase):
     @selenium_test
     def test_page_deletion(self):
         page_response = self.new_page()
-        page_id = page_response["id"]
+        page_title = page_response["title"]
         self.navigate_to_pages()
         self._assert_showing_n_pages(1)
-        self.components.pages.dropdown(id=page_id).wait_for_visible()
-        self.page_index_click_option("Delete", page_id)
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.pages.delete_modal_confirm(id=page_id).wait_for_and_click()
-        self.components.pages.dropdown(id=page_id).wait_for_absent_or_hidden()
+        self.select_grid_operation(page_title, "Delete")
+        alert = self.driver.switch_to.alert
+        alert.accept()
         self._assert_showing_n_pages(0)
 
     def new_page(self):
@@ -28,7 +26,6 @@ class TestPagesIndex(SeleniumTestCase):
 
     @retry_assertion_during_transitions
     def _assert_showing_n_pages(self, n):
-        actual_count = len(self.pages_index_table_elements())
-        if actual_count != n:
+        if (actual_count := len(self.get_grid_entry_names("#pages-grid"))) != n:
             message = f"Expected {n} pages to be displayed, based on DOM found {actual_count} page index rows."
             raise AssertionError(message)

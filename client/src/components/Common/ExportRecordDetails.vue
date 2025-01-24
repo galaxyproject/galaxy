@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheckCircle,
@@ -8,34 +8,35 @@ import {
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { ExportRecordModel } from "./models/exportRecordModel";
+import type { ColorVariant } from ".";
+import { type ExportRecord } from "./models/exportRecordModel";
 
-library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const props = defineProps({
-    record: {
-        type: ExportRecordModel,
-        required: true,
-    },
-    objectType: {
-        type: String,
-        required: true,
-    },
-    actionMessage: {
-        type: String,
-        default: null,
-    },
-    actionMessageVariant: {
-        type: String,
-        default: "info",
-    },
+library.add(faCheckCircle, faClock, faExclamationCircle, faExclamationTriangle, faLink);
+
+interface Props {
+    record: ExportRecord;
+    objectType: string;
+    actionMessage?: string;
+    actionMessageVariant?: ColorVariant;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    actionMessage: undefined,
+    actionMessageVariant: "info",
 });
 
-const emit = defineEmits(["onReimport", "onDownload", "onCopyDownloadLink", "onActionMessageDismissed"]);
+const emit = defineEmits<{
+    (e: "onActionMessageDismissed"): void;
+    (e: "onReimport", record: ExportRecord): void;
+    (e: "onDownload", record: ExportRecord): void;
+    (e: "onCopyDownloadLink", record: ExportRecord): void;
+}>();
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
 const preparingMessage = computed(
@@ -60,34 +61,38 @@ function onMessageDismissed() {
 </script>
 
 <template>
-    <BCard class="export-record-details">
-        <BCardTitle>
+    <div class="export-record-details">
+        <Heading size="sm">
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
-        </BCardTitle>
+        </Heading>
+
         <p v-if="!props.record.isPreparing">
             Format: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
         </p>
+
         <span v-if="props.record.isPreparing">
             <LoadingSpan :message="preparingMessage" />
         </span>
         <div v-else>
             <div v-if="props.record.hasFailed">
                 <FontAwesomeIcon
-                    icon="exclamation-circle"
+                    :icon="faExclamationCircle"
                     class="text-danger record-failed-icon"
                     title="Export failed" />
+
                 <span>
                     Something failed during this export. Please try again and if the problem persist contact your
                     administrator.
                 </span>
+
                 <BAlert show variant="danger">{{ props.record.errorMessage }}</BAlert>
             </div>
             <div v-else-if="props.record.isUpToDate" title="Up to date">
-                <FontAwesomeIcon icon="check-circle" class="text-success record-up-to-date-icon" />
+                <FontAwesomeIcon :icon="faCheckCircle" class="text-success record-up-to-date-icon" />
                 <span> This export record contains the latest changes of the {{ props.objectType }}. </span>
             </div>
             <div v-else>
-                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning record-outdated-icon" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning record-outdated-icon" />
                 <span>
                     This export is outdated and contains the changes of this {{ props.objectType }} from
                     {{ props.record.elapsedTime }}.
@@ -96,19 +101,20 @@ function onMessageDismissed() {
 
             <p v-if="props.record.canExpire" class="mt-3">
                 <span v-if="props.record.hasExpired">
-                    <FontAwesomeIcon icon="clock" class="text-danger record-expired-icon" /> This download link has
-                    expired.
+                    <FontAwesomeIcon :icon="faClock" class="text-danger record-expired-icon" />
+                    This download link has expired.
                 </span>
                 <span v-else>
-                    <FontAwesomeIcon icon="clock" class="text-warning record-expiration-warning-icon" /> This download
-                    link expires {{ props.record.expirationElapsedTime }}.
+                    <FontAwesomeIcon :icon="faClock" class="text-warning record-expiration-warning-icon" />
+                    This download link expires {{ props.record.expirationElapsedTime }}.
                 </span>
             </p>
 
             <div v-if="props.record.isReady">
                 <p class="mt-3">You can do the following actions with this {{ props.objectType }} export:</p>
+
                 <BAlert
-                    v-if="props.actionMessage !== null"
+                    v-if="props.actionMessage !== undefined"
                     :variant="props.actionMessageVariant"
                     show
                     fade
@@ -117,30 +123,32 @@ function onMessageDismissed() {
                     {{ props.actionMessage }}
                 </BAlert>
                 <div v-else class="actions">
-                    <b-button
+                    <BButton
                         v-if="props.record.canDownload"
                         class="record-download-btn"
                         variant="primary"
                         @click="downloadObject">
                         Download
-                    </b-button>
-                    <b-button
+                    </BButton>
+
+                    <BButton
                         v-if="props.record.canDownload"
                         title="Copy Download Link"
                         size="sm"
                         variant="link"
                         @click.stop="copyDownloadLink">
-                        <FontAwesomeIcon icon="link" />
-                    </b-button>
-                    <b-button
+                        <FontAwesomeIcon :icon="faLink" />
+                    </BButton>
+
+                    <BButton
                         v-if="props.record.canReimport"
                         class="record-reimport-btn"
                         variant="primary"
                         @click="reimportObject">
                         Reimport
-                    </b-button>
+                    </BButton>
                 </div>
             </div>
         </div>
-    </BCard>
+    </div>
 </template>

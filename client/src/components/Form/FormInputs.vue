@@ -3,7 +3,7 @@
         <div v-for="(input, index) in inputs" :key="index">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
-                    <b>{{ input.test_param.label }}</b>
+                    <b>{{ input.test_param.label || input.test_param.name }}</b>
                 </div>
                 <div class="portlet-content">
                     <FormElement
@@ -11,10 +11,10 @@
                         v-model="input.test_param.value"
                         :type="input.test_param.type"
                         :help="input.test_param.help"
+                        :help-format="input.test_param.help_format"
                         :refresh-on-change="false"
                         :disabled="sustainConditionals"
                         :attributes="input.test_param"
-                        :backbonejs="true"
                         @change="onChange" />
                     <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
                         <FormNode
@@ -52,13 +52,14 @@
                 :error="input.error"
                 :warning="input.warning"
                 :help="input.help"
+                :help-format="input.help_format"
                 :refresh-on-change="input.refresh_on_change"
                 :attributes="input.attributes || input"
-                :backbonejs="true"
                 :collapsed-enable-text="collapsedEnableText"
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
+                :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
                 @change="onChange" />
         </div>
@@ -85,6 +86,10 @@ export default {
         inputs: {
             type: Array,
             default: null,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
         },
         prefix: {
             type: String,

@@ -1,8 +1,8 @@
-<tool id="CONVERTER_Bam_Bai_0" name="Convert Bam to Bai" version="1.0.0" hidden="true" profile="16.04">
+<tool id="CONVERTER_Bam_Bai_0" name="Convert Bam to Bai" version="1.0.1" hidden="true" profile="16.04">
     <requirements>
-        <requirement type="package" version="1.10">samtools</requirement>
+        <requirement type="package" version="1.17">samtools</requirement>
     </requirements>
-    <command>samtools index -@ \${GALAXY_SLOTS:-1} '$input1' '$output1'</command>
+    <command>samtools index -@ \${GALAXY_SLOTS:-1} -b '$input1' -o '$output1'</command>
     <inputs>
         <param format="bam" name="input1" type="data" label="Choose BAM"/>
     </inputs>
@@ -12,7 +12,11 @@
     <tests>
         <test>
             <param name="input1" ftype="bam" value="srma_out2.bam"/>
-            <output name="output1" ftype="bai" value="srma_out2.bai"/>
+            <output name="output1" ftype="bai">
+                <assert_contents>
+                    <has_size value="7584" delta="10"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
     <help>

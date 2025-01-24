@@ -1,0 +1,39 @@
+.notification-container {
+    container: notification-content / inline-size;
+
+    width: 100%;
+    display: grid;
+    align-items: center;
+    grid-template-rows: auto auto auto;
+
+    .notification-title {
+        display: flex;
+        gap: 0.2rem;
+        font-size: 1rem;
+        flex-flow: wrap;
+        align-items: center;
+    }
+
+    @container notification-content (min-width: 576px) {
+        .notification-header {
+            .notification-title {
+                font-size: 1.25rem;
+            }
+        }
+
+        .notification-actions {
+            grid-area: 1/2;
+            justify-self: end;
+        }
+
+        .notification-message {
+            grid-column: 1/3;
+        }
+    }
+
+    @container notification-content (max-width: 576px) {
+        .notification-message {
+            margin-bottom: 0.5rem;
+        }
+    }
+}

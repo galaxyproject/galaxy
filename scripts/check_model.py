@@ -3,6 +3,7 @@ Check for db indexes defined in mapping.py but missing in the database.
 Note: pass '-c /path/to/galaxy.yml' to use the database_connection set in galaxy.yml.
 Otherwise the default sqlite database will be used.
 """
+
 import json
 import os
 import sys
@@ -47,14 +48,14 @@ def find_missing_indexes():
 
     # create EMPTY metadata, then load from database
     db_url = get_config(sys.argv)["db_url"]
-    metadata = MetaData(bind=create_engine(db_url))
-    metadata.reflect()
+    metadata = MetaData()
+    engine = create_engine(db_url)
+    metadata.reflect(bind=engine)
     indexes_in_db = load_indexes(metadata)
 
     all_indexes = set(mapping_indexes.keys()) | set(tsi_mapping_indexes.keys())
 
-    missing_indexes = all_indexes - set(indexes_in_db.keys())
-    if missing_indexes:
+    if missing_indexes := all_indexes - set(indexes_in_db.keys()):
         return [(mapping_indexes[index], index.table, index.column_names) for index in missing_indexes]
 
 

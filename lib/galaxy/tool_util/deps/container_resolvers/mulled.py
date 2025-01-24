@@ -111,8 +111,8 @@ class CacheDirectory(metaclass=ABCMeta):
     def _list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
         contents = os.listdir(self.path)
         sorted_images = version_sorted(contents)
-        raw_images = map(lambda name: identifier_to_cached_target(name, self.hash_func), sorted_images)
-        return list(i for i in raw_images if i is not None)
+        raw_images = (identifier_to_cached_target(name, self.hash_func) for name in sorted_images)
+        return [i for i in raw_images if i is not None]
 
     @abstractmethod
     def list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
@@ -202,7 +202,7 @@ def list_docker_cached_mulled_images(
         return image
 
     name_filter = get_filter(namespace)
-    sorted_images = version_sorted([_ for _ in filter(name_filter, images_and_versions)])
+    sorted_images = version_sorted(list(filter(name_filter, images_and_versions)))
     raw_images = (output_line_to_image(_) for _ in sorted_images)
     return [i for i in raw_images if i is not None]
 
@@ -738,7 +738,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self._mulled_kwds["channels"] = default_mulled_conda_channels_from_env() or self._get_config_option(
             "mulled_channels", DEFAULT_CHANNELS
@@ -786,9 +786,10 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
             "channels": self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             "hash_func": self.hash_func,
             "command": "build-and-test",
+            "namespace": "local",
             "singularity": True,
             "singularity_image_dir": self.cache_directory.path,
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self.involucro_context = InvolucroContext(**self._involucro_context_kwds)
         auto_init = self._get_config_option("involucro_auto_init", True)

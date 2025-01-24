@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +35,8 @@ In Galaxy:
 class TestRepairRepository(ShedTwillTestCase):
     """Test repairing an installed repository."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
@@ -60,16 +60,10 @@ class TestRepairRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Populate filter_1430 with version 1.1.0.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_create_column_repository(self):
@@ -88,16 +82,10 @@ class TestRepairRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "column_maker/column_maker.tar",
             commit_message="Populate column_1430 with tool definitions.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0015_create_repository_dependency(self):
@@ -123,7 +111,6 @@ class TestRepairRepository(ShedTwillTestCase):
         handle repository dependencies so that the filter_1430 repository is also installed. Make sure to install
         the repositories in a specified section of the tool panel.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             "column_1430",
             common.test_user_1_name,
@@ -138,8 +125,6 @@ class TestRepairRepository(ShedTwillTestCase):
 
         This is step 2 - Uninstall the filter_1430 repository.
         """
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filter_1430", common.test_user_1_name
-        )
-        self.uninstall_repository(installed_repository)
+        installed_repository = self._get_installed_repository_by_name_owner("filter_1430", common.test_user_1_name)
+        self._uninstall_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("filter_1430")

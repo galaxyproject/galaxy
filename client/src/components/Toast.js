@@ -6,7 +6,7 @@ export default {
                 title,
                 href,
                 toaster: "b-toaster-bottom-right",
-                append: true,
+                appendToast: true,
                 solid: true,
             });
         },

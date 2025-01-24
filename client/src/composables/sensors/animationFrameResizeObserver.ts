@@ -1,5 +1,4 @@
-import type { MaybeComputedRef } from "@vueuse/core";
-import { resolveUnref } from "@vueuse/core";
+import { type MaybeRefOrGetter, resolveUnref } from "@vueuse/core";
 
 import { useAnimationFrame } from "./animationFrame";
 
@@ -8,7 +7,7 @@ type CallbackValue = { clientSize: Size; scrollSize: Size };
 export type AnimationFrameResizeObserverCallback = (newValue: CallbackValue, oldValue: CallbackValue) => void;
 
 export function useAnimationFrameResizeObserver(
-    element: MaybeComputedRef<HTMLElement | null>,
+    element: MaybeRefOrGetter<HTMLElement | null>,
     callback: AnimationFrameResizeObserverCallback
 ) {
     let clientSize = { width: 0, height: 0 };

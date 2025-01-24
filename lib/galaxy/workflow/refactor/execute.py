@@ -6,9 +6,10 @@ from typing import (
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import (
+from galaxy.tools.parameters.basic import contains_workflow_parameter
+from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
-    contains_workflow_parameter,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .schema import (
@@ -41,10 +42,7 @@ from .schema import (
     UpgradeSubworkflowAction,
     UpgradeToolAction,
 )
-from ..modules import (
-    InputParameterModule,
-    NO_REPLACEMENT,
-)
+from ..modules import InputParameterModule
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +69,7 @@ class WorkflowRefactorExecutor:
             if refactor_method is None:
                 raise RequestParameterInvalidException(f"Unknown workflow editing action encountered [{action_type}]")
             execution = RefactorActionExecution(
-                action=action.dict(),
+                action=action,
                 messages=[],
             )
             refactor_method(action, execution)
@@ -116,7 +114,7 @@ class WorkflowRefactorExecutor:
         order_index = len(steps)
         step_dict = {
             "order_index": order_index,
-            "id": "new_%d" % order_index,
+            "id": f"new_{order_index}",
             "type": action.type,
         }
         if action.tool_state:
@@ -251,7 +249,7 @@ class WorkflowRefactorExecutor:
     def _apply_extract_untyped_parameter(self, action: ExtractUntypedParameter, execution: RefactorActionExecution):
         untyped_parameter_name = action.name
         new_label = action.label or untyped_parameter_name
-        target_value = "${%s}" % untyped_parameter_name
+        target_value = f"${{{untyped_parameter_name}}}"
 
         target_tool_inputs = []
         rename_pjas = []
@@ -330,7 +328,7 @@ class WorkflowRefactorExecutor:
             if untyped_parameter_name != new_label:
                 action_arguments = rename_pja.get("action_arguments")
                 old_newname = action_arguments["newname"]
-                new_newname = old_newname.replace(target_value, "${%s}" % new_label)
+                new_newname = old_newname.replace(target_value, f"${{{new_label}}}")
                 action_arguments["newname"] = new_newname
 
         optional = False
@@ -531,6 +529,9 @@ class WorkflowRefactorExecutor:
                 if upgrade_input["name"] == input_name:
                     matching_input = upgrade_input
                     break
+                elif step.when_expression and f"inputs.{input_name}" in step.when_expression:
+                    # TODO: eventually track step inputs more formally
+                    matching_input = upgrade_input
 
             # In the future check parameter type, format, mapping status...
             if matching_input is None:

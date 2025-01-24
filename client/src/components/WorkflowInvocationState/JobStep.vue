@@ -1,79 +1,94 @@
-<template>
-    <b-card v-if="jobs">
-        <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
-            <template v-slot:row-details="row">
-                <JobProvider :id="row.item.id" v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
-                    <div v-else>
-                        <JobInformation v-if="item" :job_id="item.id" />
-                        <p></p>
-                        <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
-                    </div>
-                </JobProvider>
-            </template>
-            <template v-slot:cell(create_time)="data">
-                <UtcDate :date="data.value" mode="elapsed" />
-            </template>
-            <template v-slot:cell(update_time)="data">
-                <UtcDate :date="data.value" mode="elapsed" />
-            </template>
-        </b-table>
-    </b-card>
-</template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import JobInformation from "components/JobInformation/JobInformation";
-import JobParameters from "components/JobParameters/JobParameters";
-import { JobProvider } from "components/providers";
-import UtcDate from "components/UtcDate";
-import Vue from "vue";
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
+import Vue, { computed, ref, watch } from "vue";
 
-Vue.use(BootstrapVue);
+import { GalaxyApi } from "@/api";
+import { type JobBaseModel, type JobDetails } from "@/api/jobs";
+import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
+import { rethrowSimple } from "@/utils/simple-error";
 
-export default {
-    components: {
-        UtcDate,
-        JobProvider,
-        JobParameters,
-        JobInformation,
-    },
-    props: {
-        jobs: { type: Array, required: true },
-    },
-    data() {
-        return {
-            fields: [
-                { key: "state", sortable: true },
-                { key: "update_time", label: "Updated", sortable: true },
-                { key: "create_time", label: "Created", sortable: true },
-            ],
-            toggledItems: {},
-        };
-    },
-    methods: {
-        jobsProvider(ctx, callback) {
-            // It may seem unnecessary to use a provider here, since the jobs prop
-            // is being updated externally. However we need to keep track of the
-            // _showDetails attribute which determines whether the row is shown as expanded
-            this.$watch(
-                "jobs",
-                function () {
-                    // update new jobs array with current state
-                    const toggledJobs = this.jobs.map((e) => {
-                        return { ...e, _showDetails: !!this.toggledItems[e.id] };
-                    });
-                    callback(toggledJobs);
+import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
+import LoadingSpan from "../LoadingSpan.vue";
+
+interface Props {
+    jobs: JobBaseModel[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    jobs: () => [],
+});
+
+const loading = ref(true);
+const initialLoading = ref(true);
+const jobsDetails = ref<{ [key: string]: JobDetails }>({});
+
+watch(
+    () => props.jobs,
+    async (propJobs: JobBaseModel[]) => {
+        loading.value = true;
+        for (const job of propJobs) {
+            const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
+                params: {
+                    path: { job_id: job.id },
+                    query: { full: true },
                 },
-                { immediate: true }
-            );
-            return null;
-        },
-        toggleDetails(item) {
-            // toggle item
-            item._showDetails = !item._showDetails;
-            // update state
-            this.toggledItems[item.id] = item._showDetails;
-        },
+            });
+            Vue.set(jobsDetails.value, job.id, data);
+            if (error) {
+                rethrowSimple(error);
+            }
+        }
+        if (initialLoading.value) {
+            initialLoading.value = false;
+        }
+        loading.value = false;
     },
-};
+    { immediate: true }
+);
+
+const firstJob = computed(() => Object.values(jobsDetails.value)[0]);
+const jobCount = computed(() => Object.keys(jobsDetails.value).length);
+
+function getIcon(job: JobDetails) {
+    return iconClasses[job.state];
+}
+
+function getTabClass(job: JobDetails) {
+    return {
+        ...getHeaderClass(job.state),
+        "d-flex": true,
+        "text-center": true,
+    };
+}
 </script>
+
+<template>
+    <BAlert v-if="initialLoading" variant="info" show>
+        <LoadingSpan message="Loading Jobs" />
+    </BAlert>
+    <BAlert v-else-if="!jobsDetails || !jobCount" variant="info" show> No jobs found for this step. </BAlert>
+    <div v-else-if="jobCount === 1 && firstJob">
+        <JobDetailsDisplayed :job="firstJob" />
+    </div>
+    <BTabs v-else vertical pills card nav-class="p-0" active-tab-class="p-0">
+        <BTab
+            v-for="job in jobsDetails"
+            :key="job.id"
+            data-description="workflow invocation job"
+            :title-item-class="getTabClass(job)"
+            title-link-class="w-100">
+            <template v-slot:title>
+                {{ job.state }}
+                <FontAwesomeIcon
+                    v-if="getIcon(job)"
+                    :class="getIcon(job)?.class"
+                    :icon="getIcon(job)?.icon"
+                    :spin="getIcon(job)?.spin" />
+            </template>
+            <div>
+                <JobDetailsDisplayed :job="job" />
+            </div>
+        </BTab>
+    </BTabs>
+</template>

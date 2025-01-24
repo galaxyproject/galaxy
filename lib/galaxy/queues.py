@@ -3,6 +3,7 @@
 All message queues used by Galaxy
 
 """
+
 import socket
 from typing import Optional
 

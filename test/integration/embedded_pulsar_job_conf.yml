@@ -1,0 +1,22 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+  pulsar_embed:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+    pulsar_app_config:  # this doesn't start without disabling - filelock problem
+      tool_dependency_dir: none
+      conda_auto_init: false
+      conda_auto_install: false
+
+execution:
+  default: pulsar_embed
+  environments:
+    local:
+      runner: local
+    pulsar_embed:
+      runner: pulsar_embed
+      remote_metadata: true
+
+tools:
+- class: local
+  environment: local

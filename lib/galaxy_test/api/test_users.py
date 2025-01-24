@@ -2,19 +2,26 @@ from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.decorators import (
     requires_admin,
+    requires_new_history,
     requires_new_user,
 )
-from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    PRIVATE_ROLE_TYPE,
+    skip_without_tool,
+)
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 TEST_USER_EMAIL_INDEX_DELETED = "user_for_users_index_deleted_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
+TEST_USER_EMAIL_DELETE_CANCEL_JOBS = "user_for_delete_cancel_jobs_test@bx.psu.edu"
 TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
+
     @requires_admin
     @requires_new_user
     def test_index(self):
@@ -108,11 +115,11 @@ class TestUsersApi(ApiTestCase):
         user = self._setup_user(TEST_USER_EMAIL_PURGE)
         response = self._delete(f"users/{user['id']}", admin=True)
         self._assert_status_code_is_ok(response)
-        data = dict(purge="True")
-        response = self._delete(f"users/{user['id']}", data=data, admin=True, json=True)
+        params = dict(purge="True")
+        response = self._delete(f"users/{user['id']}", params=params, admin=True, json=True)
         self._assert_status_code_is_ok(response)
-        payload = {"deleted": "True"}
-        purged_user = self._get(f"users/{user['id']}", payload, admin=True).json()
+        params = {"deleted": "True"}
+        purged_user = self._get(f"users/{user['id']}", params, admin=True).json()
         assert purged_user["deleted"] is True, purged_user
         assert purged_user["purged"] is True, purged_user
 
@@ -128,6 +135,45 @@ class TestUsersApi(ApiTestCase):
         self._post(f"users/deleted/{user['id']}/undelete", admin=True)
         undeleted_user = self._get(f"users/{user['id']}", admin=True).json()
         assert undeleted_user["deleted"] is False, undeleted_user
+
+    @requires_admin
+    @requires_new_user
+    @requires_new_history
+    @skip_without_tool("cat_data_and_sleep")
+    def test_delete_user_cancel_all_jobs(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with self._different_user(TEST_USER_EMAIL_DELETE_CANCEL_JOBS):
+            user_id = self._get_current_user_id()
+            history_id = dataset_populator.new_history()
+            hda_id = dataset_populator.new_dataset(history_id)["id"]
+
+            inputs = {
+                "input1": {"src": "hda", "id": hda_id},
+                "sleep_time": 6000,
+            }
+            run_response = dataset_populator.run_tool_raw(
+                "cat_data_and_sleep",
+                inputs,
+                history_id,
+            )
+            self._assert_status_code_is_ok(run_response)
+
+            job_id = run_response.json()["jobs"][0]["id"]
+
+            # Wait a bit for the job to be ready
+            expected_job_states = ["new", "queued", "running"]
+            dataset_populator.wait_for_job(job_id, ok_states=expected_job_states)
+
+            # Get the job state
+            job_response = self._get(f"jobs/{job_id}").json()
+            assert job_response["state"] in expected_job_states, job_response
+
+            # Delete user will cancel all jobs
+            self._delete(f"users/{user_id}", admin=True)
+
+            # Get the job state again (this time as admin), it should be deleting
+            job_response = self._get(f"jobs/{job_id}", admin=True).json()
+            assert job_response["state"] == "deleting", job_response
 
     @requires_new_user
     def test_information(self):
@@ -312,3 +358,12 @@ class TestUsersApi(ApiTestCase):
         response = self._get(f"users/{user_id}/beacon")
         user_beacon_settings = response.json()
         assert user_beacon_settings["enabled"]
+
+    @requires_admin
+    @requires_new_user
+    def test_user_roles(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        response = self._get(f"users/{user['id']}/roles", admin=True)
+        user_roles = response.json()
+        assert len(user_roles) == 1
+        assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE

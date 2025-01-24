@@ -41,7 +41,7 @@ describe("modal.js", () => {
         it("should create showEl and resolve oncreate", async () => {
             expect(showOptions).toBe(null);
             showEl();
-            expect(showOptions.title).toEqual("Create a collection");
+            expect(showOptions.title).toContain("Create a collection");
 
             expect(hidden).toBeFalsy();
             options.oncreate(null, "testres");

@@ -30,6 +30,13 @@
             :description="link.description"
             :to="`/user/${index}`" />
         <UserPreferencesElement
+            v-if="isConfigLoaded && !config.single_user"
+            id="edit-preferences-permissions"
+            icon="fa-users"
+            title="Set Dataset Permissions for New Histories"
+            description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+            to="/user/permissions" />
+        <UserPreferencesElement
             id="edit-preferences-api-key"
             icon="fa-key"
             title="Manage API Key"
@@ -48,7 +55,7 @@
             description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
             to="/user/cloud_auth" />
         <UserPreferencesElement
-            v-if="isConfigLoaded && config.enable_oidc"
+            v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
             icon="fa-id-card-o"
             title="Manage Third-Party Identities"
@@ -60,16 +67,6 @@
             title="Manage Custom Builds"
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
-        <UserPreferencesElement
-            icon="fa-th-list"
-            title="Manage Activity Bar"
-            description="Click here to show or hide the activity bar."
-            badge="New!"
-            @click="toggleActivityBar = !toggleActivityBar">
-            <b-collapse v-model="toggleActivityBar">
-                <UserActivityBarSettings />
-            </b-collapse>
-        </UserPreferencesElement>
         <UserPreferencesElement
             v-if="hasThemes"
             icon="fa-palette"
@@ -95,6 +92,22 @@
             :preferred-object-store-id="currentUser.preferred_object_store_id"
             :user-id="userId">
         </UserPreferredObjectStore>
+        <UserPreferencesElement
+            v-if="hasObjectStoreTemplates"
+            id="manage-object-stores"
+            class="manage-object-stores"
+            icon="fa-hdd"
+            title="Manage Your Storage Locations"
+            description="Add, remove, or update your personally configured storage locations."
+            to="/object_store_instances/index" />
+        <UserPreferencesElement
+            v-if="hasFileSourceTemplates"
+            id="manage-file-sources"
+            class="manage-file-sources"
+            icon="fa-file"
+            title="Manage Your Remote File Sources"
+            description="Add, remove, or update your personally configured location to find files from and write files to."
+            to="/file_source_instances/index" />
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
             :email="email"
@@ -106,7 +119,23 @@
             icon="fa-sign-out"
             title="Sign Out"
             description="Click here to sign out of all sessions."
-            @click="signOut" />
+            @click="showLogoutModal = true" />
+        <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
+            <span v-localize>
+                All of your histories and datasets have been made private. If you'd like to make all *future* histories
+                private please use the
+            </span>
+            <a :href="userPermissionsUrl">User Permissions</a>
+            <span v-localize>interface</span>.
+        </b-modal>
+        <b-modal
+            v-model="showLogoutModal"
+            title="Sign out"
+            title-class="font-weight-bold"
+            ok-title="Sign out"
+            @ok="signOut">
+            <span v-localize> Do you want to continue and sign out of all active sessions? </span>
+        </b-modal>
     </b-container>
 </template>
 
@@ -115,7 +144,7 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -123,9 +152,10 @@ import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
+import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { useUserStore } from "@/stores/userStore";
 
-import UserActivityBarSettings from "./UserActivityBarSettings";
 import UserBeaconSettings from "./UserBeaconSettings";
 import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
@@ -137,7 +167,6 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,
         ThemeSelector,
@@ -165,12 +194,19 @@ export default {
             diskQuota: "",
             messageVariant: null,
             message: null,
-            toggleActivityBar: false,
+            showLogoutModal: false,
+            showDataPrivateModal: false,
             toggleTheme: false,
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useObjectStoreTemplatesStore, {
+            hasObjectStoreTemplates: "hasTemplates",
+        }),
+        ...mapState(useFileSourceTemplatesStore, {
+            hasFileSourceTemplates: "hasTemplates",
+        }),
         activePreferences() {
             const userPreferencesEntries = Object.entries(getUserPreferencesModel());
             // Object.entries returns an array of arrays, where the first element
@@ -179,12 +215,23 @@ export default {
             return Object.fromEntries(enabledPreferences);
         },
         hasLogout() {
-            const Galaxy = getGalaxyInstance();
-            return !!Galaxy.session_csrf_token && !this.config.single_user;
+            if (this.isConfigLoaded) {
+                const Galaxy = getGalaxyInstance();
+                return !!Galaxy.session_csrf_token && !this.config.single_user;
+            } else {
+                return false;
+            }
         },
         hasThemes() {
-            const themes = Object.keys(this.config.themes);
-            return themes?.length > 1 ?? false;
+            if (this.isConfigLoaded) {
+                const themes = Object.keys(this.config.themes);
+                return themes?.length > 1 ?? false;
+            } else {
+                return false;
+            }
+        },
+        userPermissionsUrl() {
+            return withPrefix("/user/permissions");
         },
     },
     created() {
@@ -199,16 +246,39 @@ export default {
             this.diskUsage = response.data.nice_total_disk_usage;
             this.diskQuota = response.data.quota;
         });
+        this.ensureObjectStoreTemplates();
+        this.ensureFileSourceTemplates();
     },
     methods: {
+        ...mapActions(useObjectStoreTemplatesStore, {
+            ensureObjectStoreTemplates: "ensureTemplates",
+        }),
+        ...mapActions(useFileSourceTemplatesStore, {
+            ensureFileSourceTemplates: "ensureTemplates",
+        }),
+        toggleNotifications() {
+            if (window.Notification) {
+                Notification.requestPermission().then(function (permission) {
+                    //If the user accepts, let's create a notification
+                    if (permission === "granted") {
+                        new Notification("Notifications enabled", {
+                            icon: "static/favicon.ico",
+                        });
+                    } else {
+                        alert("Notifications disabled, please re-enable through browser settings.");
+                    }
+                });
+            } else {
+                alert("Notifications are not supported by this browser.");
+            }
+        },
         makeDataPrivate() {
-            const Galaxy = getGalaxyInstance();
             if (
                 confirm(
                     _l(
                         "WARNING: This will make all datasets (excluding library datasets) for which you have " +
                             "'management' permissions, in all of your histories " +
-                            "private, and will set permissions such that all " +
+                            "private (including archived and purged), and will set permissions such that all " +
                             "of your new data in these histories is created as private.  Any " +
                             "datasets within that are currently shared will need " +
                             "to be re-shared or published.  Are you sure you " +
@@ -216,33 +286,13 @@ export default {
                     )
                 )
             ) {
-                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then((response) => {
-                    Galaxy.modal.show({
-                        title: _l("Datasets are now private"),
-                        body: `All of your histories and datasets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
-                            "/user/permissions"
-                        )}">User Permissions</a> interface.`,
-                        buttons: {
-                            Close: () => {
-                                Galaxy.modal.hide();
-                            },
-                        },
-                    });
+                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
+                    this.showDataPrivateModal = true;
                 });
             }
         },
         signOut() {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.modal.show({
-                title: _l("Sign out"),
-                body: "Do you want to continue and sign out of all active sessions?",
-                buttons: {
-                    Cancel: function () {
-                        Galaxy.modal.hide();
-                    },
-                    "Sign out": userLogoutAll,
-                },
-            });
+            userLogoutAll();
         },
     },
 };

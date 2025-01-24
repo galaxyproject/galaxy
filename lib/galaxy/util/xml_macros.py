@@ -210,14 +210,14 @@ def _expand_yield_statements(macro_def, expand_el):
     for token_el in expand_el.findall("./token"):
         name = token_el.attrib.get("name", None)
         assert name is not None, "Found unnamed token" + str(token_el.attrib)
-        yield_els = [yield_el for yield_el in macro_def.findall(f".//yield[@name='{name}']")]
+        yield_els = list(macro_def.findall(f".//yield[@name='{name}']"))
         assert len(yield_els) > 0, f"No named yield found for named token {name}"
         token_el_children = list(token_el)
         for yield_el in yield_els:
             _xml_replace(yield_el, token_el_children)
 
     # replace unnamed yields
-    yield_els = [yield_el for yield_el in macro_def.findall(".//yield")]
+    yield_els = list(macro_def.findall(".//yield"))
     expand_el_children = [c for c in expand_el if c.tag != "token"]
     for yield_el in yield_els:
         _xml_replace(yield_el, expand_el_children)
@@ -281,13 +281,6 @@ def _load_macro_file(path: StrPath, xml_base_dir, macros) -> List[str]:
     tree = parse_xml(path, strip_whitespace=False)
     root = tree.getroot()
     return _load_macros(root, xml_base_dir, macros)
-
-
-def _xml_set_children(element, new_children):
-    for old_child in element:
-        element.remove(old_child)
-    for i, new_child in enumerate(new_children):
-        element.insert(i, new_child)
 
 
 def _xml_replace(query, targets):

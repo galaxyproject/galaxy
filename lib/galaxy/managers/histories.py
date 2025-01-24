@@ -4,6 +4,7 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
+
 import logging
 from typing import (
     Any,
@@ -12,23 +13,28 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 
 from sqlalchemy import (
-    and_,
     asc,
     desc,
+    exists,
     false,
     func,
+    or_,
     select,
     true,
 )
+from sqlalchemy.orm import aliased
 from typing_extensions import Literal
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model,
+from galaxy import model
+from galaxy.exceptions import (
+    MessageException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.managers import (
     deletable,
@@ -37,14 +43,28 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.base import (
+    combine_lists,
     ModelDeserializingError,
     Serializer,
     SortableManager,
     StorageCleanerManager,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.export_tracker import StoreExportTracker
+from galaxy.model import (
+    History,
+    HistoryUserShareAssociation,
+    Job,
+)
 from galaxy.model.base import transaction
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.model.index_filter_util import (
+    append_user_filter,
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
+from galaxy.schema.fields import Security
+from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectType,
@@ -60,8 +80,20 @@ from galaxy.schema.storage_cleaner import (
 )
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 
 log = logging.getLogger(__name__)
+
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "user": "user",
+    "tag": "tag",
+    "is": "is",
+}
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
@@ -87,11 +119,123 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         self.contents_manager = contents_manager
         self.contents_filters = contents_filters
 
-    def copy(self, history, user, **kwargs):
-        """
-        Copy and return the given `history`.
-        """
-        return history.copy(target_user=user, **kwargs)
+    def index_query(
+        self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[List[model.History], int]:
+        show_deleted = False
+        show_own = payload.show_own
+        show_published = payload.show_published
+        show_purged = False
+        show_shared = payload.show_shared
+        show_archived = payload.show_archived
+        is_admin = trans.user_is_admin
+        user = trans.user
+
+        if not user and not show_published:
+            message = "Requires user to log in."
+            raise RequestParameterInvalidException(message)
+
+        stmt = select(self.model_class).outerjoin(model.User)
+
+        filters = []
+        if show_own or (not show_published and not show_shared and not is_admin):
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if show_shared:
+            filters.append(self.user_share_model.user == user)
+            stmt = stmt.outerjoin(self.model_class.users_shared_with)
+        stmt = stmt.where(or_(*filters))
+
+        if payload.search:
+            search_query = payload.search
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def p_tag_filter(term_text: str, quoted: bool):
+                nonlocal stmt
+                alias = aliased(model.HistoryTagAssociation)
+                stmt = stmt.outerjoin(self.model_class.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        pg = p_tag_filter(term.text, term.quoted)
+                        stmt = stmt.where(pg)
+                    elif key == "name":
+                        stmt = stmt.where(text_column_filter(self.model_class.name, term))
+                    elif key == "user":
+                        stmt = append_user_filter(stmt, self.model_class, term)
+                    elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
+                        elif q == "importable":
+                            stmt = stmt.where(self.model_class.importable == true())
+                        elif q == "published":
+                            stmt = stmt.where(self.model_class.published == true())
+                        elif q == "purged":
+                            show_purged = True
+                        elif q == "shared_with_me":
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise RequestParameterInvalidException(message)
+                            stmt = stmt.where(self.user_share_model.user == user)
+                elif isinstance(term, RawTextTerm):
+                    tf = p_tag_filter(term.text, False)
+                    alias = aliased(model.User)
+                    stmt = stmt.outerjoin(self.model_class.user.of_type(alias))
+                    stmt = stmt.where(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.name,
+                                tf,
+                                alias.username,
+                            ],
+                            term,
+                        )
+                    )
+
+        if (show_published or show_shared) and not is_admin:
+            show_deleted = False
+            show_purged = False
+
+        if show_purged:
+            stmt = stmt.where(self.model_class.purged == true())
+        else:
+            stmt = stmt.where(self.model_class.purged == false()).where(
+                self.model_class.deleted == (true() if show_deleted else false())
+            )
+
+        # By default, return only non-archived histories when we are showing the current user's histories
+        # if listing other users' histories, we don't filter out archived histories as they may be
+        # public or shared with the current user
+        if show_own and not show_archived:
+            stmt = stmt.where(self.model_class.archived == false())
+
+        stmt = stmt.distinct()
+
+        if include_total_count:
+            total_matches = get_count(trans.sa_session, stmt)
+        else:
+            total_matches = None
+
+        sort_column: Any
+        if payload.sort_by == "username":
+            sort_column = model.User.username
+            stmt = stmt.add_columns(sort_column)
+        else:
+            sort_column = getattr(model.History, payload.sort_by)
+        if payload.sort_desc:
+            sort_column = sort_column.desc()
+        stmt = stmt.order_by(sort_column)
+
+        if payload.limit is not None:
+            stmt = stmt.limit(payload.limit)
+        if payload.offset is not None:
+            stmt = stmt.offset(payload.offset)
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
@@ -119,13 +263,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # anon users are only allowed to view their current history
         if self.user_manager.is_anonymous(user):
-            if current_history and item == current_history:
-                return True
-            return False
+            return current_history is not None and item == current_history
         return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
-    def most_recent(self, user, filters=None, current_history=None, **kwargs):
+    def most_recent(self, user, filters=None, current_history=None):
         """
         Return the most recently update history for the user.
 
@@ -134,25 +276,24 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         if self.user_manager.is_anonymous(user):
             return None if (not current_history or current_history.deleted) else current_history
-        desc_update_time = desc(self.model_class.update_time)
-        filters = self._munge_filters(filters, self.model_class.user_id == user.id)
-        # TODO: normalize this return value
-        return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
+        filters = combine_lists(filters, History.user_id == user.id)
+        stmt = select(History).where(*filters).order_by(History.update_time.desc()).limit(1)
+        return self.session().scalars(stmt).first()
 
     # .... purgable
-    def purge(self, history, flush=True, **kwargs):
+    def purge(self, item, flush=True, **kwargs):
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
-        self.error_unless_mutable(history)
+        self.error_unless_mutable(item)
         self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed()
         # First purge all the datasets
-        for hda in history.datasets:
+        for hda in item.datasets:
             if not hda.purged:
                 self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
-        super().purge(history, flush=flush, **kwargs)
+        super().purge(item, flush=flush, **kwargs)
 
     # .... current
     # TODO: make something to bypass the anon user + current history permissions issue
@@ -205,7 +346,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         # TODO: add functional/non-orm orders (such as rating)
         if default:
             return self.parse_order_by(default)
-        raise glx_exceptions.RequestParameterInvalidException(
+        raise RequestParameterInvalidException(
             "Unknown order_by", order_by=order_by_string, available=["create_time", "update_time", "name", "size"]
         )
 
@@ -217,13 +358,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # TODO: defer to jobModelManager (if there was one)
         # TODO: genericize the params to allow other filters
-        jobs = (
-            self.session()
-            .query(model.Job)
-            .filter(model.Job.history == history)
-            .filter(model.Job.state.in_(model.Job.non_ready_states))
-        )
-        return jobs
+        stmt = select(Job).where(Job.history == history).where(Job.state.in_(Job.non_ready_states))
+        return self.session().scalars(stmt)
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
@@ -280,13 +416,13 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history)
         trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
 
     def get_sharing_extra_information(
         self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
-    ) -> Optional[sharable.ShareWithExtra]:
+    ) -> ShareHistoryExtra:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
         extra = ShareHistoryExtra()
         history = cast(model.History, item)
@@ -322,7 +458,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     elif option == sharable.SharingOptions.make_public:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                 else:
-                    hda_id = trans.security.encode_id(hda.id)
+                    hda_id = hda.id
                     hda_info = HDABasicInfo(id=hda_id, name=hda.name)
                     if owner_can_manage_dataset:
                         can_change_dict[hda_id] = hda_info
@@ -341,17 +477,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return extra
 
     def is_history_shared_with(self, history: model.History, user: model.User) -> bool:
-        return bool(
-            self.session()
-            .query(self.user_share_model)
-            .filter(
-                and_(
-                    self.user_share_model.table.c.user_id == user.id,
-                    self.user_share_model.table.c.history_id == history.id,
-                )
-            )
-            .first()
+        stmt = select(
+            exists()
+            .where(HistoryUserShareAssociation.user_id == user.id)
+            .where(HistoryUserShareAssociation.history_id == history.id)
         )
+        return bool(self.session().scalar(stmt))
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.
@@ -391,7 +522,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         record to restore the history and its datasets as a new copy.
         """
         if history.archive_export_id is not None and history.purged and not force:
-            raise glx_exceptions.RequestParameterInvalidException(
+            raise RequestParameterInvalidException(
                 "Cannot restore an archived (and purged) history that is associated with an archive export record. "
                 "Please try importing it back as a new copy from the associated archive export record instead. "
                 "You can still force the un-archiving of the purged history by setting the 'force' parameter."
@@ -432,6 +563,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -466,6 +598,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -503,7 +636,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
                 self.history_manager.purge(history, flush=False, user=user)
                 success_item_count += 1
                 total_free_bytes += int(history.disk_size)
-            except BaseException as e:
+            except Exception as e:
                 errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
 
         if success_item_count:
@@ -557,6 +690,7 @@ class HistoryExportManager:
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
+        assert history.update_time is not None, "History update time must be set"
         history_has_changed = history.update_time > export_date
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()
@@ -580,8 +714,8 @@ class HistoryExportManager:
     def serialize(self, trans, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
         rval = jeha.to_dict()
         rval["type"] = "job"
-        encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
-        encoded_history_id = DecodedDatabaseIdField.encode(history_id)
+        encoded_jeha_id = Security.security.encode_id(jeha.id)
+        encoded_history_id = Security.security.encode_id(history_id)
         api_url = trans.url_builder("history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id)
         external_url = trans.url_builder(
             "history_archive_download", history_id=encoded_history_id, jeha_id="latest", qualified=True
@@ -601,11 +735,11 @@ class HistoryExportManager:
         if jeha_id != "latest":
             matching_exports = [e for e in matching_exports if e.id == jeha_id]
         if len(matching_exports) == 0:
-            raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+            raise ObjectNotFound("Failed to find target history export")
 
         jeha = matching_exports[0]
         if not jeha.ready:
-            raise glx_exceptions.MessageException("Export not available or not yet ready.")
+            raise MessageException("Export not available or not yet ready.")
 
         return jeha
 
@@ -717,20 +851,22 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
-            "hdas": lambda item, key, **context: [self.app.security.encode_id(hda.id) for hda in item.datasets],
+            "hdas": lambda item, key, encode_id=True, **context: [
+                self.app.security.encode_id(hda.id) if encode_id else hda.id for hda in item.datasets
+            ],
             "state_details": self.serialize_state_counts,
             "state_ids": self.serialize_state_ids,
             "contents": self.serialize_contents,
-            "non_ready_jobs": lambda item, key, **context: [
+            "non_ready_jobs": lambda item, key, encode_id=True, **context: [
                 self.app.security.encode_id(job.id) for job in self.manager.non_ready_jobs(item)
             ],
             "contents_states": self.serialize_contents_states,
             "contents_active": self.serialize_contents_active,
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
-            "user_id": lambda item, key, **context: self.app.security.encode_id(item.user_id)
-            if item.user_id is not None
-            else None,
+            "user_id": lambda item, key, encode_id=True, **context: (
+                self.app.security.encode_id(item.user_id) if item.user_id is not None and encode_id else item.user_id
+            ),
         }
         self.serializers.update(serializers)
 
@@ -862,7 +998,9 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
 
     def deserialize_preferred_object_store_id(self, item, key, val, **context):
         preferred_object_store_id = val
-        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        validation_error = validate_preferred_object_store_id(
+            context["trans"], self.app.object_store, preferred_object_store_id
+        )
         if validation_error:
             raise ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)
@@ -884,3 +1022,24 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
                 "update_time": {"op": ("le", "ge", "gt", "lt"), "val": self.parse_date},
             }
         )
+        self.fn_filter_parsers.update(
+            {
+                "username": {
+                    "op": {
+                        "eq": self.username_eq,
+                        "contains": self.username_contains,
+                    },
+                },
+            }
+        )
+
+    def username_eq(self, item, val: str) -> bool:
+        return val.lower() == str(item.user.username).lower()
+
+    def username_contains(self, item, val: str) -> bool:
+        return val.lower() in str(item.user.username).lower()
+
+
+def get_count(session, statement):
+    stmt = select(func.count()).select_from(statement)
+    return session.scalar(stmt)

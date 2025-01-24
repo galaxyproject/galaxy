@@ -11,7 +11,7 @@ try:
     )
 except ImportError:
     """Don't make psutil a strict requirement, but use if available."""
-    Process = None  # type: ignore
+    Process = None
 
 
 def kill_pid(pid: int, use_psutil: bool = True):

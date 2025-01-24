@@ -4,7 +4,7 @@ import pytest
 
 from galaxy import model
 from galaxy.model.base import transaction
-from galaxy.tools.parameters import basic
+from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from .util import BaseParameterTestCase
 
 
@@ -36,7 +36,7 @@ class TestSelectToolParameter(BaseParameterTestCase):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True
         assert isinstance(
-            self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": basic.RuntimeValue()}),
+            self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": RuntimeValue()}),
             model.HistoryDatasetAssociation,
         )
 
@@ -68,6 +68,7 @@ class TestSelectToolParameter(BaseParameterTestCase):
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
             webapp=Mock(name="galaxy"),
+            user=None,
         )
         self.type = "select"
         self.set_data_ref = False

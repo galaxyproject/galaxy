@@ -125,8 +125,7 @@ class SmartTarget:
         return attribute_value
 
     def assert_data_value(self, attribute: str, expected_value: str):
-        actual_value = self.data_value(attribute)
-        if actual_value != expected_value:
+        if (actual_value := self.data_value(attribute)) != expected_value:
             message = f"Expected data-{attribute} to have value [{expected_value}] but had value [{actual_value}]"
             raise AssertionError(message)
 

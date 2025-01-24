@@ -153,17 +153,4 @@ class AdminToolshed(AdminGalaxy):
                 with transaction(trans.install_model.context):
                     trans.install_model.context.commit()
             message = "The repository information has been updated."
-        dd = dependency_display.DependencyDisplayer(trans.app)
-        containers_dict = dd.populate_containers_dict_from_repository_metadata(
-            repository=repository,
-        )
-        management_dict = {
-            "status": status,
-        }
-        missing_repo_dependencies = containers_dict.get("missing_repository_dependencies", None)
-        if missing_repo_dependencies:
-            management_dict["missing_repository_dependencies"] = missing_repo_dependencies.to_dict()
-        repository_dependencies = containers_dict.get("repository_dependencies", None)
-        if repository_dependencies:
-            management_dict["repository_dependencies"] = repository_dependencies.to_dict()
-        return management_dict
+        return dependency_display.build_manage_repository_dict(trans.app, status, repository)

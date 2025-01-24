@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+from sqlalchemy import select
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -585,7 +586,7 @@ class FileParameter(MetadataParameter):
     def to_string(self, value):
         if not value:
             return str(self.spec.no_value)
-        return value.file_name
+        return value.get_file_name()
 
     def to_safe_string(self, value):
         # We do not sanitize file names
@@ -602,9 +603,20 @@ class FileParameter(MetadataParameter):
         if isinstance(value, galaxy.model.MetadataFile) or isinstance(value, MetadataTempFile):
             return value
         if isinstance(value, int):
-            return session.query(galaxy.model.MetadataFile).get(value)
+            return session.get(galaxy.model.MetadataFile, value)
         else:
-            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
+            wrapped_value = session.execute(
+                select(galaxy.model.MetadataFile).filter_by(uuid=value)
+            ).scalar_one_or_none()
+            if wrapped_value:
+                return wrapped_value
+            else:
+                # If we've simultaneously copied the  dataset and we've changed the datatype on the
+                # copy we may not have committed the MetadataFile yet, so we need to commit the session.
+                # TODO: It would be great if we can avoid the commit in the future.
+                with transaction(session):
+                    session.commit()
+            return session.execute(select(galaxy.model.MetadataFile).filter_by(uuid=value)).scalar_one_or_none()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
@@ -621,12 +633,12 @@ class FileParameter(MetadataParameter):
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             session.add(new_value)
             try:
-                new_value.update_from_file(value.file_name)
+                new_value.update_from_file(value.get_file_name())
             except AssertionError:
                 tmp_session = session(target_context.parent)
                 with transaction(tmp_session):
                     tmp_session.commit()
-                new_value.update_from_file(value.file_name)
+                new_value.update_from_file(value.get_file_name())
             return self.unwrap(new_value)
         return None
 
@@ -652,14 +664,13 @@ class FileParameter(MetadataParameter):
             if mf is None:
                 mf = self.new_file(dataset=parent, **value.kwds)
             # Ensure the metadata file gets updated with content
-            file_name = value.file_name
+            file_name = value.get_file_name()
             if path_rewriter:
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
             mf.update_from_file(file_name)
-            os.unlink(file_name)
-            value = mf.id
+            value = str(mf.uuid)
         return value
 
     def to_external_value(self, value):
@@ -681,11 +692,9 @@ class FileParameter(MetadataParameter):
             sa_session = object_session(dataset)
             if sa_session:
                 sa_session.add(mf)
-                with transaction(sa_session):
-                    sa_session.commit()  # commit to assign id
             return mf
         else:
-            # we need to make a tmp file that is accessable to the head node,
+            # we need to make a tmp file that is accessible to the head node,
             # we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             # we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile(metadata_tmp_files_dir=metadata_tmp_files_dir, **kwds)
@@ -701,8 +710,7 @@ class MetadataTempFile:
             self.tmp_dir = metadata_tmp_files_dir
         self._filename = None
 
-    @property
-    def file_name(self):
+    def get_file_name(self):
         if self._filename is None:
             # we need to create a tmp file, accessable across all nodes/heads, save the name, and return it
             self._filename = abspath(tempfile.NamedTemporaryFile(dir=self.tmp_dir, prefix="metadata_temp_file_").name)
@@ -710,7 +718,7 @@ class MetadataTempFile:
         return self._filename
 
     def to_JSON(self):
-        return {"__class__": self.__class__.__name__, "filename": self.file_name, "kwds": self.kwds}
+        return {"__class__": self.__class__.__name__, "filename": self.get_file_name(), "kwds": self.kwds}
 
     @classmethod
     def from_JSON(cls, json_dict):
@@ -730,9 +738,9 @@ class MetadataTempFile:
                 for value in json.load(fh).values():
                     if cls.is_JSONified_value(value):
                         value = cls.from_JSON(value)
-                    if isinstance(value, cls) and os.path.exists(value.file_name):
-                        log.debug("Cleaning up abandoned MetadataTempFile file: %s", value.file_name)
-                        os.unlink(value.file_name)
+                    if isinstance(value, cls) and os.path.exists(value.get_file_name()):
+                        log.debug("Cleaning up abandoned MetadataTempFile file: %s", value.get_file_name())
+                        os.unlink(value.get_file_name())
         except Exception as e:
             log.debug("Failed to cleanup MetadataTempFile temp files from %s: %s", filename, unicodify(e))
 

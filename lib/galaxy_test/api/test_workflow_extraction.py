@@ -5,6 +5,7 @@ from json import (
     dumps,
     loads,
 )
+from typing import Optional
 
 from galaxy_test.base.populators import (
     skip_without_tool,
@@ -97,17 +98,14 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
         self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
 
     def test_extract_copied_mapping_from_history(self, history_id):
-        old_history_id = self.dataset_populator.new_history()
-        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(old_history_id)
+        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(history_id)
 
-        old_contents = self._history_contents(old_history_id)
-        for old_content in old_contents:
-            self.__copy_content_to_history(history_id, old_content)
+        new_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
         # API test is somewhat contrived since there is no good way
         # to retrieve job_id1, job_id2 like this for copied dataset
         # collections I don't think.
         downloaded_workflow = self._extract_and_download_workflow(
-            history_id,
+            new_history_id,
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
         )
@@ -120,7 +118,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             "Mapping connection for copied collections not yet implemented in history import/export"
         )
 
-        old_history_id = self.dataset_populator.new_history()
+        old_history_id = self.dataset_populator.new_history()  # type: ignore[unreachable]
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_singleton(old_history_id)
 
         old_contents = self._history_contents(old_history_id)
@@ -226,6 +224,46 @@ test_data:
         collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
         assert collection_step_state["collection_type"] == "paired"
+
+    def test_empty_collection_map_over_extract_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input: collection
+  filter_file: data
+steps:
+  filter_collection:
+    tool_id: __FILTER_FROM_FILE__
+    in:
+       input: input
+       how|filter_source: filter_file
+    state:
+       how:
+         how_filter: remove_if_present
+  concat:
+    tool_id: cat1
+    in:
+      input1: filter_collection/output_filtered
+test_data:
+  input:
+    collection_type: list
+    elements:
+      - identifier: i1
+        content: "0"
+  filter_file: i1""",
+                history_id,
+                wait=True,
+            )
+            response = self._post(
+                "workflows", data={"from_history_id": history_id, "workflow_name": "extract with empty collection test"}
+            )
+            assert response.status_code == 200
+            workflow_id = response.json()["id"]
+            workflow = self.workflow_populator.download_workflow(workflow_id)
+            assert workflow
+            # TODO: after adding request models we should be able to recover implicit collection job requests.
+            # assert len(workflow["steps"]) == 4
 
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self, history_id):
@@ -481,7 +519,7 @@ test_data:
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
-        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 200)
         invocation_response = run_workflow_response.json()
         self.workflow_populator.wait_for_invocation_and_jobs(
@@ -498,9 +536,7 @@ test_data:
         return collect_step_idx
 
     def _extract_and_download_workflow(self, history_id: str, **extract_payload):
-        reimport_as = extract_payload.get("reimport_as")
-
-        if reimport_as:
+        if reimport_as := extract_payload.get("reimport_as"):
             history_name = reimport_as
             self.dataset_populator.wait_for_history(history_id)
             self.dataset_populator.rename_history(history_id, history_name)
@@ -576,11 +612,11 @@ test_data:
         downloaded_workflow = download_response.json()
         return downloaded_workflow
 
-    def _get_steps_of_type(self, downloaded_workflow, type, expected_len=None):
+    def _get_steps_of_type(self, downloaded_workflow, type: str, expected_len: Optional[int] = None):
         steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == type]
         if expected_len is not None:
             n = len(steps)
-            assert n == expected_len, "Expected %d steps of type %s, found %d" % (expected_len, type, n)
+            assert n == expected_len, f"Expected {expected_len} steps of type {type}, found {n}"
         return sorted(steps, key=operator.itemgetter("id"))
 
     def __job_id(self, history_id, dataset_id):
@@ -610,10 +646,10 @@ test_data:
     def __check_workflow(
         self,
         workflow,
-        step_count=None,
-        verify_connected=False,
-        data_input_count=None,
-        data_collection_input_count=None,
+        step_count: Optional[int] = None,
+        verify_connected: bool = False,
+        data_input_count: Optional[int] = None,
+        data_collection_input_count: Optional[int] = None,
         tool_ids=None,
     ):
         steps = workflow["steps"]

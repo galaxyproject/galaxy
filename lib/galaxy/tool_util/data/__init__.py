@@ -26,6 +26,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    overload,
     Set,
     Tuple,
     Type,
@@ -33,7 +34,6 @@ from typing import (
     Union,
 )
 
-import requests
 from typing_extensions import (
     Protocol,
     TypedDict,
@@ -43,6 +43,7 @@ from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.util import (
     Element,
+    requests,
     RW_R__R__,
 )
 from galaxy.util.compression_utils import decompress_path_to_directory
@@ -81,8 +82,7 @@ EntrySource = Optional[Union[dict, RepoInfo, "DataManager"]]
 
 
 class StoresConfigFilePaths(Protocol):
-    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]:
-        ...
+    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]: ...
 
 
 class ToolDataPathFiles:
@@ -169,8 +169,9 @@ class ToolDataTable(Dictifiable):
         filename: Optional[StrPath] = None,
         other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
-        self.name = config_element.get("name")
-        self.comment_char = config_element.get("comment_char")
+        name = config_element.get("name")
+        assert name
+        self.name = name
         self.empty_field_value = config_element.get("empty_field_value", "")
         self.empty_field_values: Dict[str, str] = {}
         self.allow_duplicate_entries = util.asbool(config_element.get("allow_duplicate_entries", True))
@@ -179,7 +180,7 @@ class ToolDataTable(Dictifiable):
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
-        self.missing_index_file = None
+        self.missing_index_file: Optional[str] = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
@@ -250,6 +251,11 @@ class ToolDataTable(Dictifiable):
                 self.add_entry(
                     entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd
                 )
+            except MessageException as e:
+                if e.type == "warning":
+                    log.warning(str(e))
+                else:
+                    log.error(str(e))
             except Exception as e:
                 log.error(str(e))
         return self._loaded_content_version
@@ -343,11 +349,19 @@ class TabularToolDataTable(ToolDataTable):
         # store repo info if available:
         repo_elem = config_element.find("tool_shed_repository")
         if repo_elem is not None:
+            tool_shed_elem = repo_elem.find("tool_shed")
+            assert tool_shed_elem is not None
+            repository_name_elem = repo_elem.find("repository_name")
+            assert repository_name_elem is not None
+            repository_owner_elem = repo_elem.find("repository_owner")
+            assert repository_owner_elem is not None
+            installed_changeset_revision_elem = repo_elem.find("installed_changeset_revision")
+            assert installed_changeset_revision_elem is not None
             repo_info = dict(
-                tool_shed=repo_elem.find("tool_shed").text,
-                name=repo_elem.find("repository_name").text,
-                owner=repo_elem.find("repository_owner").text,
-                installed_changeset_revision=repo_elem.find("installed_changeset_revision").text,
+                tool_shed=tool_shed_elem.text,
+                name=repository_name_elem.text,
+                owner=repository_owner_elem.text,
+                installed_changeset_revision=installed_changeset_revision_elem.text,
             )
         else:
             repo_info = None
@@ -370,12 +384,13 @@ class TabularToolDataTable(ToolDataTable):
                     tmp_file.flush()
                 else:
                     # Pull the filename from a global config
-                    filename = file_element.get("from_config", None) or None
+                    filename = file_element.get("from_config")
                     if filename:
                         filename = self.other_config_dict.get(filename, None)
-            filename = file_path = _expand_here_template(filename, here=self.here)
+            if filename:
+                filename = _expand_here_template(filename, here=self.here)
             found = False
-            if file_path is None:
+            if filename is None:
                 log.debug(
                     "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.",
                     util.xml_to_string(file_element),
@@ -394,7 +409,7 @@ class TabularToolDataTable(ToolDataTable):
                 # regular galaxy app has and uses tool_data_path.
                 # We're loading a tool in the tool shed, so we cannot use the Galaxy tool-data
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
-                filename = os.path.split(file_path)[1]
+                filename = os.path.split(filename)[1]
                 filename = os.path.join(tool_data_path, filename)
             if self.tool_data_path_files.exists(filename):
                 found = True
@@ -474,7 +489,7 @@ class TabularToolDataTable(ToolDataTable):
 
     # This method is used in tools, so need to keep its API stable
     def get_fields(self) -> List[List[str]]:
-        return self.data
+        return self.data.copy()
 
     def get_field(self, value):
         rval = None
@@ -521,11 +536,11 @@ class TabularToolDataTable(ToolDataTable):
         else:
             self.largest_index = 0
             for column_elem in config_element.findall("column"):
-                name = column_elem.get("name", None)
+                name = column_elem.get("name")
                 assert name is not None, "Required 'name' attribute missing from column def"
-                index = column_elem.get("index", None)
-                assert index is not None, "Required 'index' attribute missing from column def"
-                index = int(index)
+                index_attr = column_elem.get("index")
+                assert index_attr is not None, "Required 'index' attribute missing from column def"
+                index = int(index_attr)
                 self.columns[name] = index
                 if index > self.largest_index:
                     self.largest_index = index
@@ -563,10 +578,7 @@ class TabularToolDataTable(ToolDataTable):
                     if self.largest_index < len(fields):
                         rval.append(fields)
                     else:
-                        line_error = (
-                            "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s"
-                            % ((i + 1), self.name, separator_char, line)
-                        )
+                        line_error = f"Line {i + 1} in tool data table '{self.name}' is invalid (HINT: '{separator_char}' characters must be used to separate fields):\n{line}"
                         if errors is not None:
                             errors.append(line_error)
                         log.warning(line_error)
@@ -642,7 +654,7 @@ class TabularToolDataTable(ToolDataTable):
                     # we have a data manager, use its repo_info method
                     source_data_manager = cast("DataManager", source)
                     source_repo_info_model = source_data_manager.repo_info
-                source_repo_info = source_repo_info_model.dict() if source_repo_info_model else None
+                source_repo_info = source_repo_info_model.model_dump() if source_repo_info_model else None
         filename = default
         for name, value in self.filenames.items():
             repo_info = value.get("tool_shed_repository")
@@ -686,7 +698,8 @@ class TabularToolDataTable(ToolDataTable):
                 self.data.append(fields)
             else:
                 raise MessageException(
-                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False."
+                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.",
+                    type="warning",
                 )
         else:
             raise MessageException(
@@ -863,7 +876,15 @@ class TabularToolDataField(Dictifiable):
         return rval
 
 
-def _expand_here_template(content: str, here: Optional[str]) -> str:
+@overload
+def _expand_here_template(content: str, here: Optional[str]) -> str: ...
+
+
+@overload
+def _expand_here_template(content: None, here: Optional[str]) -> None: ...
+
+
+def _expand_here_template(content: Optional[str], here: Optional[str]) -> Optional[str]:
     if here and content:
         content = string.Template(content).safe_substitute({"__HERE__": here})
     return content
@@ -876,8 +897,7 @@ tool_data_table_types_list: List[Type[ToolDataTable]] = [TabularToolDataTable]
 class HasExtraFiles(Protocol):
     extra_files_path: str
 
-    def extra_files_path_exists(self) -> bool:
-        ...
+    def extra_files_path_exists(self) -> bool: ...
 
 
 class DirectoryAsExtraFiles(HasExtraFiles):
@@ -888,9 +908,10 @@ class DirectoryAsExtraFiles(HasExtraFiles):
         return True
 
 
-class OutputDataset(HasExtraFiles):
+class OutputDataset(HasExtraFiles, Protocol):
     ext: str
-    file_name: str
+
+    def get_file_name(self, sync_cache=True) -> str: ...
 
 
 class ToolDataTableManager(Dictifiable):
@@ -920,7 +941,7 @@ class ToolDataTableManager(Dictifiable):
 
     def index(self) -> ToolDataEntryList:
         data_tables = [ToolDataEntry(**table.to_dict()) for table in self.data_tables.values()]
-        return ToolDataEntryList.construct(__root__=data_tables)
+        return ToolDataEntryList.model_construct(root=data_tables)
 
     def __getitem__(self, key: str) -> ToolDataTable:
         return self.data_tables.__getitem__(key)
@@ -1089,14 +1110,11 @@ class ToolDataTableManager(Dictifiable):
                 else:
                     raise
             root = tree.getroot()
-            out_elems = [elem for elem in root]
+            out_elems = list(root)
         except Exception as e:
             out_elems = []
             log.debug("Could not parse existing tool data table config, assume no existing elements: %s", e)
-        for elem in remove_elems:
-            # handle multiple occurrences of remove elem in existing elems
-            while elem in out_elems:
-                remove_elems.remove(elem)
+        out_elems = [elem for elem in out_elems if elem not in remove_elems]
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
@@ -1191,7 +1209,7 @@ class ToolDataTableManager(Dictifiable):
             extra_files_path = dataset.extra_files_path
             bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
             with open(bundle_path, "w") as fw:
-                json.dump(bundle.dict(), fw)
+                fw.write(bundle.model_dump_json())
             bundle_datasets[bundle_path] = dataset
         return bundle_datasets
 
@@ -1219,7 +1237,7 @@ def _data_manager_dict(out_data: Dict[str, OutputDataset], ensure_single_output:
         found_output = True
 
         try:
-            output_dict = json.loads(open(output_dataset.file_name).read())
+            output_dict = json.loads(open(output_dataset.get_file_name()).read())
         except Exception as e:
             log.warning(f'Error reading DataManagerTool json for "{output_name}": {e}')
             continue

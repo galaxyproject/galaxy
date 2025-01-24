@@ -2,7 +2,7 @@
 import { BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { FilterFileSourcesOptions } from "@/components/FilesDialog/services";
+import { type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -53,9 +53,11 @@ const doExport = () => {
                 :require-writable="true"
                 :filter-options="defaultExportFilterOptions" />
         </BFormGroup>
+
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
             <BFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
+
         <BRow align-h="end">
             <BCol>
                 <BButton

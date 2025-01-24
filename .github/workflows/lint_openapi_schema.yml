@@ -20,25 +20,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7', '3.11']
+        python-version: ['3.8', '3.13']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache pip dir
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
@@ -51,10 +53,13 @@ jobs:
       - name: Build typescript schema
         run: make update-client-api-schema
         working-directory: 'galaxy root'
+      - name: Diff...
+        run: git diff
+        working-directory: 'galaxy root'
       - name: Check for changes
         run: |
           if [[ `git status --porcelain` ]]; then
-            echo "Rebuilding client/src/schema/schema.ts resulted in changes, run 'make update-client-api-schema' and commit results"
+            echo "Rebuilding client/src/api/schema/schema.ts resulted in changes, run 'make update-client-api-schema' and commit results"
             exit 1
           fi
         working-directory: 'galaxy root'

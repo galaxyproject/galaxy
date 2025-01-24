@@ -1,29 +1,6 @@
-import axios from "axios";
-import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+import { fetchDatasetDetails } from "@/api/datasets";
+import { SingleQueryProvider } from "@/components/providers/SingleQueryProvider";
 
 import { stateIsTerminal } from "./utils";
 
-async function getDataset({ id }) {
-    const url = `${getAppRoot()}api/datasets/${id}`;
-    try {
-        const { data } = await axios.get(url);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
-async function getDatasetAttributes({ id }) {
-    const url = `${getAppRoot()}dataset/get_edit?dataset_id=${id}`;
-    try {
-        const { data } = await axios.get(url);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
-export const DatasetAttributesProvider = SingleQueryProvider(getDatasetAttributes);
-export default SingleQueryProvider(getDataset, stateIsTerminal);
+export default SingleQueryProvider(fetchDatasetDetails, stateIsTerminal);

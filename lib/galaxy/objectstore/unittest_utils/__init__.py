@@ -1,9 +1,12 @@
 """Utilities for configuring and using objectstores in unit tests."""
+
 import os
+import random
 from io import StringIO
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
+from typing import Optional
 
 import yaml
 
@@ -31,8 +34,24 @@ extra_dirs:
 
 
 class Config:
-    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
+    def __init__(
+        self,
+        config_str=DISK_TEST_CONFIG,
+        clazz=None,
+        store_by="id",
+        user_object_store_resolver: Optional[objectstore.UserObjectStoreResolver] = None,
+        template_vars=None,
+        inject_galaxy_test_env=False,
+    ):
         self.temp_directory = mkdtemp()
+        template_vars = {}
+        template_vars["temp_directory"] = self.temp_directory
+        if inject_galaxy_test_env:
+            template_vars["test_random_int"] = random.randint(100000, 999999)
+            for key, value in os.environ.items():
+                if key.startswith("GALAXY_TEST_"):
+                    template_vars[key] = value
+        self.template_vars = template_vars
         if config_str.startswith("<"):
             config_file = "store.xml"
         else:
@@ -41,7 +60,9 @@ class Config:
         config = MockConfig(self.temp_directory, config_file, store_by=store_by)
         self.global_config = config
         if clazz is None:
-            self.object_store = objectstore.build_object_store_from_config(config)
+            self.object_store = objectstore.build_object_store_from_config(
+                config, user_object_store_resolver=user_object_store_resolver
+            )
         elif config_file == "store.xml":
             self.object_store = clazz.from_xml(config, XML(config_str))
         else:
@@ -59,7 +80,7 @@ class Config:
         if not os.path.exists(directory):
             os.makedirs(directory, exist_ok=True)
         contents_template = Template(contents)
-        expanded_contents = contents_template.safe_substitute(temp_directory=self.temp_directory)
+        expanded_contents = contents_template.safe_substitute(**self.template_vars)
         open(path, "w").write(expanded_contents)
         return path
 
@@ -79,7 +100,21 @@ class MockConfig:
         self.enable_quotas = True
 
 
+def app_config(tmpdir) -> objectstore.UserObjectStoresAppConfig:
+    app_config = objectstore.UserObjectStoresAppConfig(
+        jobs_directory=str(tmpdir / "jobs"),
+        new_file_path=str(tmpdir / "new_files"),
+        umask=0o077,
+        gid=0o077,
+        object_store_cache_path=str(tmpdir / "cache"),
+        object_store_cache_size=1,
+        user_config_templates_use_saved_configuration="fallback",
+    )
+    return app_config
+
+
 __all__ = [
+    "app_config",
     "Config",
     "MockConfig",
     "DISK_TEST_CONFIG",

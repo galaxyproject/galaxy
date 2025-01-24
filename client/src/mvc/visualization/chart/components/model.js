@@ -2,7 +2,7 @@ import Backbone from "backbone";
 import { Visualization } from "mvc/visualization/visualization-model";
 import Utils from "utils/utils";
 
-const MATCH_GROUP = /^groups_([0-9]+)\|([\w]+)/;
+const MATCH_GROUP = /^(groups|tracks)_([0-9]+)\|([\w]+)/;
 
 export default Backbone.Model.extend({
     defaults: {

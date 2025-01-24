@@ -94,7 +94,7 @@ class graph(object):
 
     def check_graph(self):
         for n in self.nodes.values():
-            ms = [x for x in n.edges]
+            ms = list(n.edges)
             for m in ms:
                 if n not in m.edges:
                     print("check : %s - %s" % (n, m), file=stderr)

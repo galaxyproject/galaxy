@@ -10,7 +10,6 @@ from __future__ import (
 
 import sys
 from ast import (
-    Module,
     parse,
     walk,
 )
@@ -112,8 +111,6 @@ def check_simple_name(text):
     except SyntaxError:
         return False
 
-    if not isinstance(module, Module):
-        return False
     statements = module.body
     if not len(statements) == 1:
         return False
@@ -171,8 +168,6 @@ def check_expression(text):
     except SyntaxError:
         return False
 
-    if not isinstance(module, Module):
-        return False
     statements = module.body
     if not len(statements) == 1:
         return False

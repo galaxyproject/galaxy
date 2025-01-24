@@ -1,7 +1,96 @@
+<script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
+
+import { type AsyncTaskResultSummary, GalaxyApi } from "@/api";
+import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
+import { useConfig } from "@/composables/config";
+import { useTaskMonitor } from "@/composables/taskMonitor";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { bytesToString } from "@/utils/utils";
+
+import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
+
+const { config, isConfigLoaded } = useConfig(true);
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+const { isRunning: isRecalculateTaskRunning, waitForTask } = useTaskMonitor();
+
+const quotaUsages = ref<QuotaUsage[]>();
+const errorMessage = ref<string>();
+const isRecalculating = ref<boolean>(false);
+
+const niceTotalDiskUsage = computed(() => {
+    if (!currentUser.value || currentUser.value.isAnonymous) {
+        return "Unknown";
+    }
+    return bytesToString(currentUser.value.total_disk_usage, true);
+});
+
+const isRefreshing = computed(() => {
+    return isRecalculateTaskRunning.value || isRecalculating.value;
+});
+
+watch(
+    () => isRefreshing.value,
+    (newValue, oldValue) => {
+        // Make sure we reload the user and the quota usages when the recalculation is done
+        if (oldValue && !newValue) {
+            const includeHistories = false;
+            userStore.loadUser(includeHistories);
+            loadQuotaUsages();
+        }
+    }
+);
+
+async function displayRecalculationForSeconds(seconds: number) {
+    return new Promise<void>((resolve) => {
+        isRecalculating.value = true;
+
+        setTimeout(() => {
+            isRecalculating.value = false;
+            resolve();
+        }, seconds * 1000);
+    });
+}
+
+async function onRefresh() {
+    const { response, data, error } = await GalaxyApi().PUT("/api/users/current/recalculate_disk_usage");
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
+    }
+
+    if (response.status == 200) {
+        // Wait for the task to complete
+        const asyncTaskResponse = data as AsyncTaskResultSummary;
+        waitForTask(asyncTaskResponse.id);
+    } else if (response.status == 204) {
+        // We cannot track any task, so just display the
+        // recalculation message for a reasonable amount of time
+        await displayRecalculationForSeconds(30);
+    }
+}
+
+async function loadQuotaUsages() {
+    try {
+        const currentUserQuotaUsages = await fetchCurrentUserQuotaUsages();
+        quotaUsages.value = currentUserQuotaUsages;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    }
+}
+
+onMounted(async () => {
+    await loadQuotaUsages();
+});
+</script>
 <template>
     <div>
         <b-alert v-if="errorMessage" variant="danger" show>
-            <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
+            <h2 v-localize class="alert-heading h-sm">Failed to access disk usage details.</h2>
             {{ errorMessage }}
         </b-alert>
         <b-container v-if="currentUser">
@@ -9,105 +98,24 @@
                 <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
             </b-row>
             <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
-                You're using <b>{{ getTotalDiskUsage(currentUser) }}</b> of disk space.
+                You're using <b>{{ niceTotalDiskUsage }}</b> of disk space.
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
             <button
+                id="refresh-disk-usage"
                 title="Recalculate disk usage"
-                :disabled="isRecalculating"
+                :disabled="isRefreshing"
                 variant="outline-secondary"
                 size="sm"
                 pill
                 @click="onRefresh">
-                <b-spinner v-if="isRecalculating" small />
+                <b-spinner v-if="isRefreshing" small />
                 <span v-else>Refresh</span>
             </button>
-            <b-alert
-                v-if="isRecalculating"
-                class="mt-2"
-                variant="info"
-                dismissible
-                fade
-                :show="dismissCountDown"
-                @dismiss-count-down="countDownChanged">
+            <b-alert v-if="isRefreshing" class="refreshing-alert mt-2" variant="info" show dismissible fade>
                 Recalculating disk usage... this may take some time, please check back later.
             </b-alert>
         </b-container>
     </div>
 </template>
-
-<script>
-import axios from "axios";
-import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
-import { getAppRoot } from "onload/loadConfig";
-import { mapActions, mapState } from "pinia";
-import _l from "utils/localization";
-import { rethrowSimple } from "utils/simple-error";
-import { bytesToString } from "utils/utils";
-
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-
-import { QuotaUsage } from "./Quota/model";
-
-export default {
-    components: {
-        QuotaUsageSummary,
-    },
-    setup() {
-        const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
-    },
-    data() {
-        return {
-            errorMessageTitle: _l("Failed to access disk usage details."),
-            errorMessage: null,
-            isRecalculating: false,
-            dismissCountDown: 0,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        quotaUsages() {
-            return [new QuotaUsage(this.currentUser)];
-        },
-    },
-    methods: {
-        ...mapActions(useUserStore, ["loadUser"]),
-        getTotalDiskUsage(user) {
-            return bytesToString(user.total_disk_usage, true);
-        },
-        onError(errorMessage) {
-            this.errorMessage = errorMessage;
-        },
-        async onRefresh() {
-            await this.requestDiskUsageRecalculation();
-            await this.displayRecalculationForSeconds(30);
-
-            this.loadUser();
-        },
-        async requestDiskUsageRecalculation() {
-            try {
-                await axios.put(`${getAppRoot()}api/users/current/recalculate_disk_usage`);
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        },
-        async displayRecalculationForSeconds(seconds) {
-            return new Promise((resolve) => {
-                this.isRecalculating = true;
-                this.dismissCountDown = seconds;
-
-                setTimeout(() => {
-                    this.isRecalculating = false;
-                    resolve();
-                }, seconds * 1000);
-            });
-        },
-        countDownChanged(dismissCountDown) {
-            this.dismissCountDown = dismissCountDown;
-        },
-    },
-};
-</script>

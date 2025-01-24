@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { createLocalVue, mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
-import { watchForChange } from "tests/jest/helpers";
 
 import { getRunData } from "./services";
 import sampleRunData1 from "./testdata/run1.json";
@@ -35,7 +35,7 @@ describe("WorkflowRun.vue", () => {
         const propsData = { workflowId: run1WorkflowId };
         localVue = createLocalVue();
         localVue.use(PiniaVuePlugin);
-        wrapper = shallowMount(WorkflowRun, {
+        wrapper = mount(WorkflowRun, {
             propsData: propsData,
             localVue,
             pinia: createTestingPinia(),
@@ -43,29 +43,28 @@ describe("WorkflowRun.vue", () => {
     });
 
     it("loads run data from API and parses it into a WorkflowRunModel object", async () => {
-        // waits for vue to render wrapper
-        await localVue.nextTick();
+        const loadingTag = "[data-description='loading message']";
+        expect(wrapper.find(loadingTag).exists()).toBeTruthy();
+        expect(wrapper.vm.workflowError).toBe("");
+        expect(wrapper.vm.workflowModel).toBeNull();
 
-        expect(wrapper.vm.loading).toBe(true);
-        expect(wrapper.vm.error).toBeNull();
-        expect(wrapper.vm.model).toBeNull();
+        await flushPromises();
+        await wrapper.vm.$nextTick();
 
-        await watchForChange({ vm: wrapper.vm, propName: "loading" });
-
-        expect(wrapper.vm.error).toBeNull();
-        expect(wrapper.vm.loading).toBe(false);
+        expect(wrapper.find(loadingTag).exists()).toBeFalsy();
         expect(wrapper.vm.simpleForm).toBe(false);
-        const model = wrapper.vm.model;
-        expect(model).not.toBeNull();
-        expect(model.workflowId).toBe(run1WorkflowId);
-        expect(model.name).toBe("Cool Test Workflow");
-        expect(model.historyId).toBe("8f7a155755f10e73");
-        expect(model.hasUpgradeMessages).toBe(false);
-        expect(model.hasStepVersionChanges).toBe(false);
-        expect(model.wpInputs.wf_param.label).toBe("wf_param");
+
+        const workflowModel = wrapper.vm.workflowModel;
+        expect(workflowModel).not.toBeNull();
+        expect(workflowModel.workflowId).toBe(run1WorkflowId);
+        expect(workflowModel.name).toBe("Cool Test Workflow");
+        expect(workflowModel.historyId).toBe("8f7a155755f10e73");
+        expect(workflowModel.hasUpgradeMessages).toBe(false);
+        expect(workflowModel.hasStepVersionChanges).toBe(false);
+        expect(workflowModel.wpInputs.wf_param.label).toBe("wf_param");
         // all steps are expanded since data and parameter steps are expanded by default,
         // the same is true for tools with unconnected data inputs.
-        model.steps.forEach((step) => {
+        workflowModel.steps.forEach((step) => {
             expect(step.expanded).toBe(true);
         });
     });
@@ -75,17 +74,20 @@ describe("WorkflowRun.vue", () => {
         await localVue.nextTick();
 
         expect(wrapper.vm.loading).toBe(true);
-        expect(wrapper.vm.error).toBeNull();
-        expect(wrapper.vm.model).toBeNull();
+        expect(wrapper.vm.workflowError).toBe("");
+        expect(wrapper.vm.workflowModel).toBeNull();
 
-        await watchForChange({ vm: wrapper.vm, propName: "loading" });
+        await flushPromises();
+        await wrapper.vm.$nextTick();
 
-        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.workflowError).toBe("");
         expect(wrapper.vm.loading).toBe(false);
-        expect(wrapper.find("b-alert-stub").exists()).toBe(false);
+        expect(wrapper.find(".alert-danger").exists()).toBe(false);
         wrapper.vm.handleSubmissionError("Some exception here");
+
         await localVue.nextTick();
+
         expect(wrapper.vm.submissionError).toBe("Some exception here");
-        expect(wrapper.find("b-alert-stub").attributes("variant")).toEqual("danger");
+        expect(wrapper.find(".alert-danger").exists()).toBe(true);
     });
 });

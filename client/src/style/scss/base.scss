@@ -31,18 +31,17 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "library.scss";
 @import "trackster.scss";
 @import "toastr.scss";
-@import "jstree.scss";
 @import "tour.scss";
 @import "flex.scss";
 @import "charts.scss";
 @import "message.scss";
 @import "markdown.scss";
-@import "toolshed.scss";
 @import "multiselect.scss";
 @import "icon-btn.scss";
 @import "peek-columns.scss";
 @import "dataset.scss";
 @import "list-item.scss";
+@import "panels.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -125,73 +124,6 @@ body {
     display: none;
 }
 
-// ==== Unified panel styles ====
-.unified-panel {
-    display: flex;
-    flex-flow: column;
-    background: $panel-bg-color;
-    height: 100%;
-    overflow: auto;
-}
-.unified-panel-header {
-    @extend .unselectable;
-    @extend .px-3;
-    @extend .d-flex;
-    height: $panel_header_height;
-    font-size: 1rem;
-    font-weight: bold;
-    align-items: center;
-    color: $panel-header-text-color;
-    background: $panel-bg-header-color;
-    a {
-        color: $panel-header-text-color;
-    }
-    .unified-panel-header-inner {
-        @extend .w-100;
-        min-width: max-content;
-        align-items: center;
-        justify-content: space-between;
-        display: flex;
-    }
-    .panel-header-buttons {
-        order: 9999;
-        @extend .d-flex;
-        .panel-header-button {
-            text-align: center;
-            &:not(:last-child) {
-                @extend .mr-2;
-            }
-            &:hover {
-                color: $brand-info;
-            }
-        }
-        .panel-header-button-toolbox {
-            color: $brand-dark;
-            flex: 1;
-            @extend .p-1;
-            text-align: center;
-            font-size: $h4-font-size;
-            align-items: center;
-            &:hover {
-                color: $brand-info;
-                background-color: $brand-light;
-                text-decoration: none !important;
-                border-color: $brand-light;
-            }
-        }
-    }
-}
-.unified-panel-controls {
-    @extend .px-3;
-}
-.unified-panel-body {
-    @extend .p-0;
-    @extend .w-100;
-    @extend .h-100;
-    @extend .overflow-auto;
-    flex: 1;
-}
-
 // State colors
 $galaxy-state-border: (
     "new": $state-default-border,
@@ -204,6 +136,7 @@ $galaxy-state-border: (
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
     "setting_metadata": $state-warning-border,
+    "inaccessible": darken($state-default-border, 10%),
 );
 
 $galaxy-state-bg: (
@@ -217,6 +150,7 @@ $galaxy-state-bg: (
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
     "setting_metadata": $state-warning-bg,
+    "inaccessible": darken($state-default-bg, 10%),
 );
 
 @each $state in map-keys($galaxy-state-border) {
@@ -254,6 +188,21 @@ $galaxy-state-bg: (
 [data-state="deleted"],
 [data-state="hidden"] {
     border-style: dotted;
+}
+
+.node-header-invocation {
+    color: $text-color;
+    @each $state in map-keys($galaxy-state-bg) {
+        &.header-#{$state} {
+            background-color: map-get($galaxy-state-bg, $state) !important;
+        }
+    }
+    &.header-paused {
+        background-color: $state-info-bg !important;
+    }
+    &.header-skipped {
+        background-color: map-get($galaxy-state-bg, "hidden") !important;
+    }
 }
 
 // Extra label colors

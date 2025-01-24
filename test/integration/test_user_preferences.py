@@ -7,8 +7,8 @@ from requests import (
     get,
     put,
 )
-from sqlalchemy import select
 
+from galaxy.model.db.user import get_user_by_email
 from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "test_user_preferences@bx.psu.edu"
@@ -19,8 +19,8 @@ class TestUserPreferences(integration_util.IntegrationTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self._api_url(f"users/{user['id']}/theme/test_theme", params=dict(key=self.master_api_key))
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        stmt = select(app.model.User).filter(app.model.User.email == user["email"]).limit(1)
-        db_user = app.model.session.scalars(stmt).first()
+
+        db_user = get_user_by_email(app.model.session, user["email"])
 
         # create some initial data
         put(url)

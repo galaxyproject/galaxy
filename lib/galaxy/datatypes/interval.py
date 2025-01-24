@@ -1,6 +1,7 @@
 """
 Interval datatypes
 """
+
 import logging
 import sys
 import tempfile
@@ -135,7 +136,7 @@ class Interval(Tabular):
         if dataset.has_data():
             empty_line_count = 0
             num_check_lines = 100  # only check up to this many non empty lines
-            with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
                 for i, line in enumerate(in_fh):
                     line = line.rstrip("\r\n")
                     if line:
@@ -192,11 +193,7 @@ class Interval(Tabular):
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
-                and dataset.has_data()
-                and dataset.state == dataset.states.OK
-                and dataset.metadata.columns > 0
-                and dataset.metadata.data_lines != 0
+                super().displayable(dataset)
                 and dataset.metadata.chromCol
                 and dataset.metadata.startCol
                 and dataset.metadata.endCol
@@ -229,7 +226,7 @@ class Interval(Tabular):
             start = sys.maxsize
             end = 0
             max_col = max(chrom_col, start_col, end_col)
-            with compression_utils.get_fileobj(dataset.file_name) as fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
                 for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                     # Skip comment lines
                     if not line.startswith("#"):
@@ -280,26 +277,26 @@ class Interval(Tabular):
             )
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
             if t >= 0:  # strand column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     strand = "+"
-                    name = "region_%i" % i
+                    name = f"region_{i}"
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     if t < len(elems):
                         strand = cast(str, elems[t])
                     tmp = [elems[c], elems[s], elems[e], name, "0", strand]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             elif n >= 0:  # name column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
-                    name = "region_%i" % i
+                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
+                    name = f"region_{i}"
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     tmp = [elems[c], elems[s], elems[e], name]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             else:
-                for elems in compression_utils.file_iter(dataset.file_name):
+                for elems in compression_utils.file_iter(dataset.get_file_name()):
                     tmp = [elems[c], elems[s], elems[e]]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
@@ -315,7 +312,7 @@ class Interval(Tabular):
             },
         )
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         """
         Generate links to UCSC genome browser sites based on the dbkey
         and content of dataset.
@@ -337,19 +334,16 @@ class Interval(Tabular):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = app.legacy_url_for(
-                mapper=app.legacy_mapper,
-                environ=request.environ,
+            internal_url = app.url_for(
                 controller="dataset",
                 dataset_id=dataset.id,
                 action="display_at",
                 filename="ucsc_" + site_name,
             )
             display_url = quote_plus(
-                "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                % (
+                "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
                     base_url,
-                    app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                    app.url_for(controller="root"),
                     dataset.id,
                     type,
                 )
@@ -368,7 +362,7 @@ class Interval(Tabular):
             dataset.metadata.strandCol,
         )
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
-        with compression_utils.get_fileobj(dataset.file_name, "r") as infile:
+        with compression_utils.get_fileobj(dataset.get_file_name(), "r") as infile:
             reader = GenomicIntervalReader(infile, chrom_col=c, start_col=s, end_col=e, strand_col=t)
 
             while True:
@@ -445,7 +439,7 @@ class BedGraph(Interval):
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
         """
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
     def get_estimated_display_viewport(
         self,
@@ -510,9 +504,9 @@ class Bed(Interval):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Sets the metadata information for datasets previously determined to be in bed format."""
+        i = 0
         if dataset.has_data():
-            i = 0
-            for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
+            for i, line in enumerate(open(dataset.get_file_name())):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
                     elems = line.split("\t")
@@ -527,11 +521,11 @@ class Bed(Interval):
                             if overwrite or not dataset.metadata.element_is_set("strandCol"):
                                 dataset.metadata.strandCol = 6
                         break
-            Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
+        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
-        for line in open(dataset.file_name):
+        for line in open(dataset.get_file_name()):
             line = line.strip()
             if line == "" or line.startswith("#"):
                 continue
@@ -567,7 +561,7 @@ class Bed(Interval):
             break
 
         try:
-            return open(dataset.file_name, "rb")
+            return open(dataset.get_file_name(), "rb")
         except Exception:
             return "This item contains no content"
 
@@ -768,20 +762,25 @@ class Bed12(BedStrict):
 
 class _RemoteCallMixin:
     def _get_remote_call_url(
-        self, redirect_url: str, site_name: str, dataset: HasId, type: str, app, base_url: str, request
+        self,
+        redirect_url: str,
+        site_name: str,
+        dataset: HasId,
+        type: str,
+        app,
+        base_url: str,
     ) -> str:
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
         the data available, followed by redirecting to the remote site with a
         link back to the available information.
         """
-        internal_url = f"{app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
+        internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus(
-            "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-            % (
+            "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
                 base_url,
-                app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                app.url_for(controller="root"),
                 dataset.id,
                 type,
             )
@@ -839,7 +838,7 @@ class Gff(Tabular, _RemoteCallMixin):
         # not found in the first N lines will not have metadata.
         num_lines = 200
         attribute_types = {}
-        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
             for i, line in enumerate(in_fh):
                 if line and not line.startswith("#"):
                     elems = line.split("\t")
@@ -874,7 +873,7 @@ class Gff(Tabular, _RemoteCallMixin):
         self.set_attribute_metadata(dataset)
 
         i = 0
-        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
             for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
@@ -906,7 +905,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 seqid = None
                 start = sys.maxsize
                 stop = 0
-                with compression_utils.get_fileobj(dataset.file_name) as fh:
+                with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         try:
                             if line.startswith("##sequence-region"):  # ##sequence-region IV 6000000 6030000
@@ -969,7 +968,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -978,11 +977,11 @@ class Gff(Tabular, _RemoteCallMixin):
                     redirect_url = quote_plus(
                         f"{site_url}db={dataset.dbkey}&position={seqid}:{start}-{stop}&hgt.customText=%s"
                     )
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
-    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -991,7 +990,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     if seqid.startswith("chr") and len(seqid) > 3:
                         seqid = seqid[3:]
                     redirect_url = quote_plus(f"{site_url}/?q={seqid}:{start}..{stop}&eurl=%s")
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1092,7 +1091,7 @@ class Gff3(Gff):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         self.set_attribute_metadata(dataset)
         i = 0
-        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
             for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
@@ -1317,7 +1316,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 end = 0
                 span = 1
                 step = None
-                with open(dataset.file_name) as fh:
+                with open(dataset.get_file_name()) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         try:
                             if line.startswith("browser"):
@@ -1371,7 +1370,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1380,11 +1379,11 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     if chrom.startswith("chr") and len(chrom) > 3:
                         chrom = chrom[3:]
                     redirect_url = quote_plus(f"{site_url}/?q={chrom}:{start}..{stop}&eurl=%s")
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1393,7 +1392,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     redirect_url = quote_plus(
                         f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s"
                     )
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1404,7 +1403,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         max_data_lines = None
         i = 0
-        for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
+        for i, line in enumerate(open(dataset.get_file_name())):  # noqa: B007
             line = line.rstrip("\r\n")
             if line and not line.startswith("#"):
                 elems = line.split("\t")
@@ -1505,7 +1504,7 @@ class CustomTrack(Tabular):
         span = 1
         if self.displayable(dataset):
             try:
-                with open(dataset.file_name) as fh:
+                with open(dataset.get_file_name()) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         if not line.startswith("#"):
                             try:
@@ -1553,18 +1552,17 @@ class CustomTrack(Tabular):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
-                    internal_url = f"{app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
+                    internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
                     display_url = quote_plus(
-                        "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                        % (
+                        "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
                             base_url,
-                            app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                            app.url_for(controller="root"),
                             dataset.id,
                             type,
                         )
@@ -1822,8 +1820,8 @@ class IntervalTabix(Interval):
         try:
             # tabix_index columns are 0-based while in the command line it is 1-based
             pysam.tabix_index(
-                dataset.file_name,
-                index=index_file.file_name,
+                dataset.get_file_name(),
+                index=index_file.get_file_name(),
                 seq_col=dataset.metadata.chromCol - 1,
                 start_col=dataset.metadata.startCol - 1,
                 end_col=dataset.metadata.endCol - 1,

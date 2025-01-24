@@ -1,4 +1,5 @@
 """Abstraction around cwltool and related libraries for loading a CWL artifact."""
+
 import os
 import tempfile
 from typing import NamedTuple

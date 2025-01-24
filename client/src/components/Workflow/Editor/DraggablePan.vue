@@ -9,6 +9,10 @@ const props = defineProps({
         type: Object as PropType<UnwrapRef<UseElementBoundingReturn>>,
         required: true,
     },
+    position: {
+        type: Object as PropType<Position>,
+        default: null,
+    },
     scale: {
         type: Number,
         required: false,
@@ -28,22 +32,35 @@ const props = defineProps({
         default: null,
     },
     disabled: {
-        tyoe: Boolean,
+        type: Boolean,
+        default: false,
+    },
+    panMargin: {
+        type: Number,
+        default: 60,
+    },
+    snappable: {
+        type: Boolean,
+        default: true,
+    },
+    selected: {
+        type: Boolean,
         default: false,
     },
 });
 
-type Size = { width: number; height: number };
 type Position = { x: number; y: number };
 
 type MovePosition = Position & {
-    unscaled: Position & Size;
+    unscaled: Position;
 };
 
 const emit = defineEmits<{
     (e: "pan-by", position: Position): void;
     (e: "move", position: MovePosition, event?: MouseEvent): void;
     (e: "mouseup", event: MouseEvent): void;
+    (e: "mousedown", event: MouseEvent): void;
+    (e: "start"): void;
 }>();
 
 let isPanning = false;
@@ -54,8 +71,6 @@ let movePosition: MovePosition = {
     unscaled: {
         x: 0,
         y: 0,
-        width: 0,
-        height: 0,
     },
 };
 
@@ -99,13 +114,11 @@ function onMove(position: MovePosition, event: MouseEvent) {
         return clampedDelta;
     };
 
-    const unscaled = position.unscaled;
+    const deltaLeft = event.pageX - props.rootOffset.left - props.panMargin;
+    const deltaRight = props.rootOffset.right - event.pageX - props.panMargin;
 
-    const deltaLeft = unscaled.x - props.rootOffset.left;
-    const deltaRight = props.rootOffset.right - unscaled.x - unscaled.width * props.scale;
-
-    const deltaTop = unscaled.y - props.rootOffset.top;
-    const deltaBottom = props.rootOffset.bottom - unscaled.y - unscaled.height * props.scale;
+    const deltaTop = event.pageY - props.rootOffset.top - props.panMargin;
+    const deltaBottom = props.rootOffset.bottom - event.pageY - props.panMargin;
 
     if (deltaLeft < 0) {
         panBy.x = deltaSpeed(deltaLeft);
@@ -144,17 +157,26 @@ function onMouseUp(e: MouseEvent) {
     isPanning = false;
     emit("mouseup", e);
 }
+
+function onStart() {
+    emit("start");
+}
 </script>
 
 <template>
     <Draggable
         :root-offset="rootOffset"
+        :position="props.position"
         :prevent-default="preventDefault"
         :stop-propagation="stopPropagation"
         :drag-data="dragData"
         :disabled="disabled"
+        :snappable="snappable"
+        :selected="selected"
         @move="onMove"
         @mouseup="onMouseUp"
+        @start="onStart"
+        @mousedown="(e) => emit('mousedown', e)"
         v-on="$listeners">
         <slot></slot>
     </Draggable>

@@ -47,7 +47,7 @@ def test_model_create_context_persist_hdas():
     assert len(tags) == 1
     assert tags[0].value == "value"
 
-    with open(imported_hda.file_name) as f:
+    with open(imported_hda.get_file_name()) as f:
         assert f.read().startswith("hello world\n")
 
 
@@ -112,7 +112,7 @@ def test_persist_target_library_dataset():
     assert len(new_root.datasets) == 1
     ldda = new_root.datasets[0].library_dataset_dataset_association
     assert ldda.metadata.data_lines == 2
-    with open(ldda.file_name) as f:
+    with open(ldda.get_file_name()) as f:
         assert f.read().startswith("hello world\n")
 
 
@@ -156,7 +156,7 @@ def test_persist_target_library_folder():
     assert len(child_folder.datasets) == 1
     ldda = child_folder.datasets[0].library_dataset_dataset_association
     assert ldda.metadata.data_lines == 2
-    with open(ldda.file_name) as f:
+    with open(ldda.get_file_name()) as f:
         assert f.read().startswith("hello world\n")
 
 
@@ -206,9 +206,9 @@ def test_persist_target_hdca():
     dataset0 = datasets[0]
     dataset1 = datasets[1]
 
-    with open(dataset0.file_name) as f:
+    with open(dataset0.get_file_name()) as f:
         assert f.read().startswith("hello world\n")
-    with open(dataset1.file_name) as f:
+    with open(dataset1.get_file_name()) as f:
         assert f.read().startswith("file 2 contents")
 
 

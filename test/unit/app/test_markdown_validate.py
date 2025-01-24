@@ -1,3 +1,5 @@
+from typing import Optional
+
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 
 
@@ -5,15 +7,15 @@ def assert_markdown_valid(markdown):
     validate_galaxy_markdown(markdown)
 
 
-def assert_markdown_invalid(markdown, at_line=None):
+def assert_markdown_invalid(markdown, at_line: Optional[int] = None):
     failed = False
     try:
         validate_galaxy_markdown(markdown)
     except ValueError as e:
         failed = True
         if at_line is not None:
-            assert "Invalid line %d" % (at_line + 1) in str(e)
-    assert failed, "Expected markdown [%s] to fail validation but it did not." % markdown
+            assert f"Invalid line {at_line + 1}" in str(e)
+    assert failed, f"Expected markdown [{markdown}] to fail validation but it did not."
 
 
 def test_markdown_validation():

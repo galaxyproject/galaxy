@@ -1,4 +1,5 @@
 """Test CWL workflow functionality."""
+
 from galaxy_test.api.test_workflows import BaseWorkflowsApiTestCase
 from galaxy_test.base.populators import CwlPopulator
 

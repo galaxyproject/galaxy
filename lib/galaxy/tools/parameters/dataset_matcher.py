@@ -246,8 +246,7 @@ class DatasetCollectionMatcher:
         if element.ldda:
             return False
 
-        child_collection = element.child_collection
-        if child_collection:
+        if child_collection := element.child_collection:
             return self.dataset_collection_match(child_collection)
 
         hda = element.hda
@@ -263,7 +262,7 @@ class DatasetCollectionMatcher:
     def dataset_collection_match(self, dataset_collection):
         # If dataset collection not yet populated, cannot determine if it
         # would be a valid match for this parameter.
-        if not dataset_collection.populated:
+        if not dataset_collection.populated_optimized:
             return False
 
         valid = True

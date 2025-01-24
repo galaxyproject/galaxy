@@ -6,10 +6,11 @@ import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
+import type { HistorySummary } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
-import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";

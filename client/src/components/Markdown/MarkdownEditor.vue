@@ -1,7 +1,7 @@
 <template>
     <div id="columns" class="d-flex">
         <FlexPanel side="left">
-            <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
+            <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
         </FlexPanel>
         <div id="center" class="overflow-auto w-100">
             <div class="markdown-editor h-100">
@@ -33,7 +33,7 @@
                 </div>
             </div>
         </div>
-        <MarkdownHelp ref="help" />
+        <MarkdownHelpModal ref="help" :mode="mode" />
     </div>
 </template>
 
@@ -46,7 +46,7 @@ import FlexPanel from "components/Panels/FlexPanel";
 import _ from "underscore";
 import Vue from "vue";
 
-import MarkdownHelp from "./MarkdownHelp";
+import MarkdownHelpModal from "./MarkdownHelpModal";
 import MarkdownToolBox from "./MarkdownToolBox";
 
 Vue.use(BootstrapVue);
@@ -57,18 +57,14 @@ const FENCE = "```";
 
 export default {
     components: {
-        MarkdownToolBox,
         FlexPanel,
         FontAwesomeIcon,
-        MarkdownHelp,
+        MarkdownHelpModal,
+        MarkdownToolBox,
     },
     props: {
         markdownText: {
             type: String,
-            default: null,
-        },
-        markdownConfig: {
-            type: Object,
             default: null,
         },
         steps: {
@@ -78,6 +74,10 @@ export default {
         title: {
             type: String,
             default: null,
+        },
+        mode: {
+            type: String,
+            default: "report",
         },
     },
     data() {
@@ -97,7 +97,7 @@ export default {
         },
     },
     methods: {
-        onInsert(markdown) {
+        insertMarkdown(markdown) {
             markdown = markdown.replace(")(", ", ");
             markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
             const textArea = this.$refs["text-area"];
@@ -106,10 +106,10 @@ export default {
             let newContent = this.content.substr(0, cursorPosition);
             newContent += `\r\n${markdown.trim()}\r\n`;
             newContent += this.content.substr(cursorPosition);
-            this.$emit("onUpdate", newContent);
+            this.$emit("update", newContent);
         },
         onUpdate: _.debounce(function (e) {
-            this.$emit("onUpdate", this.content);
+            this.$emit("update", this.content);
         }, 300),
         onHelp() {
             this.$refs.help.showMarkdownHelp();

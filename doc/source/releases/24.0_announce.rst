@@ -1,0 +1,102 @@
+
+===========================================================
+24.0 Galaxy Release (March 2024)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**New Workflow List and Card View.** As part of our ongoing efforts to enhance user experience, we are proud to announce several new improvements to the workflows user interface, including workflow list view, workflow card view and workflow quick view. These improvements also include new tabs for "My workflows" (owned by the user), "Shared with me" (shared by other users) and "Published workflows" (publicly accessible workflows).
+
+**New select component for selecting a large amount of options.** This new tool form component improves selecting many options at once. The elements interface features a table based layout which can be filtered using plain-text or regular expressions. Options can be added individually, in bulk via the filter value, or by highlighting a range. It appears when there are many options available in a multi-select field, but can also be switched to/from and can be set as a default directly from within the tool form.
+
+**Multiple item drag and drop and keyboard navigation.** This new feature allows users to select multiple history items and drag and drop them into other histories or even tool forms! Users can also navigate their history using the arrow keys; multiple history items can be selected with the Shift + ArrowUp/ArrowDown key combination.
+
+**image_diff.** For tool developers, image_diff, a new comparison method for test output verification using images has been added. Unlike previously used comparison methods, image_diff is specifically tailored for single-channel and multi-channel image data (e.g. RGB). The difference of a pair of images is quantified as the pixel-wise distance between the images, for which different metrics can be used. A pair of images is considered to be equal in terms of the specified metric, if the distance between the images computed with respect to the metric is not above a given threshold. For more details, see `the original pull request <https://github.com/galaxyproject/galaxy/pull/17556>`__).
+
+Other notable improvements include consolidating resource grids for histories, visualizations and pages into tab views; the addition of a new UI feature for "relocating" a dataset to a different storage location; and, for tool developers, a new comparison method for test output verification using images. Check out the `24.0 user release notes <24.0_announce_user.html>`__ for all the details.
+
+Are you an admin? See the Administration Notes below, and check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A24.0+is%3Aclosed+is%3Apr>`__.
+
+Get Galaxy
+===========================================================
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_24.0 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_24.0 && git pull --ff-only origin release_24.0
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Administration Notes
+===========================================================
+
+* A new built-in tool has been added: "Harmonize two collections". It takes two collections as input. Outputs are two collections with the same identifiers, with identifiers that are specific to one or the other removed. The tool creates new history datasets from the collection, but the user's quota usage does not increase. ( #16662)
+* A new object store plugin for the Rucio data management system has been added. (#17156)
+* The wig_to_bigWig tool removed; replaced by Wigbigwig. (#17328)
+* Notification Broadcasts Admin Panel has been enhanced. (#17090)
+* Setting dataset permissions for typical users has been simplified. (#17166)
+* When a user is deleted, all active user jobs will be canceled. (#17390)
+* Job resubmissions have been enabled in the k8s runner. (#17324)
+* Documentation has been added for tool panel and panel view administration. (#17078)
+* Documentation has been added on how to use vault keys in file sources. (#17498)
+* The release notes webhook has been dropped in favor of utilizing the notification system. (#17675)
+* Python 3.8 is now a minimum requirement. (#16954)
+* Python 3.12 is now supported. (#16796)
+
+Configuration Changes
+===========================================================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.object_store_config
+-  mapping.galaxy.mapping.oidc_scope_prefix
+-  mapping.galaxy.mapping.tus_upload_store_job_files
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.tus_upload_store.desc has changed from
+
+   ::
+
+    The upload store is a temporary directory in which files uploaded by the
+    tus middleware or server will be placed.
+    Defaults to new_file_path if not set.
+
+   to
+
+   ::
+
+    The upload store is a temporary directory in which files uploaded by the
+    tus middleware or server for user uploads will be placed.
+    Defaults to new_file_path if not set.
+
+Release Notes
+===========================================================
+
+.. include:: 24.0.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

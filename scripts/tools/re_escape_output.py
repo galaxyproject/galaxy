@@ -27,7 +27,7 @@ def __main__():
     if options.multiline:
         lines = [re.escape(input.read())]
     else:
-        lines = ["%s\n" % re.escape(line.rstrip("\n\r")) for line in input]
+        lines = ["{}\n".format(re.escape(line.rstrip("\n\r"))) for line in input]
     output.writelines(lines)
     output.close()
 

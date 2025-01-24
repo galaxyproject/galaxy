@@ -11,7 +11,10 @@ from pydantic import (
     BaseModel,
     Field,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 LABEL_DESCRIPTION = "The unique label of the step being referenced."
 INPUT_NAME_DESCRIPTION = "The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input')."
@@ -115,11 +118,12 @@ class AddStepAction(BaseAction):
 
     action_type: Literal["add_step"]
     type: str = Field(description="Module type of the step to add, see galaxy.workflow.modules for available types.")
-    tool_state: Optional[Dict[str, Any]]
+    tool_state: Optional[Dict[str, Any]] = None
     label: Optional[str] = Field(
-        description="A unique label for the step being added, must be distinct from the labels already present in the workflow."
+        None,
+        description="A unique label for the step being added, must be distinct from the labels already present in the workflow.",
     )
-    position: Optional[Position] = Field(description="The location of the step in the Galaxy workflow editor.")
+    position: Optional[Position] = Field(None, description="The location of the step in the Galaxy workflow editor.")
 
 
 class ConnectAction(BaseAction):
@@ -137,28 +141,28 @@ class DisconnectAction(BaseAction):
 class AddInputAction(BaseAction):
     action_type: Literal["add_input"]
     type: str
-    label: Optional[str]
-    position: Optional[Position]
-    collection_type: Optional[str]
-    restrictions: Optional[List[str]]
-    restrict_on_connections: Optional[bool]
-    suggestions: Optional[List[str]]
+    label: Optional[str] = None
+    position: Optional[Position] = None
+    collection_type: Optional[str] = None
+    restrictions: Optional[List[str]] = None
+    restrict_on_connections: Optional[bool] = None
+    suggestions: Optional[List[str]] = None
     optional: Optional[bool] = False
-    default: Optional[Any]  # this probably needs to be revisited when we have more complex field types
+    default: Optional[Any] = None  # this probably needs to be revisited when we have more complex field types
 
 
 class ExtractInputAction(BaseAction):
     action_type: Literal["extract_input"]
     input: input_reference_union
-    label: Optional[str]
-    position: Optional[Position]
+    label: Optional[str] = None
+    position: Optional[Position] = None
 
 
 class ExtractUntypedParameter(BaseAction):
     action_type: Literal["extract_untyped_parameter"]
     name: str
-    label: Optional[str]  # defaults to name if unset
-    position: Optional[Position]
+    label: Optional[str] = None  # defaults to name if unset
+    position: Optional[Position] = None
 
 
 class RemoveUnlabeledWorkflowOutputs(BaseAction):
@@ -182,7 +186,7 @@ class UpdateLicenseAction(BaseAction):
 
 class UpdateCreatorAction(BaseAction):
     action_type: Literal["update_creator"]
-    creator: Any
+    creator: Any = None
 
 
 class Report(BaseModel):
@@ -214,13 +218,13 @@ class UpgradeSubworkflowAction(BaseAction):
     step: step_reference_union = step_target_field
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
-    content_id: Optional[str]
+    content_id: Optional[str] = None
 
 
 class UpgradeToolAction(BaseAction):
     action_type: Literal["upgrade_tool"]
     step: step_reference_union = step_target_field
-    tool_version: Optional[str]
+    tool_version: Optional[str] = None
 
 
 class UpgradeAllStepsAction(BaseAction):
@@ -253,7 +257,7 @@ union_action_classes = Union[
 
 ACTION_CLASSES_BY_TYPE = {}
 for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
-    action_type_def = action_class.schema()["properties"]["action_type"]
+    action_type_def = action_class.model_json_schema()["properties"]["action_type"]
     try:
         # pydantic 1.8
         action_type = action_type_def["enum"][0]
@@ -265,7 +269,7 @@ for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
 
 
 class RefactorActions(BaseModel):
-    actions: List[Action]
+    actions: List[Annotated[union_action_classes, Field(discriminator="action_type")]]
     dry_run: bool = False
 
 
@@ -290,8 +294,12 @@ step with the previously connected input.
 class RefactorActionExecutionMessage(BaseModel):
     message: str
     message_type: RefactorActionExecutionMessageTypeEnum
-    step_label: Optional[str] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
-    order_index: Optional[int] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
+    step_label: Optional[str] = Field(
+        None, description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}"
+    )
+    order_index: Optional[int] = Field(
+        None, description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}"
+    )
     input_name: Optional[str] = Field(
         None,
         description=f"""If this message is about an input to a step,
@@ -319,5 +327,5 @@ side of the connection that was dropped.""",
 
 
 class RefactorActionExecution(BaseModel):
-    action: Action
+    action: union_action_classes
     messages: List[RefactorActionExecutionMessage]

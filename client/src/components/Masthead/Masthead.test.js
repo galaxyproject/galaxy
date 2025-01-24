@@ -1,117 +1,74 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { WindowManager } from "layout/window-manager";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
+import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
-import { getActiveTab } from "./utilities";
 
-import { default as Masthead } from "./Masthead.vue";
+import Masthead from "./Masthead.vue";
 
 jest.mock("app");
 jest.mock("./_webhooks");
 jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({ name: "Home" })),
+    useRouter: jest.fn(),
 }));
-jest.mock("@/schema");
+
+const currentUser = getFakeRegisteredUser();
+
+setupMockConfig({});
 
 describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
     let windowManager;
-    let tabs;
     let testPinia;
 
     function stubLoadWebhooks(items) {
         items.push({
             id: "extension",
             title: "Extension Point",
-            menu: false,
             url: "extension_url",
         });
     }
 
     loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
-    beforeEach(() => {
+    beforeEach(async () => {
         localVue = getLocalVue();
         localVue.use(PiniaVuePlugin);
         testPinia = createTestingPinia();
-        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
 
-        tabs = [
-            // Main Analysis Tab..
-            {
-                id: "analysis",
-                title: "Analyze",
-                menu: false,
-                url: "root",
-            },
-            {
-                id: "shared",
-                title: "Shared Items",
-                menu: [{ title: "_menu_title", url: "_menu_url", target: "_menu_target" }],
-            },
-            // Hidden tab (pre-Vue framework supported this, not sure it is used
-            // anywhere?)
-            {
-                id: "hiddentab",
-                title: "Hidden Title",
-                menu: false,
-                hidden: true,
-            },
-        ];
-
-        const initialActiveTab = "shared";
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();
+
+        const userStore = useUserStore();
+        userStore.currentUser = currentUser;
+
         wrapper = mount(Masthead, {
             propsData: {
-                tabs,
                 windowTab,
-                initialActiveTab,
             },
             localVue,
             pinia: testPinia,
+            stubs: {
+                Icon: true,
+            },
         });
-    });
-
-    it("test basic active tab matching", () => {
-        expect(getActiveTab("root", tabs)).toBe("analysis");
-        expect(getActiveTab("_menu_url", tabs)).toBe("shared");
+        await flushPromises();
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(6);
+        expect(wrapper.findAll("li.nav-item").length).toBe(4);
         // Ensure specified link title respected.
-        expect(wrapper.find("#analysis a").text()).toBe("Analyze");
-        expect(wrapper.find("#analysis a").attributes("href")).toBe("root");
-    });
-
-    it("should render tab items with menus", () => {
-        // Ensure specified link title respected.
-        expect(wrapper.find("#shared a").text()).toBe("Shared Items");
-        expect(wrapper.find("#shared").classes("dropdown")).toBe(true);
-
-        expect(wrapper.findAll("#shared .dropdown-menu li").length).toBe(1);
-        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("_menu_url");
-        expect(wrapper.find("#shared .dropdown-menu li a").attributes().target).toBe("_menu_target");
-        expect(wrapper.find("#shared .dropdown-menu li a").text()).toBe("_menu_title");
-    });
-
-    it("should make hidden tabs hidden", () => {
-        expect(wrapper.find("#analysis").attributes().style).not.toEqual(expect.stringContaining("display: none"));
-        expect(wrapper.find("#hiddentab").attributes().style).toEqual(expect.stringContaining("display: none"));
-        expect(wrapper.get("#interactive").isVisible()).toBeFalsy();
-    });
-
-    it("should highlight the active tab", () => {
-        expect(wrapper.find("#analysis").classes("active")).toBe(false);
-        expect(wrapper.find("#shared").classes("active")).toBe(true);
+        expect(wrapper.find("#help").text()).toBe("Support, Contact, and Community");
+        expect(wrapper.find("#help a").attributes("href")).toBe("/about");
     });
 
     it("should display window manager button", async () => {
@@ -123,25 +80,5 @@ describe("Masthead.vue", () => {
 
     it("should load webhooks on creation", async () => {
         expect(wrapper.find("#extension a").text()).toBe("Extension Point");
-    });
-
-    it("shows link to interactive tools if any is active", async () => {
-        setActivePinia(testPinia);
-        const entryPointStore = useEntryPointStore();
-        entryPointStore.entryPoints = [
-            {
-                model_class: "InteractiveToolEntryPoint",
-                id: "52e496b945151ee8",
-                job_id: "52e496b945151ee8",
-                name: "Jupyter Interactive Tool",
-                active: true,
-                created_time: "2020-02-24T15:59:18.122103",
-                modified_time: "2020-02-24T15:59:20.428594",
-                target: "http://52e496b945151ee8-be8a5bee5d5849a5b4e035b51305256e.interactivetoolentrypoint.interactivetool.localhost:8080/ipython/lab",
-            },
-        ];
-        // avoid race condition with store's reactivity
-        await new Promise((_) => setTimeout(_, 10));
-        expect(wrapper.get("#interactive").isVisible()).toBeTruthy();
     });
 });

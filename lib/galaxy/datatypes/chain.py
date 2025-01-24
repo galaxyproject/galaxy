@@ -1,5 +1,5 @@
 """
-Genome browser chain format class
+Genome browser alignment formats
 """
 
 import logging
@@ -9,6 +9,7 @@ from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
+    get_headers,
 )
 from galaxy.util import (
     commaify,
@@ -39,7 +40,7 @@ class Chain(data.Text):
         """
         data_lines = 0
         chains = 0
-        with compression_utils.get_fileobj(dataset.file_name) as fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
             for line in fh:
                 line = line.strip()
                 if line and line.startswith("#"):
@@ -55,7 +56,7 @@ class Chain(data.Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             if dataset.metadata.chains:
                 dataset.blurb = f"{commaify(str(dataset.metadata.chains))} chains"
             else:
@@ -91,39 +92,81 @@ class Chain(data.Text):
         >>> fname = get_test_fname( '1.chain' )
         >>> Chain().sniff( fname )
         True
+        >>> fname = get_test_fname( '2.chain' )
+        >>> Chain().sniff( fname )
+        True
         >>>
         """
-        fh = file_prefix.string_io()
-        for line in fh:
-            line = line.strip()
-            if line:  # first non-empty line
-                if line.startswith("chain"):
-                    # The next line.strip() must not be '', nor startwith '>'
-                    tokens = line.split()
-                    if not (
-                        len(tokens) in [12, 13]
-                        and tokens[4] in self.strands
-                        and tokens[9] in self.strands
-                        and tokens[3].isdigit()
-                        and tokens[5].isdigit()
-                        and tokens[6].isdigit()
-                    ):
-                        return False
-                    prior_token_len = 0
-                    for line in fh:
-                        line = line.strip()
-                        if line == "":
-                            break
-                        tokens = line.split()
-                        if prior_token_len == 1:
-                            return False
-                        if len(tokens) not in [1, 3]:
-                            return False
-                        if not all(token.isdigit() for token in tokens):
-                            return False
-                        prior_token_len = len(tokens)
-                    if prior_token_len == 1:
-                        return True
-                else:
-                    return False
-        return False
+        headers = get_headers(file_prefix, None, count=2, comment_designator="#")
+        if not (
+            len(headers) == 2
+            and len(headers[0]) in [12, 13]
+            and headers[0][0] == "chain"
+            and headers[0][1].isdecimal()
+            and headers[0][3].isdecimal()
+            and headers[0][4] in self.strands
+            and headers[0][5].isdecimal()
+            and headers[0][6].isdecimal()
+            and headers[0][8].isdecimal()
+            and headers[0][9] in self.strands
+            and headers[0][10].isdecimal()
+            and headers[0][11].isdecimal()
+            and headers[1][0].isdecimal()
+            and len(headers[1]) in [1, 3]
+        ):
+            return False
+        else:
+            return True
+
+
+@build_sniff_from_prefix
+class Net(data.Text):
+    """Class describing a net format alignment file"""
+
+    edam_format = "format_3983"
+    file_ext = "ucsc.net"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in net format
+
+        For details see https://genome.ucsc.edu/goldenPath/help/net.html
+
+        Rules for sniffing as True:
+
+            We don't care about line length (other than empty lines).
+
+            The first non-empty line must start with 'net' followed by chromName (str) and chromSize (int)
+
+            We will only check that the first "net" line and the first data line are formatted correctly.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.chain' )
+        >>> Net().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.ucsc.net' )
+        >>> Net().sniff( fname )
+        True
+        >>>
+        """
+        allowed_classes = ["fill", "gap"]
+        strands = ["+", "-"]
+
+        headers = get_headers(file_prefix, None, count=2, comment_designator="#")
+        if not (
+            len(headers) == 2
+            and len(headers[0]) == 3
+            and headers[0][0] == "net"
+            and headers[0][2].isdecimal()
+            and len(headers[1]) >= 7  # seven fixed fields
+            and len(headers[1]) <= 41  # plus seventeen optional name/value pairs
+            and headers[1][0] in allowed_classes
+            and headers[1][1].isdecimal()
+            and headers[1][2].isdecimal()
+            and headers[1][4] in strands
+            and headers[1][5].isdecimal()
+            and headers[1][6].isdecimal()
+        ):
+            return False
+        else:
+            return True

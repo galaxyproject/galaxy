@@ -2,9 +2,11 @@
 Class encapsulating the management of repository dependencies installed or being installed
 into Galaxy from the Tool Shed.
 """
+
 import json
 import logging
 import os
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import (
     urlencode,
@@ -33,11 +35,14 @@ from galaxy.util.tool_shed import (
     encoding_util,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+
 log = logging.getLogger(__name__)
 
 
 class RepositoryDependencyInstallManager:
-    def __init__(self, app):
+    def __init__(self, app: "InstallationTarget"):
         self.app = app
 
     def build_repository_dependency_relationships(self, repo_info_dicts, tool_shed_repositories):
@@ -70,7 +75,7 @@ class RepositoryDependencyInstallManager:
                         components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
                         d_toolshed, d_name, d_owner, d_changeset_revision = components_list[0:4]
                         for tsr in tool_shed_repositories:
-                            # Get the the tool_shed_repository defined by name, owner and changeset_revision.  This is
+                            # Get the tool_shed_repository defined by name, owner and changeset_revision.  This is
                             # the repository that will be dependent upon each of the tool shed repositories contained in
                             # val.  We'll need to check tool_shed_repository.tool_shed as well if/when repository dependencies
                             # across tool sheds is supported.
@@ -97,7 +102,7 @@ class RepositoryDependencyInstallManager:
                                 rd_prior_installation_required,
                                 rd_only_if_compiling_contained_td,
                             ) = common_util.parse_repository_dependency_tuple(repository_dependency_components_list)
-                            # Get the the tool_shed_repository defined by rd_name, rd_owner and rd_changeset_revision.  This
+                            # Get the tool_shed_repository defined by rd_name, rd_owner and rd_changeset_revision.  This
                             # is the repository that will be required by the current d_repository.
                             # TODO: Check tool_shed_repository.tool_shed as well when repository dependencies across tool sheds is supported.
                             for tsr in tool_shed_repositories:
@@ -191,7 +196,7 @@ class RepositoryDependencyInstallManager:
         all_repo_info_dicts = all_required_repo_info_dict.get("all_repo_info_dicts", [])
         if not all_repo_info_dicts:
             # No repository dependencies were discovered so process the received repositories.
-            all_repo_info_dicts = [rid for rid in repo_info_dicts]
+            all_repo_info_dicts = list(repo_info_dicts)
         for repo_info_dict in all_repo_info_dicts:
             # If the user elected to install repository dependencies, all items in the
             # all_repo_info_dicts list will be processed.  However, if repository dependencies
@@ -268,7 +273,8 @@ class RepositoryDependencyInstallManager:
                                 log.info(
                                     f"Reactivating deactivated tool_shed_repository '{str(repository_db_record.name)}'."
                                 )
-                                self.app.installed_repository_manager.activate_repository(repository_db_record)
+                                irm = self.app.installed_repository_manager
+                                irm.activate_repository(repository_db_record)
                                 # No additional updates to the database record are necessary.
                                 can_update_db_record = False
                             elif repository_db_record.status not in [

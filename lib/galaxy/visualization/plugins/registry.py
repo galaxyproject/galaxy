@@ -4,9 +4,14 @@ Lower level of visualization framework which does three main things:
     - create urls to visualizations based on some target object(s)
     - unpack a query string into the desired objects needed for rendering
 """
+
 import logging
 import os
 import weakref
+from typing import (
+    List,
+    Optional,
+)
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
@@ -247,8 +252,7 @@ class VisualizationsRegistry:
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
-        visualization = self.plugins.get(visualization_name, None)
-        if visualization is not None:
+        if (visualization := self.plugins.get(visualization_name, None)) is not None:
             data_sources = visualization.config["data_sources"]
             for data_source in data_sources:
                 model_class = data_source["model_class"]
@@ -268,6 +272,7 @@ class VisualizationsRegistry:
             result_type = test["result_type"]
             test_result = test["result"]
             test_fn = test["fn"]
+            supported_protocols = test.get("allow_uri_if_protocol", [])
             # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
             #           test_type, result_type, test_result, test_fn )
 
@@ -286,8 +291,36 @@ class VisualizationsRegistry:
                         continue
 
             # NOTE: tests are OR'd, if any test passes - the visualization can be applied
-            if test_fn(target_object, test_result):
+            if test_fn(target_object, test_result) and self._check_uri_support(target_object, supported_protocols):
                 # log.debug( '\t test passed' )
                 return True
 
+        return False
+
+    def _is_deferred(self, target_object) -> bool:
+        """Whether the target object is a deferred object."""
+        return getattr(target_object, "state", None) == "deferred"
+
+    def _deferred_source_uri(self, target_object) -> Optional[str]:
+        """Get the source uri from a deferred object."""
+        sources = getattr(target_object, "sources", None)
+        if sources and sources[0]:
+            return sources[0].source_uri
+        return None
+
+    def _check_uri_support(self, target_object, supported_protocols: List[str]) -> bool:
+        """Test if the target object is deferred and has a supported protocol."""
+        if not self._is_deferred(target_object):
+            return True  # not deferred, so no uri to check
+
+        if not supported_protocols:
+            return False  # no protocols defined, means no support for deferred objects
+
+        if "*" in supported_protocols:
+            return True  # wildcard support for all protocols
+
+        deferred_source_uri = self._deferred_source_uri(target_object)
+        if deferred_source_uri:
+            protocol = deferred_source_uri.split("://")[0]
+            return protocol in supported_protocols
         return False

@@ -15,7 +15,7 @@ describe("stores/EntryPointStore", () => {
         setActivePinia(createPinia());
         axiosMock.onGet("/api/entry_points", { params: { running: true } }).reply(200, testInteractiveToolsResponse);
         store = useEntryPointStore();
-        store.ensurePollingEntryPoints();
+        await store.fetchEntryPoints();
         await flushPromises();
     });
 
@@ -23,16 +23,7 @@ describe("stores/EntryPointStore", () => {
         axiosMock.restore();
     });
 
-    it("polls", async () => {
-        expect(store.entryPoints.length).toBe(2);
-    });
-    it("stops polling", async () => {
-        expect(store.pollTimeout >= 0).toBeTruthy();
-        store.stopPollingEntryPoints();
-        expect(store.pollTimeout === undefined).toBeTruthy();
-    });
     it("performs a partial update", async () => {
-        store.stopPollingEntryPoints();
         const updateData = [
             {
                 model_class: "InteractiveToolEntryPoint",

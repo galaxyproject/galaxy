@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from typing import (
@@ -38,7 +39,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import (
     nice_size,
-    shlex_join,
     string_as_bool,
     unicodify,
 )
@@ -91,7 +91,7 @@ class Json(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "JavaScript Object Notation (JSON)"
         else:
             dataset.peek = "file does not exist"
@@ -133,6 +133,19 @@ class Json(Text):
             return f"JSON file ({nice_size(dataset.get_size())})"
 
 
+class DataManagerJson(Json):
+    file_ext = "data_manager_json"
+    MetadataElement(
+        name="data_tables", default=None, desc="Data tables represented by this dataset", readonly=True, visible=True
+    )
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        with open(dataset.get_file_name()) as fh:
+            data_tables = json.load(fh)["data_tables"]
+        dataset.metadata.data_tables = data_tables
+
+
 class ExpressionJson(Json):
     """Represents the non-data input or output to a tool or workflow."""
 
@@ -145,7 +158,7 @@ class ExpressionJson(Json):
         """ """
         if dataset.has_data():
             json_type = "null"
-            file_path = dataset.file_name
+            file_path = dataset.get_file_name()
             try:
                 with open(file_path) as f:
                     obj = json.load(f)
@@ -170,7 +183,7 @@ class Ipynb(Json):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = "file does not exist"
@@ -232,17 +245,17 @@ class Ipynb(Json):
                     "html",
                     "--template",
                     "full",
-                    dataset.file_name,
+                    dataset.get_file_name(),
                     "--output",
                     ofilename,
                 ]
                 subprocess.check_call(cmd)
                 ofilename = f"{ofilename}.html"
             except subprocess.CalledProcessError:
-                ofilename = dataset.file_name
+                ofilename = dataset.get_file_name()
                 log.exception(
                     'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.',
-                    shlex_join(cmd),
+                    shlex.join(cmd),
                 )
             return open(ofilename, mode="rb"), headers
 
@@ -424,7 +437,7 @@ class Biom1(Json):
         Store metadata information from the BIOM file.
         """
         if dataset.has_data():
-            with open(dataset.file_name) as fh:
+            with open(dataset.get_file_name()) as fh:
                 try:
                     json_dict = json.load(fh)
                 except Exception:
@@ -458,7 +471,7 @@ class Biom1(Json):
                                     for k, v in column["metadata"].items():
                                         if v is not None:
                                             keep_columns.add(k)
-                            final_list = sorted(list(keep_columns))
+                            final_list = sorted(keep_columns)
                             dataset.metadata.table_column_metadata_headers = final_list
                         if b_name in b_transform:
                             metadata_value = b_transform[b_name](metadata_value)
@@ -525,13 +538,13 @@ class ImgtJson(Json):
         Store metadata information from the imgt file.
         """
         if dataset.has_data():
-            with open(dataset.file_name) as fh:
+            with open(dataset.get_file_name()) as fh:
                 try:
                     json_dict = json.load(fh)
                     tax_names = []
                     for entry in json_dict:
                         if "taxonId" in entry:
-                            names = "%d: %s" % (entry["taxonId"], ",".join(entry["speciesNames"]))
+                            names = "{}: {}".format(entry["taxonId"], ",".join(entry["speciesNames"]))
                             tax_names.append(names)
                     dataset.metadata.taxon_names = tax_names
                 except Exception:
@@ -610,7 +623,7 @@ class Obo(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "Open Biomedical Ontology (OBO)"
         else:
             dataset.peek = "file does not exist"
@@ -652,7 +665,7 @@ class Arff(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
             dataset.blurb += f", {dataset.metadata.comment_lines} comments, {dataset.metadata.columns} attributes"
         else:
@@ -698,7 +711,7 @@ class Arff(Text):
         if dataset.has_data():
             first_real_line = False
             data_block = False
-            with open(dataset.file_name) as handle:
+            with open(dataset.get_file_name()) as handle:
                 for line in handle:
                     line = line.strip()
                     if not line:
@@ -805,7 +818,7 @@ class SnpEffDb(Text):
             dataset.metadata.regulation = regulations
             dataset.metadata.annotation = annotations
             try:
-                with open(dataset.file_name, "w") as fh:
+                with open(dataset.get_file_name(), "w") as fh:
                     fh.write(f"{genome_version}\n" if genome_version else "Genome unknown")
                     fh.write(f"{snpeff_version}\n" if snpeff_version else "SnpEff version unknown")
                     if annotations:
@@ -869,7 +882,7 @@ class SnpSiftDbNSFP(Text):
         cannot do this until we are setting metadata
         """
         annotations = f"dbNSFP Annotations: {','.join(dataset.metadata.annotation)}\n"
-        with open(dataset.file_name, "a") as f:
+        with open(dataset.get_file_name(), "a") as f:
             if dataset.metadata.bgzip:
                 bn = dataset.metadata.bgzip
                 f.write(bn)
@@ -898,7 +911,7 @@ class SnpSiftDbNSFP(Text):
         except Exception as e:
             log.warning(
                 "set_meta fname: %s  %s",
-                dataset.file_name if dataset and dataset.file_name else "Unkwown",
+                dataset.get_file_name() if dataset and dataset.get_file_name() else "Unkwown",
                 unicodify(e),
             )
 
@@ -1113,7 +1126,6 @@ class Yaml(Text):
                 return True
             except yaml.YAMLError:
                 return False
-            return False
 
 
 @build_sniff_from_prefix
@@ -1148,7 +1160,7 @@ class BCSLts(Json):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
-            ts = json.load(open(dataset.file_name))
+            ts = json.load(open(dataset.get_file_name()))
             dataset.peek = lines.format(len(ts["nodes"]), len(ts["edges"]), len(ts["ordering"]), ts["initial"])
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1206,7 +1218,7 @@ class StormCheck(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            with open(dataset.file_name) as result:
+            with open(dataset.get_file_name()) as result:
                 answer = ""
                 for line in result:
                     if "Result (for initial states):" in line:
@@ -1234,7 +1246,7 @@ class CTLresult(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            with open(dataset.file_name) as result:
+            with open(dataset.get_file_name()) as result:
                 answer = ""
                 for line in result:
                     if "Result:" in line:

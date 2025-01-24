@@ -6,15 +6,18 @@ jobs:
   labeler:
     name: Assign labels and milestone
     if: github.repository_owner == 'galaxyproject'
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 25
+      MILESTONE_NUMBER: 29
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const response = await github.rest.issues.listLabelsOnIssue({
               owner: context.repo.owner,
@@ -25,9 +28,7 @@ jobs:
             return response.data;
       - name: Add area labels
         if: ${{ ! contains(join(fromJSON(steps.get_pr_labels.outputs.result).*.name, ', '), 'area/') }}
-        uses: actions/labeler@v4
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        uses: actions/labeler@v5
       - name: Assign milestone
         if: |
           ! github.event.pull_request.milestone &&
@@ -35,9 +36,8 @@ jobs:
           ! contains(github.event.pull_request.labels.*.name, 'status/WIP') &&
           ! contains(github.event.pull_request.title, 'WIP') &&
           ! github.event.pull_request.draft
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.update({
               owner: context.repo.owner,

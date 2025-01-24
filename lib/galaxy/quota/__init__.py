@@ -1,7 +1,9 @@
 """Galaxy Quotas"""
+
 import logging
 from typing import Optional
 
+from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
@@ -23,6 +25,13 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     possible to implement other backends for quota setting in the future such as managing
     the quota in other apps (LDAP maybe?) or via configuration files.
     """
+
+    def relabel_quota_for_dataset(self, dataset, from_label: Optional[str], to_label: Optional[str]):
+        """Update the quota source label for dataset and adjust relevant quotas.
+
+        Subtract quota for labels from users using old label and quota for new label
+        for these users.
+        """
 
     # TODO: make abstractmethod after they work better with mypy
     def get_quota(self, user, quota_source_label=None) -> Optional[int]:
@@ -78,6 +87,9 @@ class NoQuotaAgent(QuotaAgent):
         pass
 
     def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+        return None
+
+    def relabel_quota_for_dataset(self, dataset, from_label: Optional[str], to_label: Optional[str]):
         return None
 
     @property
@@ -164,13 +176,104 @@ FROM (
                 label_cond="IS NULL" if quota_source_label is None else " = :label"
             )
         )
-        conn = self.sa_session.connection()
-        with conn.begin():
-            res = conn.execute(query, is_true=True, user_id=user.id, label=quota_source_label).fetchone()
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
+            res = conn.execute(query, {"is_true": True, "user_id": user.id, "label": quota_source_label}).fetchone()
             if res:
                 return int(res[0]) if res[0] else None
             else:
                 return None
+
+    def relabel_quota_for_dataset(self, dataset, from_label: Optional[str], to_label: Optional[str]):
+        adjust = dataset.get_total_size()
+        with_quota_affected_users = """WITH quota_affected_users AS
+(
+    SELECT DISTINCT user_id
+    FROM history
+        INNER JOIN
+            history_dataset_association on history_dataset_association.history_id = history.id
+        INNER JOIN
+            dataset on history_dataset_association.dataset_id = dataset.id
+    WHERE
+        dataset_id = :dataset_id
+)"""
+        engine = self.sa_session.get_bind()
+
+        # Hack for older sqlite, would work on newer sqlite - 3.24.0
+        for_sqlite = "sqlite" in engine.dialect.name
+
+        if to_label == from_label:
+            return
+        if to_label is None:
+            to_statement = f"""
+{with_quota_affected_users}
+UPDATE galaxy_user
+SET disk_usage = coalesce(disk_usage, 0) + :adjust
+WHERE id in (select user_id from quota_affected_users)
+"""
+        else:
+            if for_sqlite:
+                to_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, :adjust as disk_usage, :to_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :adjust, :adjust)
+FROM new_quota_sources as new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label"""
+            else:
+                to_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, :adjust as disk_usage, :to_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
+SELECT * FROM new_quota_sources
+ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage + :adjust
+"""
+
+        if from_label is None:
+            from_statement = f"""
+{with_quota_affected_users}
+UPDATE galaxy_user
+SET disk_usage = coalesce(disk_usage - :adjust, 0)
+WHERE id in (select user_id from quota_affected_users)
+"""
+        else:
+            if for_sqlite:
+                from_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, :adjust as disk_usage, :from_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage - :adjust, 0)
+FROM new_quota_sources as new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label"""
+            else:
+                from_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, 0 as disk_usage, :from_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
+SELECT * FROM new_quota_sources
+ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage - :adjust
+"""
+
+        bind = {"dataset_id": dataset.id, "adjust": int(adjust), "to_label": to_label, "from_label": from_label}
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
+            with conn.begin():
+                conn.execute(text(from_statement), bind)
+                conn.execute(text(to_statement), bind)
 
     def _default_unregistered_quota(self, quota_source_label):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED, quota_source_label)
@@ -178,21 +281,20 @@ FROM (
     def _default_quota(self, default_type, quota_source_label):
         label_condition = "IS NULL" if quota_source_label is None else "= :label"
         query = text(
-            """
+            f"""
 SELECT bytes
 FROM quota as default_quota
 LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
 WHERE default_quota_association.type = :default_type
     AND default_quota.deleted != :is_true
     AND default_quota.quota_source_label {label_condition}
-""".format(
-                label_condition=label_condition
-            )
+"""
         )
-
-        conn = self.sa_session.connection()
-        with conn.begin():
-            res = conn.execute(query, is_true=True, label=quota_source_label, default_type=default_type).fetchone()
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
+            res = conn.execute(
+                query, {"is_true": True, "label": quota_source_label, "default_type": default_type}
+            ).fetchone()
             if res:
                 return res[0]
             else:
@@ -209,11 +311,10 @@ WHERE default_quota_association.type = :default_type
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
         label = quota.quota_source_label
-        dqas = (
-            self.sa_session.query(self.model.DefaultQuotaAssociation)
-            .filter(self.model.DefaultQuotaAssociation.table.c.type == default_type)
-            .all()
+        stmt = select(self.model.DefaultQuotaAssociation).filter(
+            self.model.DefaultQuotaAssociation.type == default_type
         )
+        dqas = self.sa_session.scalars(stmt).all()
         target_default = None
         for dqa in dqas:
             if dqa.quota.quota_source_label == label and not dqa.quota.deleted:

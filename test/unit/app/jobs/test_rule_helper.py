@@ -56,11 +56,8 @@ def test_job_count():
 
 
 def __assert_job_count_is(expected_count, rule_helper, **kwds):
-    acutal_count = rule_helper.job_count(**kwds)
-
-    if expected_count != acutal_count:
-        template = "Expected job count %d, actual job count %s for params %s"
-        raise AssertionError(template % (expected_count, acutal_count, kwds))
+    if expected_count != (actual_count := rule_helper.job_count(**kwds)):
+        raise AssertionError(f"Expected job count {expected_count}, actual job count {actual_count} for params {kwds}")
 
 
 def __setup_fixtures(app):
@@ -69,7 +66,7 @@ def __setup_fixtures(app):
     # user3 has no jobs.
     user1 = model.User(email=USER_EMAIL_1, password="pass1")
     user2 = model.User(email=USER_EMAIL_2, password="pass2")
-    user3 = model.User(email=USER_EMAIL_2, password="pass2")
+    user3 = model.User(email=USER_EMAIL_3, password="pass3")
 
     app.add(user1, user2, user3)
 

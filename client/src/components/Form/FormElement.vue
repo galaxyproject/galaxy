@@ -3,13 +3,18 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
+
+import { linkify } from "@/utils/utils";
 
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
+import FormData from "./Elements/FormData/FormData.vue";
+import FormDataUri from "./Elements/FormData/FormDataUri.vue";
 import FormDataDialog from "./Elements/FormDataDialog.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
@@ -17,12 +22,12 @@ import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
-import FormParameter from "./Elements/FormParameter.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
+import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
 
 interface FormElementProps {
     id?: string;
@@ -31,10 +36,11 @@ interface FormElementProps {
     title?: string;
     refreshOnChange?: boolean;
     help?: string;
+    helpFormat?: string;
     error?: string;
     warning?: string;
-    backbonejs?: boolean;
     disabled?: boolean;
+    loading?: boolean;
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
@@ -50,7 +56,6 @@ interface FormElementProps {
 const props = withDefaults(defineProps<FormElementProps>(), {
     id: "identifier",
     refreshOnChange: false,
-    backbonejs: false,
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
@@ -60,6 +65,7 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     connectedDisableText: "Add connection to module.",
     connectedEnableIcon: "fa fa-times",
     connectedDisableIcon: "fa fa-arrows-alt-h",
+    helpFormat: "html",
     workflowBuildingMode: false,
 });
 
@@ -125,9 +131,17 @@ function onConnect() {
 
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
-const hasAlert = computed(() => Boolean(props.error || props.warning));
+const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
+const isUriDataField = computed(() => {
+    const dataField = props.type == "data";
+    if (dataField && props.value && "src" in props.value) {
+        const src = props.value.src;
+        return src == "url";
+    }
+    return false;
+});
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -172,6 +186,16 @@ const isEmpty = computed(() => {
 const isRequired = computed(() => attrs.value["optional"] === false);
 const isRequiredType = computed(() => props.type !== "boolean");
 const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
+const formAlert = ref<string>();
+const alerts = computed(() => {
+    return [formAlert.value, props.error, props.warning]
+        .filter((v) => v !== undefined && v !== null)
+        .map((v) => linkify(sanitize(v!, { USE_PROFILES: { html: true } })));
+});
+
+function onAlert(value: string | undefined) {
+    formAlert.value = value;
+}
 </script>
 
 <template>
@@ -180,9 +204,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         :id="elementId"
         class="ui-form-element section-row"
         :class="{ alert: hasAlert, 'alert-info': hasAlert }">
-        <div v-if="hasAlert" class="ui-form-error">
+        <div v-for="(alert, index) in alerts" :key="index" class="ui-form-error">
             <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span class="ui-form-error-text" v-html="props.error || props.warning" />
+            <span class="ui-form-error-text" v-html="alert" />
         </div>
 
         <div class="ui-form-title">
@@ -205,9 +229,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                     <label :for="props.id">{{ props.title }}</label>
                 </span>
             </span>
-            <span v-else-if="props.title" class="ui-form-title-text"
-                ><label :for="props.id">{{ props.title }}</label></span
-            >
+            <span v-else-if="props.title" class="ui-form-title-text">
+                <label :for="props.id">{{ props.title }}</label>
+            </span>
 
             <span
                 v-if="isRequired && isRequiredType && props.title"
@@ -273,6 +297,26 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :options="attrs.options"
                 :optional="attrs.optional"
                 :multiple="attrs.multiple" />
+            <FormDataUri
+                v-else-if="isUriDataField"
+                :id="id"
+                v-model="currentValue"
+                :value="attrs.value"
+                :multiple="attrs.multiple" />
+            <FormData
+                v-else-if="['data', 'data_collection'].includes(props.type)"
+                :id="id"
+                v-model="currentValue"
+                :loading="loading"
+                :extensions="attrs.extensions"
+                :flavor="attrs.flavor"
+                :multiple="attrs.multiple"
+                :optional="attrs.optional"
+                :options="attrs.options"
+                :tag="attrs.tag"
+                :type="props.type"
+                :collection-types="attrs.collection_types"
+                @alert="onAlert" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
@@ -288,13 +332,6 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
             <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
-            <FormParameter
-                v-else-if="backbonejs"
-                :id="props.id"
-                v-model="currentValue"
-                :data-label="props.title"
-                :type="props.type ?? (attrs.options ? 'select' : 'text')"
-                :attributes="attrs" />
             <FormTags
                 v-else-if="props.type === 'tags'"
                 v-model="currentValue"
@@ -303,67 +340,16 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         </div>
 
         <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
-        <span v-if="Boolean(helpText)" class="ui-form-info form-text text-muted" v-html="helpText" />
+        <span
+            v-if="Boolean(helpText) && helpFormat != 'markdown'"
+            class="ui-form-info form-text text-muted"
+            v-html="helpText" />
+        <span v-else-if="Boolean(helpText)" class="ui-form-info form-text text-muted"
+            ><FormElementHelpMarkdown :content="helpText"
+        /></span>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-
-.ui-form-element {
-    margin-top: $margin-v * 0.25;
-    margin-bottom: $margin-v * 0.25;
-    overflow: visible;
-    clear: both;
-
-    .ui-form-title {
-        word-wrap: break-word;
-        font-weight: bold;
-
-        .ui-form-title-message {
-            font-size: $font-size-base * 0.7;
-            font-weight: 300;
-            vertical-align: text-top;
-            color: $text-light;
-            cursor: default;
-        }
-
-        .ui-form-title-star {
-            color: $text-light;
-            font-weight: 300;
-            cursor: default;
-        }
-
-        .warning {
-            color: $brand-danger;
-        }
-    }
-
-    .ui-form-field {
-        position: relative;
-        margin-top: $margin-v * 0.25;
-    }
-
-    &:deep(.ui-form-collapsible-icon),
-    &:deep(.ui-form-connected-icon) {
-        border: none;
-        background: none;
-        padding: 0;
-        line-height: 1;
-        font-size: 1.2em;
-
-        &:hover {
-            color: $brand-info;
-        }
-
-        &:focus {
-            color: $brand-primary;
-        }
-
-        &:active {
-            background: none;
-        }
-    }
-}
+@import "./_form-elements.scss";
 </style>

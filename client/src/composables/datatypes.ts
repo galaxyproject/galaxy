@@ -1,22 +1,18 @@
-import type { Ref } from "vue";
-import { ref } from "vue";
+import { type Ref, ref } from "vue";
 
-import { fetcher } from "@/schema";
-
-const datatypesFetcher = fetcher.path("/api/datatypes").method("get").create();
-const edamFormatsFetcher = fetcher.path("/api/datatypes/edam_formats/detailed").method("get").create();
-const edamDataFetcher = fetcher.path("/api/datatypes/edam_data/detailed").method("get").create();
+import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface DetailedDatatypes {
     extension: string;
-    description?: string;
-    descriptionUrl?: string;
-    edamFormat?: string;
-    edamFormatLabel?: string;
-    edamFormatDefinition?: string;
-    edamData?: string;
-    edamDataLabel?: string;
-    edamDataDefinition?: string;
+    description?: string | null;
+    descriptionUrl?: string | null;
+    edamFormat?: string | null;
+    edamFormatLabel?: string | null;
+    edamFormatDefinition?: string | null;
+    edamData?: string | null;
+    edamDataLabel?: string | null;
+    edamDataDefinition?: string | null;
 }
 
 /**
@@ -29,21 +25,30 @@ export function useDetailedDatatypes() {
 
     async function getDatatypes() {
         try {
-            const datatypesPromise = datatypesFetcher({ extension_only: false });
-            const datatypeEDAMFormatsPromise = edamFormatsFetcher({});
-            const datatypeEDAMDataPromise = edamDataFetcher({});
+            const datatypesPromise = GalaxyApi().GET("/api/datatypes", {
+                params: { query: { extension_only: false } },
+            });
+            const datatypeEDAMFormatsPromise = GalaxyApi().GET("/api/datatypes/edam_formats/detailed");
+            const datatypeEDAMDataPromise = GalaxyApi().GET("/api/datatypes/edam_data/detailed");
 
-            const [baseTypes, datatypeEDAMFormats, datatypeEDAMData] = await Promise.all([
-                datatypesPromise,
-                datatypeEDAMFormatsPromise,
-                datatypeEDAMDataPromise,
-            ]);
+            const [
+                { data: baseData, error: baseError },
+                { data: datatypeEDAMFormats, error: edamFormatsError },
+                { data: datatypeEDAMData, error: edamDataError },
+            ] = await Promise.all([datatypesPromise, datatypeEDAMFormatsPromise, datatypeEDAMDataPromise]);
 
-            type BaseTypes = Exclude<typeof baseTypes.data, string[]>;
+            type BaseTypes = Exclude<typeof baseData, string[]>;
 
-            datatypes.value = (baseTypes.data as BaseTypes).map((type) => {
-                const typeEDAMFormat = datatypeEDAMFormats.data[type.extension] ?? null;
-                const typeEDAMData = datatypeEDAMData.data[type.extension] ?? null;
+            const error = baseError || edamFormatsError || edamDataError;
+            if (error) {
+                rethrowSimple(error);
+            }
+
+            const items = baseData as BaseTypes;
+            // We can safely use non-null assertions here because otherwise we would have thrown an error
+            datatypes.value = items!.map((type) => {
+                const typeEDAMFormat = datatypeEDAMFormats![type.extension] ?? null;
+                const typeEDAMData = datatypeEDAMData![type.extension] ?? null;
 
                 return {
                     extension: type.extension,

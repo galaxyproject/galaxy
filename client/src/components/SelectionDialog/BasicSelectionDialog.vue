@@ -1,115 +1,89 @@
+<script setup lang="ts">
+import { computed, onMounted, type Ref, ref } from "vue";
+
+import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+interface Props {
+    detailsKey?: string;
+    getData: () => Promise<object[]>;
+    isEncoded?: boolean;
+    labelKey?: string;
+    leafIcon?: string;
+    timeKey?: string;
+    title: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    detailsKey: "",
+    isEncoded: false,
+    labelKey: "id",
+    leafIcon: "",
+    timeKey: "update_time",
+});
+
+const emit = defineEmits<{
+    (e: "onCancel"): void;
+    (e: "onOk", results: SelectionItem): void;
+    (e: "onUpload"): void;
+}>();
+
+const errorMessage = ref("");
+const items: Ref<Array<SelectionItem>> = ref([]);
+const modalShow = ref(true);
+const optionsShow = ref(false);
+const showTime = ref(false);
+
+const fields = computed(() => {
+    const fields = [{ key: "label" }];
+    if (props.detailsKey) {
+        fields.push({ key: "details" });
+    }
+    if (showTime.value) {
+        fields.push({ key: "time" });
+    }
+    return fields;
+});
+
+async function load() {
+    optionsShow.value = false;
+    try {
+        // TODO: Consider supporting pagination here
+        // this could potentially load quite a lot of items
+        const incoming = await props.getData();
+        items.value = incoming.map((item: any) => {
+            const timeStamp = item[props.timeKey];
+            showTime.value = !!timeStamp;
+            return {
+                id: item.id,
+                label: item[props.labelKey] || null,
+                details: item[props.detailsKey] || null,
+                time: timeStamp || null,
+                isLeaf: true,
+                url: "",
+            };
+        });
+        optionsShow.value = true;
+    } catch (err) {
+        errorMessage.value = errorMessageAsString(err);
+    }
+}
+
+onMounted(() => load());
+</script>
+
 <template>
-    <selection-dialog
+    <SelectionDialog
         :error-message="errorMessage"
+        :fields="fields"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel">
-        <template v-slot:search>
-            <data-dialog-search v-model="filter" :title="title" />
-        </template>
-        <template v-slot:options>
-            <data-dialog-table
-                v-if="optionsShow"
-                :items="items"
-                :multiple="false"
-                :is-encoded="isEncoded"
-                :filter="filter"
-                :leaf-icon="leafIcon"
-                :show-details="!!detailsKey"
-                @clicked="onOk"
-                @load="load" />
-        </template>
-    </selection-dialog>
+        :is-encoded="isEncoded"
+        :leaf-icon="leafIcon"
+        :items="items"
+        :title="title"
+        @onCancel="emit('onCancel')"
+        @onClick="emit('onOk', $event)" />
 </template>
-
-<script>
-import { errorMessageAsString } from "utils/simple-error";
-
-import SelectionDialogMixin from "./SelectionDialogMixin";
-
-export default {
-    mixins: [SelectionDialogMixin],
-    props: {
-        getData: {
-            type: Function,
-            required: true,
-        },
-        title: {
-            type: String,
-            required: true,
-        },
-        leafIcon: {
-            type: String,
-            default: null,
-        },
-        labelKey: {
-            type: String,
-            default: "id",
-        },
-        detailsKey: {
-            type: String,
-            default: null,
-        },
-        timeKey: {
-            type: String,
-            default: "update_time",
-        },
-        isEncoded: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            errorMessage: null,
-            filter: null,
-            items: [],
-            modalShow: true,
-            optionsShow: false,
-            hasValue: false,
-        };
-    },
-    created() {
-        this.load();
-    },
-    methods: {
-        onOk(record) {
-            this.$emit("onOk", record);
-        },
-        onCancel() {
-            this.$emit("onCancel");
-        },
-        async load() {
-            this.filter = null;
-            this.optionsShow = false;
-            try {
-                const response = await this.getData();
-                const items = response.data;
-                this.items = items.map((item) => {
-                    let timeStamp = item[this.timeKey];
-                    if (timeStamp) {
-                        const date = new Date(timeStamp);
-                        timeStamp = date.toLocaleString("default", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            minute: "numeric",
-                            hour: "numeric",
-                        });
-                    }
-                    return {
-                        id: item.id,
-                        label: item[this.labelKey] || null,
-                        details: item[this.detailsKey] || null,
-                        time: timeStamp || null,
-                        isLeaf: true,
-                    };
-                });
-                this.optionsShow = true;
-            } catch (err) {
-                this.errorMessage = errorMessageAsString(err);
-            }
-        },
-    },
-};
-</script>

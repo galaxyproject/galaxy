@@ -98,8 +98,10 @@ class UsesApiTestCaseMixin:
     def tearDown(self):
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
             # Only kill running jobs after test for managed test instances
-            for job in self.galaxy_interactor.get("jobs?state=running").json():
-                self._delete(f"jobs/{job['id']}")
+            response = self.galaxy_interactor.get("jobs?state=running")
+            if response.ok:
+                for job in response.json():
+                    self._delete(f"jobs/{job['id']}")
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
@@ -109,8 +111,7 @@ class UsesApiTestCaseMixin:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:
             params["key"] = self.galaxy_interactor.master_api_key
-        query = urlencode(params)
-        if query:
+        if query := urlencode(params):
             url = f"{url}?{query}"
         return url
 
@@ -146,7 +147,7 @@ class UsesApiTestCaseMixin:
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
-    def _different_user(self, email=OTHER_USER, anon=False):
+    def _different_user(self, email: Optional[str] = None, anon=False):
         """Use in test cases to switch get/post operations to act as new user
 
         ..code-block:: python
@@ -163,6 +164,7 @@ class UsesApiTestCaseMixin:
             self.galaxy_interactor.cookies = cookies
             new_key = None
         else:
+            email = OTHER_USER if email is None else email
             _, new_key = self._setup_user_get_key(email)
         try:
             self.user_api_key = new_key

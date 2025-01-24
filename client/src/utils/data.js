@@ -4,7 +4,7 @@ import { FilesDialog } from "components/FilesDialog";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import { startWatchingHistory } from "store/historyStore/model/watchHistory";
 import Vue from "vue";
 
 import { uploadPayload } from "@/utils/upload-payload.js";
@@ -19,7 +19,7 @@ import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectio
 export async function getCurrentGalaxyHistory() {
     const galaxy = getGalaxyInstance();
     if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
-        // TODO: use central store (vuex) for this.
+        // TODO: use central store for this.
         return galaxy.currHistoryPanel.model.id;
     } else {
         // Otherwise manually fetch the current history json and use that id.
@@ -116,5 +116,5 @@ export function refreshContentsWrapper() {
     // Legacy Panel Interface. no-op if using new history
     Galaxy?.currHistoryPanel?.refreshContents();
     // Will not do anything in legacy interface
-    rewatchHistory();
+    startWatchingHistory();
 }

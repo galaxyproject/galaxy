@@ -1,6 +1,7 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
+
 import logging
 import socket
 
@@ -164,6 +165,7 @@ class RemoteUser:
                 "/user/api_key",
                 "/user/edit_username",
                 "/user/dbkeys",
+                "/user/information",
                 "/user/logout",
                 "/user/toolbox_filters",
                 "/user/set_default_permissions",

@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class RelationBuilder:
-    def __init__(self, app, repository, repository_metadata, tool_shed_url):
+    def __init__(self, app, repository, repository_metadata, tool_shed_url, trans=None):
         self.all_repository_dependencies = {}
         self.app = app
         self.circular_repository_dependencies = []
@@ -25,6 +25,7 @@ class RelationBuilder:
         self.handled_key_rd_dicts = []
         self.key_rd_dicts_to_be_processed = []
         self.tool_shed_url = tool_shed_url
+        self.trans = trans
 
     def can_add_to_key_rd_dicts(self, key_rd_dict, key_rd_dicts):
         """Handle the case where an update to the changeset revision was done."""
@@ -155,8 +156,7 @@ class RelationBuilder:
         """
         # Assume the current repository does not have repository dependencies defined for it.
         current_repository_key = None
-        metadata = self.repository_metadata.metadata
-        if metadata:
+        if metadata := self.repository_metadata.metadata:
             # The value of self.tool_shed_url must include the port, but doesn't have to include
             # the protocol.
             if "repository_dependencies" in metadata:
@@ -212,7 +212,8 @@ class RelationBuilder:
                 rd_prior_installation_required,
                 rd_only_if_compiling_contained_td,
             ) = common_util.parse_repository_dependency_tuple(repository_dependency)
-            if suc.tool_shed_is_this_tool_shed(rd_toolshed):
+            tool_shed_is_this_tool_shed = suc.tool_shed_is_this_tool_shed(rd_toolshed, trans=self.trans)
+            if tool_shed_is_this_tool_shed:
                 repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(
                     self.app, rd_name, rd_owner
                 )
@@ -318,7 +319,7 @@ class RelationBuilder:
             prior_installation_required,
             only_if_compiling_contained_td,
         ) = common_util.parse_repository_dependency_tuple(repository_dependency)
-        if suc.tool_shed_is_this_tool_shed(toolshed):
+        if suc.tool_shed_is_this_tool_shed(toolshed, trans=self.trans):
             required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(self.app, name, owner)
             self.repository = required_repository
             repository_id = self.app.security.encode_id(required_repository.id)

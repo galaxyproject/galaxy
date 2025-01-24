@@ -10,7 +10,7 @@ jQuery.ajaxSettings.traditional = true;
 import Utils from "utils/utils";
 import GridModel from "legacy/grid/grid-model";
 import Templates from "legacy/grid/grid-template";
-import PopupMenu from "mvc/ui/popup-menu";
+import PopupMenu from "./popup-menu";
 import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 
 var $ = jQuery;

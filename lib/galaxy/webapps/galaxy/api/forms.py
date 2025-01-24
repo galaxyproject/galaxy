@@ -1,16 +1,45 @@
 """
 API operations on FormDefinition objects.
 """
+
 import logging
+
+from sqlalchemy import select
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.forms import FormManager
+from galaxy.model import FormDefinition
 from galaxy.model.base import transaction
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.util import XML
 from galaxy.webapps.base.controller import url_for
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=["forms"])
+
+
+@router.cbv
+class FastAPIForms:
+    form_manager: FormManager = depends(FormManager)
+
+    @router.delete("/api/forms/{id}", require_admin=True)
+    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.delete(trans, form)
+
+    @router.post("/api/forms/{id}/undelete", require_admin=True)
+    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.undelete(trans, form)
 
 
 class FormDefinitionAPIController(BaseGalaxyAPIController):
@@ -23,9 +52,10 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
         if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to view the list of forms."
-        query = trans.sa_session.query(trans.app.model.FormDefinition)
+
         rval = []
-        for form_definition in query:
+        form_defs = trans.sa_session.scalars(select(FormDefinition))
+        for form_definition in form_defs:
             item = form_definition.to_dict(
                 value_mapper={"id": trans.security.encode_id, "form_definition_current_id": trans.security.encode_id}
             )
@@ -46,7 +76,7 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
             trans.response.status = 400
             return f"Malformed form definition id ( {str(form_definition_id)} ) specified, unable to decode."
         try:
-            form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(decoded_form_definition_id)
+            form_definition = trans.sa_session.get(FormDefinition, decoded_form_definition_id)
         except Exception:
             form_definition = None
         if not form_definition or not trans.user_is_admin:

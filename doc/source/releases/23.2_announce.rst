@@ -1,0 +1,197 @@
+
+===========================================================
+23.2 Galaxy Release (January 2024)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Workflow comments** are a brand new feature of the Galaxy Workflow Editor. They add a suite of tools - such as text, markdown, freehand commenting and more - to help visually explain and structure Workflows. Workflow publishing and workflow sharing UI have received significant updates. A lot of work has been done on improving the page and workflow report editor options; a variety of new directives have been added to Galaxy Markdown.
+
+**InvenioRDM** has been integrated into Galaxy. Users can now import files directly from InvenioRDM repositories into Galaxy, and publish records containing artifacts (Histories, datasets, etc.) from Galaxy to InvenioRDM.
+
+**Miscellaneous improvements.** There have been numerous updates to the UI, including Galaxy Help forum integration, improved navigation and styling, helpful warnings, improvements to search, etc. Check out the `23.2 user release notes <23.2_announce_user.html>`__ for all the details.
+
+Are you an admin? See the Administration Notes below, and check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.2+is%3Aclosed+is%3Apr>`__.
+
+Get Galaxy
+===========================================================
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_23.2 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_23.2 && git pull --ff-only origin release_23.2
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Administration Notes
+===========================================================
+
+* A lot of work has been done on path-based interactive tools, including major additions to documentation and configuration. (`#16795 <https://github.com/galaxyproject/galaxy/pull/16795>`__)
+* It is now possible to configure per-user limits for celery task execution (`#16232 <https://github.com/galaxyproject/galaxy/pull/16232>`__)
+* An admin panel for managing notifications and broadcasts has been added. Admins will be able to schedule/update/delete a broadcast and send message notifications to selected users, roles or groups. (`#16278 <https://github.com/galaxyproject/galaxy/pull/16278>`__)
+* Configuration options are now available for carbon emissions reporting. (`#16307 <https://github.com/galaxyproject/galaxy/pull/16307>`__)
+* The pgcleanup script has been modified to allow periodically deleting old datasets; operations can now be restricted to specific object store ids. (`#16340 <https://github.com/galaxyproject/galaxy/pull/16340>`__)
+* Tool memory usage has been improved. (`#16536 <https://github.com/galaxyproject/galaxy/pull/16536>`__)
+* Support added for cgroups-v2 (`#17169 <https://github.com/galaxyproject/galaxy/pull/17169>`__)
+* Support added for configuring job metrics inline; documentation improved (`#17178 <https://github.com/galaxyproject/galaxy/pull/17178>`__)
+
+Configuration Changes
+===========================================================
+
+Added
+-----
+
+The following configuration options are new
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.invenio
+-  preferences.onedata
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.tool_shed.mapping.config_hg_for_dev
+-  mapping.tool_shed.mapping.ga4gh_service_environment
+-  mapping.tool_shed.mapping.ga4gh_service_id
+-  mapping.tool_shed.mapping.organization_name
+-  mapping.tool_shed.mapping.organization_url
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/file_sources_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   has changed from
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'accessToken': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}"}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+
+   to
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'access_token': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}"}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+    {'type': 'inveniordm', 'id': 'invenio', 'doc': 'Invenio RDM turn-key research data management repository', 'label': 'Invenio RDM Demo Repository', 'url': 'https://inveniordm.web.cern.ch/'}
+    {'type': 'onedata', 'id': 'onedata1', 'label': 'Onedata', 'doc': 'Your Onedata files - configure an access token via user preferences', 'accessToken': "${user.preferences['onedata|access_token']}", 'onezoneDomain': "${user.preferences['onedata|onezone_domain']}"}
+
+
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.instance_resource_url.desc has changed from
+
+   ::
+
+    URL of the support resource for the galaxy instance.  Used in activation
+    emails.
+
+    Example value 'https://galaxyproject.org/'
+
+   to
+
+   ::
+
+    URL of the support resource for the galaxy instance.  Used outside of web contexts
+    such as in activation emails and in Galaxy markdown report generation.
+
+    Example value 'https://galaxyproject.org/'
+
+
+-  mapping.galaxy.mapping.job_metrics_config_file.desc has changed from
+
+   ::
+
+    XML config file that contains the job metric collection configuration.
+
+   to
+
+   ::
+
+    YAML or XML config file that contains the job metric collection configuration.
+
+
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.ga4gh_service_organization_name
+-  mapping.galaxy.mapping.ga4gh_service_organization_url
+-  mapping.galaxy.mapping.interactivetools_shorten_url
+
+Release Notes
+===========================================================
+
+.. include:: 23.2.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

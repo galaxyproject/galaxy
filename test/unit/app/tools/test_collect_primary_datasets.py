@@ -128,6 +128,20 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         created_hda_3 = datasets[DEFAULT_TOOL_OUTPUT]["test3"]
         assert_created_with_path(self.app.object_store, created_hda_3.dataset, path3)
 
+    def test_collect_collection_default_format(self):
+        self._replace_output_collectors(
+            """<dataset_collection name="parent" format="abcdef">
+            <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" />
+        </dataset_collection>"""
+        )
+        self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test1")
+        self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test2")
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+        for dataset in datasets[DEFAULT_TOOL_OUTPUT].values():
+            assert dataset.ext == "abcdef"
+
     def test_collect_sorted_reverse(self):
         self._replace_output_collectors(
             """<output>
@@ -377,15 +391,13 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         # Rewrite tool as if it had been created with output containing
         # supplied dataset_collector elem.
         elem = util.parse_xml_string(xml_str)
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        )
 
     def _replace_output_collectors_from_dict(self, output_dict):
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_output_dict(
-            output_dict
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_output_dict(output_dict)
         )
 
     def _append_job_json(self, object, output_path=None, line_type="new_primary_dataset"):
@@ -447,6 +459,9 @@ class MockObjectStore:
     def __init__(self):
         self.created_datasets = {}
 
+    def get_store_by(self, obj, **kwargs):
+        return "uuid"
+
     def update_from_file(self, dataset, file_name, create):
         if create:
             self.created_datasets[dataset] = file_name
@@ -458,7 +473,7 @@ class MockObjectStore:
     def exists(self, *args, **kwargs):
         return True
 
-    def get_filename(self, dataset):
+    def get_filename(self, dataset, **kwargs):
         return self.created_datasets[dataset]
 
 

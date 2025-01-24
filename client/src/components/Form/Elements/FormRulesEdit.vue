@@ -2,11 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder";
 import RulesDisplay from "components/RulesDisplay/RulesDisplay";
-import { getAppRoot } from "onload/loadConfig";
 import { computed, ref } from "vue";
+
+import { fetchCollectionDetails } from "@/api/datasetCollections";
 
 library.add(faEdit);
 
@@ -32,11 +32,9 @@ const displayRules = computed(() => props.value ?? initialRules);
 
 async function onEdit() {
     if (props.target) {
-        const url = `${getAppRoot()}api/dataset_collections/${props.target.id}?instance_type=history`;
-
         try {
-            const response = await axios.get(url);
-            elements.value = response.data;
+            const collectionDetails = await fetchCollectionDetails({ id: props.target.id });
+            elements.value = collectionDetails;
             modal.value.show();
         } catch (e) {
             console.error(e);

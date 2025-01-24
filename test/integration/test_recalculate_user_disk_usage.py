@@ -37,7 +37,7 @@ class RecalculateDiskUsage:
         assert current_usage["total_disk_usage"] == 0
         size = 100
         history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id, content=f"{'0'*size}", wait=True)["id"]
+        hda_id = self.dataset_populator.new_dataset(history_id, content=f"{'0' * size}", wait=True)["id"]
         expected_usage = size + 1  # +1 for the new line character in the dataset
         # The usage should be the total of the datasets
         current_usage = self.dataset_populator.get_usage_for(None)

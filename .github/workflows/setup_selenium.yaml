@@ -5,4 +5,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install chromedriver
-        uses: mvdbeek/setup-chromedriver@chromedriver_puppeteer
+        uses: nanasess/setup-chromedriver@v2

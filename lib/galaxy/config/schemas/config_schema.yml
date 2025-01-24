@@ -359,7 +359,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: conda-forge,bioconda,defaults
+        default: conda-forge,bioconda
         required: false
         desc: |
           conda channels to enable by default
@@ -382,11 +382,11 @@ mapping:
 
       conda_auto_init:
         type: bool
-        default: true
         required: false
         desc: |
           Set to true to instruct Galaxy to install Conda from the web automatically
-          if it cannot find a local copy and conda_exec is not configured.
+          if it cannot find a local copy and conda_exec is not configured. The default is
+          true if running Galaxy from source, and false if running from installed packages.
 
       conda_copy_dependencies:
         type: bool
@@ -550,6 +550,61 @@ mapping:
           - type: any
         desc: |
           FileSource plugins described embedded into Galaxy's config.
+
+      object_store_templates_config_file:
+        type: str
+        default: object_store_templates.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Configured Object Store templates configuration file.
+
+      object_store_templates:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Configured Object Store templates embedded into Galaxy's config.
+
+      file_source_templates_config_file:
+        type: str
+        default: file_source_templates.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Configured user file source templates configuration file.
+
+      file_source_templates:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Configured user file source templates embedded into Galaxy's config.
+
+      user_config_templates_use_saved_configuration:
+        type: str
+        default: 'fallback'
+        required: false
+        enum: ['fallback', 'preferred', 'never']
+        desc: |
+          User defined object stores and file sources are saved in the database with
+          their last valid configuration. It may be the case that the admin changes
+          file source and object store templates over time such that the variables
+          and secrets an instance is saved with no longer match the configuration's
+          expected values. For this reason, admins should always add new versions of
+          templates instead of just changing them - however people take shortcuts and
+          divergences might happen. If a template is changed in such a way it breaks
+          or if a template disappears from the library of templates this parameter controls
+          how and if the database version will be used.
+
+          By default, it will simply be used as a 'fallback' if a configuration cannot
+          be resolved against the template version in the configuration file. Using 'preferred'
+          instead will mean the stored database version is always used. This ensures a greater
+          degree of reproducibility without effort on the part of the admin but also means
+          that small issues are not easy to fix. Using 'never' instead will ensure the
+          config templates are always only loaded from the template library files - this
+          might make sense for admins who want to disable templates without worrying about
+          the contents of the database.
 
       enable_mulled_containers:
         type: bool
@@ -1034,6 +1089,20 @@ mapping:
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
 
+      object_store_config:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying an object_store_config_file, the object store configuration can be embedded into
+          Galaxy's config with this option.
+
+          This option has no effect if the file specified by object_store_config_file exists. Otherwise, if this option
+          is set, it overrides any other objectstore settings.
+
+          The syntax, available storage plugins, and documentation of their options is explained in detail in the
+          object store sample configuration file, `object_store_conf.sample.yml`
+
       object_store_cache_monitor_driver:
         type: str
         default: 'auto'
@@ -1077,8 +1146,18 @@ mapping:
         default: -1
         required: false
         desc: |
-          Default cache size for caching object stores if cache not configured for
-          that object store entry.
+          Default cache size, in GB, for caching object stores if the cache is not
+          configured for that object store entry.
+
+      object_store_always_respect_user_selection:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to indicate in the UI that a user's object store selection
+          isn't simply a "preference" that job destinations often respect but in fact
+          will always be respected. This should be set to true to simplify the UI as
+          long as job destinations never override 'object_store_id's for a jobs.
 
       object_store_store_by:
         type: str
@@ -1180,10 +1259,19 @@ mapping:
         type: str
         required: false
         desc: |
-          URL of the support resource for the galaxy instance.  Used in activation
-          emails.
+          URL of the support resource for the galaxy instance.  Used outside of web contexts
+          such as in activation emails and in Galaxy markdown report generation.
 
           Example value 'https://galaxyproject.org/'
+
+      instance_access_url:
+        type: str
+        required: false
+        desc: |
+          URL used to access this Galaxy server. Used outside of web contexts
+          such as in Galaxy markdown report generation.
+
+          Example value 'https://usegalaxy.org'
 
       email_domain_blocklist_file:
         type: str
@@ -1386,7 +1474,7 @@ mapping:
           This is used to make carbon emissions estimates more accurate as the location effects the
           carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
           `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
-          visit https://galaxyproject.org/admin/carbon_emissions
+          visit https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
 
       power_usage_effectiveness:
         type: float
@@ -1432,7 +1520,21 @@ mapping:
         default: interactivetools_map.sqlite
         path_resolves_to: data_dir
         desc: |
-          Map for interactivetool proxy.
+          Map for the interactivetool proxy. Mappings are stored in a SQLite database file
+          located on this path. As an alternative, you may also store them in any other RDBMS
+          supported by SQLAlchemy using the option ``interactivetoolsproxy_map``, which
+          overrides this one.
+
+      interactivetoolsproxy_map:
+        type: str
+        required: false
+        desc: |
+          Use a database supported by SQLAlchemy as map for the interactivetool proxy.
+          When this option is set, the value of ``interactivetools_map`` is ignored. The
+          value of this option must be a
+          `SQLAlchemy database URL <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+          Mappings are written to the table "gxitproxy" within the database. This value cannot match
+          ``database_connection`` nor ``install_database_connection``.
 
       interactivetools_prefix:
         type: str
@@ -1440,15 +1542,6 @@ mapping:
         required: false
         desc: |
           Prefix to use in the formation of the subdomain or path for interactive tools
-
-      interactivetools_shorten_url:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Shorten the uuid portion of the subdomain or path for interactive tools.
-          Especially useful for avoiding the need for wildcard certificates by keeping
-          subdomain under 63 chars
 
       retry_interactivetool_metadata_internally:
         type: bool
@@ -1530,7 +1623,7 @@ mapping:
           Allow import of workflows from the TRS servers configured in
           the specified YAML or JSON file. The file should be a list with
           'id', 'label', and 'api_url' for each entry. Optionally,
-          'link_url' and 'doc' may be be specified as well for each entry.
+          'link_url' and 'doc' may be specified as well for each entry.
 
           If this is null (the default), a simple configuration containing
           just Dockstore will be used.
@@ -1624,7 +1717,7 @@ mapping:
 
       helpsite_url:
         type: str
-        required: true
+        required: false
         default: https://help.galaxyproject.org/
         per_host: true
         desc: |
@@ -1872,8 +1965,16 @@ mapping:
         required: False
         desc: |
           The upload store is a temporary directory in which files uploaded by the
-          tus middleware or server will be placed.
+          tus middleware or server for user uploads will be placed.
           Defaults to new_file_path if not set.
+
+      tus_upload_store_job_files:
+        type: str
+        required: False
+        desc: |
+          The upload store is a temporary directory in which files uploaded by the
+          tus middleware or server for remote job files (Pulsar) will be placed.
+          Defaults to tus_upload_store if not set.
 
       chunk_upload_size:
         type: int
@@ -2160,6 +2261,13 @@ mapping:
           and debugging: use_lint, use_profile, and use_printdebug.  It also
           causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
+
+      use_access_logging_middleware:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Log request start as well as request end. Disables uvicorn access log handler.
 
       use_lint:
         type: bool
@@ -2680,6 +2788,7 @@ mapping:
 
           Avoiding making this a boolean because we may add options such as 'in-single-form-view'
           or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+
       allow_user_dataset_purge:
         type: bool
         default: true
@@ -2809,6 +2918,7 @@ mapping:
         type: str
         default: default
         required: false
+        per_host: true
         desc: |
           Default tool panel view for the current Galaxy configuration. This should refer to an id of
           a panel view defined using the panel_views or panel_views_dir configuration options or an
@@ -2903,6 +3013,19 @@ mapping:
         desc: |
           Sets the path to OIDC backends configuration file.
 
+      oidc_scope_prefix:
+        type: str
+        default: https://galaxyproject.org/api
+        required: false
+        desc: |
+          Sets the prefix for OIDC scopes specific to this Galaxy instance.
+          If an API call is made against this Galaxy instance using an OIDC bearer token,
+          any scopes must be prefixed with this value e.g. https://galaxyproject.org/api.
+          More concretely, to request all permissions that the user has, the scope
+          would have to be specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
+          Currently, only * is recognised as a valid scope, and future iterations may
+          provide more fine-grained scopes.
+
       auth_config_file:
         type: str
         default: auth_conf.xml
@@ -2931,6 +3054,36 @@ mapping:
           a real admin user account via API.
           You should probably not set this on a production server.
 
+      organization_name:
+        type: str
+        required: false
+        desc: |
+          The name of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "Not Evil Corporation".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint for the Galaxy DRS API.
+          If unset, one will be generated using ga4gh_service_id (but only in the context
+          of GA4GH APIs).
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      organization_url:
+        type: str
+        required: false
+        desc: |
+          The URL of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "notevilcorp.com".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
       ga4gh_service_id:
         type: str
         required: false
@@ -2947,28 +3100,6 @@ mapping:
           value as a prefix and append the service type to this ID. For instance for the DRS
           service "id" (available via the DRS API) for the above configuration value would be
           org.usegalaxy.drs.
-
-      ga4gh_service_organization_name:
-        type: str
-        required: false
-        desc: |
-          Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
-          If unset, one will be generated using ga4gh_service_id.
-
-          For more information on GA4GH service definitions - check out
-          https://github.com/ga4gh-discovery/ga4gh-service-registry
-          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
-
-      ga4gh_service_organization_url:
-        type: str
-        required: False
-        desc: |
-          Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
-          If unset, one will be generated using the URL the target API requests are made against.
-
-          For more information on GA4GH service definitions - check out
-          https://github.com/ga4gh-discovery/ga4gh-service-registry
-          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 
       ga4gh_service_environment:
         type: str
@@ -3121,7 +3252,24 @@ mapping:
         path_resolves_to: config_dir
         required: false
         desc: |
-          XML config file that contains the job metric collection configuration.
+          YAML or XML config file that contains the job metric collection configuration.
+
+      job_metrics:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a job_metrics_config_file, the definition of the
+          metrics to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a job_metrics_config_file is used.
+
+          The syntax, available instrumenters, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+
+          By default, the core plugin is enabled. Setting this option to false or an empty list disables metrics
+          entirely.
 
       expose_potentially_sensitive_job_metrics:
         type: bool
@@ -3307,6 +3455,26 @@ mapping:
           decreased if extremely high job throughput is necessary, but doing so can increase CPU
           usage of handler processes. Float values are allowed.
 
+      calculate_dataset_hash:
+        type: str
+        default: upload
+        required: false
+        enum: ['always', 'upload', 'never']
+        desc: |
+          In which cases Galaxy should calculate a hash for a new dataset.
+          Dataset hashes can be used by the Galaxy job cache/search to check if job inputs match.
+          Setting the 'enable_celery_tasks' option to true is also required for dataset hash calculation.
+          Possible values are: 'always', 'upload' (the default), 'never'. If set to 'upload', the
+          hash is calculated only for the outputs of upload jobs.
+
+      hash_function:
+        type: str
+        default: sha256
+        required: false
+        desc: |
+          Hash function to use if 'calculate_dataset_hash' is enabled. Possible values
+          are: 'md5', 'sha1', 'sha256', 'sha512'
+
       metadata_strategy:
         type: str
         required: false
@@ -3400,6 +3568,7 @@ mapping:
         default: always
         required: false
         reloadable: true
+        enum: ['always', 'onsuccess', 'never']
         desc: |
           Clean up various bits of jobs left on the filesystem after completion.  These
           bits include the job working directory, external metadata temporary files,
@@ -3591,6 +3760,21 @@ mapping:
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
 
+      workflow_scheduling_separate_materialization_iteration:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Workflows launched with URI/URL inputs that are not marked as 'deferred'
+          are "materialized" (or undeferred) by the workflow scheduler. This might be
+          a lengthy process. Setting this to 'True' will place the invocation back in
+          the queue after materialization before scheduling the workflow so it is less
+          likely to starve other workflow scheduling. Ideally, Galaxy would allow more
+          fine grain control of handlers but until then, this provides a way to tip the
+          balance between "doing more work" and "being more fair". The default here is
+          pretty arbitrary - it has been to False to optimize Galaxy for automated,
+          single user applications where "fairness" is mostly irrelevant.
+
       cache_user_job_count:
         type: bool
         default: false
@@ -3685,10 +3869,24 @@ mapping:
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
 
+      enable_celery_tasks:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Offload long-running tasks to a Celery task queue.
+          Activate this only if you have setup a Celery worker for Galaxy and you have
+          configured the `celery_conf` option below. Specifically, you need to set the
+          `result_backend` option in the `celery_conf` option to a valid Celery result
+          backend URL. By default, Galaxy uses an SQLite database at '<data_dir>/results.sqlite' for storing task results.
+          For details, see https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
+
       celery_conf:
         type: any
         required: false
         default:
+          broker_url: null
+          result_backend: null
           task_routes:
             'galaxy.fetch_data': 'galaxy.external'
             'galaxy.set_job_metadata': 'galaxy.external'
@@ -3698,22 +3896,15 @@ mapping:
           To refer to a task by name, use the template `galaxy.foo` where `foo` is the function name
           of the task defined in the galaxy.celery.tasks module.
 
-          The `broker_url` option, if unset, defaults to the value of `amqp_internal_connection`.
-          The `result_backend` option must be set if the `enable_celery_tasks` option is set.
+          The `broker_url` option, if unset or null, defaults to the value of `amqp_internal_connection`.
+          The `result_backend` option, if unset or null, defaults to an SQLite database at '<data_dir>/results.sqlite'
+          for storing task results. Please use a more robust backend (e.g. Redis) for production setups.
 
           The galaxy.fetch_data task can be disabled by setting its route to "disabled": `galaxy.fetch_data: disabled`.
           (Other tasks cannot be disabled on a per-task basis at this time.)
 
           For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 
-      enable_celery_tasks:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Offload long-running tasks to a Celery task queue.
-          Activate this only if you have setup a Celery worker for Galaxy.
-          For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
       celery_user_rate_limit:
         type: float
@@ -3753,6 +3944,19 @@ mapping:
           use 0 in order to always use select2 fields,
           use -1 (default) in order to always use the regular select fields,
           use any other positive number as threshold (above threshold: regular select fields will be used)
+
+      openai_api_key:
+        type: str
+        required: false
+        desc: |
+          API key for OpenAI (https://openai.com/) to enable the wizard (or more?)
+
+      openai_model:
+        type: str
+        default: gpt-4o
+        required: false
+        desc: |
+          OpenAI model to enable the wizard.
 
       enable_tool_recommendations:
         type: bool
@@ -3912,3 +4116,46 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+
+      dispatch_notifications_interval:
+        type: int
+        required: false
+        default: 600
+        desc: |
+          The interval in seconds between attempts to dispatch notifications to users (every 10 minutes by default). Runs in a Celery task.
+
+      help_forum_api_url:
+        type: str
+        required: false
+        default: https://help.galaxyproject.org/
+        per_host: true
+        desc: |
+          The URL pointing to the Galaxy Help Forum API base URL. The API must be compatible with Discourse API (https://docs.discourse.org/).
+
+      enable_help_forum_tool_panel_integration:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
+
+      file_source_temp_dir:
+        type: str
+        required: false
+        desc: |
+          Directory to store temporary files for file sources. This defaults to new_file_path if not set.
+
+      file_source_webdav_use_temp_files:
+        type: bool
+        default: true
+        desc: |
+          Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+
+      file_source_listings_expiry_time:
+        type: int
+        default: 60
+        desc: |
+          Number of seconds before file source content listings are refreshed. Shorter times will result in more
+          queries while browsing a file sources. Longer times will result in fewer requests to file sources but
+          outdated contents might be displayed to the user. Currently only affects s3fs file sources.

@@ -6,7 +6,10 @@ from typing import (
 )
 
 import galaxy.model
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    listify,
+)
 from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
@@ -148,18 +151,15 @@ class VisualizationsConfigParser:
         # consider unifying the above into its own element and parsing method
 
         # load optional custom configuration specifiers
-        specs_section = xml_tree.find("specs")
-        if specs_section is not None:
+        if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
 
-        # load group specifiers
-        groups_section = xml_tree.find("groups")
-        if groups_section is not None:
-            returned["groups"] = ListParser(groups_section)
+        # load tracks specifiers (allow 'groups' section for backward compatibility)
+        if (tracks_section := xml_tree.find("tracks") or xml_tree.find("groups")) is not None:
+            returned["tracks"] = ListParser(tracks_section)
 
         # load settings specifiers
-        settings_section = xml_tree.find("settings")
-        if settings_section is not None:
+        if (settings_section := xml_tree.find("settings")) is not None:
             returned["settings"] = ListParser(settings_section)
 
         return returned
@@ -224,10 +224,9 @@ class DataSourceParser:
         # when no tests are given, default to isinstance( object, model_class )
         returned["tests"] = self.parse_tests(xml_tree.findall("test"))
 
-        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
+        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_class, tests
         returned["to_params"] = {}
-        to_params = self.parse_to_params(xml_tree.findall("to_param"))
-        if to_params:
+        if to_params := self.parse_to_params(xml_tree.findall("to_param")):
             returned["to_params"] = to_params
 
         return returned
@@ -286,8 +285,9 @@ class DataSourceParser:
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warning(
-                    "Skipping test. Needs both type attribute and text node to be parsed: "
-                    + f"{test_type}, {test_elem.text}"
+                    "Skipping test. Needs both type attribute and text node to be parsed: %s, %s",
+                    test_type,
+                    test_elem.text,
                 )
                 continue
             test_result = test_result.strip()
@@ -304,8 +304,16 @@ class DataSourceParser:
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
+            # allow_uri_if_protocol indicates that the visualization can work with deferred data_sources which source URI
+            # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
+            # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
+            # deferred data_sources.
+            allow_uri_if_protocol = []
+
             # test functions should be sent an object to test, and the parsed result expected from the test
             if test_type == "isinstance":
+                allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
+
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 def test_fn(o, result, getter=getter):
@@ -331,7 +339,15 @@ class DataSourceParser:
                 def test_fn(o, result, getter=getter):
                     return str(getter(o)) == result
 
-            tests.append({"type": test_type, "result": test_result, "result_type": test_result_type, "fn": test_fn})
+            tests.append(
+                {
+                    "type": test_type,
+                    "result": test_result,
+                    "result_type": test_result_type,
+                    "fn": test_fn,
+                    "allow_uri_if_protocol": allow_uri_if_protocol,
+                }
+            )
 
         return tests
 
@@ -463,16 +479,14 @@ class ParamParser:
         # NOTE: the interpretation of this list is deferred till parsing and based on param type
         #   e.g. it could be 'val in constrain_to', or 'constrain_to is min, max for number', etc.
         # TODO: currently unused
-        constrain_to = xml_tree.get("constrain_to")
-        if constrain_to:
+        if constrain_to := xml_tree.get("constrain_to"):
             returned["constrain_to"] = constrain_to.split(",")
 
         # is the param a comma-separated-value list?
         returned["csv"] = xml_tree.get("csv") == "true"
 
         # remap keys in the params/query string to the var names used in the template
-        var_name_in_template = xml_tree.get("var_name_in_template")
-        if var_name_in_template:
+        if var_name_in_template := xml_tree.get("var_name_in_template"):
             returned["var_name_in_template"] = var_name_in_template
 
         return returned

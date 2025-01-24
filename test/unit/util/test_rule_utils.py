@@ -25,6 +25,6 @@ def test_rules():
                     assert final_source == expected_final_source, msg
 
         elif "error" in test_case:
-            assert rule_set.has_errors, "rule [%s] does not contain errors" % test_case
+            assert rule_set.has_errors, f"rule [{test_case}] does not contain errors"
         else:
-            raise Exception("Problem with test case definition [%s]." % test_case)
+            raise Exception(f"Problem with test case definition [{test_case}].")

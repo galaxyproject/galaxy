@@ -55,7 +55,7 @@ class ToolBox:
             sectionorder = self.sectionorders[section]
 
         # Sortorder: add intelligent mix to the front
-        self.tools[("%05d-%s" % (sectionorder, section), label, order, section)].append(toolelement)
+        self.tools[(f"{sectionorder:05d}-{section}", label, order, section)].append(toolelement)
 
     def addElementsTo(self, rootelement):
         toolkeys = list(self.tools.keys())
@@ -77,7 +77,7 @@ class ToolBox:
                 currentlabel = ""
                 if section:
                     sectionnumber += 1
-                    attrib = {"name": section, "id": "section%d" % sectionnumber}
+                    attrib = {"name": section, "id": f"section{sectionnumber}"}
                     sectionelement = ET.Element("section", attrib)
                     rootelement.append(sectionelement)
                     currentelement = sectionelement
@@ -90,7 +90,7 @@ class ToolBox:
                 currentlabel = label
                 if label:
                     labelnumber += 1
-                    attrib = {"text": label, "id": "label%d" % labelnumber}
+                    attrib = {"text": label, "id": f"label{labelnumber}"}
                     labelelement = ET.Element("label", attrib)
                     currentelement.append(labelelement)
 
@@ -141,7 +141,7 @@ def scanfiles(filenamelist):
             newtoolelement = ET.Element("tool", attrib)
             toolboxpositionelements = toolelement.findall("toolboxposition")
             if not toolboxpositionelements:
-                print("DBG> %s has no toolboxposition" % fn)
+                print(f"DBG> {fn} has no toolboxposition")
             else:
                 for toolboxpositionelement in toolboxpositionelements:
                     toolbox.add(newtoolelement, toolboxpositionelement)

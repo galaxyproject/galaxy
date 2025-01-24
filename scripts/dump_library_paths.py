@@ -11,6 +11,7 @@ Or all in one:
 $ python dump_library_paths.py [options] --relative /srv/galaxy/datasets | rsync -arvPR \
     --files-from=- /srv/galaxy/datasets backuphost:/backup/galaxy/datasets
 """
+
 import logging
 import os
 import sys
@@ -137,11 +138,11 @@ def _get_library_dataset_paths(args, kwargs):
         filename = object_store.get_filename(dataset)
         files_dir = dataset.get_extra_files_path()
         if (args.exists and object_store.exists(dataset)) or not args.exists:
-            output.write("%s\n" % _path(filename, args))
+            output.write(f"{_path(filename, args)}\n")
         elif args.exists:
             log.warning("Missing %s", filename)
         if files_dir and os.path.exists(files_dir):
-            output.write("%s\n" % _path(files_dir, args))
+            output.write(f"{_path(files_dir, args)}\n")
         last_library = library
     output.close()
 

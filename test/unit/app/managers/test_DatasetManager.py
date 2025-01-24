@@ -1,5 +1,6 @@
 """
 """
+
 from unittest import mock
 
 import sqlalchemy
@@ -9,6 +10,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers.base import SkipAttribute
 from galaxy.managers.datasets import (
     DatasetManager,
@@ -28,6 +30,11 @@ class TestDatasetManager(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
+
+    def create_dataset_with_permissions(self, manage_roles=None, access_roles=None) -> model.Dataset:
+        dataset = self.dataset_manager.create(flush=False)
+        self.dataset_manager.permissions.set(dataset, manage_roles, access_roles)
+        return dataset
 
     def test_create(self):
         self.log("should be able to create a new Dataset")
@@ -123,7 +130,7 @@ class TestDatasetManager(BaseTestCase):
         )
         owner = self.user_manager.create(**user2_data)
         owner_private_role = self.user_manager.private_role(owner)
-        dataset = self.dataset_manager.create(manage_roles=[owner_private_role])
+        dataset = self.create_dataset_with_permissions(manage_roles=[owner_private_role])
 
         permissions = self.dataset_manager.permissions.get(dataset)
         assert isinstance(permissions, tuple)
@@ -155,7 +162,9 @@ class TestDatasetManager(BaseTestCase):
         self.log("should be able to create a new Dataset and give it private permissions")
         owner = self.user_manager.create(**user2_data)
         owner_private_role = self.user_manager.private_role(owner)
-        dataset = self.dataset_manager.create(manage_roles=[owner_private_role], access_roles=[owner_private_role])
+        dataset = self.create_dataset_with_permissions(
+            manage_roles=[owner_private_role], access_roles=[owner_private_role]
+        )
 
         permissions = self.dataset_manager.permissions.get(dataset)
         assert isinstance(permissions, tuple)
@@ -188,12 +197,7 @@ class TestDatasetManager(BaseTestCase):
         assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", mock_url_builder)
 class TestDatasetSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
@@ -271,7 +275,7 @@ class TestDatasetSerializer(BaseTestCase):
 
     def test_serializers(self):
         # self.user_manager.create( **user2_data )
-        dataset = self.dataset_manager.create()
+        dataset = self.dataset_manager.create(state=model.Dataset.states.NEW)
         all_keys = list(self.dataset_serializer.serializable_keyset)
         serialized = self.dataset_serializer.serialize(dataset, all_keys)
 

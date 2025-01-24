@@ -1,5 +1,5 @@
 <template>
-    <section v-if="hasSelection">
+    <section v-if="hasSelection && !isMultiViewItem">
         <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
@@ -12,10 +12,10 @@
             <b-dropdown-text>
                 <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
+            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
+            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
             <b-dropdown-item
@@ -24,7 +24,10 @@
                 data-description="undelete option">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
+            <b-dropdown-item
+                v-if="canDeleteSelection"
+                v-b-modal:delete-selected-content
+                data-description="delete option">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
             <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
@@ -33,9 +36,6 @@
             <b-dropdown-divider v-if="showBuildOptions" />
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                <span v-localize>Build Dataset Pair</span>
             </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
                 <span v-localize>Build List of Dataset Pairs</span>
@@ -91,6 +91,7 @@
             id="change-dbkey-of-selected-content"
             title="Change Database/Build?"
             title-tag="h2"
+            body-class="modal-with-selector"
             @ok="changeDbkeyOfSelected">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
             <DbKeyProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
@@ -98,8 +99,7 @@
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
                     :items="dbkeys"
-                    :current-item-id="selectedDbKey"
-                    class="mb-5 pb-5"
+                    :current-item="selectedDbKey"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
         </b-modal>
@@ -107,6 +107,7 @@
             id="change-datatype-of-selected-content"
             title="Change data type?"
             title-tag="h2"
+            body-class="modal-with-selector"
             :ok-disabled="selectedDatatype == null"
             @ok="changeDatatypeOfSelected">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
@@ -115,8 +116,7 @@
                     collection-name="Data Types"
                     :loading="loadingDatatypes"
                     :items="datatypes"
-                    :current-item-id="selectedDatatype"
-                    class="mb-5 pb-5"
+                    :current-item="selectedDatatype"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -138,11 +138,20 @@
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
         </b-modal>
+        <CollectionCreatorModal
+            v-if="collectionModalType"
+            :history-id="history.id"
+            :collection-type="collectionModalType"
+            :filter-text="filterText"
+            :selected-items="collectionSelection"
+            :show-modal.sync="collectionModalShow"
+            hide-modal-on-create
+            default-hide-source-items
+            @created-collection="createdCollection" />
     </section>
 </template>
 
 <script>
-import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { HistoryFilters } from "components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
@@ -155,15 +164,20 @@ import {
     undeleteSelectedContent,
     unhideSelectedContent,
 } from "components/History/model/crud";
-import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
+import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
+
+import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
+
+import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
 
 export default {
     components: {
+        CollectionCreatorModal,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
@@ -175,6 +189,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
+        isMultiViewItem: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
     },
     setup() {
@@ -183,23 +198,38 @@ export default {
     },
     data: function () {
         return {
-            selectedDbKey: "?",
-            selectedDatatype: "auto",
+            collectionModalShow: false,
+            collectionModalType: null,
+            collectionSelection: undefined,
+            selectedDbKey: { id: "?", text: "unspecified (?)" },
+            selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
         };
     },
     computed: {
         /** @returns {Boolean} */
-        showHidden() {
-            return HistoryFilters.checkFilter(this.filterText, "visible", false);
+        canUnhideSelection() {
+            return this.areAllSelectedHidden || (this.isAnyVisibilityAllowed && !this.areAllSelectedVisible);
+        },
+        /** @returns {Boolean} */
+        canHideSelection() {
+            return this.areAllSelectedVisible || (this.isAnyVisibilityAllowed && !this.areAllSelectedHidden);
         },
         /** @returns {Boolean} */
         showDeleted() {
-            return HistoryFilters.checkFilter(this.filterText, "deleted", true);
+            return !HistoryFilters.checkFilter(this.filterText, "deleted", false);
+        },
+        /** @returns {Boolean} */
+        canDeleteSelection() {
+            return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
+        },
+        /** @returns {Boolean} */
+        canUndeleteSelection() {
+            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
         },
         /** @returns {Boolean} */
         showBuildOptions() {
-            return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
+            return !this.isQuerySelection && this.areAllSelectedActive && !this.showDeleted;
         },
         /** @returns {Boolean} */
         showBuildOptionForAll() {
@@ -220,9 +250,6 @@ export default {
         noTagsSelected() {
             return this.selectedTags.length === 0;
         },
-        canUndeleteSelection() {
-            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
-        },
         areAllSelectedPurged() {
             for (const item of this.contentSelection.values()) {
                 if (Object.prototype.hasOwnProperty.call(item, "purged") && !item["purged"]) {
@@ -230,6 +257,44 @@ export default {
                 }
             }
             return true;
+        },
+        areAllSelectedVisible() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && !item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedHidden() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedActive() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedDeleted() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && !item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        isAnyVisibilityAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "visible", "any");
+        },
+        isAnyDeletedStateAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "deleted", "any");
         },
     },
     watch: {
@@ -257,12 +322,12 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         changeDbkeyOfSelected() {
-            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey });
-            this.selectedDbKey = "?";
+            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey.id });
+            this.selectedDbKey = { id: "?" };
         },
         changeDatatypeOfSelected() {
-            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype });
-            this.selectedDatatype = "auto";
+            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype.id });
+            this.selectedDatatype = { id: "auto", text: "Auto-detect" };
         },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
@@ -304,38 +369,33 @@ export default {
             this.$emit("operation-error", { errorMessage, result });
         },
         onSelectedDbKey(dbkey) {
-            this.selectedDbKey = dbkey.id;
+            this.selectedDbKey = dbkey;
         },
         onSelectedDatatype(datatype) {
-            this.selectedDatatype = datatype.id;
+            this.selectedDatatype = datatype;
         },
 
         // collection creation, fires up a modal
-        async buildDatasetList() {
-            await this.buildNewCollection("list");
+        buildDatasetList() {
+            this.collectionModalType = "list";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.collectionModalShow = true;
         },
-        async buildDatasetListAll() {
-            let allContents = [];
-            const filters = HistoryFilters.getQueryDict(this.filterText);
-
-            allContents = await getHistoryContent(this.history.id, filters, "dataset");
-
-            this.buildNewCollection("list", allContents);
+        buildDatasetListAll() {
+            this.collectionModalType = "list";
+            this.collectionSelection = undefined;
+            this.collectionModalShow = true;
         },
-        async buildDatasetPair() {
-            await this.buildNewCollection("paired");
+        buildListOfPairs() {
+            this.collectionModalType = "list:paired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.collectionModalShow = true;
         },
-        async buildListOfPairs() {
-            await this.buildNewCollection("list:paired");
+        createdCollection(collection) {
+            this.$emit("reset-selection");
         },
         async buildCollectionFromRules() {
-            await this.buildNewCollection("rules");
-        },
-        async buildNewCollection(collectionType, contents) {
-            if (contents === undefined) {
-                contents = this.contentSelection;
-            }
-            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id);
+            const modalResult = await buildRuleCollectionModal(this.contentSelection, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested
@@ -347,3 +407,10 @@ export default {
     },
 };
 </script>
+
+<style>
+.modal-with-selector {
+    overflow: initial;
+    min-height: 300px; /* To make room for the selector */
+}
+</style>

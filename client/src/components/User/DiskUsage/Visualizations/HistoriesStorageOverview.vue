@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
-import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, purgeHistoryById, undeleteHistoryById } from "./service";
+import { byteFormattingForChart, useDataLoading } from "./util";
 
 import BarChart from "./Charts/BarChart.vue";
+import OverviewPage from "./OverviewPage.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import Heading from "@/components/Common/Heading.vue";
+import WarnDeletedHistories from "./WarnDeletedHistories.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const historyStore = useHistoryStore();
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();
 const { confirm } = useConfirmDialog();
@@ -23,17 +26,16 @@ const { confirm } = useConfirmDialog();
 const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
 const topTenHistoriesBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsArchivedVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
-const isLoading = ref(true);
 const numberOfHistoriesToDisplayOptions = [10, 20, 50];
 const numberOfHistoriesToDisplay = ref(numberOfHistoriesToDisplayOptions[0]);
 
-onMounted(async () => {
-    isLoading.value = true;
+const { isLoading, loadDataOnMount } = useDataLoading();
+
+loadDataOnMount(async () => {
     const allHistoriesSizeSummary = await fetchAllHistoriesSizeSummary();
     allHistoriesSizeSummary.forEach((history) => historiesSizeSummaryMap.set(history.id, history));
 
     buildGraphsData();
-    isLoading.value = false;
 });
 
 function buildGraphsData() {
@@ -98,6 +100,11 @@ function isArchivedDataPoint(dataPoint: DataValuePoint): boolean {
     return false;
 }
 
+async function onSetCurrentHistory(historyId: string) {
+    await historyStore.setCurrentHistory(historyId);
+    router.push({ path: "/" });
+}
+
 function onViewHistory(historyId: string) {
     router.push({ name: "HistoryOverview", params: { historyId } });
 }
@@ -144,19 +151,11 @@ async function onPermanentlyDeleteHistory(historyId: string) {
 }
 </script>
 <template>
-    <div class="mx-3">
-        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <Heading h1 bold class="my-3"> Histories Storage Overview </Heading>
+    <OverviewPage title="Histories Storage Overview">
         <p class="text-justify">
             Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
         </p>
-        <p class="text-justify">
-            Note: these graphs include <b>deleted histories</b>. Remember that, even if you delete histories, they still
-            take up storage space. However, you can free up the storage space by permanently deleting them from the
-            <i>Discarded Items</i> section of the
-            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
-            individually in the graph and clicking the <b>Permanently Delete</b> button.
-        </p>
+        <WarnDeletedHistories />
 
         <div v-if="isLoading" class="text-center">
             <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
@@ -171,8 +170,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 "
                 :data="topTenHistoriesBySizeData"
                 :enable-selection="true"
-                :label-formatter="bytesLabelFormatter"
-                :value-formatter="bytesValueFormatter">
+                v-bind="byteFormattingForChart">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
                     <b-form-select
@@ -187,6 +185,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 </template>
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
+                        v-if="data"
                         :data="data"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         :is-archived="isArchivedDataPoint(data)" />
@@ -197,6 +196,8 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                         item-type="history"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         :is-archived="isArchivedDataPoint(data)"
+                        :can-edit="!isArchivedDataPoint(data)"
+                        @set-current-history="onSetCurrentHistory"
                         @view-item="onViewHistory"
                         @undelete-item="onUndeleteHistory"
                         @permanently-delete-item="onPermanentlyDeleteHistory" />
@@ -211,12 +212,14 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                     )
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"
-                :label-formatter="bytesLabelFormatter"
-                :value-formatter="bytesValueFormatter">
+                v-bind="byteFormattingForChart">
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
             </BarChart>
         </div>
-    </div>
+    </OverviewPage>
 </template>

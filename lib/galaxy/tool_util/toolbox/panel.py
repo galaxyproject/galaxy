@@ -6,7 +6,7 @@ from typing import (
     Tuple,
 )
 
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
 
@@ -44,7 +44,7 @@ class HasPanelItems:
             yield (panel_key, panel_type, panel_value)
 
 
-class ToolSection(Dictifiable, HasPanelItems):
+class ToolSection(UsesDictVisibleKeys, HasPanelItems):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -55,7 +55,7 @@ class ToolSection(Dictifiable, HasPanelItems):
     def __init__(self, item=None):
         """Build a ToolSection from an ElementTree element or a dictionary."""
         if item is None:
-            item = dict()
+            item = {}
         self.name = item.get("name") or ""
         self.id = item.get("id") or ""
         self.version = item.get("version") or ""
@@ -63,28 +63,67 @@ class ToolSection(Dictifiable, HasPanelItems):
         self.links = item.get("links") or None
         self.elems = ToolPanelElements()
 
-    def copy(self):
+    def copy(self, merge_tools=False):
         copy = ToolSection()
         copy.name = self.name
         copy.id = self.id
         copy.version = self.version
         copy.description = self.description
         copy.links = self.links
-        copy.elems.update(self.elems)
+
+        for key, panel_type, value in self.panel_items_iter():
+            if panel_type == panel_item_types.TOOL and merge_tools:
+                tool = value
+                tool_lineage = tool.lineage
+
+                tool_copied = False
+                if tool_lineage is not None:
+                    version_ids = tool_lineage.get_version_ids(reverse=True)
+
+                    for version_id in version_ids:
+                        if copy.elems.has_tool_with_id(version_id):
+                            tool_copied = True
+                            break
+
+                        if self.elems.has_tool_with_id(version_id):
+                            copy.elems.append_tool(self.elems.get_tool_with_id(version_id))
+                            tool_copied = True
+                            break
+
+                if not tool_copied:
+                    copy.elems[key] = value
+            else:
+                copy.elems[key] = value
+
         return copy
 
-    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
-        """Return a dict that includes section's attributes."""
+    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None, only_ids=False):
+        """Return a dict that includes section's attributes.
 
-        section_dict = super().to_dict()
+        if `only_ids` is `True`, we store only the ids of the section's tools in `section.tools`
+        (also full `ToolSectionLabel` objects in `section.tools` if any are present)
+
+        if `only_ids` is `False`, we store the section's full `Tool` (and any other) objects in
+        `section.elems`
+        """
+
+        section_dict = super()._dictify_view_keys()
         section_elts = []
         kwargs = dict(trans=trans, link_details=link_details, tool_help=tool_help)
         for elt in self.elems.values():
             if hasattr(elt, "tool_type") and toolbox:
-                section_elts.append(toolbox.get_tool_to_dict(trans, elt, tool_help=tool_help))
-            else:
+                if only_ids:
+                    section_elts.append(elt.id)
+                else:
+                    section_elts.append(toolbox.get_tool_to_dict(trans, elt, tool_help=tool_help))
+            elif not only_ids or (only_ids and elt.text):
+                # if !only_ids or (only_ids & section has a ToolSectionLabel within it)
                 section_elts.append(elt.to_dict(**kwargs))
-        section_dict["elems"] = section_elts
+
+        if only_ids:
+            section_dict["tools"] = section_elts
+        else:
+            section_dict["elems"] = section_elts
 
         return section_dict
 
@@ -92,7 +131,7 @@ class ToolSection(Dictifiable, HasPanelItems):
         return self.elems
 
 
-class ToolSectionLabel(Dictifiable):
+class ToolSectionLabel(UsesDictVisibleKeys):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
@@ -112,7 +151,7 @@ class ToolSectionLabel(Dictifiable):
         self.links = item.get("links", None)
 
     def to_dict(self, **kwds):
-        return super().to_dict()
+        return super()._dictify_view_keys()
 
 
 class ToolPanelElements(odict, HasPanelItems):

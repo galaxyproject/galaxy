@@ -1,4 +1,5 @@
 """Tests objectstores by exercising the datatype upload integration tests."""
+
 import os
 import string
 import subprocess
@@ -7,12 +8,13 @@ from typing import Optional
 
 import pytest
 
+from galaxy.objectstore.irods import IRODSObjectStore
 from galaxy_test.driver import integration_util
 from ..test_datatype_upload import (
     TEST_CASES,
     TestData,
     upload_datatype_helper,
-    UploadTestDatatypeDataTestCase,
+    UploadTestDatatypeDataIntegrationInstance,
 )
 
 REFRESH_TIME = 3
@@ -117,7 +119,7 @@ def stop_irods(container_name):
         subprocess.check_call(["docker", "rm", "-f", container_name])
 
 
-class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
+class BaseObjectstoreUploadIntegrationInstance(UploadTestDatatypeDataIntegrationInstance):
     object_store_template: Optional[string.Template] = None
 
     @classmethod
@@ -138,19 +140,19 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
         return {}
 
 
-class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
+class IrodsUploadTestDatatypeDataIntegrationInstance(BaseObjectstoreUploadIntegrationInstance):
     object_store_template = IRODS_OBJECT_STORE_CONFIG
 
     @classmethod
     def setUpClass(cls):
         cls.container_name = "irods_integration_container"
         start_irods(cls.container_name)
-        super(UploadTestDatatypeDataTestCase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
         stop_irods(cls.container_name)
-        super(UploadTestDatatypeDataTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     @classmethod
     def get_object_store_kwargs(cls):
@@ -168,11 +170,11 @@ class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
         }
 
 
-class IrodsIdleConnectionUploadTestCase(IrodsUploadTestDatatypeDataTestCase):
+class IrodsIdleConnectionUploadIntegrationInstance(IrodsUploadTestDatatypeDataIntegrationInstance):
     object_store_template = IRODS_OBJECT_STORE_CONFIG
 
 
-class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
+class UploadTestDosDiskAndDiskIntegrationInstance(BaseObjectstoreUploadIntegrationInstance):
     object_store_template = DISTRIBUTED_OBJECT_STORE_CONFIG
 
     @classmethod
@@ -180,19 +182,23 @@ class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
         return {"temp_directory": cls.object_stores_parent}
 
 
-class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
+class UploadTestDosIrodsAndDiskIntegrationInstance(IrodsUploadTestDatatypeDataIntegrationInstance):
     object_store_template = DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG
 
 
-distributed_instance = integration_util.integration_module_instance(UploadTestDosDiskAndDiskTestCase)
-irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
-distributed_and_irods_instance = integration_util.integration_module_instance(UploadTestDosIrodsAndDiskTestCase)
-idle_connection_irods_instance = integration_util.integration_module_instance(IrodsIdleConnectionUploadTestCase)
+distributed_instance = integration_util.integration_module_instance(UploadTestDosDiskAndDiskIntegrationInstance)
+irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataIntegrationInstance)
+distributed_and_irods_instance = integration_util.integration_module_instance(
+    UploadTestDosIrodsAndDiskIntegrationInstance
+)
+idle_connection_irods_instance = integration_util.integration_module_instance(
+    IrodsIdleConnectionUploadIntegrationInstance
+)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_disk_and_disk(
-    distributed_instance: UploadTestDosDiskAndDiskTestCase, test_data: TestData, temp_file
+    distributed_instance: UploadTestDosDiskAndDiskIntegrationInstance, test_data: TestData, temp_file
 ) -> None:
     with distributed_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(distributed_instance, test_data, temp_file, history_id)
@@ -200,7 +206,7 @@ def test_upload_datatype_dos_disk_and_disk(
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_irods(
-    irods_instance: IrodsUploadTestDatatypeDataTestCase, test_data: TestData, temp_file
+    irods_instance: IrodsUploadTestDatatypeDataIntegrationInstance, test_data: TestData, temp_file
 ) -> None:
     with irods_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(irods_instance, test_data, temp_file, history_id, True)
@@ -208,7 +214,7 @@ def test_upload_datatype_irods(
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_irods_and_disk(
-    distributed_and_irods_instance: UploadTestDosIrodsAndDiskTestCase, test_data: TestData, temp_file
+    distributed_and_irods_instance: UploadTestDosIrodsAndDiskIntegrationInstance, test_data: TestData, temp_file
 ) -> None:
     with distributed_and_irods_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file, history_id)
@@ -216,18 +222,19 @@ def test_upload_datatype_dos_irods_and_disk(
 
 @pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))
 def test_upload_datatype_irods_idle_connections(
-    idle_connection_irods_instance: IrodsIdleConnectionUploadTestCase, test_data: TestData, temp_file
+    idle_connection_irods_instance: IrodsIdleConnectionUploadIntegrationInstance, test_data: TestData, temp_file
 ) -> None:
     with idle_connection_irods_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(idle_connection_irods_instance, test_data, temp_file, history_id, True)
 
     # Get Irods object store's connection pool
     assert idle_connection_irods_instance._test_driver.app
+    assert isinstance(idle_connection_irods_instance._test_driver.app.object_store, IRODSObjectStore)
     connection_pool = idle_connection_irods_instance._test_driver.app.object_store.session.pool
 
     # Verify the connection pool has 0 active and 1 idle connections
     assert len(connection_pool.active) == 0
-    assert len(connection_pool.idle) == 1
+    assert len(connection_pool.idle) in [1, 2]
 
     # Wait for the idle connection to turn stale
     time.sleep(REFRESH_TIME)

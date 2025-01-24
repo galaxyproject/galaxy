@@ -3,15 +3,17 @@ from typing import Optional
 
 from sqlalchemy import (
     false,
+    select,
     true,
 )
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
+from galaxy.model import Quota
+from galaxy.model.db.user import get_user_by_email
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -21,7 +23,10 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -39,41 +44,38 @@ class QuotasService(ServiceBase):
     def index(self, trans: ProvidesUserContext, deleted: bool = False) -> QuotaSummaryList:
         """Displays a list of quotas."""
         rval = []
-        query = trans.sa_session.query(model.Quota)
         if deleted:
             route = "deleted_quota"
-            query = query.filter(model.Quota.deleted == true())
+            quotas = get_quotas(trans.sa_session, deleted=True)
         else:
             route = "quota"
-            query = query.filter(model.Quota.deleted == false())
-        for quota in query:
-            item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-            encoded_id = DecodedDatabaseIdField.encode(quota.id)
+            quotas = get_quotas(trans.sa_session, deleted=False)
+        for quota in quotas:
+            item = quota.to_dict()
+            encoded_id = Security.security.encode_id(quota.id)
             item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
-        return QuotaSummaryList.construct(__root__=rval)
+        return QuotaSummaryList(root=rval)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
         """Displays information about a quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=deleted)
-        rval = quota.to_dict(
-            view="element", value_mapper={"id": DecodedDatabaseIdField.encode, "total_disk_usage": float}
-        )
-        return QuotaDetails.construct(**rval)
+        rval = quota.to_dict(view="element", value_mapper={"total_disk_usage": float})
+        return QuotaDetails(**rval)
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
-        item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = url_for("quota", id=DecodedDatabaseIdField.encode(quota.id))
+        item = quota.to_dict()
+        item["url"] = url_for("quota", id=Security.security.encode_id(quota.id))
         item["message"] = message
-        return CreateQuotaResult.construct(**item)
+        return CreateQuotaResult(**item)
 
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
 
@@ -94,7 +96,8 @@ class QuotasService(ServiceBase):
         messages = []
         for method in methods:
             message = method(quota, params)
-            messages.append(message)
+            if message:
+                messages.append(message)
         return "; ".join(messages)
 
     def delete(
@@ -109,6 +112,11 @@ class QuotasService(ServiceBase):
             message += self.quota_manager.purge_quota(quota)
         return message
 
+    def purge(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
+        """Purges a previously deleted quota."""
+        quota = self.quota_manager.get_quota(trans, id, deleted=True)
+        return self.quota_manager.purge_quota(quota)
+
     def undelete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
         """Restores a previously deleted quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=True)
@@ -119,25 +127,29 @@ class QuotasService(ServiceBase):
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """
 
-        def get_id(item, model_class, column):
+        def get_user_id(item):
             try:
                 return trans.security.decode_id(item)
             except Exception:
-                pass  # maybe an email/group name
-            # this will raise if the item is invalid
-            return trans.sa_session.query(model_class).filter(column == item).first().id
+                return get_user_by_email(trans.sa_session, item).id
+
+        def get_group_id(item):
+            try:
+                return trans.security.decode_id(item)
+            except Exception:
+                return get_group_by_name(trans.sa_session, item).id
 
         new_in_users = []
         new_in_groups = []
         invalid = []
         for item in util.listify(payload.get("in_users", [])):
             try:
-                new_in_users.append(get_id(item, model.User, model.User.email))
+                new_in_users.append(get_user_id(item))
             except Exception:
                 invalid.append(item)
         for item in util.listify(payload.get("in_groups", [])):
             try:
-                new_in_groups.append(get_id(item, model.Group, model.Group.name))
+                new_in_groups.append(get_group_id(item))
             except Exception:
                 invalid.append(item)
         if invalid:
@@ -148,3 +160,9 @@ class QuotasService(ServiceBase):
             raise Exception(msg)
         payload["in_users"] = list(map(str, new_in_users))
         payload["in_groups"] = list(map(str, new_in_groups))
+
+
+def get_quotas(session: galaxy_scoped_session, deleted: bool = False):
+    is_deleted = true() if deleted else false()
+    stmt = select(Quota).where(Quota.deleted == is_deleted)
+    return session.scalars(stmt)

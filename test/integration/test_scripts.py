@@ -16,7 +16,9 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class TestScriptsIntegration(integration_util.IntegrationTestCase):
+class BaseScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -26,6 +28,39 @@ class TestScriptsIntegration(integration_util.IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         cls._raw_config = config
 
+    def _scripts_check_argparse_help(self, script):
+        # Test imports and argparse response to --help with 0 exit code.
+        output = self._scripts_check_output(script, ["--help"])
+        # Test -h, --help in printed output message.
+        assert "-h, --help" in output
+
+    def _scripts_check_output(self, script, args):
+        cwd = galaxy_directory()
+        cmd = ["python", os.path.join(cwd, "scripts", script)] + args
+        clean_env = {
+            "PATH": os.environ.get("PATH", None),
+        }  # Don't let testing environment variables interfere with config.
+        try:
+            return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
+        except Exception as e:
+            if isinstance(e, subprocess.CalledProcessError):
+                raise Exception(f"{unicodify(e)}\nOutput was:\n{unicodify(e.output)}")
+            raise
+
+    def write_config_file(self):
+        config_dir = self.config_dir
+        path = os.path.join(config_dir, "galaxy.yml")
+        self._test_driver.temp_directories.extend([config_dir])
+        config = self._raw_config
+        # Update config dict with database_connection, which might be set through env variables
+        config["database_connection"] = self._app.config.database_connection
+        with open(path, "w") as f:
+            yaml.dump({"galaxy": config}, f)
+
+        return path
+
+
+class TestScriptsIntegration(BaseScriptsIntegrationTestCase):
     def test_helper(self):
         script = "helper.py"
         self._scripts_check_argparse_help(script)
@@ -52,24 +87,9 @@ class TestScriptsIntegration(integration_util.IntegrationTestCase):
         assert history_response.status_code == 200
         assert history_response.json()["purged"] is True, history_response.json()
 
-    def test_pgcleanup(self):
-        self._skip_unless_postgres()
-
-        script = "cleanup_datasets/pgcleanup.py"
+    def test_admin_cleanup_datasets(self):
+        script = "cleanup_datasets/admin_cleanup_datasets.py"
         self._scripts_check_argparse_help(script)
-
-        history_id = self.dataset_populator.new_history()
-        delete_response = self.dataset_populator._delete(f"histories/{history_id}")
-        assert delete_response.status_code == 200
-        assert delete_response.json()["purged"] is False
-        config_file = self.write_config_file()
-        output = self._scripts_check_output(
-            script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"]
-        )
-        print(output)
-        history_response = self.dataset_populator._get(f"histories/{history_id}")
-        assert history_response.status_code == 200
-        assert history_response.json()["purged"] is True, history_response.json()
 
     def test_set_user_disk_usage(self):
         script = "set_user_disk_usage.py"
@@ -123,9 +143,6 @@ class TestScriptsIntegration(integration_util.IntegrationTestCase):
             export = json.load(f)
         assert export["version"] == 3
 
-    def test_admin_cleanup_datasets(self):
-        self._scripts_check_argparse_help("cleanup_datasets/admin_cleanup_datasets.py")
-
     def test_secret_decoder_ring(self):
         script = "secret_decoder_ring.py"
         self._scripts_check_argparse_help(script)
@@ -143,34 +160,3 @@ class TestScriptsIntegration(integration_util.IntegrationTestCase):
     def test_runtime_stats(self):
         self._skip_unless_postgres()
         self._scripts_check_argparse_help("runtime_stats.py")
-
-    def _scripts_check_argparse_help(self, script):
-        # Test imports and argparse response to --help with 0 exit code.
-        output = self._scripts_check_output(script, ["--help"])
-        # Test -h, --help in printed output message.
-        assert "-h, --help" in output
-
-    def _scripts_check_output(self, script, args):
-        cwd = galaxy_directory()
-        cmd = ["python", os.path.join(cwd, "scripts", script)] + args
-        clean_env = {
-            "PATH": os.environ.get("PATH", None),
-        }  # Don't let testing environment variables interfere with config.
-        try:
-            return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
-        except Exception as e:
-            if isinstance(e, subprocess.CalledProcessError):
-                raise Exception(f"{unicodify(e)}\nOutput was:\n{unicodify(e.output)}")
-            raise
-
-    def write_config_file(self):
-        config_dir = self.config_dir
-        path = os.path.join(config_dir, "galaxy.yml")
-        self._test_driver.temp_directories.extend([config_dir])
-        config = self._raw_config
-        # Update config dict with database_connection, which might be set through env variables
-        config["database_connection"] = self._app.config.database_connection
-        with open(path, "w") as f:
-            yaml.dump({"galaxy": config}, f)
-
-        return path

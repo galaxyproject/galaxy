@@ -15,8 +15,9 @@ from typing import (
     Optional,
 )
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 try:
     from jinja2 import Template
@@ -130,7 +131,10 @@ def find_anaconda_versions(name, anaconda_channel="bioconda"):
     """
     Find a list of available anaconda versions for a given container name
     """
-    r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files", timeout=MULLED_SOCKET_TIMEOUT)
+    r = requests.get(
+        f"https://anaconda.org/{anaconda_channel}/{name}/files",
+        timeout=MULLED_SOCKET_TIMEOUT,
+    )
     r.raise_for_status()
     urls = []
     for line in r.text.splitlines():
@@ -147,7 +151,8 @@ def open_recipe_file(file, recipes_path=None, github_repo="bioconda/bioconda-rec
         return open(f"{recipes_path}/{file}").read()
     else:  # if no clone of the repo is available locally, download from GitHub
         r = requests.get(
-            f"https://raw.githubusercontent.com/{github_repo}/master/{file}", timeout=MULLED_SOCKET_TIMEOUT
+            f"https://raw.githubusercontent.com/{github_repo}/master/{file}",
+            timeout=MULLED_SOCKET_TIMEOUT,
         )
         if r.status_code == 404:
             raise OSError
@@ -163,7 +168,10 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
         return [n.replace(f"{recipes_path}/", "") for n in glob(f"{recipes_path}/{filepath}/*/{filename}")]
     # else use the GitHub API:
     versions = []
-    r = requests.get(f"https://api.github.com/repos/{github_repo}/contents/{filepath}", timeout=MULLED_SOCKET_TIMEOUT)
+    r = requests.get(
+        f"https://api.github.com/repos/{github_repo}/contents/{filepath}",
+        timeout=MULLED_SOCKET_TIMEOUT,
+    )
     check_github_api_response_rate_limit(r)
     r.raise_for_status()
     for subfile in json.loads(r.text):

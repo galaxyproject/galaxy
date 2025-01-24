@@ -39,10 +39,14 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional v-if="isSubworkflow" :step="step" v-on="$listeners" />
+            <FormConditional
+                v-if="isSubworkflow"
+                :step="step"
+                @onUpdateStep="(id, step) => emit('onUpdateStep', id, step)" />
             <FormDisplay
                 v-if="configForm?.inputs"
                 :id="formDisplayId"
+                :key="formKey"
                 :inputs="configForm.inputs"
                 @onChange="onChange" />
             <div v-if="isSubworkflow">
@@ -58,11 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRef } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, toRef, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import type { Step } from "@/stores/workflowStepStore";
 
 import { useStepProps } from "../composables/useStepProps";
@@ -78,15 +84,19 @@ const props = defineProps<{
     step: Step;
     datatypes: DatatypesMapperModel["datatypes"];
 }>();
-const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
+const emit = defineEmits([
+    "onAnnotation",
+    "onLabel",
+    "onAttemptRefactor",
+    "onEditSubworkflow",
+    "onSetData",
+    "onUpdateStep",
+]);
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
-    if (label.value) {
-        return label.value;
-    }
     if (isSubworkflow.value) {
         return name.value;
     } else {
@@ -109,12 +119,26 @@ function onEditSubworkflow() {
 function onUpgradeSubworkflow() {
     emit("onAttemptRefactor", [{ action_type: "upgrade_subworkflow", step: { order_index: stepId.value } }]);
 }
+
+// keeps the component from emitting the onCreate change event
+const initialChange = ref(true);
+
 function onChange(values: any) {
-    emit("onSetData", stepId.value, {
-        id: stepId.value,
-        type: type.value,
-        content_id: contentId!.value,
-        inputs: values,
-    });
+    if (!initialChange.value) {
+        emit("onSetData", stepId.value, {
+            id: stepId.value,
+            type: type.value,
+            content_id: contentId!.value,
+            inputs: values,
+        });
+    }
+
+    initialChange.value = false;
 }
+
+const { formKey } = storeToRefs(useRefreshFromStore());
+watch(
+    () => formKey.value,
+    () => (initialChange.value = true)
+);
 </script>

@@ -1,0 +1,38 @@
+type: distributed
+backends:
+- type: azure_blob
+  id: azure1
+  store_by: uuid
+  name: Azure Store 1
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${GALAXY_TEST_AZURE_ACCOUNT_NAME}
+    account_key: ${GALAXY_TEST_AZURE_ACCOUNT_KEY}
+
+  container:
+    name: ${GALAXY_TEST_AZURE_CONTAINER_NAME}
+
+  extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure_1
+  - type: temp
+    path: database/tmp_azure_1
+- type: azure_blob
+  id: azure2
+  store_by: uuid
+  name: Azure Store 2
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${GALAXY_TEST_AZURE_ACCOUNT_NAME}
+    account_key: ${GALAXY_TEST_AZURE_ACCOUNT_KEY}
+
+  container:
+    name: ${GALAXY_TEST_AZURE_CONTAINER_NAME}
+
+  extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure_2
+  - type: temp
+    path: database/tmp_azure_2

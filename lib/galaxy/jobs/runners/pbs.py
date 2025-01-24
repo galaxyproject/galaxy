@@ -13,7 +13,7 @@ except ImportError as exc:
     PBS_IMPORT_MESSAGE = (
         "The Python pbs-python package is required to use "
         "this feature, please install it or correct the "
-        "following error:\nImportError %s" % str(exc)
+        f"following error:\nImportError {exc}"
     )
 
 from galaxy import (
@@ -122,7 +122,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         if not url:
             return
 
-        # Determine the the PBS server
+        # Determine the PBS server
         url_split = url.split("/")
         server = url_split[2]
         if server == "":
@@ -132,8 +132,7 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Determine the queue, set the PBS destination (not the same thing as a Galaxy job destination)
         pbs_destination = f"@{server}"
-        pbs_queue = url_split[3] or None
-        if pbs_queue is not None:
+        if (pbs_queue := url_split[3] or None) is not None:
             pbs_destination = f"{pbs_queue}{pbs_destination}"
 
         params = dict(destination=pbs_destination)
@@ -318,7 +317,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                 pbs.pbs_disconnect(c)
                 break
             errno, text = pbs.error()
-            log.warning("(%s) pbs_submit failed (try %d/5), PBS error %d: %s" % (galaxy_job_id, tries, errno, text))
+            log.warning("(%s) pbs_submit failed (try %d/5), PBS error %d: %s", galaxy_job_id, tries, errno, text)
             time.sleep(2)
         else:
             log.error(f"({galaxy_job_id}) All attempts to submit job failed")
@@ -387,7 +386,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     else:
                         # Unhandled error, continue to monitor
                         log.info(
-                            "(%s/%s) PBS state check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text)
+                            "(%s/%s) PBS state check resulted in error (%d): %s", galaxy_job_id, job_id, errno, text
                         )
                         new_watched.append(pbs_job_state)
                 continue
@@ -515,7 +514,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         try:
             pbs_server_name = self.__get_pbs_server(job.destination_params)
             if pbs_server_name is None:
-                log.debug("(%s) Job queued but no destination stored in job params, cannot delete" % job_tag)
+                log.debug("(%s) Job queued but no destination stored in job params, cannot delete", job_tag)
                 return
             c = pbs.pbs_connect(util.smart_str(pbs_server_name))
             if c <= 0:

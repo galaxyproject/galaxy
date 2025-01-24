@@ -39,8 +39,7 @@ class AnnotatableManagerMixin:
     annotation_assoc: type
 
     @abc.abstractmethod
-    def session(self) -> scoped_session:
-        ...
+    def session(self) -> scoped_session: ...
 
     def annotation(self, item) -> Optional[str]:
         """

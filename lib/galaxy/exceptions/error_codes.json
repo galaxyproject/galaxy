@@ -95,6 +95,11 @@
         "message": "Only real users can make this request."
     },
     {
+        "name": "TOOL_INPUTS_NOT_OK",
+        "code": 400017,
+        "message": "Tool inputs not in required OK state."
+    },
+    {
         "name": "USER_AUTHENTICATION_FAILED",
         "code": 401001,
         "message": "Authentication failed, invalid credentials supplied."
@@ -140,6 +145,16 @@
         "message": "Action requires account activation."
     },
     {
+        "name": "ITEM_IS_CLAIMED",
+        "code": 403008,
+        "message": "This item has already been claimed and cannot be re-claimed."
+    },
+    {
+        "name": "USER_REQUIRED",
+        "code": 403008,
+        "message": "Action requires user authentication."
+    },
+    {
         "name": "USER_OBJECT_NOT_FOUND",
         "code": 404001,
         "message": "No such object found."
@@ -148,6 +163,11 @@
         "name": "CONFLICT",
         "code": 409001,
         "message": "Database conflict prevented fulfilling the request."
+    },
+    {
+        "name": "MUST_CLAIM",
+        "code": 409010,
+        "message": "Private request must be claimed before use"
     },
     {
         "name": "DEPRECATED_API_CALL",
@@ -183,6 +203,11 @@
         "name": "REFERENCE_DATA_ERROR",
         "code": 500006,
         "message": "Reference data required for program execution failed to load."
+    },
+    {
+        "name": "INCONSISTENT_APPLICATION_STATE",
+        "code": 500007,
+        "message": "Inconsistent application state (likely not dbms related) prevented fulfilling the request."
     },
     {
         "name": "NOT_IMPLEMENTED",

@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_repository_name = "column_maker_1087"
 column_repository_description = "Add column"
@@ -18,9 +16,10 @@ category_description = "Test circular dependency features"
 class TestRepositoryDependencies(ShedTwillTestCase):
     """Test installing a repository, then updating it to include repository dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -37,16 +36,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_create_and_populate_convert_repository(self):
@@ -63,21 +56,14 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="convert_chars/convert_chars.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "convert_chars/convert_chars.tar",
                 commit_message="Uploaded convert_chars tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0015_install_and_uninstall_column_repository(self):
         """Install and uninstall the column_maker repository."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             column_repository_name,
             common.test_user_1_name,
@@ -86,10 +72,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             new_tool_panel_section_label="column_maker",
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_column_repository)
+        self._uninstall_repository(installed_column_repository)
 
     def test_0020_upload_dependency_xml(self):
         """Upload a repository_dependencies.xml file to column_maker that specifies convert_chars."""
@@ -115,7 +101,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0030_reinstall_column_repository(self):
         """Reinstall column_maker and verify it installs repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         strings_not_displayed = ["column_maker_1087"]
         self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self._install_repository(

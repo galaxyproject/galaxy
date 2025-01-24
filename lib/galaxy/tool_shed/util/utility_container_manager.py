@@ -58,9 +58,11 @@ class Folder:
 
     def remove_repository_dependency(self, repository_dependency):
         listified_repository_dependency = repository_dependency.listify
-        for contained_repository_dependency in self.repository_dependencies:
-            if contained_repository_dependency.listify == listified_repository_dependency:
-                self.repository_dependencies.remove(contained_repository_dependency)
+        self.repository_dependencies = [
+            contained_repository_dependency
+            for contained_repository_dependency in self.repository_dependencies
+            if contained_repository_dependency.listify != listified_repository_dependency
+        ]
 
     def to_dict(self):
         folders = []
@@ -861,7 +863,7 @@ class UtilityContainerManager:
         dependency has its own repository dependency).  This method will remove all repository
         dependencies from folder that are also sub-folders of folder.
         """
-        repository_dependencies = [rd for rd in folder.repository_dependencies]
+        repository_dependencies = list(folder.repository_dependencies)
         for repository_dependency in repository_dependencies:
             self.prune_folder(folder, repository_dependency)
         for sub_folder in folder.folders:

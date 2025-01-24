@@ -20,7 +20,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.check_current_data_value(dataValue)
         dataNew = "hg17"
         self.change_dbkey_value_and_click_submit(dataValue, dataNew)
-        self.history_panel_wait_for_hid_ok(4)
+        self.history_panel_wait_for_hid_ok(5)
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
@@ -42,7 +42,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.change_datatype_value_and_click_submit(dataValue, dataNew)
         self.check_current_data_value(dataNew)
         self.wait_for_history()
-        self.history_panel_expand_collection(2)
+        self.history_panel_expand_collection(3)
         self.history_panel_ensure_showing_item_details(1)
         item = self.history_panel_item_component(hid=1)
         item.datatype.wait_for_visible()
@@ -56,7 +56,7 @@ class TestCollectionEdit(SeleniumTestCase):
 
         self.collection_builder_set_name("my cool list")
         self.collection_builder_create()
-        self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
 
     def open_collection_edit_view(self):
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()

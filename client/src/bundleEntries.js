@@ -11,7 +11,6 @@
 import $ from "jquery"; // eslint-disable-line no-unused-vars
 import Client from "mvc/visualization/chart/chart-client";
 import _ from "underscore"; // eslint-disable-line no-unused-vars
-import Circster from "viz/circster";
 import { TracksterUIView } from "viz/trackster";
 
 // Previously "chart"
@@ -22,16 +21,10 @@ export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
-export { PhylovizView as phyloviz } from "viz/phyloviz";
-export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 export { TracksterUI } from "viz/trackster";
 
 export function trackster(options) {
     new TracksterUIView(options);
-}
-
-export function circster(options) {
-    new Circster.GalaxyApp(options);
 }
 
 // Previously wandering around as window.thing = thing in the onload script
@@ -41,8 +34,6 @@ export { default as async_save_text } from "utils/async-save-text";
 export function chart(options) {
     return new Client(options);
 }
-
-export { mountMakoTags } from "components/Tags";
 
 // Used in common.mako
 export { default as store } from "storemodern";

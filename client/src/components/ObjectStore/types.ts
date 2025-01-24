@@ -1,3 +1,3 @@
-import type { components } from "@/schema";
+import { type components } from "@/api/schema";
 
 export type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];

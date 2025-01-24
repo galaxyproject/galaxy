@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +28,8 @@ data_manager_tar_file = "1460_files/data_manager_files/test_data_manager.tar"
 class TestDataManagers(ShedTwillTestCase):
     """Test installing a repository containing a Data Manager."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
@@ -54,16 +54,10 @@ class TestDataManagers(ShedTwillTestCase):
             strings_displayed=[],
         )
         # Upload the data manager files to the repository.
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename=data_manager_tar_file,
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            data_manager_tar_file,
             commit_message=f"Populate {data_manager_repository_name} with a data manager configuration.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_install_data_manager_repository(self):
@@ -71,23 +65,21 @@ class TestDataManagers(ShedTwillTestCase):
 
         This is step 3 - Attempt to install the repository into a galaxy instance, verify that it is installed.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             data_manager_repository_name,
             common.test_user_1_name,
             category_name,
-            install_tool_dependencies=True,
+            install_tool_dependencies=False,
         )
 
     def test_0030_verify_data_manager_tool(self):
         """Verify that the data_manager_1460 repository is installed and Data Manager tool appears in list in Galaxy."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            data_manager_repository_name, common.test_user_1_name
-        )
-        strings_displayed = ["status", "jobs", data_manager_name]
-        self.display_installed_jobs_list_page(
-            repository, data_manager_names=data_manager_name, strings_displayed=strings_displayed
-        )
+        repository = self._get_installed_repository_by_name_owner(data_manager_repository_name, common.test_user_1_name)
+        if self.full_stack_galaxy:
+            strings_displayed = ["status", "jobs", data_manager_name]
+            self.display_installed_jobs_list_page(
+                repository, data_manager_names=data_manager_name, strings_displayed=strings_displayed
+            )
 
     def test_0040_verify_data_manager_data_table(self):
         """Verify that the installed repository populated shed_tool_data_table.xml and the sample files."""

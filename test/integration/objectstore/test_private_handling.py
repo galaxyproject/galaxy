@@ -1,4 +1,4 @@
-"""Integration tests for mixing store_by."""
+"""Integration tests for private object store handling."""
 
 import string
 

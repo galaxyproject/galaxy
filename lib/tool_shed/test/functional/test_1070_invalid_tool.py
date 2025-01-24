@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 repository_name = "bismark_0070"
 repository_description = "Galaxy's bismark wrapper"
@@ -13,9 +11,10 @@ category_description = "Test 1070 for a repository with an invalid tool."
 class TestFreebayesRepository(ShedTwillTestCase):
     """Test repository with multiple revisions with invalid tools."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -33,32 +32,10 @@ class TestFreebayesRepository(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
-                repository,
-                filename="bismark/bismark.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="bismark/bismark_methylation_extractor.xml",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded an updated tool xml.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.user_populator().setup_bismark_repo(repository)
 
     def test_0010_browse_tool_shed(self):
         """Browse the available tool sheds in this Galaxy instance and preview the bismark repository."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=[category_name])
         category = self.populator.get_category_with_name(category_name)
         self.browse_category(category, strings_displayed=[repository_name])
@@ -75,11 +52,9 @@ class TestFreebayesRepository(ShedTwillTestCase):
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1070",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
-        assert self.get_installed_repository_for(
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
+        assert self._get_installed_repository_for(
             common.test_user_1, repository_name, installed_repository.installed_changeset_revision
         )
-        self.update_installed_repository_api(installed_repository, verify_no_updates=True)
+        self.update_installed_repository(installed_repository, verify_no_updates=True)
         self._assert_repo_has_invalid_tool_in_file(installed_repository, "bismark_bowtie_wrapper.xml")

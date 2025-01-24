@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
+import { getObjectStoreDetails } from "@/api/objectStores";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { getObjectStoreDetails } from "./services";
 import type { ConcreteObjectStoreModel } from "./types";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -38,7 +38,7 @@ watch(
     }
 );
 fetch();
-const loadingMessage = "Loading object store details";
+const loadingMessage = "Loading storage location details";
 </script>
 
 <template>

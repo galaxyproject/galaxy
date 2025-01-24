@@ -1,5 +1,6 @@
 """Return various facts for string formatting.
 """
+
 import socket
 from collections.abc import MutableMapping
 

@@ -4,9 +4,9 @@
         <Multiselect
             v-if="items"
             v-model="selectedItem"
-            deselect-label="Can't remove this value"
-            track-by="id"
-            label="text"
+            :deselect-label="null"
+            :track-by="trackBy"
+            :label="label"
             :options="items"
             :searchable="true"
             :allow-empty="false"
@@ -54,9 +54,17 @@ export default {
             default: null,
         },
         /** The initially selected item. */
-        currentItemId: {
+        currentItem: {
+            type: Object,
+            default: null,
+        },
+        label: {
             type: String,
-            required: true,
+            default: "text",
+        },
+        trackBy: {
+            type: String,
+            default: "id",
         },
     },
     data() {
@@ -72,7 +80,7 @@ export default {
     },
     watch: {
         items: function () {
-            this.selectedItem = this.items.find((item) => item.id == this.currentItemId);
+            this.selectedItem = this.currentItem;
         },
     },
     methods: {

@@ -1,5 +1,4 @@
-import type { Component, SelectorTemplate } from "./index";
-import { ROOT_COMPONENT as raw_root_component } from "./index";
+import { type Component, ROOT_COMPONENT as raw_root_component, type SelectorTemplate } from "./index";
 
 interface Root_messages extends Component {
     all: SelectorTemplate;
@@ -101,7 +100,6 @@ interface Roothistory_panelitem extends Component {
     delete_button: SelectorTemplate;
     download_button: SelectorTemplate;
     info_button: SelectorTemplate;
-    tool_help_button: SelectorTemplate;
     rerun_button: SelectorTemplate;
     alltags: SelectorTemplate;
 }
@@ -262,7 +260,6 @@ interface Rootpublished_histories extends Component {
     advanced_search_toggle: SelectorTemplate;
     advanced_search_name_input: SelectorTemplate;
     advanced_search_tag_input: SelectorTemplate;
-    advanced_search_submit: SelectorTemplate;
     tag_content: SelectorTemplate;
     column_header: SelectorTemplate;
 }
@@ -387,13 +384,6 @@ interface Rootworkflows extends Component {
     workflow_rows: SelectorTemplate;
     external_link: SelectorTemplate;
     trs_icon: SelectorTemplate;
-    pager: SelectorTemplate;
-    pager_page: SelectorTemplate;
-    pager_page_next: SelectorTemplate;
-    pager_page_first: SelectorTemplate;
-    pager_page_last: SelectorTemplate;
-    pager_page_previous: SelectorTemplate;
-    pager_page_active: SelectorTemplate;
     run_button: SelectorTemplate;
     bookmark_link: SelectorTemplate;
     workflow_with_name: SelectorTemplate;
@@ -428,7 +418,8 @@ interface Rootworkflow_run extends Component {
     validation_error: SelectorTemplate;
     expand_form_link: SelectorTemplate;
     expanded_form: SelectorTemplate;
-    new_history_target_link: SelectorTemplate;
+    new_history_badge: SelectorTemplate;
+    history_target_link: SelectorTemplate;
     runtime_setting_button: SelectorTemplate;
     runtime_setting_target: SelectorTemplate;
     input_select_field: SelectorTemplate;
@@ -489,6 +480,8 @@ interface Rootworkflow_show extends Component {
 interface Rootinvocations extends Component {
     invocations_table: SelectorTemplate;
     invocations_table_rows: SelectorTemplate;
+    invocations_panel_list: SelectorTemplate;
+    invocations_panel_list_items: SelectorTemplate;
     pager: SelectorTemplate;
     pager_page: SelectorTemplate;
     pager_page_next: SelectorTemplate;
@@ -497,7 +490,6 @@ interface Rootinvocations extends Component {
     pager_page_previous: SelectorTemplate;
     pager_page_active: SelectorTemplate;
     state_details: SelectorTemplate;
-    toggle_invocation_details: SelectorTemplate;
     progress_steps_note: SelectorTemplate;
     progress_jobs_note: SelectorTemplate;
     invocation_tab: SelectorTemplate;
@@ -511,8 +503,6 @@ interface Rootinvocations extends Component {
     step_output_collection_element_identifier: SelectorTemplate;
     step_output_collection_element_datatype: SelectorTemplate;
     step_job_details: SelectorTemplate;
-    step_job_table: SelectorTemplate;
-    step_job_table_rows: SelectorTemplate;
     step_job_information: SelectorTemplate;
     step_job_information_tool_id: SelectorTemplate;
 }

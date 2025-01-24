@@ -1,12 +1,6 @@
-import { fetcher } from "@/schema/fetcher";
-
-const getHistories = fetcher.path("/api/histories").method("get").create();
-const getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();
-const getDatasets = fetcher.path("/api/datasets").method("get").create();
-const undeleteHistory = fetcher.path("/api/histories/deleted/{history_id}/undelete").method("post").create();
-const purgeHistory = fetcher.path("/api/histories/{history_id}").method("delete").create();
-const updateDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("put").create();
-const purgeDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("delete").create();
+import { GalaxyApi } from "@/api";
+import { purgeDataset, undeleteDataset } from "@/api/datasets";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface ItemSizeSummary {
     id: string;
@@ -23,51 +17,129 @@ interface PurgeableItemSizeSummary extends ItemSizeSummary {
 const itemSizeSummaryFields = "id,name,size,deleted,archived";
 
 export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]> {
-    const nonPurgedHistoriesResponse = await getHistories({
-        keys: itemSizeSummaryFields,
-        q: ["deleted", "purged"],
-        qv: ["None", "false"],
+    const { data: nonPurgedHistories, error: nonPurgedHistoriesError } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                keys: itemSizeSummaryFields,
+                q: ["deleted", "purged"],
+                qv: ["None", "false"],
+            },
+        },
     });
-    const nonPurgedArchivedHistories = await getArchivedHistories({
-        keys: itemSizeSummaryFields,
-        q: ["purged"],
-        qv: ["false"],
-    });
+
+    if (nonPurgedHistoriesError) {
+        rethrowSimple(nonPurgedHistoriesError);
+    }
+
+    const { data: nonPurgedArchivedHistories, error: nonPurgedArchivedHistoriesError } = await GalaxyApi().GET(
+        "/api/histories/archived",
+        {
+            params: {
+                query: {
+                    keys: itemSizeSummaryFields,
+                    q: ["purged"],
+                    qv: ["false"],
+                },
+            },
+        }
+    );
+
+    if (nonPurgedArchivedHistoriesError) {
+        rethrowSimple(nonPurgedArchivedHistoriesError);
+    }
+
     const allHistoriesTakingStorageResponse = [
-        ...(nonPurgedHistoriesResponse.data as ItemSizeSummary[]),
-        ...(nonPurgedArchivedHistories.data as ItemSizeSummary[]),
+        ...(nonPurgedHistories as ItemSizeSummary[]),
+        ...(nonPurgedArchivedHistories as ItemSizeSummary[]),
     ];
     return allHistoriesTakingStorageResponse;
 }
 
-export async function fetchHistoryContentsSizeSummary(historyId: string, limit = 5000) {
-    const response = await getDatasets({
-        history_id: historyId,
-        keys: itemSizeSummaryFields,
-        limit,
-        order: "size-dsc",
-        q: ["purged", "history_content_type"],
-        qv: ["false", "dataset"],
+export async function fetchHistoryContentsSizeSummary(
+    historyId: string,
+    limit = 5000,
+    objectStoreId: string | null = null
+) {
+    const q = ["purged", "history_content_type"];
+    const qv = ["false", "dataset"];
+
+    if (objectStoreId) {
+        q.push("object_store_id");
+        qv.push(objectStoreId);
+    }
+
+    const { data, error } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                history_id: historyId,
+                keys: itemSizeSummaryFields,
+                limit,
+                order: "size-dsc",
+                q: q,
+                qv: qv,
+            },
+        },
     });
-    return response.data as unknown as ItemSizeSummary[];
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as unknown as ItemSizeSummary[];
+}
+
+export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string, limit = 5000) {
+    const { data, error } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                keys: itemSizeSummaryFields,
+                limit,
+                order: "size-dsc",
+                q: ["purged", "history_content_type", "object_store_id"],
+                qv: ["false", "dataset", objectStoreId],
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as unknown as ItemSizeSummary[];
 }
 
 export async function undeleteHistoryById(historyId: string): Promise<ItemSizeSummary> {
-    const response = await undeleteHistory({ history_id: historyId });
-    return response.data as unknown as ItemSizeSummary;
+    const { data, error } = await GalaxyApi().POST("/api/histories/deleted/{history_id}/undelete", {
+        params: {
+            path: { history_id: historyId },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data as ItemSizeSummary;
 }
 
 export async function purgeHistoryById(historyId: string): Promise<PurgeableItemSizeSummary> {
-    const response = await purgeHistory({ history_id: historyId, purge: true });
-    return response.data as unknown as PurgeableItemSizeSummary;
+    const { data, error } = await GalaxyApi().DELETE("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: historyId },
+            query: { purge: true },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as PurgeableItemSizeSummary;
 }
 
-export async function undeleteDatasetById(historyId: string, datasetId: string): Promise<ItemSizeSummary> {
-    const response = await updateDataset({ history_id: historyId, id: datasetId, type: "dataset", deleted: false });
-    return response.data as unknown as ItemSizeSummary;
+export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSummary> {
+    const data = await undeleteDataset(datasetId);
+    return data as unknown as ItemSizeSummary;
 }
 
-export async function purgeDatasetById(historyId: string, datasetId: string): Promise<PurgeableItemSizeSummary> {
-    const response = await purgeDataset({ history_id: historyId, id: datasetId, type: "dataset", purge: true });
-    return response.data as unknown as PurgeableItemSizeSummary;
+export async function purgeDatasetById(datasetId: string): Promise<PurgeableItemSizeSummary> {
+    const data = await purgeDataset(datasetId);
+    return data as unknown as PurgeableItemSizeSummary;
 }

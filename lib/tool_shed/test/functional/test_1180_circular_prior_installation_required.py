@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -51,9 +49,10 @@ running_standalone = False
 class TestSimplePriorInstallation(ShedTwillTestCase):
     """Test features related to datatype converters."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -72,16 +71,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="convert_chars/convert_chars.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "convert_chars/convert_chars.tar",
                 commit_message="Uploaded convert_chars tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_create_column_repository(self):
@@ -97,16 +90,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             strings_displayed=[],
         )
         if running_standalone:
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0015_create_filtering_repository(self):
@@ -122,16 +109,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             strings_displayed=[],
         )
         if running_standalone:
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0020_create_repository_dependency(self):
@@ -214,7 +195,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0030_install_filtering_repository(self):
         """Install the filtering_0160 repository."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["filtering_0160", self.get_repository_tip(filter_repository)]
         self._install_repository(
@@ -228,13 +208,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0035_verify_installation_order(self):
         """Verify that convert_chars_0160 and column_maker_0160 were installed before filtering_0160."""
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         # Filtering was selected for installation, so convert chars and column maker should have been installed first.
@@ -247,13 +227,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0040_deactivate_all_repositories(self):
         """Uninstall convert_chars_0160, column_maker_0160, and filtering_0160."""
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(filter_repository)
@@ -262,7 +242,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0045_reactivate_filter_repository(self):
         """Reinstall the filtering_0160 repository."""
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(filter_repository)
@@ -273,18 +253,19 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
     def test_0050_verify_reinstallation_order(self):
         """Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160."""
         # Fixme: this test is not covering any important behavior since repositories were only deactivated and not uninstalled.
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         # Filtering was selected for reinstallation, so convert chars and column maker should have been installed first.
-        for repo in [convert_repository, column_repository, filter_repository]:
-            self.test_db_util.install_session().refresh(repo)
+        if self.full_stack_galaxy:
+            for repo in [convert_repository, column_repository, filter_repository]:
+                self.test_db_util.install_session().refresh(repo)
         assert (
             filter_repository.update_time > convert_repository.update_time
         ), "Prior installed convert_chars_0160 shows a later update time than filtering_0160"

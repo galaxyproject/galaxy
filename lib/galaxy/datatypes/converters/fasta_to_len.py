@@ -6,8 +6,6 @@ Return titles with lengths of corresponding seq
 """
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
-
 
 def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=False):
     infile = fasta_file
@@ -34,7 +32,7 @@ def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=
                     if first_entry is False:
                         if keep_first_word:
                             fasta_title = fasta_title.split()[0]
-                        out.write("%s\t%d\n" % (fasta_title[1:keep_first_char], seq_len))
+                        out.write(f"{fasta_title[1:keep_first_char]}\t{seq_len}\n")
                     else:
                         first_entry = False
                     fasta_title = line
@@ -45,7 +43,7 @@ def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=
         # last fasta-entry
         if keep_first_word:
             fasta_title = fasta_title.split()[0]
-        out.write("%s\t%d\n" % (fasta_title[1:keep_first_char], seq_len))
+        out.write(f"{fasta_title[1:keep_first_char]}\t{seq_len}\n")
 
 
 if __name__ == "__main__":

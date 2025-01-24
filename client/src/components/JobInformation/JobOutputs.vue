@@ -26,9 +26,9 @@
                 </tr>
                 <tr v-if="paginate && totalLength > firstN">
                     <td colspan="2">
-                        <b-button id="paginate-btn" block variant="secondary" @click="firstN += 10">
+                        <BButton id="paginate-btn" block variant="secondary" @click="firstN += 10">
                             Show {{ totalLength - firstN >= 10 ? 10 : totalLength - firstN }} more outputs
-                        </b-button>
+                        </BButton>
                     </td>
                 </tr>
             </tbody>
@@ -37,10 +37,12 @@
 </template>
 
 <script>
+import { BButton } from "bootstrap-vue";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 
 export default {
     components: {
+        BButton,
         GenericHistoryItem,
     },
     props: {

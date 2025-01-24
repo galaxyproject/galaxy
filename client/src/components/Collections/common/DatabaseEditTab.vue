@@ -1,17 +1,48 @@
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import Multiselect from "vue-multiselect";
+
+import localize from "@/utils/localization";
+
+interface Props {
+    genomes: { id: string; text: string }[];
+    databaseKeyFromElements: string;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (event: "clicked-save", attribute: string, newValue: any): void;
+}>();
+
+const selectedGenome = ref();
+
+function clickedSave() {
+    emit("clicked-save", "dbkey", selectedGenome.value);
+}
+
+onMounted(() => {
+    selectedGenome.value = props.genomes.find((element) => element.id == props.databaseKeyFromElements);
+});
+</script>
+
 <template>
     <div>
         <div>
             <span class="float-left h-sm">Change Database/Build of all elements in collection</span>
+
             <div class="text-right">
                 <button
                     class="save-dbkey-edit btn btn-primary"
-                    :disabled="selectedGenome.id == databaseKeyFromElements"
+                    :disabled="selectedGenome?.id == databaseKeyFromElements"
                     @click="clickedSave">
-                    {{ l("Save") }}
+                    {{ localize("Save") }}
                 </button>
             </div>
         </div>
-        <b>{{ l("Database/Build") }}: </b>
+
+        <b>{{ localize("Database/Build") }}: </b>
+
         <Multiselect
             v-model="selectedGenome"
             class="database-dropdown"
@@ -21,38 +52,7 @@
             :options="genomes"
             :searchable="true"
             :allow-empty="false">
-            {{ selectedGenome.text }}
+            {{ selectedGenome?.text }}
         </Multiselect>
     </div>
 </template>
-<script>
-import Multiselect from "vue-multiselect";
-
-export default {
-    components: { Multiselect },
-    props: {
-        genomes: {
-            type: Array,
-            required: true,
-        },
-        databaseKeyFromElements: {
-            type: String,
-            required: true,
-        },
-    },
-    data: function () {
-        return {
-            selectedGenome: {},
-        };
-    },
-    created() {
-        this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-    },
-    methods: {
-        clickedSave: function () {
-            this.$emit("clicked-save", "dbkey", this.selectedGenome);
-            this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-        },
-    },
-};
-</script>

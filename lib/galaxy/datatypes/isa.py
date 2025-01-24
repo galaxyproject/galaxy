@@ -129,8 +129,7 @@ class _Isa(Data):
         We will use it to parse and access information from the archive."""
 
         investigation = None
-        main_file = self._get_main_file(dataset)
-        if main_file is not None:
+        if (main_file := self._get_main_file(dataset)) is not None:
             investigation = self._make_investigation_instance(main_file)
 
         return investigation
@@ -248,7 +247,8 @@ class _Isa(Data):
             # perform extraction
             # For some ZIP files CompressedFile::extract() extract the file inside <output_folder>/<file_name> instead of outputing it inside <output_folder>. So we first create a temporary folder, extract inside it, and move content to final destination.
             temp_folder = tempfile.mkdtemp()
-            CompressedFile(file_name).extract(temp_folder)
+            with CompressedFile(file_name) as cf:
+                cf.extract(temp_folder)
             shutil.rmtree(output_path)
             extracted_files = os.listdir(temp_folder)
             logger.debug(" ".join(extracted_files))

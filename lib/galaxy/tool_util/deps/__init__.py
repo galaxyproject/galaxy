@@ -149,7 +149,7 @@ class DependencyManager:
 
     def set_enabled_container_types(self, container_types_to_destinations):
         """Set the union of all enabled container types."""
-        self._enabled_container_types = [container_type for container_type in container_types_to_destinations.keys()]
+        self._enabled_container_types = list(container_types_to_destinations.keys())
         # Just pick first enabled destination for a container type, probably covers the most common deployment scenarios
         self._destination_for_container_type = container_types_to_destinations
 
@@ -323,7 +323,7 @@ class DependencyManager:
         return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
-        return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
+        return any(isinstance(r, ToolShedPackageDependencyResolver) for r in self.dependency_resolvers)
 
     def find_dep(self, name: str, version: Optional[str] = None, type: str = "package", **kwds):
         log.debug(f"Find dependency {name} version {version}")

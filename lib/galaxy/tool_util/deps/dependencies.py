@@ -21,6 +21,7 @@ class AppInfo:
         galaxy_root_dir: Optional[str] = None,
         default_file_path: Optional[str] = None,
         tool_data_path: Optional[str] = None,
+        galaxy_data_manager_data_path: Optional[str] = None,
         shed_tool_data_path: Optional[str] = None,
         outputs_to_working_directory: bool = False,
         container_image_cache_path: Optional[str] = None,
@@ -35,6 +36,7 @@ class AppInfo:
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
         self.tool_data_path = tool_data_path
+        self.galaxy_data_manager_data_path = galaxy_data_manager_data_path
         self.shed_tool_data_path = shed_tool_data_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory

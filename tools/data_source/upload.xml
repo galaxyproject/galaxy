@@ -14,7 +14,7 @@
     #while $varExists('output%i' % $outnum):
         #set $output = $getVar('output%i' % $outnum)
         #set $outnum += 1
-        #set $file_name = $output.file_name
+        #set $file_name = str($output)
         ## FIXME: This is not future-proof for other uses of external_filename (other than for use by the library upload's "link data" feature)
         #if $output.dataset.dataset.external_filename:
             #set $file_name = "None"
@@ -59,6 +59,7 @@
     </upload_dataset>
     <param name="force_composite" type="hidden" value="false" />
     <param name="dbkey" type="genomebuild" label="Genome" />
+    <param name="tags" type="hidden" value="" />
     <conditional name="files_metadata" value_from="self:app.datatypes_registry.get_upload_metadata_params" value_ref="file_type" value_ref_in_group="False" />
     <!-- <param name="other_dbkey" type="text" label="Or user-defined Genome" /> -->
   </inputs>

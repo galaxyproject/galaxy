@@ -18,7 +18,8 @@ import sys
 from urllib.parse import urlencode
 
 import parse_builds  # noqa: I100,I202
-import requests
+
+from galaxy.util import requests
 
 
 def getchrominfo(url, db):
@@ -46,7 +47,7 @@ def getchrominfo(url, db):
         if len(fields) > 1 and len(fields[0]) > 0 and int(fields[1]) > 0:
             yield [fields[0], fields[1]]
         else:
-            raise Exception("Problem parsing line %d '%s' in page '%s'" % (i, line, page))
+            raise Exception(f"Problem parsing line {i} '{line}' in page '{page}'")
 
 
 if __name__ == "__main__":

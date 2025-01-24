@@ -1,4 +1,4 @@
-import { mount, Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
@@ -46,6 +46,7 @@ describe("JobParameters/JobParameters.vue", () => {
             propsData,
             stubs: {
                 DatasetProvider: DatasetProvider,
+                ContentItem: true,
             },
             pinia,
         });
@@ -54,12 +55,18 @@ describe("JobParameters/JobParameters.vue", () => {
         const checkTableParameter = (
             element: Wrapper<any>,
             expectedTitle: string,
-            expectedValue: string,
+            expectedValue: string | { hid: number; name: string },
             link?: string
         ) => {
             const tds = element.findAll("td");
             expect(tds.at(0).text()).toBe(expectedTitle);
-            expect(tds.at(1).text()).toContain(expectedValue);
+            if (typeof expectedValue === "string") {
+                expect(tds.at(1).text()).toContain(expectedValue);
+            } else {
+                const contentItem = tds.at(1).find("contentitem-stub");
+                expect(contentItem.attributes("id")).toBe(`${expectedValue.hid}`);
+                expect(contentItem.attributes("name")).toBe(expectedValue.name);
+            }
             if (link) {
                 const a_element = tds.at(1).find("a");
                 expect(a_element.attributes("href")).toBe(link);
@@ -74,7 +81,7 @@ describe("JobParameters/JobParameters.vue", () => {
         expect(elements.length).toBe(3);
 
         checkTableParameter(elements.at(0), "Add this value", "22", undefined);
-        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid}: ${raw.name}`, undefined);
+        checkTableParameter(elements.at(1), linkParam.text, { hid: raw.hid, name: raw.name }, undefined);
         checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
     });
 
@@ -89,6 +96,7 @@ describe("JobParameters/JobParameters.vue", () => {
                 propsData,
                 stubs: {
                     DatasetProvider: DatasetProvider,
+                    ContentItem: true,
                 },
                 pinia,
             });

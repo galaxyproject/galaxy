@@ -1,5 +1,4 @@
 <tool id="empty_select" name="empty_select" version="1.0.0">
-    <description>multi_select</description>
     <command><![CDATA[
 touch '$output'
 #if $select_optional:

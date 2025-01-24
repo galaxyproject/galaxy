@@ -1,13 +1,34 @@
+import "tests/jest/mockHelpPopovers";
+
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { findViaNavigation, getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
+
+import { useServerMock } from "@/api/client/__mocks__";
 
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
 const localVue = getLocalVue(true);
 
+const { server, http } = useServerMock();
+
+jest.mock("@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue", () => ({
+    name: "HelpPopover",
+    render: (h) => h("div", "Mocked Popover"),
+}));
+
 describe("WorkflowStorageConfiguration.vue", () => {
     let wrapper;
+
+    beforeEach(() => {
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            })
+        );
+    });
 
     async function doMount(split) {
         const propsData = {
@@ -18,6 +39,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         wrapper = mount(WorkflowStorageConfiguration, {
             propsData,
             localVue,
+            pinia: createTestingPinia(),
         });
     }
 
@@ -31,6 +53,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
                 ROOT_COMPONENT.workflow_run.intermediate_storage_indciator
             );
             expect(intermediateEl.exists()).toBeTruthy();
+            await flushPromises();
         });
 
         it("should show one button on not splitObjectStore", async () => {
@@ -42,6 +65,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
                 ROOT_COMPONENT.workflow_run.intermediate_storage_indciator
             );
             expect(intermediateEl.exists()).toBeFalsy();
+            await flushPromises();
         });
     });
 
@@ -52,6 +76,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             const emitted = wrapper.emitted();
             expect(emitted["updated"][0][0]).toEqual("storage123");
             expect(emitted["updated"][0][1]).toEqual(false);
+            await flushPromises();
         });
 
         it("should fire an update event when intermediate selection is updated", async () => {
@@ -60,6 +85,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             const emitted = wrapper.emitted();
             expect(emitted["updated"][0][0]).toEqual("storage123");
             expect(emitted["updated"][0][1]).toEqual(true);
+            await flushPromises();
         });
     });
 });

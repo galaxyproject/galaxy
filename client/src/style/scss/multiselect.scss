@@ -1,27 +1,86 @@
 .multiselect {
     font-weight: normal;
+
     .multiselect__content-wrapper {
-        background: darken($white, 2%);
         overflow-x: hidden;
     }
+
     .multiselect__input {
         background: transparent;
-    }
-    .multiselect__option {
-        white-space: normal;
+        padding-left: 0;
+        padding-top: 2px;
+        margin-bottom: 8px;
         font-size: $font-size-base;
     }
+
+    .multiselect__option {
+        padding: 0.5rem;
+        min-height: unset;
+        white-space: normal;
+        font-size: $font-size-base;
+
+        &::after {
+            line-height: unset;
+            font-size: $font-size-base;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+    }
+
     .multiselect__option--highlight {
-        background-color: $brand-info;
+        background-color: $brand-primary;
         color: $white;
+
+        &::after {
+            background: unset;
+            font-weight: bold;
+        }
     }
+
     .multiselect__option--selected {
-        background: $brand-primary;
-        color: $brand-light;
+        background: $brand-secondary;
+        color: $brand-primary;
+
+        &::after {
+            color: darken($brand-secondary, 40%);
+        }
+
+        &.multiselect__option--highlight {
+            background: $brand-danger;
+
+            &::after {
+                background: unset;
+            }
+        }
     }
+
+    .multiselect__placeholder {
+        margin-bottom: 8px;
+    }
+
     .multiselect__tag {
-        min-height: 0;
+        min-height: unset;
+        white-space: normal;
+        word-break: break-all;
+        background: $brand-primary;
+        margin-right: 0.25rem;
+        margin-bottom: 0.1rem;
+
+        .multiselect__tag-icon {
+            color: $white;
+
+            &:hover,
+            &:focus {
+                background: $brand-info;
+            }
+
+            &::after {
+                color: inherit;
+            }
+        }
     }
+
     .multiselect__tags {
         background: transparent;
         border: $border-default;
@@ -31,8 +90,12 @@
             color: $text-color;
             font-size: $font-size-base;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: break-all;
         }
     }
+}
+
+.multiselect--active {
+    z-index: 1500; // Should be on top of everything
 }

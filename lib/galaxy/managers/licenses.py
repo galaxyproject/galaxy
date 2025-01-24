@@ -16,21 +16,23 @@ log = logging.getLogger(__name__)
 
 # https://github.com/spdx/license-list-data/blob/master/accessingLicenses.md#license-list-table-of-contents
 class LicenseMetadataModel(BaseModel):
-    licenseId: str = Field(title="Identifier", description="SPDX Identifier", example="Apache-2.0")
-    name: str = Field(title="Name", description="Full name of the license", example="Apache License 2.0")
+    licenseId: str = Field(title="Identifier", description="SPDX Identifier", examples=["Apache-2.0"])
+    name: str = Field(title="Name", description="Full name of the license", examples=["Apache License 2.0"])
     reference: str = Field(
-        title="Reference", description="Reference to the HTML format for the license file", example="./Apache-2.0.html"
+        title="Reference",
+        description="Reference to the HTML format for the license file",
+        examples=["./Apache-2.0.html"],
     )
     referenceNumber: int = Field(
         title="Reference number", description="*Deprecated* - this field is generated and is no longer in use"
     )
     isDeprecatedLicenseId: bool = Field(
-        title="Deprecated License", description="True if the entire license is deprecated", example=False
+        title="Deprecated License", description="True if the entire license is deprecated", examples=[False]
     )
     isOsiApproved: bool = Field(
         title="OSI approved",
         description="Indicates if the [OSI](https://opensource.org/) has approved the license",
-        example=True,
+        examples=[True],
     )
     seeAlso: List[HttpUrl] = Field(
         title="Reference URLs", description="Cross reference URL pointing to additional copies of the license"
@@ -38,11 +40,13 @@ class LicenseMetadataModel(BaseModel):
     detailsUrl: HttpUrl = Field(
         title="Details URL",
         description="URL to the SPDX json details for this license",
-        example="http://spdx.org/licenses/Apache-2.0.json",
+        examples=["http://spdx.org/licenses/Apache-2.0.json"],
     )
     recommended: bool = Field(title="Recommended", description="True if this license is recommended to be used")
-    url: HttpUrl = Field(title="URL", description="License URL", example="http://www.apache.org/licenses/LICENSE-2.0")
-    spdxUrl: HttpUrl = Field(title="SPDX URL", example="https://spdx.org/licenses/Apache-2.0.html")
+    url: HttpUrl = Field(
+        title="URL", description="License URL", examples=["http://www.apache.org/licenses/LICENSE-2.0"]
+    )
+    spdxUrl: HttpUrl = Field(title="SPDX URL", examples=["https://spdx.org/licenses/Apache-2.0.html"])
 
 
 # https://docs.google.com/document/d/16vnRtDjrx5eHSl4jXs2vMaDTI6luyyLzU6xMvRHsnbI/edit#heading=h.1pihjj16olz2
@@ -61,7 +65,7 @@ RECOMMENDED_LICENSES = [
     "MPL-2.0",
     "PDDL-1.0",
 ]
-SPDX_LICENSES_STRING = resource_string(__package__, "licenses.json")
+SPDX_LICENSES_STRING = resource_string(__name__, "licenses.json")
 SPDX_LICENSES = json.loads(SPDX_LICENSES_STRING)
 for license in SPDX_LICENSES["licenses"]:
     license["recommended"] = license["licenseId"] in RECOMMENDED_LICENSES

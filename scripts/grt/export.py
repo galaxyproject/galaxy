@@ -56,7 +56,7 @@ def kw_metrics(job):
 
 def round_to_2sd(number):
     if number:
-        return str(int(float("%.2g" % number)))
+        return str(int(float(f"{number:.2g}")))
     else:
         return "-1"
 

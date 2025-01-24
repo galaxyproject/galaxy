@@ -19,8 +19,11 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8', '3.13']
+        shed-api: ['v1', 'v2']
+        test-install-client: ['galaxy_api', 'standalone']
     services:
       postgres:
         image: postgres:13
@@ -31,32 +34,52 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache pip dir
-        uses: actions/cache@v3
-        id: pip-cache
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-toolshed
-      - name: Run tests
-        run: './run_tests.sh -toolshed'
+      - name: Install dependencies
+        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v3
+      - name: Build Frontend
+        run: |
+          . .venv/bin/activate
+          cd lib/tool_shed/webapp/frontend
+          yarn
+          make client
+        working-directory: 'galaxy root'
+      - name: Install playwright
+        run: |
+          . .venv/bin/activate
+          playwright install
+        working-directory: 'galaxy root'
+      - name: Run tests
+        run: ./run_tests.sh -toolshed
+        env:
+          TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
+          TOOL_SHED_API_VERSION: ${{ matrix.shed-api }}
+          TOOL_SHED_TEST_BROWSER: ${{ matrix.shed-api == 'v1' && 'twill' || 'playwright' }}
+        working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: Toolshed test results (${{ matrix.python-version }})
+          name: Toolshed test results (${{ matrix.python-version }}, ${{ matrix.shed-api }}, ${{ matrix.test-install-client }})
           path: 'galaxy root/run_toolshed_tests.html'

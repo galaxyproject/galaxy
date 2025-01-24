@@ -9,8 +9,8 @@ from requests import (
     get,
     put,
 )
-from sqlalchemy import select
 
+from galaxy.model.db.user import get_user_by_email
 from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
@@ -133,5 +133,4 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
 
     def _get_dbuser(self, app, user):
-        stmt = select(app.model.User).filter(app.model.User.email == user["email"]).limit(1)
-        return app.model.session.scalars(stmt).first()
+        return get_user_by_email(app.model.session, user["email"])

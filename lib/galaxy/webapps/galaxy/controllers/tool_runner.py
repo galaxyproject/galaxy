@@ -1,6 +1,7 @@
 """
 Controller handles external tool related requests
 """
+
 import logging
 
 from markupsafe import escape
@@ -45,9 +46,9 @@ class ToolRunner(BaseUIController):
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         def __tool_404__():
             log.debug("index called with tool id '%s' but no such tool exists", tool_id)
-            trans.log_event("Tool id '%s' does not exist" % tool_id)
+            trans.log_event(f"Tool id '{tool_id}' does not exist")
             trans.response.status = 404
-            return trans.show_error_message("Tool '%s' does not exist." % (escape(tool_id)))
+            return trans.show_error_message(f"Tool '{escape(tool_id)}' does not exist.")
 
         # tool id not available, redirect to main page
         if tool_id is None:
@@ -74,18 +75,39 @@ class ToolRunner(BaseUIController):
         if tool.tool_type in ["default", "interactivetool"]:
             return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
 
-        # execute tool without displaying form (used for datasource tools)
-        params = galaxy.util.Params(kwd, sanitize=False)
-        # do param translation here, used by datasource tools
+        # execute tool without displaying form
+        # (used for datasource tools, but note that data_source_async tools
+        # are handled separately by the async controller)
+        params = galaxy.util.Params(kwd, sanitize=False).__dict__
         if tool.input_translator:
-            tool.input_translator.translate(params)
-        if "runtool_btn" not in params.__dict__ and "URL" not in params.__dict__:
-            error("Tool execution through the `tool_runner` requires a `runtool_btn` flag or `URL` parameter.")
+            # perform test translation of the incoming params without affecting originals
+            # the actual translation will happen later
+            # this is only for checking if we end up with required parameters
+            test_params = params.copy()
+            tool.input_translator.translate(test_params)
+        else:
+            test_params = params
+        if tool.tool_type == "data_source":
+            if "URL" not in test_params:
+                error("Execution of `data_source` tools requires a `URL` parameter")
+            # preserve original params sent by the remote server as extra dict
+            # before in-place translation happens, then clean the incoming params
+            params.update({"incoming_request_params": params.copy()})
+            if tool.input_translator and tool.wants_params_cleaned:
+                for k in list(params.keys()):
+                    if k not in tool.input_translator.vocabulary and k not in ("URL", "incoming_request_params"):
+                        # the remote server has sent a param
+                        # that the tool is not expecting -> drop it
+                        del params[k]
+        else:
+            if "runtool_btn" not in test_params:
+                error("Tool execution through the `tool_runner` requires a `runtool_btn` flag")
+
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans(trans, create=True)
         try:
-            vars = tool.handle_input(trans, params.__dict__, history=history)
+            vars = tool.handle_input(trans, params, history=history)
         except Exception as e:
             error(galaxy.util.unicodify(e))
         if len(params) > 0:
@@ -123,7 +145,7 @@ class ToolRunner(BaseUIController):
             if job:
                 job_id = trans.security.encode_id(job.id)
             else:
-                raise Exception("Failed to get job information for dataset hid %d" % data.hid)
+                raise Exception(f"Failed to get job information for dataset hid {data.hid}")
         return trans.response.send_redirect(url_for(controller="root", job_id=job_id))
 
     @web.expose

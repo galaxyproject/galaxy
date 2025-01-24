@@ -7,8 +7,11 @@ export const URI_PREFIXES = [
     "gxfiles://",
     "gximport://",
     "gxuserimport://",
+    "gxuserfiles://",
     "gxftp://",
     "drs://",
+    "invenio://",
+    "zenodo://",
 ];
 
 export function isUrl(content) {

@@ -1,18 +1,18 @@
-import { resolveUnref } from "@vueuse/core";
+import { toValue } from "@vueuse/core";
 import { onScopeDispose, ref, watch } from "vue";
 
-export function useFilterObjectArray(array, filter, objectFields) {
+export function useFilterObjectArray(array, filter, objectFields, asRegex = false) {
     const worker = new Worker(new URL("./filter.worker.js", import.meta.url));
 
     const filtered = ref([]);
-    filtered.value = resolveUnref(array);
+    filtered.value = toValue(array);
 
     const post = (message) => {
         worker.postMessage(message);
     };
 
     watch(
-        () => resolveUnref(array),
+        () => toValue(array),
         (arr) => {
             post({ type: "setArray", array: arr });
         },
@@ -22,7 +22,7 @@ export function useFilterObjectArray(array, filter, objectFields) {
     );
 
     watch(
-        () => resolveUnref(filter),
+        () => toValue(filter),
         (f) => {
             post({ type: "setFilter", filter: f });
         },
@@ -32,7 +32,7 @@ export function useFilterObjectArray(array, filter, objectFields) {
     );
 
     watch(
-        () => resolveUnref(objectFields),
+        () => toValue(objectFields),
         (fields) => {
             post({ type: "setFields", fields });
         },

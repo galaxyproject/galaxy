@@ -49,19 +49,19 @@ class Tools(BaseUIController):
     def formatted(self, date, colored=False):
         splited = str(date).split(",")
         if len(splited) == 2:
-            returned = "%s %dH" % (splited[0], int(splited[1].split(":")[0]))
+            returned = "{} {}H".format(splited[0], int(splited[1].split(":")[0]))
             if colored:
                 return f'<font color="red">{returned}</font>'
             return returned
         else:
             splited = tuple(float(_) for _ in str(date).split(":"))
             if splited[0]:
-                returned = "%d h. %d min." % splited[:2]
+                returned = f"{int(splited[0])} h. {int(splited[1])} min."
                 if colored:
                     return f'<font color="orange">{returned}</font>'
                 return returned
             if splited[1]:
-                return "%d min. %d sec." % splited[1:3]
+                return f"{int(splited[1])} min. {int(splited[2])} sec."
             return f"{splited[2]:.1f} sec."
 
     @web.expose
@@ -365,7 +365,7 @@ class Tools(BaseUIController):
                         sentence += f"</br>{word}"
                         count += 1
                     if sentence in new_key:
-                        new_key = new_key.replace(sentence, f"</br>{word}{' [this line in %d times]' % count}")
+                        new_key = new_key.replace(sentence, f"</br>{word} [this line in {count} times]")
             data[new_key] = counter[key]
 
         return trans.fill_template(

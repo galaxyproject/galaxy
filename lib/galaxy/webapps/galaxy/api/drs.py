@@ -1,4 +1,5 @@
 """Implement a DRS server for Galaxy dataset objects (experimental)."""
+
 import logging
 from io import IOBase
 from typing import cast
@@ -14,11 +15,10 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.drs import (
     DrsObject,
+    Organization,
     Service,
-    ServiceOrganization,
     ServiceType,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.version import VERSION
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from . import (
@@ -43,7 +43,7 @@ class DrsApi:
     service: DatasetsService = depends(DatasetsService)
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
 
-    @router.get("/ga4gh/drs/v1/service-info")
+    @router.get("/ga4gh/drs/v1/service-info", public=True)
     def service_info(self, request: Request) -> Service:
         components = request.url.components
         hostname = components.hostname
@@ -51,10 +51,10 @@ class DrsApi:
         default_organization_id = ".".join(reversed(hostname.split(".")))
         config = self.config
         organization_id = config.ga4gh_service_id or default_organization_id
-        organization_name = config.ga4gh_service_organization_name or organization_id
-        organization_url = config.ga4gh_service_organization_url or f"{components.scheme}://{components.netloc}"
+        organization_name = config.organization_name or organization_id
+        organization_url = config.organization_url or f"{components.scheme}://{components.netloc}"
 
-        organization = ServiceOrganization(
+        organization = Organization(
             url=organization_url,
             name=organization_name,
         )
@@ -63,9 +63,8 @@ class DrsApi:
             artifact="drs",
             version="1.2.0",
         )
-        environment = config.ga4gh_service_environment
         extra_kwds = {}
-        if environment:
+        if environment := config.ga4gh_service_environment:
             extra_kwds["environment"] = environment
         return Service(
             id=organization_id + ".drs",
@@ -77,8 +76,8 @@ class DrsApi:
             **extra_kwds,
         )
 
-    @router.get("/ga4gh/drs/v1/objects/{object_id}")
-    @router.post("/ga4gh/drs/v1/objects/{object_id}")  # spec specifies both get and post should work.
+    @router.get("/ga4gh/drs/v1/objects/{object_id}", public=True)
+    @router.post("/ga4gh/drs/v1/objects/{object_id}", public=True)  # spec specifies both get and post should work.
     def get_object(
         self,
         request: Request,
@@ -87,8 +86,8 @@ class DrsApi:
     ) -> DrsObject:
         return self.service.get_drs_object(trans, object_id, request_url=request.url)
 
-    @router.get("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}")
-    @router.post("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}")
+    @router.get("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}", public=True)
+    @router.post("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}", public=True)
     def get_access_url(
         self,
         request: Request,
@@ -100,12 +99,13 @@ class DrsApi:
 
     @router.get(
         "/api/drs_download/{object_id}",
+        public=True,
         response_class=FileResponse,
     )
     def download(self, trans: ProvidesHistoryContext = DependsOnTrans, object_id: str = ObjectIDParam):
         decoded_object_id, hda_ldda = self.service.drs_dataset_instance(object_id)
         display_data, headers = self.service.display(
-            trans, DecodedDatabaseIdField(decoded_object_id), hda_ldda=hda_ldda, filename=None, raw=True
+            trans, decoded_object_id, hda_ldda=hda_ldda, filename=None, raw=True
         )
         data_io = cast(IOBase, display_data)
         return FileResponse(getattr(data_io, "name", "unnamed_file"), headers=headers)

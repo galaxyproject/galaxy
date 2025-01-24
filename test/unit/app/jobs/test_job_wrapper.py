@@ -7,7 +7,10 @@ from typing import (
     Type,
 )
 
-from galaxy.app_unittest_utils.tools_support import UsesApp
+from galaxy.app_unittest_utils.tools_support import (
+    MockContext,
+    UsesApp,
+)
 from galaxy.jobs import (
     JobWrapper,
     TaskWrapper,
@@ -50,7 +53,7 @@ class AbstractTestCases:
             self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
             self.app.model.session = MockContext(self.model_objects)
 
-            self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
+            self.app._toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
             self.working_directory = os.path.join(self.test_directory, "working")
             self.app.object_store = cast(BaseObjectStore, MockObjectStore(self.working_directory))
 
@@ -63,7 +66,7 @@ class AbstractTestCases:
         @contextmanager
         def _prepared_wrapper(self):
             wrapper = self._wrapper()
-            wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[assignment]
+            wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[method-assign]
             wrapper.prepare()
             yield wrapper
 
@@ -110,14 +113,11 @@ class MockEvaluator:
         self.local_working_directory = local_working_directory
         self.param_dict = {}
 
-    def populate_interactivetools(self):
-        return []
-
     def set_compute_environment(self, *args, **kwds):
         pass
 
     def build(self):
-        return TEST_COMMAND, "", [], []
+        return TEST_COMMAND, "", [], [], []
 
 
 class MockJobQueue:
@@ -132,39 +132,6 @@ class MockJobDispatcher:
 
     def url_to_destination(self):
         pass
-
-
-class MockContext:
-    def __init__(self, model_objects):
-        self.expunged_all = False
-        self.model_objects = model_objects
-        self.created_objects = []
-
-    def expunge_all(self):
-        self.expunged_all = True
-
-    def query(self, clazz):
-        return MockQuery(self.model_objects.get(clazz))
-
-    def flush(self):
-        pass
-
-    def commit(self):
-        pass
-
-    def add(self, object):
-        self.created_objects.append(object)
-
-
-class MockQuery:
-    def __init__(self, class_objects):
-        self.class_objects = class_objects
-
-    def filter_by(self, **kwds):
-        return Bunch(first=lambda: None)
-
-    def get(self, id):
-        return self.class_objects.get(id, None)
 
 
 class MockTool:

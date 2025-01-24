@@ -23,7 +23,6 @@ for deletion instead of writing new tests and modernizing the API.
 
 - reset_metadata_on_repositories
 - remove_repository_registry_entry
-- get_repository_revision_install_info
 - get_installable_revisions
 - The whole Groups API.
 - The whole Repository Revisions API.
@@ -41,4 +40,10 @@ for deletion instead of writing new tests and modernizing the API.
 | repositories/{repository_id}/changeset_revision | NO | YES | NO | YES | NO | |
 | POST repositories | NO | YES | NO | YES | NO | |
 | GET repositories (without search query) | ? | ? |? | True | True | |
+| GET /repositories/updates/ | YES | NO | NO | NO | YES | |
 
+Research if searching by tool_ids is used with the repository index API.
+
+Added in:
+- https://github.com/galaxyproject/galaxy/pull/3626/files
+- Likely no longer used?

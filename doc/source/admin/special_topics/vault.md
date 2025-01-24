@@ -97,29 +97,32 @@ The `user_preferences_extra_conf.yml` can be used to automatically route secrets
 
 ```yaml
 preferences:
-    googledrive:
-        description: Your Google Drive account
+    nextcloud:
+        description: Your NextCloud account
         inputs:
-            - name: client_id
-              label: Client ID
-              type: text
-              required: True
-            - name: client_secret
-              label: Client Secret
-              type: secret
-              store: vault
-              required: True
-            - name: access_token
-              label: Access token
+            - name: password
+              label: password
               type: password
               store: vault
-              required: True
-            - name: refresh_token
-              label: Refresh Token
-              type: secret
-              store: vault
-              required: True
+              required: False
 ```
 
 Note the `store: vault` property, which results in the property being stored in the vault. Note also that if you use `type: password`, the secret is sent to the client front-end,
 but specifying `type: secret` would mean that the values cannot be retrieved by the client, only written to, providing an extra layer of security.
+
+## Configuring file sources to use (user) secrets stored in a vault
+
+In a file source the password could be used as follows:
+
+```yaml
+- type: webdav
+  id: nextcloud
+  label: NextCloud
+  doc: UFZ NextCloud files (configure access in user preferences)
+  url: https://some-nextcloud.org
+  root: /remote.php/dav/files/${user.username}/
+  login: ${user.username}
+  password: ${user.user_vault.read_secret('preferences/ufz-nextcloud/password')}
+```
+
+This example assumes that the NextCloud username is identical to the Galaxy username. If this is not the case also the username could be a user preference that is stored in a vault.

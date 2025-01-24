@@ -3,7 +3,8 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { getDatatypes, getDbKeys, getRemoteFiles } from "./services";
+import { GalaxyApi } from "@/api";
+import { getDbKeys } from "@/api/dbKeys";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -49,7 +50,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await getDbKeys();
+    const dbKeys = await getDbKeys();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({
@@ -65,7 +66,9 @@ async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return _cachedDatatypes;
     }
-    const { data: datatypes } = await getDatatypes({ extension_only: false });
+    const { data: datatypes } = await GalaxyApi().GET("/api/datatypes", {
+        params: { query: { extension_only: false } },
+    });
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
@@ -109,22 +112,28 @@ export async function getUploadDbKeys(defaultDbKey) {
     return dbKeyList;
 }
 
-export async function getRemoteEntries(success, error) {
-    try {
-        const { data } = await getRemoteFiles();
-        success(data);
-    } catch (e) {
-        error(errorMessageAsString(e));
+export async function getRemoteEntries(onSuccess, onError) {
+    const { data, error } = await GalaxyApi().GET("/api/remote_files");
+
+    if (error) {
+        onError(errorMessageAsString(error));
     }
+
+    onSuccess(data);
 }
 
 export async function getRemoteEntriesAt(target) {
-    try {
-        const { data: files } = await getRemoteFiles({ target });
-        return files;
-    } catch (e) {
-        rethrowSimple(e);
+    const { data: files, error } = await GalaxyApi().GET("/api/remote_files", {
+        params: {
+            query: { target },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return files;
 }
 
 export function hasBrowserSupport() {
@@ -141,3 +150,13 @@ export default {
     getUploadDatatypes,
     getUploadDbKeys,
 };
+
+export function setIframeEvents(elements, disableEvents) {
+    let element;
+    elements.forEach((e) => {
+        element = document.querySelector(`iframe#${e}`);
+        if (element) {
+            element.style.pointerEvents = disableEvents ? "none" : "auto";
+        }
+    });
+}

@@ -1,6 +1,6 @@
 import axios from "axios";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
-import JOB_STATES_MODEL from "utils/job-states-model";
 
 export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
     // full=true to capture standard error on last iteration for building
@@ -14,9 +14,9 @@ export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
                 if (onStateUpdate !== null) {
                     onStateUpdate(state);
                 }
-                if (JOB_STATES_MODEL.NON_TERMINAL_STATES.indexOf(state) !== -1) {
+                if (NON_TERMINAL_STATES.indexOf(state) !== -1) {
                     setTimeout(checkCondition, interval, resolve, reject);
-                } else if (JOB_STATES_MODEL.ERROR_STATES.indexOf(state) !== -1) {
+                } else if (ERROR_STATES.indexOf(state) !== -1) {
                     reject(jobResponse);
                 } else {
                     resolve(jobResponse);

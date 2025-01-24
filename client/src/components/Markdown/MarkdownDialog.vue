@@ -1,10 +1,253 @@
+<script setup lang="ts">
+import BootstrapVue from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import Vue, { computed, ref } from "vue";
+
+import { GalaxyApi } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
+import { rethrowSimple } from "@/utils/simple-error";
+
+import { type WorkflowLabel, type WorkflowLabels } from "./labels";
+
+import MarkdownSelector from "./MarkdownSelector.vue";
+import MarkdownVisualization from "./MarkdownVisualization.vue";
+import DataDialog from "@/components/DataDialog/DataDialog.vue";
+import BasicSelectionDialog from "@/components/SelectionDialog/BasicSelectionDialog.vue";
+import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
+
+Vue.use(BootstrapVue);
+
+interface MarkdownDialogProps {
+    argumentName?: string;
+    argumentType?: string;
+    argumentPayload?: object;
+    labels?: WorkflowLabels;
+    useLabels: boolean;
+}
+
+const props = withDefaults(defineProps<MarkdownDialogProps>(), {
+    argumentName: undefined,
+    argumentType: undefined,
+    argumentPayload: undefined,
+});
+
+const emit = defineEmits<{
+    (e: "onCancel"): void;
+    (e: "onInsert", value: string): void;
+}>();
+
+interface SelectTitles {
+    labelTitle: string;
+}
+
+type SelectType = "job_id" | "invocation_id" | "history_dataset_id" | "history_dataset_collection_id";
+
+const effectiveLabels = computed<WorkflowLabels>(() => {
+    if (!props.labels) {
+        return [] as WorkflowLabels;
+    }
+    const selectSteps = props.argumentType == "job_id";
+    const filteredLabels: WorkflowLabels = [];
+    for (const label of props.labels) {
+        if (selectSteps && label.type == "step") {
+            filteredLabels.push(label);
+        } else if (!selectSteps && label.type != "step") {
+            filteredLabels.push(label);
+        }
+    }
+    return filteredLabels;
+});
+
+const selectorConfig = {
+    job_id: {
+        labelTitle: "Step",
+    },
+    invocation_id: {
+        labelTitle: "Step",
+    },
+    history_dataset_id: {
+        labelTitle: "Dataset (Input/Output)",
+    },
+    history_dataset_collection_id: {
+        labelTitle: "Dataset Collection (Input/Output)",
+    },
+};
+
+const selectedShow = ref(false);
+const visualizationShow = ref(false);
+const workflowShow = ref(false);
+const historyShow = ref(false);
+const jobShow = ref(false);
+const invocationShow = ref(false);
+const dataShow = ref(false);
+const dataCollectionShow = ref(false);
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+const selectedLabelTitle = computed(() => {
+    const config: SelectTitles = selectorConfig[props.argumentType as SelectType] as SelectTitles;
+    return (config && config.labelTitle) || "Select Label";
+});
+
+async function getInvocations() {
+    const { data, error } = await GalaxyApi().GET("/api/invocations");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+async function getJobs() {
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+async function getWorkflows() {
+    const { data, error } = await GalaxyApi().GET("/api/workflows");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+async function getHistories() {
+    const { data, error } = await GalaxyApi().GET("/api/histories/published");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+function onData(response: string) {
+    dataShow.value = false;
+    emit("onInsert", `${props.argumentName}(history_dataset_id=${response})`);
+}
+
+interface ObjectReference {
+    id: string;
+}
+
+function onDataCollection(response: ObjectReference) {
+    dataCollectionShow.value = false;
+    emit("onInsert", `${props.argumentName}(history_dataset_collection_id=${response.id})`);
+}
+
+function onJob(response: ObjectReference) {
+    jobShow.value = false;
+    emit("onInsert", `${props.argumentName}(job_id=${response.id})`);
+}
+
+function onInvocation(response: ObjectReference) {
+    invocationShow.value = false;
+    emit("onInsert", `${props.argumentName}(invocation_id=${response.id})`);
+}
+
+function onHistory(response: ObjectReference) {
+    historyShow.value = false;
+    emit("onInsert", `history_link(history_id=${response.id})`);
+}
+
+function onWorkflow(response: ObjectReference) {
+    workflowShow.value = false;
+    emit("onInsert", `${props.argumentName}(workflow_id=${response.id})`);
+}
+
+function onVisualization(response: string) {
+    visualizationShow.value = false;
+    emit("onInsert", response);
+}
+
+function onOk(selectedLabel: WorkflowLabel | undefined) {
+    const defaultLabelType: string =
+        ["history_dataset_id", "history_dataset_collection_id"].indexOf(props.argumentType) >= 0 ? "output" : "step";
+    const labelText: string = selectedLabel ? selectedLabel.label : "<ENTER LABEL>";
+    const labelType: string = selectedLabel ? selectedLabel.type : defaultLabelType;
+    selectedShow.value = false;
+
+    function onInsertArgument() {
+        emit("onInsert", `${props.argumentName}(${labelType}="${labelText}")`);
+    }
+
+    if (props.argumentType == "history_dataset_id") {
+        if (props.useLabels) {
+            onInsertArgument();
+        } else {
+            dataShow.value = true;
+        }
+    } else if (props.argumentType == "history_dataset_collection_id") {
+        if (props.useLabels) {
+            onInsertArgument();
+        } else {
+            dataCollectionShow.value = true;
+        }
+    } else if (props.argumentType == "job_id") {
+        if (props.useLabels) {
+            onInsertArgument();
+        } else {
+            jobShow.value = true;
+        }
+    } else if (props.argumentType == "invocation_id") {
+        if (props.useLabels) {
+            onInsertArgument();
+        } else {
+            invocationShow.value = true;
+        }
+    }
+}
+
+function onCancel() {
+    dataCollectionShow.value = false;
+    selectedShow.value = false;
+    workflowShow.value = false;
+    visualizationShow.value = false;
+    jobShow.value = false;
+    invocationShow.value = false;
+    dataShow.value = false;
+    emit("onCancel");
+}
+
+if (props.argumentType == "workflow_id") {
+    workflowShow.value = true;
+} else if (props.argumentType == "history_id") {
+    historyShow.value = true;
+} else if (props.argumentType == "history_dataset_id") {
+    if (props.useLabels) {
+        selectedShow.value = true;
+    } else {
+        dataShow.value = true;
+    }
+} else if (props.argumentType == "history_dataset_collection_id") {
+    if (props.useLabels) {
+        selectedShow.value = true;
+    } else {
+        dataCollectionShow.value = true;
+    }
+} else if (props.argumentType == "invocation_id") {
+    if (props.useLabels) {
+        selectedShow.value = true;
+    } else {
+        invocationShow.value = true;
+    }
+} else if (props.argumentType == "job_id") {
+    if (props.useLabels) {
+        selectedShow.value = true;
+    } else {
+        jobShow.value = true;
+    }
+} else if (props.argumentType == "visualization_id") {
+    visualizationShow.value = true;
+}
+</script>
+
 <template>
     <span>
         <MarkdownSelector
             v-if="selectedShow"
             :initial-value="argumentType"
             :argument-name="argumentName"
-            :labels="labels"
+            :labels="effectiveLabels"
             :label-title="selectedLabelTitle"
             @onOk="onOk"
             @onCancel="onCancel" />
@@ -12,15 +255,15 @@
             v-else-if="visualizationShow"
             :argument-name="argumentName"
             :argument-payload="argumentPayload"
-            :labels="labels"
+            :labels="effectiveLabels"
             :use-labels="useLabels"
-            :history="dataHistoryId"
+            :history="currentHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel" />
-        <DataDialog v-else-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
+        <DataDialog v-else-if="dataShow" :history="currentHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
         <DatasetCollectionDialog
             v-else-if="dataCollectionShow"
-            :history="dataHistoryId"
+            :history="currentHistoryId"
             format="id"
             @onOk="onDataCollection"
             @onCancel="onCancel" />
@@ -57,219 +300,3 @@
             @onCancel="onCancel" />
     </span>
 </template>
-
-<script>
-import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import DataDialog from "components/DataDialog/DataDialog";
-import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
-import { getAppRoot } from "onload/loadConfig";
-import { getCurrentGalaxyHistory } from "utils/data";
-import Vue from "vue";
-
-import MarkdownSelector from "./MarkdownSelector";
-import MarkdownVisualization from "./MarkdownVisualization";
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: {
-        MarkdownSelector,
-        MarkdownVisualization,
-        BasicSelectionDialog,
-        DatasetCollectionDialog,
-        DataDialog,
-    },
-    props: {
-        argumentName: {
-            type: String,
-            default: null,
-        },
-        argumentType: {
-            type: String,
-            default: null,
-        },
-        argumentPayload: {
-            type: Object,
-            default: null,
-        },
-        labels: {
-            type: Array,
-            default: null,
-        },
-        useLabels: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            selectorConfig: {
-                job_id: {
-                    labelTitle: "Step",
-                },
-                invocation_id: {
-                    labelTitle: "Step",
-                },
-                history_dataset_id: {
-                    labelTitle: "Output",
-                },
-                history_dataset_collection_id: {
-                    labelTitle: "Output",
-                },
-            },
-            jobsUrl: `${getAppRoot()}api/jobs`,
-            workflowsUrl: `${getAppRoot()}api/workflows`,
-            invocationsUrl: `${getAppRoot()}api/invocations`,
-            historiesUrl: `${getAppRoot()}api/histories?view=detailed&q=published&qv=True`,
-            selectedShow: false,
-            visualizationShow: false,
-            workflowShow: false,
-            historyShow: false,
-            jobShow: false,
-            invocationShow: false,
-            dataShow: false,
-            dataCollectionShow: false,
-        };
-    },
-    computed: {
-        selectedLabelTitle() {
-            const config = this.selectorConfig[this.argumentType];
-            return (config && config.labelTitle) || "Select Label";
-        },
-    },
-    created() {
-        this.onCreate();
-    },
-    methods: {
-        getInvocations() {
-            return axios.get(this.invocationsUrl);
-        },
-        getJobs() {
-            return axios.get(this.jobsUrl);
-        },
-        getWorkflows() {
-            return axios.get(this.workflowsUrl);
-        },
-        getHistories() {
-            return axios.get(this.historiesUrl);
-        },
-        onData(response) {
-            this.dataShow = false;
-            this.$emit("onInsert", `${this.argumentName}(history_dataset_id=${response})`);
-        },
-        onDataCollection(response) {
-            this.dataCollectionShow = false;
-            this.$emit("onInsert", `${this.argumentName}(history_dataset_collection_id=${response.id})`);
-        },
-        onJob(response) {
-            this.jobShow = false;
-            this.$emit("onInsert", `${this.argumentName}(job_id=${response.id})`);
-        },
-        onInvocation(response) {
-            this.invocationShow = false;
-            this.$emit("onInsert", `${this.argumentName}(invocation_id=${response.id})`);
-        },
-        onHistory(response) {
-            this.historyShow = false;
-            this.$emit("onInsert", `history_link(history_id=${response.id})`);
-        },
-        onWorkflow(response) {
-            this.workflowShow = false;
-            this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
-        },
-        onVisualization(response) {
-            this.visualizationShow = false;
-            this.$emit("onInsert", response);
-        },
-        onCreate() {
-            if (this.argumentType == "workflow_id") {
-                this.workflowShow = true;
-            } else if (this.argumentType == "history_id") {
-                this.historyShow = true;
-            } else if (this.argumentType == "history_dataset_id") {
-                if (this.useLabels) {
-                    this.selectedShow = true;
-                } else {
-                    getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataHistoryId = historyId;
-                        this.dataShow = true;
-                    });
-                }
-            } else if (this.argumentType == "history_dataset_collection_id") {
-                if (this.useLabels) {
-                    this.selectedShow = true;
-                } else {
-                    getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataHistoryId = historyId;
-                        this.dataCollectionShow = true;
-                    });
-                }
-            } else if (this.argumentType == "invocation_id") {
-                if (this.useLabels) {
-                    this.selectedShow = true;
-                } else {
-                    this.invocationShow = true;
-                }
-            } else if (this.argumentType == "job_id") {
-                if (this.useLabels) {
-                    this.selectedShow = true;
-                } else {
-                    this.jobShow = true;
-                }
-            } else if (this.argumentType == "visualization_id") {
-                getCurrentGalaxyHistory().then((historyId) => {
-                    this.dataHistoryId = historyId;
-                    this.visualizationShow = true;
-                });
-            }
-        },
-        onOk(selectedLabel) {
-            selectedLabel = selectedLabel || "<ENTER LABEL>";
-            this.selectedShow = false;
-            if (this.argumentType == "history_dataset_id") {
-                if (this.useLabels) {
-                    this.$emit("onInsert", `${this.argumentName}(output="${selectedLabel}")`);
-                } else {
-                    getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataShow = true;
-                        this.dataHistoryId = historyId;
-                    });
-                }
-            } else if (this.argumentType == "history_dataset_collection_id") {
-                if (this.useLabels) {
-                    this.$emit("onInsert", `${this.argumentName}(output="${selectedLabel}")`);
-                } else {
-                    getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataCollectionShow = true;
-                        this.dataHistoryId = historyId;
-                    });
-                }
-            } else if (this.argumentType == "job_id") {
-                if (this.useLabels) {
-                    this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
-                } else {
-                    this.jobShow = true;
-                }
-            } else if (this.argumentType == "invocation_id") {
-                if (this.useLabels) {
-                    this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
-                } else {
-                    this.invocationShow = true;
-                }
-            }
-        },
-        onCancel() {
-            this.dataCollectionShow = false;
-            this.selectedShow = false;
-            this.workflowShow = false;
-            this.visualizationShow = false;
-            this.jobShow = false;
-            this.invocationShow = false;
-            this.dataShow = false;
-            this.$emit("onCancel");
-        },
-    },
-};
-</script>

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { InvocationMessage } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-
-import type { InvocationMessageResponseModel } from "./invocationMessageModel";
 
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
@@ -21,6 +20,7 @@ type ReasonToLevel = {
     when_not_boolean: "error";
     unexpected_failure: "error";
     workflow_output_not_found: "warning";
+    workflow_parameter_invalid: "error";
 };
 
 const level: ReasonToLevel = {
@@ -35,6 +35,7 @@ const level: ReasonToLevel = {
     when_not_boolean: "error",
     unexpected_failure: "error",
     workflow_output_not_found: "warning",
+    workflow_parameter_invalid: "error",
 };
 
 const levelClasses = {
@@ -49,7 +50,7 @@ interface Invocation {
 }
 
 interface InvocationMessageProps {
-    invocationMessage: InvocationMessageResponseModel;
+    invocationMessage: InvocationMessage;
     invocation: Invocation;
 }
 
@@ -65,7 +66,12 @@ const workflow = computed(() => {
 });
 
 const workflowStep = computed(() => {
-    if ("workflow_step_id" in props.invocationMessage && workflow.value) {
+    if (
+        "workflow_step_id" in props.invocationMessage &&
+        props.invocationMessage.workflow_step_id !== undefined &&
+        props.invocationMessage.workflow_step_id !== null &&
+        workflow.value
+    ) {
         return workflow.value.steps[props.invocationMessage.workflow_step_id];
     }
     return undefined;
@@ -74,7 +80,7 @@ const workflowStep = computed(() => {
 const dependentWorkflowStep = computed(() => {
     if ("dependent_workflow_step_id" in props.invocationMessage && workflow.value) {
         const stepId = props.invocationMessage["dependent_workflow_step_id"];
-        if (stepId !== undefined) {
+        if (stepId !== undefined && stepId !== null) {
             return workflow.value.steps[stepId];
         }
     }
@@ -149,11 +155,22 @@ const infoString = computed(() => {
             invocationMessage.workflow_step_id + 1
         } is a conditional step and the result of the when expression is not a boolean type.`;
     } else if (reason === "unexpected_failure") {
-        return `${failFragment} an unexpected failure occurred.`;
+        let atStep = "";
+        if (invocationMessage.workflow_step_id !== null && invocationMessage.workflow_step_id !== undefined) {
+            atStep = ` at step ${invocationMessage.workflow_step_id + 1}`;
+        }
+        if (invocationMessage.details) {
+            return `${failFragment} an unexpected failure occurred${atStep}: '${invocationMessage.details}'`;
+        }
+        return `${failFragment} an unexpected failure occurred${atStep}.`;
     } else if (reason === "workflow_output_not_found") {
         return `Defined workflow output '${invocationMessage.output_name}' was not found in step ${
             invocationMessage.workflow_step_id + 1
         }.`;
+    } else if (reason === "workflow_parameter_invalid") {
+        return `Workflow parameter on step ${invocationMessage.workflow_step_id + 1} failed validation: ${
+            invocationMessage.details
+        }`;
     } else {
         return reason;
     }

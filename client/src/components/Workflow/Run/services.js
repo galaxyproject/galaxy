@@ -10,9 +10,13 @@ import { rethrowSimple } from "utils/simple-error";
  * for implementation). This contains the data needed to render the UI for workflows.
  *
  * @param {String} workflowId - (Stored?) Workflow ID to fetch data for.
+ * @param {String} version - Version of the workflow to fetch.
  */
-export async function getRunData(workflowId) {
-    const url = `${getAppRoot()}api/workflows/${workflowId}/download?style=run`;
+export async function getRunData(workflowId, version = null, instance = false) {
+    let url = `${getAppRoot()}api/workflows/${workflowId}/download?style=run&instance=${instance}`;
+    if (version) {
+        url += `&version=${version}`;
+    }
     try {
         const response = await axios.get(url);
         return response.data;

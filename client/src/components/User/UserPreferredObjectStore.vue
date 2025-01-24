@@ -7,17 +7,17 @@
                 v-b-modal.modal-select-preferred-object-store
                 class="preferred-storage"
                 href="javascript:void(0)"
-                ><b v-localize>Preferred Object Store</b></a
+                ><b v-localize>{{ title }}</b></a
             >
             <div v-localize class="form-text text-muted">
-                Select a preferred default object store for the outputs of new jobs to be created in.
+                Select a {{ preferredOrEmptyString }} storage location for the outputs of new jobs.
             </div>
             <BModal
                 id="modal-select-preferred-object-store"
                 ref="modal"
                 v-model="showModal"
                 centered
-                title="Preferred Object Store"
+                :title="title"
                 :title-tag="titleTag"
                 hide-footer
                 static
@@ -40,9 +40,12 @@
 import axios from "axios";
 import { BModal, BRow, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
+import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
+
+import { useConfigStore } from "@/stores/configurationStore";
 
 Vue.use(VBModal);
 
@@ -75,6 +78,19 @@ export default {
             galaxySelectionDefaultDescription:
                 "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
         };
+    },
+    computed: {
+        ...mapState(useConfigStore, ["config"]),
+        preferredOrEmptyString() {
+            if (this.config?.object_store_always_respect_user_selection) {
+                return "";
+            } else {
+                return "Preferred";
+            }
+        },
+        title() {
+            return `${this.preferredOrEmptyString} Storage Location`;
+        },
     },
     methods: {
         resetModal() {},

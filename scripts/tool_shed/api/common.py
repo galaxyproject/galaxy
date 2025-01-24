@@ -33,13 +33,13 @@ def display(url, api_key=None, return_formatted=True):
             # All collection members should have a name in the response.
             # url is optional
             if "url" in i:
-                print("#%d: %s" % (n + 1, i.pop("url")))
+                print("#{}: {}".format(n + 1, i.pop("url")))
             if "name" in i:
-                print("  name: %s" % i.pop("name"))
+                print(f"  name: {i.pop('name')}")
             for k, v in i.items():
                 print(f"  {k}: {v}")
         print()
-        print("%d element(s) in collection" % len(r))
+        print(f"{len(r)} element(s) in collection")
     elif isinstance(r, dict):
         # Response is an element as defined in the REST style.
         print("Member Information")
@@ -47,7 +47,7 @@ def display(url, api_key=None, return_formatted=True):
         for k, v in r.items():
             print(f"{k}: {v}")
     else:
-        print("response is unknown type: %s" % type(r))
+        print(f"response is unknown type: {type(r)}")
 
 
 def get(url, api_key=None):
@@ -100,7 +100,7 @@ def submit(url, data, api_key=None, return_formatted=True):
                 else:
                     print("----")
                 if "name" in i:
-                    print("  name: %s" % i.pop("name"))
+                    print(f"  name: {i.pop('name')}")
                 for k, v in i.items():
                     print(f"  {k}: {v}")
             else:

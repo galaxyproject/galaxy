@@ -1,30 +1,29 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faCheckSquare, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
+import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, type Ref, ref } from "vue";
+import { computed, type ComputedRef } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
-import DelayedInput from "@/components/Common/DelayedInput.vue";
+const props = defineProps<{
+    activityBarId: string;
+    query: string;
+}>();
 
-library.add({
-    faCheckSquare,
-    faSquare,
-    faTrash,
-    faThumbtack,
-});
+const emit = defineEmits<{
+    (e: "activityClicked", activityId: string): void;
+}>();
 
-const activityStore = useActivityStore();
-const { activities } = storeToRefs(activityStore);
-const query: Ref<string> = ref("");
+const activityStore = useActivityStore(props.activityBarId);
+
+const optionalActivities = computed(() => activityStore.activities.filter((a) => a.optional));
 
 const filteredActivities = computed(() => {
-    if (query.value.length > 0) {
-        const queryLower = query.value.toLowerCase();
-        const results = activities.value.filter((a: Activity) => {
+    if (props.query?.length > 0) {
+        const queryLower = props.query.toLowerCase();
+        const results = optionalActivities.value.filter((a: Activity) => {
             const attributeValues = [a.title, a.description];
             for (const value of attributeValues) {
                 if (value.toLowerCase().indexOf(queryLower) !== -1) {
@@ -35,7 +34,7 @@ const filteredActivities = computed(() => {
         });
         return results;
     } else {
-        return activities.value;
+        return optionalActivities.value;
     }
 });
 
@@ -43,7 +42,7 @@ const foundActivities: ComputedRef<boolean> = computed(() => {
     return filteredActivities.value.length > 0;
 });
 
-function onClick(activity: Activity) {
+function onFavorite(activity: Activity) {
     if (activity.optional) {
         activity.visible = !activity.visible;
     }
@@ -53,54 +52,77 @@ function onRemove(activity: Activity) {
     activityStore.remove(activity.id);
 }
 
-function onQuery(newQuery: string) {
-    query.value = newQuery;
+const router = useRouter();
+
+function executeActivity(activity: Activity) {
+    if (activity.click) {
+        emit("activityClicked", activity.id);
+    }
+
+    if (activity.panel) {
+        activityStore.toggleSideBar(activity.id);
+    }
+
+    if (activity.to) {
+        router.push(activity.to);
+    }
 }
 </script>
 
 <template>
-    <div class="activity-settings rounded p-3 no-highlight">
-        <DelayedInput class="mb-3" :delay="100" placeholder="Search activities" @change="onQuery" />
-        <div v-if="foundActivities" class="activity-settings-content overflow-auto">
-            <div v-for="activity in filteredActivities" :key="activity.id">
-                <div class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <span class="w-100">
-                            <FontAwesomeIcon
-                                v-if="!activity.optional"
-                                class="icon-check mr-1"
-                                icon="fas fa-thumbtack"
-                                fa-fw />
-                            <FontAwesomeIcon
-                                v-else-if="activity.visible"
-                                class="icon-check mr-1"
-                                icon="fas fa-check-square"
-                                fa-fw />
-                            <FontAwesomeIcon v-else class="mr-1" icon="far fa-square" fa-fw />
-                            <small>
-                                <icon class="mr-1" :icon="activity.icon" />
-                                <span v-localize class="font-weight-bold">{{
-                                    activity.title || "No title available"
-                                }}</span>
-                            </small>
+    <div>
+        <div v-if="foundActivities">
+            <button
+                v-for="activity in filteredActivities"
+                :key="activity.id"
+                class="activity-settings-item p-2 cursor-pointer"
+                @click="executeActivity(activity)">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="d-flex justify-content-between w-100">
+                        <span>
+                            <FontAwesomeIcon class="mr-1" :icon="activity.icon" />
+                            <span v-localize class="font-weight-bold">{{
+                                activity.title || "No title available"
+                            }}</span>
                         </span>
-                        <b-button
-                            v-if="activity.mutable"
-                            data-description="delete activity"
-                            class="button-delete"
-                            size="sm"
-                            variant="link"
-                            @click.stop="onRemove(activity)">
-                            <FontAwesomeIcon icon="fa-trash" fa-fw />
-                        </b-button>
-                    </div>
-                    <small v-localize>
-                        {{ activity.description || "No description available" }}
-                    </small>
+                        <div>
+                            <BButton
+                                v-if="activity.mutable"
+                                v-b-tooltip.hover
+                                data-description="delete activity"
+                                size="sm"
+                                title="Delete Activity"
+                                variant="link"
+                                @click.stop="onRemove(activity)">
+                                <FontAwesomeIcon :icon="faTrash" fa-fw />
+                            </BButton>
+                            <BButton
+                                v-if="activity.visible"
+                                v-b-tooltip.hover
+                                size="sm"
+                                title="Hide in Activity Bar"
+                                variant="link"
+                                @click.stop="onFavorite(activity)">
+                                <FontAwesomeIcon :icon="faStar" fa-fw />
+                            </BButton>
+                            <BButton
+                                v-else
+                                v-b-tooltip.hover
+                                size="sm"
+                                title="Show in Activity Bar"
+                                variant="link"
+                                @click.stop="onFavorite(activity)">
+                                <FontAwesomeIcon :icon="faStarRegular" fa-fw />
+                            </BButton>
+                        </div>
+                    </span>
                 </div>
-            </div>
+                <div v-localize class="text-muted">
+                    {{ activity.description || "No description available" }}
+                </div>
+            </button>
         </div>
-        <div v-else class="activity-settings-content">
+        <div v-else>
             <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
         </div>
     </div>
@@ -109,31 +131,15 @@ function onQuery(newQuery: string) {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.activity-settings {
-    width: 20rem;
-}
-
-.activity-settings-content {
-    height: 20rem;
-}
-
 .activity-settings-item {
-    .icon-check {
-        color: darken($brand-success, 15%);
-    }
-    .button-delete {
-        background: transparent;
-    }
+    background: none;
+    border: none;
+    text-align: left;
+    transition: none;
+    width: 100%;
 }
+
 .activity-settings-item:hover {
-    background: $brand-primary;
-    color: $brand-light;
-    border-radius: $border-radius-large;
-    .icon-check {
-        color: $brand-light;
-    }
-    .button-delete {
-        color: $brand-light;
-    }
+    background: $gray-200;
 }
 </style>

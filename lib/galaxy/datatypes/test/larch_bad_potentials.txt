@@ -1,0 +1,24 @@
+TITLE comment: None given
+TITLE Source:  
+TITLE Structure Summary:  Fe2 S4
+TITLE Reduced formula:  FeS2
+TITLE space group: (Pnnm), space number:  (58)
+TITLE abc:  3.385200   4.447400   5.428700
+TITLE angles: 90.000000  90.000000  90.000000
+TITLE sites: 6
+* 1 Fe     0.000000     0.000000     0.000000
+* 2 Fe     0.500000     0.500000     0.500000
+* 3 S     0.000000     0.199900     0.378040
+* 4 S     0.000000     0.800100     0.621960
+* 5 S     0.500000     0.699900     0.121960
+* 6 S     0.500000     0.300100     0.878040
+
+POTENTIALS 
+  * pot    Z  tag      lmax1    lmax2    xnatph(stoichometry)    spinph
+******-  **-  ****-  ******-  ******-  **********************  ********
+      0   26  Fe          -1       -1                  0.0001         0
+      1   26  Fe          -1       -1                  2              0
+      2   16  S           -1       -1                  4              0
+END
+
+

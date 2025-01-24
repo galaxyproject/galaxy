@@ -7,6 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 from uuid import uuid4
 
@@ -43,7 +44,7 @@ def notification_broadcast_test_data(subject: Optional[str] = None, message: Opt
     }
 
 
-class TestNotificationsIntegration(IntegrationTestCase):
+class NotificationsIntegrationBase(IntegrationTestCase):
     dataset_populator: DatasetPopulator
     task_based = False
     framework_tool_and_types = False
@@ -51,6 +52,7 @@ class TestNotificationsIntegration(IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = False
         config["enable_notification_system"] = True
 
     def setUp(self):
@@ -65,12 +67,18 @@ class TestNotificationsIntegration(IntegrationTestCase):
         before_creating_notifications = datetime.utcnow()
 
         # Only user1 will receive this notification
-        created_response_1 = self._send_test_notification_to([user1["id"]], message="test_notification_status 1")
-        assert created_response_1["total_notifications_sent"] == 1
+        subject1 = f"notification_{uuid4()}"
+        created_response_1 = self._send_test_notification_to(
+            [user1["id"]], subject=subject1, message="test_notification_status 1"
+        )
+        self._assert_notifications_sent(created_response_1, expected_count=1)
 
         # Both user1 and user2 will receive this notification
-        created_response_2 = self._send_test_notification_to([user1["id"], user2["id"]], "test_notification_status 2")
-        assert created_response_2["total_notifications_sent"] == 2
+        subject2 = f"notification_{uuid4()}"
+        created_response_2 = self._send_test_notification_to(
+            [user1["id"], user2["id"]], subject=subject2, message="test_notification_status 2"
+        )
+        self._assert_notifications_sent(created_response_2, expected_count=2)
 
         # All users will receive this broadcasted notification
         created_response_3 = self._send_broadcast_notification("test_notification_status 3")
@@ -112,7 +120,8 @@ class TestNotificationsIntegration(IntegrationTestCase):
             assert len(status["broadcasts"]) == 0
 
             # Updating a notification association value should return that notification in the next request
-            notification_id = created_response_2["notification"]["id"]
+            notification_id = self._get_notification_id_by_subject(subject2)
+            assert notification_id is not None
             self._update_notification(notification_id, update_state={"seen": True})
             status = self._get_notifications_status_since(after_creating_notifications)
             assert status["total_unread_count"] == 0
@@ -130,16 +139,21 @@ class TestNotificationsIntegration(IntegrationTestCase):
         user1 = self._create_test_user()
         user2 = self._create_test_user()
 
+        subject = f"notification_{uuid4()}"
         created_response = self._send_test_notification_to(
-            [user1["id"]], message="test_user_cannot_access_other_users_notifications"
+            [user1["id"]], subject=subject, message="test_user_cannot_access_other_users_notifications"
         )
-        notification_id = created_response["notification"]["id"]
+        self._assert_notifications_sent(created_response, expected_count=1)
+        notification_id = None
 
         with self._different_user(user1["email"]):
+            notification_id = self._get_notification_id_by_subject(subject)
+            assert notification_id is not None
             response = self._get(f"notifications/{notification_id}")
             self._assert_status_code_is_ok(response)
 
         with self._different_user(user2["email"]):
+            assert notification_id is not None
             response = self._get(f"notifications/{notification_id}")
             self._assert_status_code_is(response, 404)
 
@@ -149,13 +163,15 @@ class TestNotificationsIntegration(IntegrationTestCase):
 
         before_creating_notifications = datetime.utcnow()
 
+        subject = f"notification_{uuid4()}"
         created_response = self._send_test_notification_to(
-            [user1["id"], user2["id"]], message="test_delete_notification_by_user"
+            [user1["id"], user2["id"]], subject=subject, message="test_delete_notification_by_user"
         )
-        assert created_response["total_notifications_sent"] == 2
-        notification_id = created_response["notification"]["id"]
+        self._assert_notifications_sent(created_response, expected_count=2)
 
         with self._different_user(user1["email"]):
+            notification_id = self._get_notification_id_by_subject(subject)
+            assert notification_id is not None
             response = self._get(f"notifications/{notification_id}")
             self._assert_status_code_is_ok(response)
             self._delete(f"notifications/{notification_id}")
@@ -168,6 +184,7 @@ class TestNotificationsIntegration(IntegrationTestCase):
             assert len(status["broadcasts"]) == 0
 
         with self._different_user(user2["email"]):
+            assert notification_id is not None
             response = self._get(f"notifications/{notification_id}")
             self._assert_status_code_is_ok(response)
 
@@ -194,11 +211,14 @@ class TestNotificationsIntegration(IntegrationTestCase):
 
     def test_update_notifications(self):
         recipient_user = self._create_test_user()
-        created_user_notification_response = self._send_test_notification_to(
-            [recipient_user["id"]], subject="User Notification to update"
-        )
-        assert created_user_notification_response["total_notifications_sent"] == 1
-        user_notification_id = created_user_notification_response["notification"]["id"]
+        subject = f"User Notification to update {uuid4()}"
+        created_user_notification_response = self._send_test_notification_to([recipient_user["id"]], subject=subject)
+        self._assert_notifications_sent(created_user_notification_response, expected_count=1)
+
+        with self._different_user(recipient_user["email"]):
+            user_notification_id = self._get_notification_id_by_subject(subject)
+
+        assert user_notification_id is not None
 
         created_broadcast_notification_response = self._send_broadcast_notification(
             subject="Broadcasted Notification to update"
@@ -268,6 +288,35 @@ class TestNotificationsIntegration(IntegrationTestCase):
         assert "Scheduled" in subjects
         assert "Expired" in subjects
 
+    def test_notification_input_dates_consider_timezone(self):
+        payload = notification_broadcast_test_data(subject="Test", message="Test")
+        payload["publication_time"] = "2021-01-01T12:00:00+02:00"
+        payload["expiration_time"] = "2021-01-01T12:00:00Z"
+        response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
+        self._assert_status_code_is_ok(response)
+        notification = response.json()["notification"]
+        assert notification["publication_time"] == "2021-01-01T10:00:00"
+        assert notification["expiration_time"] == "2021-01-01T12:00:00"
+
+    def test_broadcast_notification_action_links(self):
+        # Broadcast notifications can have relative and absolute links
+        response = self._send_broadcast_notification(
+            action_links=[("View Workflows", "/workflows/list"), ("Go to GTN", "https://training.galaxyproject.org")]
+        )
+        notification_id = response["notification"]["id"]
+        response = self._get(f"notifications/broadcast/{notification_id}")
+        self._assert_status_code_is_ok(response)
+        notification = response.json()
+        assert "content" in notification
+        assert "action_links" in notification["content"]
+        assert len(notification["content"]["action_links"]) == 2
+        action_link = notification["content"]["action_links"][0]
+        assert action_link["action_name"] == "View Workflows"
+        assert action_link["link"] == "/workflows/list"
+        action_link = notification["content"]["action_links"][1]
+        assert action_link["action_name"] == "Go to GTN"
+        assert action_link["link"] == "https://training.galaxyproject.org"
+
     def test_sharing_items_creates_notifications_when_expected(self):
         user1 = self._create_test_user()
         user2 = self._create_test_user()
@@ -307,7 +356,7 @@ class TestNotificationsIntegration(IntegrationTestCase):
             "type": "example",
             "dbkey": "hg17",
         }
-        response = self._post("visualizations", data=create_payload).json()
+        response = self._post("visualizations", data=create_payload, json=True).json()
         visualization_id = response["id"]
         payload = {"user_ids": user_ids}
         sharing_response = self._put(f"visualizations/{visualization_id}/share_with_users", data=payload, json=True)
@@ -349,12 +398,17 @@ class TestNotificationsIntegration(IntegrationTestCase):
         message: Optional[str] = None,
         publication_time: Optional[datetime] = None,
         expiration_time: Optional[datetime] = None,
+        action_links: Optional[List[Tuple[str, str]]] = None,
     ):
         payload = notification_broadcast_test_data()
         if subject is not None:
             payload["content"]["subject"] = subject
         if message is not None:
             payload["content"]["message"] = message
+        if action_links is not None:
+            payload["content"]["action_links"] = [
+                {"action_name": action_name, "link": link} for action_name, link in action_links
+            ]
         if publication_time is not None:
             payload["publication_time"] = publication_time.isoformat()
         if expiration_time is not None:
@@ -367,3 +421,36 @@ class TestNotificationsIntegration(IntegrationTestCase):
     def _update_notification(self, notification_id: str, update_state: Dict[str, Any]):
         update_response = self._put(f"notifications/{notification_id}", data=update_state, json=True)
         self._assert_status_code_is(update_response, 204)
+
+    def _assert_notifications_sent(self, response, expected_count: int = 0):
+        if self.task_based:
+            task_id = response["id"]
+            assert task_id is not None
+            self.dataset_populator.wait_on_task_id(task_id)
+        else:
+            assert response["total_notifications_sent"] == expected_count
+
+    def _get_notification_id_by_subject(self, subject: str) -> Optional[str]:
+        notifications = self._get("notifications").json()
+        for notification in notifications:
+            if notification["content"]["subject"] == subject:
+                return notification["id"]
+        return None
+
+
+class TestNotificationsIntegration(NotificationsIntegrationBase):
+    task_based = False
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = False
+
+
+class TestNotificationsIntegrationTaskBased(NotificationsIntegrationBase):
+    task_based = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = True

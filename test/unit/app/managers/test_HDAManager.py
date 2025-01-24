@@ -7,6 +7,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
@@ -132,13 +133,6 @@ class TestHDAManager(HDATestCase):
         hda3_annotation = self.hda_manager.annotation(hda3)
         assert annotation == hda3_annotation
 
-    # def test_copy_from_ldda( self ):
-    #    owner = self.user_manager.create( self.trans, **user2_data )
-    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-    #
-    #    self.log( "should be able to copy an HDA" )
-    #    hda2 = self.hda_manager.copy_ldda( history1, hda1 )
-
     def test_delete(self):
         owner = self.user_manager.create(**user2_data)
         history1 = self.history_manager.create(name="history1", user=owner)
@@ -227,8 +221,7 @@ class TestHDAManager(HDATestCase):
         assert accessible == item1
 
         self.log(
-            "after setting a dataset to private (one user) permissions, "
-            + "access should be not allowed for other users"
+            "after setting a dataset to private (one user) permissions, access should be not allowed for other users"
         )
         with self.assertRaises(exceptions.ItemAccessibilityException):
             self.hda_manager.get_accessible(
@@ -239,7 +232,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "a copy of a restricted dataset in another users history should be inaccessible even to "
-            + "the histories owner"
+            "the histories owner"
         )
         history2 = self.history_manager.create(name="history2", user=non_owner)
         self.trans.set_history(history2)
@@ -306,7 +299,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "anonymous users should not be able to access datasets within their own histories if "
-            + "permissions do not allow"
+            "permissions do not allow"
         )
         assert not self.hda_manager.is_accessible(item1, anon_user)
         with self.assertRaises(exceptions.ItemAccessibilityException):
@@ -314,7 +307,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "those users with access permissions should still be allowed access to datasets "
-            + "within anon users' histories"
+            "within anon users' histories"
         )
         assert self.hda_manager.is_accessible(item1, dataset_owner)
 
@@ -345,13 +338,7 @@ class TestHDAManager(HDATestCase):
     # def test_text_data( self ):
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", mock_url_builder)
 class TestHDASerializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
@@ -425,7 +412,7 @@ class TestHDASerializer(HDATestCase):
         assert isinstance(serialized["file_size"], int)
         assert isinstance(serialized["nice_size"], str)
         # TODO: these should be tested w/copy
-        self.assertNullableEncodedId(serialized["copied_from_history_dataset_association_id"])
+        assert isinstance(serialized["copied_from_history_dataset_association_id"], int)
         self.assertNullableEncodedId(serialized["copied_from_library_dataset_dataset_association_id"])
         self.assertNullableBasestring(serialized["info"])
         self.assertNullableBasestring(serialized["blurb"])

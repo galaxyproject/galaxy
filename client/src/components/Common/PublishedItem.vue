@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { computed, type PropType } from "vue";
-
-import { usePanels } from "@/composables/usePanels";
+import { computed } from "vue";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface Item {
@@ -19,12 +16,11 @@ interface Item {
     title?: string;
 }
 
-const props = defineProps({
-    item: {
-        type: Object as PropType<Item | null>,
-        default: null,
-    },
-});
+interface Props {
+    item?: Item;
+}
+
+const props = defineProps<Props>();
 
 const modelTitle = computed(() => {
     const modelClass = props.item?.model_class ?? "Item";
@@ -46,38 +42,46 @@ const owner = computed(() => props.item?.owner ?? props.item?.username ?? "Unava
 const pluralPath = computed(() => plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
-
-const { showActivityBar, showToolbox } = usePanels();
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
-        <FlexPanel v-if="showToolbox" side="left">
-            <ToolBox />
-        </FlexPanel>
+        <ActivityBar />
+
         <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
             <slot />
         </div>
+
         <FlexPanel side="right">
             <div v-if="modelTitle" class="m-3">
                 <h1 class="h-sm">About this {{ modelTitle }}</h1>
+
                 <h2 class="h-md text-break">{{ props.item?.title ?? props.item?.name }}</h2>
+
                 <img :src="gravatarSource" alt="user avatar" />
+
                 <StatelessTags v-if="props.item?.tags" class="tags mt-2" :value="props.item.tags" disabled />
+
                 <br />
+
                 <h2 class="h-sm">Author</h2>
+
                 <div>{{ owner }}</div>
+
                 <hr />
+
                 <h2 class="h-sm">Related Pages</h2>
+
                 <div>
-                    <router-link :to="urlAll">All published {{ plural }}.</router-link>
+                    <router-link :to="urlAll">All published {{ plural }}</router-link>
                 </div>
+
                 <div>
-                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
+                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
                 </div>
             </div>
             <LoadingSpan v-else message="Loading item details" />
+
             <div class="flex-fill" />
         </FlexPanel>
     </div>

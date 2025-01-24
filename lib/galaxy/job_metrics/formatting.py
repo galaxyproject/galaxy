@@ -1,4 +1,5 @@
 """Utilities related to formatting job metrics for human consumption."""
+
 from typing import (
     Any,
     NamedTuple,
@@ -13,8 +14,8 @@ class FormattedMetric(NamedTuple):
 class JobMetricFormatter:
     """Format job metric key-value pairs for human consumption in Web UI."""
 
-    def format(self, key: Any, value: Any) -> FormattedMetric:
-        return FormattedMetric(str(key), str(value))
+    def format(self, key: str, value: Any) -> FormattedMetric:
+        return FormattedMetric(key, str(value))
 
 
 def seconds_to_str(value: int) -> str:

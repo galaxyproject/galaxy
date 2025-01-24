@@ -28,11 +28,11 @@ steps:
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
-      element: "#btn-start"
+      element: "#regular #btn-start"
       intro: "Upload the data into your Galaxy <b>History</b>."
       postclick:
-        - "#btn-start"
-        - "#btn-close"
+        - "#regular #btn-start"
+        - "#regular #btn-close"
 
     - title: "History"
       element: "#current-history-panel"
@@ -71,7 +71,7 @@ steps:
       intro: "You can remove a dataset from the history with the trash can symbol."
       postclick: true
 
-    - element: "#current-history-panel input[data-description='filter text input']"
+    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
       title: "Filter your datasets"
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
       textinsert: "deleted:true"
@@ -83,7 +83,7 @@ steps:
             Please note that datasets marked as deleted can be purged by your administrator at any time.
       postclick: true
 
-    - element: "#current-history-panel [data-description='filter text input']"
+    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
       title: "Search your History"
       intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
       textinsert: ""

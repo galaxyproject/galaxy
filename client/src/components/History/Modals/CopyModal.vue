@@ -1,107 +1,142 @@
+<script setup lang="ts">
+import {
+    BAlert,
+    BButton,
+    BForm,
+    BFormGroup,
+    BFormInput,
+    BFormInvalidFeedback,
+    BFormRadio,
+    BModal,
+    BSpinner,
+} from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+
+import { type HistorySummary, userOwnsHistory } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+
+interface Props {
+    history: HistorySummary;
+    showModal?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    showModal: false,
+});
+
+const emit = defineEmits<{
+    (e: "update:show-modal", value: boolean): void;
+}>();
+
+const userStore = useUserStore();
+const historyStore = useHistoryStore();
+
+const { currentUser, isAnonymous } = storeToRefs(userStore);
+
+const name = ref("");
+const copyAll = ref(false);
+const loading = ref(false);
+const localShowModal = ref(props.showModal);
+
+const title = computed(() => {
+    return `Copying History: ${props.history.name}`;
+});
+const saveTitle = computed(() => {
+    return loading.value ? "Saving..." : "Copy History";
+});
+const saveVariant = computed(() => {
+    return loading.value ? "info" : formValid.value ? "primary" : "secondary";
+});
+const isOwner = computed(() => {
+    return userOwnsHistory(currentUser.value, props.history);
+});
+const newNameValid = computed(() => {
+    if (isOwner.value && name.value == props.history.name) {
+        return false;
+    }
+    return name.value.length > 0;
+});
+const formValid = computed(() => {
+    return newNameValid.value;
+});
+
+watch(
+    () => props.showModal,
+    (newVal) => {
+        localShowModal.value = newVal;
+    }
+);
+watch(
+    () => localShowModal.value,
+    (newVal) => {
+        emit("update:show-modal", newVal);
+    }
+);
+watch(
+    () => props.history,
+    (newHistory) => {
+        name.value = `Copy of '${newHistory.name}'`;
+    },
+    {
+        immediate: true,
+    }
+);
+
+async function copy(close: () => void) {
+    loading.value = true;
+    await historyStore.copyHistory(props.history, name.value, copyAll.value);
+    loading.value = false;
+    close();
+}
+</script>
+
 <template>
-    <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
+    <BModal v-model="localShowModal" v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
-            <b-alert v-localize :show="isAnonymous" variant="warning">
-                As an anonymous user, unless you login or register, you will lose your current history after copying
-                this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
-            </b-alert>
+            <BAlert v-localize :show="isAnonymous" variant="warning">
+                As an anonymous user, unless you log in or register, you will lose your current history after copying
+                this history. You can <a href="/login/start">log in or register here</a>.
+            </BAlert>
         </transition>
 
         <transition name="fade">
             <div v-if="loading" class="d-flex justify-content-center mb-3">
-                <b-spinner label="Copying History..."></b-spinner>
+                <BSpinner label="Copying History..." />
             </div>
         </transition>
 
         <transition>
-            <b-form v-if="!loading">
-                <b-form-group label="Enter a title for the new history" label-for="copy-modal-title">
-                    <b-input id="copy-modal-title" v-model="name" :state="newNameValid" required />
-                    <b-form-invalid-feedback :state="newNameValid">
-                        Please enter a valid history title.
-                    </b-form-invalid-feedback>
-                </b-form-group>
+            <BForm v-if="!loading">
+                <BFormGroup label="Enter a title for the new history" label-for="copy-modal-title">
+                    <BFormInput id="copy-modal-title" v-model="name" :state="newNameValid" required />
 
-                <b-form-group label="Choose which datasets from the original history to include.">
-                    <b-form-radio v-model="copyAll" :value="false">
+                    <BFormInvalidFeedback :state="newNameValid">
+                        Please enter a valid history title.
+                    </BFormInvalidFeedback>
+                </BFormGroup>
+
+                <BFormGroup label="Choose which datasets from the original history to include.">
+                    <BFormRadio v-model="copyAll" :value="false">
                         Copy only the active, non-deleted datasets.
-                    </b-form-radio>
-                    <b-form-radio v-model="copyAll" :value="true">
-                        Copy all datasets including deleted ones.
-                    </b-form-radio>
-                </b-form-group>
-            </b-form>
+                    </BFormRadio>
+
+                    <BFormRadio v-model="copyAll" :value="true"> Copy all datasets including deleted ones. </BFormRadio>
+                </BFormGroup>
+            </BForm>
         </transition>
 
-        <div slot="modal-footer" slot-scope="{ ok, cancel }">
-            <div>
-                <b-button class="mr-3" @click="cancel()"> Cancel </b-button>
-                <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
-                    {{ saveTitle | localize }}
-                </b-button>
-            </div>
-        </div>
-    </b-modal>
+        <template v-slot:modal-footer="{ ok, cancel }">
+            <BButton class="mr-3" @click="cancel()"> Cancel </BButton>
+
+            <BButton :variant="saveVariant" :disabled="loading || !formValid" @click="copy(ok)">
+                {{ localize(saveTitle) }}
+            </BButton>
+        </template>
+    </BModal>
 </template>
-
-<script>
-import { mapActions, mapState } from "pinia";
-
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-
-export default {
-    props: {
-        history: { type: Object, required: true },
-    },
-    data() {
-        return {
-            name: "",
-            copyAll: false,
-            loading: false,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["isAnonymous"]),
-        title() {
-            return `Copying History: ${this.history.name}`;
-        },
-        saveTitle() {
-            return this.loading ? "Saving..." : "Copy History";
-        },
-        saveVariant() {
-            return this.loading ? "info" : this.formValid ? "primary" : "secondary";
-        },
-        newNameValid() {
-            if (this.name == this.history.name) {
-                return null;
-            }
-            return this.name.length > 0;
-        },
-        formValid() {
-            return this.newNameValid;
-        },
-    },
-    watch: {
-        history: {
-            handler(newHistory) {
-                this.name = `Copy of '${newHistory.name}'`;
-            },
-            immediate: true,
-        },
-    },
-    methods: {
-        ...mapActions(useHistoryStore, ["copyHistory"]),
-        async copy(close) {
-            this.loading = true;
-            const { history, name, copyAll } = this;
-            await this.copyHistory(history, name, copyAll);
-            this.loading = false;
-            close();
-        },
-    },
-};
-</script>
 
 <style lang="scss">
 @import "scss/transitions.scss";

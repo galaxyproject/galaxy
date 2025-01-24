@@ -14,6 +14,7 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -27,7 +28,6 @@ from galaxy.schema.schema import (
     InstalledToolShedRepository,
 )
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -142,9 +142,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         irm = InstallRepositoryManager(self.app)
         installed_tool_shed_repositories = irm.install(tool_shed_url, name, owner, changeset_revision, payload)
         if installed_tool_shed_repositories:
-            return InstalledToolShedRepositories(
-                __root__=list(map(self.service._show, installed_tool_shed_repositories))
-            )
+            return InstalledToolShedRepositories(root=list(map(self.service._show, installed_tool_shed_repositories)))
         message = "No repositories were installed, possibly because the selected repository has already been installed."
         return dict(status="ok", message=message)
 
@@ -244,8 +242,8 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
                 # We encountered an error.
                 return installed_tool_shed_repositories
             elif isinstance(installed_tool_shed_repositories, InstalledToolShedRepositories):
-                all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories.__root__)
-        return InstalledToolShedRepositories(__root__=all_installed_tool_shed_repositories)
+                all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories.root)
+        return InstalledToolShedRepositories(root=all_installed_tool_shed_repositories)
 
     @require_admin
     @expose_api
@@ -285,7 +283,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             )
             if not repository:
                 raise HTTPBadRequest(detail="Repository not found")
-        irm = InstalledRepositoryManager(app=self.app)
+        irm = self.app.installed_repository_manager
         errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
             action = "removed" if remove_from_disk else "deactivated"
@@ -318,8 +316,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
     @require_admin
     @expose_api
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
-        repository_ids = util.listify(kwd.get("repository_ids"))
-        if repository_ids:
+        if repository_ids := util.listify(kwd.get("repository_ids")):
             irmm = InstalledRepositoryMetadataManager(self.app)
             failed = []
             successful = []
@@ -385,11 +382,14 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         return json.dumps(results, sort_keys=True, indent=4)
 
 
-InstalledToolShedRepositoryIDPathParam: DecodedDatabaseIdField = Path(
-    ...,
-    title="Installed Tool Shed Repository ID",
-    description="The encoded database identifier of the installed Tool Shed Repository.",
-)
+InstalledToolShedRepositoryIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(
+        ...,
+        title="Installed Tool Shed Repository ID",
+        description="The encoded database identifier of the installed Tool Shed Repository.",
+    ),
+]
 
 NameQueryParam: Optional[str] = Query(default=None, title="Name", description="Filter by repository name.")
 
@@ -412,6 +412,7 @@ class FastAPIToolShedRepositories:
 
     @router.get(
         "/api/tool_shed_repositories",
+        public=True,
         summary="Lists installed tool shed repositories.",
         response_description="A list of installed tool shed repository objects.",
     )
@@ -443,10 +444,11 @@ class FastAPIToolShedRepositories:
 
     @router.get(
         "/api/tool_shed_repositories/{id}",
+        public=True,
         summary="Show installed tool shed repository.",
     )
     def show(
         self,
-        id: DecodedDatabaseIdField = InstalledToolShedRepositoryIDPathParam,
+        id: InstalledToolShedRepositoryIDPathParam,
     ) -> InstalledToolShedRepository:
         return self.service.show(id)

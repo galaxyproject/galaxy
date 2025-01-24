@@ -1,33 +1,45 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useEventBus } from "@vueuse/core";
+import { BAlert } from "bootstrap-vue";
+
+import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import localize from "@/utils/localization";
+
+library.add(faInfoCircle);
+
+const { emit } = useEventBus<string>("open-tool-section");
+
+const props = withDefaults(
+    defineProps<{
+        message?: string;
+        writable?: boolean;
+    }>(),
+    {
+        message: "This history is empty.",
+        writable: true,
+    }
+);
+
+const { openGlobalUploadModal } = useGlobalUploadModal();
+function clickDataLink() {
+    emit("getext");
+}
+</script>
+
 <template>
-    <b-alert show>
-        <h4 class="mb-1">
-            <i class="fa fa-info-circle empty-message"></i>
-            <span>{{ message | l }}</span>
+    <BAlert show>
+        <h4 id="empty-history-message" class="mb-1">
+            <FontAwesomeIcon :icon="faInfoCircle" />
+            <span>{{ localize(message) }}</span>
         </h4>
-        <p v-if="writable">
+
+        <p v-if="props.writable">
             <a v-localize href="#" @click.prevent="openGlobalUploadModal">You can load your own data</a>
             <span v-localize>or</span>
             <a v-localize href="#" @click.prevent="clickDataLink">get data from an external source</a>.
         </p>
-    </b-alert>
+    </BAlert>
 </template>
-
-<script>
-import { useGlobalUploadModal } from "composables/globalUploadModal";
-
-export default {
-    props: {
-        message: { type: String, default: "This history is empty." },
-        writable: { type: Boolean, default: true },
-    },
-    setup() {
-        const { openGlobalUploadModal } = useGlobalUploadModal();
-        return { openGlobalUploadModal };
-    },
-    methods: {
-        clickDataLink() {
-            this.eventHub.$emit("openToolSection", "getext");
-        },
-    },
-};
-</script>

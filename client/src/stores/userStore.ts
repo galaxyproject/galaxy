@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -10,32 +11,39 @@ import {
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
 
-interface User {
-    id: string;
-    email: string;
-    tags_used: string[];
-    isAnonymous: false;
-}
-
-interface AnonymousUser {
-    isAnonymous: true;
+interface FavoriteTools {
+    tools: string[];
 }
 
 interface Preferences {
-    theme: string;
-    favorites: { tools: string[] };
+    theme?: string;
+    favorites: FavoriteTools;
+    [key: string]: unknown;
 }
 
+type ListViewMode = "grid" | "list";
+
 export const useUserStore = defineStore("userStore", () => {
-    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools");
-    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false);
-    const currentUser = ref<User | AnonymousUser | null>(null);
+    const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
+
+    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
+    const hasSeenUploadHelp = useUserLocalStorage("user-store-seen-upload-help", false, currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
+    function $reset() {
+        currentUser.value = null;
+        currentPreferences.value = null;
+        loadPromise = null;
+    }
+
+    const isAdmin = computed(() => {
+        return isAdminUser(currentUser.value);
+    });
+
     const isAnonymous = computed(() => {
-        return !("email" in (currentUser.value || []));
+        return isAnonymousUser(currentUser.value);
     });
 
     const currentTheme = computed(() => {
@@ -50,24 +58,34 @@ export const useUserStore = defineStore("userStore", () => {
         }
     });
 
-    function setCurrentUser(user: User) {
+    const matchesCurrentUsername = computed(() => {
+        return (username?: string) => {
+            return isRegisteredUser(currentUser.value) && currentUser.value.username === username;
+        };
+    });
+
+    function setCurrentUser(user: RegisteredUser) {
         currentUser.value = user;
     }
 
-    function loadUser() {
+    function loadUser(includeHistories = true) {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    const historyStore = useHistoryStore();
-                    currentUser.value = { ...user, isAnonymous: !user.email };
-                    currentPreferences.value = user?.preferences ?? null;
-                    // TODO: This is a hack to get around the fact that the API returns a string
-                    if (currentPreferences.value?.favorites) {
-                        currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
+                    if (isRegisteredUser(user)) {
+                        currentUser.value = user;
+                        currentPreferences.value = processUserPreferences(user);
+                    } else if (isAnonymousUser(user)) {
+                        currentUser.value = user;
+                    } else if (user === null) {
+                        currentUser.value = null;
                     }
-                    await historyStore.loadCurrentHistory();
-                    // load first few histories for user to start pagination
-                    await historyStore.loadHistories();
+
+                    if (includeHistories) {
+                        const historyStore = useHistoryStore();
+                        // load first few histories for user to start pagination
+                        await historyStore.loadHistories();
+                    }
                 })
                 .catch((e) => {
                     console.error("Failed to load user", e);
@@ -105,31 +123,40 @@ export const useUserStore = defineStore("userStore", () => {
 
     function setFavoriteTools(tools: string[]) {
         if (currentPreferences.value) {
-            currentPreferences.value.favorites.tools = tools ?? { tools: [] };
+            currentPreferences.value.favorites.tools = tools;
         }
     }
 
-    function toggleActivityBar() {
-        showActivityBar.value = !showActivityBar.value;
+    function setPreferredListViewMode(view: ListViewMode) {
+        preferredListViewMode.value = view;
     }
-    function toggleSideBar(currentOpen = "") {
-        toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+
+    function processUserPreferences(user: RegisteredUser): Preferences {
+        // Favorites are returned as a JSON string by the API
+        const favorites =
+            typeof user.preferences.favorites === "string" ? JSON.parse(user.preferences.favorites) : { tools: [] };
+        return {
+            ...user.preferences,
+            favorites,
+        };
     }
 
     return {
         currentUser,
         currentPreferences,
+        isAdmin,
         isAnonymous,
         currentTheme,
         currentFavorites,
-        showActivityBar,
-        toggledSideBar,
+        preferredListViewMode,
+        hasSeenUploadHelp,
         loadUser,
+        matchesCurrentUsername,
         setCurrentUser,
         setCurrentTheme,
+        setPreferredListViewMode,
         addFavoriteTool,
         removeFavoriteTool,
-        toggleActivityBar,
-        toggleSideBar,
+        $reset,
     };
 });

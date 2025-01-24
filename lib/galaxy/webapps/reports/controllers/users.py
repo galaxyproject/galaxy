@@ -9,7 +9,11 @@ from datetime import (
 
 import sqlalchemy as sa
 from markupsafe import escape
-from sqlalchemy import false
+from sqlalchemy import (
+    false,
+    func,
+    select,
+)
 
 import galaxy.model
 from galaxy import util
@@ -27,7 +31,8 @@ class Users(BaseUIController, ReportQueryBuilder):
     @web.expose
     def registered_users(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get("message", "")))
-        num_users = trans.sa_session.query(galaxy.model.User).count()
+        stmt = select(func.count(galaxy.model.User.id))
+        num_users = trans.sa_session.scalar(stmt)
         return trans.fill_template("/webapps/reports/registered_users.mako", num_users=num_users, message=message)
 
     @web.expose
@@ -165,11 +170,9 @@ class Users(BaseUIController, ReportQueryBuilder):
             days_not_logged_in = 0
         cutoff_time = datetime.utcnow() - timedelta(days=int(days_not_logged_in))
         users = []
-        for user in (
-            trans.sa_session.query(galaxy.model.User)
-            .filter(galaxy.model.User.table.c.deleted == false())
-            .order_by(galaxy.model.User.table.c.email)
-        ):
+
+        stmt = select(galaxy.model.User).filter(galaxy.model.User.deleted == false()).order_by(galaxy.model.User.email)
+        for user in trans.sa_session.scalars(stmt).all():
             current_galaxy_session = user.current_galaxy_session
             if current_galaxy_session:
                 last_galaxy_session = current_galaxy_session
@@ -204,7 +207,7 @@ class Users(BaseUIController, ReportQueryBuilder):
 
         user_cutoff = int(kwd.get("user_cutoff", 60))
         # disk_usage isn't indexed
-        all_users = trans.sa_session.query(galaxy.model.User).all()
+        all_users = trans.sa_session.scalars(select(galaxy.model.User)).all()
         sort_attrgetter = operator.attrgetter(str(sort_id))
         users = sorted(all_users, key=lambda x: sort_attrgetter(x) or 0, reverse=_order)
         if user_cutoff:

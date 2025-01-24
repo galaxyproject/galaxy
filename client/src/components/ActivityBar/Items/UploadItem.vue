@@ -1,60 +1,47 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, type Ref, ref } from "vue";
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { storeToRefs } from "pinia";
+import { onMounted } from "vue";
 
-import { eventHub } from "@/components/plugins/eventHub.js";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
+import { useUploadStore } from "@/stores/uploadStore";
 import Query from "@/utils/query-string-parsing.js";
 
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
-
-const { openGlobalUploadModal } = useGlobalUploadModal();
+import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
-    icon: string;
+    icon: IconDefinition;
     tooltip: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
 }>();
 
-const status: Ref<string> = ref("success");
-const percentage: Ref<number> = ref(0);
+const { openGlobalUploadModal } = useGlobalUploadModal();
+const { percentage, status } = storeToRefs(useUploadStore());
 
 onMounted(() => {
-    eventHub.$on("upload:status", setStatus);
-    eventHub.$on("upload:percentage", setPercentage);
     if (Query.get("tool_id") == "upload1") {
         openGlobalUploadModal();
     }
-});
-
-onUnmounted(() => {
-    eventHub.$off("upload:status", setStatus);
-    eventHub.$off("upload:percentage", setPercentage);
 });
 
 function onUploadModal() {
     emit("click");
     openGlobalUploadModal();
 }
-
-function setStatus(val: string): void {
-    status.value = val;
-}
-
-function setPercentage(val: number): void {
-    percentage.value = val;
-}
 </script>
 
 <template>
     <ActivityItem
         :id="id"
+        :activity-bar-id="props.activityBarId"
         :title="title"
         :tooltip="tooltip"
         :icon="icon"

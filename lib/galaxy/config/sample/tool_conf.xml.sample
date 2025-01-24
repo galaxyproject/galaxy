@@ -32,11 +32,15 @@
     <tool file="${model_tools_path}/zip_collection.xml" />
     <tool file="${model_tools_path}/filter_failed_collection.xml" />
     <tool file="${model_tools_path}/filter_empty_collection.xml" />
+    <tool file="${model_tools_path}/filter_null.xml" />
     <tool file="${model_tools_path}/flatten_collection.xml" />
     <tool file="${model_tools_path}/merge_collection.xml" />
     <tool file="${model_tools_path}/relabel_from_file.xml" />
     <tool file="${model_tools_path}/filter_from_file.xml" />
     <tool file="${model_tools_path}/sort_collection_list.xml" />
+    <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
+    <tool file="${model_tools_path}/cross_product_flat.xml" />
+    <tool file="${model_tools_path}/cross_product_nested.xml" />
     <tool file="${model_tools_path}/tag_collection_from_file.xml" />
     <tool file="${model_tools_path}/apply_rules.xml" />
     <tool file="${model_tools_path}/build_list.xml" />
@@ -79,6 +83,7 @@
     <tool file="filters/bed_to_bigbed.xml" />
   </section>
   <section id="filter" name="Filter and Sort">
+    <tool file="stats/filtering_1_1_0.xml" />
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
@@ -130,13 +135,19 @@
   <section id="interactivetools" name="Interactive tools">
     <tool file="interactive/interactivetool_askomics.xml" />
     <tool file="interactive/interactivetool_bam_iobio.xml" />
-    <tool file="interactive/interactivetool_cellxgene.xml" />
+    <tool file="interactive/interactivetool_blobtoolkit.xml" />
+    <tool file="interactive/interactivetool_cellxgene_0.16.2.xml" />
+    <tool file="interactive/interactivetool_cellxgene_1.1.1.xml" />
     <tool file="interactive/interactivetool_ethercalc.xml" />
+    <tool file="interactive/interactivetool_guacamole_desktop.xml" />
     <tool file="interactive/interactivetool_hicbrowser.xml" />
+    <tool file="interactive/interactivetool_jupyter_notebook_1.0.1.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook_1.0.0.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook.xml" />
     <tool file="interactive/interactivetool_neo4j.xml" />
+    <tool file="interactive/interactivetool_openrefine.xml" />
     <tool file="interactive/interactivetool_phinch.xml" />
+    <tool file="interactive/interactivetool_rstudio.xml" />
   </section>
   -->
 </toolbox>

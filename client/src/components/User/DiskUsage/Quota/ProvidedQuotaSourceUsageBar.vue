@@ -36,7 +36,7 @@ export default {
     },
     data() {
         return {
-            loadingMessage: "Loading object store information",
+            loadingMessage: "Loading storage location information",
         };
     },
 };

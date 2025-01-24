@@ -1,7 +1,7 @@
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
-import type { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { Step, Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { type DatatypesMapperModel } from "@/components/Datatypes/model";
+import { type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { type useWorkflowStores } from "@/composables/workflowStores";
+import { type Step, type Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { terminalFactory } from "./terminals";
@@ -15,16 +15,22 @@ interface LintState {
     autofix?: boolean;
 }
 
+export const bestPracticeWarningAnnotation =
+    "This workflow is not annotated. Providing an annotation helps workflow executors understand the purpose and usage of the workflow.";
+export const bestPracticeWarningCreator =
+    "This workflow does not specify creator(s). This is important metadata for workflows that will be published and/or shared to help workflow executors know how to cite the workflow authors.";
+export const bestPracticeWarningLicense =
+    "This workflow does not specify a license. This is important metadata for workflows that will be published and/or shared to help workflow executors understand how it may be used.";
+
 export function getDisconnectedInputs(
     steps: Steps = {},
     datatypesMapper: DatatypesMapperModel,
-    connectionStore: ReturnType<typeof useConnectionStore>,
-    stepStore: ReturnType<typeof useWorkflowStepStore>
+    stores: ReturnType<typeof useWorkflowStores>
 ) {
     const inputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
         step.inputs.map((inputSource) => {
-            const inputTerminal = terminalFactory(step.id, inputSource, datatypesMapper, connectionStore, stepStore);
+            const inputTerminal = terminalFactory(step.id, inputSource, datatypesMapper, stores);
             if (!inputTerminal.optional && inputTerminal.connections.length === 0) {
                 const inputLabel = inputSource.label || inputSource.name;
                 inputs.push({
@@ -124,8 +130,7 @@ export function fixAllIssues(
     steps: Steps,
     parameters: UntypedParameters,
     datatypesMapper: DatatypesMapperModel,
-    connectionStore: ReturnType<typeof useConnectionStore>,
-    stepStore: ReturnType<typeof useWorkflowStepStore>
+    stores: ReturnType<typeof useWorkflowStores>
 ) {
     const actions = [];
     const untypedParameters = getUntypedParameters(parameters);
@@ -134,7 +139,7 @@ export function fixAllIssues(
             actions.push(fixUntypedParameter(untypedParameter));
         }
     }
-    const disconnectedInputs = getDisconnectedInputs(steps, datatypesMapper, connectionStore, stepStore);
+    const disconnectedInputs = getDisconnectedInputs(steps, datatypesMapper, stores);
     for (const disconnectedInput of disconnectedInputs) {
         if (disconnectedInput.autofix) {
             actions.push(fixDisconnectedInput(disconnectedInput));

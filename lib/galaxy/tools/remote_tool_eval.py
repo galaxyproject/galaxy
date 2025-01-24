@@ -60,7 +60,8 @@ class ToolApp(MinimalToolApp):
         tool_data_table_manager: ToolDataTableManager,
         file_sources: ConfiguredFileSources,
     ):
-        self.model = Bunch(context=sa_session)
+        # For backward compatibility we need both context and session attributes that point to sa_session.
+        self.model = Bunch(context=sa_session, session=sa_session)
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
@@ -71,7 +72,7 @@ class ToolApp(MinimalToolApp):
         self.security = None  # type: ignore[assignment]
 
 
-def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
+def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY) -> None:
     metadata_params = get_metadata_params(WORKING_DIRECTORY)
     datatypes_config = metadata_params["datatypes_config"]
     if not os.path.exists(datatypes_config):
@@ -113,7 +114,7 @@ def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
     )
     tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
     with open(os.path.join(WORKING_DIRECTORY, "tool_script.sh"), "a") as out:
-        command_line, version_command_line, extra_filenames, environment_variables = tool_evaluator.build()
+        command_line, version_command_line, extra_filenames, environment_variables, *_ = tool_evaluator.build()
         out.write(f'{version_command_line or ""}{command_line}')
 
 

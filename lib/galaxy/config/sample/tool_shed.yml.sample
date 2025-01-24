@@ -15,6 +15,14 @@ tool_shed:
   # installation directory.
   #hgweb_config_dir: null
 
+  # Default URL prefix for repositories served via hgweb. If running an
+  # external hgweb server you should set this to an empty string.
+  #hgweb_repo_prefix: repos/
+
+  # Allow pushing directly to mercurial repositories directly and
+  # without authentication.
+  #config_hg_for_dev: null
+
   # Where Tool Shed repositories are stored.
   #file_path: database/community_files
 
@@ -45,6 +53,9 @@ tool_shed:
   # the Tool Shed given that you specify the following two config
   # options.
   #whoosh_index_dir: database/toolshed_whoosh_indexes
+
+  # Cache directory for Pydantic model objects.
+  #model_cache_dir: database/model_cache
 
   # For searching repositories at /api/repositories:
   #repo_name_boost: 0.9
@@ -187,6 +198,50 @@ tool_shed:
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
+
+  # Service ID for GA4GH services.
+  # If unset, one will be generated using the URL the target API
+  # requests are made against.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  # This value should likely reflect your service's URL. For instance
+  # for usegalaxy.org this value should be org.usegalaxy. Particular
+  # Galaxy implementations will treat this value as a prefix and append
+  # the service type to this ID. For instance for the DRS service "id"
+  # (available via the DRS API) for the above configuration value would
+  # be org.usegalaxy.drs.
+  #ga4gh_service_id: null
+
+  # The name of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "Not Evil Corporation".
+  # For GA4GH APIs, this is exposed via the service-info endpoint for
+  # the Galaxy DRS API. If unset, one will be generated using
+  # ga4gh_service_id (but only in the context of GA4GH APIs).
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_name: null
+
+  # The URL of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "notevilcorp.com".
+  # For GA4GH APIs, this is exposed via the service-info endpoint.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_url: null
+
+  # Service environment (exposed via the service-info endpoint for the
+  # Galaxy DRS API) for implemented GA4GH services.
+  # Suggested values are prod, test, dev, staging.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #ga4gh_service_environment: null
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk  space rapidly!)

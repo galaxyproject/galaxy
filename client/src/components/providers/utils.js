@@ -1,8 +1,8 @@
-import { snakeCase } from "snake-case";
-import JOB_STATES_MODEL from "utils/job-states-model";
+import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
+import { snakeCase } from "lodash";
 
 export function stateIsTerminal(result) {
-    return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(result.state);
+    return !NON_TERMINAL_STATES.includes(result.state);
 }
 
 export const HasAttributesMixin = {

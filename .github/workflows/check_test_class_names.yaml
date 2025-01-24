@@ -5,23 +5,23 @@ on:
       - '.ci/check_test_class_names.sh'
       - 'lib/galaxy_test/**'
       - 'test/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache pip dir
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
       - name: Install Python dependencies
         run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
       - name: Run tests

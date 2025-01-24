@@ -1,8 +1,7 @@
 import { createPinia, PiniaVuePlugin } from "pinia";
-import Vue, { provide } from "vue";
+import Vue from "vue";
 
 import { addInitialization, standardInit } from "@/onload";
-import store from "@/store";
 
 import { getRouter } from "./router";
 
@@ -20,12 +19,8 @@ addInitialization((Galaxy: any) => {
     Galaxy.router = router;
     new Vue({
         el: "#app",
-        setup() {
-            provide("store", store);
-        },
         render: (h) => h(App),
         router: router,
-        store: store,
         pinia: pinia,
     });
 });

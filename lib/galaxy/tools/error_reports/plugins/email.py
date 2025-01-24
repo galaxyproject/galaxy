@@ -35,7 +35,9 @@ class EmailPlugin(ErrorPlugin):
             )
             return ("Your error report has been sent", "success")
         except Exception as e:
-            return (f"An error occurred sending the report by email: {unicodify(e)}", "danger")
+            msg = f"An error occurred sending the report by email: {unicodify(e)}"
+            log.exception(msg)
+            return (msg, "danger")
 
 
 __all__ = ("EmailPlugin",)

@@ -1,75 +1,102 @@
+import { type components } from "@/api/schema";
 import { bytesToString } from "@/utils/utils";
 
 export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
 
-export interface QuotaUsageResponse {
-    quota_source_label?: string;
-    quota_bytes?: number;
-    total_disk_usage: number;
-    quota_percent?: number;
-}
+export type UserQuotaUsageData = components["schemas"]["UserQuotaUsage"];
 
 /**
  * Contains information about quota usage for a particular ObjectStore.
  */
-export class QuotaUsage {
-    private _data: QuotaUsageResponse;
-
-    constructor(data: QuotaUsageResponse) {
-        this._data = data;
-    }
+export interface QuotaUsage {
+    rawSourceLabel: string | null;
 
     /**
      * The name of the ObjectStore associated with the quota.
      */
-    get sourceLabel(): string {
-        return this._data.quota_source_label ?? DEFAULT_QUOTA_SOURCE_LABEL;
-    }
+    sourceLabel: string;
 
     /**
      * The maximum allowed disk usage in bytes.
      */
-    get quotaInBytes(): number | undefined {
-        return this._data.quota_bytes;
-    }
+    quotaInBytes: number | undefined | null;
 
     /**
      * The total amount of bytes used in this ObjectStore.
      */
-    get totalDiskUsageInBytes(): number {
-        return this._data.total_disk_usage;
-    }
+    totalDiskUsageInBytes: number;
 
     /**
      * The percentage of used quota.
      */
-    get quotaPercent(): number | undefined {
-        return this._data.quota_percent;
-    }
+    quotaPercent: number | undefined | null;
 
     /**
      * The maximum allowed disk usage as human readable size.
      */
+    niceQuota: string;
+
+    /**
+     * The total amount of disk used in this ObjectStore as human readable size.
+     */
+    niceTotalDiskUsage: string;
+
+    /**
+     * Whether this ObjectStore has unlimited quota
+     */
+    isUnlimited: boolean;
+}
+
+/**
+ * Converts a raw UserQuotaUsageData response to a QuotaUsage object.
+ * @param data The raw UserQuotaUsageData response.
+ * @returns The QuotaUsage object.
+ */
+export function toQuotaUsage(data: UserQuotaUsageData): QuotaUsage {
+    return new QuotaUsageModel(data);
+}
+
+class QuotaUsageModel implements QuotaUsage {
+    private _data: UserQuotaUsageData;
+
+    constructor(data: UserQuotaUsageData) {
+        this._data = data;
+    }
+
+    get rawSourceLabel(): string | null {
+        return this._data.quota_source_label ?? null;
+    }
+
+    get sourceLabel(): string {
+        return this.rawSourceLabel ?? DEFAULT_QUOTA_SOURCE_LABEL;
+    }
+
+    get quotaInBytes(): number | undefined | null {
+        return this._data.quota_bytes;
+    }
+
+    get totalDiskUsageInBytes(): number {
+        return this._data.total_disk_usage;
+    }
+
+    get quotaPercent(): number | undefined | null {
+        return this._data.quota_percent;
+    }
+
     get niceQuota(): string {
         if (this.isUnlimited) {
             return "unlimited";
         }
-        if (this.quotaInBytes !== undefined) {
+        if (this.quotaInBytes !== undefined && this.quotaInBytes !== null) {
             return bytesToString(this.quotaInBytes, true, undefined);
         }
         return "unknown";
     }
 
-    /**
-     * The total amount of disk used in this ObjectStore as human readable size.
-     */
     get niceTotalDiskUsage(): string {
         return bytesToString(this.totalDiskUsageInBytes, true, undefined);
     }
 
-    /**
-     * Whether this ObjectStore has unlimited quota
-     */
     get isUnlimited(): boolean {
         return !this.quotaInBytes;
     }

@@ -6,12 +6,14 @@ from typing import (
     Dict,
     List,
 )
+from urllib.parse import quote
 
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     one_hda_model_store_dict,
     TEST_SOURCE_URI,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.decorators import (
@@ -342,6 +344,17 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_display_error_handling(self, history_id):
+        hda1 = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+        )
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
+        self._assert_status_code_is(display_response, 409)
+        assert (
+            display_response.json()["err_msg"]
+            == "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
+        )
+
     def test_get_content_as_text(self, history_id):
         contents = textwrap.dedent(
             """\
@@ -355,6 +368,15 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(get_content_as_text_response, 200)
         self._assert_has_key(get_content_as_text_response.json(), "item_data")
         assert get_content_as_text_response.json().get("item_data") == contents
+
+    def test_get_content_as_text_with_compressed_text_data(self, history_id):
+        test_data_resolver = TestDataResolver()
+        with open(test_data_resolver.get_filename("1.fasta.gz"), mode="rb") as fh:
+            hda1 = self.dataset_populator.new_dataset(history_id, content=fh, ftype="fasta.gz", wait=True)
+        get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+        self._assert_status_code_is(get_content_as_text_response, 200)
+        self._assert_has_key(get_content_as_text_response.json(), "item_data")
+        assert ">hg17" in get_content_as_text_response.json().get("item_data")
 
     def test_anon_get_content_as_text(self, history_id):
         contents = "accessible data"
@@ -637,6 +659,19 @@ class TestDatasetsApi(ApiTestCase):
         deleted_job_details = self.dataset_populator.get_job_details(job_id).json()
         assert deleted_job_details["state"] in ("deleting", "deleted"), deleted_job_details
 
+    def test_purge_does_not_reset_file_size(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC", wait=True)
+            assert dataset["file_size"]
+            self.dataset_populator.delete_dataset(
+                history_id=history_id, content_id=dataset["id"], purge=True, wait_for_purge=True
+            )
+            purged_dataset = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=dataset["id"]
+            )
+            assert purged_dataset["purged"]
+            assert dataset["file_size"] == purged_dataset["file_size"]
+
     def test_delete_batch(self):
         num_datasets = 4
         dataset_map: Dict[int, str] = {}
@@ -723,23 +758,13 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_compute_md5_on_primary_dataset(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
-        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
-        assert "hashes" in hda_details, str(hda_details.keys())
-        hashes = hda_details["hashes"]
-        assert len(hashes) == 0
-
         self.dataset_populator.compute_hash(hda["id"])
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
         self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
 
     def test_compute_sha1_on_composite_dataset(self, history_id):
         output = self.dataset_populator.fetch_hda(history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
-        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
-        assert "hashes" in hda_details, str(hda_details.keys())
-        hashes = hda_details["hashes"]
-        assert len(hashes) == 0
-
-        self.dataset_populator.compute_hash(hda_details["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
+        self.dataset_populator.compute_hash(output["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
         self.assert_hash_value(
             hda_details,
@@ -750,11 +775,6 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_duplicated_hash_requests_on_primary(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
-        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
-        assert "hashes" in hda_details, str(hda_details.keys())
-        hashes = hda_details["hashes"]
-        assert len(hashes) == 0
-
         self.dataset_populator.compute_hash(hda["id"])
         self.dataset_populator.compute_hash(hda["id"])
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
@@ -762,19 +782,12 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_duplicated_hash_requests_on_extra_files(self, history_id):
         output = self.dataset_populator.fetch_hda(history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
-        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
-        assert "hashes" in hda_details, str(hda_details.keys())
-        hashes = hda_details["hashes"]
-        assert len(hashes) == 0
-
         # 4 unique requests, but make them twice...
         for _ in range(2):
-            self.dataset_populator.compute_hash(hda_details["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
-            self.dataset_populator.compute_hash(hda_details["id"], hash_function="SHA-1", extra_files_path="Roadmaps")
-            self.dataset_populator.compute_hash(hda_details["id"], hash_function="MD5", extra_files_path="Roadmaps")
-            self.dataset_populator.compute_hash(
-                hda_details["id"], hash_function="SHA-256", extra_files_path="Sequences"
-            )
+            self.dataset_populator.compute_hash(output["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
+            self.dataset_populator.compute_hash(output["id"], hash_function="SHA-1", extra_files_path="Roadmaps")
+            self.dataset_populator.compute_hash(output["id"], hash_function="MD5", extra_files_path="Roadmaps")
+            self.dataset_populator.compute_hash(output["id"], hash_function="SHA-256", extra_files_path="Sequences")
 
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
         self.assert_hash_value(hda_details, "ce0c0ef1073317ff96c896c249b002dc", "MD5", extra_files_path="Roadmaps")
@@ -863,3 +876,10 @@ class TestDatasetsApi(ApiTestCase):
         response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)
         self._assert_status_code_is(response, 403)
         assert response.json()["err_msg"] == "History is immutable"
+
+    def test_download_non_english_characters(self, history_id):
+        name = "دیتاست"
+        hda = self.dataset_populator.new_dataset(history_id=history_id, name=name, content="data", wait=True)
+        response = self._get(f"histories/{history_id}/contents/{hda['id']}/display?to_ext=json")
+        self._assert_status_code_is(response, 200)
+        assert quote(name, safe="") in response.headers["Content-Disposition"]

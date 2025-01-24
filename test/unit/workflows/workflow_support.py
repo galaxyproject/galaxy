@@ -6,12 +6,14 @@ from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.base import transaction
+from galaxy.util.bunch import Bunch
 from galaxy.workflow.modules import module_factory
 
 
 class MockTrans:
     def __init__(self):
         self.app = MockApp()
+        self.app.trs_proxy = Bunch()
         self.sa_session = self.app.model.context
         self._user = None
 
@@ -35,7 +37,7 @@ class MockTrans:
 class MockApp(galaxy_mock.MockApp):
     def __init__(self):
         super().__init__()
-        self.toolbox = MockToolbox()
+        self._toolbox = MockToolbox()
         self.workflow_manager = WorkflowsManager(self)
 
 

@@ -1,21 +1,263 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBars, faCog, faDatabase, faSave, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import { BAlert, BButton, BSpinner, BTab, BTabs } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+
+import { GalaxyApi } from "@/api";
+import { updateContentFields } from "@/components/History/model/queries";
+import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
+import { useConfig } from "@/composables/config";
+import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
+import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
+import { prependPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
+import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";
+import SuitableConvertersTab from "@/components/Collections/common/SuitableConvertersTab.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+library.add(faBars, faCog, faDatabase, faSave, faTable, faUser);
+
+interface Props {
+    collectionId: string;
+}
+
+const props = defineProps<Props>();
+
+const { config, isConfigLoaded } = useConfig(true);
+const collectionAttributesStore = useCollectionAttributesStore();
+
+const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(historyStore);
+
+const collectionStore = useCollectionElementsStore();
+
+const jobError = ref(null);
+const errorMessage = ref("");
+const infoMessage = ref("");
+const successMessage = ref("");
+const attributesInputs = ref<{ name: string; label: string; type: string; value: any }[]>([]);
+
+/** Used to track if there has been a change in the collection, and rerenders `FormDisplay` */
+const collectionChangeKey = ref(0);
+
+const attributesData = computed(() => {
+    return collectionAttributesStore.getAttributes(props.collectionId);
+});
+const attributesLoadError = computed(() =>
+    errorMessageAsString(collectionAttributesStore.hasItemLoadError(props.collectionId))
+);
+
+const collection = computed(() => {
+    return collectionStore.getCollectionById(props.collectionId);
+});
+const collectionLoadError = computed(() => {
+    if (collection.value) {
+        return errorMessageAsString(collectionStore.hasLoadingCollectionElementsError(collection.value));
+    }
+    return "";
+});
+watch([attributesLoadError, collectionLoadError], () => {
+    if (attributesLoadError.value) {
+        errorMessage.value = attributesLoadError.value;
+    } else if (collectionLoadError.value) {
+        errorMessage.value = collectionLoadError.value;
+    }
+});
+const databaseKeyFromElements = computed(() => {
+    return attributesData.value?.dbkey;
+});
+const datatypeFromElements = computed(() => {
+    return attributesData.value?.extension;
+});
+
+watch(
+    () => collection.value,
+    (newVal) => {
+        if (newVal) {
+            collectionChangeKey.value++;
+            attributesInputs.value = [
+                {
+                    name: "name",
+                    label: "Name",
+                    type: "text",
+                    value: newVal.name,
+                },
+            ];
+        }
+    },
+    { immediate: true }
+);
+
+function updateInfoMessage(strMessage: string) {
+    infoMessage.value = strMessage;
+    successMessage.value = "";
+}
+
+// TODO: Replace with actual datatype type
+async function clickedSave(attribute: string, newValue: any) {
+    if (attribute !== "dbkey") {
+        // TODO: extend this to other attributes that could be changed
+        console.error(`Changing ${attribute} not implemented`);
+        return;
+    }
+
+    const dbKey = newValue.id as string;
+
+    const { error } = await GalaxyApi().POST("/api/dataset_collections/{id}/copy", {
+        params: { path: { id: props.collectionId } },
+        body: { dbkey: dbKey },
+    });
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, `Changing ${attribute} failed.`);
+    }
+}
+
+// TODO: Replace with actual datatype type
+async function clickedConvert(selectedConverter: any) {
+    const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
+    const data = {
+        src: "hdca",
+        id: props.collectionId,
+        source_type: selectedConverter.original_type,
+        target_type: selectedConverter.target_type,
+    };
+
+    try {
+        await axios.post(url, data).catch(handleError);
+        successMessage.value = "Conversion started successfully.";
+    } catch (err) {
+        errorMessage.value = errorMessageAsString(err, "Conversion failed.");
+    }
+}
+
+// TODO: Replace with actual datatype type
+async function clickedDatatypeChange(selectedDatatype: any) {
+    if (!currentHistoryId.value) {
+        errorMessage.value = "No current history selected.";
+        return;
+    }
+
+    const { error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/bulk", {
+        params: { path: { history_id: currentHistoryId.value } },
+        body: {
+            items: [
+                {
+                    history_content_type: "dataset_collection",
+                    id: props.collectionId,
+                },
+            ],
+            operation: "change_datatype",
+            params: {
+                type: "change_datatype",
+                datatype: selectedDatatype.id,
+            },
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, "Datatype change failed.");
+        return;
+    }
+    successMessage.value = "Datatype changed successfully.";
+}
+
+function handleError(err: any) {
+    errorMessage.value = errorMessageAsString(err, "Datatype conversion failed.");
+
+    if (err?.data?.stderr) {
+        jobError.value = err.data;
+    }
+}
+
+function onAttribute(data: Record<string, any>) {
+    for (const key in data) {
+        const index = attributesInputs.value?.findIndex((input) => input.name === key);
+        if (index !== -1 && attributesInputs.value[index]) {
+            attributesInputs.value[index]!.value = data[key];
+        }
+    }
+}
+
+async function saveAttrs() {
+    if (collection.value && attributesInputs.value) {
+        const updatedAttrs = attributesInputs.value.reduce((acc, input) => {
+            acc[input.name] = input.value;
+            return acc;
+        }, {} as Record<string, any>);
+        try {
+            await updateContentFields(collection.value, updatedAttrs);
+
+            successMessage.value = "Attributes updated successfully.";
+        } catch (err) {
+            errorMessage.value = errorMessageAsString(err, "Unable to update attributes.");
+        }
+    }
+}
+</script>
+
 <template>
     <div aria-labelledby="collection-edit-view-heading">
-        <h1 id="collection-edit-view-heading" class="h-lg">{{ l("Edit Collection Attributes") }}</h1>
-        <b-alert show variant="info" dismissible>
-            {{ l(infoMessage) }}
-        </b-alert>
-        <div v-if="jobError">
-            <b-alert show variant="danger" dismissible>
-                {{ l(errorMessage) }}
-            </b-alert>
-        </div>
-        <b-tabs content-class="mt-3">
-            <b-tab
+        <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
+            {{ localize("Edit Collection Attributes") }}
+        </Heading>
+
+        <BAlert v-if="infoMessage" show variant="info" dismissible>
+            {{ localize(infoMessage) }}
+        </BAlert>
+
+        <BAlert v-if="errorMessage" show variant="danger">
+            {{ localize(errorMessage) }}
+        </BAlert>
+
+        <BAlert v-if="successMessage" show variant="success" dismissible>
+            {{ localize(successMessage) }}
+        </BAlert>
+        <BTabs v-if="!errorMessage" class="mt-3">
+            <BTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
+                <template v-slot:title>
+                    <FontAwesomeIcon :icon="faBars" class="mr-1" />
+                    {{ localize("Attributes") }}
+                </template>
+
+                <FormDisplay
+                    v-if="attributesInputs.length > 0"
+                    :key="collectionChangeKey"
+                    :inputs="attributesInputs"
+                    @onChange="onAttribute" />
+
+                <div class="mt-2">
+                    <BButton id="dataset-attributes-default-save" variant="primary" @click="saveAttrs">
+                        <FontAwesomeIcon :icon="faSave" class="mr-1" />
+                        {{ localize("Save") }}
+                    </BButton>
+                </div>
+            </BTab>
+            <BTab
                 title-link-class="collection-edit-change-genome-nav"
-                @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
-                <template v-slot:title> <FontAwesomeIcon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
+                @click="
+                    updateInfoMessage(
+                        'This will create a new collection in your History. Your quota will not increase.'
+                    )
+                ">
+                <template v-slot:title>
+                    <FontAwesomeIcon :icon="faTable" class="mr-1" />
+                    {{ localize("Database/Build") }}
+                </template>
+
                 <DbKeyProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
+                    <div v-if="loading">
+                        <BSpinner label="Loading Database/Builds..." />
+                    </div>
                     <div v-else>
                         <DatabaseEditTab
                             v-if="item && databaseKeyFromElements"
@@ -24,23 +266,39 @@
                             @clicked-save="clickedSave" />
                     </div>
                 </DbKeyProvider>
-            </b-tab>
+            </BTab>
+
             <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
-                <b-tab
+                <BTab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
-                    @click="updateInfoMessage(newCollectionMessage)">
-                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
+                    @click="updateInfoMessage('This will create a new collection in your History.')">
+                    <template v-slot:title>
+                        <FontAwesomeIcon :icon="faCog" class="mr-1" />
+                        {{ localize("Convert") }}
+                    </template>
+
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
-                </b-tab>
+                </BTab>
             </SuitableConvertersProvider>
-            <b-tab
+
+            <BTab
                 v-if="isConfigLoaded && config.enable_celery_tasks"
                 title-link-class="collection-edit-change-datatype-nav"
-                @click="updateInfoMessage(expectWaitTimeMessage)">
-                <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
+                @click="
+                    updateInfoMessage(
+                        'This operation might take a short while, depending on the size of your collection.'
+                    )
+                ">
+                <template v-slot:title>
+                    <FontAwesomeIcon :icon="faDatabase" class="mr-1" />
+                    {{ localize("Datatypes") }}
+                </template>
+
                 <DatatypesProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
+                    <div v-if="loading">
+                        <LoadingSpan message="Loading Datatypes" />
+                    </div>
                     <div v-else>
                         <ChangeDatatypeTab
                             v-if="item && datatypeFromElements"
@@ -49,138 +307,7 @@
                             @clicked-save="clickedDatatypeChange" />
                     </div>
                 </DatatypesProvider>
-            </b-tab>
-        </b-tabs>
+            </BTab>
+        </BTabs>
     </div>
 </template>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import { mapState } from "pinia";
-import { prependPath } from "utils/redirect";
-import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
-
-import { useConfig } from "@/composables/config";
-import { useHistoryStore } from "@/stores/historyStore";
-
-import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
-import ChangeDatatypeTab from "./ChangeDatatypeTab";
-import DatabaseEditTab from "./DatabaseEditTab";
-import SuitableConvertersTab from "./SuitableConvertersTab";
-
-import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faDatabase, faTable, faBars, faUser, faCog);
-
-Vue.use(BootstrapVue);
-export default {
-    components: {
-        DatabaseEditTab,
-        SuitableConvertersTab,
-        FontAwesomeIcon,
-        DbKeyProvider,
-        SuitableConvertersProvider,
-        ChangeDatatypeTab,
-        DatatypesProvider,
-        LoadingSpan,
-    },
-    props: {
-        collectionId: {
-            type: String,
-            required: true,
-        },
-    },
-    setup() {
-        const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
-    },
-    data: function () {
-        return {
-            attributesData: {},
-            errorMessage: null,
-            jobError: null,
-            noQuotaIncrease: true,
-            loadingString: "Loading Datatypes",
-            infoMessage: "This will create a new collection in your History. Your quota will not increase.", //initialmessage on first/database tab
-            newCollectionMessage: "This will create a new collection in your History.",
-            noQuotaIncreaseMessage: "Your quota will not increase.",
-            expectWaitTimeMessage: "This operation might take a short while, depending on the size of your collection.",
-        };
-    },
-    computed: {
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
-        databaseKeyFromElements: function () {
-            return this.attributesData.dbkey;
-        },
-        datatypeFromElements: function () {
-            return this.attributesData.extension;
-        },
-    },
-    created() {
-        this.getCollectionDataAndAttributes();
-    },
-    methods: {
-        updateInfoMessage: function (strMessage) {
-            this.infoMessage = strMessage;
-        },
-        getCollectionDataAndAttributes: async function () {
-            let attributesGet = this.$store.getters.getCollectionAttributes(this.collectionId);
-            if (attributesGet == null) {
-                await this.$store.dispatch("fetchCollectionAttributes", this.collectionId);
-                attributesGet = this.$store.getters.getCollectionAttributes(this.collectionId);
-            }
-            this.attributesData = attributesGet;
-        },
-        clickedSave: function (attribute, newValue) {
-            const url = prependPath(`/api/dataset_collections/${this.collectionId}/copy`);
-            const data = {};
-            if (attribute == "dbkey") {
-                data["dbkey"] = newValue.id;
-            } else {
-                // TODO: extend this to other attributes that could be changed
-                console.error(`Changing ${attribute} not implemented`);
-                return;
-            }
-            axios.post(url, data).catch(this.handleError);
-        },
-        clickedConvert: function (selectedConverter) {
-            const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
-            const data = {
-                src: "hdca",
-                id: this.collectionId,
-                source_type: selectedConverter.original_type,
-                target_type: selectedConverter.target_type,
-            };
-            axios.post(url, data).catch(this.handleError);
-        },
-        clickedDatatypeChange: function (selectedDatatype) {
-            const url = prependPath(`/api/histories/${this.currentHistoryId}/contents/bulk`);
-            const data = {
-                operation: "change_datatype",
-                items: [
-                    {
-                        history_content_type: "dataset_collection",
-                        id: this.collectionId,
-                    },
-                ],
-                params: {
-                    type: "change_datatype",
-                    datatype: selectedDatatype.id,
-                },
-            };
-            axios.put(url, data).catch(this.handleError);
-        },
-        handleError: function (err) {
-            this.errorMessage = errorMessageAsString(err, "History import failed.");
-            if (err?.data?.stderr) {
-                this.jobError = err.data;
-            }
-        },
-    },
-};
-</script>

@@ -42,10 +42,10 @@ Members
 -------
 
 - Enis Afgan (@afgane)
+- Ahmed Awan (@ahmedhamidawan)
 - Dannon Baker (@dannon)
 - Matthias Bernt (@bernt-matthias)
 - Daniel Blankenberg (@blankenberg)
-- Dave Bouvier (@davebx)
 - Martin Čech (@martenson)
 - John Chilton (@jmchilton)
 - Nate Coraor (@natefoo)
@@ -54,6 +54,7 @@ Members
 - Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
+- Alireza Heidari (@itisAliRH)
 - Jennifer Hillman Jackson (@jennaj)
 - David López (@davelopez)
 - Laila Los (@ElectronicBlueberry)
@@ -126,26 +127,21 @@ Everyone is encouraged to express opinions and issue non-binding votes on pull
 requests, but only members of the *committers* group may issue binding votes
 on pull requests.
 
-Votes on pull requests should take the form of +1, 0, -1, and fractions as
-outlined by the `Apache Software Foundation voting rules`_. The following are
-equivalent to a +1 vote:
-
-- a `thumbs up reaction <https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/>`__
-  on the pull request description;
-- approving the pull request when submitting a
-  `review <https://help.github.com/articles/reviewing-proposed-changes-in-a-pull-request/>`__.
-
-The latter is the preferred method because it is integrated in GitHub, it allows
-tracking the moment when the review was submitted, and it sends a notification
-to subscribers.
+Votes on pull requests should be expressed in pull request comments in the form
+of +1, 0, -1, and fractions as outlined by the
+`Apache Software Foundation voting rules`_.
+Approving a pull request when submitting a
+`review <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/reviewing-proposed-changes-in-a-pull-request>`__
+is equivalent to a +1 vote.
+The latter is the preferred method because it is integrated in GitHub.
 
 Pull requests changing or clarifying the *Procedure Documents* (listed above):
 
 - Must be made to the ``dev`` branch of this repository.
 - Must remain open for at least 192 hours (unless every qualified *committer* has
   voted).
-- Require binding *+1* votes from at least 25% of qualified *committers* with no
-  *-1* binding votes.
+- Require binding *+1* votes from at least 25% of qualified *committers*, with
+  no *-1* binding votes.
 - Should be titled with the prefix *[PROCEDURES]* and tagged with
   the *procedures* tag in Github.
 - Should not be modified once open. If changes are needed, the pull request
@@ -159,8 +155,8 @@ Pull requests changing or clarifying the *Procedure Documents* (listed above):
   subject to the 192 hour nor 25% rule, and can be merged by any other member.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
-than the author of the pull request. A member of the *committers* group merging
-a pull request is considered an implicit +1.
+than the author of the pull request, with no *-1* binding votes. A member of the
+*committers* group merging a pull request is considered an implicit +1.
 
 Pull requests modifying frozen and tagged release branches should be restricted
 to bug fixes. As an exception, pull requests which only add new datatypes can

@@ -2,6 +2,7 @@
 Tags Controller: handles tagging/untagging of entities
 and provides autocomplete support.
 """
+
 import logging
 
 from sqlalchemy.sql import select
@@ -139,7 +140,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Do query and get result set.
         query = (
             select(item_tag_assoc_class.table.c.value, func.count())
-            .select_from_obj(from_obj)
+            .select_from(from_obj)
             .where(where_clause)
             .group_by(item_tag_assoc_class.table.c.value)
             .order_by(func.count().desc(), item_tag_assoc_class.table.c.value)
@@ -170,7 +171,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             .order_by(func.count().desc())
         )
         result_set = trans.sa_session.execute(query)
-        user_tag_names = list()
+        user_tag_names = []
         for row in result_set:
             user_tag_names.append(row[0])
         return user_tag_names

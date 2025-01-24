@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -44,6 +42,8 @@ running_standalone = False
 class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
     """Verify that the "Reset selected metadata" feature works."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -79,28 +79,12 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
-            self.upload_file(
-                repository,
-                filename="filtering/filtering_2.2.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded filtering 2.2.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.add_tar_to_repository(repository, "filtering/filtering_2.2.0.tar")
 
     def test_0015_create_repositories_from_0010_series(self):
         """Create repository freebayes_0010."""
@@ -114,50 +98,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
-                repository,
-                filename="freebayes/freebayes.xml",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded freebayes.xml.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="freebayes/tool_data_table_conf.xml.sample",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded tool_data_table_conf.xml.sample",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="freebayes/sam_fa_indices.loc.sample",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded sam_fa_indices.loc.sample",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="freebayes/tool_dependencies.xml",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded tool_dependencies.xml",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.setup_freebayes_0010_repo(repository)
 
     def test_0020_create_repositories_from_0020_series(self):
         """Create repositories emboss_0020 and column_maker_0020 if necessary."""
@@ -171,16 +112,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 column_maker_repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository = self.get_or_create_repository(
                 name="emboss_0020",
@@ -190,16 +125,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss.tar",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0025_create_repositories_from_0030_series(self):
@@ -215,16 +144,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 column_maker_repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             emboss_5_repository = self.get_or_create_repository(
                 name="emboss_5_0030",
@@ -234,16 +157,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_5_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss.tar",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_0330", additional_paths=["emboss", "5"])
             dependency_tuple = (
@@ -265,16 +182,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_6_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss.tar",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_0330", additional_paths=["emboss", "6"])
             dependency_tuple = (
@@ -296,16 +207,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss.tar",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_0330", additional_paths=["emboss", "5"])
             dependency_tuple = (
@@ -343,16 +248,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="freebayes/freebayes.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "freebayes/freebayes.tar",
                 commit_message="Uploaded the tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository = self.get_or_create_repository(
                 name="filtering_0040",
@@ -362,16 +261,10 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded the tool tarball for filtering 1.1.0.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
             filtering_repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
@@ -430,38 +323,20 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss.tar",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 freebayes_repository,
-                filename="freebayes/freebayes.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "freebayes/freebayes.tar",
                 commit_message="Uploaded freebayes tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 filtering_repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_0350", additional_paths=["emboss"])
             repository_dependencies_path = self.generate_temp_path("test_0350", additional_paths=["filtering"])
@@ -516,7 +391,6 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
 
     def test_9900_install_all_missing_repositories(self):
         """Call the install_repository method to ensure that all required repositories are installed."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository("filtering_0000", common.test_user_1_name, category_0000_name)
         self._install_repository("freebayes_0010", common.test_user_1_name, category_0010_name)
         self._install_repository("emboss_0020", common.test_user_1_name, category_0020_name)
@@ -525,14 +399,13 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
 
     def test_9905_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""
-        repository_metadata = dict()
-        repositories = self.test_db_util.get_all_installed_repositories(actually_installed=True)
+        repositories = self.get_all_installed_repositories()
+        repository_metadata = {}
         for repository in repositories:
-            repository_metadata[self.security.encode_id(repository.id)] = repository.metadata_
-        self.reset_metadata_on_selected_installed_repositories(list(repository_metadata.keys()))
-        for repository in repositories:
-            self.test_db_util.ga_refresh(repository)
-            old_metadata = repository_metadata[self.security.encode_id(repository.id)]
+            repository_metadata[repository.id] = repository.metadata_
+        self.reset_metadata_on_installed_repositories(repositories)
+        for repository in self.get_all_installed_repositories():
+            old_metadata = repository_metadata[repository.id]
             # When a repository with tools to be displayed in a tool panel section is deactivated and reinstalled,
             # the tool panel section remains in the repository metadata. However, when the repository's metadata
             # is subsequently reset, the tool panel section is removed from the repository metadata. While this

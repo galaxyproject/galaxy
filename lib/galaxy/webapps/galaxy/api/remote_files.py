@@ -1,13 +1,17 @@
 """
 API operations on remote files.
 """
+
 import logging
 from typing import (
     List,
     Optional,
 )
 
-from fastapi import Body
+from fastapi import (
+    Body,
+    Response,
+)
 from fastapi.param_functions import Query
 from typing_extensions import Annotated
 
@@ -34,13 +38,11 @@ log = logging.getLogger(__name__)
 router = Router(tags=["remote files"])
 
 TargetQueryParam: str = Query(
-    default=RemoteFilesTarget.ftpdir,
     title="Target source",
-    description=("The source to load datasets from." " Possible values: ftpdir, userdir, importdir"),
+    description=("The source to load datasets from. Possible values: ftpdir, userdir, importdir"),
 )
 
 FormatQueryParam: Optional[RemoteFilesFormat] = Query(
-    default=RemoteFilesFormat.uri,
     title="Response format",
     description=(
         "The requested format of returned data. Either `flat` to simply list all the files"
@@ -50,15 +52,13 @@ FormatQueryParam: Optional[RemoteFilesFormat] = Query(
 )
 
 RecursiveQueryParam: Optional[bool] = Query(
-    default=None,
     title="Recursive",
     description=(
-        "Wether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
+        "Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`."
     ),
 )
 
 DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
-    default=None,
     title="Disable mode",
     description=(
         "(This only applies when `format` is `jstree`)"
@@ -68,7 +68,6 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
 )
 
 WriteableQueryParam: Optional[bool] = Query(
-    default=None,
     title="Writeable",
     description=(
         "Whether the query is made with the intention of writing to the source."
@@ -77,7 +76,6 @@ WriteableQueryParam: Optional[bool] = Query(
 )
 
 BrowsableQueryParam: Optional[bool] = Query(
-    default=True,
     title="Browsable filesources only",
     description=(
         "Whether to return browsable filesources only. The default is `True`, which will omit filesources"
@@ -101,6 +99,20 @@ ExcludeKindQueryParam = Query(
     ),
 )
 
+LimitQueryParam = Query(title="Limit", description="Maximum number of entries to return.")
+
+OffsetQueryParam = Query(title="Offset", description="Number of entries to skip.")
+
+SearchQueryParam = Query(
+    title="Query",
+    description="Search query to filter entries by. The syntax could be different depending on the target source.",
+)
+
+SortByQueryParam = Query(
+    title="Sort by",
+    description="Sort the entries by the specified field.",
+)
+
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -116,27 +128,39 @@ class FastAPIRemoteFiles:
         deprecated=True,
         summary="Displays remote files available to the user. Please use /api/remote_files instead.",
     )
-    async def index(
+    def index(
         self,
+        response: Response,
         user_ctx: ProvidesUserContext = DependsOnTrans,
-        target: str = TargetQueryParam,
-        format: Optional[RemoteFilesFormat] = FormatQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
-        writeable: Optional[bool] = WriteableQueryParam,
+        target: Annotated[str, TargetQueryParam] = RemoteFilesTarget.ftpdir,
+        format: Annotated[Optional[RemoteFilesFormat], FormatQueryParam] = RemoteFilesFormat.uri,
+        recursive: Annotated[Optional[bool], RecursiveQueryParam] = None,
+        disable: Annotated[Optional[RemoteFilesDisableMode], DisableModeQueryParam] = None,
+        writeable: Annotated[Optional[bool], WriteableQueryParam] = None,
+        limit: Annotated[Optional[int], LimitQueryParam] = None,
+        offset: Annotated[Optional[int], OffsetQueryParam] = None,
+        query: Annotated[Optional[str], SearchQueryParam] = None,
+        sort_by: Annotated[Optional[str], SortByQueryParam] = None,
     ) -> AnyRemoteFilesListResponse:
-        """Lists all remote files available to the user from different sources."""
-        return self.manager.index(user_ctx, target, format, recursive, disable, writeable)
+        """Lists all remote files available to the user from different sources.
+
+        The total count of files and directories is returned in the 'total_matches' header.
+        """
+        result, count = self.manager.index(
+            user_ctx, target, format, recursive, disable, writeable, limit, offset, query, sort_by
+        )
+        response.headers["total_matches"] = str(count)
+        return result
 
     @router.get(
         "/api/remote_files/plugins",
         summary="Display plugin information for each of the gxfiles:// URI targets available.",
         response_description="A list with details about each plugin.",
     )
-    async def plugins(
+    def plugins(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
-        browsable_only: Optional[bool] = BrowsableQueryParam,
+        browsable_only: Annotated[Optional[bool], BrowsableQueryParam] = True,
         include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
         exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
     ) -> FilesSourcePluginList:
@@ -152,7 +176,7 @@ class FastAPIRemoteFiles:
         "/api/remote_files",
         summary="Creates a new entry (directory/record) on the remote files source.",
     )
-    async def create_entry(
+    def create_entry(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         payload: CreateEntryPayload = Body(

@@ -2,12 +2,23 @@ import importlib
 import logging
 from inspect import getfullargspec
 from types import ModuleType
+from typing import (
+    Callable,
+    TYPE_CHECKING,
+)
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.util.submodules import import_submodules
 from .rule_helper import RuleHelper
+
+if TYPE_CHECKING:
+    from galaxy.jobs import (
+        JobConfiguration,
+        JobDestination,
+        JobWrapper,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +63,12 @@ class JobRunnerMapper:
 
     rules_module: ModuleType
 
-    def __init__(self, job_wrapper, url_to_destination, job_config):
+    def __init__(
+        self,
+        job_wrapper: "JobWrapper",
+        url_to_destination: Callable[[str], "JobDestination"],
+        job_config: "JobConfiguration",
+    ):
         self.job_wrapper = job_wrapper
         self.url_to_destination = url_to_destination
         self.job_config = job_config
@@ -129,7 +145,7 @@ class JobRunnerMapper:
         param_values = job.get_param_values(app, ignore_errors=True)
         return param_values
 
-    def __convert_url_to_destination(self, url):
+    def __convert_url_to_destination(self, url: str):
         """
         Job runner URLs are deprecated, but dynamic mapper functions may still
         be returning them.  Runners are expected to be able to convert these to
@@ -160,8 +176,7 @@ class JobRunnerMapper:
         rules_module_name = destination.params.get("rules_module")
         rule_modules = self.__get_rule_modules_or_defaults(rules_module_name)
         expand_function = None
-        expand_function_name = destination.params.get("function")
-        if expand_function_name:
+        if expand_function_name := destination.params.get("function"):
             expand_function = self.__last_matching_function_in_modules(rule_modules, expand_function_name)
             if not expand_function:
                 message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % expand_function_name

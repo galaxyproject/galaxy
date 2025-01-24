@@ -1,69 +1,59 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+import { hasDetails } from "@/api";
+import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
+import { useDatasetStore } from "@/stores/datasetStore";
+
+interface Props {
+    historyDatasetId: string;
+    path?: string;
+    label?: string;
+}
+
+const { datasetPathDestination } = useDatasetPathDestination();
+const { getDataset } = useDatasetStore();
+
+const props = defineProps<Props>();
+
+const pathDestination = computed<PathDestination | null>(() =>
+    datasetPathDestination.value(props.historyDatasetId, props.path)
+);
+
+const dataset = computed(() => getDataset(props.historyDatasetId));
+
+const fileLink = computed(() => {
+    if (props.path === undefined || props.path === "undefined") {
+        // Download whole dataset
+        if (dataset.value && hasDetails(dataset.value)) {
+            return `${dataset.value.download_url}?to_ext=${dataset.value.file_ext}`;
+        }
+    }
+
+    // Download individual file from composite dataset
+    return pathDestination.value?.fileLink;
+});
+
+const linkLabel = computed(() => {
+    if (pathDestination.value?.isDirectory) {
+        return `Path: ${props.path} is a directory!`;
+    }
+
+    if (!fileLink.value) {
+        return `Path: ${props.path} was not found!`;
+    }
+
+    if (props.label && props.label !== "undefined") {
+        return props.label;
+    }
+    return `${props.historyDatasetId}`;
+});
+
+const linkTitle = computed(() => `Download ${dataset.value?.name ?? props.historyDatasetId}`);
+</script>
+
 <template>
     <div>
-        <a :href="pathDestination.fileLink" title="test" target="_blank">{{ linkLabel }}</a>
+        <a :href="fileLink" :title="linkTitle" target="_blank">{{ linkLabel }}</a>
     </div>
 </template>
-
-<script>
-import { getCompositeDatasetInfo } from "components/Dataset/services";
-import { mapCacheActions } from "vuex-cache";
-
-export default {
-    props: {
-        history_dataset_id: {
-            type: String,
-            required: true,
-        },
-        path: {
-            type: String,
-        },
-        label: {
-            type: String,
-        },
-    },
-    data() {
-        return {
-            pathDestination: undefined,
-        };
-    },
-    computed: {
-        linkLabel() {
-            // if sub-directory, we could potentially implement subdir compression
-            if (this.pathDestination.isDirectory) {
-                return `Path: ${this.path} is a directory!`;
-            }
-
-            if (!this.pathDestination.fileLink) {
-                return `Path: ${this.path} was not found!`;
-            }
-
-            if (this.label !== undefined && this.label !== "undefined") {
-                return this.label;
-            } else {
-                return `${
-                    this.pathDestination.datasetRootDir && this.path
-                        ? `DATASET: ${this.pathDestination.datasetRootDir} FILEPATH: ${this.path}`
-                        : `${this.history_dataset_id}`
-                } `;
-            }
-        },
-    },
-    created() {
-        this.pathDestination = {};
-        if (this.path && this.path !== "undefined") {
-            // download individual file from composite dataset
-            this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
-                this.pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
-            });
-        } else {
-            // download whole dataset
-            getCompositeDatasetInfo(this.history_dataset_id).then((response) => {
-                this.pathDestination = { fileLink: `${response.download_url}?to_ext=${response.file_ext}` };
-            });
-        }
-    },
-    methods: {
-        ...mapCacheActions(["fetchPathDestination"]),
-    },
-};
-</script>

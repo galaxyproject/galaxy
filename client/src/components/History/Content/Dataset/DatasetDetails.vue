@@ -1,7 +1,49 @@
+<script setup lang="ts">
+import { BLink } from "bootstrap-vue";
+import { computed } from "vue";
+
+import { hasDetails } from "@/api";
+import { STATES } from "@/components/History/Content/model/states";
+import { useDatasetStore } from "@/stores/datasetStore";
+
+import { type ItemUrls } from ".";
+
+import DatasetActions from "./DatasetActions.vue";
+import DatasetMiscInfo from "./DatasetMiscInfo.vue";
+
+const datasetStore = useDatasetStore();
+
+interface Props {
+    id: string;
+    writable?: boolean;
+    showHighlight?: boolean;
+    itemUrls: ItemUrls;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    writable: true,
+    showHighlight: false,
+});
+
+const emit = defineEmits<{
+    (e: "toggleHighlights"): void;
+    (e: "edit"): void;
+}>();
+
+const result = computed(() => datasetStore.getDataset(props.id));
+const isLoading = computed(() => datasetStore.isLoadingDataset(props.id));
+
+const stateText = computed(() => result.value && STATES[result.value.state] && STATES[result.value.state].text);
+
+function toggleHighlights() {
+    emit("toggleHighlights");
+}
+</script>
+
 <template>
-    <DatasetProvider :id="dataset.id" v-slot="{ loading, result }" auto-refresh>
-        <div v-if="!loading" class="dataset">
-            <div class="p-2 details not-loading">
+    <div>
+        <div v-if="result && !isLoading && hasDetails(result)" class="dataset">
+            <div class="details not-loading">
                 <div class="summary">
                     <div v-if="stateText" class="mb-1">{{ stateText }}</div>
                     <div v-else-if="result.misc_blurb" class="blurb">
@@ -17,9 +59,7 @@
                             result.genome_build
                         }}</BLink>
                     </span>
-                    <div v-if="result.misc_info" class="info">
-                        <span class="value">{{ result.misc_info }}</span>
-                    </div>
+                    <DatasetMiscInfo v-if="result.misc_info" :misc-info="result.misc_info" />
                 </div>
                 <DatasetActions
                     :item="result"
@@ -81,40 +121,9 @@
                     class="dataset-peek p-1"><table cellspacing="0" cellpadding="3"><tbody><tr><td>Dataset peek loading...</td></tr></tbody></table></pre>
             </div>
         </div>
-    </DatasetProvider>
+    </div>
 </template>
 
-<script>
-import { BLink } from "bootstrap-vue";
-import { STATES } from "components/History/Content/model/states";
-import { DatasetProvider } from "components/providers/storeProviders";
-
-import DatasetActions from "./DatasetActions";
-
-export default {
-    components: {
-        DatasetActions,
-        DatasetProvider,
-        BLink,
-    },
-    props: {
-        dataset: { type: Object, required: true },
-        writable: { type: Boolean, default: true },
-        showHighlight: { type: Boolean, default: false },
-        itemUrls: { type: Object, required: true },
-    },
-    computed: {
-        stateText() {
-            return STATES[this.dataset.state] && STATES[this.dataset.state].text;
-        },
-    },
-    methods: {
-        toggleHighlights() {
-            this.$emit("toggleHighlights");
-        },
-    },
-};
-</script>
 <style scoped>
 .details .summary div.info {
     max-height: 4rem;

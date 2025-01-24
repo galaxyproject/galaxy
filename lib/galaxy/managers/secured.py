@@ -3,6 +3,7 @@ Accessible models can be read and copied but not modified or deleted.
 
 Owned models can be modified and deleted.
 """
+
 from typing import (
     Any,
     Optional,
@@ -29,18 +30,17 @@ class AccessibleManagerMixin:
     # declare what we are using from base ModelManager
     model_class: Type[Any]
 
-    def by_id(self, id: int):
-        ...
+    def by_id(self, id: int): ...
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible(self, item: "Query", user: model.User, **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: model.User, **kwargs: Any) -> bool:
         """
         Return True if the item accessible to user.
         """
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_accessible(self, id: int, user: model.User, **kwargs: Any) -> "Query":
+    def get_accessible(self, id: int, user: model.User, **kwargs: Any):
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
@@ -96,8 +96,7 @@ class OwnableManagerMixin:
     # declare what we are using from base ModelManager
     model_class: Type[Any]
 
-    def by_id(self, id: int):
-        ...
+    def by_id(self, id: int): ...
 
     def is_owner(self, item: model.Base, user: Optional[model.User], **kwargs: Any) -> bool:
         """
