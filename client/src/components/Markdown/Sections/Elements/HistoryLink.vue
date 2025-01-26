@@ -21,7 +21,7 @@ const showLink = computed(() => !imported.value && !error.value);
 
 const onClick = async () => {
     try {
-        await axios.post(`${getAppRoot}/api/histories/${props.historyId}`);
+        await axios.post(`${getAppRoot()}api/histories`, { history_id: props.historyId });
         imported.value = true;
     } catch (e) {
         error.value = errorMessageAsString(e);
