@@ -42,10 +42,6 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    invocations: {
-        type: Object,
-        default: null,
-    },
     time: {
         type: String,
         default: null,
