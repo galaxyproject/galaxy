@@ -26,7 +26,7 @@ export function parseMarkdown(input: string): { name: string; content: string }[
     let currentName: string = "markdown";
     let currentContent: string[] = [];
     lines.forEach((line) => {
-        const sectionMatch = line.match(/^```(.*)$/);
+        const sectionMatch = line.trim().match(/^```(.*)$/);
         if (sectionMatch) {
             parseResult(result, currentName, currentContent);
             currentName = sectionMatch[1] || "markdown";
