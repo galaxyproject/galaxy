@@ -31,10 +31,6 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    datasets: {
-        type: Object,
-        default: null,
-    },
 });
 
 const parsedArgs = computed(() => getArgs(props.content));
@@ -166,8 +162,7 @@ function argToBoolean(args, name, booleanDefault) {
                     ].includes(name)
                 "
                 :name="name"
-                :args="args"
-                :datasets="datasets" />
+                :dataset-id="args.history_dataset_id" />
         </b-collapse>
     </div>
 </template>
