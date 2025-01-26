@@ -140,7 +140,7 @@ function argToBoolean(args, name, booleanDefault) {
                 :footer="args.footer" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
-            <InvocationTime v-else-if="name == 'invocation_time'" :args="args" :invocations="invocations" />
+            <InvocationTime v-else-if="name == 'invocation_time'" :invocation-id="args.invocation_id" />
             <JobMetrics
                 v-else-if="name == 'job_metrics'"
                 :job-id="args.job_id"
