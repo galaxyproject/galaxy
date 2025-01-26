@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
+import { getGalaxyInstance } from "@/app";
 import { useConfig } from "@/composables/config";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
@@ -42,10 +43,6 @@ const props = defineProps({
         type: String,
         default: null,
     },
-    version: {
-        type: String,
-        default: null,
-    },
 });
 
 const parsedArgs = computed(() => getArgs(props.content));
@@ -54,6 +51,7 @@ const name = computed(() => parsedArgs.value.name);
 
 const isCollapsible = computed(() => args.value.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
+const version = computed(() => getGalaxyInstance().config.version_major);
 
 function argToBoolean(args, name, booleanDefault) {
     const valueAsString = args[name];
