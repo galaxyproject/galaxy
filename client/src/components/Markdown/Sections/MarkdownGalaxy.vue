@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
 
-import { getArgs } from "@/components/Markdown/parse";
 import { getGalaxyInstance } from "@/app";
+import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
@@ -39,10 +39,6 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    time: {
-        type: String,
-        default: null,
-    },
 });
 
 const parsedArgs = computed(() => getArgs(props.content));
@@ -75,7 +71,7 @@ function argToBoolean(args, name, booleanDefault) {
                 <pre><code>{{ version }}</code></pre>
             </div>
             <div v-else-if="name == 'generate_time'" class="galaxy-time">
-                <pre><code>{{ time }}</code></pre>
+                <pre><code>{{ new Date().toUTCString() }}</code></pre>
             </div>
             <div v-else-if="name == 'workflow_image'" class="workflow-image" style="text-align: center">
                 <WorkflowImage
