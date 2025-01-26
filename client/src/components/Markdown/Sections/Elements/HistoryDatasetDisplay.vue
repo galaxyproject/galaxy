@@ -100,117 +100,81 @@
     </UrlDataProvider>
 </template>
 
-<script>
-import LoadingSpan from "components/LoadingSpan";
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import { getAppRoot } from "onload/loadConfig";
-import { mapState } from "pinia";
+<script setup lang="ts">
+import { computed, ref } from "vue";
 
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { UrlDataProvider } from "@/components/providers/UrlDataProvider";
+import { getAppRoot } from "@/onload/loadConfig";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-export default {
-    components: {
-        LoadingSpan,
-        UrlDataProvider,
-        HistoryDatasetAsImage,
-    },
-    props: {
-        datasetId: {
-            type: Number,
-            required: true,
-        },
-        embedded: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            currentPage: 1,
-            expanded: false,
-            perPage: 100,
-        };
-    },
-    computed: {
-        ...mapState(useDatatypesMapperStore, ["createMapper", "datatypesMapper", "loading"]),
-        contentClass() {
-            if (this.datatypesMapper?.isSubTypeOfAny(this.datasetType, ["tabular"])) {
-                return "";
-            }
-            if (this.expanded) {
-                return "embedded-dataset-expanded";
-            } else {
-                return "embedded-dataset";
-            }
-        },
-        datatypesUrl() {
-            return "/api/datatypes/types_and_mapping";
-        },
-        downloadUrl() {
-            return `${getAppRoot()}dataset/display?dataset_id=${this.datasetId}`;
-        },
-        displayUrl() {
-            return `${getAppRoot()}datasets/${this.datasetId}/display/?preview=True`;
-        },
-        importUrl() {
-            return `${getAppRoot()}dataset/imp?dataset_id=${this.datasetId}`;
-        },
-        itemUrl() {
-            return `/api/datasets/${this.datasetId}/get_content_as_text`;
-        },
-        metaUrl() {
-            return `/api/datasets/${this.datasetId}`;
-        },
-    },
-    created() {
-        this.createMapper();
-    },
-    methods: {
-        getFields(metaData) {
-            const fields = [];
-            const columnNames = metaData.metadata_column_names || [];
-            const columnCount = metaData.metadata_columns;
-            for (let i = 0; i < columnCount; i++) {
-                fields.push({
-                    key: `${i}`,
-                    label: columnNames[i] || i,
-                    sortable: true,
-                });
-            }
-            return fields;
-        },
-        getItems(textData, metaData) {
-            const tableData = [];
-            const delimiter = metaData.metadata_delimiter || "\t";
-            const comments = metaData.metadata_comment_lines || 0;
-            const lines = textData.split("\n");
-            lines.forEach((line, i) => {
-                if (i >= comments) {
-                    const tabs = line.split(delimiter);
-                    const rowData = {};
-                    let hasData = false;
-                    tabs.forEach((cellData, j) => {
-                        const cellDataTrimmed = cellData.trim();
-                        if (cellDataTrimmed) {
-                            hasData = true;
-                        }
-                        rowData[j] = cellDataTrimmed;
-                    });
-                    if (hasData) {
-                        tableData.push(rowData);
-                    }
+const props = defineProps<{
+    datasetId: string;
+    embedded?: boolean;
+}>();
+
+const expanded = ref(false);
+
+const contentClass = computed(() => (expanded.value ? "embedded-dataset-expanded" : "embedded-dataset"));
+
+const datatypesUrl = computed(() => "/api/datatypes/types_and_mapping");
+const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
+const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
+const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
+const itemUrl = computed(() => `/api/datasets/${props.datasetId}/get_content_as_text`);
+const metaUrl = computed(() => `/api/datasets/${props.datasetId}`);
+
+function onExpand() {
+    expanded.value = !expanded.value;
+}
+
+function isSubTypeOfAny(child: string, parents: string[], datatypesModel: any) {
+    const datatypesMapper = new DatatypesMapperModel(datatypesModel);
+    return datatypesMapper.isSubTypeOfAny(child, parents);
+}
+
+function getFields(metaData: any) {
+    const fields = [];
+    const columnNames = metaData.metadata_column_names || [];
+    const columnCount = metaData.metadata_columns;
+    for (let i = 0; i < columnCount; i++) {
+        fields.push({
+            key: `${i}`,
+            label: columnNames[i] || i,
+            sortable: true,
+        });
+    }
+    return fields;
+}
+
+function getItems(textData: string, metaData: any) {
+    const tableData: any = [];
+    const delimiter = metaData.metadata_delimiter || "\t";
+    const comments = metaData.metadata_comment_lines || 0;
+    const lines = textData.split("\n");
+    lines.forEach((line, i) => {
+        if (i >= comments) {
+            const tabs = line.split(delimiter);
+            const rowData: Record<string, string> = {};
+            let hasData = false;
+            tabs.forEach((cellData, j) => {
+                const cellDataTrimmed = cellData.trim();
+                if (cellDataTrimmed) {
+                    hasData = true;
                 }
+                rowData[j] = cellDataTrimmed;
             });
-            return tableData;
-        },
-        onExpand() {
-            this.expanded = !this.expanded;
-        },
-    },
-};
+            if (hasData) {
+                tableData.push(rowData);
+            }
+        }
+    });
+    return tableData;
+}
 </script>
+
 <style scoped>
 .embedded-dataset {
     max-height: 20rem;

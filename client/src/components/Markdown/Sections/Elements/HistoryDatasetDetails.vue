@@ -1,37 +1,41 @@
-<template>
-    <pre><code class="word-wrap-normal">{{ content }}</code></pre>
-</template>
+<script setup lang="ts">
+import axios from "axios";
+import { computed, ref } from "vue";
 
-<script>
-const ATTRIBUTES = {
+import { getAppRoot } from "@/onload/loadConfig";
+
+const ATTRIBUTES: Record<string, string> = {
     history_dataset_name: "name",
     history_dataset_info: "info",
     history_dataset_peek: "peek",
-    history_dataset_type: "ext",
+    history_dataset_type: "file_ext",
 };
-export default {
-    props: {
-        args: {
-            type: Object,
-            required: true,
-        },
-        datasets: {
-            type: Object,
-            default: null,
-        },
-        name: {
-            type: String,
-            default: null,
-        },
-    },
-    computed: {
-        getClass() {
-            return `dataset-${ATTRIBUTES[this.name]}`;
-        },
-        content() {
-            const dataset = this.datasets[this.args.history_dataset_id];
-            return dataset && dataset[ATTRIBUTES[this.name]];
-        },
-    },
-};
+
+const props = defineProps<{
+    datasetId: string;
+    name: string;
+}>();
+
+const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
+
+const attributeValue = ref();
+
+async function fetchAttribute(datasetId: string) {
+    try {
+        const attributeName = ATTRIBUTES[props.name] || "";
+        if (attributeName) {
+            const { data } = await axios.get(`${getAppRoot()}api/datasets/${datasetId}`);
+            attributeValue.value = data[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
+        }
+    } catch (error) {
+        console.error("Error fetching dataset attribute:", error);
+        attributeValue.value = "";
+    }
+}
+
+fetchAttribute(props.datasetId);
 </script>
+
+<template>
+    <pre><code :class="getClass">{{ attributeValue }}</code></pre>
+</template>
