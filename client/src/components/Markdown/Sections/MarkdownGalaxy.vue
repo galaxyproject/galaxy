@@ -125,7 +125,7 @@ function argToBoolean(args, name, booleanDefault) {
                 :title="config.ga4gh_service_organization_name"
                 :loading="!isConfigLoaded">
             </InstanceUrl>
-            <HistoryLink v-else-if="name == 'history_link'" :args="args" :histories="histories" />
+            <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
             <HistoryDatasetAsImage v-else-if="name == 'history_dataset_as_image'" :args="args" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
