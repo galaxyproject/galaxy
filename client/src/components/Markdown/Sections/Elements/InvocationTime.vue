@@ -1,26 +1,32 @@
+<script setup lang="ts">
+import axios from "axios";
+import { ref } from "vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
+
+const props = defineProps<{
+    invocationId: string;
+}>();
+
+const invocationTime = ref();
+
+async function fetchInvocation(invocationId: string) {
+    try {
+        const { data } = await axios.get(`${getAppRoot()}api/invocations/${invocationId}`);
+        if (data.create_time) {
+            invocationTime.value = new Date(data.create_time).toUTCString();
+        }
+    } catch (error) {
+        console.error("Error fetching invocation time:", error);
+        invocationTime.value = "";
+    }
+}
+
+fetchInvocation(props.invocationId);
+</script>
+
 <template>
-    <div class="invocation-time" :invocation_id="args.invocation_id">
-        <pre><code>{{ content }}</code></pre>
+    <div class="invocation-time">
+        <pre><code>{{ invocationTime }}</code></pre>
     </div>
 </template>
-
-<script>
-export default {
-    props: {
-        args: {
-            type: Object,
-            required: true,
-        },
-        invocations: {
-            type: Object,
-            required: true,
-        },
-    },
-    computed: {
-        content() {
-            const invocation = this.invocations[this.args.invocation_id];
-            return invocation && new Date(invocation["create_time"]).toUTCString();
-        },
-    },
-};
-</script>
