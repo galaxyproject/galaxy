@@ -14,7 +14,7 @@
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
-                    v-if="vcurrentUser && currentHistoryId"
+                    v-if="currentUser && currentHistoryId"
                     v-b-tooltip.hover
                     href="#"
                     role="button"
@@ -28,7 +28,7 @@
             </span>
             <span>
                 <span>Dataset Collection:</span>
-                <span class="font-weight-light">{{ collectionName }}</span>
+                <span class="font-weight-light">{{ itemName }}</span>
             </span>
         </b-card-header>
         <b-card-body>
@@ -61,11 +61,7 @@ export default {
         LoadingSpan,
     },
     props: {
-        args: {
-            type: Object,
-            default: null,
-        },
-        collections: {
+        collectionId: {
             type: Object,
             default: null,
         },
@@ -81,15 +77,14 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
-        collectionName() {
-            const collection = this.collections[this.args.history_dataset_collection_id];
-            return collection && collection.name;
+        itemName() {
+            return this.itemContent?.name;
         },
         itemUrl() {
-            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}`;
+            return `${getAppRoot()}api/dataset_collections/${this.collectionId}`;
         },
         downloadUrl() {
-            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;
+            return `${getAppRoot()}api/dataset_collections/${this.collectionId}/download`;
         },
     },
     created() {
@@ -100,7 +95,7 @@ export default {
     },
     methods: {
         onCopyCollection(currentHistoryId) {
-            const hdcaId = this.args.history_dataset_collection_id;
+            const hdcaId = this.collectionId;
             copyCollection(hdcaId, currentHistoryId).then(
                 (response) => {
                     this.messageVariant = "success";
