@@ -124,8 +124,8 @@ export default {
         HistoryDatasetAsImage,
     },
     props: {
-        args: {
-            type: Object,
+        datasetId: {
+            type: Number,
             required: true,
         },
         datasets: {
@@ -157,27 +157,27 @@ export default {
             }
         },
         datasetType() {
-            const dataset = this.datasets[this.args.history_dataset_id];
+            const dataset = this.datasets[this.datasetId];
             return dataset.ext;
         },
         datasetName() {
-            const dataset = this.datasets[this.args.history_dataset_id];
+            const dataset = this.datasets[this.datasetId];
             return dataset && dataset.name;
         },
         downloadUrl() {
-            return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
+            return `${getAppRoot()}dataset/display?dataset_id=${this.datasetId}`;
         },
         displayUrl() {
-            return `${getAppRoot()}datasets/${this.args.history_dataset_id}/display/?preview=True`;
+            return `${getAppRoot()}datasets/${this.datasetId}/display/?preview=True`;
         },
         importUrl() {
-            return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;
+            return `${getAppRoot()}dataset/imp?dataset_id=${this.datasetId}`;
         },
         itemUrl() {
-            return `/api/datasets/${this.args.history_dataset_id}/get_content_as_text`;
+            return `/api/datasets/${this.datasetId}/get_content_as_text`;
         },
         metaUrl() {
-            return `/api/datasets/${this.args.history_dataset_id}`;
+            return `/api/datasets/${this.datasetId}`;
         },
     },
     created() {

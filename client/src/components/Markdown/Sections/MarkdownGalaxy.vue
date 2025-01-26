@@ -151,8 +151,7 @@ function argToBoolean(args, name, booleanDefault) {
                 :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
-                :args="args"
-                :datasets="datasets"
+                :dataset-id="args.history_dataset_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetDetails
                 v-else-if="
