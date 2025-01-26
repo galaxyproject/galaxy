@@ -38,10 +38,6 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    histories: {
-        type: Object,
-        default: null,
-    },
     time: {
         type: String,
         default: null,
