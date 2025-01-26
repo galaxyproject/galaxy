@@ -112,7 +112,10 @@ function argToBoolean(args, name, booleanDefault) {
                 :loading="!isConfigLoaded">
             </InstanceUrl>
             <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
-            <HistoryDatasetAsImage v-else-if="name == 'history_dataset_as_image'" :args="args" />
+            <HistoryDatasetAsImage
+                v-else-if="name == 'history_dataset_as_image'"
+                :dataset-id="args.history_dataset_id"
+                :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
                 :history-dataset-id="args.history_dataset_id"

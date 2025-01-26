@@ -70,7 +70,7 @@
                                 v-else-if="
                                     isSubTypeOfAny(metaData.ext, ['galaxy.datatypes.images.Image'], datatypesModel)
                                 "
-                                :args="args" />
+                                :dataset-id="datasetId" />
                             <div v-else-if="itemContent.item_data">
                                 <div v-if="isSubTypeOfAny(metaData.ext, ['tabular'], datatypesModel)">
                                     <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
