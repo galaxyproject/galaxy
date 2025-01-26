@@ -15,7 +15,5 @@ const dataIncoming = computed(() => ({
 </script>
 
 <template>
-    <div>
-        <VisualizationWrapper name="vitessce" :data-incoming="dataIncoming" height="500px" />
-    </div>
+    <VisualizationWrapper name="vitessce" :data-incoming="dataIncoming" height="500px" />
 </template>

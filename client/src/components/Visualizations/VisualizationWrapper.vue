@@ -23,33 +23,32 @@ onMounted(() => {
     const pluginSrc = `${pluginPath}.js`;
     const pluginCss = `${pluginPath}.css`;
 
-    if (iframeRef.value) {
-        const iframe = iframeRef.value;
-        iframe.onload = () => {
-            const iframeDocument = iframe.contentDocument;
-            if (!iframeDocument) {
-                console.error("Failed to access iframe document.");
-                return;
-            }
+    const iframe = iframeRef.value;
+    if (iframe) {
+        // Verify document existence
+        const iframeDocument = iframe.contentDocument;
+        if (!iframeDocument) {
+            console.error("Failed to access iframe document.");
+            return;
+        }
 
-            // Create the container for the plugin
-            const container = iframeDocument.createElement("div");
-            container.id = "app";
-            container.setAttribute("data-incoming", JSON.stringify(props.dataIncoming));
-            iframeDocument.body.appendChild(container);
+        // Create the container for the plugin
+        const container = iframeDocument.createElement("div");
+        container.id = "app";
+        container.setAttribute("data-incoming", JSON.stringify(props.dataIncoming));
+        iframeDocument.body.appendChild(container);
 
-            // Inject the script tag for the plugin
-            const script = iframeDocument.createElement("script");
-            script.type = "module";
-            script.src = pluginSrc;
-            iframeDocument.body.appendChild(script);
+        // Inject the script tag for the plugin
+        const script = iframeDocument.createElement("script");
+        script.type = "module";
+        script.src = pluginSrc;
+        iframeDocument.body.appendChild(script);
 
-            // Add a CSS link to the iframe document
-            const link = iframeDocument.createElement("link");
-            link.rel = "stylesheet";
-            link.href = pluginCss;
-            iframeDocument.head.appendChild(link);
-        };
+        // Add a CSS link to the iframe document
+        const link = iframeDocument.createElement("link");
+        link.rel = "stylesheet";
+        link.href = pluginCss;
+        iframeDocument.head.appendChild(link);
     }
 });
 </script>
