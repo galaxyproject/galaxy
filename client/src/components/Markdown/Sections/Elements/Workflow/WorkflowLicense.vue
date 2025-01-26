@@ -1,11 +1,30 @@
 <script setup lang="ts">
+import axios from "axios";
+import { ref } from "vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
+
 import License from "@/components/License/License.vue";
 
 interface WorkflowLicenseProps {
-    licenseId?: string;
+    workflowId: string;
 }
 
-defineProps<WorkflowLicenseProps>();
+const props = defineProps<WorkflowLicenseProps>();
+
+const licenseId = ref("");
+
+async function fetchLicense(workflowId: string) {
+    try {
+        const response = await axios.get(`${getAppRoot()}api/workflows/${workflowId}`);
+        licenseId.value = response.data?.license || "";
+    } catch (error) {
+        console.error("Error fetching workflow license:", error);
+        licenseId.value = "";
+    }
+}
+
+fetchLicense(props.workflowId);
 </script>
 
 <template>
