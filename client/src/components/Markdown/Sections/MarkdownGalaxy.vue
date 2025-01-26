@@ -54,10 +54,6 @@ const props = defineProps({
         type: String,
         default: null,
     },
-    workflows: {
-        type: Object,
-        default: null,
-    },
 });
 
 const parsedArgs = computed(() => getArgs(props.content));
@@ -98,7 +94,7 @@ function argToBoolean(args, name, booleanDefault) {
                     :workflow-version="args.workflow_checkpoint || undefined" />
             </div>
             <div v-else-if="name == 'workflow_license'" class="workflow-license">
-                <WorkflowLicense :license-id="workflows[args.workflow_id]['license']" />
+                <WorkflowLicense :workflow-id="args.workflow_id" />
             </div>
             <InstanceUrl
                 v-else-if="name == 'instance_citation_link'"
@@ -161,8 +157,7 @@ function argToBoolean(args, name, booleanDefault) {
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"
-                :workflow-version="args.workflow_checkpoint"
-                :workflows="workflows" />
+                :workflow-version="args.workflow_checkpoint" />
             <Visualization v-else-if="name == 'visualization'" :args="args" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
