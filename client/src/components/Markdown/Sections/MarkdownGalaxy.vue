@@ -35,10 +35,6 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    collections: {
-        type: Object,
-        default: null,
-    },
 });
 
 const parsedArgs = computed(() => getArgs(props.content));
