@@ -39,7 +39,7 @@ const error = ref("");
 const loaded = ref(false);
 const toggle = ref(false);
 
-const isCollapsible = computed(() => args.value.collapse !== undefined);
+const isCollapsible = computed(() => args.value?.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const version = computed(() => getGalaxyInstance().config.version_major);

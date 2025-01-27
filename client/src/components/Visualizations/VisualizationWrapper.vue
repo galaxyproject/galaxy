@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from "axios";
 import { onMounted, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -13,15 +14,18 @@ const props = defineProps<Props>();
 
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
-onMounted(() => {
+onMounted(async () => {
     if (!props.name) {
         console.error("Plugin name is required!");
         return;
     }
 
-    const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/dist/index`;
-    const pluginSrc = `${pluginPath}.js`;
-    const pluginCss = `${pluginPath}.css`;
+    const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
+
+    // TODO: Add validation and error handling
+    const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/`;
+    const pluginSrc = `${pluginPath}${plugin.entry_point.attr.src}`;
+    const pluginCss = `${pluginPath}${plugin.entry_point.attr.css}`;
 
     const iframe = iframeRef.value;
     if (iframe) {
