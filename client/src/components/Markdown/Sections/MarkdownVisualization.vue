@@ -4,6 +4,7 @@ import { ref, watch } from "vue";
 import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
 const props = defineProps<{
+    attribute?: string;
     content: string;
     name: string;
 }>();
@@ -19,7 +20,13 @@ watch(
     () => {
         try {
             errorMessage.value = "";
-            visualizationConfig.value = { ...JSON.parse(props.content) };
+            const parsedContent = { ...JSON.parse(props.content) };
+            if (props.attribute) {
+                visualizationConfig.value = {};
+                visualizationConfig.value[props.attribute] = parsedContent;
+            } else {
+                visualizationConfig.value = parsedContent;
+            }
             visualizationKey.value++;
         } catch (e) {
             errorMessage.value = String(e);
@@ -35,8 +42,8 @@ watch(
     </b-alert>
     <VisualizationWrapper
         v-else-if="visualizationConfig"
+        :key="visualizationKey"
         :config="visualizationConfig"
         :height="HEIGHT"
-        :key="visualizationKey"
         :name="name" />
 </template>
