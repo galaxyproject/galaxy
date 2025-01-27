@@ -6,7 +6,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 interface Props {
     name: string;
-    dataIncoming: object;
+    config: object;
     height?: string;
 }
 
@@ -21,9 +21,12 @@ onMounted(async () => {
     }
 
     const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
-
     const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/`;
-
+    const dataIncoming = {
+        root: getAppRoot(),
+        visualization_plugin: plugin,
+        visualization_config: props.config,
+    };
     const iframe = iframeRef.value;
     if (iframe) {
         // Verify document existence
@@ -36,7 +39,7 @@ onMounted(async () => {
         // Create the container for the plugin
         const container = iframeDocument.createElement("div");
         container.id = "app";
-        container.setAttribute("data-incoming", JSON.stringify(props.dataIncoming));
+        container.setAttribute("data-incoming", JSON.stringify(dataIncoming));
         iframeDocument.body.appendChild(container);
 
         // Inject the script tag for the plugin
