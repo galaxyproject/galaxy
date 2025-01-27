@@ -1,10 +1,11 @@
 <script setup>
+import axios from "axios";
 import { computed, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
-import { useInvocationStore } from "@/stores/invocationStore";
+import { getAppRoot } from "@/onload/loadConfig";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -25,7 +26,6 @@ import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 
 const { config, isConfigLoaded } = useConfig();
-const invocationStore = useInvocationStore();
 
 const props = defineProps({
     content: {
@@ -50,9 +50,14 @@ async function handleArgs() {
         error.value = "";
         attributes.value = getArgs(props.content);
         const attributesArgs = { ...attributes.value.args };
+
         if (attributesArgs.invocation_id) {
-            await invocationStore.fetchInvocationForId({ id: attributesArgs.invocation_id });
-            const invocation = await invocationStore.getInvocationById(attributesArgs.invocation_id);
+            if (attributesArgs.output) {
+                console.log(attributesArgs.invocation_id);
+            }
+            const { data: invocation } = await axios.get(
+                `${getAppRoot()}api/invocations/${attributesArgs.invocation_id}`
+            );
             if (invocation) {
                 attributesArgs.invocation = invocation;
                 if (attributesArgs.input && invocation.inputs) {
@@ -65,7 +70,7 @@ async function handleArgs() {
                     attributesArgs.history_target_id = targetId;
                 }
             } else {
-                console.error("Failed to retrieve invocation.");
+                error.value = "Failed to retrieve invocation.";
             }
         }
         args.value = attributesArgs;
