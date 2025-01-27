@@ -9,10 +9,10 @@ from galaxy.managers.credentials import (
 )
 from galaxy.model import (
     CredentialsGroup,
-    Secret,
     User,
     UserCredentials,
-    Variable,
+    UserCredentialSecret,
+    UserCredentialVariable,
 )
 from galaxy.schema.credentials import SOURCE_TYPE
 from .base import BaseTestCase
@@ -27,40 +27,42 @@ class TestCredentialsManager(BaseTestCase):
     def test_user_credentials(self):
         user = self._create_test_user()
         user_id = user.id
-        reference = "ref1"
+        service_reference = "ref1"
         source_type: SOURCE_TYPE = "tool"
         source_id = "tool_id"
         user_credentials: List[Tuple[UserCredentials, CredentialsGroup]] = []
 
         user_credentials_id = self.credentials_manager.add_user_credentials(
-            user_credentials, user_id, reference, source_type, source_id
+            user_credentials, user_id, service_reference, source_type, source_id
         )
 
         group_name = "group1"
 
         user_credential_group_id = self.credentials_manager.add_group(
-            user_credentials, user_credentials_id, group_name, reference
+            user_credentials, user_credentials_id, group_name, service_reference
         )
 
         variable_name = "var1"
         variable_value = "value1"
-        variables: List[Variable] = []
+        variables: List[UserCredentialVariable] = []
 
         secret_name = "secret1"
         secret_value = "value1"
-        secrets: List[Secret] = []
+        secrets: List[UserCredentialSecret] = []
 
-        self.credentials_manager.add_variable(variables, user_credential_group_id, variable_name, variable_value)
-        self.credentials_manager.add_secret(secrets, user_credential_group_id, secret_name, secret_value)
+        self.credentials_manager.add_or_update_variable(
+            variables, user_credential_group_id, variable_name, variable_value
+        )
+        self.credentials_manager.add_or_update_secret(secrets, user_credential_group_id, secret_name, secret_value)
         self.credentials_manager.update_current_group(user_id, user_credentials_id, group_name)
-        self.credentials_manager.commit_session()
+        self.trans.sa_session.commit()
 
         result_user_credentials, result_credentials_group = self.credentials_manager.get_user_credentials(
             user_id, source_type, source_id, user_credentials_id, user_credential_group_id
         )[0]
         assert result_user_credentials.id == user_credentials_id
         assert result_user_credentials.user_id == user_id
-        assert result_user_credentials.reference == reference
+        assert result_user_credentials.service_reference == service_reference
         assert result_user_credentials.source_type == source_type
         assert result_user_credentials.source_id == source_id
         assert result_user_credentials.current_group_id == user_credential_group_id
@@ -78,7 +80,7 @@ class TestCredentialsManager(BaseTestCase):
 
         rows_to_delete: CredentialsModelList = [result_user_credentials, result_credentials_group, *variables, *secrets]
         self.credentials_manager.delete_rows(rows_to_delete)
-        self.credentials_manager.commit_session()
+        self.trans.sa_session.commit()
 
     def _create_test_user(self, username="user1") -> User:
         user_data = dict(email=f"{username}@user.email", username=username, password="password")

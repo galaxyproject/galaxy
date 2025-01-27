@@ -118,7 +118,7 @@ function areSetByUser(credentials: UserCredentials): boolean {
 }
 
 function areOptional(credentials: UserCredentials): boolean {
-    const matchingDefinition = credentialsDefinition.value.services.get(credentials.reference);
+    const matchingDefinition = credentialsDefinition.value.services.get(credentials.service_reference);
     if (!matchingDefinition) {
         return false;
     }
@@ -143,11 +143,11 @@ async function onSavedCredentials(providedCredentials: CreateSourceCredentialsPa
     }
 }
 
-async function onDeleteCredentialsGroup(reference: string, groupName: string) {
+async function onDeleteCredentialsGroup(service_reference: string, groupName: string) {
     busyMessage.value = "Updating your credentials...";
     isBusy.value = true;
     try {
-        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, reference, groupName);
+        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, service_reference, groupName);
     } catch (error) {
         // TODO: Implement error handling.
         console.error("Error deleting user credentials group", error);

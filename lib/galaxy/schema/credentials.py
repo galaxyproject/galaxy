@@ -38,7 +38,7 @@ class UserCredentialsResponse(Model):
     id: EncodedDatabaseIdField
     source_type: SOURCE_TYPE
     source_id: str
-    reference: str
+    service_reference: str
     current_group_name: str
     groups: Dict[str, CredentialGroupResponse]
 
@@ -59,7 +59,7 @@ class ServiceGroupPayload(Model):
 
 
 class ServiceCredentialPayload(Model):
-    reference: str  # Reference to the service
+    service_reference: str  # Reference to the service
     current_group: Optional[str] = "default"  # The selected group, the one that would be used when running the service
     groups: List[ServiceGroupPayload]  # All provided groups, including the selected one
 

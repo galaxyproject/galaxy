@@ -11,16 +11,15 @@ from sqlalchemy.orm import aliased
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     CredentialsGroup,
-    Secret,
     UserCredentials,
-    Variable,
+    UserCredentialSecret,
+    UserCredentialVariable,
 )
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import SOURCE_TYPE
 from galaxy.schema.fields import DecodedDatabaseIdField
 
-CredentialsModelList = List[Union[UserCredentials, CredentialsGroup, Variable, Secret]]
+CredentialsModelList = List[Union[UserCredentials, CredentialsGroup, UserCredentialVariable, UserCredentialSecret]]
 
 
 class CredentialsManager:
@@ -46,44 +45,42 @@ class CredentialsManager:
         if source_type:
             stmt = stmt.where(user_cred_alias.source_type == source_type)
         if source_id:
-            if not source_type:
-                raise RequestParameterInvalidException("Source type is required when source ID is provided.")
             stmt = stmt.where(user_cred_alias.source_id == source_id)
         if user_credentials_id:
             stmt = stmt.where(user_cred_alias.id == user_credentials_id)
         if group_id:
             stmt = stmt.where(group_alias.id == group_id)
 
-        result = self.session.execute(stmt).all()
-        return [(row[0], row[1]) for row in result]
+        result = self.session.execute(stmt).tuples().all()
+        return list(result)
 
     def fetch_credentials(
         self,
         group_id: DecodedDatabaseIdField,
-    ) -> Tuple[List[Variable], List[Secret]]:
-        variables = list(
-            self.session.execute(select(Variable).where(Variable.user_credential_group_id == group_id)).scalars().all()
-        )
-
-        secrets = list(
-            self.session.execute(select(Secret).where(Secret.user_credential_group_id == group_id)).scalars().all()
-        )
-
-        return variables, secrets
+    ) -> Tuple[List[UserCredentialVariable], List[UserCredentialSecret]]:
+        variables = self.session.scalars(
+            select(UserCredentialVariable).where(UserCredentialVariable.user_credential_group_id == group_id)
+        ).all()
+        secrets = self.session.scalars(
+            select(UserCredentialSecret).where(UserCredentialSecret.user_credential_group_id == group_id)
+        ).all()
+        return list(variables), list(secrets)
 
     def add_user_credentials(
         self,
         existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
         user_id: DecodedDatabaseIdField,
-        reference: str,
+        service_reference: str,
         source_type: SOURCE_TYPE,
         source_id: str,
     ) -> DecodedDatabaseIdField:
-        user_credentials = next((uc[0] for uc in existing_user_credentials if uc[0].reference == reference), None)
+        user_credentials = next(
+            (uc[0] for uc in existing_user_credentials if uc[0].service_reference == service_reference), None
+        )
         if not user_credentials:
             user_credentials = UserCredentials(
                 user_id=user_id,
-                reference=reference,
+                service_reference=service_reference,
                 source_type=source_type,
                 source_id=source_id,
             )
@@ -96,10 +93,14 @@ class CredentialsManager:
         existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
         user_credentials_id: DecodedDatabaseIdField,
         group_name: str,
-        reference: str,
+        service_reference: str,
     ) -> DecodedDatabaseIdField:
         credentials_group = next(
-            (uc[1] for uc in existing_user_credentials if uc[1].name == group_name and uc[0].reference == reference),
+            (
+                uc[1]
+                for uc in existing_user_credentials
+                if uc[1].name == group_name and uc[0].service_reference == service_reference
+            ),
             None,
         )
         if not credentials_group:
@@ -108,9 +109,9 @@ class CredentialsManager:
             self.session.flush()
         return credentials_group.id
 
-    def add_variable(
+    def add_or_update_variable(
         self,
-        variables: List[Variable],
+        variables: List[UserCredentialVariable],
         user_credential_group_id: DecodedDatabaseIdField,
         variable_name: str,
         variable_value: str,
@@ -122,16 +123,16 @@ class CredentialsManager:
         if variable:
             variable.value = variable_value
         else:
-            variable = Variable(
+            variable = UserCredentialVariable(
                 user_credential_group_id=user_credential_group_id,
                 name=variable_name,
                 value=variable_value,
             )
         self.session.add(variable)
 
-    def add_secret(
+    def add_or_update_secret(
         self,
-        secrets: List[Secret],
+        secrets: List[UserCredentialSecret],
         user_credential_group_id: DecodedDatabaseIdField,
         secret_name: str,
         secret_value: str,
@@ -143,16 +144,12 @@ class CredentialsManager:
         if secret:
             secret.already_set = True if secret_value else False
         else:
-            secret = Secret(
+            secret = UserCredentialSecret(
                 user_credential_group_id=user_credential_group_id,
                 name=secret_name,
                 already_set=True if secret_value else False,
             )
         self.session.add(secret)
-
-    def commit_session(self) -> None:
-        with transaction(self.session):
-            self.session.commit()
 
     def update_current_group(
         self,
@@ -175,4 +172,4 @@ class CredentialsManager:
     ) -> None:
         for row in rows_to_delete:
             self.session.delete(row)
-        self.commit_session()
+        self.session.commit()

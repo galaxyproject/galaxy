@@ -46,7 +46,7 @@ const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== "defaul
 const emit = defineEmits<{
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
     (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
-    (e: "delete-credentials-group", reference: string, groupName: string): void;
+    (e: "delete-credentials-group", service_reference: string, groupName: string): void;
 }>();
 
 function onAddingNewSet() {
@@ -112,7 +112,7 @@ function onDeleteGroup() {
             selectedSet.value = defaultSet;
             onCurrentSetChange(defaultSet);
         }
-        emit("delete-credentials-group", props.credentialPayload.reference, groupNameToDelete);
+        emit("delete-credentials-group", props.credentialPayload.service_reference, groupNameToDelete);
     }
 }
 </script>

@@ -49,7 +49,7 @@ export function transformToSourceCredentials(
     return {
         sourceType: "tool",
         sourceId: toolId,
-        services: new Map(toolCredentialsDefinition.map((service) => [service.reference, service])),
+        services: new Map(toolCredentialsDefinition.map((service) => [service.service_reference, service])),
     };
 }
 
@@ -57,7 +57,7 @@ export function transformToSourceCredentials(
  * Represents the definition of credentials for a particular service.
  */
 export interface ServiceCredentialsDefinition {
-    reference: string;
+    service_reference: string;
     name: string;
     optional: boolean;
     multiple: boolean;

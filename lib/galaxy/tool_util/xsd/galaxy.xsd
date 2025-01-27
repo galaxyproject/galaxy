@@ -742,7 +742,7 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:documentation xml:lang="en"><![CDATA[
 This is possible to add credentials into tools directly by adding a requirement of
 type ``credentials``. This requirement type is used to define a set of credentials
-that are required by the tool. The credentials are defined by a name, a reference
+that are required by the tool. The credentials are defined by a name, a service_reference
 to the source of the credentials, and a set of variables and secrets that are
 required by the tool. The variables and secrets are injected into the environment
 of the tool process as environment variables.
@@ -750,7 +750,7 @@ It can contain multiple ``variable`` and ``secret`` tags.
 
 ```xml
 <requirements>
-    <credentials name="service1" reference="service/54687" optional="false" multiple="true" label="Your credentials set" description="Optional description of the service using credentials">
+    <credentials name="service1" service_reference="service/54687" optional="false" multiple="true" label="Your credentials set" description="Optional description of the service using credentials">
         <variable name="server" inject_as_env="service1_url" label="Your Service1 server" description="You can set the server..." />
         <secret name="username" inject_as_env="service1_user" label="Your Service1 username" description="Your username is your email" />
         <secret name="password" inject_as_env="service1_pass" label="Your Service1 password" description="This needs to be a strong password" />
@@ -768,7 +768,7 @@ It can contain multiple ``variable`` and ``secret`` tags.
         <xs:documentation xml:lang="en">The name of the credential set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="reference" type="xs:string" use="required">
+    <xs:attribute name="service_reference" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">A reference to the source of the credentials.</xs:documentation>
       </xs:annotation>

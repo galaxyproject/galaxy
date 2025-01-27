@@ -12139,17 +12139,18 @@ class UserCredentials(Base):
     """
 
     __tablename__ = "user_credentials"
+    __table_args__ = (UniqueConstraint("service_reference", "source_type", "source_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
-    reference: Mapped[str] = mapped_column(nullable=False)
-    source_type: Mapped[str] = mapped_column(nullable=False)
-    source_id: Mapped[str] = mapped_column(nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    service_reference: Mapped[str] = mapped_column()
+    source_type: Mapped[str] = mapped_column()
+    source_id: Mapped[str] = mapped_column()
     current_group_id: Mapped[int] = mapped_column(
         ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
     )
-    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
 class CredentialsGroup(Base):
@@ -12160,44 +12161,44 @@ class CredentialsGroup(Base):
     __tablename__ = "user_credentials_group"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column()
     user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id", ondelete="CASCADE"), index=True)
-    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
-class Variable(Base):
+class UserCredentialVariable(Base):
     """
     Represents a variable associated with a user for a specific service.
     """
 
-    __tablename__ = "credential_variable"
+    __tablename__ = "user_credential_variable"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True
     )
-    name: Mapped[str] = mapped_column(nullable=False)
-    value: Mapped[str] = mapped_column(nullable=False)
-    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    name: Mapped[str] = mapped_column()
+    value: Mapped[str] = mapped_column()
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
-class Secret(Base):
+class UserCredentialSecret(Base):
     """
     Represents a secret associated with a user for a specific service.
     """
 
-    __tablename__ = "credential_secret"
+    __tablename__ = "user_credential_secret"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True
     )
-    name: Mapped[str] = mapped_column(nullable=False)
-    already_set: Mapped[bool] = mapped_column(nullable=False, default=False)
-    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    name: Mapped[str] = mapped_column()
+    already_set: Mapped[bool] = mapped_column(default=False)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
