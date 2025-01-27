@@ -6,11 +6,11 @@ import { UrlDataProvider } from "@/components/providers/UrlDataProvider.js";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface HistoryDatasetAsTableProps {
-    historyDatasetId: string;
     compact: boolean;
+    datasetId: string;
+    footer?: string;
     showColumnHeaders: boolean;
     title?: string;
-    footer?: string;
 }
 
 const props = withDefaults(defineProps<HistoryDatasetAsTableProps>(), {
@@ -21,11 +21,11 @@ const props = withDefaults(defineProps<HistoryDatasetAsTableProps>(), {
 });
 
 const itemUrl = computed(() => {
-    return `/api/datasets/${props.historyDatasetId}/get_content_as_text`;
+    return `/api/datasets/${props.datasetId}/get_content_as_text`;
 });
 
 const metaUrl = computed(() => {
-    return `/api/datasets/${props.historyDatasetId}`;
+    return `/api/datasets/${props.datasetId}`;
 });
 
 const expanded = false;
