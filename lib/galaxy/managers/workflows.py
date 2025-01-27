@@ -197,6 +197,11 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             filters.append(StoredWorkflow.published == true())
 
         stmt = select(StoredWorkflow)
+
+        # Do not include workflows authored by deleted users
+        if show_published or show_shared:
+            stmt = stmt.join(StoredWorkflow.user).where(User.deleted == false())
+
         if show_shared:
             stmt = stmt.outerjoin(StoredWorkflow.users_shared_with)
         stmt = stmt.outerjoin(StoredWorkflow.tags)

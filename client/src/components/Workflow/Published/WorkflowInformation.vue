@@ -43,6 +43,13 @@ const fullLink = computed(() => {
 const userOwned = computed(() => {
     return userStore.matchesCurrentUsername(props.workflowInfo.owner);
 });
+
+const owner = computed(() => {
+    if (props.workflowInfo?.creator_deleted) {
+        return "Archived author";
+    }
+    return props.workflowInfo.owner;
+});
 </script>
 
 <template>
@@ -58,12 +65,15 @@ const userOwned = computed(() => {
         <div class="workflow-info-box">
             <hgroup class="mb-2">
                 <Heading h3 size="md" class="mb-0">Author</Heading>
-                <span class="ml-2">{{ workflowInfo.owner }}</span>
+                <span class="ml-2">{{ owner }}</span>
             </hgroup>
 
             <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
 
-            <RouterLink :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
+            <RouterLink
+                v-if="!props.workflowInfo?.creator_deleted"
+                :to="publishedByUser"
+                :target="props.embedded ? '_blank' : ''">
                 All published Workflows by {{ workflowInfo.owner }}
             </RouterLink>
         </div>

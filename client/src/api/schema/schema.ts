@@ -14741,6 +14741,11 @@ export interface components {
         /** PageDetails */
         PageDetails: {
             /**
+             * Author deleted
+             * @description Whether the author of this Page has been deleted.
+             */
+            author_deleted: boolean;
+            /**
              * Content
              * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
@@ -14838,6 +14843,11 @@ export interface components {
         };
         /** PageSummary */
         PageSummary: {
+            /**
+             * Author deleted
+             * @description Whether the author of this Page has been deleted.
+             */
+            author_deleted: boolean;
             /**
              * Create Time
              * Format: date-time
@@ -16387,6 +16397,11 @@ export interface components {
             creator?:
                 | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
                 | null;
+            /**
+             * Creator deleted
+             * @description Whether the creator of this Workflow has been deleted.
+             */
+            creator_deleted: boolean;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.

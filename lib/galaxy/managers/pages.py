@@ -157,6 +157,10 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
         stmt = select(self.model_class)
 
+        # Do not include pages authored by deleted users
+        if show_published:
+            stmt = stmt.join(Page.user).where(User.deleted == false())
+
         filters = []
         if show_own or (not show_published and not show_shared and not is_admin):
             filters = [self.model_class.user == user]
