@@ -9,7 +9,7 @@ const props = defineProps<{
     name: string;
 }>();
 
-const HEIGHT = "500px";
+const HEIGHT = "400px";
 
 const errorMessage = ref("");
 const visualizationConfig = ref();
@@ -37,7 +37,7 @@ watch(
 </script>
 
 <template>
-    <b-alert v-if="errorMessage" variant="danger" show>
+    <b-alert v-if="errorMessage" variant="danger" show :height="HEIGHT">
         {{ errorMessage }}
     </b-alert>
     <VisualizationWrapper
