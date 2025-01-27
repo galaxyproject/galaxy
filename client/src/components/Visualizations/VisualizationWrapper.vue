@@ -22,10 +22,7 @@ onMounted(async () => {
 
     const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
 
-    // TODO: Add validation and error handling
     const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/`;
-    const pluginSrc = `${pluginPath}${plugin.entry_point.attr.src}`;
-    const pluginCss = `${pluginPath}${plugin.entry_point.attr.css}`;
 
     const iframe = iframeRef.value;
     if (iframe) {
@@ -43,16 +40,24 @@ onMounted(async () => {
         iframeDocument.body.appendChild(container);
 
         // Inject the script tag for the plugin
-        const script = iframeDocument.createElement("script");
-        script.type = "module";
-        script.src = pluginSrc;
-        iframeDocument.body.appendChild(script);
+        if (plugin?.entry_point?.attr?.src) {
+            const script = iframeDocument.createElement("script");
+            script.type = "module";
+            script.src = `${pluginPath}${plugin.entry_point.attr.src}`;
+            iframeDocument.body.appendChild(script);
+        } else {
+            const error = iframeDocument.createElement("div");
+            error.innerHTML = `Unable to locate plugin module for: ${props.name}.`;
+            iframeDocument.body.appendChild(error);
+        }
 
         // Add a CSS link to the iframe document
-        const link = iframeDocument.createElement("link");
-        link.rel = "stylesheet";
-        link.href = pluginCss;
-        iframeDocument.head.appendChild(link);
+        if (plugin?.entry_point?.attr?.css) {
+            const link = iframeDocument.createElement("link");
+            link.rel = "stylesheet";
+            link.href = `${pluginPath}${plugin.entry_point.attr.css}`;
+            iframeDocument.head.appendChild(link);
+        }
     }
 });
 </script>
