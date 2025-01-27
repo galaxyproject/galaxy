@@ -18574,8 +18574,8 @@ export interface components {
             current_group: string | null;
             /** Groups */
             groups: components["schemas"]["ServiceGroupPayload"][];
-            /** Reference */
-            reference: string;
+            /** Service Reference */
+            service_reference: string;
         };
         /** ServiceGroupPayload */
         ServiceGroupPayload: {
@@ -20628,8 +20628,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Reference */
-            reference: string;
+            /** Service Reference */
+            service_reference: string;
             /** Source Id */
             source_id: string;
             /**
