@@ -493,7 +493,6 @@ def parse_xml_validators(input_elem: Element) -> List[AnyValidatorModel]:
 def static_validators(validator_models: List[AnyValidatorModel]) -> List[AnyValidatorModel]:
     static_validators = []
     for validator_model in validator_models:
-        print(validator_model._static)
         if validator_model._static:
             static_validators.append(validator_model)
     return static_validators
