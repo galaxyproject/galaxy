@@ -8,15 +8,19 @@ const props = defineProps<{
     name: string;
 }>();
 
-const visualizationConfig = ref();
+const HEIGHT = "500px";
+
 const errorMessage = ref("");
+const visualizationConfig = ref();
+const visualizationKey = ref(0);
 
 watch(
     () => props.content,
     () => {
         try {
-            visualizationConfig.value = { ...JSON.parse(props.content) };
             errorMessage.value = "";
+            visualizationConfig.value = { ...JSON.parse(props.content) };
+            visualizationKey.value++;
         } catch (e) {
             errorMessage.value = String(e);
         }
@@ -29,5 +33,10 @@ watch(
     <b-alert v-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </b-alert>
-    <VisualizationWrapper v-else-if="visualizationConfig" :name="name" :config="visualizationConfig" height="500px" />
+    <VisualizationWrapper
+        v-else-if="visualizationConfig"
+        :config="visualizationConfig"
+        :height="HEIGHT"
+        :key="visualizationKey"
+        :name="name" />
 </template>
