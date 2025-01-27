@@ -67,6 +67,11 @@ function getMode(cellName: string) {
 
 <style lang="scss">
 @import "theme/blue.scss";
+
+.cell-guide {
+    min-width: 5rem;
+}
+
 .cell-hover {
     background-color: $gray-100;
 }

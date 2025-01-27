@@ -57,9 +57,3 @@ function onUpdate() {
     emit("update", newMarkdownText);
 }
 </script>
-
-<style>
-.cell-guide {
-    width: 5rem;
-}
-</style>
