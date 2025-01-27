@@ -11,7 +11,6 @@ import { parseMarkdown } from "./parse";
 import MarkdownDefault from "./Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
 import MarkdownVega from "./Sections/MarkdownVega.vue";
-import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StsDownloadButton from "@/components/StsDownloadButton.vue";
 
@@ -158,7 +157,6 @@ onMounted(() => {
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <MarkdownDefault v-if="obj.name === 'markdown'" :content="obj.content" />
                 <MarkdownVega v-else-if="obj.name === 'vega'" :content="obj.content" />
-                <MarkdownVitessce v-else-if="obj.name === 'vitessce'" :content="obj.content" />
                 <MarkdownGalaxy
                     v-else-if="obj.name === 'galaxy'"
                     :content="obj.content"
