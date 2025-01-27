@@ -110,18 +110,18 @@ watch(
             </div>
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
-                :dataset-id="args.history_target_id"
+                :dataset-id="args.history_target_id || args.history_dataset_id"
                 :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
-                :history-dataset-id="args.history_target_id"
                 :compact="argToBoolean(args, 'compact', false)"
+                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :footer="args.footer"
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
-                :title="args.title"
-                :footer="args.footer" />
+                :title="args.title" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
-                :collection-id="args.history_target_id" />
+                :collection-id="args.history_target_id || args.history_dataset_collection_id" />
             <HistoryDatasetDetails
                 v-else-if="
                     [
@@ -131,11 +131,11 @@ watch(
                         'history_dataset_type',
                     ].includes(name)
                 "
-                :name="name"
-                :dataset-id="args.history_target_id" />
+                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
-                :dataset-id="args.history_target_id"
+                :dataset-id="args.history_target_id || args.history_dataset_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
