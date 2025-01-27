@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
+import { useInvocationStore } from "@/stores/invocationStore";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -24,8 +25,8 @@ import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 
 const { config, isConfigLoaded } = useConfig();
+const invocationStore = useInvocationStore();
 
-const toggle = ref(false);
 const props = defineProps({
     content: {
         type: String,
@@ -33,28 +34,50 @@ const props = defineProps({
     },
 });
 
-const parsedArgs = computed(() => getArgs(props.content));
-const args = computed(() => parsedArgs.value.args);
-const name = computed(() => parsedArgs.value.name);
+const args = ref();
+const loaded = ref(false);
+const toggle = ref(false);
 
 const isCollapsible = computed(() => args.value.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
+const name = computed(() => parsedArgs.value.name);
+const parsedArgs = computed(() => getArgs(props.content));
 const version = computed(() => getGalaxyInstance().config.version_major);
 
-function argToBoolean(args, name, booleanDefault) {
-    const valueAsString = args[name];
-    if (valueAsString == "true") {
-        return true;
-    } else if (valueAsString == "false") {
-        return false;
-    } else {
-        return booleanDefault;
+async function handleArgs() {
+    const result = { ...parsedArgs.value.args };
+    if (result.invocation_id) {
+        await invocationStore.fetchInvocationForId({ id: result.invocation_id });
+        const invocation = await invocationStore.getInvocationById(result.invocation_id);
+        if (invocation) {
+            result.invocation = invocation;
+            if (result.input && invocation.inputs) {
+                const targetId = Object.values(invocation.inputs).find((input) => input.label === result.input)?.id || "";
+                result.history_target_id = targetId;
+            }
+            else if (result.output && invocation.outputs) {
+                const targetId = invocation.outputs[result.output]?.id || "";
+                result.history_target_id = targetId;
+            }
+        } else {
+            console.error("Failed to retrieve invocation.");
+        }
     }
+    args.value = result;
+    loaded.value = true;
 }
+
+watch(
+    () => props.content,
+    () => {
+        handleArgs();
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
-    <div>
+    <div v-if="loaded">
         <b-link v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
         </b-link>
@@ -110,11 +133,11 @@ function argToBoolean(args, name, booleanDefault) {
             <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
-                :dataset-id="args.history_dataset_id"
+                :dataset-id="args.history_target_id"
                 :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
-                :history-dataset-id="args.history_dataset_id"
+                :history-dataset-id="args.history_target_id"
                 :compact="argToBoolean(args, 'compact', false)"
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
                 :title="args.title"
@@ -142,7 +165,7 @@ function argToBoolean(args, name, booleanDefault) {
             <Visualization v-else-if="name == 'visualization'" :args="args" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
-                :collection-id="args.history_dataset_collection_id" />
+                :collection-id="args.history_target_id" />
             <ToolStd
                 v-else-if="['tool_stdout', 'tool_stderr'].includes(name)"
                 :job-id="args.job_id"
@@ -150,7 +173,7 @@ function argToBoolean(args, name, booleanDefault) {
                 :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
-                :dataset-id="args.history_dataset_id"
+                :dataset-id="args.history_target_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetDetails
                 v-else-if="
@@ -162,7 +185,7 @@ function argToBoolean(args, name, booleanDefault) {
                     ].includes(name)
                 "
                 :name="name"
-                :dataset-id="args.history_dataset_id" />
+                :dataset-id="args.history_target_id" />
         </b-collapse>
     </div>
 </template>
