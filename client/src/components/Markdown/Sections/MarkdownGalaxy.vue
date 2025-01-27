@@ -149,6 +149,16 @@ watch(
                 :title="config.ga4gh_service_organization_name"
                 :loading="!isConfigLoaded">
             </InstanceUrl>
+            <div v-else-if="name === 'invocation_inputs'">
+                <div v-for="(input, index) in args.invocation.inputs" :key="index">
+                    <h4 class="ml-2">Input {{ parseInt(index) + 1 }}: {{ input.label }}</h4>
+                </div>
+            </div>
+            <div v-else-if="name === 'invocation_outputs'">
+                <div v-for="(outputKey, index) in Object.keys(args.invocation.outputs)" :key="index">
+                    <h4 class="ml-2">Output {{ index + 1 }}: {{ outputKey }}</h4>
+                </div>
+            </div>
             <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
