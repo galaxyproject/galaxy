@@ -13,10 +13,11 @@
                 </CellButton>
             </div>
             <div class="m-2 w-100">
-                <MarkdownDefault v-if="name === 'markdown'" :content="content" />
-                <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
+                <MarkdownGalaxy v-if="name === 'galaxy'" :content="content" />
                 <MarkdownVega v-else-if="name === 'vega'" :content="content" />
+                <MarkdownVisualization v-else-if="name === 'plotly'" name="plotly" :content="content" />
                 <MarkdownVitessce v-else-if="name === 'vitessce'" :content="content" />
+                <MarkdownDefault v-else :content="content" />
             </div>
         </div>
         <div v-if="toggle" class="d-flex">
@@ -40,6 +41,7 @@ import { ref } from "vue";
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
 import MarkdownVega from "../Sections/MarkdownVega.vue";
+import MarkdownVisualization from "../Sections/MarkdownVisualization.vue";
 import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
