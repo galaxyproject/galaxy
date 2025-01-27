@@ -356,7 +356,7 @@ class CredentialsRequirement:
     def __init__(
         self,
         name: str,
-        reference: str,
+        service_reference: str,
         optional: bool = True,
         multiple: bool = False,
         label: str = "",
@@ -365,7 +365,7 @@ class CredentialsRequirement:
         variables: Optional[List[Variable]] = None,
     ) -> None:
         self.name = name
-        self.reference = reference
+        self.service_reference = service_reference
         self.optional = optional
         self.multiple = multiple
         self.label = label
@@ -373,13 +373,13 @@ class CredentialsRequirement:
         self.secrets = secrets if secrets is not None else []
         self.variables = variables if variables is not None else []
 
-        if not self.reference:
-            raise ValueError("Missing reference")
+        if not self.service_reference:
+            raise ValueError("Missing service_reference")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
-            "reference": self.reference,
+            "service_reference": self.service_reference,
             "optional": self.optional,
             "multiple": self.multiple,
             "label": self.label,
@@ -391,7 +391,7 @@ class CredentialsRequirement:
     @classmethod
     def from_dict(cls, dict: Dict[str, Any]) -> "CredentialsRequirement":
         name = dict["name"]
-        reference = dict["reference"]
+        service_reference = dict["service_reference"]
         optional = dict.get("optional", True)
         multiple = dict.get("multiple", False)
         label = dict.get("label", "")
@@ -400,7 +400,7 @@ class CredentialsRequirement:
         variables = [Variable.from_element(v) for v in dict.get("variables", [])]
         return cls(
             name=name,
-            reference=reference,
+            service_reference=service_reference,
             optional=optional,
             multiple=multiple,
             label=label,
@@ -497,7 +497,7 @@ def container_from_element(container_elem) -> ContainerDescription:
 
 def credentials_from_element(credentials_elem) -> CredentialsRequirement:
     name = credentials_elem.get("name")
-    reference = credentials_elem.get("reference")
+    service_reference = credentials_elem.get("service_reference")
     optional = string_as_bool(credentials_elem.get("optional", "true"))
     multiple = string_as_bool(credentials_elem.get("multiple", "false"))
     label = credentials_elem.get("label", "")
@@ -506,7 +506,7 @@ def credentials_from_element(credentials_elem) -> CredentialsRequirement:
     variables = [Variable.from_element(elem) for elem in credentials_elem.findall("variable")]
     return CredentialsRequirement(
         name=name,
-        reference=reference,
+        service_reference=service_reference,
         optional=optional,
         multiple=multiple,
         label=label,
