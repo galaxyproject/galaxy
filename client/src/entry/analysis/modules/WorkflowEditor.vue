@@ -1,3 +1,75 @@
+<script setup lang="ts">
+import { ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { getQueryValue } from "@/utils/route";
+import { urlData } from "@/utils/url";
+
+import Editor from "@/components/Workflow/Editor/Index.vue";
+
+const router = useRouter();
+
+const emit = defineEmits<{
+    (e: "update:confirmation", confirmation: boolean): void;
+}>();
+
+const storedWorkflowId = ref<string | undefined>();
+const workflowId = ref<string | undefined>();
+const version = ref<number | undefined>();
+const skipNextReload = ref(false);
+const editorReloadKey = ref(0);
+const editorConfig = ref<{
+    id: string;
+    dataManagers: any[];
+    initialVersion: number;
+    moduleSections: any[];
+    tags: any[];
+    workflows: any[];
+}>();
+
+async function getEditorConfig() {
+    let reloadEditor = true;
+
+    if (skipNextReload.value) {
+        reloadEditor = false;
+        skipNextReload.value = false;
+    }
+
+    storedWorkflowId.value = getQueryValue("id");
+    workflowId.value = getQueryValue("workflow_id");
+    version.value = parseInt(getQueryValue("version") || "", 10);
+
+    const params: {
+        id?: string;
+        version?: string;
+        workflow_id?: string;
+    } = {};
+
+    if (workflowId.value) {
+        params.workflow_id = workflowId.value.toString();
+    } else if (storedWorkflowId.value) {
+        params.id = storedWorkflowId.value.toString();
+    }
+    if (version.value) {
+        params.version = version.value.toString();
+    }
+
+    editorConfig.value = await urlData({ url: "/workflow/editor", params });
+
+    if (reloadEditor) {
+        editorReloadKey.value += 1;
+    }
+}
+
+watch(
+    () => router.currentRoute.query,
+    () => {
+        getEditorConfig();
+    },
+    { immediate: true }
+);
+</script>
+
 <template>
     <Editor
         v-if="editorConfig"
@@ -7,67 +79,6 @@
         :initial-version="editorConfig.initialVersion"
         :module-sections="editorConfig.moduleSections"
         :workflow-tags="editorConfig.tags"
-        @update:confirmation="$emit('update:confirmation', $event)"
+        @update:confirmation="emit('update:confirmation', $event)"
         @skipNextReload="() => (skipNextReload = true)" />
 </template>
-<script>
-import Editor from "components/Workflow/Editor/Index";
-import Query from "utils/query-string-parsing";
-import { urlData } from "utils/url";
-
-export default {
-    components: {
-        Editor,
-    },
-    data() {
-        return {
-            storedWorkflowId: null,
-            workflowId: null,
-            version: null,
-            editorConfig: null,
-            editorReloadKey: 0,
-            skipNextReload: false,
-        };
-    },
-    watch: {
-        "$route.params": {
-            handler() {
-                this.getEditorConfig();
-            },
-            immediate: true,
-        },
-    },
-    methods: {
-        async getEditorConfig() {
-            let reloadEditor = true;
-
-            if (this.skipNextReload) {
-                reloadEditor = false;
-                this.skipNextReload = false;
-            }
-
-            this.storedWorkflowId = Query.get("id");
-            this.workflowId = Query.get("workflow_id");
-            this.version = Query.get("version");
-            this.previousHistoryLength = window.history.length;
-
-            const params = {};
-
-            if (this.workflowId) {
-                params.workflow_id = this.workflowId;
-            } else if (this.storedWorkflowId) {
-                params.id = this.storedWorkflowId;
-            }
-            if (this.version) {
-                params.version = this.version;
-            }
-
-            this.editorConfig = await urlData({ url: "/workflow/editor", params });
-
-            if (reloadEditor) {
-                this.editorReloadKey += 1;
-            }
-        },
-    },
-};
-</script>
