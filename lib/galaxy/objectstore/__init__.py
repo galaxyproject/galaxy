@@ -1074,10 +1074,10 @@ class DiskObjectStore(ConcreteObjectStore):
 
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         """Override `ObjectStore`'s stub; delete the file or folder on disk."""
+        path = self._get_filename(obj, **kwargs)
+        extra_dir = kwargs.get("extra_dir", None)
+        obj_dir = kwargs.get("obj_dir", False)
         try:
-            path = self._get_filename(obj, **kwargs)
-            extra_dir = kwargs.get("extra_dir", None)
-            obj_dir = kwargs.get("obj_dir", False)
             if entire_dir and (extra_dir or obj_dir):
                 shutil.rmtree(path)
                 return True
@@ -1120,7 +1120,7 @@ class DiskObjectStore(ConcreteObjectStore):
                 return path
         path = self._construct_path(obj, **kwargs)
         if not os.path.exists(path):
-            raise FileNotFoundError
+            raise ObjectNotFound
         return path
 
     def _update_from_file(
