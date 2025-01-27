@@ -51,10 +51,12 @@ const shared = computed(() => {
 });
 
 const sourceType = computed(() => {
-    if (props.workflow.source_metadata?.url) {
+    const { url, trs_server, trs_tool_id } = props.workflow.source_metadata || {};
+    const trs = trs_server || trs_tool_id;
+    if (url) {
         return "url";
-    } else if (props.workflow.source_metadata?.trs_server) {
-        return `trs_${props.workflow.source_metadata?.trs_server}`;
+    } else if (trs) {
+        return `trs_${trs}`;
     } else {
         return "";
     }
