@@ -157,6 +157,7 @@ async function submit() {
                                             required />
                                         <button
                                             type="button"
+                                            title="Show Password"
                                             class="input-group-text password-toggle-icon"
                                             @click.prevent="togglePasswordVisibility">
                                             <FontAwesomeIcon :icon="showPassword ? faEyeSlash : faEye" />

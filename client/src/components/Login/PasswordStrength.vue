@@ -2,7 +2,7 @@
 import { zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core";
 import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common";
 import * as zxcvbnEnPackage from "@zxcvbn-ts/language-en";
-import { type PropType, type Ref, ref, watch } from "vue";
+import { type PropType, type Ref, ref,watch } from "vue";
 
 const props = defineProps({
     password: {
@@ -16,12 +16,12 @@ const strengthScore = ref<number>(0);
 const showPasswordGuidelines: Ref<boolean> = ref(false);
 const crackTime = ref<string>("");
 const options = {
-  translations: zxcvbnEnPackage.translations,
-  graphs: zxcvbnCommonPackage.adjacencyGraphs,
-  dictionary: {
-    ...zxcvbnCommonPackage.dictionary,
-    ...zxcvbnEnPackage.dictionary,
-  },
+    translations: zxcvbnEnPackage.translations,
+    graphs: zxcvbnCommonPackage.adjacencyGraphs,
+    dictionary: {
+        ...zxcvbnCommonPackage.dictionary,
+        ...zxcvbnEnPackage.dictionary,
+    },
 };
 zxcvbnOptions.setOptions(options);
 
@@ -35,7 +35,7 @@ function evaluatePasswordStrength(newPassword: string) {
 
     const result = zxcvbn(newPassword);
     strengthScore.value = result.score;
-    crackTime.value = String(result.crackTimesDisplay.onlineNoThrottling10PerSecond || "N/A");
+    crackTime.value = String(result.crackTimesDisplay.offlineSlowHashing1e4PerSecond || "N/A");
 
     if (strengthScore.value <= 1) {
         passwordStrength.value = "weak";
@@ -65,16 +65,17 @@ watch(
                 :style="{ width: `${(strengthScore / 4) * 100}%` }"></div>
         </div>
 
-        <div :class="['password-strength', passwordStrength]" class="mt-2">
-            <span v-if="passwordStrength === 'empty'"></span>
-            <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
-            <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
-            <span v-else>Strong Password</span>
-        </div>
-
-        <div v-if="passwordStrength !== 'empty'" class="crack-time mt-2">
-            <strong>Estimated time to crack:</strong>
-            <span :class="passwordStrength"> {{ crackTime }}</span>
+        <div class="password-info-container mt-2">
+            <div :class="['password-strength', passwordStrength]">
+                <span v-if="passwordStrength === 'empty'"></span>
+                <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
+                <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
+                <span v-else>Strong Password</span>
+            </div>
+            <div v-if="passwordStrength !== 'empty'" class="crack-time">
+                <strong>Estimated time to crack:</strong>
+                <span :class="passwordStrength"> {{ crackTime }}</span>
+            </div>
         </div>
 
         <BButton variant="secondary" class="ui-link mt-3" @click="showPasswordGuidelines = true">
@@ -134,6 +135,12 @@ watch(
     &.strong {
         background-color: $brand-success;
     }
+}
+
+.password-info-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .password-strength,
