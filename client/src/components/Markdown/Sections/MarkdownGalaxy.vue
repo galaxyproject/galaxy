@@ -61,13 +61,15 @@ async function handleArgs() {
             if (invocation) {
                 attributesArgs.invocation = invocation;
                 if (attributesArgs.input && invocation.inputs) {
-                    const targetId =
-                        Object.values(invocation.inputs).find((input) => input.label === attributesArgs.input)?.id ||
-                        "";
-                    attributesArgs.history_target_id = targetId;
+                    const inputValues = Object.values(invocation.inputs);
+                    const input = inputValues.find((i) => i.label === attributesArgs.input);
+                    attributesArgs.history_target_id = input?.id;
                 } else if (attributesArgs.output && invocation.outputs) {
                     const targetId = invocation.outputs[attributesArgs.output]?.id || "";
                     attributesArgs.history_target_id = targetId;
+                } else if (attributesArgs.step && invocation.steps) {
+                    const step = invocation.steps.find((s) => s.workflow_step_label === attributesArgs.step);
+                    attributesArgs.job_id = step?.job_id;
                 }
             } else {
                 error.value = "Failed to retrieve invocation.";
