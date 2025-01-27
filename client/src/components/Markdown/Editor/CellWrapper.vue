@@ -16,7 +16,11 @@
                 <MarkdownGalaxy v-if="name === 'galaxy'" :content="content" />
                 <MarkdownVega v-else-if="name === 'vega'" :content="content" />
                 <MarkdownVisualization v-else-if="name === 'plotly'" name="plotly" :content="content" />
-                <MarkdownVitessce v-else-if="name === 'vitessce'" :content="content" />
+                <MarkdownVisualization
+                    v-else-if="name === 'vitessce'"
+                    attribute="dataset_content"
+                    name="vitessce"
+                    :content="content" />
                 <MarkdownDefault v-else :content="content" />
             </div>
         </div>
@@ -42,7 +46,6 @@ import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
 import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVisualization from "../Sections/MarkdownVisualization.vue";
-import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
 
