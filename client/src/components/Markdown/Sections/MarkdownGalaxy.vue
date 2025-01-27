@@ -70,6 +70,7 @@ async function handleArgs() {
                 } else if (attributesArgs.step && invocation.steps) {
                     const step = invocation.steps.find((s) => s.workflow_step_label === attributesArgs.step);
                     attributesArgs.job_id = step?.job_id;
+                    attributesArgs.implicit_collection_jobs_id = step?.implicit_collection_jobs_id;
                 }
             } else {
                 error.value = "Failed to retrieve invocation.";
