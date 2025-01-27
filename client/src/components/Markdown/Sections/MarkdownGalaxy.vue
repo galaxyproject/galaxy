@@ -1,11 +1,10 @@
 <script setup>
-import axios from "axios";
 import { computed, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { fromCache } from "@/components/Markdown/cache";
 import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
-import { getAppRoot } from "@/onload/loadConfig";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -52,12 +51,7 @@ async function handleArgs() {
         const attributesArgs = { ...attributes.value.args };
 
         if (attributesArgs.invocation_id) {
-            if (attributesArgs.output) {
-                console.log(attributesArgs.invocation_id);
-            }
-            const { data: invocation } = await axios.get(
-                `${getAppRoot()}api/invocations/${attributesArgs.invocation_id}`
-            );
+            const invocation = await fromCache(`invocations/${attributesArgs.invocation_id}`);
             if (invocation) {
                 attributesArgs.invocation = invocation;
                 if (attributesArgs.input && invocation.inputs) {
