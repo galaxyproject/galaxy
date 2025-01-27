@@ -384,6 +384,7 @@ tool_panel:
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
     search: '.search-query'
+    toolbox: '[data-description="panel toolbox"]'
     workflow_names: '#internal-workflows .toolTitle'
     views_button: '.tool-panel-dropdown'
     views_menu_item: '[data-panel-id="${panel_id}"]'

@@ -75,7 +75,13 @@ DEFAULT_PRIVATE = False
 DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
+USER_OBJECTS_SCHEME = "user_objects://"
+
 log = logging.getLogger(__name__)
+
+
+def is_user_object_store(object_store_id: Optional[str]) -> bool:
+    return object_store_id is not None and object_store_id.startswith(USER_OBJECTS_SCHEME)
 
 
 class UserObjectStoreResolver(Protocol):
@@ -1536,7 +1542,7 @@ class DistributedObjectStore(NestedObjectStore):
         try:
             return self.backends[object_store_id]
         except KeyError:
-            if object_store_id.startswith("user_objects://") and self.user_object_store_resolver:
+            if is_user_object_store(object_store_id) and self.user_object_store_resolver:
                 return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
             raise
 
@@ -1574,7 +1580,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
-            if obj.object_store_id in self.backends or obj.object_store_id.startswith("user_objects://"):
+            if obj.object_store_id in self.backends or is_user_object_store(obj.object_store_id):
                 return obj.object_store_id
             else:
                 log.warning(
@@ -1627,7 +1633,7 @@ class DistributedObjectStore(NestedObjectStore):
         if parent_check or object_store_id is None:
             return parent_check
         # user selection allowed and object_store_id is not None
-        if object_store_id.startswith("user_objects://"):
+        if is_user_object_store(object_store_id):
             if not user:
                 return "Supplied object store id is not accessible"
             rest_of_uri = object_store_id.split("://", 1)[1]
@@ -2017,12 +2023,16 @@ class QuotaSourceMap:
         self.default_quota_source = source
         self.default_quota_enabled = enabled
         self.info = QuotaSourceInfo(self.default_quota_source, self.default_quota_enabled)
+        # User defined sources are provided by the user and the quota is not tracked
+        self.user_defined_source_info = QuotaSourceInfo(label=None, use=False)
         self.backends = {}
         self._labels = None
 
-    def get_quota_source_info(self, object_store_id):
+    def get_quota_source_info(self, object_store_id: Optional[str]) -> QuotaSourceInfo:
         if object_store_id in self.backends:
             return self.backends[object_store_id].get_quota_source_info(object_store_id)
+        elif is_user_object_store(object_store_id):
+            return self.user_defined_source_info
         else:
             return self.info
 

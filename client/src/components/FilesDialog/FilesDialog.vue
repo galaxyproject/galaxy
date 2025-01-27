@@ -21,6 +21,7 @@ import {
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { USER_FILE_PREFIX } from "@/utils/upload-payload";
 
 import { Model } from "./model";
 
@@ -249,7 +250,9 @@ function load(record?: SelectionItem) {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
                     .map(fileSourcePluginToItem);
-                items.value = convertedItems;
+
+                const sortedItems = convertedItems.sort(sortPrivateFileSourcesFirst);
+                items.value = sortedItems;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = false;
@@ -293,6 +296,20 @@ function load(record?: SelectionItem) {
                 errorMessage.value = errorMessageAsString(error);
             });
     }
+}
+
+function isPrivateFileSource(item: SelectionItem): boolean {
+    return item.url.startsWith(USER_FILE_PREFIX);
+}
+
+function sortPrivateFileSourcesFirst(a: SelectionItem, b: SelectionItem): number {
+    if (isPrivateFileSource(a) && !isPrivateFileSource(b)) {
+        return -1;
+    }
+    if (!isPrivateFileSource(a) && isPrivateFileSource(b)) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
