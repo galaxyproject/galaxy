@@ -35,35 +35,44 @@ const props = defineProps({
 });
 
 const args = ref();
+const attributes = ref();
+const error = ref("");
 const loaded = ref(false);
 const toggle = ref(false);
 
 const isCollapsible = computed(() => args.value.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
-const name = computed(() => parsedArgs.value.name);
-const parsedArgs = computed(() => getArgs(props.content));
+const name = computed(() => attributes.value.name);
 const version = computed(() => getGalaxyInstance().config.version_major);
 
 async function handleArgs() {
-    const result = { ...parsedArgs.value.args };
-    if (result.invocation_id) {
-        await invocationStore.fetchInvocationForId({ id: result.invocation_id });
-        const invocation = await invocationStore.getInvocationById(result.invocation_id);
-        if (invocation) {
-            result.invocation = invocation;
-            if (result.input && invocation.inputs) {
-                const targetId = Object.values(invocation.inputs).find((input) => input.label === result.input)?.id || "";
-                result.history_target_id = targetId;
+    try {
+        error.value = "";
+        attributes.value = getArgs(props.content);
+        const attributesArgs = { ...attributes.value.args };
+        if (attributesArgs.invocation_id) {
+            await invocationStore.fetchInvocationForId({ id: attributesArgs.invocation_id });
+            const invocation = await invocationStore.getInvocationById(attributesArgs.invocation_id);
+            if (invocation) {
+                attributesArgs.invocation = invocation;
+                if (attributesArgs.input && invocation.inputs) {
+                    const targetId =
+                        Object.values(invocation.inputs).find((input) => input.label === attributesArgs.input)?.id ||
+                        "";
+                    attributesArgs.history_target_id = targetId;
+                } else if (attributesArgs.output && invocation.outputs) {
+                    const targetId = invocation.outputs[attributesArgs.output]?.id || "";
+                    attributesArgs.history_target_id = targetId;
+                }
+            } else {
+                console.error("Failed to retrieve invocation.");
             }
-            else if (result.output && invocation.outputs) {
-                const targetId = invocation.outputs[result.output]?.id || "";
-                result.history_target_id = targetId;
-            }
-        } else {
-            console.error("Failed to retrieve invocation.");
         }
+        args.value = attributesArgs;
+    } catch (e) {
+        error.value = "The directive provided below is invalid. Please review it for errors.";
+        attributes.value = {};
     }
-    args.value = result;
     loaded.value = true;
 }
 
@@ -78,6 +87,9 @@ watch(
 
 <template>
     <div v-if="loaded">
+        <b-alert v-if="error" variant="danger" show>
+            {{ error }}
+        </b-alert>
         <b-link v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
         </b-link>
