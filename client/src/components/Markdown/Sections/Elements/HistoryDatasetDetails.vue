@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -21,19 +21,25 @@ const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 const attributeValue = ref();
 
 async function fetchAttribute(datasetId: string) {
-    try {
-        const attributeName = ATTRIBUTES[props.name] || "";
-        if (attributeName) {
-            const { data } = await axios.get(`${getAppRoot()}api/datasets/${datasetId}`);
-            attributeValue.value = data[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
+    if (datasetId) {
+        try {
+            const attributeName = ATTRIBUTES[props.name] || "";
+            if (attributeName) {
+                const { data } = await axios.get(`${getAppRoot()}api/datasets/${datasetId}`);
+                attributeValue.value = data[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
+            }
+        } catch (error) {
+            console.error("Error fetching dataset attribute:", error);
+            attributeValue.value = "";
         }
-    } catch (error) {
-        console.error("Error fetching dataset attribute:", error);
-        attributeValue.value = "";
     }
 }
 
-fetchAttribute(props.datasetId);
+watch(
+    () => props.datasetId,
+    () => fetchAttribute(props.datasetId),
+    { immediate: true }
+);
 </script>
 
 <template>
