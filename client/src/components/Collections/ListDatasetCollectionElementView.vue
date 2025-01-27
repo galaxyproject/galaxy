@@ -13,6 +13,7 @@ interface Props {
     selected?: boolean;
     hasActions?: boolean;
     notEditable?: boolean;
+    hideExtension?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -48,7 +49,7 @@ function clickDiscard() {
                 <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
                 <span v-else>{{ elementName }}</span>
             </strong>
-            <i v-if="element.extension"> ({{ element.extension }}) </i>
+            <i v-if="!hideExtension && element.extension"> ({{ element.extension }}) </i>
         </span>
 
         <div v-if="hasActions" class="float-right">

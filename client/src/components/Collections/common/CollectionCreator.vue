@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BTab, BTabs } from "bootstrap-vue";
+import { BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -11,7 +11,6 @@ import { AUTO_EXTENSION, getUploadDatatypes } from "@/components/Upload/utils";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
-import { orList } from "@/utils/strings";
 
 import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
 import CollectionCreatorHelpHeader from "./CollectionCreatorHelpHeader.vue";
@@ -19,7 +18,6 @@ import CollectionCreatorNoItemsMessage from "./CollectionCreatorNoItemsMessage.v
 import CollectionCreatorShowExtensions from "./CollectionCreatorShowExtensions.vue";
 import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
 import CollectionNameInput from "./CollectionNameInput.vue";
-import HelpText from "@/components/Help/HelpText.vue";
 import DefaultBox from "@/components/Upload/DefaultBox.vue";
 
 const Tabs = {
@@ -54,6 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
     extensions: undefined,
     extensionsToggle: false,
     showUpload: true,
+    collectionType: undefined,
 });
 
 const emit = defineEmits<{
@@ -249,14 +248,7 @@ watch(
                     @uploaded="addUploadedFiles"
                     @dismiss="currentTab = Tabs.create">
                     <template v-slot:footer>
-                        <div class="d-flex align-items-center justify-content-between mt-2">
-                            <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
-                                <HelpText
-                                    uri="galaxy.collections.collectionBuilder.requiredUploadExtensions"
-                                    :text="localize('Required extensions: ')" />
-                                <strong>{{ orList(extensions) }}</strong>
-                            </BAlert>
-                        </div>
+                        <CollectionCreatorShowExtensions :extensions="extensions" upload />
                     </template>
                     <template v-slot:emit-btn-txt>
                         <FontAwesomeIcon :icon="faPlus" fixed-width />

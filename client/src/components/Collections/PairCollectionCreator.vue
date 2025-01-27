@@ -5,6 +5,8 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -12,6 +14,8 @@ import localize from "@/utils/localization";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 
+import DelayedInput from "../Common/DelayedInput.vue";
+import HelpText from "../Help/HelpText.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -42,6 +46,13 @@ const removeExtensions = ref(true);
 const initialSuggestedName = ref("");
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
+const filterText = ref("");
+
+const filteredElements = computed(() => {
+    return workingElements.value.filter((element) => {
+        return `${element.hid}: ${element.name}`.toLowerCase().includes(filterText.value.toLowerCase());
+    });
+});
 
 /** If not `fromSelection`, the manually added elements that will become the pair */
 const inListElements = ref<SelectedDatasetPair>({ forward: undefined, reverse: undefined });
@@ -66,6 +77,13 @@ const pairElements = computed<SelectedDatasetPair>(() => {
         return inListElements.value;
     }
 });
+const pairHasMixedExtensions = computed(() => {
+    return (
+        pairElements.value.forward?.extension &&
+        pairElements.value.reverse?.extension &&
+        pairElements.value.forward.extension !== pairElements.value.reverse.extension
+    );
+});
 
 // variables for datatype mapping and then filtering
 const datatypesMapperStore = useDatatypesMapperStore();
@@ -73,6 +91,16 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+
+// check if we have scrolled to the top or bottom of the scrollable div
+const scrollableDiv = ref<HTMLDivElement | null>(null);
+const { arrived } = useAnimationFrameScroll(scrollableDiv);
+const isScrollable = ref(false);
+useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
+    isScrollable.value = scrollSize.height >= clientSize.height + 1;
+});
+const scrolledTop = computed(() => !isScrollable.value || arrived.top);
+const scrolledBottom = computed(() => !isScrollable.value || arrived.bottom);
 
 watch(
     () => props.initialElements,
@@ -187,7 +215,7 @@ function _isElementInvalid(element: HistoryItemSummary) {
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize(`has an invalid extension: ${element.extension}`);
+        return localize(`has an invalid format: ${element.extension}`);
     }
     return null;
 }
@@ -355,17 +383,6 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </ul>
                 </BAlert>
             </div>
-            <div v-if="!exactlyTwoValidElements">
-                <BAlert show variant="warning" dismissible>
-                    {{ localize("Exactly two elements are needed for the pair.") }}
-                    <span v-if="fromSelection">
-                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                            {{ localize("Cancel") }}
-                        </a>
-                        {{ localize("and reselect new elements.") }}
-                    </span>
-                </BAlert>
-            </div>
 
             <CollectionCreator
                 :oncancel="() => emit('on-cancel')"
@@ -451,7 +468,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                 )
                             }}
                             <div v-if="extensions?.length">
-                                {{ localize("The following extensions are required for this pair: ") }}
+                                {{ localize("The following formats are required for this pair: ") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
@@ -474,19 +491,48 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </BAlert>
                     </div>
                     <div v-else>
-                        <div class="collection-elements-controls">
-                            <BButton
-                                class="swap"
-                                size="sm"
-                                :disabled="!exactlyTwoValidElements"
-                                :title="localize('Swap forward and reverse datasets')"
-                                @click="swapButton">
-                                <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
-                                {{ localize("Swap") }}
-                            </BButton>
+                        <div class="collection-elements-controls flex-gapx-1">
+                            <div>
+                                <BButton
+                                    class="swap"
+                                    size="sm"
+                                    :disabled="!exactlyTwoValidElements"
+                                    :title="localize('Swap forward and reverse datasets')"
+                                    @click="swapButton">
+                                    <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
+                                    {{ localize("Swap") }}
+                                </BButton>
+                            </div>
+                            <div class="flex-grow-1">
+                                <BAlert v-if="!exactlyTwoValidElements" show variant="warning">
+                                    {{ localize("Exactly two elements are needed for the pair.") }}
+                                    <span v-if="fromSelection">
+                                        <a
+                                            class="cancel-text"
+                                            href="javascript:void(0)"
+                                            role="button"
+                                            @click="emit('on-cancel')">
+                                            {{ localize("Cancel") }}
+                                        </a>
+                                        {{ localize("and reselect new elements.") }}
+                                    </span>
+                                </BAlert>
+                                <BAlert v-else-if="pairHasMixedExtensions" show variant="warning">
+                                    {{ localize("The selected datasets have mixed formats.") }}
+                                    {{ localize("You can still create the pair but generally") }}
+                                    {{ localize("dataset pairs should contain datasets of the same type.") }}
+                                    <HelpText
+                                        uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
+                                        :text="localize('Why?')" />
+                                </BAlert>
+                                <BAlert v-else show variant="success">
+                                    {{ localize("The Dataset Pair is ready to be created.") }}
+                                    {{ localize("Provide a name and click the button below to create the pair.") }}
+                                </BAlert>
+                            </div>
                         </div>
 
-                        <div class="collection-elements flex-row mb-3">
+                        <div class="flex-row mb-3">
                             <div v-for="dataset in ['forward', 'reverse']" :key="dataset">
                                 {{ localize(dataset) }}:
                                 <DatasetCollectionElementView
@@ -502,20 +548,33 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </div>
 
                         <div v-if="!fromSelection">
-                            {{ localize("Manually select a forward and reverse dataset to create a pair collection:") }}
-                            <div class="collection-elements">
-                                <DatasetCollectionElementView
-                                    v-for="element in workingElements"
-                                    :key="element.id"
-                                    :class="{
-                                        selected: [pairElements.forward, pairElements.reverse].includes(element),
-                                    }"
-                                    :element="element"
-                                    not-editable
-                                    :selected="[pairElements.forward, pairElements.reverse].includes(element)"
-                                    @element-is-selected="selectElement"
-                                    @onRename="(name) => (element.name = name)" />
+                            <DelayedInput v-model="filterText" placeholder="search datasets" :delay="800" />
+                            <strong>
+                                {{
+                                    localize("Manually select a forward and reverse dataset to create a dataset pair:")
+                                }}
+                            </strong>
+                            <div
+                                v-if="filteredElements.length"
+                                class="scroll-list-container"
+                                :class="{ 'scrolled-top': scrolledTop, 'scrolled-bottom': scrolledBottom }">
+                                <div ref="scrollableDiv" class="collection-elements">
+                                    <DatasetCollectionElementView
+                                        v-for="element in filteredElements"
+                                        :key="element.id"
+                                        :class="{
+                                            selected: [pairElements.forward, pairElements.reverse].includes(element),
+                                        }"
+                                        :element="element"
+                                        not-editable
+                                        :selected="[pairElements.forward, pairElements.reverse].includes(element)"
+                                        @element-is-selected="selectElement"
+                                        @onRename="(name) => (element.name = name)" />
+                                </div>
                             </div>
+                            <BAlert v-else show variant="info">
+                                {{ localize(`No datasets found${filterText ? " matching '" + filterText + "'" : ""}`) }}
+                            </BAlert>
                         </div>
                     </div>
                 </template>
@@ -531,11 +590,19 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
     }
 
     .collection-elements-controls {
-        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .alert {
+            padding: 0.25rem 0.5rem;
+            margin: 0;
+            text-align: center;
+        }
     }
 
     .collection-elements {
-        max-height: 400px;
+        max-height: 30vh;
         border: 0px solid lightgrey;
         overflow-y: auto;
         overflow-x: hidden;
