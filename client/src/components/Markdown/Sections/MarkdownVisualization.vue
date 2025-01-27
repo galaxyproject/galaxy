@@ -5,6 +5,7 @@ import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapp
 
 const props = defineProps<{
     content: string;
+    name: string;
 }>();
 
 const visualizationConfig = ref();
@@ -14,9 +15,7 @@ watch(
     () => props.content,
     () => {
         try {
-            visualizationConfig.value = {
-                dataset_content: { ...JSON.parse(props.content) },
-            };
+            visualizationConfig.value = { ...JSON.parse(props.content) };
             errorMessage.value = "";
         } catch (e) {
             errorMessage.value = String(e);
@@ -30,9 +29,5 @@ watch(
     <b-alert v-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </b-alert>
-    <VisualizationWrapper
-        v-else-if="visualizationConfig"
-        name="vitessce"
-        :config="visualizationConfig"
-        height="500px" />
+    <VisualizationWrapper v-else-if="visualizationConfig" :name="name" :config="visualizationConfig" height="500px" />
 </template>
