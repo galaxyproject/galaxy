@@ -2,9 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { until } from "@vueuse/core";
 import { type AxiosError } from "axios";
 import { BAlert, BButton, BCard } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { type WorkflowSummary } from "@/api/workflows";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
@@ -130,8 +131,15 @@ watch(
     { immediate: true }
 );
 
+const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
+
 onMounted(async () => {
     await load();
+    await until(workflow).toBeTruthy();
+    await nextTick();
+
+    // @ts-ignore: TS2339 webpack dev issue. hopefully we can remove this with vite
+    workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
 });
 </script>
 
@@ -224,6 +232,7 @@ onMounted(async () => {
                 <BCard class="workflow-preview" :class="{ 'only-preview': !props.showAbout }">
                     <WorkflowGraph
                         v-if="workflow && datatypesMapper"
+                        ref="workflowGraph"
                         :steps="workflow.steps"
                         :datatypes-mapper="datatypesMapper"
                         :initial-position="initialPosition"
