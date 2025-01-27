@@ -107,59 +107,6 @@ watch(
             <div v-else-if="name == 'generate_time'" class="galaxy-time">
                 <pre><code>{{ new Date().toUTCString() }}</code></pre>
             </div>
-            <div v-else-if="name == 'workflow_image'" class="workflow-image" style="text-align: center">
-                <WorkflowImage
-                    :workflow-id="args.workflow_id"
-                    :size="args.size || 'lg'"
-                    :workflow-version="args.workflow_checkpoint || undefined" />
-            </div>
-            <div v-else-if="name == 'workflow_license'" class="workflow-license">
-                <WorkflowLicense :workflow-id="args.workflow_id" />
-            </div>
-            <InstanceUrl
-                v-else-if="name == 'instance_citation_link'"
-                :href="config.citation_url"
-                :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <InstanceUrl v-else-if="name == 'instance_terms_link'" :href="config.terms_url" :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <InstanceUrl
-                v-else-if="name == 'instance_support_link'"
-                :href="config.support_url"
-                :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <InstanceUrl
-                v-else-if="name == 'instance_help_link'"
-                :href="config.helpsite_url"
-                :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <InstanceUrl
-                v-else-if="name == 'instance_resources_link'"
-                :href="config.instance_resource_url"
-                :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <InstanceUrl
-                v-else-if="name == 'instance_access_link'"
-                :href="config.instance_access_url"
-                :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <InstanceUrl
-                v-else-if="name == 'instance_organization_link'"
-                :href="config.ga4gh_service_organization_url"
-                :title="config.ga4gh_service_organization_name"
-                :loading="!isConfigLoaded">
-            </InstanceUrl>
-            <div v-else-if="name === 'invocation_inputs'">
-                <div v-for="(input, index) in args.invocation.inputs" :key="index">
-                    <h4 class="ml-2">Input {{ parseInt(index) + 1 }}: {{ input.label }}</h4>
-                </div>
-            </div>
-            <div v-else-if="name === 'invocation_outputs'">
-                <div v-for="(outputKey, index) in Object.keys(args.invocation.outputs)" :key="index">
-                    <h4 class="ml-2">Output {{ index + 1 }}: {{ outputKey }}</h4>
-                </div>
-            </div>
-            <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
                 :dataset-id="args.history_target_id"
@@ -171,9 +118,67 @@ watch(
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
                 :title="args.title"
                 :footer="args.footer" />
-            <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
+            <HistoryDatasetCollectionDisplay
+                v-else-if="name == 'history_dataset_collection_display'"
+                :collection-id="args.history_target_id" />
+            <HistoryDatasetDetails
+                v-else-if="
+                    [
+                        'history_dataset_name',
+                        'history_dataset_info',
+                        'history_dataset_peek',
+                        'history_dataset_type',
+                    ].includes(name)
+                "
+                :name="name"
+                :dataset-id="args.history_target_id" />
+            <HistoryDatasetDisplay
+                v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
+                :dataset-id="args.history_target_id"
+                :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
+            <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
+            <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
+            <InstanceUrl
+                v-else-if="name == 'instance_access_link'"
+                :href="config.instance_access_url"
+                :loading="!isConfigLoaded" />
+            <InstanceUrl
+                v-else-if="name == 'instance_citation_link'"
+                :href="config.citation_url"
+                :loading="!isConfigLoaded" />
+            <InstanceUrl
+                v-else-if="name == 'instance_help_link'"
+                :href="config.helpsite_url"
+                :loading="!isConfigLoaded" />
+            <InstanceUrl
+                v-else-if="name == 'instance_organization_link'"
+                :href="config.ga4gh_service_organization_url"
+                :title="config.ga4gh_service_organization_name"
+                :loading="!isConfigLoaded" />
+            <InstanceUrl
+                v-else-if="name == 'instance_resources_link'"
+                :href="config.instance_resource_url"
+                :loading="!isConfigLoaded" />
+            <InstanceUrl
+                v-else-if="name == 'instance_support_link'"
+                :href="config.support_url"
+                :loading="!isConfigLoaded" />
+            <InstanceUrl
+                v-else-if="name == 'instance_terms_link'"
+                :href="config.terms_url"
+                :loading="!isConfigLoaded" />
             <InvocationTime v-else-if="name == 'invocation_time'" :invocation-id="args.invocation_id" />
+            <div v-else-if="name === 'invocation_inputs'">
+                <div v-for="(input, index) in args.invocation.inputs" :key="index">
+                    <h4 class="ml-2">Input {{ parseInt(index) + 1 }}: {{ input.label }}</h4>
+                </div>
+            </div>
+            <div v-else-if="name === 'invocation_outputs'">
+                <div v-for="(outputKey, index) in Object.keys(args.invocation.outputs)" :key="index">
+                    <h4 class="ml-2">Output {{ index + 1 }}: {{ outputKey }}</h4>
+                </div>
+            </div>
             <JobMetrics
                 v-else-if="name == 'job_metrics'"
                 :job-id="args.job_id"
@@ -187,34 +192,22 @@ watch(
                 :param="args.param || undefined"
                 :title="args.title"
                 :footer="args.footer" />
-            <WorkflowDisplay
-                v-else-if="name == 'workflow_display'"
-                :workflow-id="args.workflow_id"
-                :workflow-version="args.workflow_checkpoint" />
-            <Visualization v-else-if="name == 'visualization'" :args="args" />
-            <HistoryDatasetCollectionDisplay
-                v-else-if="name == 'history_dataset_collection_display'"
-                :collection-id="args.history_target_id" />
             <ToolStd
                 v-else-if="['tool_stdout', 'tool_stderr'].includes(name)"
                 :job-id="args.job_id"
                 :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :name="name" />
-            <HistoryDatasetDisplay
-                v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
-                :dataset-id="args.history_target_id"
-                :embedded="name == 'history_dataset_embedded'" />
-            <HistoryDatasetDetails
-                v-else-if="
-                    [
-                        'history_dataset_name',
-                        'history_dataset_info',
-                        'history_dataset_peek',
-                        'history_dataset_type',
-                    ].includes(name)
-                "
-                :name="name"
-                :dataset-id="args.history_target_id" />
+            <Visualization v-else-if="name == 'visualization'" :args="args" />
+            <WorkflowDisplay
+                v-else-if="name == 'workflow_display'"
+                :workflow-id="args.workflow_id"
+                :workflow-version="args.workflow_checkpoint" />
+            <WorkflowImage
+                v-else-if="name == 'workflow_image'"
+                :workflow-id="args.workflow_id"
+                :size="args.size || 'lg'"
+                :workflow-version="args.workflow_checkpoint || undefined" />
+            <WorkflowLicense v-else-if="name == 'workflow_license'" :workflow-id="args.workflow_id" />
         </b-collapse>
     </div>
 </template>
