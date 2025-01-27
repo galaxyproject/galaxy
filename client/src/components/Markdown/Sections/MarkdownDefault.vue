@@ -19,5 +19,5 @@ const renderedContent = computed(() => md.render(props.content));
 </script>
 
 <template>
-    <p class="text-justify m-2" v-html="renderedContent" />
+    <p class="text-justify" v-html="renderedContent" />
 </template>
