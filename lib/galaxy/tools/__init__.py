@@ -1224,13 +1224,6 @@ class Tool(UsesDictVisibleKeys):
         self.containers = containers
         self.resource_requirements = resource_requirements
         self.credentials = credentials
-        # for credential in self.credentials:
-        #     pass
-        #     preferences = self.app.config.user_preferences_extra["preferences"]
-        #     main_key, input_key = credential.user_preferences_key.split("/")
-        #     preferences_input = preferences.get(main_key, {}).get("inputs", [])
-        #     if not any(input_item.get("name") == input_key for input_item in preferences_input):
-        #         raise exceptions.ConfigurationError(f"User preferences key {credential.user_preferences_key} not found")
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
