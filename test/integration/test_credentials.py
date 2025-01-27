@@ -139,7 +139,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             "source_id": "test_tool",
             "credentials": [
                 {
-                    "reference": "invalid_test_service",
+                    "service_reference": "invalid_test_service",
                     "current_group": "invalid_group_name",
                     "groups": [{"name": "default", "variables": [], "secrets": []}],
                 }
@@ -176,7 +176,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             "source_id": source_id,
             "credentials": [
                 {
-                    "reference": "test_service",
+                    "service_reference": "test_service",
                     "current_group": "default",
                     "groups": [
                         {

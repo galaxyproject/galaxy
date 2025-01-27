@@ -66,15 +66,15 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
         return data;
     }
 
-    async function deleteCredentialsGroupForTool(toolId: string, reference: string, groupName: string): Promise<void> {
+    async function deleteCredentialsGroupForTool(toolId: string, service_reference: string, groupName: string): Promise<void> {
         const userId = ensureUserIsRegistered();
         const key = getKey(toolId);
         const credentials = userCredentialsForTools.value[key];
 
         if (credentials) {
-            const serviceCredentials = credentials.find((credential) => credential.reference === reference);
+            const serviceCredentials = credentials.find((credential) => credential.service_reference === service_reference);
             if (!serviceCredentials) {
-                throw new Error(`No credentials found for reference ${reference}`);
+                throw new Error(`No credentials found for service reference ${service_reference}`);
             }
             const group = serviceCredentials.groups[groupName];
             if (!group) {
@@ -94,7 +94,7 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
             }
             // Remove the group from the credentials
             const updatedCredentials = credentials.map((credential) => {
-                if (credential.id === reference) {
+                if (credential.id === service_reference) {
                     delete credential.groups[groupName];
                 }
                 return credential;
