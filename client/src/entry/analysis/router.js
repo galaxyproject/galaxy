@@ -173,6 +173,7 @@ export function getRouter(Galaxy) {
                     showZoomControls: route.query.zoom_controls ? parseBool(route.query.zoom_controls) : undefined,
                     initialX: route.query.initialX ? parseInt(route.query.initialX) : undefined,
                     initialY: route.query.initialY ? parseInt(route.query.initialY) : undefined,
+                    ignoreErrors: route.query.ignoreErrors ? parseBool(route.query.ignoreErrors) : undefined,
                 }),
             },
             {

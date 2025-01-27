@@ -74,6 +74,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    ignoreErrors: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 onBeforeUnmount(() => {
@@ -149,7 +153,7 @@ const label = computed(() => props.input.label || props.input.name);
 const hasConnections = computed(() => connections.value.length > 0);
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "input-data-row"];
-    if (!props.blank && props.input?.valid === false) {
+    if (!props.ignoreErrors && !props.blank && props.input?.valid === false) {
         classes.push("form-row-error");
     }
     return classes;
