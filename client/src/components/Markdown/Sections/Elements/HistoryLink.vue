@@ -5,6 +5,7 @@ import axios from "axios";
 import { errorMessageAsString } from "utils/simple-error";
 import { computed, ref } from "vue";
 
+import { fromCache } from "@/components/Markdown/cache";
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface Props {
@@ -30,10 +31,10 @@ const onClick = async () => {
 
 async function fetchName(historyId: string) {
     try {
-        const { data } = await axios.get(`${getAppRoot()}api/histories/${historyId}`);
+        const data = await fromCache(`histories/${historyId}`);
         name.value = data?.name || "";
-    } catch (error) {
-        console.error("Error fetching history name:", error);
+    } catch (e) {
+        error.value = errorMessageAsString(e);
         name.value = "";
     }
 }
@@ -52,7 +53,7 @@ fetchName(props.historyId);
         </div>
         <div v-if="!!error" class="text-danger">
             <FontAwesomeIcon icon="exclamation-triangle" class="mr-1" />
-            <span>Failed to Import History: {{ name }}!</span>
+            <span>Failed to handle History: {{ name || "n/a" }}!</span>
             <span>{{ error }}</span>
         </div>
     </div>
