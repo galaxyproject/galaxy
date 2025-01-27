@@ -131,7 +131,7 @@ class ToolRecommendations:
         Create model and associated dictionaries for recommendations
         """
         self.tool_recommendation_model_path = self.__download_model(remote_model_url)
-        with h5py.File(self.tool_recommendation_model_path, "r", locking=False) as model_file:
+        with h5py.File(self.tool_recommendation_model_path, "r", locking=None) as model_file:
             self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
             self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
             self.loaded_model.load_weights(self.tool_recommendation_model_path)
