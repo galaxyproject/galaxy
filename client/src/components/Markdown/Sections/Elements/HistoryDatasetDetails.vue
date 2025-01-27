@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import axios from "axios";
 import { computed, ref, watch } from "vue";
 
-import { getAppRoot } from "@/onload/loadConfig";
+import { fromCache } from "@/components/Markdown/cache";
 
 const ATTRIBUTES: Record<string, string> = {
     history_dataset_name: "name",
@@ -25,7 +24,7 @@ async function fetchAttribute(datasetId: string) {
         try {
             const attributeName = ATTRIBUTES[props.name] || "";
             if (attributeName) {
-                const { data } = await axios.get(`${getAppRoot()}api/datasets/${datasetId}`);
+                const data = await fromCache(`datasets/${datasetId}`);
                 attributeValue.value = data[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
             }
         } catch (error) {
