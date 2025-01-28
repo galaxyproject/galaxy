@@ -106,6 +106,20 @@ class TestLandingApi(ApiTestCase):
         _cannot_claim_request(self.dataset_populator, response)
         _cannot_use_request(self.dataset_populator, response)
 
+    def test_landing_claim_preserves_source_metadata(self):
+        request = CreateWorkflowLandingRequestPayload(
+            workflow_id="https://dockstore.org/api/ga4gh/trs/v2/tools/#workflow/github.com/iwc-workflows/chipseq-pe/main/versions/v0.12",
+            workflow_target_type="trs_url",
+            request_state={},
+            public=True,
+        )
+        response = self.dataset_populator.create_workflow_landing(request)
+        landing_request = self.dataset_populator.use_workflow_landing(response.uuid)
+        workflow_id = landing_request.workflow_id
+        workflow = self.workflow_populator._get(f"/api/workflows/{workflow_id}?instance=true").json()
+        assert workflow["source_metadata"]["trs_tool_id"] == "#workflow/github.com/iwc-workflows/chipseq-pe/main"
+        assert workflow["source_metadata"]["trs_version_id"] == "v0.12"
+
 
 def _workflow_request_state() -> Dict[str, Any]:
     deferred = False
