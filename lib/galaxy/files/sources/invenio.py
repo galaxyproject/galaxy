@@ -209,7 +209,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
-        public_name = self.get_public_name(user_context)
+        public_name = self.get_public_name(user_context) or "No name"
         record = self.repository.create_draft_file_container(entry_data["name"], public_name, user_context=user_context)
         return {
             "uri": self.repository.to_plugin_uri(record["id"]),
@@ -296,7 +296,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return self._get_record_files_from_response(container_id, response_data)
 
     def create_draft_file_container(
-        self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
+        self, title: str, public_name: str, user_context: OptionalUserContext = None
     ) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_public_name(public_name)

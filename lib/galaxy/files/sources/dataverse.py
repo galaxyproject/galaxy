@@ -159,11 +159,13 @@ class DataverseRDMFilesSource(RDMFilesSource):
     ) -> Entry:
         """Creates a draft dataset in the repository."""
         public_name = self.get_public_name(user_context) or "Anonymous Galaxy User"
-        dataset = self.repository.create_draft_file_container(entry_data.get("name"), public_name, user_context)
+        title = entry_data.get("name") or "No title"
+        dataset = self.repository.create_draft_file_container(title, public_name, user_context)
+        datasetId = str(dataset.get("persistentId"))
         return {
-            "uri": self.repository.to_plugin_uri(dataset.get("persistentId")),
-            "name": dataset.get("name") or "No title",
-            "external_link": self.repository.public_dataset_url(dataset.get("persistentId")),
+            "uri": self.repository.to_plugin_uri(datasetId),
+            "name": title,
+            "external_link": self.repository.public_dataset_url(datasetId),
         }
 
     def _realize_to(
@@ -294,19 +296,21 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         """Creates a draft dataset in the repository. Dataverse datasets are contained in collections. Collections can be contained in collections.
         We create a collection inside the root collection and then a dataset inside that collection.
         """
+        # Prepare and create the collection
         collection_payload = self._prepare_collection_data(title, public_name, user_context)
         collection = self._create_collection(":root", collection_payload, user_context)
-        if collection and collection.get("data"):
-            collection_alias = collection.get("data").get("alias")
-        else:
-            raise Exception("Could not create collection in Dataverse or response has not expected format.")
+        if not collection or "data" not in collection or "alias" not in collection["data"]:
+            raise Exception("Could not create collection in Dataverse or response has an unexpected format.")
+        collection_alias = collection["data"]["alias"]
+
+        # Prepare and create the dataset
         dataset_payload = self._prepare_dataset_data(title, public_name, user_context)
         dataset = self._create_dataset(collection_alias, dataset_payload, user_context)
-        if dataset and dataset.get("data"):
-            dataset["data"]["name"] = title
-            return dataset.get("data")
-        else:
-            raise Exception("Could not create dataset in Dataverse or response has not expected format.")
+        if not dataset or "data" not in dataset:
+            raise Exception("Could not create dataset in Dataverse or response has an unexpected format.")
+
+        dataset["data"]["name"] = title
+        return dataset["data"]
 
     def _create_collection(
         self, parent_alias: str, collection_payload: str, user_context: OptionalUserContext = None
