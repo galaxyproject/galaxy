@@ -20,12 +20,14 @@ const props = withDefaults(defineProps<Props>(), {
 const labels = new Map([
     ["list", "list"],
     ["list:paired", "list"],
+    ["list:paired_or_unpaired", "list"],
     ["list:list", "list"],
     ["paired", "pair"],
 ]);
 
 const collectionLabel = computed(() => {
-    return labels.get(props.collectionType) ?? "nested list";
+    const collectionType = props.collectionType;
+    return labels.get(collectionType) ?? "nested list";
 });
 const hasSingleElement = computed(() => {
     return props.elementCount === 1;
@@ -43,6 +45,20 @@ const pluralizedItem = computed(() => {
     if (props.collectionType === "list:paired") {
         return pluralize("pair");
     }
+    if (props.collectionType === "list:paired_or_unpaired") {
+        if (!hasSingleElement.value) {
+            return "paired and unpaired datasets";
+        } else {
+            return "dataset pair or unpaired dataset";
+        }
+    }
+    if (props.collectionType === "paired_or_unpaired") {
+        if (!hasSingleElement.value) {
+            return "dataset pair";
+        } else {
+            return "unpaired dataset";
+        }
+    }
     if (!labels.has(props.collectionType)) {
         return pluralize("dataset collection");
     }
@@ -56,7 +72,10 @@ function pluralize(word: string) {
 
 <template>
     <div>
-        <span class="description mt-1 mb-1">
+        <span v-if="collectionType == 'paired_or_unpaired'" class="description mt-1 mb-1">
+            a <b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+        </span>
+        <span v-else class="description mt-1 mb-1">
             a {{ collectionLabel }} with {{ elementCount || 0 }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
         </span>
 
