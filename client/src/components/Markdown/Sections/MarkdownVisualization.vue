@@ -6,12 +6,13 @@ import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapp
 const props = defineProps<{
     attribute?: string;
     content: string;
-    name: string;
+    name?: string;
 }>();
 
 const errorMessage = ref("");
 const visualizationConfig = ref();
 const visualizationKey = ref(0);
+const visualizationName = ref();
 
 watch(
     () => props.content,
@@ -24,6 +25,10 @@ watch(
                 visualizationConfig.value[props.attribute] = parsedContent;
             } else {
                 visualizationConfig.value = parsedContent;
+            }
+            visualizationName.value = props.name || visualizationConfig.value.visualization_name;
+            if (!visualizationName.value) {
+                throw new Error("Please add a 'visualization_name` to the dictionary.");
             }
             visualizationKey.value++;
         } catch (e) {
@@ -45,7 +50,7 @@ watch(
         :key="visualizationKey"
         class="markdown-visualization"
         :config="visualizationConfig"
-        :name="name" />
+        :name="visualizationName" />
 </template>
 
 <style>
