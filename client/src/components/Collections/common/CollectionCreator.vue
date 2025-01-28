@@ -28,7 +28,6 @@ interface Props {
     oncancel: () => void;
     historyId: string;
     hideSourceItems: boolean;
-    name?: string;
     suggestedName?: string;
     renderExtensionsToggle?: boolean;
     extensions?: string[];
@@ -46,12 +45,9 @@ const props = withDefaults(defineProps<Props>(), {
     extensions: undefined,
     extensionsToggle: false,
     showUpload: true,
-<<<<<<< HEAD
     collectionType: undefined,
-=======
     showButtons: true,
     mode: "modal",
->>>>>>> 86802f2055 (Implement paired_or_unpaired collections, list wizards.)
 });
 
 const emit = defineEmits<{
