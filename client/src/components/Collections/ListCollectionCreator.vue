@@ -12,8 +12,9 @@ import type { HDASummary, HistoryItemSummary } from "@/api";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
+
+import { useExtensionFiltering } from "./common/useExtensionFilter";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
@@ -76,12 +77,7 @@ const allElementsAreInvalid = computed(() => {
 /** If not `fromSelection`, the list of elements that will become the collection */
 const inListElements = ref<HDASummary[]>([]);
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+const { hasInvalidExtension, showElementExtension } = useExtensionFiltering(props);
 
 /** Does `inListElements` have elements with different extensions? */
 const listHasMixedExtensions = computed(() => {
@@ -173,29 +169,10 @@ function _isElementInvalid(element: HistoryItemSummary): string | null {
     }
 
     // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
+    if (hasInvalidExtension(element)) {
         return localize(`has an invalid format: ${element.extension}`);
     }
     return null;
-}
-
-/** Show the element's extension next to its name:
- *  1. If there are no required extensions, so users can avoid creating mixed extension lists.
- *  2. If the extension is not in the list of required extensions but is a subtype of one of them,
- *     so users can see that those elements were still included as they are implicitly convertible.
- */
-function showElementExtension(element: HDASummary) {
-    return (
-        !props.extensions?.length ||
-        (filterExtensions.value &&
-            element.extension &&
-            !props.extensions?.includes(element.extension) &&
-            datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!))
-    );
 }
 
 // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
@@ -325,16 +302,6 @@ watch(
     () => {
         // for any new/removed elements, add them to working elements
         _elementsSetUp();
-    },
-    { immediate: true }
-);
-
-watch(
-    () => datatypesMapper.value,
-    async (mapper) => {
-        if (props.extensions?.length && !mapper) {
-            await datatypesMapperStore.createMapper();
-        }
     },
     { immediate: true }
 );

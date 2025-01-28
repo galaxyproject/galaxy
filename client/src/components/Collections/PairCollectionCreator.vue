@@ -9,10 +9,11 @@ import { useAnimationFrameResizeObserver } from "@/composables/sensors/animation
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+import { useExtensionFiltering } from "./common/useExtensionFilter";
+import { guessNameForPair } from "./pairing";
 
 import GButton from "../BaseComponents/GButton.vue";
 import DelayedInput from "../Common/DelayedInput.vue";
@@ -88,12 +89,7 @@ const pairHasMixedExtensions = computed(() => {
     );
 });
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+const { hasInvalidExtension } = useExtensionFiltering(props);
 
 // check if we have scrolled to the top or bottom of the scrollable div
 const scrollableDiv = ref<HTMLDivElement | null>(null);
@@ -213,12 +209,8 @@ function _isElementInvalid(element: HistoryItemSummary) {
     }
 
     // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
-        return localize(`has an invalid format: ${element.extension}`);
+    if (hasInvalidExtension(element)) {
+        return localize(`has an invalid extension: ${element.extension}`);
     }
     return null;
 }
@@ -314,76 +306,11 @@ function removeExtensionsToggle() {
 
 function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: boolean) {
     removeExtensions = removeExtensions ? removeExtensions : removeExtensions;
-
-    var fwdName = fwd.name ?? "";
-    var revName = rev.name ?? "";
-    var lcs = _naiveStartingAndEndingLCS(fwdName, revName);
-
-    /** remove url prefix if files were uploaded by url */
-    var lastDotIndex = lcs.lastIndexOf(".");
-    var lastSlashIndex = lcs.lastIndexOf("/");
-    var extension = lcs.slice(lastDotIndex, lcs.length);
-
-    if (lastSlashIndex > 0) {
-        var urlprefix = lcs.slice(0, lastSlashIndex + 1);
-
-        lcs = lcs.replace(urlprefix, "");
-        fwdName = fwdName.replace(extension, "");
-        revName = revName.replace(extension, "");
-    }
-
-    if (removeExtensions) {
-        if (lastDotIndex > 0) {
-            lcs = lcs.replace(extension, "");
-            fwdName = fwdName.replace(extension, "");
-            revName = revName.replace(extension, "");
-        }
-    }
-
-    return lcs || `${fwdName} & ${revName}`;
+    return guessNameForPair(fwd, rev, "", "", removeExtensions);
 }
 
 function onUpdateHideSourceItems(newHideSourceItems: boolean) {
     hideSourceItems.value = newHideSourceItems;
-}
-
-function _naiveStartingAndEndingLCS(s1: string, s2: string) {
-    var i = 0;
-    var j = 0;
-    var fwdLCS = "";
-    var revLCS = "";
-
-    while (i < s1.length && i < s2.length) {
-        if (s1[i] !== s2[i]) {
-            break;
-        }
-
-        fwdLCS += s1[i];
-        i += 1;
-    }
-
-    if (i === s1.length) {
-        return s1;
-    }
-
-    if (i === s2.length) {
-        return s2;
-    }
-
-    i = s1.length - 1;
-    j = s2.length - 1;
-
-    while (i >= 0 && j >= 0) {
-        if (s1[i] !== s2[j]) {
-            break;
-        }
-
-        revLCS = [s1[i], revLCS].join("");
-        i -= 1;
-        j -= 1;
-    }
-
-    return fwdLCS + revLCS;
 }
 </script>
 

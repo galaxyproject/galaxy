@@ -17,12 +17,12 @@ import type { ComponentColor } from "@/components/BaseComponents/componentVarian
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 // import levenshteinDistance from '@/utils/levenshtein';
 import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+import { useExtensionFiltering } from "./common/useExtensionFilter";
 import {
     COMMON_FILTERS,
     type CommonFiltersType,
@@ -193,12 +193,7 @@ const noUnpairedElementsDisplayed = computed(() => {
     return numOfUnpairedForwardElements.value + numOfUnpairedReverseElements.value === 0;
 });
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+const { hasInvalidExtension } = useExtensionFiltering(props);
 
 function removeExtensionsToggle() {
     removeExtensions.value = !removeExtensions.value;
@@ -290,11 +285,7 @@ function _isElementInvalid(element: HistoryItemSummary) {
     }
 
     // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
+    if (hasInvalidExtension(element)) {
         return localize(`has an invalid format: ${element.extension}`);
     }
     return null;
