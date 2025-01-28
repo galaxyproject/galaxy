@@ -271,15 +271,15 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     def get_files_in_container(
         self,
-        dataset_id: str,
+        container_id: str,
         writeable: bool,
         user_context: OptionalUserContext = None,
         query: Optional[str] = None,
     ) -> List[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
-        request_url = self.files_of_dataset_url(dataset_id=dataset_id)
+        request_url = self.files_of_dataset_url(dataset_id=container_id)
         response_data = self._get_response(user_context, request_url)
-        files = self._get_files_from_response(dataset_id, response_data["data"])
+        files = self._get_files_from_response(container_id, response_data["data"])
         files = self._filter_files_by_name(files, query)
         return files
 

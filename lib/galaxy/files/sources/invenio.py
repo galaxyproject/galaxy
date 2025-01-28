@@ -288,7 +288,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return size, page
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None
+        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None, query: Optional[str] = None,
     ) -> List[RemoteFile]:
         conditionally_draft = "/draft" if writeable else ""
         request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
