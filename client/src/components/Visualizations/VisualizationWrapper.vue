@@ -7,7 +7,6 @@ import { getAppRoot } from "@/onload/loadConfig";
 interface Props {
     name: string;
     config: object;
-    height?: string;
 }
 
 const props = defineProps<Props>();
@@ -66,12 +65,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <iframe
-        ref="iframeRef"
-        title="visualization"
-        class="visualization-wrapper"
-        :style="{ height: props.height || '100%' }">
-    </iframe>
+    <iframe ref="iframeRef" title="visualization" class="visualization-wrapper"></iframe>
 </template>
 
 <style>
