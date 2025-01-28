@@ -1,0 +1,235 @@
+set forcefield "MMFF"
+print "checkmm.spt reading mmff-validation.dat..."
+vdat = load("mmff-validation.dat").split("model ")
+tdat = {}
+mmdat = {}
+print "...validation data for " + (vdat.length - 1) + " models read"
+
+function setAtomInfo() {
+	print "...creating reference data set"
+	for (var i = 2; i <= vdat.length; i++) {
+		var dat = vdat[i].split(" # ")
+		var model = ((dat[1])[1][10]).split(" ")[1]
+		var m = {}
+		mmdat[model] = m
+		m["index"] = i - 1
+		m["atomInfo"] = {}
+		var mm = m["atomInfo"]
+		for (var t = 2; t <= dat.length; t++) {
+			var line = dat[t]
+			var ttype = line[1]
+//			m[ttype] = line
+			var tokens = line.split(" ")
+			for (var j = 2; j < tokens.length; j+= 3) {
+				var a = tokens[j]
+				if(!mm[a]) {
+					mm[a] = {}
+				}
+				var mmm = mm[a]
+				mmm[ttype] = tokens[j+2]
+			}
+		}	
+	}
+	print "reading mmff-validation-energy.dat"		
+	var dat = load("mmff-validation-energy.dat").lines
+	for (var i = 1; i <= dat.length; i++) {
+		var tokens = dat[i].split("\t")
+		var model = tokens[1]
+		var m = mmdat[model]
+		m["energy"] = 0.0 + tokens[2]
+	}
+	print "reading MMFF94SYMB.PAR"	
+	var dat = load("MMFF94SYMB.PAR").split("SYMBOL").lines[3][0]
+	for (var i = 1; i <=dat.length; i++) {
+		var code = (dat[i])[3][9].trim()
+		var mmtype = (dat[i])[10][11].trim()
+		var def = (dat[i])[12][0].trim()
+		tdat[code] = "" + mmtype + " " + def
+	}
+	print "..." + tdat.keys.length + " atom type symbols read"	
+
+}
+setAtomInfo
+print "use checkAll() to check atom types; checkAllCharges() to check partial charges; checkAllEnergies to check MMFF94 energies"
+
+function labelmm(color) { 
+		label %a %4.2[partialcharge] %[formalcharge] %[atomtype]
+	background label @color
+}
+
+function checkpc(name) {
+	if (name != "") {
+		print name
+		load @{":" + name}
+	}
+	select *
+	wireframe only
+	 A = {*}.partialcharge.all
+	calculate partialCharge {*}
+	{*}.partialcharge = A.sub({*}.partialcharge.all)
+	select partialcharge > 0.01 or partialcharge < -0.01
+	labelMM "pink"
+}
+
+function loadmm(name) {
+	if (name == "") {
+		load mmff94_dative.mol2 filter "CENTER"
+		mdat = getProperty("modelinfo.models.name")
+	} else {
+		load mmff94_dative.mol2 filter @{"name=" + name}
+	}
+	set echo top center
+	echo @name
+}
+
+function showmm(name) {
+	print mmdat[name]
+}
+
+function findatom(n) {
+	var m = {atomindex=n}.modelIndex
+	model @{m+1}
+	checkatoms(_modelName)
+
+}
+
+function findmm(name) {
+	model @{(mmdat[name])["index"]}
+	showmm(name)
+}
+
+function findfc(fc) {
+  fc = "" + fc
+  for (var i = 1; i <= vdat.length; i++) {
+		if (vdat[i].find(fc) && vdat[i].find(fc) > vdat[i].find("fchar")) {
+			print mmdat[i-1] 
+			model @{i-1}
+			showmm(mmdat[i-1])
+			delay 4
+		}
+	}
+}
+
+function checkatoms(name) {
+	labels off
+	select none
+	var m = mmdat[name]["atomInfo"]
+	var b = {visible}
+	for (var a in b) {
+		var aname = a.atomName
+		var atype = a.atomType.split(":")[1]
+		var mmtype = "" + m[aname]["t"]
+		var mmcode = "" + m[aname]["s"]
+		if (atype != mmtype) {
+			select add @a
+			print name + "\t" + a + "\t" + aname + "\t" + atype + "\t" + mmcode + "\t" + tdat[mmcode]
+		}		
+	}
+	label %a %3.2[partialcharge] %[atomtype]
+}
+
+
+function checkAll(n) {
+	if (!n) {
+		n = 10000
+	}
+	select *
+	print "checking atom types for " + {*}.length + " atoms..."
+	calculate partialCharge {*}
+	var nbad = 0
+	for (var a in {*}) {
+		m = a.modelIndex
+		if(m==n){quit}
+		model @{m+1}
+		aname = a.atomName
+		atype = a.atomType
+		mmtype = "" + mmdat[_modelName]["atomInfo"][aname]["t"]
+		if (atype != mmtype) {
+			print "" + (++nbad) + "\t" + (m + 1) + "\t" + _modelName + "\t" + a + "\t" + aname + "\t" + mmtype + "\t_" + mmdat[_modelName]["atomInfo"][aname]["s"] + "\t" + atype
+		}
+	}
+	if (nbad == 0) {
+		print "...all types match mmff94"
+		checkAllEnergies()
+	}
+}
+
+function checkAllEnergies() {
+	var last = {*}[0].modelIndex
+	print "checking calculated energies for " + (last + 1) + " models"
+	set forcefield "MMFF"
+	set useMinimizationThread false
+	set minimizationSilent
+	var nBad = 0;
+	var a = [];
+	var max = 0.1;
+	a[last + 1] = 0;
+	var eu = energyUnits;
+	energyUnits = "kcal"
+	for (var m = 0; m <= last; m++) {
+		model @{m+1}
+		select {modelindex=m}
+		minimize energy
+		var ref = mmdat[_modelName]["energy"]
+		var diff = abs(_minimizationEnergy - ref)
+		a[m + 1] = diff
+		if (diff > max) { 
+			print "" + (++nBad) + "\t" + _modelName + "\t E= \t" + _minimizationEnergy + "\t Eref=\t" + ref + "\t diff= \t" + diff
+		}
+	}
+	print "for " + (last+1) + " models, " + nBad + " have energy differences outside the range " + (-max) + " to " + max + " with a standard deviation of " + a.stddev
+	energyUnits = eu;
+}
+
+
+function checkAllCharges(n) {
+	if (!n) {
+		n = 10000
+	}
+	var max = 0.001001
+	select *
+	var A = {*}.partialcharge.all
+	calculate partialCharge {*}
+	{*}.partialcharge = A.sub({*}.partialcharge.all)
+	select partialcharge > max or partialcharge < -max
+	selectionhalos on
+	print "for " + {*}.size + " atoms, " + {selected}.size + " have charge differences outside the range " + (-max) + " to " + max + " with a standard deviation of " + {*}.partialcharge.all.stddev
+	var nbad = 0
+	for (var a in {selected}) {
+		m = a.modelIndex
+		if(m>n){quit}
+		model @{m+1}
+		aname = a.atomName
+		atype = a.atomType
+		mmtype = "" + mmdat[_modelName]["atomInfo"][aname]["t"]
+		print "" + (++nbad) + "\t" + (m + 1) + "\t" + _modelName + "\t" + a + "\t" + aname + "\t" + a.partialCharge +  "\t" + mmtype + "\t_" + mmdat[_modelName]["atomInfo"][aname]["s"] + "\t" + atype
+	}
+
+}
+
+function checkmm(name, dodif) {
+	loadmm(name)
+	select *
+	wireframe only
+	 A = {*}.partialcharge.all
+	calculate partialCharge {*}
+	if (dodif) {
+		{*}.partialcharge = A.sub({*}.partialcharge.all)
+		select partialcharge > 0.01 or partialcharge < -0.01
+print {selected}
+	}
+	labelMM(dodif ? "pink" : "none")
+	print {*}.partialcharge.all.stddev
+//	showmm @name
+//	checkatoms name
+}
+
+function findsm(smartsString) {
+	var x = {within(smarts,@smartsString)}
+	print x
+	findAtom(x[1].atomIndex)	
+
+}
+
+loadmm
+//checkmm "AMPTRB" true
