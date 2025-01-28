@@ -27,6 +27,7 @@ class RDMFilesSourceProperties(FilesSourceProperties):
 
 class ContainerAndFileIdentifier(NamedTuple):
     """The file_identifier could be a filename or a file_id."""
+
     container_id: str
     file_identifier: str
 
@@ -82,7 +83,11 @@ class RDMRepositoryInteractor:
         raise NotImplementedError()
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None, query: Optional[str] = None, 
+        self,
+        container_id: str,
+        writeable: bool,
+        user_context: OptionalUserContext = None,
+        query: Optional[str] = None,
     ) -> List[RemoteFile]:
         """Returns the list of files of a file container.
 
@@ -91,7 +96,6 @@ class RDMRepositoryInteractor:
         raise NotImplementedError()
 
     def create_draft_file_container(
-
         self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
     ):
         """Creates a draft file container in the repository with basic metadata.
@@ -171,7 +175,7 @@ class RDMFilesSource(BaseFilesSource):
 
     def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
         """Parses the given source path and returns the container_id and filename.
-        
+
         If container_id_only is True, an empty filename will be returned.
 
         This must be implemented by subclasses."""

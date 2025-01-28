@@ -31,10 +31,10 @@ from galaxy.files.sources import (
     RemoteFile,
 )
 from galaxy.files.sources._rdm import (
+    ContainerAndFileIdentifier,
     RDMFilesSource,
     RDMFilesSourceProperties,
     RDMRepositoryInteractor,
-    ContainerAndFileIdentifier,
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -119,7 +119,7 @@ class InvenioRecord(TypedDict):
 
 class InvenioRDMFilesSource(RDMFilesSource):
     """A files source for Invenio turn-key research data management repository.
-    
+
     In Invenio a "Record" represents what we refer to as container in the rdm base class
     """
 
@@ -150,7 +150,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         return InvenioRepositoryInteractor(repository_url, self)
-    
+
     def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
         """Parses the given source path and returns the record_id and filename.
 
@@ -177,7 +177,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
             raise ValueError(get_error_msg("Too many parts. Please provide the record_id and file_name only."))
         record_id, file_name = parts
         return ContainerAndFileIdentifier(container_id=record_id, file_identifier=file_name)
-    
+
     def get_container_id_from_path(self, source_path: str) -> str:
         return self.parse_path(source_path, container_id_only=True).container_id
 

@@ -1,8 +1,6 @@
 import json
 import re
 import urllib.request
-from urllib.parse import quote
-
 from typing import (
     Any,
     cast,
@@ -11,6 +9,7 @@ from typing import (
     Optional,
     Tuple,
 )
+from urllib.parse import quote
 
 from typing_extensions import (
     Literal,
@@ -31,10 +30,10 @@ from galaxy.files.sources import (
     RemoteFile,
 )
 from galaxy.files.sources._rdm import (
+    ContainerAndFileIdentifier,
     RDMFilesSource,
     RDMFilesSourceProperties,
     RDMRepositoryInteractor,
-    ContainerAndFileIdentifier,
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -43,9 +42,11 @@ from galaxy.util import (
     stream_to_open_named_file,
 )
 
+
 class NotFoundException(Exception):
     def __init__(self, message):
         super().__init__(message)
+
 
 class DataverseDataset(TypedDict):
     name: str
@@ -64,9 +65,10 @@ class DataverseDataset(TypedDict):
 
 class DataverseRDMFilesSource(RDMFilesSource):
     """A files source for Dataverse turn-key research data management repository.
-    
+
     In Dataverse a "dataset" represents what we refer to as container in the rdm base class
     """
+
     plugin_type = "dataverse"
     supports_pagination = True
     supports_search = True
@@ -78,30 +80,30 @@ class DataverseRDMFilesSource(RDMFilesSource):
 
     def get_scheme(self) -> str:
         return "dataverse"
-    
+
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
             return match.span()[1]
         else:
             return 0
-        
+
     def to_relative_path(self, url: str) -> str:
         legacy_uri_root = f"{DEFAULT_SCHEME}://{self.id}"
         if url.startswith(legacy_uri_root):
             return url[len(legacy_uri_root) :]
         else:
             return super().to_relative_path(url)
-        
+
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         return DataverseRepositoryInteractor(repository_url, self)
 
     def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
-        """Parses the given source path and returns the dataset_id and/or the file_id. 
+        """Parses the given source path and returns the dataset_id and/or the file_id.
 
         The source path must either have the format '/<dataset_id>' or '/<file_id>' where <dataset_id> is a subset of <file_id>.
         If dataset_id_only is True, the source path must have the format '/<dataset_id>' and an empty file_id will be returned.
 
-        Example dataset_id: 
+        Example dataset_id:
         doi:10.70122/FK2/DIG2DG
 
         Example file_id:
@@ -120,13 +122,13 @@ class DataverseRDMFilesSource(RDMFilesSource):
 
         if len(parts) != 4:
             raise ValueError(f"Invalid source path: '{source_path}'. Expected format: '/<file_id>'.")
-        
+
         file_id = dataset_id + "/" + parts[3]
         return ContainerAndFileIdentifier(container_id=dataset_id, file_identifier=file_id)
-    
+
     def get_container_id_from_path(self, source_path: str) -> str:
         return self.parse_path(source_path, container_id_only=True).container_id
-    
+
     def _list(
         self,
         path="/",
@@ -175,7 +177,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         """Used when downloading files from dataverse."""
         # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
         # This prevents downloading files that require authentication even if the user provided a token.
-        
+
         dataset_id, file_id = self.parse_path(source_path)
         try:
             self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
@@ -185,14 +187,14 @@ class DataverseRDMFilesSource(RDMFilesSource):
             if is_zip_file:
                 # Workaround explanation:
                 # When we archive our history to dataverse, the zip sent from Galaxy to dataverse is extracted automatically.
-                # Only the contents are stored, not the zip itself. 
+                # Only the contents are stored, not the zip itself.
                 # So, if a zip is not found, we suppose we are trying to reimport an archived history
                 # and make an API call to Dataverse to download the dataset as a zip.
                 self.repository._download_dataset_as_zip(dataset_id, native_path, user_context)
 
     def _is_zip_archive(self, file_name: str) -> bool:
         return file_name.endswith(".zip")
-    
+
     def _write_from(
         self,
         target_path: str,
@@ -203,7 +205,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
         """Used when uploading files to dataverse."""
         dataset_id, file_id = self.parse_path(target_path)
         self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path, user_context=user_context)
-    
+
+
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     """In Dataverse a "Dataset" represents what we refer to as container in the rdm base class"""
 
@@ -214,35 +217,35 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     @property
     def search_url(self) -> str:
         return f"{self.api_base_url}/search"
-    
+
     def file_access_url(self, file_id: str) -> str:
         encoded_file_id = quote(file_id, safe="")
         return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={encoded_file_id}"
-    
+
     def download_dataset_as_zip_url(self, dataset_id: str) -> str:
         return f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
-    
-    def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
+
+    def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ":latest") -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
-    
+
     def add_files_to_dataset_url(self, dataset_id: str) -> str:
         return f"{self.api_base_url}/datasets/:persistentId/add?persistentId={dataset_id}"
-    
+
     def create_collection_url(self, parent_alias: str) -> str:
         return f"{self.api_base_url}/dataverses/{parent_alias}"
-    
+
     def create_dataset_url(self, parent_alias: str) -> str:
         return f"{self.api_base_url}/dataverses/{parent_alias}/datasets"
-    
+
     def public_dataset_url(self, dataset_id: str) -> str:
         return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
 
     def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{f'{file_identifier}' if file_identifier else f'{dataset_id}'}"
-    
+
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
-        
+
     def get_file_containers(
         self,
         writeable: bool,
@@ -268,11 +271,11 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return self._get_datasets_from_response(response_data["data"]), total_hits
 
     def get_files_in_container(
-        self, 
-        dataset_id: str, 
-        writeable: bool, 
+        self,
+        dataset_id: str,
+        writeable: bool,
         user_context: OptionalUserContext = None,
-        query: Optional[str] = None, 
+        query: Optional[str] = None,
     ) -> List[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
         request_url = self.files_of_dataset_url(dataset_id=dataset_id)
@@ -280,7 +283,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         files = self._get_files_from_response(dataset_id, response_data["data"])
         files = self._filter_files_by_name(files, query)
         return files
-    
+
     def _filter_files_by_name(self, files: List[RemoteFile], query: Optional[str] = None) -> List[RemoteFile]:
         if not query:
             return files
@@ -303,16 +306,20 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         if dataset and dataset.get("data"):
             dataset["data"]["name"] = title
             return dataset.get("data")
-        else: 
+        else:
             raise Exception("Could not create dataset in Dataverse or response has not expected format.")
-    
-    def _create_collection(self, parent_alias: str, collection_payload: str, user_context: OptionalUserContext = None) -> dict:
+
+    def _create_collection(
+        self, parent_alias: str, collection_payload: str, user_context: OptionalUserContext = None
+    ) -> dict:
         headers = self._get_request_headers(user_context, auth_required=True)
         response = requests.post(self.create_collection_url(parent_alias), data=collection_payload, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         return response.json()
 
-    def _create_dataset(self, parent_alias: str, dataset_payload: str, user_context: OptionalUserContext = None) -> dict:
+    def _create_dataset(
+        self, parent_alias: str, dataset_payload: str, user_context: OptionalUserContext = None
+    ) -> dict:
         headers = self._get_request_headers(user_context, auth_required=True)
         response = requests.post(self.create_dataset_url(parent_alias), data=dataset_payload, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
@@ -330,12 +337,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
         with open(file_path, "rb") as file:
             # TODO: For some reason tar.gz files are not uploaded successfully to Dataverse.
-            files = {'file': (filename, file)}
+            files = {"file": (filename, file)}
             add_files_url = self.add_files_to_dataset_url(dataset_id)
-            response = requests.post(
-                add_files_url, 
-                files=files, 
-                headers=headers)
+            response = requests.post(add_files_url, files=files, headers=headers)
             self._ensure_response_has_expected_status_code(response, 200)
 
     def download_file_from_container(
@@ -348,21 +352,16 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         download_file_content_url = self.file_access_url(file_identifier)
         self._download_file(file_path, download_file_content_url, user_context)
 
-    def _download_dataset_as_zip(
-            self, 
-            dataset_id: str, 
-            file_path: str, 
-            user_context: OptionalUserContext = None
-        ):
+    def _download_dataset_as_zip(self, dataset_id: str, file_path: str, user_context: OptionalUserContext = None):
         download_dataset_url = self.download_dataset_as_zip_url(dataset_id)
         self._download_file(file_path, download_dataset_url, user_context)
 
     def _download_file(
-            self, 
-            file_path: str, 
-            download_file_content_url: str, 
-            user_context: OptionalUserContext = None,
-        ):
+        self,
+        file_path: str,
+        download_file_content_url: str,
+        user_context: OptionalUserContext = None,
+    ):
         headers = {}
 
         if self._is_api_url(download_file_content_url):
@@ -396,7 +395,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             )
         return rval
 
-    def _get_files_from_response(self, dataset_id: str, response: dict) -> List[RemoteFile]:   
+    def _get_files_from_response(self, dataset_id: str, response: dict) -> List[RemoteFile]:
         rval: List[RemoteFile] = []
         for entry in response:
             dataFile = entry.get("dataFile")
@@ -453,116 +452,108 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         for error in errors:
             error_message += f"\n{json.dumps(error)}"
         return error_message
-    
+
     def _get_user_email(self, user_context: OptionalUserContext = None) -> str:
         return user_context.email if user_context and user_context.email else "enteryourmail@placeholder.com"
-    
+
     def _create_valid_alias(self, public_name: str, title: str) -> str:
-        return re.sub(r"[^a-zA-Z0-9-_]", "", public_name.lower().replace(" ", "-") + "_" + title.lower().replace(" ", "-"))
-    
+        return re.sub(
+            r"[^a-zA-Z0-9-_]", "", public_name.lower().replace(" ", "-") + "_" + title.lower().replace(" ", "-")
+        )
+
     def _prepare_collection_data(
-            self,
-            title: str,
-            public_name: str,
-            user_context: OptionalUserContext = None,
-        ) -> str:
-        return json.dumps({
-            "name": title,
-            "alias": self._create_valid_alias(public_name, title),
-            "dataverseContacts": [
+        self,
+        title: str,
+        public_name: str,
+        user_context: OptionalUserContext = None,
+    ) -> str:
+        return json.dumps(
             {
-                "contactEmail": self._get_user_email(user_context)
-            },
-            ],
-        })
-    
+                "name": title,
+                "alias": self._create_valid_alias(public_name, title),
+                "dataverseContacts": [
+                    {"contactEmail": self._get_user_email(user_context)},
+                ],
+            }
+        )
+
     def _prepare_dataset_data(
-            self, 
-            title: str, 
-            public_name: str,
-            user_context: OptionalUserContext = None,
-            ) -> str:
+        self,
+        title: str,
+        public_name: str,
+        user_context: OptionalUserContext = None,
+    ) -> str:
         """Prepares the dataset data with all required metadata fields."""
         user_email = self._get_user_email(user_context)
         author_name = public_name
         dataset_data = {
             "datasetVersion": {
-            "license": {
-                "name": "CC0 1.0",
-                "uri": "http://creativecommons.org/publicdomain/zero/1.0"
-            },
-            "metadataBlocks": {
-                "citation": {
-                "fields": [
-                    {
-                    "value": title,
-                    "typeClass": "primitive",
-                    "multiple": False,
-                    "typeName": "title"
-                    },
-                    {
-                    "value": [
-                        {
-                        "authorName": {
-                            "value": author_name,
-                            "typeClass": "primitive",
-                            "multiple": False,
-                            "typeName": "authorName"
-                        }
-                        }
-                    ],
-                    "typeClass": "compound",
-                    "multiple": True,
-                    "typeName": "author"
-                    },
-                    {
-                    "value": [
-                        {
-                        "datasetContactEmail": {
-                            "typeClass": "primitive",
-                            "multiple": False,
-                            "typeName": "datasetContactEmail",
-                            "value": user_email,
-                        },
-                        "datasetContactName": {
-                            "typeClass": "primitive",
-                            "multiple": False,
-                            "typeName": "datasetContactName",
-                            "value": author_name,
-                        }
-                        }
-                    ],
-                    "typeClass": "compound",
-                    "multiple": True,
-                    "typeName": "datasetContact"
-                    },
-                    {
-                    "value": [
-                        {
-                        "dsDescriptionValue": {
-                            "value": "Exported history from Galaxy",
-                            "multiple": False,
-                            "typeClass": "primitive",
-                            "typeName": "dsDescriptionValue"
-                        }
-                        }
-                    ],
-                    "typeClass": "compound",
-                    "multiple": True,
-                    "typeName": "dsDescription"
-                    },
-                    {
-                    "value": [
-                        "Medicine, Health and Life Sciences"
-                    ],
-                    "typeClass": "controlledVocabulary",
-                    "multiple": True,
-                    "typeName": "subject"
+                "license": {"name": "CC0 1.0", "uri": "http://creativecommons.org/publicdomain/zero/1.0"},
+                "metadataBlocks": {
+                    "citation": {
+                        "fields": [
+                            {"value": title, "typeClass": "primitive", "multiple": False, "typeName": "title"},
+                            {
+                                "value": [
+                                    {
+                                        "authorName": {
+                                            "value": author_name,
+                                            "typeClass": "primitive",
+                                            "multiple": False,
+                                            "typeName": "authorName",
+                                        }
+                                    }
+                                ],
+                                "typeClass": "compound",
+                                "multiple": True,
+                                "typeName": "author",
+                            },
+                            {
+                                "value": [
+                                    {
+                                        "datasetContactEmail": {
+                                            "typeClass": "primitive",
+                                            "multiple": False,
+                                            "typeName": "datasetContactEmail",
+                                            "value": user_email,
+                                        },
+                                        "datasetContactName": {
+                                            "typeClass": "primitive",
+                                            "multiple": False,
+                                            "typeName": "datasetContactName",
+                                            "value": author_name,
+                                        },
+                                    }
+                                ],
+                                "typeClass": "compound",
+                                "multiple": True,
+                                "typeName": "datasetContact",
+                            },
+                            {
+                                "value": [
+                                    {
+                                        "dsDescriptionValue": {
+                                            "value": "Exported history from Galaxy",
+                                            "multiple": False,
+                                            "typeClass": "primitive",
+                                            "typeName": "dsDescriptionValue",
+                                        }
+                                    }
+                                ],
+                                "typeClass": "compound",
+                                "multiple": True,
+                                "typeName": "dsDescription",
+                            },
+                            {
+                                "value": ["Medicine, Health and Life Sciences"],
+                                "typeClass": "controlledVocabulary",
+                                "multiple": True,
+                                "typeName": "subject",
+                            },
+                        ],
+                        "displayName": "Citation Metadata",
                     }
-                ],
-                "displayName": "Citation Metadata"
-                }
-            }
+                },
             }
         }
         return json.dumps(dataset_data)
