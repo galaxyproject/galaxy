@@ -256,3 +256,11 @@
   access_token: ${user.preferences['onedata|access_token']}
   onezone_domain: ${user.preferences['onedata|onezone_domain']}
   disable_tls_certificate_validation: ${user.preferences['onedata|disable_tls_certificate_validation']}
+
+- type: elabftw
+  id: elabftw
+  label: eLabFTW
+  doc: Import/export files from an eLabFTW instance.
+  api_key: ${user.user_vault.read_secret('preferences/elabftw/api_key')}
+  writable: true
+  endpoint: ${user.preferences['elabftw|endpoint']}

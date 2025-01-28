@@ -7,6 +7,7 @@ import Multiselect from "vue-multiselect";
 import { useConfig } from "@/composables/config";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -16,7 +17,14 @@ interface Idp {
     OrganizationName: string;
     RandS: boolean;
 }
-type OIDCConfig = Record<string, { icon?: string }>;
+type OIDCConfig = Record<
+    string,
+    {
+        icon?: string;
+        label?: string;
+        custom_button_text?: string;
+    }
+>;
 
 interface Props {
     loginPage?: boolean;
@@ -271,7 +279,12 @@ function getIdpPreference() {
                         <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
                             Sign in with
-                            {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                            <span v-if="iDPInfo['label']">
+                                {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
+                            </span>
+                            <span v-else>
+                                {{ capitalizeFirstLetter(idp) }}
+                            </span>
                         </BButton>
                     </span>
                 </div>

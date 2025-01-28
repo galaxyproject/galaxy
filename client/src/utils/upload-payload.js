@@ -14,6 +14,7 @@ export const URI_PREFIXES = [
     "invenio://",
     "zenodo://",
     "dataverse://",
+    "elabftw://",
 ];
 
 export function isUrl(content) {
