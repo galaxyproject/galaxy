@@ -172,7 +172,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        """Used when download files from dataverse."""
+        """Used when downloading files from dataverse."""
         # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
         # This prevents downloading files that require authentication even if the user provided a token.
         
@@ -219,20 +219,20 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         encoded_file_id = quote(file_id, safe="")
         return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={encoded_file_id}"
     
+    def download_dataset_as_zip_url(self, dataset_id: str) -> str:
+        return f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
+    
     def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
+    
+    def add_files_to_dataset_url(self, dataset_id: str) -> str:
+        return f"{self.api_base_url}/datasets/:persistentId/add?persistentId={dataset_id}"
     
     def create_collection_url(self, parent_alias: str) -> str:
         return f"{self.api_base_url}/dataverses/{parent_alias}"
     
     def create_dataset_url(self, parent_alias: str) -> str:
         return f"{self.api_base_url}/dataverses/{parent_alias}/datasets"
-    
-    def download_dataset_as_zip_url(self, dataset_id: str) -> str:
-        return f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
-    
-    def add_files_to_dataset_url(self, dataset_id: str) -> str:
-        return f"{self.api_base_url}/datasets/:persistentId/add?persistentId={dataset_id}"
     
     def public_dataset_url(self, dataset_id: str) -> str:
         return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
