@@ -12,7 +12,6 @@ from typing import (
 from urllib.parse import quote
 
 from typing_extensions import (
-    Literal,
     TypedDict,
     Unpack,
 )
@@ -181,7 +180,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         dataset_id, file_id = self.parse_path(source_path)
         try:
             self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
-        except NotFoundException as e:
+        except NotFoundException:
             filename = file_id.split("/")[-1]
             is_zip_file = self._is_zip_archive(filename)
             if is_zip_file:
