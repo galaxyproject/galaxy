@@ -9,8 +9,6 @@ const props = defineProps<{
     name: string;
 }>();
 
-const HEIGHT = "400px";
-
 const errorMessage = ref("");
 const visualizationConfig = ref();
 const visualizationKey = ref(0);
@@ -37,13 +35,21 @@ watch(
 </script>
 
 <template>
-    <b-alert v-if="errorMessage" variant="danger" show :height="HEIGHT">
-        {{ errorMessage }}
-    </b-alert>
+    <div v-if="errorMessage" class="markdown-visualization">
+        <b-alert variant="danger" show>
+            {{ errorMessage }}
+        </b-alert>
+    </div>
     <VisualizationWrapper
         v-else-if="visualizationConfig"
         :key="visualizationKey"
+        class="markdown-visualization"
         :config="visualizationConfig"
-        :height="HEIGHT"
         :name="name" />
 </template>
+
+<style>
+.markdown-visualization {
+    min-height: 400px;
+}
+</style>
