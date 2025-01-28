@@ -95,9 +95,7 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def create_draft_file_container(
-        self, title: str, public_name: str, user_context: OptionalUserContext = None
-    ):
+    def create_draft_file_container(self, title: str, public_name: str, user_context: OptionalUserContext = None):
         """Creates a draft file container in the repository with basic metadata.
 
         The metadata is usually just the title of the container and the user that created it.
