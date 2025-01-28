@@ -7,6 +7,7 @@ import { type ComputedRef } from "vue";
 import { type components, GalaxyApi } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -370,12 +371,8 @@ const metrics = computed(() => {
     return Object.fromEntries(items.map((item) => [item.y_title, { spec: itemToSpec(item), item: item }]));
 });
 
-function getTimingInTitle(timing: string): string {
-    return timing.charAt(0).toUpperCase() + timing.slice(1);
-}
-
 const timingInTitles = computed(() => {
-    return getTimingInTitle(timing.value);
+    return capitalizeFirstLetter(timing.value);
 });
 
 const groupByInTitles = computed(() => {
@@ -392,9 +389,15 @@ const groupByInTitles = computed(() => {
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>
                     <b-dropdown right :text="'Timing: ' + timingInTitles">
-                        <b-dropdown-item @click="timing = 'seconds'">{{ getTimingInTitle("seconds") }}</b-dropdown-item>
-                        <b-dropdown-item @click="timing = 'minutes'">{{ getTimingInTitle("minutes") }}</b-dropdown-item>
-                        <b-dropdown-item @click="timing = 'hours'">{{ getTimingInTitle("hours") }}</b-dropdown-item>
+                        <b-dropdown-item @click="timing = 'seconds'">
+                            {{ capitalizeFirstLetter("seconds") }}
+                        </b-dropdown-item>
+                        <b-dropdown-item @click="timing = 'minutes'">
+                            {{ capitalizeFirstLetter("minutes") }}
+                        </b-dropdown-item>
+                        <b-dropdown-item @click="timing = 'hours'">
+                            {{ capitalizeFirstLetter("hours") }}
+                        </b-dropdown-item>
                     </b-dropdown>
                     <b-dropdown right :text="'Group By: ' + groupByInTitles">
                         <b-dropdown-item @click="groupBy = 'tool_id'">Tool</b-dropdown-item>

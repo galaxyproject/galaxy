@@ -91,6 +91,7 @@ import { waitOnJob } from "components/JobStates/wait";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
+import { capitalizeFirstLetter } from "utils/strings";
 import Vue, { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
@@ -165,7 +166,7 @@ export default {
             return this.invocationImport ? "invocation" : "history";
         },
         identifierTextCapitalized() {
-            return this.identifierText.charAt(0).toUpperCase() + this.identifierText.slice(1);
+            return capitalizeFirstLetter(this.identifierText);
         },
         identifierTextPlural() {
             return this.invocationImport ? "invocations" : "histories";
