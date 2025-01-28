@@ -54,53 +54,66 @@
             </span>
         </b-card-header>
         <b-card-body>
-            <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
-                <UrlDataProvider v-slot="{ result: datatypesModel, loading: datatypesLoading }" :url="datatypesUrl">
-                    <LoadingSpan v-if="loading" message="Loading Dataset" />
-                    <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
-                    <div v-else-if="error">{{ error }}</div>
-                    <div v-else :class="contentClass">
-                        <b-embed
-                            v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
-                            type="iframe"
-                            aspect="16by9"
-                            :src="displayUrl" />
-                        <HistoryDatasetAsImage
-                            v-else-if="isSubTypeOfAny(datasetType, ['galaxy.datatypes.images.Image'], datatypesModel)"
-                            :args="args" />
-                        <div v-else-if="itemContent.item_data">
-                            <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
-                                <UrlDataProvider
-                                    v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
-                                    :url="metaUrl">
-                                    <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-                                    <div v-else-if="metaError">{{ metaError }}</div>
+            <UrlDataProvider v-slot="{ result: itemContent, loading: datasetLoading, error }" :url="itemUrl">
+                <LoadingSpan v-if="datasetLoading" message="Loading Dataset" />
+                <LoadingSpan v-else-if="loading" message="Loading Datatypes" />
+                <div v-else-if="error">{{ error }}</div>
+                <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
+                <div v-else :class="contentClass">
+                    <b-embed
+                        v-if="datatypesMapper.isSubTypeOfAny(datasetType, ['pdf', 'html'])"
+                        type="iframe"
+                        aspect="16by9"
+                        :src="displayUrl" />
+                    <HistoryDatasetAsImage
+                        v-else-if="datatypesMapper.isSubTypeOfAny(datasetType, ['galaxy.datatypes.images.Image'])"
+                        :args="args" />
+                    <div v-else-if="itemContent.item_data">
+                        <div v-if="datatypesMapper.isSubTypeOfAny(datasetType, ['tabular'])">
+                            <UrlDataProvider
+                                v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
+                                :url="metaUrl">
+                                <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                                <div v-else-if="metaError">{{ metaError }}</div>
+                                <div v-else>
                                     <b-table
-                                        v-else
+                                        id="tabular-dataset-table"
+                                        sticky-header
+                                        thead-tr-class="sticky-top"
                                         striped
                                         hover
-                                        :fields="getFields(metaData)"
-                                        :items="getItems(itemContent.item_data, metaData)" />
-                                </UrlDataProvider>
-                            </div>
-                            <pre v-else>
-                                <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
-                            </pre>
+                                        :per-page="perPage"
+                                        :current-page="currentPage"
+                                        :fields="Object.freeze(getFields(metaData))"
+                                        :items="Object.freeze(getItems(itemContent.item_data, metaData))" />
+                                    <b-pagination
+                                        v-model="currentPage"
+                                        align="center"
+                                        :total-rows="Object.freeze(getItems(itemContent.item_data, metaData)).length"
+                                        :per-page="perPage"
+                                        aria-controls="tabular-dataset-table" />
+                                </div>
+                            </UrlDataProvider>
                         </div>
-                        <div v-else>No content found.</div>
-                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                        <pre v-else>
+                            <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
+                        </pre>
                     </div>
-                </UrlDataProvider>
+                    <div v-else>No content found.</div>
+                    <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                </div>
             </UrlDataProvider>
         </b-card-body>
     </b-card>
 </template>
 
 <script>
-import { DatatypesMapperModel } from "components/Datatypes/model";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
 
@@ -126,11 +139,17 @@ export default {
     },
     data() {
         return {
+            currentPage: 1,
             expanded: false,
+            perPage: 200,
         };
     },
     computed: {
+        ...mapState(useDatatypesMapperStore, ["createMapper", "datatypesMapper", "loading"]),
         contentClass() {
+            if (this.datatypesMapper?.isSubTypeOfAny(this.datasetType, ["tabular"])) {
+                return "";
+            }
             if (this.expanded) {
                 return "embedded-dataset-expanded";
             } else {
@@ -144,9 +163,6 @@ export default {
         datasetName() {
             const dataset = this.datasets[this.args.history_dataset_id];
             return dataset && dataset.name;
-        },
-        datatypesUrl() {
-            return "/api/datatypes/types_and_mapping";
         },
         downloadUrl() {
             return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
@@ -164,11 +180,10 @@ export default {
             return `/api/datasets/${this.args.history_dataset_id}`;
         },
     },
+    created() {
+        this.createMapper();
+    },
     methods: {
-        isSubTypeOfAny(child, parents, datatypesModel) {
-            const datatypesMapper = new DatatypesMapperModel(datatypesModel);
-            return datatypesMapper.isSubTypeOfAny(child, parents);
-        },
         getFields(metaData) {
             const fields = [];
             const columnNames = metaData.metadata_column_names || [];
