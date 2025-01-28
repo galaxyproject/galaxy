@@ -32,6 +32,7 @@ from galaxy.structured_app import (
     MinimalToolApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tools.actions import determine_output_format
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -168,6 +169,9 @@ class ToolEvaluator:
             out_data,
             output_collections=out_collections,
         )
+        # late update of format_source outputs
+        self._eval_format_source(job, inp_data, out_data)
+
         self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
@@ -256,6 +260,23 @@ class ToolEvaluator:
                 undeferred_objects[key] = undeferred_collection
 
         return undeferred_objects
+
+    def _eval_format_source(
+        self,
+        job: model.Job,
+        inp_data: Dict[str, Optional[model.DatasetInstance]],
+        out_data: Dict[str, model.DatasetInstance],
+    ):
+        for output_name, output in out_data.items():
+            if (
+                (tool_output := self.tool.outputs.get(output_name))
+                and (tool_output.format_source or tool_output.change_format)
+                and output.extension == "expression.json"
+            ):
+                input_collections = {jtidca.name: jtidca.dataset_collection for jtidca in job.input_dataset_collections}
+                ext = determine_output_format(tool_output, self.param_dict, inp_data, input_collections, None)
+                if ext:
+                    output.extension = ext
 
     def _replaced_deferred_objects(
         self,

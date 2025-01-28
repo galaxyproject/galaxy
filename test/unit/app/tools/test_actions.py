@@ -231,7 +231,7 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
         )
         c1.elements = [dce1, dce2]
 
-        input_collections["hdcai"] = [(hc1, False)]
+        input_collections["hdcai"] = hc1
 
     actual_format = determine_output_format(output, param_context, inputs, input_collections, last_ext)
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
