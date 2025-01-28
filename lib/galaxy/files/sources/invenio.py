@@ -211,10 +211,23 @@ class InvenioRDMFilesSource(RDMFilesSource):
     ) -> Entry:
         public_name = self.get_public_name(user_context) or "No name"
         record = self.repository.create_draft_file_container(entry_data["name"], public_name, user_context=user_context)
+        record_id = record.get("id")
+        if not record_id or not isinstance(record_id, str):
+            raise Exception("Failed to create record.")
+        uri = self.repository.to_plugin_uri(record_id=record_id)
+        name = record.get("title") or "Untitled"
+        if not isinstance(name, str):
+            raise Exception("Failed to get record title.")
+        links = record.get("links")
+        if not links or not isinstance(links, dict):
+            raise Exception("Failed to get record links.")
+        external_link = links.get("self_html")
+        if not external_link or not isinstance(external_link, str):
+            raise Exception("Failed to get record link.")
         return {
-            "uri": self.repository.to_plugin_uri(record["id"]),
-            "name": record["title"],
-            "external_link": record["links"]["self_html"],
+            "uri": uri,
+            "name": name,
+            "external_link": external_link,
         }
 
     def _realize_to(
@@ -288,7 +301,11 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return size, page
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None, query: Optional[str] = None,
+        self,
+        container_id: str,
+        writeable: bool,
+        user_context: OptionalUserContext = None,
+        query: Optional[str] = None,
     ) -> List[RemoteFile]:
         conditionally_draft = "/draft" if writeable else ""
         request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
