@@ -53,10 +53,14 @@ class OIDC(JSAppLauncher):
                 userinfo = jwt.decode(
                     token.id_token, options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
                 )
+                provider_label = trans.app.authnz_manager.oidc_backends_config.get(token.provider, {}).get(
+                    "label", token.provider
+                )
                 rtv.append(
                     {
                         "id": trans.app.security.encode_id(token.id),
                         "provider": token.provider,
+                        "provider_label": provider_label,
                         "email": userinfo["email"],
                         "expiration": str(datetime.datetime.utcfromtimestamp(userinfo["exp"])),
                     }
