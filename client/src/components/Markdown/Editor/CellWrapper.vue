@@ -3,7 +3,8 @@
         <div class="d-flex">
             <div class="cell-guide d-flex flex-column justify-content-between" :class="{ 'cell-hover': hover }">
                 <CellButton title="Learn more">
-                    <div class="small">{{ name }}</div>
+                    <div v-if="VALID_TYPES.includes(name)" class="small">{{ name }}</div>
+                    <div v-else class="small">unknown</div>
                 </CellButton>
                 <CellButton v-if="toggle" title="Collapse" @click="toggle = false">
                     <FontAwesomeIcon :icon="faAngleDoubleUp" />
@@ -13,15 +14,16 @@
                 </CellButton>
             </div>
             <div class="m-2 w-100">
-                <MarkdownGalaxy v-if="name === 'galaxy'" :content="content" />
+                <MarkdownDefault v-if="name === 'markdown'" :content="content" />
+                <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
                 <MarkdownVega v-else-if="name === 'vega'" :content="content" />
-                <MarkdownVisualization v-else-if="name === 'plotly'" name="plotly" :content="content" />
+                <MarkdownVisualization v-else-if="name === 'visualization'" :content="content" />
                 <MarkdownVisualization
                     v-else-if="name === 'vitessce'"
                     attribute="dataset_content"
                     name="vitessce"
                     :content="content" />
-                <MarkdownDefault v-else :content="content" />
+                <b-alert v-else variant="danger" show> This cell type `{{ name }}` is not available. </b-alert>
             </div>
         </div>
         <div v-if="toggle" class="d-flex">
@@ -48,6 +50,8 @@ import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVisualization from "../Sections/MarkdownVisualization.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
+
+const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
 defineProps<{
     name: string;
