@@ -69,7 +69,7 @@ onMounted(async () => {
             errorMessage.value = "Frame has been invalidated.";
         }
     } catch (e) {
-        errorMessage.value = `Visualization '${props.name}' not available.`;
+        errorMessage.value = `Visualization '${props.name}' not available: ${e}.`;
     }
 });
 </script>
