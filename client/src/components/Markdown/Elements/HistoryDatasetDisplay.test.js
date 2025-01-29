@@ -1,15 +1,26 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { typesAndMappingResponse } from "components/Datatypes/test_fixtures";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 
 const localVue = getLocalVue();
 
 const args = { history_dataset_id: "someId" };
-const api_paths_map = new Map([["/api/datatypes/types_and_mapping", typesAndMappingResponse]]);
+
+function setUpDatatypesStore() {
+    const pinia = createTestingPinia({ stubActions: false });
+
+    const datatypesStore = useDatatypesMapperStore();
+    datatypesStore.datatypesMapper = testDatatypesMapper;
+
+    return pinia;
+}
 
 describe("History Tabular Dataset Display", () => {
     let wrapper;
@@ -23,15 +34,14 @@ describe("History Tabular Dataset Display", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-
-        for (const [path, response] of api_paths_map.entries()) {
-            axiosMock.onGet(path).reply(200, response);
-        }
-
         axiosMock.onGet(`/api/datasets/${args.history_dataset_id}`).reply(200, tabularMetaData);
         axiosMock.onGet(`/api/datasets/${args.history_dataset_id}/get_content_as_text`).reply(200, tabular);
 
-        wrapper = mount(HistoryDatasetDisplay, { localVue, propsData: { datasets: tabularDatasets, args } });
+        wrapper = mount(HistoryDatasetDisplay, {
+            localVue,
+            propsData: { datasets: tabularDatasets, args },
+            pinia: setUpDatatypesStore(),
+        });
     });
 
     afterEach(() => {
@@ -55,13 +65,13 @@ describe("History Text Dataset Display", () => {
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
 
-        for (const [path, response] of api_paths_map.entries()) {
-            axiosMock.onGet(path).reply(200, response);
-        }
-
         axiosMock.onGet(`/api/datasets/${args.history_dataset_id}/get_content_as_text`).reply(200, text);
 
-        wrapper = mount(HistoryDatasetDisplay, { localVue, propsData: { datasets: textDatasets, args } });
+        wrapper = mount(HistoryDatasetDisplay, {
+            localVue,
+            propsData: { datasets: textDatasets, args },
+            pinia: setUpDatatypesStore(),
+        });
     });
 
     afterEach(() => {

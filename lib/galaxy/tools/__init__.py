@@ -3967,6 +3967,10 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 add_copied_value_to_new_elements(new_label, dce_object)
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
+            if hdca.collection.element_count > len(new_labels):
+                raise exceptions.MessageException(
+                    "Relabel mapping file contains less lines than there are collection elements to relabel."
+                )
             for i, dce in enumerate(hdca.collection.elements):
                 dce_object = dce.element_object
                 add_copied_value_to_new_elements(new_labels[i], dce_object)
