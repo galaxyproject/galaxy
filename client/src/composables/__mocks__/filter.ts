@@ -1,5 +1,5 @@
 import { toValue } from "@vueuse/core";
-import { computed, Ref } from "vue";
+import { computed, type Ref } from "vue";
 
 import type { useFilterObjectArray as UseFilterObjectArray } from "@/composables/filter";
 
