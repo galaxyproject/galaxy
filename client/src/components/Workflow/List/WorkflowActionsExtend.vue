@@ -223,7 +223,7 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
 </template>
 
 <style scoped lang="scss">
-@import "_breakpoints.scss";
+@import "breakpoints.scss";
 
 .workflow-card-actions {
     display: flex;
