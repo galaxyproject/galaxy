@@ -1,37 +1,44 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BRow } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
+import { BAlert, BButton } from "bootstrap-vue";
 
 import localize from "@/utils/localization";
 
-library.add(faPlus);
+import Heading from "@/components/Common/Heading.vue";
 
 interface Props {
-    message: String | null | undefined;
+    message?: string;
     createButtonId: string;
     createRoute: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
-const router = useRouter();
+const createUrl = props.createRoute;
 </script>
 
 <template>
     <div>
+        <div class="d-flex">
+            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Remote File Sources</Heading>
+
+            <div>
+                <BButton
+                    :id="createButtonId"
+                    v-b-tooltip.hover.noninteractive
+                    title="Create new file source"
+                    size="sm"
+                    variant="outline-primary"
+                    :to="createUrl">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    {{ localize("Create") }}
+                </BButton>
+            </div>
+        </div>
+
         <BAlert v-if="message" show dismissible>
             {{ message || "" }}
         </BAlert>
-        <BRow class="mb-3">
-            <BCol>
-                <BButton :id="createButtonId" class="m-1 float-right" @click="router.push(createRoute)">
-                    <FontAwesomeIcon icon="plus" />
-                    {{ localize("Create") }}
-                </BButton>
-            </BCol>
-        </BRow>
     </div>
 </template>
