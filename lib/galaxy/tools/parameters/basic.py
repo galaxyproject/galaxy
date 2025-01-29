@@ -2221,7 +2221,7 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
             value_to_check: Union[
-                DatasetInstance, DatasetCollection, DatasetCollectionElement, HistoryDatasetCollectionAssociation
+                DatasetInstance, DatasetCollection, DatasetCollectionElement, HistoryDatasetCollectionAssociation, CollectionAdapter
             ] = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
