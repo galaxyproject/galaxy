@@ -1,19 +1,8 @@
-from typing import (
-    List,
-    Tuple,
-)
-
 from galaxy.managers.credentials import (
     CredentialsManager,
-    CredentialsModelList,
+    CredentialsModelsList,
 )
-from galaxy.model import (
-    CredentialsGroup,
-    User,
-    UserCredentials,
-    UserCredentialSecret,
-    UserCredentialVariable,
-)
+from galaxy.model import User
 from galaxy.schema.credentials import SOURCE_TYPE
 from .base import BaseTestCase
 
@@ -30,7 +19,7 @@ class TestCredentialsManager(BaseTestCase):
         service_reference = "ref1"
         source_type: SOURCE_TYPE = "tool"
         source_id = "tool_id"
-        user_credentials: List[Tuple[UserCredentials, CredentialsGroup]] = []
+        user_credentials = self.credentials_manager.get_user_credentials(user_id, source_type, source_id)
 
         user_credentials_id = self.credentials_manager.add_user_credentials(
             user_credentials, user_id, service_reference, source_type, source_id
@@ -44,41 +33,51 @@ class TestCredentialsManager(BaseTestCase):
 
         variable_name = "var1"
         variable_value = "value1"
-        variables: List[UserCredentialVariable] = []
+        self.credentials_manager.add_or_update_credential(
+            user_credentials, user_credential_group_id, variable_name, variable_value
+        )
 
         secret_name = "secret1"
         secret_value = "value1"
-        secrets: List[UserCredentialSecret] = []
-
-        self.credentials_manager.add_or_update_variable(
-            variables, user_credential_group_id, variable_name, variable_value
+        self.credentials_manager.add_or_update_credential(
+            user_credentials, user_credential_group_id, secret_name, secret_value, is_secret=True
         )
-        self.credentials_manager.add_or_update_secret(secrets, user_credential_group_id, secret_name, secret_value)
+
         self.credentials_manager.update_current_group(user_id, user_credentials_id, group_name)
         self.trans.sa_session.commit()
 
-        result_user_credentials, result_credentials_group = self.credentials_manager.get_user_credentials(
+        user_credentials = self.credentials_manager.get_user_credentials(
             user_id, source_type, source_id, user_credentials_id, user_credential_group_id
-        )[0]
-        assert result_user_credentials.id == user_credentials_id
-        assert result_user_credentials.user_id == user_id
-        assert result_user_credentials.service_reference == service_reference
-        assert result_user_credentials.source_type == source_type
-        assert result_user_credentials.source_id == source_id
-        assert result_user_credentials.current_group_id == user_credential_group_id
-        assert result_credentials_group.id == user_credential_group_id
-        assert result_credentials_group.name == group_name
-        assert result_credentials_group.user_credentials_id == user_credentials_id
+        )
+        for result_user_credentials, result_credentials_group, _ in user_credentials:
+            assert result_user_credentials.id == user_credentials_id
+            assert result_user_credentials.user_id == user_id
+            assert result_user_credentials.service_reference == service_reference
+            assert result_user_credentials.source_type == source_type
+            assert result_user_credentials.source_id == source_id
+            assert result_user_credentials.current_group_id == user_credential_group_id
+            assert result_credentials_group.id == user_credential_group_id
+            assert result_credentials_group.name == group_name
+            assert result_credentials_group.user_credentials_id == user_credentials_id
 
-        variables, secrets = self.credentials_manager.fetch_credentials(user_credential_group_id)
-        assert variables[0].user_credential_group_id == user_credential_group_id
-        assert variables[0].name == variable_name
-        assert variables[0].value == variable_value
-        assert secrets[0].user_credential_group_id == user_credential_group_id
-        assert secrets[0].name == secret_name
-        assert secrets[0].already_set
+        assert user_credentials[0][2].group_id == user_credential_group_id
+        assert user_credentials[0][2].name == variable_name
+        assert user_credentials[0][2].value == variable_value
+        assert not user_credentials[0][2].is_secret
+        assert user_credentials[0][2].is_set
 
-        rows_to_delete: CredentialsModelList = [result_user_credentials, result_credentials_group, *variables, *secrets]
+        assert user_credentials[1][2].group_id == user_credential_group_id
+        assert user_credentials[1][2].name == secret_name
+        assert user_credentials[1][2].value is None
+        assert user_credentials[1][2].is_secret
+        assert user_credentials[1][2].is_set
+
+        rows_to_delete: CredentialsModelsList = [
+            result_user_credentials,
+            result_credentials_group,
+            user_credentials[0][2],
+            user_credentials[1][2],
+        ]
         self.credentials_manager.delete_rows(rows_to_delete)
         self.trans.sa_session.commit()
 

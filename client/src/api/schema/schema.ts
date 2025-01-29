@@ -7480,12 +7480,26 @@ export interface components {
             /** Name */
             name: string;
             /** Secrets */
-            secrets: components["schemas"]["SecretResponse"][];
+            secrets: components["schemas"]["CredentialResponse"][];
             /** Variables */
-            variables: components["schemas"]["VariableResponse"][];
+            variables: components["schemas"]["CredentialResponse"][];
         };
         /** CredentialPayload */
         CredentialPayload: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: string | null;
+        };
+        /** CredentialResponse */
+        CredentialResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Is Set */
+            is_set: boolean;
             /** Name */
             name: string;
             /** Value */
@@ -15841,18 +15855,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** SecretResponse */
-        SecretResponse: {
-            /** Already Set */
-            already_set: boolean;
-            /**
-             * Id
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /** Name */
-            name: string;
-        };
         /** ServerDirElement */
         ServerDirElement: {
             /** Md5 */
@@ -18015,18 +18017,6 @@ export interface components {
              * @description The name of the user.
              */
             username?: string | null;
-        };
-        /** VariableResponse */
-        VariableResponse: {
-            /**
-             * Id
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /** Name */
-            name: string;
-            /** Value */
-            value: string | null;
         };
         /** Visualization */
         Visualization: Record<string, never>;
