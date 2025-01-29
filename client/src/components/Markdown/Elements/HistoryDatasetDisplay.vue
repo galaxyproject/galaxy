@@ -84,12 +84,12 @@
                                         hover
                                         :per-page="perPage"
                                         :current-page="currentPage"
-                                        :fields="Object.freeze(getFields(metaData))"
-                                        :items="Object.freeze(getItems(itemContent.item_data, metaData))" />
+                                        :fields="getFields(metaData)"
+                                        :items="getItems(itemContent.item_data, metaData)" />
                                     <b-pagination
                                         v-model="currentPage"
                                         align="center"
-                                        :total-rows="Object.freeze(getItems(itemContent.item_data, metaData)).length"
+                                        :total-rows="getItems(itemContent.item_data, metaData).length"
                                         :per-page="perPage"
                                         aria-controls="tabular-dataset-table" />
                                 </div>
