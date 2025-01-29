@@ -141,7 +141,7 @@ export default {
         return {
             currentPage: 1,
             expanded: false,
-            perPage: 200,
+            perPage: 100,
         };
     },
     computed: {
