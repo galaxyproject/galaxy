@@ -113,7 +113,7 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
 
 function areSetByUser(credentials: UserCredentials): boolean {
     return Object.values(credentials.groups).every((set) => {
-        return set.variables.every((variable) => variable.value) && set.secrets.every((secret) => secret.already_set);
+        return set.variables.every((variable) => variable.value) && set.secrets.every((secret) => secret.is_set);
     });
 }
 
