@@ -8205,60 +8205,30 @@ export interface components {
             /** Name */
             name: string;
             /** Secrets */
-            secrets: components["schemas"]["SecretResponse"][];
+            secrets: components["schemas"]["CredentialResponse"][];
             /** Variables */
-            variables: components["schemas"]["VariableResponse"][];
+            variables: components["schemas"]["CredentialResponse"][];
         };
         /** CredentialPayload */
         CredentialPayload: {
             /** Name */
             name: string;
-            /**
-             * Type
-             * @description Type of the credential(secret/variable)
-             */
-            type: components["schemas"]["CredentialType"];
-            /**
-             * Credential Value
-             * @description Value of the credential
-             */
-            value?: string | null;
+            /** Value */
+            value: string | null;
         };
-        /**
-         * CredentialType
-         * @enum {string}
-         */
-        CredentialType: "secret" | "variable";
-        /** CredentialsPayload */
-        CredentialsPayload: {
+        /** CredentialResponse */
+        CredentialResponse: {
             /**
-             * Credentials
-             * @description List of credentials
+             * Id
+             * @example 0123456789ABCDEF
              */
-            credentials: components["schemas"]["CredentialPayload"][];
-            /**
-             * Group Name
-             * @description Name of the group
-             * @default default
-             */
-            group_name: string | null;
-            /**
-             * Service Reference
-             * @description Reference to the service
-             */
-            reference: string;
-            /**
-             * Source ID
-             * @description ID of the source
-             */
-            source_id: string;
-            /**
-             * Source Type
-             * @description Type of the source
-             * @constant
-             * @enum {string}
-             */
-            source_type: "tool";
+            id: string;
+            /** Is Set */
+            is_set: boolean;
+            /** Name */
+            name: string;
+            /** Value */
+            value: string | null;
         };
         /** CustomArchivedHistoryView */
         CustomArchivedHistoryView: {
@@ -18240,18 +18210,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** SecretResponse */
-        SecretResponse: {
-            /** Already Set */
-            already_set: boolean;
-            /**
-             * Id
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /** Name */
-            name: string;
-        };
         /** SectionParameterModel */
         "SectionParameterModel-Input": {
             /** Argument */
@@ -20568,52 +20526,7 @@ export interface components {
              */
             username: string;
         };
-        /** UserCredentialCreateResponse */
-        UserCredentialCreateResponse: {
-            /**
-             * Current Group Name
-             * @description Name of the current group
-             */
-            current_group_name: string;
-            /**
-             * Group
-             * @description Group of credentials
-             */
-            group: components["schemas"]["CredentialGroupResponse"];
-            /**
-             * User Credentials ID
-             * @description ID of the user credentials
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Service Reference
-             * @description Reference to the service
-             */
-            reference: string;
-            /**
-             * Source ID
-             * @description ID of the source
-             */
-            source_id: string;
-            /**
-             * Source Type
-             * @description Type of the source
-             * @constant
-             * @enum {string}
-             */
-            source_type: "tool";
-            /**
-             * User ID
-             * @description ID of the user
-             * @example 0123456789ABCDEF
-             */
-            user_id: string;
-        };
-        /**
-         * UserCredentialsListResponse
-         * @description List of user credentials
-         */
+        /** UserCredentialsListResponse */
         UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
         /** UserCredentialsResponse */
         UserCredentialsResponse: {
@@ -21087,18 +21000,6 @@ export interface components {
              * @description The name of the user.
              */
             username?: string | null;
-        };
-        /** VariableResponse */
-        VariableResponse: {
-            /**
-             * Id
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /** Name */
-            name: string;
-            /** Value */
-            value: string | null;
         };
         /** Visualization */
         Visualization: Record<string, never>;
