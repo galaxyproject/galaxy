@@ -16,7 +16,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 const fileSourceInstancesStore = useFileSourceInstancesStore();
 
 interface Props {
-    message: String | undefined | null;
+    message?: string;
 }
 
 defineProps<Props>();
