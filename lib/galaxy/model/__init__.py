@@ -12139,15 +12139,15 @@ class UserCredentials(Base):
     """
 
     __tablename__ = "user_credentials"
-    __table_args__ = (UniqueConstraint("service_reference", "source_type", "source_id"),)
+    __table_args__ = (UniqueConstraint("user_id", "service_reference", "source_type", "source_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    service_reference: Mapped[str] = mapped_column()
     source_type: Mapped[str] = mapped_column()
     source_id: Mapped[str] = mapped_column()
+    service_reference: Mapped[str] = mapped_column()
     current_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
+        ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
     )
     create_time: Mapped[datetime] = mapped_column(default=now)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
@@ -12158,45 +12158,28 @@ class CredentialsGroup(Base):
     Represents a group of credentials associated with a user for a specific service.
     """
 
-    __tablename__ = "user_credentials_group"
+    __tablename__ = "credentials_group"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column()
     user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column()
     create_time: Mapped[datetime] = mapped_column(default=now)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
-class UserCredentialVariable(Base):
+class Credential(Base):
     """
-    Represents a variable associated with a user for a specific service.
+    Represents a credential (variable or secret) associated with a user for a specific service.
     """
 
-    __tablename__ = "user_credential_variable"
+    __tablename__ = "credential"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_credential_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True
-    )
+    group_id: Mapped[int] = mapped_column(ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column()
-    value: Mapped[str] = mapped_column()
-    create_time: Mapped[datetime] = mapped_column(default=now)
-    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
-
-
-class UserCredentialSecret(Base):
-    """
-    Represents a secret associated with a user for a specific service.
-    """
-
-    __tablename__ = "user_credential_secret"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_credential_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True
-    )
-    name: Mapped[str] = mapped_column()
-    already_set: Mapped[bool] = mapped_column(default=False)
+    is_secret: Mapped[bool] = mapped_column(Boolean)
+    is_set: Mapped[bool] = mapped_column(Boolean)
+    value: Mapped[Optional[str]] = mapped_column(nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 

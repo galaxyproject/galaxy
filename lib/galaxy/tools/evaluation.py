@@ -135,12 +135,12 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
 
 
 class UserCredentialsConfigurator:
-    def __init__(self, app: MinimalToolApp, job: model.Job, environment_variables: List[Dict[str, str]]):
+    def __init__(self, app: MinimalToolApp, job: model.Job, environment_variables: list[dict[str, str]]):
         self.app = cast(StructuredApp, app)
         self.job = job
         self.environment_variables = environment_variables
 
-    def set_environment_variables(self, source_type: str, source_id: str, credentials: List[CredentialsRequirement]):
+    def set_environment_variables(self, source_type: str, source_id: str, credentials: list[CredentialsRequirement]):
         for credential in credentials:
             service_reference = credential.service_reference
             user_id = self.job.user_id
@@ -148,11 +148,11 @@ class UserCredentialsConfigurator:
                 raise ValueError("User does not exist.")
             user_cred_alias = aliased(model.UserCredentials)
             group_alias = aliased(model.CredentialsGroup)
-            var_alias = aliased(model.UserCredentialVariable)
+            cred_alias = aliased(model.Credential)
             stmt = (
-                select(user_cred_alias, group_alias, var_alias)
+                select(user_cred_alias, group_alias, cred_alias)
                 .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
-                .outerjoin(var_alias, var_alias.user_credential_group_id == group_alias.id)
+                .outerjoin(cred_alias, cred_alias.group_id == group_alias.id)
                 .where(user_cred_alias.current_group_id == group_alias.id)
                 .where(user_cred_alias.user_id == user_id)
                 .where(user_cred_alias.source_type == source_type)
