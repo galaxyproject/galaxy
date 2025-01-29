@@ -16,21 +16,15 @@ SOURCE_TYPE = Literal["tool"]
 class CredentialResponse(Model):
     id: EncodedDatabaseIdField
     name: str
-
-
-class VariableResponse(CredentialResponse):
+    is_set: bool
     value: Optional[str]
-
-
-class SecretResponse(CredentialResponse):
-    already_set: bool
 
 
 class CredentialGroupResponse(Model):
     id: EncodedDatabaseIdField
     name: str
-    variables: List[VariableResponse]
-    secrets: List[SecretResponse]
+    variables: List[CredentialResponse]
+    secrets: List[CredentialResponse]
 
 
 class UserCredentialsResponse(Model):
