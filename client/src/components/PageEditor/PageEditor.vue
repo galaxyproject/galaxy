@@ -1,12 +1,15 @@
 <template>
-    <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
-    <PageEditorMarkdown
-        v-else
-        :title="title"
-        :page-id="pageId"
-        :public-url="publicUrl"
-        :content="content"
-        :content-data="contentData" />
+    <div id="columns" class="d-flex">
+        <ActivityBar />
+        <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
+        <PageEditorMarkdown
+            v-else
+            :title="title"
+            :page-id="pageId"
+            :public-url="publicUrl"
+            :content="content"
+            :content-data="contentData" />
+    </div>
 </template>
 
 <script>
@@ -18,10 +21,13 @@ import { rethrowSimple } from "utils/simple-error";
 
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+
 export default {
     components: {
         PageEditorMarkdown,
         LoadingSpan,
+        ActivityBar,
     },
     props: {
         pageId: {
