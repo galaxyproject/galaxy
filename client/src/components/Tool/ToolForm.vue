@@ -14,7 +14,7 @@
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </b-alert>
-            <b-alert show variant="warning">
+            <b-alert v-if="submissionRequestFailed" show variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
             </b-alert>
@@ -194,6 +194,7 @@ export default {
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
+            submissionRequestFailed: false,
             validationInternal: null,
             validationScrollTo: null,
             currentVersion: this.version,
@@ -364,6 +365,7 @@ export default {
             const prevRoute = this.$route.fullPath;
             submitJob(jobDef).then(
                 (jobResponse) => {
+                    this.submissionRequestFailed = false;
                     this.showExecuting = false;
                     let changeRoute = false;
                     refreshContentsWrapper();
@@ -372,7 +374,7 @@ export default {
                         this.entryPoints = jobResponse.jobs;
                     }
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
-                    if (nJobs > 0) {
+                    if (nJobs > 0 && !jobResponse.errors?.length) {
                         this.showForm = false;
                         const toolName = this.toolName;
                         this.saveLatestResponse({
@@ -382,10 +384,23 @@ export default {
                         });
                         changeRoute = prevRoute === this.$route.fullPath;
                     } else {
+                        const defaultErrorTitle = "Job submission rejected.";
                         this.showError = true;
                         this.showForm = true;
-                        this.errorTitle = "Job submission rejected.";
-                        this.errorContent = jobResponse;
+                        if (jobResponse?.errors) {
+                            const nErrors = jobResponse.errors.length;
+                            if (nJobs > 0) {
+                                this.errorTitle = `Job submission for ${nErrors} out of ${
+                                    nJobs + nErrors
+                                } jobs failed.`;
+                            } else {
+                                this.errorTitle = defaultErrorTitle;
+                            }
+                            this.errorContent = jobResponse.errors;
+                        } else {
+                            this.errorTitle = defaultErrorTitle;
+                            this.errorContent = jobResponse;
+                        }
                     }
                     if (changeRoute) {
                         this.$router.push(`/jobs/submission/success`);
@@ -398,6 +413,7 @@ export default {
                 },
                 (e) => {
                     this.errorMessage = e?.response?.data?.err_msg;
+                    this.submissionRequestFailed = true;
                     this.showExecuting = false;
                     let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
