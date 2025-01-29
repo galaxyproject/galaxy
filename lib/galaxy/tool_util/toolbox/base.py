@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 from urllib.parse import urlparse
@@ -57,6 +58,9 @@ from .views.interface import (
     ToolPanelViewModelType,
 )
 from .views.static import StaticToolPanelView
+
+if TYPE_CHECKING:
+    from galaxy.model import DynamicTool
 
 log = logging.getLogger(__name__)
 
@@ -252,7 +256,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         raise NotImplementedError()
 
-    def create_dynamic_tool(self, dynamic_tool):
+    def create_dynamic_tool(self, dynamic_tool: "DynamicTool"):
         raise NotImplementedError()
 
     def can_load_config_file(self, config_filename):
@@ -392,7 +396,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         panel_view_rendered = self._tool_panel_view_rendered[panel_view_id]
         return panel_view_rendered.has_item_recursive(tool)
 
-    def load_dynamic_tool(self, dynamic_tool):
+    def load_dynamic_tool(self, dynamic_tool: "DynamicTool"):
         if not dynamic_tool.active:
             return None
 

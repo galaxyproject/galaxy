@@ -26,7 +26,7 @@ def get_tool_source(*args, **kwargs):
     return tool_source
 
 
-def _cwl_tool_path(path):
+def _cwl_tool_path(path: str):
     return os.path.join(CWL_TOOLS_DIRECTORY, path)
 
 

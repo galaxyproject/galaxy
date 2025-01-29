@@ -1249,6 +1249,6 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
     return session.scalars(stmt).all()
 
 
-def get_job(session, *where_clauses):
+def get_job(session: galaxy_scoped_session, *where_clauses):
     stmt = select(Job).where(*where_clauses).limit(1)
     return session.scalars(stmt).first()
