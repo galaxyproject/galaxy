@@ -76,8 +76,8 @@ function buildGroupsFromUserCredentials(
                 })),
                 secrets: definition.secrets.map((secret) => ({
                     name: secret.name,
-                    value: group.secrets.find((s) => s.name === secret.name)?.already_set ? SECRET_PLACEHOLDER : null,
-                    alreadySet: group.secrets.find((s) => s.name === secret.name)?.already_set ?? false,
+                    value: group.secrets.find((s) => s.name === secret.name)?.is_set ? SECRET_PLACEHOLDER : null,
+                    alreadySet: group.secrets.find((s) => s.name === secret.name)?.is_set ?? false,
                 })),
             };
             groups.push(newGroup);
