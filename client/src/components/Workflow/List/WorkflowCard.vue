@@ -179,7 +179,7 @@ const dropdownOpen = ref(false);
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "_breakpoints.scss";
+@import "breakpoints.scss";
 
 .workflow-card {
     container: workflow-card / inline-size;
