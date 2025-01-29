@@ -305,6 +305,7 @@ export default {
             console.debug("ToolForm - Requesting tool.", this.id);
             return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
+                    this.currentVersion = data.version;
                     this.formConfig = data;
                     this.remapAllowed = this.job_id && data.job_remap;
                     this.showForm = true;
