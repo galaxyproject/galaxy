@@ -2366,7 +2366,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             create_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["xxx\n", "yyy\n"], wait=True
             )
-            list_id = create_response.json()["outputs"][0]["id"]
+            list_id = create_response.json()["output_collections"][0]["id"]
             inputs = {
                 "f1": {
                     "batch": True,
