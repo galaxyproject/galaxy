@@ -17,6 +17,18 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
+const STEP_DESCRIPTIONS = {
+    TextToolParameter: "Provide text input",
+    IntegerToolParameter: "Provide an integer",
+    FloatToolParameter: "Provide a float",
+    ColorToolParameter: "Provide a color",
+    DirectoryUriToolParameter: "Provide a directory",
+    DataToolParameter: "Provide a dataset",
+    DataCollectionToolParameter: "Provide a collection",
+    SelectToolParameter: "Select an option",
+    BooleanToolParameter: "",
+};
+
 interface BaseDataToolParameterInput {
     batch: boolean;
     product: boolean;
@@ -76,45 +88,11 @@ function syncStepsWithInputVals() {
             let dataInput = props.inputs[step.id.toString()];
             const formInput = props.formInputs.find((input) => parseInt(input.name) === step.id);
             const optional = formInput?.optional as boolean;
+            const modelClass = formInput?.model_class as keyof typeof STEP_DESCRIPTIONS;
 
-            if (formInput.model_class === "BooleanToolParameter") {
+            if (modelClass === "BooleanToolParameter") {
                 setStepDescription(step, dataInput as boolean, true);
-            } else if (
-                ["TextToolParameter", "IntegerToolParameter", "FloatToolParameter"].includes(formInput.model_class)
-            ) {
-                if (!dataInput || dataInput.toString().trim() === "") {
-                    let infoText: string;
-                    switch (formInput.model_class) {
-                        case "TextToolParameter":
-                            infoText = `Provide text input${optional ? " (optional)" : ""}`;
-                            break;
-                        case "IntegerToolParameter":
-                            infoText = `Provide an integer${optional ? " (optional)" : ""}`;
-                            break;
-                        default:
-                            infoText = `Provide a float${optional ? " (optional)" : ""}`;
-                            break;
-                    }
-                    setStepDescription(step, infoText, false, optional);
-                } else {
-                    setStepDescription(step, `<b>${dataInput}</b>`, true);
-                }
-            } else if (formInput.model_class === "ColorToolParameter") {
-                if (!dataInput) {
-                    setStepDescription(step, "Provide a color", false);
-                } else {
-                    setStepDescription(step, dataInput as string, true);
-                }
-            } else if (formInput.model_class === "DirectoryUriToolParameter") {
-                if (!dataInput) {
-                    setStepDescription(step, `Provide a directory${optional ? " (optional)" : ""}`, false, optional);
-                } else {
-                    setStepDescription(step, `Directory: <b>${dataInput}</b>`, true);
-                }
-            } else if (
-                formInput.model_class === "DataToolParameter" ||
-                formInput.model_class === "DataCollectionToolParameter"
-            ) {
+            } else if (modelClass === "DataToolParameter" || modelClass === "DataCollectionToolParameter") {
                 dataInput = dataInput as DataToolParameterInput | DataCollectionToolParameterInput;
                 const inputVals = dataInput?.values;
                 const options = formInput?.options;
@@ -125,10 +103,25 @@ function syncStepsWithInputVals() {
                     setStepDescription(step, `${item.hid}: <b>${item.name}</b>`, true);
                 } else if (inputVals?.length) {
                     setStepDescription(step, `${inputVals.length} inputs provided`, true);
-                } else if (formInput.model_class === "DataToolParameter") {
-                    setStepDescription(step, `Provide a dataset${optional ? " (optional)" : ""}`, false, optional);
                 } else {
-                    setStepDescription(step, `Provide a collection${optional ? " (optional)" : ""}`, false, optional);
+                    setStepDescription(step, STEP_DESCRIPTIONS[modelClass], false, optional);
+                }
+            } else if (Object.keys(STEP_DESCRIPTIONS).includes(modelClass)) {
+                if (!dataInput || dataInput.toString().trim() === "") {
+                    setStepDescription(step, STEP_DESCRIPTIONS[modelClass], false, optional);
+                } else {
+                    let text: string;
+                    switch (modelClass) {
+                        case "ColorToolParameter":
+                            text = dataInput as string;
+                            break;
+                        case "DirectoryUriToolParameter":
+                            text = `Directory: <b>${dataInput}</b>`;
+                            break;
+                        default:
+                            text = `<b>${dataInput}</b>`;
+                    }
+                    setStepDescription(step, text, true);
                 }
             } else {
                 set(step, "nodeText", "This is an input");
@@ -148,6 +141,8 @@ function setStepDescription(step: any, text: string | boolean, populated: boolea
     // "" for optional inputs and `ok` for populated inputs
     const headerClass = optional ? "" : populated ? "ok" : "paused";
     const headerIcon = populated ? faCheckCircle : faExclamationCircle;
+
+    text = typeof text === "boolean" ? text : !optional ? text : `${text} (optional)`;
 
     set(step, "nodeText", text);
     set(step, "headerClass", getHeaderClass(headerClass));
