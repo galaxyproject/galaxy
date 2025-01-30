@@ -311,7 +311,7 @@ class WorkflowRunCrateProfileBuilder:
                             "position": position[0],
                             "name": step.tool_id,
                             "description": step_description,
-                            "workExample": f"#{step.tool_id}"
+                            "workExample": f"#{step.tool_id}",
                         },
                     )
                 )
