@@ -16,10 +16,13 @@ const visualizationConfig = ref();
 const visualizationKey = ref(0);
 const visualizationName = ref();
 
+const currentContent = ref(props.content);
+
 function onChange(newContent: string) {
     const newContentObj = JSON.parse(newContent);
     const mergedContent = { visualization_name: visualizationName.value, ...newContentObj };
-    emit("change", JSON.stringify(mergedContent));
+    currentContent.value = JSON.stringify(mergedContent, null, 4);
+    emit("change", currentContent.value);
 }
 
 watch(
@@ -38,7 +41,10 @@ watch(
             if (!visualizationName.value) {
                 throw new Error("Please add a 'visualization_name` to the dictionary.");
             }
-            visualizationKey.value++;
+            if (currentContent.value !== props.content) {
+                currentContent.value = props.content;
+                visualizationKey.value++;
+            }
         } catch (e) {
             errorMessage.value = String(e);
         }
