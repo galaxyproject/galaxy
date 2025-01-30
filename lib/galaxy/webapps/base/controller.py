@@ -613,87 +613,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     slug_builder = SlugBuilder()
 
-    def save_visualization(self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None):
-        session = trans.sa_session
-
-        # Create/get visualization.
-        if not id:
-            # Create new visualization.
-            vis = self._create_visualization(trans, title, type, dbkey, slug, annotation)
-        else:
-            decoded_id = trans.security.decode_id(id)
-            vis = session.get(model.Visualization, decoded_id)
-            # TODO: security check?
-
-        # Create new VisualizationRevision that will be attached to the viz
-        vis_rev = trans.model.VisualizationRevision()
-        vis_rev.visualization = vis
-        # do NOT alter the dbkey
-        vis_rev.dbkey = vis.dbkey
-        # do alter the title and config
-        vis_rev.title = title
-
-        # -- Validate config. --
-
-        if vis.type == "trackster":
-
-            def unpack_track(track_dict):
-                """Unpack a track from its json."""
-                dataset_dict = track_dict["dataset"]
-                return {
-                    "dataset_id": trans.security.decode_id(dataset_dict["id"]),
-                    "hda_ldda": dataset_dict.get("hda_ldda", "hda"),
-                    "track_type": track_dict["track_type"],
-                    "prefs": track_dict["prefs"],
-                    "mode": track_dict["mode"],
-                    "filters": track_dict["filters"],
-                    "tool_state": track_dict["tool_state"],
-                }
-
-            def unpack_collection(collection_json):
-                """Unpack a collection from its json."""
-                unpacked_drawables = []
-                drawables = collection_json["drawables"]
-                for drawable_json in drawables:
-                    if "track_type" in drawable_json:
-                        drawable = unpack_track(drawable_json)
-                    else:
-                        drawable = unpack_collection(drawable_json)
-                    unpacked_drawables.append(drawable)
-                return {
-                    "obj_type": collection_json["obj_type"],
-                    "drawables": unpacked_drawables,
-                    "prefs": collection_json.get("prefs", []),
-                    "filters": collection_json.get("filters", None),
-                }
-
-            # TODO: unpack and validate bookmarks:
-            def unpack_bookmarks(bookmarks_json):
-                return bookmarks_json
-
-            # Unpack and validate view content.
-            view_content = unpack_collection(config["view"])
-            bookmarks = unpack_bookmarks(config["bookmarks"])
-            vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
-            # Viewport from payload
-            viewport = config.get("viewport")
-            if viewport:
-                chrom = viewport["chrom"]
-                start = viewport["start"]
-                end = viewport["end"]
-                overview = viewport["overview"]
-                vis_rev.config["viewport"] = {"chrom": chrom, "start": start, "end": end, "overview": overview}
-        else:
-            # Default action is to save the config as is with no validation.
-            vis_rev.config = config
-
-        vis.latest_revision = vis_rev
-        session.add(vis_rev)
-        with transaction(session):
-            session.commit()
-        encoded_id = trans.security.encode_id(vis.id)
-        return {"vis_id": encoded_id, "url": url_for(controller="visualization", action=vis.type, id=encoded_id)}
-
     def get_tool_def(self, trans, hda):
         """Returns definition of an interactive tool for an HDA."""
 
@@ -741,10 +660,14 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                dataset_id = track_dict["dataset_id"]
+                unencoded_id = track_dict.get("dataset_id")
+                if unencoded_id:
+                    encoded_id = trans.security.encode_id(unencoded_id)
+                else:
+                    encoded_id = track_dict["dataset"]["id"]
                 hda_ldda = track_dict.get("hda_ldda", "hda")
-                dataset_id = trans.security.encode_id(dataset_id)
-                dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
+
+                dataset = self.get_hda_or_ldda(trans, hda_ldda, encoded_id)
                 try:
                     prefs = track_dict["prefs"]
                 except KeyError:

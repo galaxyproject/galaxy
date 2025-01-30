@@ -618,6 +618,7 @@ def populate_api_routes(webapp, app):
         "/plugins/visualizations/{visualization_name}/saved",
         controller="visualization",
         action="saved",
+        conditions={"method": ["POST"]},
     )
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect(
