@@ -53,6 +53,7 @@ URI_PREFIXES = [
         "drs",
         "invenio",
         "zenodo",
+        "dataverse",
     ]
 ]
 
