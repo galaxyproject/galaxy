@@ -46,7 +46,7 @@ class ModelOperationToolAction(DefaultToolAction):
             tool, trans, incoming, history, current_user_roles, collection_info
         )
 
-        tool.check_inputs_ready(inp_data, inp_dataset_collections)
+        tool.check_inputs_ready(inp_data, inp_dataset_collections, security=trans.security)
 
     def execute(
         self,
