@@ -115,7 +115,7 @@ watch(
     () => props.job_id,
     async (newId, oldId) => {
         if (newId && (invocationId.value === undefined || newId !== oldId)) {
-            const invocation = await fetchInvocationForJob({ jobId: newId });
+            const invocation = await fetchInvocationForJob(newId);
             if (invocation) {
                 invocationId.value = invocation.id;
             } else {
