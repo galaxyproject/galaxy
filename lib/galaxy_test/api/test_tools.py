@@ -202,6 +202,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self._assert_has_keys(case2_inputs[0], "name", "type", "label", "help", "argument")
         assert case2_inputs[0]["name"] == "seed"
 
+    @skip_without_tool("gx_conditional_select")
+    def test_invalid_conditional_payload_handled(self):
+        with self.dataset_populator.test_history() as history_id:
+            # Invalid request, should be `{"conditional_parameter": {"test_parameter": "A"}}`
+            response = self._run(
+                tool_id="gx_conditional_select", history_id=history_id, inputs={"conditional_parameter": "A"}
+            )
+            assert response.status_code == 400
+            assert (
+                response.json()["err_msg"]
+                == "Invalid value 'A' submitted for conditional parameter 'conditional_parameter'."
+            )
+
     @skip_without_tool("multi_data_param")
     def test_show_multi_data(self):
         tool_info = self._show_valid_tool("multi_data_param")
