@@ -12,6 +12,7 @@ from typing import (
 
 from boltons.iterutils import remap
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
@@ -243,6 +244,10 @@ def visit_input_values(
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = f"{name_prefix + input.name}|"
+            if not isinstance(values, dict):
+                raise RequestParameterInvalidException(
+                    f"Invalid value '{values}' submitted for conditional parameter '{name_prefix + input.name}'."
+                )
             case_error = None if get_current_case(input, values) >= 0 else "The selected case is unavailable/invalid."
             callback_helper(
                 input.test_param,
