@@ -9,10 +9,18 @@ const props = defineProps<{
     name?: string;
 }>();
 
+const emit = defineEmits(["change"]);
+
 const errorMessage = ref("");
 const visualizationConfig = ref();
 const visualizationKey = ref(0);
 const visualizationName = ref();
+
+function onChange(newContent: string) {
+    const newContentObj = JSON.parse(newContent);
+    const mergedContent = { visualization_name: visualizationName.value, ...newContentObj };
+    emit("change", JSON.stringify(mergedContent));
+}
 
 watch(
     () => props.content,
@@ -50,7 +58,8 @@ watch(
         :key="visualizationKey"
         class="markdown-visualization"
         :config="visualizationConfig"
-        :name="visualizationName" />
+        :name="visualizationName"
+        @change="onChange" />
 </template>
 
 <style>

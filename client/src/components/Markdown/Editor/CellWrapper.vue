@@ -17,7 +17,10 @@
                 <MarkdownDefault v-if="name === 'markdown'" :content="content" />
                 <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
                 <MarkdownVega v-else-if="name === 'vega'" :content="content" />
-                <MarkdownVisualization v-else-if="name === 'visualization'" :content="content" />
+                <MarkdownVisualization
+                    v-else-if="name === 'visualization'"
+                    :content="content"
+                    @change="$emit('change', $event)" />
                 <MarkdownVisualization
                     v-else-if="name === 'vitessce'"
                     attribute="dataset_content"
