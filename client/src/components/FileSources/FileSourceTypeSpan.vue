@@ -12,6 +12,7 @@ const MESSAGES = {
     webdav: "This is a remote file source plugin based on the WebDAV protocol.",
     dropbox: "This is a file source plugin that connects with the commercial Dropbox service.",
     googledrive: "This is a file source plugin that connects with the commercial Google Drive service.",
+    elabftw: "This is a remote file source that connects with an eLabFTW instance.",
 };
 
 interface Props {
