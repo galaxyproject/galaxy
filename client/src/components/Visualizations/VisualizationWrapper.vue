@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
+import { debounce } from "lodash";
 import { onMounted, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
+
+const DELAY = 300;
 
 interface Props {
     name: string;
@@ -10,6 +13,12 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits(["change"]);
+
+const emitChange = debounce((newValue: string) => {
+    emit("change", newValue);
+}, DELAY);
 
 const errorMessage = ref("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
@@ -67,7 +76,9 @@ onMounted(async () => {
 
             // Add event listener
             iframe.contentWindow?.addEventListener("message", (event) => {
-                console.log(event.data);
+                if (event.data.source === "galaxy-charts" && event.data.content) {
+                    emitChange(event.data.content);
+                }
             });
 
             // Reset error message

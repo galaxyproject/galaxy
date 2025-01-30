@@ -24,7 +24,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["update"]);
+const emit = defineEmits(["change"]);
 
 const editor = ref(null);
 
