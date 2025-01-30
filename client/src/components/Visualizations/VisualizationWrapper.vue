@@ -76,7 +76,7 @@ onMounted(async () => {
 
             // Add event listener
             iframe.contentWindow?.addEventListener("message", (event) => {
-                if (event.data.source === "galaxy-charts" && event.data.content) {
+                if (event.data.from === "galaxy-visualization" && event.data.content) {
                     emitChange(event.data.content);
                 }
             });
