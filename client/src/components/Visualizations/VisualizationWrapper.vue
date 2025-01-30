@@ -64,6 +64,13 @@ onMounted(async () => {
                 link.href = `${pluginPath}${plugin.entry_point.attr.css}`;
                 iframeDocument.head.appendChild(link);
             }
+
+            // Add event listener
+            iframe.contentWindow?.addEventListener("message", (event) => {
+                console.log(event.data);
+            });
+
+            // Reset error message
             errorMessage.value = "";
         } else {
             errorMessage.value = "Frame has been invalidated.";
