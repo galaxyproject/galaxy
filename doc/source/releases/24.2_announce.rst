@@ -307,10 +307,6 @@ Release testing:
 * `Aysam Guerler <https://github.com/guerler>`__
 * `Srividya Ramakrishnan <https://github.com/Srividya22>`__
 
-Communications:
-
-* `Natalie Whitaker-Allen <https://github.com/natwhitaker>`__
-
 A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
 
 ----
