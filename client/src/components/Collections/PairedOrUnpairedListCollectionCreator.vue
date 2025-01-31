@@ -266,7 +266,12 @@ function initialize() {
             currentForwardFilter.value = forwardFilter;
             currentReverseFilter.value = reverseFilter;
         } else {
-            currentSummary.value = undefined;
+            autoPair(
+                activeElements.value,
+                "",
+                "",
+                removeExtensions.value
+            );
         }
     } else {
         autoPair(
@@ -518,7 +523,21 @@ function onUnpair(pair: GenericPair<HistoryItemSummary>) {
     _refresh();
 }
 
-function onRemove(item: GenericPair<HistoryItemSummary> | { unpaired: HistoryItemSummary }, refresh = true) {
+type UnpairedValue = { unpaired: HistoryItemSummary };
+
+const activeUnpairedTarget = ref<UnpairedValue | null>(null);
+
+function onUnpairedClick(value: UnpairedValue) {
+    if (activeUnpairedTarget.value == null) {
+        activeUnpairedTarget.value = value;
+    } else {
+        const forwardId = activeUnpairedTarget.value.unpaired.id;
+        activeUnpairedTarget.value = null;
+        onPair(forwardId, value.unpaired.id);
+    }
+}
+
+function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh = true) {
     let rowId = null as string | null;
     if ("forward" in item) {
         rowId = item.forward.id;
@@ -588,6 +607,7 @@ const context = {
     pinia,
     onPair,
     onUnpair,
+    onUnpairedClick,
     onRemove,
     onSwap,
 };

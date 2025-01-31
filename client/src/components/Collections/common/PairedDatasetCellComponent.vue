@@ -42,6 +42,9 @@ export default defineComponent({
         onSwap() {
             this.params.context.onSwap(this.params.value);
         },
+        onUnpairedClick() {
+            this.params.context.onUnpairedClick(this.params.value);
+        },
         onDragStart() {
             this.pairingTargetsStore().startDrag(this.params.value.unpaired?.id);
         },
@@ -86,6 +89,7 @@ export default defineComponent({
                 class="icon-wrapper"
                 :class="{ dragging: dragging, 'drop-target': dropOver }"
                 :draggable="true"
+                @click="onUnpairedClick"
                 @dragstart="onDragStart"
                 @dragover.prevent
                 @dragenter="onDragEnter"

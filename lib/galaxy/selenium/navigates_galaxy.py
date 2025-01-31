@@ -2032,6 +2032,20 @@ class NavigatesGalaxy(HasDriver):
             return False
         return item_component.details.is_displayed
 
+    def history_panel_build_list_auto(self):
+        return self.use_bootstrap_dropdown(option="auto build list", menu="selected content menu")
+
+    def history_panel_build_list_advanced(self):
+        return self.use_bootstrap_dropdown(option="advanced build list", menu="selected content menu")
+
+    def history_panel_build_list_of_pairs(self):
+        self.history_panel_build_list_advanced()
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.which_builder(builder="list:paired").wait_for_and_click()
+        list_wizard.wizard_next_button.wait_for_and_click()
+        list_wizard.auto_pairing.wait_for_visible()
+        list_wizard.wizard_next_button.wait_for_and_click()
+
     def collection_builder_set_name(self, name):
         # small sleep here seems to be needed in the case of the
         # collection builder even though we wait for the component
@@ -2049,7 +2063,12 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector('[data-description="hide original elements"]')
 
     def collection_builder_create(self):
-        self.wait_for_and_click_selector("button.create-collection")
+        list_wizard_create = self.components.collection_builders.list_wizard.create
+        modal_create = self.components.collection_builders.modals.create
+        if list_wizard_create.is_displayed:
+            list_wizard_create.wait_for_and_click()
+        else:
+            modal_create.wait_for_and_click()
 
     def ensure_collection_builder_filters_cleared(self):
         clear_filters = self.components.collection_builders.clear_filters

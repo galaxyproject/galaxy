@@ -44,6 +44,9 @@ function onUpdate(forwardFilter: string, reverseFilter: string) {
 }
 
 const applyButtonTitle = computed(() => localize("Apply Auto Pairing"));
+const hasUnmatchedDatasets = computed(() => {
+    return (currentSummary.value?.unpaired.length || 0) > 0;
+});
 const whereIsTheBuilder = computed(() => {
     if (props.mode == "modal") {
         return `back in the main table of this builder after you click '${applyButtonTitle.value}' below'.`;
@@ -58,7 +61,7 @@ function onApply() {
 </script>
 
 <template>
-    <div class="collection-creator">
+    <div class="collection-creator" data-description="auto pairing">
         <div class="middle flex-row flex-row-container">
             <PairingFilterInputGroup
                 :forward-filter="currentForwardFilter"
@@ -81,23 +84,32 @@ function onApply() {
                     >)
                 </li>
             </ol>
-            <div class="summary-list-header mt-2">Un-matched Datasets</div>
-            <div class="summary-list-description">
-                These datasets were not paired automatically. This builder will allow you to match any of pairs of these
-                manually {{ whereIsTheBuilder }}.
-                <span v-if="collectionType == 'list:paired'">
-                    All unmatched datasets will not be included in the final list of paired datasets.
-                </span>
-                <span v-else>
-                    Any of these datasets will be included in the final list if they are not discarded.
-                </span>
-            </div>
-            <ol class="summary-list">
-                <li v-for="(unpairedDataset, index) of currentSummary?.unpaired" :key="`unpaired_${index}`">
-                    <span v-if="index > 0">,</span>
-                    <span class="unpaired-dataset-name dataset-name">{{ unpairedDataset.name }}</span>
-                </li>
-            </ol>
+            <span v-if="hasUnmatchedDatasets">
+                <div class="summary-list-header mt-2">Un-matched Datasets</div>
+                <div class="summary-list-description">
+                    These datasets were not paired automatically. This builder will allow you to match any of pairs of these
+                    manually {{ whereIsTheBuilder }}.
+                    <span v-if="collectionType == 'list:paired'">
+                        All unmatched datasets will not be included in the final list of paired datasets.
+                    </span>
+                    <span v-else>
+                        Any of these datasets will be included in the final list if they are not discarded.
+                    </span>
+                </div>
+                <ol class="summary-list">
+                    <li v-for="(unpairedDataset, index) of currentSummary?.unpaired" :key="`unpaired_${index}`">
+                        <span v-if="index > 0">,</span>
+                        <span class="unpaired-dataset-name dataset-name">{{ unpairedDataset.name }}</span>
+                    </li>
+                </ol>
+            </span>
+            <span v-else>
+                <div class="summary-list-header mt-2">No Un-matched Datasets</div>
+                <div class="summary-list-description">
+                    All datasets successfully auto-paired, this is generally a good sign Galaxy
+                    was able to correctly pair off all supplied datasets using their names.
+                </div>
+            </span>
         </div>
         <div v-if="mode == 'modal'" class="footer flex-row">
             <div class="actions vertically-spaced d-flex justify-content-between">
