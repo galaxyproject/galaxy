@@ -11,8 +11,10 @@ Enhancements
 
 .. major_feature
 
-
 .. feature
+
+Features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Backport of Workflow Editor Activity Bar
   (thanks to `@dannon <https://github.com/dannon>`__).
@@ -38,7 +40,11 @@ Enhancements
 * Feature - stdout live reporting
   (thanks to `@gecage952 <https://github.com/gecage952>`__).
   `Pull Request 16975`_
+
 .. enhancement_tag_viz
+
+Vizualization enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Fix MSA viz, new dependency specification options
   (thanks to `@dannon <https://github.com/dannon>`__).
@@ -67,7 +73,11 @@ Enhancements
 * Remove OpenLayers legacy files and add SVG logo
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 19135`_
+
 .. enhancement_tag_datatypes
+
+Datatype enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Add pod5 datatype
   (thanks to `@TomHarrop <https://github.com/TomHarrop>`__).
@@ -84,7 +94,11 @@ Enhancements
 * Add XML based `vtk` datatype
   (thanks to `@tStehling <https://github.com/tStehling>`__).
   `Pull Request 19104`_
+
 .. enhancement_tag_tools
+
+Tool enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Update GPU JupyterLab tool
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
@@ -107,7 +121,11 @@ Enhancements
 * Add Interactive Tool Ilastik
   (thanks to `@lldelisle <https://github.com/lldelisle>`__).
   `Pull Request 16837`_
+
 .. enhancement_tag_workflows
+
+Workflow enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Fix usability of workflow best practice attribute checking.
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
@@ -154,7 +172,11 @@ Enhancements
 * Allow recovering a normalized version of workflow request state from API
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 18985`_
+
 .. enhancement_tag_ui
+
+UI enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Enable verbatimModuleSyntax, fix jest usage
   (thanks to `@dannon <https://github.com/dannon>`__).
@@ -165,7 +187,11 @@ Enhancements
 * Upgrade `openapi-typescript` to 7.0.2 + swap to `openapi-fetch`
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 18532`_
+
 .. enhancement_tag_jobs
+
+Job enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Record container id and type in core job metrics
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -176,7 +202,11 @@ Enhancements
 * Allow to overwrite `real_system_username` per destination
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 18945`_
+
 .. enhancement_tag_admin
+
+Admin enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Remove `defaults` channel for conda usage
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
@@ -199,7 +229,11 @@ Enhancements
 * Better cleanup of sharing roles on user purge
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 19096`_
+
 .. enhancement
+
+Misc. enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Activity bar add new workflow button
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
@@ -447,6 +481,7 @@ Enhancements
 * Add linters for datatypes
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 17600`_
+
 .. small_enhancement
 
 * Update versions of GitHub actions
@@ -546,6 +581,9 @@ Fixes
 
 .. bug_tag_viz
 
+Vizualization fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 * Update visualizations package versions
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 19232`_
@@ -555,12 +593,20 @@ Fixes
 * Restore access to saved visualizations
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 19136`_
+
 .. bug_tag_datatypes
+
+Datatype fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Add gtf to auto_compressed_types
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 19175`_
+
 .. bug_tag_tools
+
+Tool fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Drop "Send to cloud" tool and associated cloudauthz code
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
@@ -568,7 +614,11 @@ Fixes
 * Fix commas that shouldn't be in biotools_mappings.tsv
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 18919`_
+
 .. bug_tag_workflows
+
+Workflow fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Fix workflows with optional non-default parameter input
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -579,7 +629,11 @@ Fixes
 * Fix collection type drag and drop validation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 18623`_
+
 .. bug_tag_ui
+
+UI fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Bump requirejs from 2.3.6 to 2.3.7 in /client
   (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
@@ -602,14 +656,22 @@ Fixes
 * Bump dompurify from 2.3.10 to 3.1.6 in /client
   (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
   `Pull Request 18880`_
+
 .. bug_tag_jobs
+
+Job fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Fixes random job failures in kubernetes
   (thanks to `@mapk-amazon <https://github.com/mapk-amazon>`__).
   `Pull Request 19001`_
+
 .. bug_tag_admin
 
 .. bug
+
+Misc. fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Fix handling of step id offsets when duplicating selections
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
