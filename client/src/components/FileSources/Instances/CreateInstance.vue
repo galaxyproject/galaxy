@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
+import { faUserGear } from "font-awesome-6";
 import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
@@ -84,7 +86,12 @@ watch(
     <div>
         <div class="d-flex">
             <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">
-                <RouterLink to="/file_source_instances/index"> Remote File Sources</RouterLink> /
+                <RouterLink to="/user">
+                    <FontAwesomeIcon v-b-tooltip.hover.noninteractive :icon="faUserGear" title="User preferences" />
+                </RouterLink>
+                /
+                <RouterLink to="/file_source_instances/index"> Remote File Sources</RouterLink>
+                /
                 <RouterLink to="/file_source_instances/create"> Templates</RouterLink>
                 / {{ template?.name || "Template" }}
             </Heading>
