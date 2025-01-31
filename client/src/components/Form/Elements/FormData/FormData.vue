@@ -758,7 +758,7 @@ const noOptionsWarningMessage = computed(() => {
             :collection-types="props.collectionTypes"
             :workflow-tab.sync="workflowTab"
             @focus="scrollToBrowseSection"
-            @created-collection="($event) => handleIncoming($event)" />
+            @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
     </div>
 </template>
 

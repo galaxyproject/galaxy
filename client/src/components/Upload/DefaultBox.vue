@@ -415,7 +415,13 @@ defineExpose({
                     Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
                 </div>
             </div>
-            <input ref="uploadFile" type="file" :multiple="multiple" @change="addFiles($event.target.files)" />
+            <label class="sr-only" for="upload-file">Uploaded File</label>
+            <input
+                id="upload-file"
+                ref="uploadFile"
+                type="file"
+                :multiple="multiple"
+                @change="addFiles($event.target.files)" />
         </UploadBox>
         <div v-if="!disableFooter" class="upload-footer text-center">
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
@@ -447,7 +453,7 @@ defineExpose({
                 @input="updateDbKey" />
         </div>
         <slot name="footer" />
-        <div class="upload-buttons d-flex justify-content-end">
+        <div class="d-flex justify-content-end" :class="!disableFooter && 'upload-buttons'">
             <BButton id="btn-local" :disabled="!enableSources" @click="uploadFile.click()">
                 <FontAwesomeIcon icon="fa-laptop" />
                 <span v-localize>Choose local file</span>
