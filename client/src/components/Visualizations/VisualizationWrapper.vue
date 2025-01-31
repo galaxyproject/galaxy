@@ -8,8 +8,9 @@ import { getAppRoot } from "@/onload/loadConfig";
 const DELAY = 300;
 
 interface Props {
-    name: string;
-    config: object;
+    config: Object;
+    name: String;
+    title: String;
 }
 
 const props = defineProps<Props>();
@@ -31,12 +32,12 @@ onMounted(async () => {
 
     try {
         const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
-
         const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/`;
         const dataIncoming = {
             root: getAppRoot(),
-            visualization_plugin: plugin,
             visualization_config: props.config,
+            visualization_plugin: plugin,
+            visualization_title: props.title,
         };
 
         const iframe = iframeRef.value;
