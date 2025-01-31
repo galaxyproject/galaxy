@@ -494,19 +494,28 @@ function scrollToBrowseSection() {
 function onDragEnter(evt: DragEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
-        const extensions = (eventData.extension as string) || (eventData.elements_datatypes as Array<string>);
+        let eventFiles: any[];
+        if (eventStore.multipleDragData) {
+            eventFiles = Object.values(eventData);
+        } else {
+            eventFiles = [eventData];
+        }
+
         let highlightingState = "success";
-        if (!canAcceptDatatype(extensions)) {
-            highlightingState = "warning";
-            $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
-        } else if (
-            !canAcceptSrc(
-                eventData.history_content_type as "dataset" | "dataset_collection",
-                eventData.collection_type as CollectionType
-            )
-        ) {
-            highlightingState = "warning";
-            $emit("alert", `${eventData.history_content_type} is not an acceptable input type for this parameter.`);
+        for (const eventFile of eventFiles) {
+            const extensions = (eventFile.extension as string) || (eventFile.elements_datatypes as Array<string>);
+            if (!canAcceptDatatype(extensions)) {
+                highlightingState = "warning";
+                $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
+            } else if (
+                !canAcceptSrc(
+                    eventFile.history_content_type as "dataset" | "dataset_collection",
+                    eventFile.collection_type as CollectionType
+                )
+            ) {
+                highlightingState = "warning";
+                $emit("alert", `${eventFile.history_content_type} is not an acceptable input type for this parameter.`);
+            }
         }
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
