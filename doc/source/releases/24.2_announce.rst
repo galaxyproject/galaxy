@@ -270,10 +270,6 @@ config/galaxy.yml.sample:galaxy
 -  mapping.galaxy.mapping.conda_auto_init
 
 
-Deprecation Notices
-===========================================================
-Add content or drop section.
-
 Developer Notes
 ===========================================================
 
