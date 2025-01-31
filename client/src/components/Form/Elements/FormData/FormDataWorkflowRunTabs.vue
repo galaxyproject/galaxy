@@ -6,16 +6,16 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
-import { useConfig } from "@/composables/config";
+import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 import type { DataOption } from "./types";
 import type { VariantInterface } from "./variants";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
+import CollectionCreatorShowExtensions from "@/components/Collections/common/CollectionCreatorShowExtensions.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
-import UploadContainer from "@/components/Upload/UploadContainer.vue";
+import DefaultBox from "@/components/Upload/DefaultBox.vue";
 
 const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     list: "list",
@@ -39,7 +39,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "focus"): void;
-    (e: "created-collection", collection: Record<string, any>): void;
+    (e: "uploaded-data", data: any): void;
     (e: "update:workflow-tab", value: string): void;
 }>();
 
@@ -56,26 +56,22 @@ const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) 
 );
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
-const { currentUser } = storeToRefs(useUserStore());
 
 // Upload properties
-const { config, isConfigLoaded } = useConfig();
+const {
+    configOptions,
+    effectiveExtensions,
+    listDbKeys,
+    ready: uploadReady,
+} = useUploadConfigurations(props.extensions);
 
-const configOptions = computed(() =>
-    isConfigLoaded.value
-        ? {
-              chunkUploadSize: config.value.chunk_upload_size,
-              fileSourcesConfigured: config.value.file_sources_configured,
-              ftpUploadSite: config.value.ftp_upload_site,
-              defaultDbKey: config.value.default_genome || "",
-              defaultExtension: config.value.default_extension || "",
-          }
-        : {}
-);
-
-function collectionCreated(collection: Record<string, any>) {
-    emit("created-collection", collection);
+function addUploadedFiles(value: any[]) {
+    emit("uploaded-data", value);
     emit("focus");
+}
+
+function collectionCreated(collection: any) {
+    addUploadedFiles([collection]);
 }
 
 function goToFirstWorkflowTab() {
@@ -84,7 +80,6 @@ function goToFirstWorkflowTab() {
 }
 
 // TODO:
-// - Add support for emitting upload data from the UploadContainer tab (multiple files as well)
 // - Add support for the browse files option we have in FormData
 </script>
 
@@ -112,13 +107,23 @@ function goToFirstWorkflowTab() {
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
                     <span v-localize>Browse or Upload Datasets</span>
                 </template>
-                <UploadContainer
-                    v-if="currentHistoryId && currentUser && 'id' in currentUser"
-                    :current-user-id="currentUser?.id"
-                    :current-history-id="currentHistoryId"
-                    no-collection-tab
+                <DefaultBox
+                    v-if="currentHistoryId && uploadReady"
+                    :effective-extensions="effectiveExtensions"
                     v-bind="configOptions"
-                    @dismiss="goToFirstWorkflowTab" />
+                    :has-callback="false"
+                    :history-id="currentHistoryId"
+                    :list-db-keys="listDbKeys"
+                    disable-footer
+                    emit-uploaded
+                    @uploaded="addUploadedFiles"
+                    @dismiss="goToFirstWorkflowTab">
+                    <template v-slot:footer>
+                        <CollectionCreatorShowExtensions
+                            :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
+                            upload />
+                    </template>
+                </DefaultBox>
             </BTab>
         </template>
         <template v-if="currentHistoryId && effectiveCollectionTypes && effectiveCollectionTypes?.length > 0">
