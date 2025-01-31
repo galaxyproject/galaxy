@@ -130,7 +130,7 @@ export default {
             workflows: {},
             invocations: {},
             loading: true,
-            workflowID: "",
+            workflowID: undefined,
         };
     },
     computed: {
@@ -159,7 +159,7 @@ export default {
             return "unavailable";
         },
         workflowVersions() {
-            return this.getStoredWorkflowByInstanceId(this.workflowID);
+            return this.workflowID ? this.getStoredWorkflowByInstanceId(this.workflowID) : undefined;
         },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
@@ -172,7 +172,9 @@ export default {
     },
     created() {
         this.initConfig();
-        this.fetchWorkflowForInstanceId(this.workflowID);
+        if (this.workflowID) {
+            this.fetchWorkflowForInstanceId(this.workflowID);
+        }
     },
     methods: {
         ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
@@ -188,7 +190,7 @@ export default {
                 this.workflows = config.workflows || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
-                this.workflowID = Object.keys(this.markdownConfig?.workflows ?? {})[0] ?? "";
+                this.workflowID = Object.keys(this.markdownConfig?.workflows ?? {})[0];
             }
         },
         splitMarkdown(markdown) {
