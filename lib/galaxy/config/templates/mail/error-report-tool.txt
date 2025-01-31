@@ -1,0 +1,26 @@
+GALAXY ERROR REPORT: TOOL
+------------------------
+
+This error report was sent from the Galaxy instance hosted on the server
+"{{ host }}"
+-----------------------------------------------------------------------------
+This is in reference to tool id {{ job_tool_id }} {{ job_tool_version }} from history id {{ history_id }} ({{ history_id_encoded }})
+-----------------------------------------------------------------------------
+You should be able to view the history by logging in as a Galaxy admin user
+to the Galaxy instance referenced above and pointing your browser to the 
+following link.
+
+{{ history_view_link }}
+-----------------------------------------------------------------------------
+The user {{ email_str }} provided the following information:
+
+{{ message }}
+-----------------------------------------------------------------------------
+Detailed Tool Information:
+tool id: {{ job_tool_id }}
+tool version: {{ job_tool_version }}
+-----------------------------------------------------------------------------
+Tool Execution and Failure Information:
+{{ transcript }}
+-----------------------------------------------------------------------------
+(This is an automated message).

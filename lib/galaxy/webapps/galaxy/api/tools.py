@@ -8,25 +8,12 @@ from typing import (
     List,
     Optional,
 )
-from galaxy.schema.tools import (
-    # DeleteJobPayload,
-    # EncodedJobDetails,
-    # JobConsoleOutput,
-    # JobDestinationParams,
-    # JobDisplayParametersSummary,
-    # JobErrorSummary,
-    # JobInputAssociation,
-    # JobInputSummary,
-    # JobOutputAssociation,
-    ReportToolErrorPayload,
-    # SearchJobsPayload,
-    # ShowFullJobResponse,
-)
 from fastapi import (
     Body,
     Depends,
     Request,
     UploadFile,
+    Path,
 )
 from typing_extensions import Annotated
 from starlette.datastructures import UploadFile as StarletteUploadFile
@@ -39,6 +26,9 @@ from galaxy import (
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesUserContext,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.schema.fetch_data import (
@@ -48,6 +38,9 @@ from galaxy.schema.fetch_data import (
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
+from galaxy.util import (
+    unicodify,
+)
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -65,7 +58,7 @@ from . import (
     DependsOnTrans,
     Router,
 )
-from webob import Response
+from galaxy.tools.errors import EmailErrorReporterTool
 
 log = logging.getLogger(__name__)
 
@@ -121,6 +114,41 @@ class FetchTools:
         files: List[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
+
+
+@router.cbv
+class EmailReportTools:
+    @router.post(
+        "/api/tools/{tool_id}/error",
+        public=True,
+        summary="Get tool error details",
+        response_model=None,
+    )
+    def error(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        tool_id: str = Path(..., description="The ID of the tool"),
+        payload: dict = Body(..., description="The Payload from the form"),
+    ) -> Any:
+        args = _kwd_or_payload(payload)
+        email = args.get("email", None)
+        message = args.get("message", None)
+        reportable_data = args.get("reportable_data", None)
+        try:
+            error_reporter = EmailErrorReporterTool
+            error_reporter.create_report_tool(
+                self=trans,
+                user=trans.user,
+                reportable_data=reportable_data,
+                email=email,
+                message=message,
+                redact_user_details_in_bugreport=trans.app.config.redact_user_details_in_bugreport,
+            )
+            return ("Your error report has been sent", "success")
+        except Exception as e:
+            msg = f"An error occurred sending the report by email: {unicodify(e)}"
+            log.info(msg)
+            return (msg, "danger")
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -610,19 +638,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self.service._create(trans, payload, **kwd)
-
-    @web.expose # TODO Try: @expose_api
-    def error(
-        self,
-        payload: Annotated[ReportToolErrorPayload, ReportErrorBody],
-        id: str,
-        trans: GalaxyWebTransaction,
-    ):
-        """
-        POST /api/tools/{tool_id}/error
-        Submit bug report.
-        """
-        return Response("ok", status=200, content_type="text/html")
 
 
 def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:

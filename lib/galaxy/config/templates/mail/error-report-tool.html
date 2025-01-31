@@ -1,0 +1,43 @@
+<html>
+  <body>
+    <h1>Galaxy Error Report: Tool</h1>
+    <span class="sub">
+    <i>from </i>
+    <span style="font-family: monospace;">
+    <a href="{{ host }}">{{ host }}</a>
+    </span>
+    </span>
+    <h3>Error Localization</h3>
+    <table style="margin:1em">
+      <tbody>
+        <tr style="background-color: #f2f2f2">
+          <td>History</td>
+          <td>
+            <a href="{{ history_view_link }}">{{ history_id }} ({{ history_id_encoded }})</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>User Provided Information</h3>
+    The user 
+    <span style="font-family: monospace;">{{ email_str }}</span> provided the following information:
+    <pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">{{ message }}</pre>
+    <h3>Detailed Tool Information</h3>
+    <table style="margin:1em">
+      <tbody>
+        <tr style="background-color: #f2f2f2">
+          <td>Tool ID</td>
+          <td>{{ job_tool_id }}</td>
+        </tr>
+        <tr>
+          <td>Tool Version</td>
+          <td>{{ job_tool_version }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>Tool Execution and Failure Information</h3>
+    <h4>Transcript</h4>
+    <pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">{{ transcript }}</pre>
+    This is an automated message. Do not reply to this address.
+  </body>
+</html>

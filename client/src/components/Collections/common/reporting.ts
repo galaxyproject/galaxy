@@ -6,7 +6,7 @@ export type ReportType = "dataset" | "tool";
 
 export async function dispatchReport(
     reportType: ReportType,
-    reportableData: any, // HDADetailed,
+    reportableData: HDADetailed | any, // TODO Better option for Tools than "any" ?
     message: string,
     email: string
 ) {
@@ -44,7 +44,7 @@ export async function submitReportDataset(
 }
 
 export async function submitReportTool(
-    reportableData: any, // HDADetailed,
+    reportableData: any,
     message: string,
     email: string
 ): Promise<{ messages: string[][]; error?: string }> {
@@ -52,11 +52,11 @@ export async function submitReportTool(
         const { data, error } = await GalaxyApi().POST("/api/tools/{tool_id}/error", {
             params: {
                 path: {
-                    tool_id: reportableData.id,
+                    tool_id: reportableData.tool_id,
                 },
             },
             body: {
-                tool_id: reportableData.id,
+                reportable_data: reportableData,
                 message,
                 email,
             },
@@ -65,8 +65,10 @@ export async function submitReportTool(
         if (error) {
             return { messages: [], error: errorMessageAsString(error) };
         }
-        return { messages: data.messages };
+        // return { messages: data.messages };
+        return { messages: [["Success!", "success"]] };
     } catch (err) {
+        console.log("api error (err)", err);
         return { messages: [], error: errorMessageAsString(err) };
     }
 }

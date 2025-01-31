@@ -15617,7 +15617,12 @@ export interface components {
              * @description Tool ID related to the error.
              * @example "myTool"
              */
-            tool_id: string;
+            /**
+             * Reportable Data
+             * @description The tool data related to the error.
+             * @example "{tool_id: 'myTool', params: {param1: 'value1', param2: 'value2'}}"
+             */
+            reportable_data: object;
             /**
              * Email
              * @description Email address for communication with the user. Only required for anonymous users.

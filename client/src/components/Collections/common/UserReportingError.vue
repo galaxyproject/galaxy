@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert, BButton, BCollapse, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { dispatchReport, type ReportType } from "@/components/Collections/common/reporting";
@@ -24,11 +24,11 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 const message = ref("");
 const errorMessage = ref("");
 const resultMessages = ref<string[][]>([]);
+const isExpanded = ref(<boolean>false);
 const showForm = computed(() => {
-    return true;
-    // const noResult = !resultMessages.value.length;
-    // const hasError = resultMessages.value.some((msg) => msg[1] === "danger");
-    // return noResult || hasError;
+    const noResult = !resultMessages.value.length;
+    const hasError = resultMessages.value.some((msg) => msg[1] === "danger");
+    return noResult || hasError;
 });
 const FIELD_MESSAGE = {
     loginRequired: localize("You must be logged in to send emails."),
@@ -39,6 +39,7 @@ const fieldMessages = computed(() =>
         Boolean
     )
 );
+const expandedIcon = computed(() => (isExpanded.value ? "-" : "+"));
 
 async function handleSubmit(reportType: ReportType, data?: any, email?: string | null) {
     if (!data || !email) {
@@ -74,6 +75,16 @@ async function handleSubmit(reportType: ReportType, data?: any, email?: string |
                 <span v-if="!props.reportableData">{{ FIELD_MESSAGE.dataRequired }}</span>
             </div>
             <FormElement v-if="props.reportableData" id="object-error-message" v-model="message" :area="true" />
+            <BLink
+                :aria-expanded="isExpanded ? 'true' : 'false'"
+                aria-controls="collapse-previous"
+                @click="isExpanded = !isExpanded">
+                ({{ expandedIcon }}) Error transcript:
+            </BLink>
+            <BCollapse id="collapse-previous" v-model="isExpanded">
+                <pre class="rounded code">{{ reportableData }}</pre>
+            </BCollapse>
+            <br />
             <BButton
                 id="data-error-submit"
                 v-b-tooltip.hover

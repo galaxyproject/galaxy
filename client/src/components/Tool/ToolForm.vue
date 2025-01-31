@@ -18,12 +18,9 @@
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
             </b-alert>
-            <small class="text-muted">
-                <pre>{{ errorContentPretty }}</pre>
-            </small>
             <UserReportingError
                 report-type="tool"
-                :reportable-data="this.errorContent"
+                :reportable-data="errorContent"
                 :reporting-email="currentUser?.email" />
         </b-modal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
@@ -188,7 +185,7 @@ export default {
             formData: undefined,
             remapAllowed: false,
             errorTitle: null,
-            errorContent: null,
+            // errorContent: null,
             errorMessage: "",
             messageShow: false,
             messageVariant: "",
@@ -210,6 +207,70 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            errorContent: {
+                history_id: "2d190d7d262b60f4",
+                tool_id: "__APPLY_RULES__",
+                tool_version: "1.1.0",
+                inputs: {
+                    input: {
+                        batch: false,
+                        product: false,
+                        values: [
+                            {
+                                id: "8237ee2988567c1c",
+                                src: "hdca",
+                                map_over_type: null,
+                            },
+                        ],
+                    },
+                    rules: {
+                        rules: [
+                            {
+                                type: "add_column_metadata",
+                                value: "identifier0",
+                                error: null,
+                                warn: null,
+                            },
+                            {
+                                type: "add_filter_regex",
+                                target_column: 0,
+                                expression: "cat",
+                                invert: false,
+                                error: null,
+                                warn: null,
+                            },
+                            {
+                                type: "swap_columns",
+                                target_column_0: 0,
+                                target_column_1: 0,
+                                error: null,
+                                warn: null,
+                            },
+                            {
+                                type: "add_filter_regex",
+                                target_column: 0,
+                                expression: "newbie",
+                                invert: false,
+                                error: null,
+                                warn: null,
+                            },
+                            {
+                                type: "add_column_rownum",
+                                start: 100,
+                                error: null,
+                                warn: null,
+                            },
+                        ],
+                        mapping: [
+                            {
+                                type: "list_identifiers",
+                                columns: [0],
+                                editing: false,
+                            },
+                        ],
+                    },
+                },
+            },
         };
     },
     computed: {
@@ -391,7 +452,7 @@ export default {
                         this.showError = true;
                         this.showForm = true;
                         this.errorTitle = "Job submission rejected.";
-                        this.errorContent = jobResponse;
+                        // this.errorContent = jobResponse;
                     }
                     if (changeRoute) {
                         this.$router.push(`/jobs/submission/success`);
@@ -417,7 +478,7 @@ export default {
                     if (genericError) {
                         this.showError = true;
                         this.errorTitle = "Job submission failed.";
-                        this.errorContent = jobDef;
+                        // this.errorContent = jobDef;
                     }
                 }
             );

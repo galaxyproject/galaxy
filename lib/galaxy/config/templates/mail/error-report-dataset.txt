@@ -1,4 +1,4 @@
-GALAXY TOOL ERROR REPORT
+GALAXY ERROR REPORT: DATASET
 ------------------------
 
 This error report was sent from the Galaxy instance hosted on the server
