@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Any,
+    Optional,
+)
 
 from galaxy import model
 from galaxy.managers import base as manager_base
@@ -25,6 +29,16 @@ class LDDAManager(DatasetAssociationManager):
         return manager_base.get_object(
             trans, id, "LibraryDatasetDatasetAssociation", check_ownership=False, check_accessible=check_accessible
         )
+
+    def is_owner(self, item: model.Base, user: Optional[model.User], **kwargs: Any) -> bool:
+        """
+        Return True if user owns the item.
+        """
+        if not isinstance(item, model.LibraryDatasetDatasetAssociation):
+            raise TypeError('"item" must be a LibraryDatasetDatasetAssociation.')
+        if self.app.config.is_admin_user(user):
+            return True
+        return item.user == user
 
     def _set_permissions(self, trans, library_dataset, role_ids_dict):
         # Check Git history for an older broken implementation, but it was broken
