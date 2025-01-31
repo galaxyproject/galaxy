@@ -56,7 +56,7 @@ export default {
     },
     computed: {
         userOwnsPage() {
-            return this.currentUser.username === this.page.username;
+            return this.currentUser?.username === this.page.username;
         },
         dataUrl() {
             return `/api/pages/${this.pageId}`;

@@ -1992,7 +1992,11 @@ class Tool(UsesDictVisibleKeys):
         if raise_execution_exception:
             example_error = execution_tracker.execution_errors[0]
             assert example_error
-            raise exceptions.MessageException(str(example_error))
+            if isinstance(example_error, exceptions.MessageException):
+                raise example_error
+            else:
+                # Fallback, though everything here should already be a MessageException.
+                raise exceptions.MessageException(str(example_error))
 
         return dict(
             out_data=execution_tracker.output_datasets,
@@ -3328,32 +3332,34 @@ class DatabaseOperationTool(Tool):
     def allow_errored_inputs(self):
         return not self.require_dataset_ok
 
-    def check_inputs_ready(self, input_datasets, input_dataset_collections):
-        def check_dataset_state(state):
+    def check_inputs_ready(self, input_datasets, input_dataset_collections, security):
+        def check_dataset_state(input_key, state):
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
+                    # TODO: frontend component should intercept and point to problematic input
                     raise ToolInputsNotOKException(
-                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'",
+                        f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{input_dataset.state}'",
                         src="hda",
                         id=input_dataset.id,
+                        input_name=input_key,
                     )
 
-        for input_dataset in input_datasets.values():
+        for input_key, input_dataset in input_datasets.items():
             if input_dataset:
                 # None is a possible input for optional inputs
-                check_dataset_state(input_dataset.state)
+                check_dataset_state(input_key, input_dataset.state)
 
-        for input_dataset_collection_pairs in input_dataset_collections.values():
+        for input_key, input_dataset_collection_pairs in input_dataset_collections.items():
             for input_dataset_collection, _ in input_dataset_collection_pairs:
                 if not input_dataset_collection.collection.populated_optimized:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
             states, _ = input_dataset_collection.collection.dataset_states_and_extensions_summary
             for state in states:
-                check_dataset_state(state)
+                check_dataset_state(input_key, state)
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         for element_object in elements:
