@@ -15,16 +15,17 @@ const errorMessage = ref("");
 const visualizationConfig = ref();
 const visualizationKey = ref(0);
 const visualizationName = ref();
+const visualizationTitle = ref("");
 
 const currentContent = ref(props.content);
 
 function onChange(incomingData: Record<string, any>) {
-    const mergedContent = {
+    const newContent = {
         visualization_name: visualizationName.value,
         visualization_title: incomingData.visualization_title,
         ...incomingData.visualization_config,
     };
-    currentContent.value = JSON.stringify(mergedContent, null, 4);
+    currentContent.value = JSON.stringify(newContent, null, 4);
     emit("change", currentContent.value);
 }
 
@@ -38,9 +39,14 @@ watch(
                 visualizationConfig.value = {};
                 visualizationConfig.value[props.attribute] = parsedContent;
             } else {
-                visualizationConfig.value = parsedContent;
+                visualizationConfig.value = {
+                    dataset_id: parsedContent.dataset_id,
+                    settings: parsedContent.settings,
+                    tracks: parsedContent.tracks,
+                };
+                visualizationTitle.value = parsedContent.visualization_title || "";
             }
-            visualizationName.value = props.name || visualizationConfig.value.visualization_name;
+            visualizationName.value = props.name || parsedContent.visualization_name;
             if (!visualizationName.value) {
                 throw new Error("Please add a 'visualization_name` to the dictionary.");
             }
@@ -68,6 +74,7 @@ watch(
         class="markdown-visualization"
         :config="visualizationConfig"
         :name="visualizationName"
+        :title="visualizationTitle"
         @change="onChange" />
 </template>
 
