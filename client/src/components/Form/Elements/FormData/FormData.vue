@@ -596,7 +596,7 @@ watch(
     }
 );
 
-const formatsVisible = ref(props.workflowRun || false);
+const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
 
 function collectionTypeToText(collectionType: string): string {
@@ -654,23 +654,27 @@ const noOptionsWarningMessage = computed(() => {
                             <span v-else class="font-weight-bold">...</span>
                         </BButton>
                     </BButtonGroup>
-                    <BDropdown
-                        v-else
-                        variant="link"
-                        toggle-class="text-decoration-none text-nowrap"
-                        class="align-self-start">
-                        <template v-slot:button-content>
-                            <FontAwesomeIcon v-if="currentVariant?.icon" :icon="currentVariant?.icon" />
-                            <span v-localize>{{ currentVariant?.tooltip }}</span>
-                        </template>
-                        <BDropdownItem
-                            v-for="(v, index) in variant"
-                            :key="index"
-                            :active="index === currentField"
-                            @click="currentField = index">
-                            {{ v.tooltip }}
-                        </BDropdownItem>
-                    </BDropdown>
+                    <div v-else class="d-flex align-items-center flex-column">
+                        <BDropdown variant="link" toggle-class="text-decoration-none text-nowrap">
+                            <template v-slot:button-content>
+                                <FontAwesomeIcon v-if="currentVariant?.icon" :icon="currentVariant?.icon" />
+                                <span v-localize>{{ currentVariant?.tooltip }}</span>
+                            </template>
+                            <BDropdownItem
+                                v-for="(v, index) in variant"
+                                :key="index"
+                                :active="index === currentField"
+                                @click="currentField = index">
+                                {{ v.tooltip }}
+                            </BDropdownItem>
+                        </BDropdown>
+                        <FormDataExtensions
+                            v-if="restrictsExtensions"
+                            popover
+                            :extensions="props.extensions"
+                            :formats-button-id="formatsButtonId"
+                            :formats-visible.sync="formatsVisible" />
+                    </div>
                 </div>
 
                 <FormDataExtensions
@@ -733,18 +737,11 @@ const noOptionsWarningMessage = computed(() => {
                     </span>
                 </div>
             </div>
-
-            <FormDataExtensions
-                v-if="props.workflowRun && restrictsExtensions"
-                class="ml-auto"
-                :extensions="props.extensions"
-                :formats-button-id="formatsButtonId"
-                :formats-visible.sync="formatsVisible" />
         </div>
 
         <FormDataWorkflowRunTabs
             v-if="props.workflowRun"
-            class="mt-4"
+            class="mt-2"
             :current-value="currentValue"
             :current-variant="currentVariant"
             :can-browse="canBrowse"
