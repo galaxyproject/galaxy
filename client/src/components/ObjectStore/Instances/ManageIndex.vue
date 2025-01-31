@@ -18,7 +18,7 @@ import TemplateSummarySpan from "@/components/ObjectStore/Templates/TemplateSumm
 const objectStoreInstancesStore = useObjectStoreInstancesStore();
 
 interface Props {
-    message: String | undefined | null;
+    message?: string;
 }
 
 defineProps<Props>();
@@ -48,10 +48,7 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 
 <template>
     <div>
-        <ManageIndexHeader
-            :message="message"
-            create-button-id="object-store-create"
-            create-route="/object_store_instances/create">
+        <ManageIndexHeader header="Storage Locations" :message="message" create-route="/object_store_instances/create">
         </ManageIndexHeader>
         <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
         <BTable
