@@ -18,8 +18,12 @@ const visualizationName = ref();
 
 const currentContent = ref(props.content);
 
-function onChange(newContent: Record<string, any>) {
-    const mergedContent = { visualization_name: visualizationName.value, ...newContent };
+function onChange(incomingData: Record<string, any>) {
+    const mergedContent = {
+        visualization_name: visualizationName.value,
+        visualization_title: incomingData.visualization_title,
+        ...incomingData.visualization_config,
+    };
     currentContent.value = JSON.stringify(mergedContent, null, 4);
     emit("change", currentContent.value);
 }
