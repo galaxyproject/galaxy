@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormInput } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { faNetworkWired, faUserGear } from "font-awesome-6";
+import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
@@ -16,7 +17,7 @@ import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import Filtering from "@/utils/filtering";
 
 import Heading from "@/components/Common/Heading.vue";
-import FileSourceTemplateCard from "@/components/FileSources/Templates/FileSourceTemplateCard.vue";
+import SourceTemplateCard from "@/components/ConfigTemplates/SourceTemplateCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type AvailableTypes = { type: FileSourceTypes } & FileSourceTypesDetail[keyof FileSourceTypesDetail];
@@ -81,12 +82,20 @@ function handleOAuth2Redirect() {
 }
 
 handleOAuth2Redirect();
+
+function getTypeIcon(t: FileSourceTypes) {
+    return templateTypes[t].icon ?? faNetworkWired;
+}
 </script>
 
 <template>
     <div class="file-source-templates">
         <div class="file-source-templates-list-header">
             <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">
+                <RouterLink to="/user">
+                    <FontAwesomeIcon v-b-tooltip.hover.noninteractive :icon="faUserGear" title="User preferences" />
+                </RouterLink>
+                /
                 <RouterLink to="/file_source_instances/index"> Remote File Sources</RouterLink>
                 / Templates
             </Heading>
@@ -122,7 +131,9 @@ handleOAuth2Redirect();
                     :pressed="filterActivated(availableType.type)"
                     @click="onTypeFilter(availableType.type)">
                     <FontAwesomeIcon :icon="availableType.icon" />
-                    {{ availableType.type.charAt(0).toUpperCase() + availableType.type.slice(1) }}
+                    <span class="file-source-templates-type-label">
+                        {{ availableType.type }}
+                    </span>
                 </BButton>
             </div>
         </div>
@@ -137,12 +148,29 @@ handleOAuth2Redirect();
             No templates found matching <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
         <div v-else class="file-source-templates-cards-list">
-            <FileSourceTemplateCard
+            <SourceTemplateCard
                 v-for="tp in filteredTemplates"
                 :key="tp.id"
-                :file-source-template="tp"
-                :template-types="templateTypes"
-                @typeFilter="onTypeFilter" />
+                :source-template="tp"
+                :select-route="`/file_source_templates/${tp.id}/new`"
+                :template-types="templateTypes">
+                <template v-slot:badges>
+                    <div class="file-source-template-card-header-type">
+                        <BButton
+                            v-b-tooltip.hover.noninteractive
+                            variant="outline-primary"
+                            size="sm"
+                            :title="templateTypes[tp.type].message + ' (click to filter by this type)'"
+                            class="inline-icon-button"
+                            @click="onTypeFilter(tp.type)">
+                            <FontAwesomeIcon :icon="getTypeIcon(tp.type)" />
+                            <span class="file-source-templates-type-label">
+                                {{ tp.type }}
+                            </span>
+                        </BButton>
+                    </div>
+                </template>
+            </SourceTemplateCard>
         </div>
     </div>
 </template>
@@ -170,6 +198,16 @@ handleOAuth2Redirect();
         display: flex;
         flex-wrap: wrap;
         gap: 1rem;
+    }
+
+    .file-source-templates-type-label {
+        text-transform: uppercase;
+    }
+
+    .file-source-template-card-header-type {
+        display: flex;
+        align-self: start;
+        justify-content: flex-end;
     }
 }
 </style>
