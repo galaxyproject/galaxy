@@ -16,6 +16,7 @@
         }
         &:not(.temp-focus) {
             border: solid 1px $portlet-bg-color;
+            box-shadow: 0 0 5px $portlet-bg-color;
         }
 
         .ui-form-title {
