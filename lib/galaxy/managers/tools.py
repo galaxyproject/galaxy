@@ -85,7 +85,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         stmt = select(DynamicTool).where(DynamicTool.id == object_id, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
-    def create_tool(self, trans: ProvidesUserContext, tool_payload: DynamicToolPayload, allow_load=True):
+    def create_tool(self, trans: "ProvidesUserContext", tool_payload: DynamicToolPayload, allow_load: bool = True):
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
