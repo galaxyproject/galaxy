@@ -88,6 +88,9 @@ Visualizations
 ===========================================================
 
 .. visualizations
+* Update visualizations package versions
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19232`_
 * Fix MSA viz, new dependency specification options
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 18760`_

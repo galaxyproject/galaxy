@@ -546,6 +546,9 @@ Fixes
 
 .. bug_tag_viz
 
+* Update visualizations package versions
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19232`_
 * Install npm-package viz to the package prefix explicitly
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 18950`_
@@ -567,6 +570,9 @@ Fixes
   `Pull Request 18919`_
 .. bug_tag_workflows
 
+* Fix workflows with optional non-default parameter input
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19332`_
 * Fix cancellation of workflow scheduling
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 19238`_
@@ -605,6 +611,15 @@ Fixes
 
 .. bug
 
+* Fix handling of step id offsets when duplicating selections
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19351`_
+* Fix simple activity panel item style
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19350`_
+* Fixes window manager scrolling and resizing
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19308`_
 * Fix activity-bar-id handling wrt activityStore
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 19316`_
