@@ -188,7 +188,7 @@ export default {
                 this.workflows = config.workflows || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
-                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
+                this.workflowID = Object.keys(this.markdownConfig?.workflows ?? {})[0] ?? "";
             }
         },
         splitMarkdown(markdown) {
