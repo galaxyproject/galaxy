@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse, BTooltip } from "bootstrap-vue";
+import { BButton, BCollapse, BPopover, BTooltip } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { orList } from "@/utils/strings";
@@ -10,6 +10,7 @@ const props = defineProps<{
     extensions: string[];
     formatsButtonId: string;
     formatsVisible: boolean;
+    popover?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -35,12 +36,22 @@ const localFormatsVisible = computed({
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
         </BButton>
-        <BCollapse v-model="localFormatsVisible">
+        <component
+            :is="props.popover ? BPopover : BCollapse"
+            v-model="localFormatsVisible"
+            :target="props.formatsButtonId"
+            :show.sync="localFormatsVisible"
+            placement="bottom">
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
             </ul>
-        </BCollapse>
-        <BTooltip :target="props.formatsButtonId" noninteractive placement="bottom" triggers="hover">
+        </component>
+        <BTooltip
+            v-if="!formatsVisible"
+            :target="props.formatsButtonId"
+            noninteractive
+            placement="bottom"
+            triggers="hover">
             <div class="form-data-props.extensions-tooltip">
                 <span>{{ orList([...props.extensions]) }}</span>
             </div>
