@@ -48,7 +48,7 @@
                 </CellButton>
             </div>
             <div class="ml-2 w-100">
-                <CellCode :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
+                <CellCode :key="name" :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
             </div>
         </div>
         <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
