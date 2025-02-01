@@ -37,7 +37,7 @@
                 <CellButton title="Clone Cell">
                     <FontAwesomeIcon :icon="faClone" />
                 </CellButton>
-                <CellButton title="Delete Cell">
+                <CellButton title="Delete Cell" @click="confirmDelete = true">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
                 <CellButton title="Move Up">
@@ -51,6 +51,9 @@
                 <CellCode :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
             </div>
         </div>
+        <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
+            <p v-localize>Are you sure you want to delete this cell?</p>
+        </BModal>
     </div>
 </template>
 
@@ -65,6 +68,7 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
@@ -81,8 +85,9 @@ defineProps<{
     content: string;
 }>();
 
-defineEmits(["change"]);
+defineEmits(["change", "delete"]);
 
+const confirmDelete = ref(false);
 const hover = ref(false);
 const toggle = ref(true);
 

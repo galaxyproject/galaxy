@@ -3,7 +3,11 @@
         <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
             <CellAdd :cell-index="cellIndex" @click="onAdd" />
             <hr class="solid m-0" />
-            <CellWrapper :name="cell.name" :content="cell.content" @change="onChange(cellIndex, $event)" />
+            <CellWrapper
+                :name="cell.name"
+                :content="cell.content"
+                @change="onChange(cellIndex, $event)"
+                @delete="onDelete(cellIndex)" />
             <hr class="solid m-0" />
         </div>
         <CellAdd :cell-index="cells.length" @click="onAdd" />
@@ -42,6 +46,10 @@ function onChange(cellIndex: number, cellContent: string) {
         cell.content = cellContent;
     }
     onUpdate();
+}
+
+function onDelete(cellIndex: number) {
+    cells.value = cells.value.filter((_, itemIndex) => itemIndex !== cellIndex);
 }
 
 function onUpdate() {
