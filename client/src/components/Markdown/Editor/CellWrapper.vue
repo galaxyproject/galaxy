@@ -31,14 +31,20 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
+                <CellButton title="Attach Data">
+                    <FontAwesomeIcon :icon="faPaperclip" />
+                </CellButton>
+                <CellButton title="Clone Cell">
+                    <FontAwesomeIcon :icon="faClone" />
+                </CellButton>
+                <CellButton title="Delete Cell">
+                    <FontAwesomeIcon :icon="faTrash" />
+                </CellButton>
                 <CellButton title="Move Up">
                     <FontAwesomeIcon :icon="faArrowUp" />
                 </CellButton>
                 <CellButton title="Move Down">
                     <FontAwesomeIcon :icon="faArrowDown" />
-                </CellButton>
-                <CellButton title="Delete">
-                    <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
             </div>
             <div class="ml-2 w-100">
@@ -49,7 +55,15 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleDown, faAngleDoubleUp, faArrowDown, faArrowUp, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faAngleDoubleDown,
+    faAngleDoubleUp,
+    faArrowDown,
+    faArrowUp,
+    faClone,
+    faPaperclip,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 

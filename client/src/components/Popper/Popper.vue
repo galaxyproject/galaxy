@@ -39,6 +39,7 @@ const props = defineProps({
 });
 
 const reference = props.referenceEl ? ref(props.referenceEl) : ref();
+
 const popper = ref();
 
 const { visible } = usePopper(reference, popper, {
