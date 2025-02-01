@@ -30,7 +30,13 @@
             </div>
         </div>
         <div v-if="toggle" class="d-flex">
-            <div class="cell-guide d-flex flex-column justify-content-between" :class="{ 'cell-hover': hover }">
+            <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
+                <CellButton title="Move Up">
+                    <FontAwesomeIcon :icon="faArrowUp" />
+                </CellButton>
+                <CellButton title="Move Down">
+                    <FontAwesomeIcon :icon="faArrowDown" />
+                </CellButton>
                 <CellButton title="Delete">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
@@ -43,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleDown, faAngleDoubleUp, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleDown, faAngleDoubleUp, faArrowDown, faArrowUp, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
