@@ -1,6 +1,6 @@
 <template>
     <div class="cell-guide d-flex flex-column justify-content-between">
-        <CellButton ref="buttonRef" title="Insert new Cell">
+        <CellButton ref="buttonRef" title="Insert Cell">
             <FontAwesomeIcon :icon="faPlus" />
         </CellButton>
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
