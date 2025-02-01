@@ -50,6 +50,7 @@ function onChange(cellIndex: number, cellContent: string) {
 
 function onDelete(cellIndex: number) {
     cells.value = cells.value.filter((_, itemIndex) => itemIndex !== cellIndex);
+    onUpdate();
 }
 
 function onUpdate() {
