@@ -40,10 +40,10 @@
                 <CellButton title="Delete Cell" @click="confirmDelete = true">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
-                <CellButton title="Move Up">
+                <CellButton title="Move Up" @click="$emit('move-up')">
                     <FontAwesomeIcon :icon="faArrowUp" />
                 </CellButton>
-                <CellButton title="Move Down">
+                <CellButton title="Move Down" @click="$emit('move-down')">
                     <FontAwesomeIcon :icon="faArrowDown" />
                 </CellButton>
             </div>
@@ -85,7 +85,7 @@ defineProps<{
     content: string;
 }>();
 
-defineEmits(["change", "clone", "delete"]);
+defineEmits(["change", "clone", "delete", "move-down", "move-up"]);
 
 const confirmDelete = ref(false);
 const hover = ref(false);
