@@ -1,7 +1,10 @@
 <template>
     <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div class="cell-guide d-flex flex-column justify-content-between" :class="{ 'cell-hover': hover }">
+            <div
+                class="cell-guide d-flex flex-column justify-content-between cursor-pointer"
+                :class="{ 'cell-hover': hover }"
+                @click="toggle = !toggle">
                 <CellButton title="Learn more">
                     <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
                     <div v-else class="small font-weight-bold">unknown</div>
