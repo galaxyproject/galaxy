@@ -7,6 +7,7 @@
                 :name="cell.name"
                 :content="cell.content"
                 @change="onChange(cellIndex, $event)"
+                @clone="onClone(cellIndex)"
                 @delete="onDelete(cellIndex)" />
             <hr class="solid m-0" />
         </div>
@@ -46,6 +47,17 @@ function onChange(cellIndex: number, cellContent: string) {
         cell.content = cellContent;
     }
     onUpdate();
+}
+
+// Clone the cell and insert it at cellIndex + 1
+function onClone(cellIndex: number) {
+    const cell = cells.value?.[cellIndex];
+    if (cell) {
+        const newCells = [...(cells.value || [])];
+        newCells.splice(cellIndex + 1, 0, { ...cell });
+        cells.value = newCells;
+        onUpdate();
+    }
 }
 
 function onDelete(cellIndex: number) {

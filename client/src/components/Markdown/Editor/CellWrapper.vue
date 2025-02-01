@@ -34,7 +34,7 @@
                 <CellButton title="Attach Data">
                     <FontAwesomeIcon :icon="faPaperclip" />
                 </CellButton>
-                <CellButton title="Clone Cell">
+                <CellButton title="Clone Cell" @click="$emit('clone')">
                     <FontAwesomeIcon :icon="faClone" />
                 </CellButton>
                 <CellButton title="Delete Cell" @click="confirmDelete = true">
@@ -85,7 +85,7 @@ defineProps<{
     content: string;
 }>();
 
-defineEmits(["change", "delete"]);
+defineEmits(["change", "clone", "delete"]);
 
 const confirmDelete = ref(false);
 const hover = ref(false);
