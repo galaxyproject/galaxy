@@ -57,3 +57,12 @@ function onUpdate() {
     emit("update", newMarkdownText);
 }
 </script>
+
+<style lang="scss">
+@import "theme/blue.scss";
+
+.cell-guide {
+    min-width: 5.5rem;
+    max-width: 5.5rem;
+}
+</style>

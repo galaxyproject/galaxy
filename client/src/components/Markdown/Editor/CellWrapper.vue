@@ -3,8 +3,8 @@
         <div class="d-flex">
             <div class="cell-guide d-flex flex-column justify-content-between" :class="{ 'cell-hover': hover }">
                 <CellButton title="Learn more">
-                    <div v-if="VALID_TYPES.includes(name)" class="small">{{ name }}</div>
-                    <div v-else class="small">unknown</div>
+                    <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
+                    <div v-else class="small font-weight-bold">unknown</div>
                 </CellButton>
                 <CellButton v-if="toggle" title="Collapse" @click="toggle = false">
                     <FontAwesomeIcon :icon="faAngleDoubleUp" />
@@ -85,10 +85,6 @@ function getMode(cellName: string) {
 
 <style lang="scss">
 @import "theme/blue.scss";
-
-.cell-guide {
-    min-width: 5rem;
-}
 
 .cell-hover {
     background-color: $gray-100;
