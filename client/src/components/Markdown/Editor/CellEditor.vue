@@ -40,8 +40,10 @@ const cells = ref<Array<CellType>>(parseCells());
 const cellRefs = ref<Array<HTMLElement>>([]);
 
 // Add new cell
-function onAdd(cellIndex: number, cellType: CellType) {
-    console.log([cellIndex, cellType]);
+function onAdd(cellIndex: number, cell: CellType) {
+    const newCells = [...cells.value];
+    newCells.splice(cellIndex + 1, 0, { ...cell });
+    cells.value = newCells;
     onUpdate();
 }
 
@@ -74,7 +76,6 @@ function onDelete(cellIndex: number) {
 
 // Move cell upwards or downwards, then scroll to it
 function onMove(cellIndex: number, direction: "up" | "down") {
-    console.log(cellIndex, direction);
     if (cells.value.length > 0) {
         const newCells = [...cells.value];
         const swapIndex = direction === "up" ? cellIndex - 1 : cellIndex + 1;
