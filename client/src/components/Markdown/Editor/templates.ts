@@ -1,9 +1,22 @@
 import vegaBarChart from "./templates/vega-bar-chart.json";
+import vegaLineChart from "./templates/vega-line-chart.json";
+import type { CellType } from "./types";
 
-export const cellTemplates = [
+interface TemplateEntry {
+    title: string;
+    description: string;
+    cell: CellType;
+}
+
+interface TemplateCategory {
+    name: string;
+    templates: Array<TemplateEntry>;
+}
+
+export const templateCategories: Array<TemplateCategory> = [
     {
         name: "Markdown",
-        examples: [
+        templates: [
             {
                 title: "Heading 1",
                 description: "Main headline",
@@ -32,7 +45,7 @@ export const cellTemplates = [
     },
     {
         name: "Vega",
-        examples: [
+        templates: [
             {
                 title: "Bar Diagram",
                 description: "Basic bar diagram",
@@ -41,6 +54,34 @@ export const cellTemplates = [
                     content: JSON.stringify(vegaBarChart, null, 4),
                 },
             },
+            {
+                title: "Line Chart",
+                description: "Basic line chart",
+                cell: {
+                    name: "vega",
+                    content: JSON.stringify(vegaLineChart, null, 4),
+                },
+            },
         ],
     },
 ];
+
+export function getTemplates(query: string): Array<TemplateCategory> {
+    const filteredCategories: Array<TemplateCategory> = [];
+    templateCategories.forEach((category) => {
+        const matchedTemplates = category.templates.filter(
+            (template) =>
+                category.name.toLowerCase().includes(query.toLowerCase()) ||
+                template.title.toLowerCase().includes(query.toLowerCase()) ||
+                template.description.toLowerCase().includes(query.toLowerCase())
+        );
+        if (matchedTemplates.length > 0) {
+            filteredCategories.push({
+                name: category.name,
+                templates: matchedTemplates,
+            });
+        }
+    });
+
+    return filteredCategories;
+}
