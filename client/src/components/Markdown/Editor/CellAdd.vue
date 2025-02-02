@@ -5,7 +5,7 @@
         </CellButton>
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
-            <div class="cursor-pointer overflow-auto" style="max-height: 20rem">
+            <div class="cell-add-categories cursor-pointer overflow-auto">
                 <div v-for="(category, categoryIndex) of getTemplates(query)" :key="categoryIndex">
                     <hr class="solid m-0" />
                     <span class="d-flex justify-content-between">
@@ -30,8 +30,8 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import { getTemplates } from "./templates";
-import type { CellType } from "./types";
+import { cellTemplates } from "./templates";
+import type { CellType, TemplateCategory } from "./types";
 
 import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
@@ -44,4 +44,29 @@ defineEmits<{
 
 const buttonRef = ref();
 const query = ref("");
+
+function getTemplates(query: string): Array<TemplateCategory> {
+    const filteredCategories: Array<TemplateCategory> = [];
+    cellTemplates.forEach((category) => {
+        const matchedTemplates = category.templates.filter(
+            (template) =>
+                category.name.toLowerCase().includes(query.toLowerCase()) ||
+                template.title.toLowerCase().includes(query.toLowerCase()) ||
+                template.description.toLowerCase().includes(query.toLowerCase())
+        );
+        if (matchedTemplates.length > 0) {
+            filteredCategories.push({
+                name: category.name,
+                templates: matchedTemplates,
+            });
+        }
+    });
+    return filteredCategories;
+}
 </script>
+
+<style>
+.cell-add-categories {
+    max-height: 20rem;
+}
+</style>
