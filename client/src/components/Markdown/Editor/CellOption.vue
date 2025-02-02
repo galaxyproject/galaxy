@@ -1,14 +1,10 @@
 <template>
-    <span
-        role="button"
-        tabindex="0"
-        class="cell-option d-flex justify-content-between rounded m-1"
-        @click="$emit('click')">
-        <div class="m-2">
+    <span role="button" tabindex="0" class="cell-option d-flex justify-content-between" @click="$emit('click')">
+        <div class="my-1 mx-3">
             <div class="font-weight-bold">{{ title }}</div>
-            <small>{{ description }}</small>
+            <small class="d-inline-block text-wrap text-break">{{ description }}</small>
         </div>
-        <div v-if="icon" class="m-2 align-self-center">
+        <div v-if="icon" class="my-2 mx-3 align-self-center">
             <FontAwesomeIcon :icon="icon" />
         </div>
     </span>
@@ -32,6 +28,8 @@ defineEmits<{
 @import "theme/blue.scss";
 
 .cell-option {
+    max-width: 15rem;
+    min-width: 15rem;
     &:hover {
         background: $brand-primary;
         color: $white;
