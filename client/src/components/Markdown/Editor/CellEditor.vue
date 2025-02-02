@@ -1,6 +1,6 @@
 <template>
     <div class="h-100 w-75 mx-auto">
-        <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
+        <div v-for="(cell, cellIndex) in cells" :key="cellIndex" ref="cellRefs">
             <CellAdd :cell-index="cellIndex" @click="onAdd" />
             <hr class="solid m-0" />
             <CellWrapper
@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import { parseMarkdown } from "@/components/Markdown/parse";
 
@@ -37,6 +37,7 @@ const props = defineProps<{
 const emit = defineEmits(["update"]);
 
 const cells = ref<Array<CellType>>(parseMarkdown(props.markdownText));
+const cellRefs = ref<Array<HTMLElement>>([]);
 
 // Add new cell
 function onAdd(cellIndex: number, cellType: string) {
@@ -53,14 +54,15 @@ function onChange(cellIndex: number, cellContent: string) {
     onUpdate();
 }
 
-// Clone cell and insert it at cellIndex + 1
+// Clone cell and insert it at cellIndex + 1, then scroll to it
 function onClone(cellIndex: number) {
     const cell = cells.value?.[cellIndex];
     if (cell) {
-        const newCells = [...(cells.value || [])];
+        const newCells = [...cells.value];
         newCells.splice(cellIndex + 1, 0, { ...cell });
         cells.value = newCells;
         onUpdate();
+        scrollToCell(cellIndex + 1);
     }
 }
 
@@ -70,9 +72,9 @@ function onDelete(cellIndex: number) {
     onUpdate();
 }
 
-// Move cell upwards and downwards
+// Move cell upwards or downwards, then scroll to it
 function onMove(cellIndex: number, direction: "up" | "down") {
-    if (cells.value && cells.value.length > 0) {
+    if (cells.value.length > 0) {
         const newCells = [...cells.value];
         const swapIndex = direction === "up" ? cellIndex - 1 : cellIndex + 1;
         if (swapIndex >= 0 && swapIndex < newCells.length) {
@@ -83,6 +85,7 @@ function onMove(cellIndex: number, direction: "up" | "down") {
                 newCells[swapIndex] = { ...currentCell };
                 cells.value = newCells;
                 onUpdate();
+                scrollToCell(swapIndex);
             }
         }
     }
@@ -95,11 +98,21 @@ function onUpdate() {
         if (cell.name === "markdown") {
             newMarkdownText += cell.content;
         } else {
-            newMarkdownText += `\`\`\`${cell.name}\n` + cell.content + "\n```";
+            newMarkdownText += `\`\`\`${cell.name}\n${cell.content}\n\`\`\``;
         }
         newMarkdownText += "\n\n";
     });
     emit("update", newMarkdownText);
+}
+
+// Scroll a specific cell into view
+function scrollToCell(cellIndex: number) {
+    nextTick(() => {
+        const element = cellRefs.value[cellIndex];
+        if (element instanceof HTMLElement) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    });
 }
 </script>
 
