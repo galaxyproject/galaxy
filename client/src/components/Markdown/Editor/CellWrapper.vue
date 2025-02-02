@@ -9,10 +9,10 @@
                     <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
                     <div v-else class="small font-weight-bold">unknown</div>
                 </div>
-                <CellButton v-if="toggle" title="Collapse" @click="$emit('toggle')">
+                <CellButton v-if="toggle" title="Collapse">
                     <FontAwesomeIcon :icon="faAngleDoubleUp" />
                 </CellButton>
-                <CellButton v-else title="Expand" @click="$emit('toggle')">
+                <CellButton v-else title="Expand">
                     <FontAwesomeIcon :icon="faAngleDoubleDown" />
                 </CellButton>
             </div>
