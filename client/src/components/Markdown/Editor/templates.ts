@@ -40,7 +40,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display a Collection",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_collection_display(history_dataset_collection_id=)",
+                    content: "history_dataset_collection_display(history_dataset_collection_id)",
                 },
             },
             {
@@ -48,7 +48,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display a Dataset",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_display(history_dataset_id=)",
+                    content: "history_dataset_display(history_dataset_id)",
                 },
             },
             {
@@ -56,7 +56,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display a Dataset Information",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_info(history_dataset_id=)",
+                    content: "history_dataset_info(history_dataset_id)",
                 },
             },
             {
@@ -64,7 +64,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display a Dataset Index",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_index(history_dataset_id=)",
+                    content: "history_dataset_index(history_dataset_id)",
                 },
             },
             {
@@ -80,7 +80,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Embed a Dataset",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_embedded(history_dataset_id=)",
+                    content: "history_dataset_embedded(history_dataset_id)",
                 },
             },
             {
@@ -88,7 +88,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Embed a Dataset as Table",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_as_table(history_dataset_id=)",
+                    content: "history_dataset_as_table(history_dataset_id)",
                 },
             },
             {
@@ -96,7 +96,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Embed an Image",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_as_image(history_dataset_id=)",
+                    content: "history_dataset_as_image(history_dataset_id)",
                 },
             },
             {
@@ -104,7 +104,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Create link to a Dataset",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_link(history_dataset_id=)",
+                    content: "history_dataset_link(history_dataset_id)",
                 },
             },
             {
@@ -112,7 +112,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Link to Import a History",
                 cell: {
                     name: "galaxy",
-                    content: "history_link(history_id=)",
+                    content: "history_link(history_id)",
                 },
             },
             {
@@ -120,7 +120,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display a Dataset name",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_name(history_dataset_id=)",
+                    content: "history_dataset_name(history_dataset_id)",
                 },
             },
             {
@@ -128,7 +128,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display a Dataset peek",
                 cell: {
                     name: "galaxy",
-                    content: "history_dataset_peek(history_dataset_id=)",
+                    content: "history_dataset_peek(history_dataset_id)",
                 },
             },
             {
@@ -136,7 +136,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display job resource consumption",
                 cell: {
                     name: "galaxy",
-                    content: "job_metrics(job_id=)",
+                    content: "job_metrics(job_id)",
                 },
             },
             {
@@ -144,7 +144,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display the input parameters of a Job",
                 cell: {
                     name: "galaxy",
-                    content: "job_parameters(job_id=)",
+                    content: "job_parameters(job_id)",
                 },
             },
             {
@@ -152,7 +152,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display Tool errors",
                 cell: {
                     name: "galaxy",
-                    content: "tool_stderr(job_id=)",
+                    content: "tool_stderr(job_id)",
                 },
             },
             {
@@ -160,7 +160,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display Tool standard output",
                 cell: {
                     name: "galaxy",
-                    content: "tool_stdout(job_id=)",
+                    content: "tool_stdout(job_id)",
                 },
             },
             {
@@ -168,7 +168,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Display all Workflow steps",
                 cell: {
                     name: "galaxy",
-                    content: "workflow_display(workflow_id=)",
+                    content: "workflow_display(workflow_id)",
                 },
             },
             {
@@ -176,7 +176,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Inovcation time of a Workflow run",
                 cell: {
                     name: "galaxy",
-                    content: "invocation_time(workflow_id=)",
+                    content: "invocation_time(workflow_id)",
                 },
             },
             {
@@ -184,7 +184,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "A static image of a Workflow",
                 cell: {
                     name: "galaxy",
-                    content: "workflow_image(workflow_id=)",
+                    content: "workflow_image(workflow_id)",
                 },
             },
             {
@@ -192,7 +192,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 description: "Usage license of a Workflow",
                 cell: {
                     name: "galaxy",
-                    content: "workflow_license(workflow_id=)",
+                    content: "workflow_license(workflow_id)",
                 },
             },
         ],
