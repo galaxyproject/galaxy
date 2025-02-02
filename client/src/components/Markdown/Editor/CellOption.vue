@@ -28,8 +28,6 @@ defineEmits<{
 @import "theme/blue.scss";
 
 .cell-option {
-    max-width: 15rem;
-    min-width: 15rem;
     &:hover {
         background: $brand-primary;
         color: $white;

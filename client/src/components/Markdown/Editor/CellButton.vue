@@ -4,7 +4,7 @@
         class="border-0 m-1 px-1 py-0"
         :title="title"
         variant="outline-primary"
-        @click.stop="onClick()"
+        @click="onClick()"
         @mouseleave="onMouseLeave($event)">
         <slot />
     </BButton>
