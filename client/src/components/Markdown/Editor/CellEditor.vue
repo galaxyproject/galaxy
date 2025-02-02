@@ -4,6 +4,8 @@
             <CellAdd :cell-index="cellIndex" @click="onAdd" />
             <hr class="solid m-0" />
             <CellWrapper
+                :cell-index="cellIndex"
+                :cell-total="cells.length"
                 :name="cell.name"
                 :content="cell.content"
                 :toggle="cell.toggle"
