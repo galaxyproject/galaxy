@@ -16,7 +16,7 @@
                 @toggle="onToggle(cellIndex)" />
             <hr class="solid m-0" />
         </div>
-        <CellAdd @click="onAdd(cells.length - 1, $event)" />
+        <CellAdd @click="onAdd(cells.length, $event)" />
     </div>
 </template>
 
@@ -42,9 +42,10 @@ const cellRefs = ref<Array<HTMLElement>>([]);
 // Add new cell
 function onAdd(cellIndex: number, cell: CellType) {
     const newCells = [...cells.value];
-    newCells.splice(cellIndex + 1, 0, { ...cell });
+    newCells.splice(cellIndex, 0, { ...cell });
     cells.value = newCells;
     onUpdate();
+    scrollToCell(cellIndex);
 }
 
 // Handle cell code changes

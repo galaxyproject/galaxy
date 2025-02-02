@@ -1,4 +1,4 @@
-import vegaBarChart from "./templates/vega-bar-chart.json"
+import vegaBarChart from "./templates/vega-bar-chart.json";
 
 export const cellTemplates = [
     {
