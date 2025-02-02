@@ -5,21 +5,24 @@
         </CellButton>
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
-            <div class="cell-add-categories cursor-pointer overflow-auto">
-                <div v-for="(category, categoryIndex) of getTemplates(query)" :key="categoryIndex">
-                    <hr class="solid m-0" />
-                    <span class="d-flex justify-content-between">
-                        <small class="my-1 mx-3 text-info">{{ category.name }}</small>
-                    </span>
-                    <div v-if="category.templates.length > 0">
-                        <CellOption
-                            v-for="(option, optionIndex) of category.templates"
-                            :key="optionIndex"
-                            :title="option.title"
-                            :description="option.description"
-                            @click="$emit('click', { ...option.cell, toggle: true })" />
+            <div class="cell-add-categories overflow-auto">
+                <div v-if="filteredTemplates.length > 0">
+                    <div v-for="(category, categoryIndex) of filteredTemplates" :key="categoryIndex">
+                        <hr class="solid m-0" />
+                        <span class="d-flex justify-content-between">
+                            <small class="my-1 mx-3 text-info">{{ category.name }}</small>
+                        </span>
+                        <div v-if="category.templates.length > 0" class="cell-add-options">
+                            <CellOption
+                                v-for="(option, optionIndex) of category.templates"
+                                :key="optionIndex"
+                                :title="option.title"
+                                :description="option.description"
+                                @click="$emit('click', { ...option.cell, toggle: true })" />
+                        </div>
                     </div>
                 </div>
+                <b-alert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </b-alert>
             </div>
         </Popper>
     </div>
@@ -28,7 +31,7 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { cellTemplates } from "./templates";
 import type { CellType, TemplateCategory } from "./types";
@@ -45,14 +48,14 @@ defineEmits<{
 const buttonRef = ref();
 const query = ref("");
 
-function getTemplates(query: string): Array<TemplateCategory> {
+const filteredTemplates = computed(() => {
     const filteredCategories: Array<TemplateCategory> = [];
     cellTemplates.forEach((category) => {
         const matchedTemplates = category.templates.filter(
             (template) =>
-                category.name.toLowerCase().includes(query.toLowerCase()) ||
-                template.title.toLowerCase().includes(query.toLowerCase()) ||
-                template.description.toLowerCase().includes(query.toLowerCase())
+                category.name.toLowerCase().includes(query.value.toLowerCase()) ||
+                template.title.toLowerCase().includes(query.value.toLowerCase()) ||
+                template.description.toLowerCase().includes(query.value.toLowerCase())
         );
         if (matchedTemplates.length > 0) {
             filteredCategories.push({
@@ -62,11 +65,13 @@ function getTemplates(query: string): Array<TemplateCategory> {
         }
     });
     return filteredCategories;
-}
+});
 </script>
 
 <style>
 .cell-add-categories {
     max-height: 20rem;
+    max-width: 15rem;
+    min-width: 15rem;
 }
 </style>
