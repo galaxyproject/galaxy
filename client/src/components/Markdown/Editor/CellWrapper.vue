@@ -43,10 +43,10 @@
                 <CellButton title="Delete Cell" @click="confirmDelete = true">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
-                <CellButton title="Move Up" @click="$emit('move-up')">
+                <CellButton title="Move Up" :disabled="cellIndex < 1" @click="$emit('move-up')">
                     <FontAwesomeIcon :icon="faArrowUp" />
                 </CellButton>
-                <CellButton title="Move Down" @click="$emit('move-down')">
+                <CellButton title="Move Down" :disabled="cellTotal - cellIndex < 2" @click="$emit('move-down')">
                     <FontAwesomeIcon :icon="faArrowDown" />
                 </CellButton>
             </div>
@@ -84,8 +84,10 @@ import CellCode from "./CellCode.vue";
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
 defineProps<{
-    name: string;
+    cellIndex: number;
+    cellTotal: number;
     content: string;
+    name: string;
     toggle: boolean;
 }>();
 
