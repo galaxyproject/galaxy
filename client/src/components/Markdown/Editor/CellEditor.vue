@@ -1,7 +1,7 @@
 <template>
     <div class="h-100 w-75 mx-auto">
         <div v-for="(cell, cellIndex) in cells" :key="cellIndex" ref="cellRefs">
-            <CellAdd :cell-index="cellIndex" @click="onAdd" />
+            <CellAdd @click="onAdd(cellIndex, $event)" />
             <hr class="solid m-0" />
             <CellWrapper
                 :cell-index="cellIndex"
@@ -12,12 +12,11 @@
                 @change="onChange(cellIndex, $event)"
                 @clone="onClone(cellIndex)"
                 @delete="onDelete(cellIndex)"
-                @move-down="onMove(cellIndex, 'down')"
-                @move-up="onMove(cellIndex, 'up')"
+                @move="onMove(cellIndex, $event)"
                 @toggle="onToggle(cellIndex)" />
             <hr class="solid m-0" />
         </div>
-        <CellAdd :cell-index="cells.length" @click="onAdd" />
+        <CellAdd @click="onAdd(cells.length - 1, $event)" />
     </div>
 </template>
 
@@ -26,14 +25,10 @@ import { nextTick, ref } from "vue";
 
 import { parseMarkdown } from "@/components/Markdown/parse";
 
+import type { CellType } from "./types";
+
 import CellAdd from "./CellAdd.vue";
 import CellWrapper from "./CellWrapper.vue";
-
-interface CellType {
-    name: string;
-    content: string;
-    toggle: boolean;
-}
 
 const props = defineProps<{
     markdownText: string;
@@ -45,7 +40,7 @@ const cells = ref<Array<CellType>>(parseCells());
 const cellRefs = ref<Array<HTMLElement>>([]);
 
 // Add new cell
-function onAdd(cellIndex: number, cellType: string) {
+function onAdd(cellIndex: number, cellType: CellType) {
     console.log([cellIndex, cellType]);
     onUpdate();
 }
@@ -79,6 +74,7 @@ function onDelete(cellIndex: number) {
 
 // Move cell upwards or downwards, then scroll to it
 function onMove(cellIndex: number, direction: "up" | "down") {
+    console.log(cellIndex, direction);
     if (cells.value.length > 0) {
         const newCells = [...cells.value];
         const swapIndex = direction === "up" ? cellIndex - 1 : cellIndex + 1;

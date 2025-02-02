@@ -6,21 +6,11 @@
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <div class="cursor-pointer">
                 <CellOption
-                    title="Markdown"
-                    description="Markdown text element"
-                    :icon="faPlus"
-                    @click="onClick('markdown')" />
-                <CellOption
-                    title="Galaxy Element"
-                    description="Galaxy element"
-                    :icon="faPlus"
-                    @click="onClick('galaxy')" />
-                <CellOption title="Vega" description="Vega Graphics" :icon="faPlus" @click="onClick('vega')" />
-                <CellOption
-                    title="Vitessce"
-                    description="Vitessce Graphics"
-                    :icon="faPlus"
-                    @click="onClick('vitessce')" />
+                    v-for="(option, optionIndex) of options"
+                    :key="optionIndex"
+                    :title="option.title"
+                    :description="option.description"
+                    @click="$emit('click', { ...option.cell, toggle: true })" />
             </div>
         </Popper>
     </div>
@@ -31,21 +21,41 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
+import type { CellType } from "./types";
+
 import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
-const props = defineProps<{
-    cellIndex: number;
-}>();
-
-const emit = defineEmits<{
-    (e: "click", cellIndex: number, cellType: string): void;
+defineEmits<{
+    (e: "click", cell: CellType): void;
 }>();
 
 const buttonRef = ref();
-
-function onClick(cellType: string) {
-    emit("click", props.cellIndex, cellType);
-}
+const options = ref([
+    {
+        title: "Markdown",
+        description: "Vitessce Graphics",
+        cell: {
+            name: "markdown",
+            content: "",
+        },
+    },
+    {
+        title: "Vega",
+        description: "Vitessce Graphics",
+        cell: {
+            name: "vega",
+            content: "",
+        },
+    },
+    {
+        title: "Vitessce",
+        description: "Vitessce Graphics",
+        cell: {
+            name: "markdown",
+            content: "",
+        },
+    },
+]);
 </script>

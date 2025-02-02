@@ -5,10 +5,10 @@
                 class="cell-guide d-flex flex-column justify-content-between cursor-pointer"
                 :class="{ 'cell-hover': hover }"
                 @click="$emit('toggle')">
-                <CellButton title="Learn more">
+                <div class="text-center text-primary">
                     <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
                     <div v-else class="small font-weight-bold">unknown</div>
-                </CellButton>
+                </div>
                 <CellButton v-if="toggle" title="Collapse" @click="$emit('toggle')">
                     <FontAwesomeIcon :icon="faAngleDoubleUp" />
                 </CellButton>
@@ -43,10 +43,10 @@
                 <CellButton title="Delete Cell" @click="confirmDelete = true">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
-                <CellButton title="Move Up" :disabled="cellIndex < 1" @click="$emit('move-up')">
+                <CellButton title="Move Up" :disabled="cellIndex < 1" @click="$emit('move', 'up')">
                     <FontAwesomeIcon :icon="faArrowUp" />
                 </CellButton>
-                <CellButton title="Move Down" :disabled="cellTotal - cellIndex < 2" @click="$emit('move-down')">
+                <CellButton title="Move Down" :disabled="cellTotal - cellIndex < 2" @click="$emit('move', 'down')">
                     <FontAwesomeIcon :icon="faArrowDown" />
                 </CellButton>
             </div>
@@ -91,7 +91,7 @@ defineProps<{
     toggle: boolean;
 }>();
 
-defineEmits(["change", "clone", "delete", "move-down", "move-up", "toggle"]);
+defineEmits(["change", "clone", "delete", "move", "toggle"]);
 
 const confirmDelete = ref(false);
 const hover = ref(false);
