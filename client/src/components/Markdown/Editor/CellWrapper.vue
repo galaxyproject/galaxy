@@ -4,15 +4,15 @@
             <div
                 class="cell-guide d-flex flex-column justify-content-between cursor-pointer"
                 :class="{ 'cell-hover': hover }"
-                @click="toggle = !toggle">
+                @click="$emit('toggle')">
                 <CellButton title="Learn more">
                     <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
                     <div v-else class="small font-weight-bold">unknown</div>
                 </CellButton>
-                <CellButton v-if="toggle" title="Collapse" @click="toggle = false">
+                <CellButton v-if="toggle" title="Collapse" @click="$emit('toggle')">
                     <FontAwesomeIcon :icon="faAngleDoubleUp" />
                 </CellButton>
-                <CellButton v-else title="Expand" @click="toggle = true">
+                <CellButton v-else title="Expand" @click="$emit('toggle')">
                     <FontAwesomeIcon :icon="faAngleDoubleDown" />
                 </CellButton>
             </div>
@@ -86,13 +86,13 @@ const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 defineProps<{
     name: string;
     content: string;
+    toggle: boolean;
 }>();
 
-defineEmits(["change", "clone", "delete", "move-down", "move-up"]);
+defineEmits(["change", "clone", "delete", "move-down", "move-up", "toggle"]);
 
 const confirmDelete = ref(false);
 const hover = ref(false);
-const toggle = ref(true);
 
 function getMode(cellName: string) {
     switch (cellName) {

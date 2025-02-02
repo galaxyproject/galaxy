@@ -6,11 +6,13 @@
             <CellWrapper
                 :name="cell.name"
                 :content="cell.content"
+                :toggle="cell.toggle"
                 @change="onChange(cellIndex, $event)"
                 @clone="onClone(cellIndex)"
                 @delete="onDelete(cellIndex)"
                 @move-down="onMove(cellIndex, 'down')"
-                @move-up="onMove(cellIndex, 'up')" />
+                @move-up="onMove(cellIndex, 'up')"
+                @toggle="onToggle(cellIndex)" />
             <hr class="solid m-0" />
         </div>
         <CellAdd :cell-index="cells.length" @click="onAdd" />
@@ -28,6 +30,7 @@ import CellWrapper from "./CellWrapper.vue";
 interface CellType {
     name: string;
     content: string;
+    toggle: boolean;
 }
 
 const props = defineProps<{
@@ -36,7 +39,7 @@ const props = defineProps<{
 
 const emit = defineEmits(["update"]);
 
-const cells = ref<Array<CellType>>(parseMarkdown(props.markdownText));
+const cells = ref<Array<CellType>>(parseCells());
 const cellRefs = ref<Array<HTMLElement>>([]);
 
 // Add new cell
@@ -103,6 +106,19 @@ function onUpdate() {
         newMarkdownText += "\n\n";
     });
     emit("update", newMarkdownText);
+}
+
+// Toggle
+function onToggle(cellIndex: number) {
+    const cell = cells.value?.[cellIndex];
+    if (cell) {
+        cell.toggle = !cell.toggle;
+    }
+}
+
+// Parse cells
+function parseCells(toggle: boolean = false) {
+    return parseMarkdown(props.markdownText).map((cell) => ({ ...cell, toggle }));
 }
 
 // Scroll a specific cell into view
