@@ -88,7 +88,7 @@ defineProps<{
     cellTotal: number;
     content: string;
     name: string;
-    toggle: boolean;
+    toggle?: boolean;
 }>();
 
 defineEmits(["change", "clone", "delete", "move", "toggle"]);

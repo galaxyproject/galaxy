@@ -41,7 +41,7 @@
             }
         ]
     },
-    "mark": "bar",
+    "mark": "line",
     "encoding": {
         "x": {
             "field": "a",
