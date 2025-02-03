@@ -209,7 +209,7 @@ class CredentialsService:
                 user, source_id, source_version, service_name, service_version
             )
             if source_credentials is None:
-                raise RequestParameterInvalidException(
+                raise ObjectNotFound(
                     f"Service '{service_name}' with version '{service_version}' is not defined"
                     f"in {source_type} with id {source_id} and version {source_version}."
                 )
