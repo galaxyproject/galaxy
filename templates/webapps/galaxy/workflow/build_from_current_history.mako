@@ -112,6 +112,7 @@ into a workflow will be shown in gray.</p>
     <%
     cls = "toolForm"
     tool_name = "Unknown"
+    checked_job = "checked" if any(True for d in datasets if not d[1].deleted) else ""
     if hasattr( job, 'is_fake' ) and job.is_fake:
         cls += " toolFormDisabled"
         disabled = True
@@ -142,7 +143,10 @@ into a workflow will be shown in gray.</p>
                     %if disabled:
                         <div style="font-style: italic; color: gray">${disabled_why}</div>
                     %else:
-                        <div><input type="checkbox" name="job_ids" value="${job.id}" checked="true" />Include "${tool_name}" in workflow</div>
+                        <div><input type="checkbox" name="job_ids" value="${job.id}" ${checked_job} />Include "${tool_name}" in workflow</div>
+                        %if not checked_job:
+                            ${ render_msg( "All job outputs have been deleted", status="info" ) }
+                        %endif
                         %if tool_version_warning:
                             ${ render_msg( tool_version_warning, status="warning" ) }
                         %endif
