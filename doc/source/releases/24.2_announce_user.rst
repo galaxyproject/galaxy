@@ -50,6 +50,10 @@ improvements.
 - **Inputs** are not tools, and are now no longer treated as such. Find inputs in their own
   interface, and easily add input sub-types directly.
 
+.. raw:: html
+
+	 <iframe width="560" height="315" src="https://www.youtube.com/embed/42HZQkC7PHY" title="Galaxy 24.2 - Workflow Editor Enhancements: Activity Bar and Undo Stack UI" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 Masthead Revision and Activity Bar Improvements
 -----------------------------------------------------------
 
@@ -68,6 +72,10 @@ These changes enhance the user experience by making the interface more intuitive
 clutter.
 [`#17927 <https://github.com/galaxyproject/galaxy/pull/17927>`__]
 
+.. raw:: html
+
+	 <iframe width="560" height="315" src="https://www.youtube.com/embed/5NMkcpj-1w8" title="Galaxy 24.2 - Masthead Revision and Activity Bar Improvements" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 Improved Navigation and Usability of Collection Builders
 -----------------------------------------------------------
 
@@ -79,6 +87,10 @@ can upload datasets directly to the collection builder. These updates will impro
 experience of opening a workflow run form, creating appropriate collection(s) for its inputs
 and running the workflow in one seamless iteration.
 [`#18857 <https://github.com/galaxyproject/galaxy/pull/18857>`__]
+
+.. raw:: html
+
+	 <iframe width="560" height="315" src="https://www.youtube.com/embed/y4gNThU_BZE" title="Galaxy 24.2 - Improved Navigation and Usability of Collection Builders" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Enhanced Workflow Invocation View
 -----------------------------------------------------------
@@ -132,6 +144,10 @@ user directory or import directory into a library. Admins can also import datase
 specified path. Additionally, the new History Dataset Picker allows users to explore their
 histories and select datasets to add to the library, streamlining the dataset management process.
 [`#18638 <https://github.com/galaxyproject/galaxy/pull/18638>`__]
+
+.. raw:: html
+
+	 <iframe width="560" height="315" src="https://www.youtube.com/embed/i8AHdv5sU5A" title="Galaxy 24.2 - Libraries Modernization: Directory Dataset Picker" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Live Reporting of Job Console Outputs
 -----------------------------------------------------------
