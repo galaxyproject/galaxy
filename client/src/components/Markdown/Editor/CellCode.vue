@@ -1,5 +1,5 @@
 <template>
-    <div ref="editor" class="mt-1 w-100" />
+    <div ref="editor" class="w-100" />
 </template>
 
 <script setup>

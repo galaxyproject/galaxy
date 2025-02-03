@@ -5,7 +5,9 @@
                 <div class="h2">Attach Data</div>
                 <div class="small">Fill in the fields below to map required inputs to this cell.</div>
             </div>
-            <BButton variant="link" class="align-self-start"><FontAwesomeIcon :icon="faTimes" class="fa-lg" /></BButton>
+            <BButton variant="link" class="align-self-start" @click="$emit('cancel')">
+                <FontAwesomeIcon :icon="faTimes" class="fa-lg" />
+            </BButton>
         </div>
         <div class="mb-3">
             <label class="form-label">Workflow</label>
@@ -16,7 +18,7 @@
             <input type="text" class="form-control" />
         </div>
         <div class="d-flex justify-content-end">
-            <BButton variant="outline-primary" class="mr-2">Cancel</BButton>
+            <BButton variant="outline-primary" class="mr-2" @click="$emit('cancel')">Cancel</BButton>
             <BButton variant="outline-primary">OK</BButton>
         </div>
     </div>
@@ -26,9 +28,12 @@
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-defineProps<{}>();
+defineProps<{
+    content: string;
+}>();
 
 defineEmits<{
-    (e: "click"): void;
+    (e: "cancel"): void;
+    (e: "change", content: string): void;
 }>();
 </script>
