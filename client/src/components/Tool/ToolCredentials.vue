@@ -6,6 +6,8 @@ import { isRegisteredUser } from "@/api";
 import {
     type CreateSourceCredentialsPayload,
     type ServiceCredentialsDefinition,
+    type ServiceCredentialsIdentifier,
+    type ServiceVariableDefinition,
     type SourceCredentialsDefinition,
     transformToSourceCredentials,
     type UserCredentials,
@@ -41,20 +43,22 @@ const hasUserProvidedRequiredCredentials = computed<boolean>(() => {
     if (!userCredentials.value || userCredentials.value.length === 0) {
         return false;
     }
-
-    return userCredentials.value.every((credentials) => areOptional(credentials) || areSetByUser(credentials));
+    return userCredentials.value.every((credentials) => areRequiredSetByUser(credentials));
 });
 
 const hasUserProvidedAllCredentials = computed<boolean>(() => {
     if (!userCredentials.value || userCredentials.value.length === 0) {
         return false;
     }
-    return userCredentials.value.every(areSetByUser);
+    return userCredentials.value.every(areAllSetByUser);
 });
 
 const hasSomeOptionalCredentials = computed<boolean>(() => {
-    for (const credentials of credentialsDefinition.value.services.values()) {
-        if (credentials.optional) {
+    for (const service of credentialsDefinition.value.services.values()) {
+        if (
+            service.secrets.some((secret) => secret.optional) ||
+            service.variables.some((variable) => variable.optional)
+        ) {
             return true;
         }
     }
@@ -62,8 +66,11 @@ const hasSomeOptionalCredentials = computed<boolean>(() => {
 });
 
 const hasSomeRequiredCredentials = computed<boolean>(() => {
-    for (const credentials of credentialsDefinition.value.services.values()) {
-        if (!credentials.optional) {
+    for (const service of credentialsDefinition.value.services.values()) {
+        if (
+            service.secrets.some((secret) => !secret.optional) ||
+            service.variables.some((variable) => !variable.optional)
+        ) {
             return true;
         }
     }
@@ -111,18 +118,27 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
     }
 }
 
-function areSetByUser(credentials: UserCredentials): boolean {
-    return Object.values(credentials.groups).every((set) => {
-        return set.variables.every((variable) => variable.value) && set.secrets.every((secret) => secret.is_set);
-    });
-}
-
-function areOptional(credentials: UserCredentials): boolean {
-    const matchingDefinition = credentialsDefinition.value.services.get(credentials.service_reference);
-    if (!matchingDefinition) {
+function areAllSetByUser(credentials: UserCredentials): boolean {
+    const selectedGroup = credentials.groups[credentials.current_group_name];
+    if (!selectedGroup) {
         return false;
     }
-    return matchingDefinition.optional;
+    return selectedGroup.variables.every((v) => v.is_set) && selectedGroup.secrets.every((s) => s.is_set);
+}
+
+function areRequiredSetByUser(credentials: UserCredentials): boolean {
+    const selectedGroup = credentials.groups[credentials.current_group_name];
+    if (!selectedGroup) {
+        return false;
+    }
+    return (
+        selectedGroup.variables.every(
+            (v) => v.is_set || credentials.credential_definitions.variables.find((dv) => v.name === dv.name)?.optional
+        ) &&
+        selectedGroup.secrets.every(
+            (s) => s.is_set || credentials.credential_definitions.secrets.find((ds) => s.name === ds.name)?.optional
+        )
+    );
 }
 
 function provideCredentials() {
@@ -143,11 +159,11 @@ async function onSavedCredentials(providedCredentials: CreateSourceCredentialsPa
     }
 }
 
-async function onDeleteCredentialsGroup(service_reference: string, groupName: string) {
+async function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier, groupName: string) {
     busyMessage.value = "Updating your credentials...";
     isBusy.value = true;
     try {
-        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, service_reference, groupName);
+        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, serviceId, groupName);
     } catch (error) {
         // TODO: Implement error handling.
         console.error("Error deleting user credentials group", error);

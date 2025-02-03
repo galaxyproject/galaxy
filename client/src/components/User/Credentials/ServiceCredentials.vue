@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type {
     ServiceCredentialPayload,
     ServiceCredentialsDefinition,
+    ServiceCredentialsIdentifier,
     ServiceGroupPayload,
     ServiceVariableDefinition,
 } from "@/api/users";
@@ -37,16 +38,12 @@ const canCreateNewSet = computed<boolean>(
     () => newSetName.value.trim() !== "" && !availableSets.value.some((set) => set.name === newSetName.value)
 );
 
-const canShowSetSelector = computed<boolean>(
-    () => props.credentialDefinition.multiple && availableSets.value.length > 1
-);
-
 const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== "default");
 
 const emit = defineEmits<{
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
     (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
-    (e: "delete-credentials-group", service_reference: string, groupName: string): void;
+    (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
 }>();
 
 function onAddingNewSet() {
@@ -103,6 +100,10 @@ function getVariableDescription(name: string, type: CredentialType): string | un
     return getVariableDefinition(name, type).description;
 }
 
+function isVariableOptional(name: string, type: CredentialType): boolean {
+    return getVariableDefinition(name, type).optional;
+}
+
 function onDeleteGroup() {
     if (selectedSet.value) {
         //TODO: Implement confirmation dialog.
@@ -112,7 +113,7 @@ function onDeleteGroup() {
             selectedSet.value = defaultSet;
             onCurrentSetChange(defaultSet);
         }
-        emit("delete-credentials-group", props.credentialPayload.service_reference, groupNameToDelete);
+        emit("delete-credentials-group", props.credentialPayload, groupNameToDelete);
     }
 }
 </script>
@@ -122,31 +123,10 @@ function onDeleteGroup() {
         <form autocomplete="off">
             <h3>
                 {{ credentialDefinition.label || credentialDefinition.name }}
-                <BBadge
-                    v-if="credentialDefinition.optional"
-                    variant="secondary"
-                    class="optional-credentials"
-                    title="These credentials are optional. If you do not provide them, the tool will use default values or
-                    anonymous access.">
-                    Optional
-                </BBadge>
-                <BBadge
-                    v-else
-                    variant="danger"
-                    class="required-credentials"
-                    title="These credentials are required. You must provide them to use the tool.">
-                    Required
-                </BBadge>
-                <BBadge
-                    v-if="credentialDefinition.multiple"
-                    variant="info"
-                    title="You can provide multiple sets of credentials for this tool. But only one set can be active at a time.">
-                    Multiple
-                </BBadge>
             </h3>
             <p>{{ credentialDefinition.description }}</p>
             <div v-if="selectedSet">
-                <div v-if="canShowSetSelector" class="set-selection-bar">
+                <div class="set-selection-bar">
                     <b>Using set:</b>
                     <Multiselect
                         v-model="selectedSet"
@@ -173,7 +153,7 @@ function onDeleteGroup() {
                         v-model="variable.value"
                         type="text"
                         :title="getVariableTitle(variable.name, 'variable')"
-                        :optional="credentialDefinition.optional"
+                        :optional="isVariableOptional(variable.name, 'variable')"
                         :help="getVariableDescription(variable.name, 'variable')" />
                 </div>
                 <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
@@ -183,11 +163,11 @@ function onDeleteGroup() {
                         type="password"
                         :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
                         :title="getVariableTitle(secret.name, 'secret')"
-                        :optional="credentialDefinition.optional"
+                        :optional="isVariableOptional(secret.name, 'secret')"
                         :help="getVariableDescription(secret.name, 'secret')" />
                 </div>
 
-                <div v-if="credentialDefinition.multiple" class="set-management-bar">
+                <div class="set-management-bar">
                     <button
                         v-if="!isAddingNewSet"
                         title="Create a new set for these credentials so you can choose between them."

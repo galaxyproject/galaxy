@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import type {
-    CreateSourceCredentialsPayload,
-    ServiceCredentialPayload,
-    ServiceCredentialsDefinition,
-    ServiceGroupPayload,
-    SourceCredentialsDefinition,
-    UserCredentials,
+import {
+    type CreateSourceCredentialsPayload,
+    getKeyFromCredentialsIdentifier,
+    type ServiceCredentialPayload,
+    type ServiceCredentialsDefinition,
+    type ServiceCredentialsIdentifier,
+    type ServiceGroupPayload,
+    type SourceCredentialsDefinition,
+    type UserCredentials,
 } from "@/api/users";
 import { SECRET_PLACEHOLDER } from "@/stores/userCredentials";
 
@@ -28,7 +30,7 @@ const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCreden
 
 const emit = defineEmits<{
     (e: "save-credentials", credentials: CreateSourceCredentialsPayload): void;
-    (e: "delete-credentials-group", service_reference: string, groupName: string): void;
+    (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
 }>();
 
 function saveCredentials() {
@@ -37,15 +39,17 @@ function saveCredentials() {
 
 function initializeCredentials(): CreateSourceCredentialsPayload {
     const serviceCredentials = [];
-    for (const service_reference of props.toolCredentialsDefinition.services.keys()) {
-        const userProvidedCredentialForService = props.userToolCredentials.find(
-            (c) => c.service_reference === service_reference
+    for (const key of props.toolCredentialsDefinition.services.keys()) {
+        const userCredentialForService = props.userToolCredentials.find(
+            (c) => key === getKeyFromCredentialsIdentifier(c)
         );
-        const currentGroup = userProvidedCredentialForService?.current_group_name ?? "default";
-        const definition = getServiceCredentialsDefinition(service_reference);
-        const groups = buildGroupsFromUserCredentials(definition, userProvidedCredentialForService);
+
+        const currentGroup = userCredentialForService?.current_group_name ?? "default";
+        const definition = getServiceCredentialsDefinition(key);
+        const groups = buildGroupsFromUserCredentials(definition, userCredentialForService);
         const credential: ServiceCredentialPayload = {
-            service_reference: service_reference,
+            name: definition.name,
+            version: definition.version,
             current_group: currentGroup,
             groups,
         };
@@ -55,6 +59,7 @@ function initializeCredentials(): CreateSourceCredentialsPayload {
     const providedCredentials: CreateSourceCredentialsPayload = {
         source_type: "tool",
         source_id: props.toolId,
+        source_version: props.toolVersion,
         credentials: serviceCredentials,
     };
     return providedCredentials;
@@ -101,38 +106,36 @@ function buildGroupsFromUserCredentials(
 
 function onNewCredentialsSet(credential: ServiceCredentialPayload, newSet: ServiceGroupPayload) {
     const credentialFound = providedCredentials.value.credentials.find(
-        (c) => c.service_reference === credential.service_reference
+        (c) => c.name === credential.name && c.version === credential.version
     );
     if (credentialFound) {
         credentialFound.groups.push(newSet);
     }
 }
 
-function onDeleteCredentialsGroup(service_reference: string, groupName: string) {
+function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier, groupName: string) {
     const credentialFound = providedCredentials.value.credentials.find(
-        (c) => c.service_reference === service_reference
+        (c) => c.name === serviceId.name && c.version === serviceId.version
     );
     if (credentialFound) {
         credentialFound.groups = credentialFound.groups.filter((g) => g.name !== groupName);
-        emit("delete-credentials-group", service_reference, groupName);
+        emit("delete-credentials-group", serviceId, groupName);
     }
 }
 
 function onCurrentSetChange(credential: ServiceCredentialPayload, newSet: ServiceGroupPayload) {
     const credentialFound = providedCredentials.value.credentials.find(
-        (c) => c.service_reference === credential.service_reference
+        (c) => c.name === credential.name && c.version === credential.version
     );
     if (credentialFound) {
         credentialFound.current_group = newSet.name;
     }
 }
 
-function getServiceCredentialsDefinition(service_reference: string): ServiceCredentialsDefinition {
-    const definition = props.toolCredentialsDefinition.services.get(service_reference);
+function getServiceCredentialsDefinition(key: string): ServiceCredentialsDefinition {
+    const definition = props.toolCredentialsDefinition.services.get(key);
     if (!definition) {
-        throw new Error(
-            `No definition found for credential service reference ${service_reference} in tool ${props.toolId}`
-        );
+        throw new Error(`No definition found for credential service '${key}' in tool ${props.toolId}`);
     }
     return definition;
 }
@@ -147,8 +150,8 @@ function getServiceCredentialsDefinition(service_reference: string): ServiceCred
         </p>
         <ServiceCredentials
             v-for="credential in providedCredentials.credentials"
-            :key="credential.service_reference"
-            :credential-definition="getServiceCredentialsDefinition(credential.service_reference)"
+            :key="credential.name"
+            :credential-definition="getServiceCredentialsDefinition(getKeyFromCredentialsIdentifier(credential))"
             :credential-payload="credential"
             class="mb-2"
             @new-credentials-set="onNewCredentialsSet"
