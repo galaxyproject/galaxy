@@ -80,7 +80,7 @@
     </ActivityPanel>
 </template>
 
-<script>
+<script lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
@@ -91,6 +91,7 @@ import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
+import type { LintState } from "./modules/linting";
 import {
     bestPracticeWarningAnnotation,
     bestPracticeWarningAnnotationLength,
@@ -225,11 +226,11 @@ export default {
         },
     },
     methods: {
-        onAttributes(highlight) {
+        onAttributes(highlight: string) {
             const args = { highlight: highlight };
             this.$emit("onAttributes", args);
         },
-        onFixUntypedParameter(item) {
+        onFixUntypedParameter(item: LintState) {
             if (
                 confirm(
                     "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
@@ -240,7 +241,7 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        onFixDisconnectedInput(item) {
+        onFixDisconnectedInput(item: LintState) {
             if (
                 confirm(
                     "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
@@ -251,7 +252,7 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        onFixUnlabeledOutputs(item) {
+        onFixUnlabeledOutputs(item: LintState) {
             if (
                 confirm(
                     "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?",
@@ -262,14 +263,14 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        openAndFocus(item) {
+        openAndFocus(item: LintState) {
             this.stateStore.activeNodeId = item.stepId;
             this.$emit("onScrollTo", item.stepId);
         },
-        onHighlight(item) {
+        onHighlight(item: LintState) {
             this.$emit("onHighlight", item.stepId);
         },
-        onUnhighlight(item) {
+        onUnhighlight(item: LintState) {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {

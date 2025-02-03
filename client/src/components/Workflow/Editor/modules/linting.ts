@@ -6,7 +6,7 @@ import { assertDefined } from "@/utils/assertions";
 
 import { terminalFactory } from "./terminals";
 
-interface LintState {
+export interface LintState {
     stepId: number;
     stepLabel: string;
     warningLabel: string;
