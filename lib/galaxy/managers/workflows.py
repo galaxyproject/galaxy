@@ -86,7 +86,6 @@ from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.cwl import workflow_proxy
-from galaxy.tool_util_models.dynamic_tool_models import DynamicToolCreatePayload
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values,
@@ -671,8 +670,7 @@ class WorkflowContentsManager(UsesAnnotations):
             tool_reference_proxies = wf_proxy.tool_reference_proxies()
             for tool_reference_proxy in tool_reference_proxies:
                 # TODO: Namespace IDS in workflows.
-                representation = tool_reference_proxy.to_persistent_representation()
-                self.app.dynamic_tool_manager.create_tool(DynamicToolCreatePayload(representation=representation))
+                self.app.dynamic_tool_manager.create_tool_from_proxy(tool_reference_proxy)
             as_dict = wf_proxy.to_dict()
 
         return RawWorkflowDescription(as_dict, workflow_path)
