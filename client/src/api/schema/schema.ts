@@ -8097,6 +8097,8 @@ export interface components {
              * @constant
              */
             source_type: "tool";
+            /** Source Version */
+            source_version: string;
         };
         /**
          * CreateType
@@ -8194,6 +8196,24 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /** CredentialDefinitionResponse */
+        CredentialDefinitionResponse: {
+            /** Description */
+            description: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+        };
+        /** CredentialDefinitionsResponse */
+        CredentialDefinitionsResponse: {
+            /** Secrets */
+            secrets: components["schemas"]["CredentialDefinitionResponse"][];
+            /** Variables */
+            variables: components["schemas"]["CredentialDefinitionResponse"][];
         };
         /** CredentialGroupResponse */
         CredentialGroupResponse: {
@@ -18532,8 +18552,10 @@ export interface components {
             current_group: string | null;
             /** Groups */
             groups: components["schemas"]["ServiceGroupPayload"][];
-            /** Service Reference */
-            service_reference: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
         };
         /** ServiceGroupPayload */
         ServiceGroupPayload: {
@@ -20530,8 +20552,11 @@ export interface components {
         UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
         /** UserCredentialsResponse */
         UserCredentialsResponse: {
+            credential_definitions: components["schemas"]["CredentialDefinitionsResponse"];
             /** Current Group Name */
             current_group_name: string;
+            /** Description */
+            description: string;
             /** Groups */
             groups: {
                 [key: string]: components["schemas"]["CredentialGroupResponse"];
@@ -20541,8 +20566,10 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Service Reference */
-            service_reference: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
             /** Source Id */
             source_id: string;
             /**
@@ -20550,11 +20577,15 @@ export interface components {
              * @constant
              */
             source_type: "tool";
+            /** Source Version */
+            source_version: string;
             /**
              * User Id
              * @example 0123456789ABCDEF
              */
             user_id: string;
+            /** Version */
+            version: string;
         };
         /** UserDeletionPayload */
         UserDeletionPayload: {
@@ -38016,6 +38047,8 @@ export interface operations {
                 source_type?: "tool" | null;
                 /** @description The ID of the source to filter by. */
                 source_id?: string | null;
+                /** @description The version of the source to filter by. By default it is the latest version. */
+                source_version?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

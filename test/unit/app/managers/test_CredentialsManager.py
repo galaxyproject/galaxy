@@ -16,20 +16,22 @@ class TestCredentialsManager(BaseTestCase):
     def test_user_credentials(self):
         user = self._create_test_user()
         user_id = user.id
-        service_reference = "ref1"
+        name = "ServiceA"
+        version = "1.0"
         source_type: SOURCE_TYPE = "tool"
         source_id = "tool_id"
-        user_credentials = self.credentials_manager.get_user_credentials(user_id, source_type, source_id)
+        source_version = "tool_version"
+        user_credentials = self.credentials_manager.get_user_credentials(
+            user_id, source_type, source_id, source_version
+        )
 
         user_credentials_id = self.credentials_manager.add_user_credentials(
-            user_credentials, user_id, service_reference, source_type, source_id
+            user_credentials, user_id, source_type, source_id, source_version, name, version
         )
 
         group_name = "group1"
 
-        user_credential_group_id = self.credentials_manager.add_group(
-            user_credentials, user_credentials_id, group_name, service_reference
-        )
+        user_credential_group_id = self.credentials_manager.add_group(user_credentials, user_credentials_id, group_name)
 
         variable_name = "var1"
         variable_value = "value1"
@@ -47,14 +49,16 @@ class TestCredentialsManager(BaseTestCase):
         self.trans.sa_session.commit()
 
         user_credentials = self.credentials_manager.get_user_credentials(
-            user_id, source_type, source_id, user_credentials_id, user_credential_group_id
+            user_id, source_type, source_id, source_version, user_credential_group_id
         )
         for result_user_credentials, result_credentials_group, _ in user_credentials:
             assert result_user_credentials.id == user_credentials_id
             assert result_user_credentials.user_id == user_id
-            assert result_user_credentials.service_reference == service_reference
+            assert result_user_credentials.name == name
+            assert result_user_credentials.version == version
             assert result_user_credentials.source_type == source_type
             assert result_user_credentials.source_id == source_id
+            assert result_user_credentials.source_version == source_version
             assert result_user_credentials.current_group_id == user_credential_group_id
             assert result_credentials_group.id == user_credential_group_id
             assert result_credentials_group.name == group_name
