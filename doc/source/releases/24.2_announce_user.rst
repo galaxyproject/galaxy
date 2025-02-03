@@ -111,6 +111,18 @@ Updates include:
      - Only the currently active step shows below, leaving full width for graph, progress
        bars in the Header
 
+Display Metrics for Workflow Invocations
+-----------------------------------------------------------
+
+Galaxy now provides a Metrics tab in the Workflow Invocation View, allowing users to quickly
+summarize runtime, memory usage, and core allocation per invocation. This enhancement helps users
+better understand the resource usage of their workflows. The Metrics tab displays runtime in
+seconds and core allocation for each step and tool in the workflow.
+[`#19048 <https://github.com/galaxyproject/galaxy/pull/19048>`__]
+
+.. figure:: images/24.2-workflow-invocation-metrics.png
+   :alt: Metrics tab in the Workflow Invocation View.
+
 Libraries Modernization: Directory Dataset Picker
 -----------------------------------------------------------
 
