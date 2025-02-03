@@ -709,7 +709,6 @@ class TestDatasetsApi(ApiTestCase):
         for purged_source_id in expected_purged_source_ids:
             self.dataset_populator.wait_for_purge(history_id, purged_source_id["id"])
 
-    @requires_new_history
     @requires_new_library
     def test_delete_batch_lddas(self):
         # Create a library dataset
@@ -860,9 +859,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_storage_show(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
-        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
-        dataset_id = hda_details["dataset_id"]
-        storage_info_dict = self.dataset_populator.dataset_storage_info(dataset_id)
+        storage_info_dict = self.dataset_populator.dataset_storage_info(hda["id"])
         assert_has_keys(storage_info_dict, "object_store_id", "name", "description")
 
     def test_storage_show_on_discarded(self, history_id):
