@@ -34,7 +34,7 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
-                <CellButton title="Attach Data" @click="$emit('configure')">
+                <CellButton v-if="name !== 'markdown'" title="Attach Data" @click="$emit('configure')">
                     <FontAwesomeIcon :icon="faPaperclip" />
                 </CellButton>
                 <CellButton title="Clone Cell" @click="$emit('clone')">
@@ -52,8 +52,18 @@
             </div>
             <div class="ml-2 w-100">
                 <hr class="solid m-0" />
-                <CellConfigure v-if="configure" />
-                <CellCode v-else :key="name" :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
+                <CellConfigure
+                    v-if="configure"
+                    :content="content"
+                    @cancel="$emit('configure')"
+                    @change="$emit('change', $event)" />
+                <CellCode
+                    v-else
+                    :key="name"
+                    class="mt-1"
+                    :value="content"
+                    :mode="mode"
+                    @change="$emit('change', $event)" />
             </div>
         </div>
         <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
@@ -74,7 +84,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
@@ -86,7 +96,7 @@ import CellConfigure from "./CellConfigure.vue";
 
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
-defineProps<{
+const props = defineProps<{
     cellIndex: number;
     cellTotal: number;
     configure?: boolean;
@@ -100,15 +110,15 @@ defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
 const confirmDelete = ref(false);
 const hover = ref(false);
 
-function getMode(cellName: string) {
-    switch (cellName) {
+const mode = computed(() => {
+    switch (props.name) {
         case "galaxy":
             return "python";
         case "markdown":
             return "markdown";
     }
     return "json";
-}
+});
 </script>
 
 <style lang="scss">
