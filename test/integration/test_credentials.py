@@ -110,21 +110,9 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_provide_credential_invalid_group(self):
-        payload = {
-            "source_type": "tool",
-            "source_id": CREDENTIALS_TEST_TOOL,
-            "source_version": "test",
-            "credentials": [
-                {
-                    "name": "service1",
-                    "version": "1",
-                    "current_group": "invalid_group_name",
-                    "groups": [{"name": "default", "variables": [], "secrets": []}],
-                }
-            ],
-        }
-        response = self._post("/api/users/current/credentials", data=payload, json=True)
-        self._assert_status_code_is(response, 400)
+        payload = self._build_credentials_payload()
+        payload["credentials"][0]["current_group"] = "invalid_group_name"
+        self._provide_user_credentials(payload, status_code=400)
 
     def test_invalid_source_type(self):
         payload = self._build_credentials_payload(source_type="invalid_source_type")
@@ -147,6 +135,13 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
     def test_not_existing_service_version(self):
         payload = self._build_credentials_payload(service_version="nonexistent_service_version")
         self._provide_user_credentials(payload, status_code=404)
+
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_invalid_credential_name(self):
+        for key in ["variables", "secrets"]:
+            payload = self._build_credentials_payload()
+            payload["credentials"][0]["groups"][0][key][0]["name"] = "invalid_name"
+            self._provide_user_credentials(payload, status_code=400)
 
     def test_delete_nonexistent_service_credentials(self):
         response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e")
