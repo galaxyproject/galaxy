@@ -8,32 +8,48 @@
 Highlights
 ===========================================================
 
-Feature1
---------
 
-Feature description.
 
-Feature2
---------
+**A Wizard-like Export View for Workflow Invocations**. The workflow invocation
+export process has been enhanced with a new wizard-like interface, making it
+more guided and user-friendly. This interface simplifies complex processes with
+many options, providing a step-by-step approach to exporting workflow
+invocations.
 
-Feature description.
+**Workflow Editor Enhancements: Activity Bar and Undo Stack UI**. The Activity
+Bar is now present in the Workflow Editor along side multiple interface
+improvements.
 
-Feature3
---------
+**Masthead Revision and Activity Bar Improvements**. The Galaxy masthead has
+been revised to achieve consistency and reduce redundancy, aligning its
+functionality with the Activity Bar.
 
-Feature description.
+**Improved Navigation and Usability of Collection Builders**. To guide users
+towards creating collections of the correct type, Galaxy now provides better
+navigation via buttons directly on data collection parameters. Users can create
+a collection with the required structure for the input, with pre-filtered items
+from their current history, also ensuring compatibility with required file
+extensions. Additionally, users can upload datasets directly to the collection
+builder.
 
-DRAFT CONTENT
+**Enhanced Workflow Invocation View**. The Workflow Invocation View, introduced
+in the previous release has been significantly refined to improve the usability
+and visualization of workflow runs.
 
-* Add wizard-like export view for workflow invocations
-* Workflow Editor Activity Bar + Undo stack UI
-* Masthead Revision
-* Guide users to collection builders
-* Workflow Invocation view improvements
-* Libraries Modernisation: Directory Dataset Picker
-* Improvements to help terms & tool help.
-* Feature - stdout live reporting
-* Allow OAuth 2.0 user defined file sources (w/Dropbox integration)
+**Display Metrics for Workflow Invocations**. Galaxy now provides a Metrics tab
+in the Workflow Invocation View, allowing users to quickly summarize runtime,
+memory usage, and core allocation per invocation. This enhancement helps users
+better understand the resource usage of their workflows.
+
+**Libraries Modernization: Directory Dataset Picker**. The dataset picker for
+user and import directories has been modernized, providing a more intuitive and
+user-friendly interface. Users can now easily import files or folders from
+their user directory or import directory into a library.
+
+**Live Reporting of Job Console Outputs**. If enabled by the Galaxy
+administrators, it will now be possible to view live console output for running
+jobs. The job output will be available on the Job Information page where these
+logs have always been available for completed jobs. 
 
 Please see the `24.2 user release notes <24.2_announce_user.html>`__ for a summary of new user features.
 
