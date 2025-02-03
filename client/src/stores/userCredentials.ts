@@ -85,7 +85,8 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
             }
             const group = serviceCredentials.groups[groupName];
             if (!group) {
-                throw new Error(`No group found for name ${groupName}`);
+                // Group does not exist, nothing to delete
+                return;
             }
             const { error } = await GalaxyApi().DELETE(
                 "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
@@ -104,7 +105,6 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
                 if (credential.name === serviceIdentifier.name && credential.version === serviceIdentifier.version) {
                     delete credential.groups[groupName];
                 }
-                return credential;
             });
             set(userCredentialsForTools.value, key, updatedCredentials);
         }
