@@ -649,7 +649,9 @@ class ToolBox(AbstractToolBox):
             tool_source: ToolSource = YamlToolSource(tool_representation)
         elif tool_format in ["CommandLineTool", "ExpressionTool"]:
             # CWL tool
-            if config_file := dynamic_tool.tool_path:
+            if dynamic_tool.proxy:
+                tool_source = CwlToolSource(tool_proxy=dynamic_tool.proxy)
+            elif config_file := dynamic_tool.tool_path:
                 tool_source = self.get_expanded_tool_source(config_file, uuid=dynamic_tool.uuid)
             else:
                 # Restore from persistent representation

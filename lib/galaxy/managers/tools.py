@@ -198,6 +198,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
                 uuid=proxy.uuid,
                 value=representation,
                 public=True,
+                proxy=proxy,
             )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool

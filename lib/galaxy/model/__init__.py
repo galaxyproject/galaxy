@@ -239,6 +239,7 @@ if TYPE_CHECKING:
         QuotaSourceMap,
     )
     from galaxy.schema.invocation import InvocationMessageUnion
+    from galaxy.tool_util.cwl.parser import ToolProxy
 
 log = logging.getLogger(__name__)
 
@@ -1482,12 +1483,19 @@ class DynamicTool(Base, Dictifiable, RepresentById):
         "representation",
     )
 
-    def __init__(self, active=True, hidden=True, **kwd):
+    def __init__(
+        self,
+        uuid: Optional[Union[UUID, str]] = None,
+        proxy: Optional["ToolProxy"] = None,
+        **kwd,
+    ):
         super().__init__(**kwd)
-        self.active = active
-        self.hidden = hidden
-        _uuid = kwd.get("uuid")
-        self.uuid = get_uuid(_uuid)
+        self.uuid = get_uuid(uuid)
+        self.proxy = proxy
+
+    @reconstructor
+    def init_on_load(self):
+        self.proxy = None
 
     def to_dict(self, view="collection", value_mapper=None):
         rval = super().to_dict(view, value_mapper=None)
