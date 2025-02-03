@@ -27,23 +27,37 @@ If no configuration is specified, the default is to load only the ``core`` plugi
 Available Job Metrics Plugins
 -----------------------------
 
-The list of metrics plugins implemented in the code can be found at ``lib/galaxy/job_metrics/instrumenters``.
+The list of metrics plugins implemented in the code can be found at ``lib/galaxy/job_metrics/instrumenters``. A list of
+available plugins and example configurations follows.
 
 
 core
 ~~~~
 
-The core plugin captures the number of cores allocated to the job (``$GALAXY_SLOTS``), the start and end time of job (in
-seconds since epoch) and computes the runtime in seconds.
-
-It has no options.
-
 .. code-block:: yaml
 
     - type: core
+      timezone: UTC
+
+The core plugin captures the number of cores allocated to the job (``$GALAXY_SLOTS``), the start and end time of job (in
+seconds since epoch) and computes the runtime in seconds.
+
+The optional ``timezone`` option (default: ``null``) controls how times are displayed in the UI. If unset, times are
+displayed in server local time. Note that not all values respect daylight savings time; for example, ``US/Eastern``,
+``America/New_York``, and ``EST5EDT`` do, whereas ``EST`` does not. Possible values are determined by the server time
+zone library and can be listed with the following command:
+
+.. code-block:: shell
+
+    python3 -c 'import zoneinfo; list(map(print, sorted(zoneinfo.available_timezones())))'
 
 cpuinfo
 ~~~~~~~
+
+.. code-block:: yaml
+
+    - type: cpuinfo
+      verbose: false
 
 The cpuinfo plugin captures the processor count on the system that that job ran on (note that this may differ from the
 number of CPUs actually allocated to the job).
@@ -53,53 +67,42 @@ The optional ``verbose`` option (default: ``false``) captures details (likely fa
 
 The cpuinfo plugin works on Linux only.
 
-.. code-block:: yaml
-
-    - type: cpuinfo
-      verbose: false
-
 meminfo
 ~~~~~~~
+
+.. code-block:: yaml
+
+    - type: meminfo
 
 The meminfo plugin captures the memory information on the system that the job ran on (note that this may differ from the
 amount of memory actually allocated to the job).
 
 It has no options.
 
-.. code-block:: yaml
-
-    - type: meminfo
-
 hostname
 ~~~~~~~~
-
-The hostname plugin captures the output of ``hostname`` on the system that the job ran on.
-
-It has no options.
 
 .. code-block:: yaml
 
     - type: hostname
 
-uname
-~~~~~
-
-The uname plugin captures the output of ``uname -a`` on the system that the job ran on.
+The hostname plugin captures the output of ``hostname`` on the system that the job ran on.
 
 It has no options.
+
+uname
+~~~~~
 
 .. code-block:: yaml
 
     - type: uname
 
+The uname plugin captures the output of ``uname -a`` on the system that the job ran on.
+
+It has no options.
+
 env
 ~~~
-
-The env plugin captures environment variables set in the job's executing environment.
-
-By default, it captures **all** environment variables, which is likely excessive but may be useful for debugging. The
-optional ``variables`` option can be set to a list of variables to capture (if set). For legacy purposes, this can also
-be a comma-separated string of variable names.
 
 .. code-block:: yaml
 
@@ -109,8 +112,23 @@ be a comma-separated string of variable names.
         - SLURM_CPUS_ON_NODE
         - SLURM_JOBID
 
+The env plugin captures environment variables set in the job's executing environment.
+
+By default, it captures **all** environment variables, which is likely excessive but may be useful for debugging. The
+optional ``variables`` option can be set to a list of variables to capture (if set). For legacy purposes, this can also
+be a comma-separated string of variable names.
+
 cgroup
 ~~~~~~
+
+.. code-block:: yaml
+
+    - type: cgroup
+      verbose: false
+      version: 2
+      params:
+        - cpu.stat
+        - memory.peak
 
 The cgroup plugin captures values set by `Linux Control Groups (cgroups)
 <https://docs.kernel.org/admin-guide/cgroup-v2.html>`_. This is most useful if your jobs run in unique per-job Cgroups
@@ -131,15 +149,6 @@ list of parameter names (files in the controller directory) to capture. For lega
 comma-separated string of cgroup parameter names.
 
 The cgroup plugin works on Linux only.
-
-.. code-block:: yaml
-
-    - type: cgroup
-      verbose: false
-      version: 2
-      params:
-        - cpu.stat
-        - memory.peak
 
 Overriding the Global Job Metrics Configuration
 -----------------------------------------------
