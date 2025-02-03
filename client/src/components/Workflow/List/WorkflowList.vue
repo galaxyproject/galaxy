@@ -27,7 +27,7 @@ import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
 
-// Temporary interface to match the `Workflow` interface from `WorkflowCard`
+// Interface to match the `Workflow` interface from `WorkflowCard`
 interface SelectedWorkflow {
     id: string;
     name: string;
