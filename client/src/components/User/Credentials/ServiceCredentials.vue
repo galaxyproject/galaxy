@@ -145,29 +145,7 @@ function onDeleteGroup() {
                         @click="onDeleteGroup">
                         <FontAwesomeIcon :icon="faTrash" />
                     </button>
-                </div>
-
-                <div v-for="variable in selectedSet.variables" :key="variable.name">
-                    <FormElement
-                        :id="`${selectedSet.name}-${variable.name}-variable`"
-                        v-model="variable.value"
-                        type="text"
-                        :title="getVariableTitle(variable.name, 'variable')"
-                        :optional="isVariableOptional(variable.name, 'variable')"
-                        :help="getVariableDescription(variable.name, 'variable')" />
-                </div>
-                <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
-                    <FormElement
-                        :id="`${selectedSet.name}-${secret.name}-secret`"
-                        v-model="secret.value"
-                        type="password"
-                        :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
-                        :title="getVariableTitle(secret.name, 'secret')"
-                        :optional="isVariableOptional(secret.name, 'secret')"
-                        :help="getVariableDescription(secret.name, 'secret')" />
-                </div>
-
-                <div class="set-management-bar">
+                    <div class="set-management-bar">
                     <button
                         v-if="!isAddingNewSet"
                         title="Create a new set for these credentials so you can choose between them."
@@ -189,6 +167,27 @@ function onDeleteGroup() {
                         </button>
                         <button v-if="isAddingNewSet" @click="onCancelAddingNewSet">Cancel</button>
                     </div>
+                </div>
+                </div>
+
+                <div v-for="variable in selectedSet.variables" :key="variable.name">
+                    <FormElement
+                        :id="`${selectedSet.name}-${variable.name}-variable`"
+                        v-model="variable.value"
+                        type="text"
+                        :title="getVariableTitle(variable.name, 'variable')"
+                        :optional="isVariableOptional(variable.name, 'variable')"
+                        :help="getVariableDescription(variable.name, 'variable')" />
+                </div>
+                <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
+                    <FormElement
+                        :id="`${selectedSet.name}-${secret.name}-secret`"
+                        v-model="secret.value"
+                        type="password"
+                        :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
+                        :title="getVariableTitle(secret.name, 'secret')"
+                        :optional="isVariableOptional(secret.name, 'secret')"
+                        :help="getVariableDescription(secret.name, 'secret')" />
                 </div>
             </div>
         </form>
