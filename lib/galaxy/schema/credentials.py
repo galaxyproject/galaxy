@@ -27,13 +27,30 @@ class CredentialGroupResponse(Model):
     secrets: List[CredentialResponse]
 
 
+class CredentialDefinitionResponse(Model):
+    name: str
+    label: str
+    description: str
+    optional: bool
+
+
+class CredentialDefinitionsResponse(Model):
+    variables: List[CredentialDefinitionResponse]
+    secrets: List[CredentialDefinitionResponse]
+
+
 class UserCredentialsResponse(Model):
     user_id: EncodedDatabaseIdField
     id: EncodedDatabaseIdField
     source_type: SOURCE_TYPE
     source_id: str
-    service_reference: str
+    source_version: str
+    name: str
+    version: str
+    label: str
+    description: str
     current_group_name: str
+    credential_definitions: CredentialDefinitionsResponse
     groups: Dict[str, CredentialGroupResponse]
 
 
@@ -53,7 +70,8 @@ class ServiceGroupPayload(Model):
 
 
 class ServiceCredentialPayload(Model):
-    service_reference: str  # Reference to the service
+    name: str
+    version: str
     current_group: Optional[str] = "default"  # The selected group, the one that would be used when running the service
     groups: List[ServiceGroupPayload]  # All provided groups, including the selected one
 
@@ -61,4 +79,5 @@ class ServiceCredentialPayload(Model):
 class CreateSourceCredentialsPayload(Model):
     source_type: SOURCE_TYPE
     source_id: str
+    source_version: str
     credentials: List[ServiceCredentialPayload]  # The credentials to create for each service

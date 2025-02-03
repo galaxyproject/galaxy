@@ -12139,13 +12139,15 @@ class UserCredentials(Base):
     """
 
     __tablename__ = "user_credentials"
-    __table_args__ = (UniqueConstraint("user_id", "service_reference", "source_type", "source_id"),)
+    __table_args__ = (UniqueConstraint("user_id", "source_type", "source_id", "source_version", "name", "version"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     source_type: Mapped[str] = mapped_column()
     source_id: Mapped[str] = mapped_column()
-    service_reference: Mapped[str] = mapped_column()
+    source_version: Mapped[str] = mapped_column()
+    name: Mapped[str] = mapped_column()
+    version: Mapped[str] = mapped_column()
     current_group_id: Mapped[int] = mapped_column(
         ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
     )

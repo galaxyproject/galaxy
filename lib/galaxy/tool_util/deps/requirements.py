@@ -314,20 +314,25 @@ class BaseCredential:
         self,
         name: str,
         inject_as_env: str,
+        optional: bool = False,
         label: str = "",
         description: str = "",
     ) -> None:
         self.name = name
         self.inject_as_env = inject_as_env
+        self.optional = optional
         self.label = label
         self.description = description
+
+        if not self.name:
+            raise ValueError("Missing credential (secret/variable) name")
         if not self.inject_as_env:
             raise ValueError("Missing inject_as_env")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
-            "inject_as_env": self.inject_as_env,
+            "optional": self.optional,
             "label": self.label,
             "description": self.description,
         }
@@ -339,6 +344,7 @@ class Secret(BaseCredential):
         return cls(
             name=elem.get("name"),
             inject_as_env=elem.get("inject_as_env"),
+            optional=string_as_bool(elem.get("optional", "false")),
             label=elem.get("label", ""),
             description=elem.get("description", ""),
         )
@@ -350,6 +356,7 @@ class Variable(BaseCredential):
         return cls(
             name=elem.get("name"),
             inject_as_env=elem.get("inject_as_env"),
+            optional=string_as_bool(elem.get("optional", "false")),
             label=elem.get("label", ""),
             description=elem.get("description", ""),
         )
@@ -359,32 +366,28 @@ class CredentialsRequirement:
     def __init__(
         self,
         name: str,
-        service_reference: str,
-        optional: bool = True,
-        multiple: bool = False,
+        version: str,
         label: str = "",
         description: str = "",
         secrets: Optional[List[Secret]] = None,
         variables: Optional[List[Variable]] = None,
     ) -> None:
         self.name = name
-        self.service_reference = service_reference
-        self.optional = optional
-        self.multiple = multiple
+        self.version = version
         self.label = label
         self.description = description
         self.secrets = secrets if secrets is not None else []
         self.variables = variables if variables is not None else []
 
-        if not self.service_reference:
-            raise ValueError("Missing service_reference")
+        if not self.name:
+            raise ValueError("Missing user credentials name")
+        if not self.version:
+            raise ValueError("Missing version")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
-            "service_reference": self.service_reference,
-            "optional": self.optional,
-            "multiple": self.multiple,
+            "version": self.version,
             "label": self.label,
             "description": self.description,
             "secrets": [s.to_dict() for s in self.secrets],
@@ -394,18 +397,14 @@ class CredentialsRequirement:
     @classmethod
     def from_dict(cls, dict: Dict[str, Any]) -> "CredentialsRequirement":
         name = dict["name"]
-        service_reference = dict["service_reference"]
-        optional = dict.get("optional", True)
-        multiple = dict.get("multiple", False)
+        version = dict["version"]
         label = dict.get("label", "")
         description = dict.get("description", "")
         secrets = [Secret.from_element(s) for s in dict.get("secrets", [])]
         variables = [Variable.from_element(v) for v in dict.get("variables", [])]
         return cls(
             name=name,
-            service_reference=service_reference,
-            optional=optional,
-            multiple=multiple,
+            version=version,
             label=label,
             description=description,
             secrets=secrets,
@@ -509,18 +508,14 @@ def container_from_element(container_elem) -> ContainerDescription:
 
 def credentials_from_element(credentials_elem) -> CredentialsRequirement:
     name = credentials_elem.get("name")
-    service_reference = credentials_elem.get("service_reference")
-    optional = string_as_bool(credentials_elem.get("optional", "true"))
-    multiple = string_as_bool(credentials_elem.get("multiple", "false"))
+    version = credentials_elem.get("version")
     label = credentials_elem.get("label", "")
     description = credentials_elem.get("description", "")
     secrets = [Secret.from_element(elem) for elem in credentials_elem.findall("secret")]
     variables = [Variable.from_element(elem) for elem in credentials_elem.findall("variable")]
     return CredentialsRequirement(
         name=name,
-        service_reference=service_reference,
-        optional=optional,
-        multiple=multiple,
+        version=version,
         label=label,
         description=description,
         secrets=secrets,

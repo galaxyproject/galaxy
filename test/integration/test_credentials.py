@@ -1,6 +1,7 @@
-from uuid import uuid4
-
+from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
+
+CREDENTIALS_TEST_TOOL = "secret_tool"
 
 
 class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.ConfiguresDatabaseVault):
@@ -9,22 +10,23 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         super().handle_galaxy_config_kwds(config)
         cls._configure_database_vault(config)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_provide_credential(self):
         created_user_credentials = self._provide_user_credentials()
         assert len(created_user_credentials) == 1
         assert created_user_credentials[0]["current_group_name"] == "default"
         assert len(created_user_credentials[0]["groups"]["default"]["variables"]) == 1
-        assert len(created_user_credentials[0]["groups"]["default"]["secrets"]) == 3
+        assert len(created_user_credentials[0]["groups"]["default"]["secrets"]) == 2
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_anon_users_cannot_provide_credentials(self):
         payload = self._build_credentials_payload()
         response = self._post("/api/users/current/credentials", data=payload, json=True, anon=True)
         self._assert_status_code_is(response, 403)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_list_user_credentials(self):
-        source_id = f"test_tool_list_credentials_{uuid4()}"
-        payload = self._build_credentials_payload(source_id=source_id)
-        self._provide_user_credentials(payload)
+        self._provide_user_credentials()
 
         # Check there is at least one credential
         response = self._get("/api/users/current/credentials")
@@ -33,40 +35,28 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert len(list_user_credentials) > 0
 
         # Check the specific credential exists
-        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-        self._assert_status_code_is(response, 200)
-        list_user_credentials = response.json()
-        assert len(list_user_credentials) == 1
-        assert list_user_credentials[0]["source_id"] == source_id
+        self._check_credentials_exist()
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_other_users_cannot_list_credentials(self):
-        source_id = f"test_others_cant_list_credentials_{uuid4()}"
-        payload = self._build_credentials_payload(source_id=source_id)
-        self._provide_user_credentials(payload)
+        self._provide_user_credentials()
 
-        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-        self._assert_status_code_is(response, 200)
-        list_user_credentials = response.json()
-        assert len(list_user_credentials) == 1
-        assert list_user_credentials[0]["source_id"] == source_id
+        self._check_credentials_exist()
 
         with self._different_user():
-            response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-            self._assert_status_code_is(response, 200)
-            list_user_credentials = response.json()
-            assert len(list_user_credentials) == 0
+            self._check_credentials_exist(num_credentials=0)
 
     def test_list_by_source_id_requires_source_type(self):
-        response = self._get("/api/users/current/credentials?source_id=test_tool")
+        response = self._get("/api/users/current/credentials?source_id={CREDENTIALS_TEST_TOOL}")
         self._assert_status_code_is(response, 400)
 
     def test_list_unsupported_source_type(self):
         response = self._get("/api/users/current/credentials?source_type=invalid")
         self._assert_status_code_is(response, 400)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_add_group_to_credentials(self):
-        source_id = f"test_tool_add_group_{uuid4()}"
-        payload = self._build_credentials_payload(source_id=source_id)
+        payload = self._build_credentials_payload()
         user_credentials = self._provide_user_credentials(payload)
         assert len(user_credentials) == 1
         assert len(user_credentials[0]["groups"]) == 1
@@ -79,43 +69,31 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert updated_user_credentials[0]["current_group_name"] == new_group_name
         assert len(updated_user_credentials[0]["groups"]) == 2
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_delete_service_credentials(self):
         # Create credentials
-        source_id = f"test_tool_delete_service_credentials_{uuid4()}"
-        payload = self._build_credentials_payload(source_id=source_id)
-        created_user_credentials = self._provide_user_credentials(payload)
+        created_user_credentials = self._provide_user_credentials()
         user_credentials_id = created_user_credentials[0]["id"]
 
         # Check credentials exist
-        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-        self._assert_status_code_is(response, 200)
-        list_user_credentials = response.json()
-        assert len(list_user_credentials) == 1
-        assert list_user_credentials[0]["source_id"] == source_id
+        self._check_credentials_exist()
 
         # Delete credentials
         response = self._delete(f"/api/users/current/credentials/{user_credentials_id}")
         self._assert_status_code_is(response, 204)
 
         # Check credentials are deleted
-        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-        self._assert_status_code_is(response, 200)
-        list_user_credentials = response.json()
-        assert len(list_user_credentials) == 0
+        self._check_credentials_exist(num_credentials=0)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_delete_credentials_group(self):
         target_group_name = "new_group"
-        source_id = f"test_tool_delete_credentials_group_{uuid4()}"
-        payload = self._build_credentials_payload(source_id=source_id)
+        payload = self._build_credentials_payload()
         payload = self._add_group_and_set_as_current(payload, target_group_name)
         user_credentials = self._provide_user_credentials(payload)
 
         # Check credentials exist with the new group
-        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-        self._assert_status_code_is(response, 200)
-        list_user_credentials = response.json()
-        assert len(list_user_credentials) == 1
-        assert list_user_credentials[0]["source_id"] == source_id
+        list_user_credentials = self._check_credentials_exist()
         assert list_user_credentials[0]["current_group_name"] == target_group_name
 
         # Delete the group
@@ -126,20 +104,20 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         self._assert_status_code_is(response, 204)
 
         # Check group is deleted
-        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
-        self._assert_status_code_is(response, 200)
-        list_user_credentials = response.json()
-        assert len(list_user_credentials) == 1
+        list_user_credentials = self._check_credentials_exist()
         assert len(list_user_credentials[0]["groups"]) == 1
         assert list_user_credentials[0]["current_group_name"] == "default"
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_provide_credential_invalid_group(self):
         payload = {
             "source_type": "tool",
-            "source_id": "test_tool",
+            "source_id": CREDENTIALS_TEST_TOOL,
+            "source_version": "test",
             "credentials": [
                 {
-                    "service_reference": "invalid_test_service",
+                    "name": "service1",
+                    "version": "1",
                     "current_group": "invalid_group_name",
                     "groups": [{"name": "default", "variables": [], "secrets": []}],
                 }
@@ -147,6 +125,28 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         }
         response = self._post("/api/users/current/credentials", data=payload, json=True)
         self._assert_status_code_is(response, 400)
+
+    def test_invalid_source_type(self):
+        payload = self._build_credentials_payload(source_type="invalid_source_type")
+        self._provide_user_credentials(payload, status_code=400)
+
+    def test_not_existing_tool(self):
+        payload = self._build_credentials_payload(source_id="nonexistent_tool")
+        self._provide_user_credentials(payload, status_code=404)
+
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_not_existing_tool_version(self):
+        payload = self._build_credentials_payload(source_version="nonexistent_tool_version")
+        self._provide_user_credentials(payload, status_code=404)
+
+    def test_not_existing_service_name(self):
+        payload = self._build_credentials_payload(service_name="nonexistent_service")
+        self._provide_user_credentials(payload, status_code=404)
+
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_not_existing_service_version(self):
+        payload = self._build_credentials_payload(service_version="nonexistent_service_version")
+        self._provide_user_credentials(payload, status_code=404)
 
     def test_delete_nonexistent_service_credentials(self):
         response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e")
@@ -156,6 +156,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e/f2db41e1fa331b3e")
         self._assert_status_code_is(response, 400)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_cannot_delete_default_credential_group(self):
         created_user_credentials = self._provide_user_credentials()
         user_credentials_id = created_user_credentials[0]["id"]
@@ -164,19 +165,30 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/{group_id}")
         self._assert_status_code_is(response, 400)
 
-    def _provide_user_credentials(self, payload=None):
+    def _provide_user_credentials(self, payload=None, status_code=200):
         payload = payload or self._build_credentials_payload()
         response = self._post("/api/users/current/credentials", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        return response.json()
+        self._assert_status_code_is(response, status_code)
+        if status_code == 200:
+            return response.json()
+        return []
 
-    def _build_credentials_payload(self, source_type: str = "tool", source_id: str = "test_tool"):
+    def _build_credentials_payload(
+        self,
+        source_type: str = "tool",
+        source_id: str = CREDENTIALS_TEST_TOOL,
+        source_version: str = "test",
+        service_name: str = "service1",
+        service_version: str = "1",
+    ):
         return {
             "source_type": source_type,
             "source_id": source_id,
+            "source_version": source_version,
             "credentials": [
                 {
-                    "service_reference": "test_service",
+                    "name": service_name,
+                    "version": service_version,
                     "current_group": "default",
                     "groups": [
                         {
@@ -185,7 +197,6 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                             "secrets": [
                                 {"name": "username", "value": "user"},
                                 {"name": "password", "value": "pass"},
-                                {"name": "token", "value": "key"},
                             ],
                         }
                     ],
@@ -205,9 +216,18 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                 "secrets": [
                     {"name": "username", "value": "user"},
                     {"name": "password", "value": "pass"},
-                    {"name": "token", "value": "key"},
                 ],
             }
         )
         assert len(payload["credentials"][0]["groups"]) == 2
         return payload
+
+    def _check_credentials_exist(self, source_id: str = CREDENTIALS_TEST_TOOL, num_credentials: int = 1):
+        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
+        self._assert_status_code_is(response, 200)
+        list_user_credentials = response.json()
+        assert len(list_user_credentials) == num_credentials
+        if num_credentials > 0:
+            assert list_user_credentials[0]["source_id"] == source_id
+
+        return list_user_credentials
