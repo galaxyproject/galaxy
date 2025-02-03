@@ -81,6 +81,7 @@ from galaxy.tool_util.parser import (
     RequiredFiles,
     ToolOutputCollectionPart,
 )
+from galaxy.tool_util.parser.cwl import CwlToolSource
 from galaxy.tool_util.parser.interface import (
     HelpContent,
     InputSource,
@@ -608,33 +609,35 @@ class ToolBox(AbstractToolBox):
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
 
-    def create_dynamic_tool(self, dynamic_tool, **kwds):
-        tool_format = dynamic_tool.tool_format
-        tool_representation = dynamic_tool.value
-        if "name" not in tool_representation:
-            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
-        strict_cwl_validation = getattr(self.app.config, "strict_cwl_validation", True)
-        get_source_kwds = dict(
-            tool_format=tool_format,
-            tool_representation=tool_representation,
-            strict_cwl_validation=strict_cwl_validation,
-            uuid=dynamic_tool.uuid,
-        )
-        if dynamic_tool.tool_directory:
-            get_source_kwds["tool_directory"] = dynamic_tool.tool_directory
-        if dynamic_tool.tool_path:
-            config_file = dynamic_tool.tool_path
-            # TODO: uuid probably needed here...
-            tool_source = get_tool_source(
-                config_file,
-                enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", True),
-                tool_location_fetcher=self.tool_location_fetcher,
-                strict_cwl_validation=strict_cwl_validation,
-            )
+    def create_dynamic_tool(self, dynamic_tool):
+        if dynamic_tool.proxy:
+            # CWL tool
+            tool_source: ToolSource = CwlToolSource(tool_proxy=dynamic_tool.proxy)
         else:
-            tool_source = get_tool_source_from_representation(**get_source_kwds)
-        kwds["dynamic"] = True
-        tool = self._create_tool_from_source(tool_source, **kwds)
+            strict_cwl_validation = getattr(self.app.config, "strict_cwl_validation", True)
+            if dynamic_tool.tool_path:
+                config_file = dynamic_tool.tool_path
+                # TODO: uuid probably needed here...
+                tool_source = get_tool_source(
+                    config_file,
+                    enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", True),
+                    tool_location_fetcher=self.tool_location_fetcher,
+                    strict_cwl_validation=strict_cwl_validation,
+                )
+            else:
+                tool_format = dynamic_tool.tool_format
+                tool_representation = dynamic_tool.value
+                assert tool_representation
+                if "name" not in tool_representation:
+                    tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
+                tool_source = get_tool_source_from_representation(
+                    tool_format=tool_format,
+                    tool_representation=tool_representation,
+                    strict_cwl_validation=strict_cwl_validation,
+                    uuid=dynamic_tool.uuid,
+                    tool_directory=dynamic_tool.tool_directory,
+                )
+        tool = self._create_tool_from_source(tool_source, dynamic=True)
         tool.dynamic_tool = dynamic_tool
         tool.uuid = dynamic_tool.uuid
         if not tool.id:

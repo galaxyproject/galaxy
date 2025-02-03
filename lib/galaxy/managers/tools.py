@@ -136,6 +136,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 active=tool_payload.get("active"),
                 hidden=tool_payload.get("hidden"),
                 value=representation,
+                proxy=proxy,
             )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
