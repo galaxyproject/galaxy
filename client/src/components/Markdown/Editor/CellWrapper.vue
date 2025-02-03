@@ -34,7 +34,7 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
-                <CellButton title="Attach Data">
+                <CellButton title="Attach Data" @click="$emit('configure')">
                     <FontAwesomeIcon :icon="faPaperclip" />
                 </CellButton>
                 <CellButton title="Clone Cell" @click="$emit('clone')">
@@ -51,7 +51,8 @@
                 </CellButton>
             </div>
             <div class="ml-2 w-100">
-                <CellCode :key="name" :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
+                <CellConfigure v-if="configure" />
+                <CellCode v-else :key="name" :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
             </div>
         </div>
         <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
@@ -80,18 +81,20 @@ import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVisualization from "../Sections/MarkdownVisualization.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
+import CellConfigure from "./CellConfigure.vue";
 
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
 defineProps<{
     cellIndex: number;
     cellTotal: number;
+    configure?: boolean;
     content: string;
     name: string;
     toggle?: boolean;
 }>();
 
-defineEmits(["change", "clone", "delete", "move", "toggle"]);
+defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
 
 const confirmDelete = ref(false);
 const hover = ref(false);

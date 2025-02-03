@@ -1,6 +1,7 @@
 export interface CellType {
     name: string;
     content: string;
+    configure?: boolean;
     toggle?: boolean;
 }
 
