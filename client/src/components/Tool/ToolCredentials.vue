@@ -7,7 +7,6 @@ import {
     type CreateSourceCredentialsPayload,
     type ServiceCredentialsDefinition,
     type ServiceCredentialsIdentifier,
-    type ServiceVariableDefinition,
     type SourceCredentialsDefinition,
     transformToSourceCredentials,
     type UserCredentials,
