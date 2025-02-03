@@ -10,16 +10,33 @@ Please see the full :doc:`24.2 release notes <24.2_announce>` for more details.
 Highlights
 ===========================================================
 
-Add wizard-like export view for workflow invocations
+A Wizard-like Export View for Workflow Invocations
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
+The workflow invocation export process has been enhanced with a new wizard-like interface,
+making it more guided and user-friendly. This interface simplifies complex processes with many
+options, providing a step-by-step approach to exporting workflow invocations.
 
-Workflow Editor Activity Bar + Undo stack UI
+- **Select export format**. Choose from various formats such as RO Crate, BioCompute Object,
+  or Compressed File.
+- **Choose export destination**. Options include temporary direct download, remote file source,
+  or RDM repository.
+- **Export**! Finalize and complete the export process with ease.
+
+This new interface aims to improve the user experience and may be extended to other complex
+processes in Galaxy in the future.
+[`#18796 <https://github.com/galaxyproject/galaxy/pull/18796>`__]
+
+.. figure:: images/24.2-export-invocation-wizard.gif
+   :alt: Export invocation wizard.
+
+Workflow Editor Enhancements: Activity Bar and Undo Stack UI
 -----------------------------------------------------------
 
 The Activity Bar is now present in the Workflow Editor along side multiple interface
 improvements.
+[`#18729 <https://github.com/galaxyproject/galaxy/pull/18729>`__]
+[`#18548 <https://github.com/galaxyproject/galaxy/pull/18548>`__]
 
 - **No more double side bars**. Inspecting a step now has it's own floating window,
   which can be easily expanded and remembers it's size. All other features were moved to the
@@ -33,12 +50,25 @@ improvements.
 - **Inputs** are not tools, and are now no longer treated as such. Find inputs in their own
   interface, and easily add input sub-types directly.
 
-Masthead Revision
+Masthead Revision and Activity Bar Improvements
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
+The Galaxy masthead has been revised to achieve consistency and reduce redundancy, aligning its
+functionality with the Activity Bar.
 
-Guide users to collection builders
+- **New "More" activity**. Hidden and less frequently used activities are now accessible through
+  a new "More" activity, allowing users to add or remove items from the activity bar and navigate
+  directly to any activity.
+- **Username visible in masthead**. The username is now visible in the masthead, with user
+  preferences and logout options accessible through the user dropdown.
+- **A compact masthead**. The masthead has been streamlined, removing redundant links and only
+  displaying essential items such as storage and the username on the right end.
+
+These changes enhance the user experience by making the interface more intuitive and reducing
+clutter.
+[`#17927 <https://github.com/galaxyproject/galaxy/pull/17927>`__]
+
+Improved Navigation and Usability of Collection Builders
 -----------------------------------------------------------
 
 To guide users towards creating collections of the correct type, Galaxy now provides
@@ -59,17 +89,37 @@ has been significantly refined to improve the usability and visualization of wor
 
 Updates include:
 
-- Workflow steps have been moved to a separate tab, allocating maximum space for the graph.
-- Progress bars have also been relocated to the header for a cleaner layout.
-- Workflow inputs displayed directly on the graph, eliminating the need for clicking
+- **Workflow steps moved to a separate tab**, allocating maximum space for the graph.
+- **Progress bars relocated to the header** for a cleaner layout.
+- **Workflow inputs displayed directly on the graph**, eliminating the need for clicking
   and investigating each input.
-- The Invocations panel also toggles out on mouse leave, providing an uncluttered view when
+- **The Invocations panel also toggles out on mouse leave**, providing an uncluttered view when
   exploring runs.
 
-Libraries Modernisation: Directory Dataset Picker
+.. list-table::
+   :header-rows: 1
+
+   * - Before
+     - After
+   * - .. image:: images/24.2-invocation-view-improvements-before.png
+          :alt: Invocation view improvements before
+          :width: 100%
+     - .. image:: images/24.2-invocation-view-improvements-after.png
+          :alt: Invocation view improvements after
+          :width: 100%
+   * - Steps show on the right, the progress bars are within the `Overview` tab
+     - Only the currently active step shows below, leaving full width for graph, progress
+       bars in the Header
+
+Libraries Modernization: Directory Dataset Picker
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
+The dataset picker for user and import directories has been modernized, providing a more
+intuitive and user-friendly interface. Users can now easily import files or folders from their
+user directory or import directory into a library. Admins can also import datasets from a
+specified path. Additionally, the new History Dataset Picker allows users to explore their
+histories and select datasets to add to the library, streamlining the dataset management process.
+[`#18638 <https://github.com/galaxyproject/galaxy/pull/18638>`__]
 
 Live Reporting of Job Console Outputs
 -----------------------------------------------------------
