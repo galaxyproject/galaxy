@@ -1105,10 +1105,9 @@ class BaseDatasetPopulator(BasePopulator):
             assert response.status_code == 200, response.text
         return response.json()
 
-    def create_tool(self, representation, tool_directory: Optional[str] = None) -> dict[str, Any]:
+    def create_tool(self, representation) -> dict[str, Any]:
         payload = dict(
             representation=representation,
-            tool_directory=tool_directory,
         )
         return self._create_tool_raw(payload)
 

@@ -48,6 +48,7 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
+    from galaxy.tool_util.cwl.parser import ToolProxy
 
 
 def tool_payload_to_tool(app, tool_dict: dict[str, Any]) -> Optional[Tool]:
@@ -119,7 +120,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         stmt = select(DynamicTool).where(DynamicTool.id == object_id, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
-    def create_tool(self, tool_payload: DynamicToolPayload):
+    def create_tool(self, tool_payload: DynamicToolPayload) -> DynamicTool:
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
@@ -142,6 +143,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
             if not tool_format:
                 raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
 
+        proxy: Optional[ToolProxy] = None
         if tool_format in ("GalaxyTool", "GalaxyUserTool"):
             tool_id = representation.get("id")
             if not tool_id:
@@ -176,7 +178,27 @@ class DynamicToolManager(ModelManager[DynamicTool]):
             hidden=tool_payload.hidden,
             value=representation,
             public=True,
+            proxy=proxy,
         )
+        self.app.toolbox.load_dynamic_tool(dynamic_tool)
+        return dynamic_tool
+
+    def create_tool_from_proxy(self, proxy: "ToolProxy") -> DynamicTool:
+        if not getattr(self.app.config, "enable_beta_tool_formats", False):
+            raise exceptions.ConfigDoesNotAllowException(
+                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
+            )
+        dynamic_tool = self.get_tool_by_uuid(proxy.uuid)
+        if not dynamic_tool:
+            representation = proxy.to_persistent_representation()
+            dynamic_tool = self.create(
+                tool_format=proxy._class,
+                tool_id=proxy.galaxy_id(),
+                tool_version=representation.get("version"),
+                uuid=proxy.uuid,
+                value=representation,
+                public=True,
+            )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
 
