@@ -210,7 +210,8 @@ class CredentialsService:
             )
             if source_credentials is None:
                 raise RequestParameterInvalidException(
-                    f"Service '{service_name}' with version '{service_version}' is not defined."
+                    f"Service '{service_name}' with version '{service_version}' is not defined"
+                    f"in {source_type} with id {source_id} and version {source_version}."
                 )
             user_credentials_id = self.credentials_manager.add_user_credentials(
                 existing_user_credentials,
