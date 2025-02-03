@@ -19,9 +19,7 @@ from galaxy.managers.credentials import (
     CredentialsManager,
     CredentialsModelsList,
 )
-from galaxy.model import (
-    User,
-)
+from galaxy.model import User
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
