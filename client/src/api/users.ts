@@ -40,49 +40,50 @@ export type CreateSourceCredentialsPayload = components["schemas"]["CreateSource
 export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
 export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
 export type UserCredentials = components["schemas"]["UserCredentialsResponse"];
+export type ServiceVariableDefinition = components["schemas"]["CredentialDefinitionResponse"];
 
-// TODO: Change API to directly return the correct type to avoid this transformation and additional type definitions.
 export function transformToSourceCredentials(
     toolId: string,
     toolCredentialsDefinition: ServiceCredentialsDefinition[]
 ): SourceCredentialsDefinition {
+    const services = new Map(
+        toolCredentialsDefinition.map((service) => [getKeyFromCredentialsIdentifier(service), service])
+    );
     return {
         sourceType: "tool",
         sourceId: toolId,
-        services: new Map(toolCredentialsDefinition.map((service) => [service.service_reference, service])),
+        services,
     };
+}
+
+export interface ServiceCredentialsIdentifier {
+    name: string;
+    version: string;
+}
+
+export function getKeyFromCredentialsIdentifier(credentialsIdentifier: ServiceCredentialsIdentifier): string {
+    return `${credentialsIdentifier.name}-${credentialsIdentifier.version}`;
 }
 
 /**
  * Represents the definition of credentials for a particular service.
  */
-export interface ServiceCredentialsDefinition {
-    service_reference: string;
-    name: string;
-    optional: boolean;
-    multiple: boolean;
+export interface ServiceCredentialsDefinition extends ServiceCredentialsIdentifier {
     label?: string;
     description?: string;
-    variables: ServiceVariableDefinition[];
     secrets: ServiceVariableDefinition[];
+    variables: ServiceVariableDefinition[];
 }
 
 /**
  * Represents the definition of credentials for a particular source.
  * A source can be a tool, a workflow, etc.Base interface for credentials definitions.
  * A source may accept multiple services, each with its own credentials.
+ *
+ * The `services` map is indexed by the service name and version using the `getKeyFromCredentialsIdentifier` function.
  */
 export interface SourceCredentialsDefinition {
     sourceType: string;
     sourceId: string;
     services: Map<string, ServiceCredentialsDefinition>;
-}
-
-/**
- * Base interface for credential details. It is used to define the structure of variables and secrets.
- */
-export interface ServiceVariableDefinition {
-    name: string;
-    label?: string;
-    description?: string;
 }
