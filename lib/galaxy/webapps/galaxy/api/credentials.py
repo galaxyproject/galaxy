@@ -51,8 +51,12 @@ class FastAPICredentials:
             None,
             description="The ID of the source to filter by.",
         ),
+        source_version: Optional[str] = Query(
+            None,
+            description="The version of the source to filter by. By default it is the latest version.",
+        ),
     ) -> UserCredentialsListResponse:
-        return self.service.list_user_credentials(trans, user_id, source_type, source_id)
+        return self.service.list_user_credentials(trans, user_id, source_type, source_id, source_version)
 
     @router.post(
         "/api/users/{user_id}/credentials",
