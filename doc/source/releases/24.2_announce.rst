@@ -312,18 +312,11 @@ config/galaxy.yml.sample:galaxy
 Developer Notes
 ===========================================================
 
-DRAFT CONTENT
+* More concise, readable tool execution testing: infrastructure and some examples. [`#18977 <https://github.com/galaxyproject/galaxy/pull/18977>`__]
+* More examples of new data access tests. [`#18312 <https://github.com/galaxyproject/galaxy/pull/18312>`__]
+* Poetry replaced: Galaxy's Python dependency management is now handled with uv. [`#19075 <https://github.com/galaxyproject/galaxy/pull/19075>`__]
+* Upgrades to openapi-typescript cause some breaking changes. See `#18532 <https://github.com/galaxyproject/galaxy/pull/18532>`__ for more details.
 
-* Replace poetry with uv
-* Improvements to help terms & tool help.
-* A variety of improvements around tool parameter modeling (second try)
-* Allow recovering a normalized version of workflow request state from API
-* Implement Declarative Testing for Workflow Behaviors
-* More concise, readable tool execution testing.
-* More data access tests, some refactoring and cleanup
-* Parameter Model Improvements
-* Upgrade ``openapi-typescript`` to 7.0.2 + swap to ``openapi-fetch``
-* Workflow Landing Requests
 
 Release Notes
 ===========================================================
