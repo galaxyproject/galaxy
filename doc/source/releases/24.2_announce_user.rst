@@ -52,7 +52,7 @@ improvements.
 
 .. raw:: html
 
-	 <iframe width="560" height="315" src="https://www.youtube.com/embed/42HZQkC7PHY" title="Galaxy 24.2 - Workflow Editor Enhancements: Activity Bar and Undo Stack UI" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/42HZQkC7PHY" title="Galaxy 24.2 - Workflow Editor Enhancements: Activity Bar and Undo Stack UI" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Masthead Revision and Activity Bar Improvements
 -----------------------------------------------------------
@@ -74,7 +74,7 @@ clutter.
 
 .. raw:: html
 
-	 <iframe width="560" height="315" src="https://www.youtube.com/embed/5NMkcpj-1w8" title="Galaxy 24.2 - Masthead Revision and Activity Bar Improvements" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/5NMkcpj-1w8" title="Galaxy 24.2 - Masthead Revision and Activity Bar Improvements" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Improved Navigation and Usability of Collection Builders
 -----------------------------------------------------------
@@ -90,7 +90,7 @@ and running the workflow in one seamless iteration.
 
 .. raw:: html
 
-	 <iframe width="560" height="315" src="https://www.youtube.com/embed/y4gNThU_BZE" title="Galaxy 24.2 - Improved Navigation and Usability of Collection Builders" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/y4gNThU_BZE" title="Galaxy 24.2 - Improved Navigation and Usability of Collection Builders" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Enhanced Workflow Invocation View
 -----------------------------------------------------------
@@ -147,7 +147,7 @@ histories and select datasets to add to the library, streamlining the dataset ma
 
 .. raw:: html
 
-	 <iframe width="560" height="315" src="https://www.youtube.com/embed/i8AHdv5sU5A" title="Galaxy 24.2 - Libraries Modernization: Directory Dataset Picker" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/i8AHdv5sU5A" title="Galaxy 24.2 - Libraries Modernization: Directory Dataset Picker" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Live Reporting of Job Console Outputs
 -----------------------------------------------------------
