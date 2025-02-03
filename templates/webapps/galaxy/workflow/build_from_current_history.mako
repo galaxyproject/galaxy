@@ -88,7 +88,7 @@ into a workflow will be shown in gray.</p>
     <div class="warningmark">${warning}</div>
 %endfor
 
-<form method="post" action="${h.url_for(controller='workflow', action='build_from_current_history')}">
+<form method="post" action="${h.url_for(controller='workflow', action='build_from_current_history', history_id=trans.security.encode_id(history.id))}">
 <div class='form-row'>
     <label>Workflow name</label>
     <input name="workflow_name" type="text" value="Workflow constructed from history '${ util.unicodify( history.name )}'" size="60"/>

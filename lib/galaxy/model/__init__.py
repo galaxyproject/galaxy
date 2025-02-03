@@ -3645,6 +3645,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         """Return all active contents ordered by hid."""
         return self.contents_iter(types=["dataset", "dataset_collection"], deleted=False, visible=True)
 
+    @property
+    def visible_contents(self):
+        return self.contents_iter(types=["dataset", "dataset_collection"], visible=True)
+
     def contents_iter(self, **kwds):
         """
         Fetch filtered list of contents of history.
