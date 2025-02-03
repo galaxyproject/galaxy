@@ -1,7 +1,7 @@
 import { ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { CreateSourceCredentialsPayload, UserCredentials } from "@/api/users";
+import type { CreateSourceCredentialsPayload, ServiceCredentialsIdentifier, UserCredentials } from "@/api/users";
 
 import { defineScopedStore } from "./scopedStore";
 
@@ -68,7 +68,7 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
 
     async function deleteCredentialsGroupForTool(
         toolId: string,
-        service_reference: string,
+        serviceIdentifier: ServiceCredentialsIdentifier,
         groupName: string
     ): Promise<void> {
         const userId = ensureUserIsRegistered();
@@ -77,10 +77,11 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
 
         if (credentials) {
             const serviceCredentials = credentials.find(
-                (credential) => credential.service_reference === service_reference
+                (credential) =>
+                    credential.name === serviceIdentifier.name && credential.version === serviceIdentifier.version
             );
             if (!serviceCredentials) {
-                throw new Error(`No credentials found for service reference ${service_reference}`);
+                throw new Error(`No credentials found for service reference ${serviceIdentifier}`);
             }
             const group = serviceCredentials.groups[groupName];
             if (!group) {
@@ -100,7 +101,7 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
             }
             // Remove the group from the credentials
             const updatedCredentials = credentials.map((credential) => {
-                if (credential.id === service_reference) {
+                if (credential.name === serviceIdentifier.name && credential.version === serviceIdentifier.version) {
                     delete credential.groups[groupName];
                 }
                 return credential;
