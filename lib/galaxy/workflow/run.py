@@ -263,7 +263,7 @@ class WorkflowInvoker:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
-                log_function = log.exception
+                log_function = log.error
                 if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
                     log_function = log.info
                 log_function(
