@@ -51,6 +51,7 @@
                 </CellButton>
             </div>
             <div class="ml-2 w-100">
+                <hr class="solid m-0" />
                 <CellConfigure v-if="configure" />
                 <CellCode v-else :key="name" :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
             </div>
