@@ -1,9 +1,133 @@
+<script setup lang="ts">
+import axios from "axios";
+import { BAlert, BModal } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
+
+import { isRegisteredUser } from "@/api";
+import { getGalaxyInstance } from "@/app";
+import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
+import { useConfig } from "@/composables/config";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
+import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+import { userLogoutAll } from "@/utils/logout";
+import QueryStringParsing from "@/utils/query-string-parsing";
+import { withPrefix } from "@/utils/redirect";
+
+import Heading from "@/components/Common/Heading.vue";
+import ThemeSelector from "@/components/User/ThemeSelector.vue";
+import UserBeaconSettings from "@/components/User/UserBeaconSettings.vue";
+import UserDeletion from "@/components/User/UserDeletion.vue";
+import UserPreferencesElement from "@/components/User/UserPreferencesElement.vue";
+import UserPreferredObjectStore from "@/components/User/UserPreferredObjectStore.vue";
+
+const { config, isConfigLoaded } = useConfig(true);
+
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+
+console.log(currentUser.value);
+const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
+const fileSourceTemplatesStore = useFileSourceTemplatesStore();
+
+const messageVariant = ref(null);
+const message = ref(null);
+const showLogoutModal = ref(false);
+const showDataPrivateModal = ref(false);
+const toggleTheme = ref(false);
+
+const email = computed(() => (isRegisteredUser(currentUser.value) ? currentUser.value?.email : ""));
+const diskQuota = computed(() => currentUser.value?.quota_percent);
+const diskUsage = computed(() => currentUser.value?.nice_total_disk_usage);
+const activePreferences = computed(() => {
+    const userPreferencesEntries = Object.entries(getUserPreferencesModel());
+    const enabledPreferences = userPreferencesEntries.filter((f) => "disabled" in f[1] && !f[1].disabled);
+    return Object.fromEntries(enabledPreferences);
+});
+const hasLogout = computed(() => {
+    if (isConfigLoaded.value) {
+        const Galaxy = getGalaxyInstance();
+        return !!Galaxy.session_csrf_token && !config.value.single_user;
+    } else {
+        return false;
+    }
+});
+const hasThemes = computed(() => {
+    if (isConfigLoaded.value) {
+        const themes = Object.keys(config.value.themes);
+        return themes.length > 1;
+    } else {
+        return false;
+    }
+});
+const userPermissionsUrl = computed(() => {
+    return withPrefix("/user/permissions");
+});
+
+function toggleNotifications() {
+    if (window.Notification) {
+        Notification.requestPermission().then(function (permission) {
+            //If the user accepts, let's create a notification
+            if (permission === "granted") {
+                new Notification("Notifications enabled", {
+                    icon: "static/favicon.ico",
+                });
+            } else {
+                alert("Notifications disabled, please re-enable through browser settings.");
+            }
+        });
+    } else {
+        alert("Notifications are not supported by this browser.");
+    }
+}
+
+function makeDataPrivate() {
+    if (
+        confirm(
+            localize(
+                "WARNING: This will make all datasets (excluding library datasets) for which you have " +
+                    "'management' permissions, in all of your histories " +
+                    "private (including archived and purged), and will set permissions such that all " +
+                    "of your new data in these histories is created as private.  Any " +
+                    "datasets within that are currently shared will need " +
+                    "to be re-shared or published.  Are you sure you " +
+                    "want to do this?"
+            )
+        )
+    ) {
+        axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
+            showDataPrivateModal.value = true;
+        });
+    }
+}
+
+function signOut() {
+    userLogoutAll();
+}
+
+onMounted(async () => {
+    const msg = QueryStringParsing.get("message");
+    const status = QueryStringParsing.get("status");
+
+    if (msg && status) {
+        message.value = msg;
+        messageVariant.value = status;
+    }
+
+    objectStoreTemplatesStore.ensureTemplates();
+    fileSourceTemplatesStore.ensureTemplates();
+});
+</script>
+
 <template>
-    <b-container fluid class="p-0">
-        <h1 v-localize class="h-lg">User preferences</h1>
-        <b-alert :variant="messageVariant" :show="!!message">
+    <div class="user-preferences">
+        <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2"> User Preferences </Heading>
+        <BAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
+        </BAlert>
         <p>
             <span v-localize>You are signed in as</span>
             <strong id="user-preferences-current-email">{{ email }}</strong>
@@ -11,11 +135,11 @@
             <strong>{{ diskUsage }}</strong>
             <span v-localize>of disk space.</span>
             <span v-localize>If this is more than expected, please visit the</span>
-            <router-link id="edit-preferences-cloud-auth" to="/storage">
+            <RouterLink id="edit-preferences-cloud-auth" to="/storage">
                 <b v-localize>Storage Dashboard</b>
-            </router-link>
+            </RouterLink>
             <span v-localize>to free up disk space.</span>
-            <span v-if="enableQuotas">
+            <span v-if="config?.enable_quotas">
                 <span v-localize>Your disk quota is:</span>
                 <strong>{{ diskQuota }}</strong
                 >.
@@ -78,15 +202,15 @@
             title="Make All Data Private"
             description="Click here to make all data private."
             @click="makeDataPrivate" />
-        <UserBeaconSettings v-if="isConfigLoaded && config.enable_beacon_integration" :user-id="userId">
+        <UserBeaconSettings v-if="isConfigLoaded && config.enable_beacon_integration" :user-id="currentUser?.id">
         </UserBeaconSettings>
         <UserPreferredObjectStore
             v-if="isConfigLoaded && config.object_store_allows_id_selection && currentUser"
-            :preferred-object-store-id="currentUser.preferred_object_store_id"
-            :user-id="userId">
+            :preferred-object-store-id="currentUser?.preferred_object_store_id"
+            :user-id="currentUser?.id">
         </UserPreferredObjectStore>
         <UserPreferencesElement
-            v-if="hasObjectStoreTemplates"
+            v-if="objectStoreTemplatesStore.hasTemplates"
             id="manage-object-stores"
             class="manage-object-stores"
             icon="fa-hdd"
@@ -94,7 +218,7 @@
             description="Add, remove, or update your personally configured Galaxy storage."
             to="/object_store_instances/index" />
         <UserPreferencesElement
-            v-if="hasFileSourceTemplates"
+            v-if="fileSourceTemplatesStore.hasTemplates"
             id="manage-file-sources"
             class="manage-file-sources"
             icon="fa-file"
@@ -104,7 +228,7 @@
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
             :email="email"
-            :user-id="userId">
+            :user-id="currentUser?.id || ''">
         </UserDeletion>
         <UserPreferencesElement
             v-if="hasLogout"
@@ -113,180 +237,21 @@
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="showLogoutModal = true" />
-        <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
+        <BModal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
             <span v-localize>
                 All of your histories and datasets have been made private. If you'd like to make all *future* histories
                 private please use the
             </span>
             <a :href="userPermissionsUrl">User Permissions</a>
             <span v-localize>interface</span>.
-        </b-modal>
-        <b-modal
+        </BModal>
+        <BModal
             v-model="showLogoutModal"
             title="Sign out"
             title-class="font-weight-bold"
             ok-title="Sign out"
             @ok="signOut">
             <span v-localize> Do you want to continue and sign out of all active sessions? </span>
-        </b-modal>
-    </b-container>
+        </BModal>
+    </div>
 </template>
-
-<script>
-import { getGalaxyInstance } from "app";
-import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import { mapActions, mapState } from "pinia";
-import _l from "utils/localization";
-import { userLogoutAll } from "utils/logout";
-import QueryStringParsing from "utils/query-string-parsing";
-import { withPrefix } from "utils/redirect";
-import Vue from "vue";
-
-import { useConfig } from "@/composables/config";
-import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
-import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
-import { useUserStore } from "@/stores/userStore";
-
-import UserBeaconSettings from "./UserBeaconSettings";
-import UserDeletion from "./UserDeletion";
-import UserPreferencesElement from "./UserPreferencesElement";
-import UserPreferredObjectStore from "./UserPreferredObjectStore";
-
-import ThemeSelector from "./ThemeSelector.vue";
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: {
-        UserDeletion,
-        UserPreferencesElement,
-        ThemeSelector,
-        UserBeaconSettings,
-        UserPreferredObjectStore,
-    },
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
-        enableQuotas: {
-            type: Boolean,
-            required: true,
-        },
-    },
-    setup() {
-        const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
-    },
-    data() {
-        return {
-            email: "",
-            diskUsage: "",
-            diskQuota: "",
-            messageVariant: null,
-            message: null,
-            showLogoutModal: false,
-            showDataPrivateModal: false,
-            toggleTheme: false,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useObjectStoreTemplatesStore, {
-            hasObjectStoreTemplates: "hasTemplates",
-        }),
-        ...mapState(useFileSourceTemplatesStore, {
-            hasFileSourceTemplates: "hasTemplates",
-        }),
-        activePreferences() {
-            const userPreferencesEntries = Object.entries(getUserPreferencesModel());
-            // Object.entries returns an array of arrays, where the first element
-            // is the key (string) and the second is the value (object)
-            const enabledPreferences = userPreferencesEntries.filter((f) => !f[1].disabled);
-            return Object.fromEntries(enabledPreferences);
-        },
-        hasLogout() {
-            if (this.isConfigLoaded) {
-                const Galaxy = getGalaxyInstance();
-                return !!Galaxy.session_csrf_token && !this.config.single_user;
-            } else {
-                return false;
-            }
-        },
-        hasThemes() {
-            if (this.isConfigLoaded) {
-                const themes = Object.keys(this.config.themes);
-                return themes?.length > 1 ?? false;
-            } else {
-                return false;
-            }
-        },
-        userPermissionsUrl() {
-            return withPrefix("/user/permissions");
-        },
-    },
-    created() {
-        const message = QueryStringParsing.get("message");
-        const status = QueryStringParsing.get("status");
-        if (message && status) {
-            this.message = message;
-            this.messageVariant = status;
-        }
-        axios.get(withPrefix(`/api/users/${this.userId}`)).then((response) => {
-            this.email = response.data.email;
-            this.diskUsage = response.data.nice_total_disk_usage;
-            this.diskQuota = response.data.quota;
-        });
-        this.ensureObjectStoreTemplates();
-        this.ensureFileSourceTemplates();
-    },
-    methods: {
-        ...mapActions(useObjectStoreTemplatesStore, {
-            ensureObjectStoreTemplates: "ensureTemplates",
-        }),
-        ...mapActions(useFileSourceTemplatesStore, {
-            ensureFileSourceTemplates: "ensureTemplates",
-        }),
-        toggleNotifications() {
-            if (window.Notification) {
-                Notification.requestPermission().then(function (permission) {
-                    //If the user accepts, let's create a notification
-                    if (permission === "granted") {
-                        new Notification("Notifications enabled", {
-                            icon: "static/favicon.ico",
-                        });
-                    } else {
-                        alert("Notifications disabled, please re-enable through browser settings.");
-                    }
-                });
-            } else {
-                alert("Notifications are not supported by this browser.");
-            }
-        },
-        makeDataPrivate() {
-            if (
-                confirm(
-                    _l(
-                        "WARNING: This will make all datasets (excluding library datasets) for which you have " +
-                            "'management' permissions, in all of your histories " +
-                            "private (including archived and purged), and will set permissions such that all " +
-                            "of your new data in these histories is created as private.  Any " +
-                            "datasets within that are currently shared will need " +
-                            "to be re-shared or published.  Are you sure you " +
-                            "want to do this?"
-                    )
-                )
-            ) {
-                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
-                    this.showDataPrivateModal = true;
-                });
-            }
-        },
-        signOut() {
-            userLogoutAll();
-        },
-    },
-};
-</script>
