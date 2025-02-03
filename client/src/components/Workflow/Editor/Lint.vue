@@ -1,78 +1,3 @@
-<template>
-    <ActivityPanel title="Best Practices Review">
-        <template v-if="showRefactor" v-slot:header>
-            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
-        </template>
-        <LintSection
-            :okay="checkAnnotation"
-            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
-                    understand the purpose and usage of the workflow."
-            :warning-message="bestPracticeWarningAnnotation"
-            attribute-link="Describe your Workflow."
-            @onClick="onAttributes('annotation')" />
-        <LintSection
-            :okay="checkAnnotationLength"
-            :success-message="annotationLengthSuccessMessage"
-            :warning-message="bestPracticeWarningAnnotationLength"
-            attribute-link="Shorten your Workflow Description."
-            @onClick="onAttributes('annotation')" />
-        <LintSection
-            :okay="checkReadme"
-            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
-            :warning-message="bestPracticeWarningReadme"
-            attribute-link="Provide Readme for your Workflow."
-            @onClick="onAttributes('readme')" />
-        <LintSection
-            :okay="checkCreator"
-            success-message="This workflow defines creator information."
-            :warning-message="bestPracticeWarningCreator"
-            attribute-link="Provide Creator Details."
-            @onClick="onAttributes('creator')" />
-        <LintSection
-            :okay="checkLicense"
-            success-message="This workflow defines a license."
-            :warning-message="bestPracticeWarningLicense"
-            attribute-link="Specify a License."
-            @onClick="onAttributes('license')" />
-        <LintSection
-            success-message="Workflow parameters are using formal input parameters."
-            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
-                formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
-                and executing the workflow via the API more robust:"
-            :warning-items="warningUntypedParameters"
-            @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
-            @onClick="onFixUntypedParameter" />
-        <LintSection
-            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
-            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
-                make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
-            :warning-items="warningDisconnectedInputs"
-            @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
-            @onClick="onFixDisconnectedInput" />
-        <LintSection
-            success-message="All workflow inputs have labels and annotations."
-            warning-message="Some workflow inputs are missing labels and/or annotations:"
-            :warning-items="warningMissingMetadata"
-            @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
-            @onClick="openAndFocus" />
-        <LintSection
-            success-message="This workflow has outputs and they all have valid labels."
-            warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
-                    unchecked in the workflow editor to mark them as no longer being a workflow output:"
-            :warning-items="warningUnlabeledOutputs"
-            @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
-            @onClick="onFixUnlabeledOutputs" />
-        <div v-if="!hasActiveOutputs">
-            <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
-            <span>This workflow has no labeled outputs, please select and label at least one output.</span>
-        </div>
-    </ActivityPanel>
-</template>
-
 <script lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
@@ -274,3 +199,65 @@ export default {
     },
 };
 </script>
+<template>
+    <ActivityPanel title="Best Practices Review">
+        <template v-if="showRefactor" v-slot:header>
+            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
+        </template>
+        <LintSection
+            :okay="checkAnnotation"
+            success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
+                    understand the purpose and usage of the workflow."
+            :warning-message="bestPracticeWarningAnnotation"
+            attribute-link="Annotate your Workflow."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkCreator"
+            success-message="This workflow defines creator information."
+            :warning-message="bestPracticeWarningCreator"
+            attribute-link="Provide Creator Details."
+            @onClick="onAttributes('creator')" />
+        <LintSection
+            :okay="checkLicense"
+            success-message="This workflow defines a license."
+            :warning-message="bestPracticeWarningLicense"
+            attribute-link="Specify a License."
+            @onClick="onAttributes('license')" />
+        <LintSection
+            success-message="Workflow parameters are using formal input parameters."
+            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
+                formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
+                and executing the workflow via the API more robust:"
+            :warning-items="warningUntypedParameters"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixUntypedParameter" />
+        <LintSection
+            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
+            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
+                make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
+            :warning-items="warningDisconnectedInputs"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixDisconnectedInput" />
+        <LintSection
+            success-message="All workflow inputs have labels and annotations."
+            warning-message="Some workflow inputs are missing labels and/or annotations:"
+            :warning-items="warningMissingMetadata"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="openAndFocus" />
+        <LintSection
+            success-message="This workflow has outputs and they all have valid labels."
+            warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
+                    unchecked in the workflow editor to mark them as no longer being a workflow output:"
+            :warning-items="warningUnlabeledOutputs"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixUnlabeledOutputs" />
+        <div v-if="!hasActiveOutputs">
+            <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
+            <span>This workflow has no labeled outputs, please select and label at least one output.</span>
+        </div>
+    </ActivityPanel>
+</template>
