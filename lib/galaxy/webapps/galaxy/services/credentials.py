@@ -34,7 +34,7 @@ from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tools import Tool
 
-GetToolCredentialsDefinition = Callable[[User, str, str, str, str], CredentialsRequirement]
+GetToolCredentialsDefinition = Callable[[User, str, str, str, str], Optional[CredentialsRequirement]]
 
 
 class CredentialsService:
@@ -107,7 +107,7 @@ class CredentialsService:
         tool_version: str,
         service_name: str,
         service_version: str,
-    ) -> CredentialsRequirement:
+    ) -> Optional[CredentialsRequirement]:
         tool: Tool = self.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
             raise ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
@@ -121,7 +121,7 @@ class CredentialsService:
         for credentials_service in tool.credentials:
             if credentials_service.name == service_name and credentials_service.version == service_version:
                 return credentials_service
-        raise ObjectNotFound(f"Could not find service with name '{service_name}' and version '{service_version}'.")
+        return None
 
     def _list_user_credentials(
         self,
@@ -143,6 +143,8 @@ class CredentialsService:
                 user_credentials.name,
                 user_credentials.version,
             )
+            if definition is None:
+                continue
             user_credentials_dict.setdefault(
                 cred_id,
                 {
@@ -206,6 +208,10 @@ class CredentialsService:
             source_credentials = self.source_type_credentials[source_type](
                 user, source_id, source_version, service_name, service_version
             )
+            if source_credentials is None:
+                raise RequestParameterInvalidException(
+                    f"Service '{service_name}' with version '{service_version}' is not defined."
+                )
             user_credentials_id = self.credentials_manager.add_user_credentials(
                 existing_user_credentials,
                 user.id,
