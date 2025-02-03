@@ -677,14 +677,13 @@ class WorkflowContentsManager(UsesAnnotations):
             tool_reference_proxies = wf_proxy.tool_reference_proxies()
             for tool_reference_proxy in tool_reference_proxies:
                 # TODO: Namespace IDS in workflows.
-                representation = tool_reference_proxy.to_persistent_representation()
                 self.app.dynamic_tool_manager.create_tool(
                     trans,
                     {
                         "uuid": tool_reference_proxy.uuid,
-                        "representation": representation,
                     },
                     allow_load=True,
+                    proxy=tool_reference_proxy,
                 )
             as_dict = wf_proxy.to_dict()
 
