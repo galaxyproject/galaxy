@@ -61,18 +61,19 @@
     </ActivityPanel>
 </template>
 
-<script>
+<script lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import { storeToRefs } from "pinia";
 import Vue from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
+import type { LintState } from "./modules/linting";
 import {
     bestPracticeWarningAnnotation,
     bestPracticeWarningCreator,
@@ -182,7 +183,7 @@ export default {
         },
     },
     methods: {
-        onAttributes(highlight) {
+        onAttributes(highlight: string) {
             const args = { highlight: highlight };
             this.$emit("onAttributes", args);
         },
@@ -219,14 +220,14 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        openAndFocus(item) {
+        openAndFocus(item: LintState) {
             this.stateStore.activeNodeId = item.stepId;
             this.$emit("onScrollTo", item.stepId);
         },
-        onHighlight(item) {
+        onHighlight(item: LintState) {
             this.$emit("onHighlight", item.stepId);
         },
-        onUnhighlight(item) {
+        onUnhighlight(item: LintState) {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
