@@ -8,7 +8,9 @@
                 :cell-total="cells.length"
                 :name="cell.name"
                 :content="cell.content"
+                :configure="cell.configure"
                 :toggle="cell.toggle"
+                @configure="onConfigure(cellIndex)"
                 @change="onChange(cellIndex, $event)"
                 @clone="onClone(cellIndex)"
                 @delete="onDelete(cellIndex)"
@@ -46,6 +48,14 @@ function onAdd(cellIndex: number, cell: CellType) {
     cells.value = newCells;
     onUpdate();
     scrollToCell(cellIndex);
+}
+
+// Toggle
+function onConfigure(cellIndex: number) {
+    const cell = cells.value?.[cellIndex];
+    if (cell) {
+        cell.configure = !cell.configure;
+    }
 }
 
 // Handle cell code changes
@@ -117,8 +127,8 @@ function onToggle(cellIndex: number) {
 }
 
 // Parse cells
-function parseCells(toggle: boolean = false) {
-    return parseMarkdown(props.markdownText).map((cell) => ({ ...cell, toggle }));
+function parseCells(configure: boolean = false, toggle: boolean = false) {
+    return parseMarkdown(props.markdownText).map((cell) => ({ ...cell, configure, toggle }));
 }
 
 // Scroll a specific cell into view
