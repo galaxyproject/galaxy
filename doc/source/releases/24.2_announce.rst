@@ -81,11 +81,12 @@ Admin Notes
 * Database migration `04288b6a5b25 (make dataset uuids unique)` requires
   function `gen_random_uuid()` which was added in PostgreSQL version 13.0.
   Prior to version 13.0, UUID generation functions were available in the
-  external modules uuid-ossp and pgcrypto (see [PostgreSQL 13.0 release
-  notes](phttps://www.postgresql.org/docs/release/13.0/)). Thus, you need to
+  external modules uuid-ossp and pgcrypto (see `PostgreSQL 13.0 release notes
+  <https://www.postgresql.org/docs/release/13.0/>`__). Thus, you need to
   upgrade your database to version 13.0 or newer, or, alternatively, load the
-  pgcrypto extension (see [this solution on Stackoverflow](https://stackoverflow.com/a/35960732/1382596)).
-* A user's email address is no longer used as the name of their private role;
+  pgcrypto extension (see `this solution on Stackoverflow
+  <https://stackoverflow.com/a/35960732/1382596>`__).  * A user's email address
+  is no longer used as the name of their private role;
   instead, the association between a user and their private role is handled
   through a foreign key at the database level. Although a role name is no
   longer required to be unique in the database (automatically generated private
@@ -97,13 +98,13 @@ Admin Notes
   incomplete records. In addition to these changes to the database schema, the
   database upgrade includes data migration scripts (executed as part of the
   upgrade) which will automatically fix any inconsistent data in these tables.
-  See [#18777](https://github.com/galaxyproject/galaxy/pull/18777).
+  [`#18777 <https://github.com/galaxyproject/galaxy/pull/18777>`__]
 * OAuth 2.0 enabled plugin for Dropbox has been added to the user defined file
-  sources framework. See [#18272](https://github.com/galaxyproject/galaxy/pull/18272)
+  sources framework. See `#18272 <https://github.com/galaxyproject/galaxy/pull/18272>`__
   for updates to the admin documentation on how to build and configure a
   Dropbox app within Dropbox for a Galaxy instance.
 * Support has been added for high-availability setups for the interactive tools proxy.
-  (See [#18481](https://github.com/galaxyproject/galaxy/pull/18481))
+  [`#18481 <https://github.com/galaxyproject/galaxy/pull/18481>`__]
 
 
 Configuration Changes
