@@ -7911,12 +7911,12 @@ class Workflow(Base, Dictifiable, RepresentById):
     has_cycles: Mapped[Optional[bool]]
     has_errors: Mapped[Optional[bool]]
     reports_config: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    creator_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    creator_metadata: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONType)
     license: Mapped[Optional[str]] = mapped_column(TEXT)
     source_metadata: Mapped[Optional[Dict[str, str]]] = mapped_column(JSONType)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
 
-    steps = relationship(
+    steps: Mapped[List["WorkflowStep"]] = relationship(
         "WorkflowStep",
         back_populates="workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),
@@ -7967,7 +7967,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         return rval
 
     @property
-    def steps_by_id(self):
+    def steps_by_id(self) -> Dict[int, "WorkflowStep"]:
         steps = {}
         for step in self.steps:
             step_id = step.id
@@ -8142,7 +8142,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         back_populates="workflow_step",
     )
     post_job_actions = relationship("PostJobAction", back_populates="workflow_step", cascade_backrefs=False)
-    inputs = relationship("WorkflowStepInput", back_populates="workflow_step")
+    inputs: Mapped[List["WorkflowStepInput"]] = relationship("WorkflowStepInput", back_populates="workflow_step")
     workflow_outputs: Mapped[List["WorkflowOutput"]] = relationship(
         back_populates="workflow_step", cascade_backrefs=False
     )
@@ -8486,16 +8486,16 @@ class WorkflowStepConnection(Base, RepresentById):
     output_name: Mapped[Optional[str]] = mapped_column(TEXT)
     input_subworkflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
 
-    input_step_input = relationship(
+    input_step_input: Mapped["WorkflowStepInput"] = relationship(
         "WorkflowStepInput",
         back_populates="connections",
         cascade="all",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
     )
-    input_subworkflow_step = relationship(
+    input_subworkflow_step: Mapped[Optional["WorkflowStep"]] = relationship(
         "WorkflowStep", primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id)
     )
-    output_step = relationship(
+    output_step: Mapped["WorkflowStep"] = relationship(
         "WorkflowStep",
         back_populates="output_connections",
         cascade="all",
@@ -8519,7 +8519,7 @@ class WorkflowStepConnection(Base, RepresentById):
 
     @property
     def input_step(self) -> Optional[WorkflowStep]:
-        return self.input_step_input and self.input_step_input.workflow_step
+        return self.input_step_input.workflow_step
 
     @property
     def input_step_id(self):
@@ -8736,7 +8736,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         order_by=lambda: WorkflowInvocationStep.order_index,
         cascade_backrefs=False,
     )
-    workflow = relationship("Workflow")
+    workflow: Mapped[Workflow] = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation",
         back_populates="workflow_invocation",
@@ -9659,7 +9659,7 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    value: Mapped[Optional[Dict[str, Any]]] = mapped_column(MutableJSONType)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="step_states")
 
