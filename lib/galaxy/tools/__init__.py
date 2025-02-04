@@ -8,6 +8,7 @@ import logging
 import math
 import os
 import re
+import shlex
 import tarfile
 import tempfile
 from collections.abc import MutableMapping
@@ -53,6 +54,10 @@ from galaxy.model import (
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
+from galaxy.tool_util.cwl import (
+    needs_shell_quoting,
+    to_galaxy_parameters,
+)
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     CachedDependencyManager,
@@ -76,6 +81,7 @@ from galaxy.tool_util.parser import (
     RequiredFiles,
     ToolOutputCollectionPart,
 )
+from galaxy.tool_util.parser.cwl import CwlToolSource
 from galaxy.tool_util.parser.interface import (
     HelpContent,
     InputSource,
@@ -166,6 +172,7 @@ from galaxy.util import (
     parse_xml_string,
     parse_xml_string_to_etree,
     rst_to_html,
+    safe_makedirs,
     string_as_bool,
     unicodify,
     UNKNOWN,
@@ -259,6 +266,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
+    "CONVERTER_tar_to_directory",  # WORKAROUND FOR CWL BRANCH! GOTTA FIX THIS I GUESS
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "pileup_interval",
@@ -590,6 +598,7 @@ class ToolBox(AbstractToolBox):
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
+                strict_cwl_validation=getattr(self.app.config, "strict_cwl_validation", True),
                 **kwargs,
             )
         except Exception as e:
@@ -600,17 +609,35 @@ class ToolBox(AbstractToolBox):
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
 
-    def create_dynamic_tool(self, dynamic_tool, **kwds):
-        tool_format = dynamic_tool.tool_format
-        tool_representation = dynamic_tool.value
-        if "name" not in tool_representation:
-            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
-        tool_source = get_tool_source_from_representation(
-            tool_format=tool_format,
-            tool_representation=tool_representation,
-        )
-        kwds["dynamic"] = True
-        tool = self._create_tool_from_source(tool_source, **kwds)
+    def create_dynamic_tool(self, dynamic_tool):
+        if dynamic_tool.proxy:
+            # CWL tool
+            tool_source: ToolSource = CwlToolSource(tool_proxy=dynamic_tool.proxy)
+        else:
+            strict_cwl_validation = getattr(self.app.config, "strict_cwl_validation", True)
+            if dynamic_tool.tool_path:
+                config_file = dynamic_tool.tool_path
+                # TODO: uuid probably needed here...
+                tool_source = get_tool_source(
+                    config_file,
+                    enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", True),
+                    tool_location_fetcher=self.tool_location_fetcher,
+                    strict_cwl_validation=strict_cwl_validation,
+                )
+            else:
+                tool_format = dynamic_tool.tool_format
+                tool_representation = dynamic_tool.value
+                assert tool_representation
+                if "name" not in tool_representation:
+                    tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
+                tool_source = get_tool_source_from_representation(
+                    tool_format=tool_format,
+                    tool_representation=tool_representation,
+                    strict_cwl_validation=strict_cwl_validation,
+                    uuid=dynamic_tool.uuid,
+                    tool_directory=dynamic_tool.tool_directory,
+                )
+        tool = self._create_tool_from_source(tool_source, dynamic=True)
         tool.dynamic_tool = dynamic_tool
         tool.uuid = dynamic_tool.uuid
         if not tool.id:
@@ -778,6 +805,7 @@ class Tool(UsesDictVisibleKeys):
     __help: Optional[Template]
     job_search: "JobSearch"
     version: str
+    may_use_container_entry_point = False
 
     def __init__(
         self,
@@ -1255,6 +1283,7 @@ class Tool(UsesDictVisibleKeys):
         self.ports = tool_source.parse_interactivetool()
 
         self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
+        self.cores_min = tool_source.parse_cores_min()
 
     def __parse_legacy_features(self, tool_source: ToolSource):
         self.code_namespace: Dict[str, str] = {}
@@ -1783,6 +1812,22 @@ class Tool(UsesDictVisibleKeys):
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
+
+    def inputs_from_dict(self, as_dict):
+        """Extra inputs from input dictionary (e.g. API payload).
+
+        Translate for tool type as needed.
+        """
+        inputs = as_dict.get("inputs", {})
+        if not isinstance(inputs, dict):
+            raise exceptions.RequestParameterInvalidException(f"inputs invalid [{inputs}]")
+        inputs_representation = as_dict.get("inputs_representation", "galaxy")
+        if inputs_representation != "galaxy":
+            raise exceptions.RequestParameterInvalidException(
+                "Only galaxy inputs representation is allowed for normal tools."
+            )
+        # TODO: Consider <>.
+        return inputs
 
     def new_state(self, trans):
         """
@@ -2572,7 +2617,9 @@ class Tool(UsesDictVisibleKeys):
 
         tool_class = self.__class__
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
-        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
+        regular_form = tool_class == Tool or isinstance(
+            self, (DatabaseOperationTool, InteractiveTool, CwlCommandBindingTool)
+        )
         tool_dict["form_style"] = "regular" if regular_form else "special"
         if tool_help:
             # create tool help
@@ -3213,6 +3260,134 @@ class InteractiveTool(Tool):
         super().job_failed(job_wrapper, message, exception=exception)
         job = job_wrapper.sa_session.get(Job, job_wrapper.job_id)
         self.__remove_interactivetool_by_job(job)
+
+
+class CwlCommandBindingTool(Tool):
+    """Tools that use CWL to bind parameters to command-line descriptions."""
+
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+        super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
+        # Working directory on Galaxy server (instead of remote compute).
+        local_working_directory = param_dict["__local_working_directory__"]
+        log.info("exec_before_job for CWL tool")
+        if param_dict is None:
+            raise Exception("Internal error - param_dict is empty.")
+
+        input_json = self.param_dict_to_cwl_inputs(param_dict, local_working_directory)
+
+        output_dict = {}
+        for name, dataset in out_data.items():
+            output_dict[name] = {
+                "id": str(getattr(dataset.dataset, dataset.dataset.store_by)),
+                "path": dataset.get_file_name(),
+            }
+
+        # prevent unset optional file to trigger 'ValidationException' exception
+        input_json = {
+            k: v
+            for k, v in input_json.items()
+            if not (isinstance(v, dict) and v.get("class") == "File" and v.get("location") == "None")
+        }
+
+        # prevent empty string
+        # this really seems wrong -John
+        input_json = {k: v for k, v in input_json.items() if v != ""}
+
+        cwl_job_proxy = self._cwl_tool_proxy.job_proxy(
+            input_json,
+            output_dict,
+            local_working_directory,
+        )
+        cwl_command_line = cwl_job_proxy.command_line
+        cwl_stdin = cwl_job_proxy.stdin
+        cwl_stdout = cwl_job_proxy.stdout
+        cwl_stderr = cwl_job_proxy.stderr
+        env = cwl_job_proxy.environment
+
+        def needs_shell_quoting_hack(arg):
+            if arg == "$GALAXY_SLOTS":
+                return False
+            else:
+                return needs_shell_quoting(arg)
+
+        command_line = " ".join(shlex.quote(arg) if needs_shell_quoting_hack(arg) else arg for arg in cwl_command_line)
+        if cwl_stdin:
+            command_line += ' < "' + cwl_stdin + '"'
+        if cwl_stdout:
+            command_line += ' > "' + cwl_stdout + '"'
+        if cwl_stderr:
+            command_line += ' 2> "' + cwl_stderr + '"'
+        cwl_job_state = {
+            "args": cwl_command_line,
+            "stdin": cwl_stdin,
+            "stdout": cwl_stdout,
+            "stderr": cwl_stderr,
+            "env": env,
+        }
+        tool_working_directory = os.path.join(local_working_directory, "working")
+        # Move to prepare...
+        safe_makedirs(tool_working_directory)
+        cwl_job_proxy.stage_files()
+
+        cwl_job_proxy.rewrite_inputs_for_staging()
+        # Write representation to disk that can be reloaded at runtime
+        # and outputs collected before Galaxy metadata is gathered.
+        cwl_job_proxy.save_job()
+
+        param_dict["__cwl_command"] = command_line
+        param_dict["__cwl_command_state"] = cwl_job_state
+        param_dict["__cwl_command_version"] = 1
+        log.info("CwlTool.exec_before_job() generated command_line %s", command_line)
+
+    def parse(self, tool_source, guid=None, dynamic=False):
+        super().parse(tool_source, guid=guid, dynamic=dynamic)
+        cwl_tool_proxy = getattr(tool_source, "tool_proxy", None)
+        if cwl_tool_proxy is None:
+            raise Exception("parse() called on tool source not defining a proxy object to underlying CWL tool.")
+        self._cwl_tool_proxy = cwl_tool_proxy
+
+    def param_dict_to_cwl_inputs(self, param_dict, local_working_directory):
+        """Map Galaxy API inputs description to a CWL job json."""
+        raise NotImplementedError()
+
+
+class GalacticCwlTool(CwlCommandBindingTool):
+    """A CWL tool with a gx:Interface defined so Galaxy tool state can be used."""
+
+    tool_type = "galactic_cwl"
+
+    def param_dict_to_cwl_inputs(self, param_dict, local_working_directory):
+        from galaxy.tool_util.cwl.representation import galactic_flavored_to_cwl_job
+
+        input_json = galactic_flavored_to_cwl_job(self, param_dict, local_working_directory)
+        return input_json
+
+
+class CwlTool(CwlCommandBindingTool):
+    tool_type = "cwl"
+    may_use_container_entry_point = True
+
+    def param_dict_to_cwl_inputs(self, param_dict, local_working_directory):
+        """Map Galaxy API inputs description to a CWL job json."""
+        from galaxy.tool_util.cwl import to_cwl_job
+
+        input_json = to_cwl_job(self, param_dict, local_working_directory)
+        return input_json
+
+    def inputs_from_dict(self, as_dict):
+        """Extra inputs from input dictionary (e.g. API payload).
+
+        Translate for tool type as needed.
+        """
+        inputs = as_dict.get("inputs", {})
+        inputs_representation = as_dict.get("inputs_representation", "galaxy")
+        if inputs_representation not in ["galaxy", "cwl"]:
+            raise exceptions.RequestParameterInvalidException("Inputs representation must be galaxy or cwl.")
+
+        if inputs_representation == "cwl":
+            inputs = to_galaxy_parameters(self, inputs)
+
+        return inputs
 
 
 class DataManagerTool(OutputParameterJSONTool):
@@ -4177,6 +4352,8 @@ TOOL_CLASSES: List[Type[Tool]] = [
     BuildListCollectionTool,
     ExtractDatasetCollectionTool,
     DataDestinationTool,
+    CwlTool,
+    GalacticCwlTool,
 ]
 tool_types = {tool_class.tool_type: tool_class for tool_class in TOOL_CLASSES}
 
