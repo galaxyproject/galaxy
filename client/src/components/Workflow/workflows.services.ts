@@ -113,40 +113,37 @@ export async function getWorkflowInfo(workflowId: string) {
  * @returns the README and CHANGELOG file contents
  */
 export async function fetchDocsForIwcWorkflow(trsId: string, versionId?: string) {
+    // Ensure that the trsID is for a GitHub workflow at iwc-workflows
+    const parts = trsId.split("/");
+    if (parts.length !== 5 || parts[0] !== "#workflow" || parts[1] !== "github.com" || parts[2] !== "iwc-workflows") {
+        return { readme: null, changelog: null };
+    }
+
+    const directory = parts[3];
+
+    // Construct the URL for the README and CHANGELOG files
+    let baseUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/`;
+    if (!versionId) {
+        baseUrl += "heads/main/";
+    } else {
+        baseUrl += `tags/${versionId}/`;
+    }
     try {
-        const parts = trsId.split("/");
-        if (parts.length !== 5) {
-            throw new Error("Invalid trsId");
-        }
+        // Fetch the files
+        const [readmeResponse, changelogResponse] = await Promise.all([
+            fetch(baseUrl + "README.md"),
+            fetch(baseUrl + "CHANGELOG.md"),
+        ]);
 
-        // Ensure that the trsID is for a GitHub workflow at iwc-workflows
-        if (parts[0] !== "#workflow" || parts[1] !== "github.com" || parts[2] !== "iwc-workflows") {
-            throw new Error("Workflow is not from iwc-workflows");
-        }
+        const readme = readmeResponse.ok ? await readmeResponse.text() : null;
+        const changelog = changelogResponse.ok ? await changelogResponse.text() : null;
 
-        const directory = parts[3];
-
-        // Construct the URL for the README and CHANGELOG files
-        let baseUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/`;
-        if (!versionId) {
-            baseUrl += "heads/main/";
-        } else {
-            baseUrl += `tags/${versionId}/`;
-        }
-        let readme;
-        let changelog;
-
-        // Now fetch the files
-        const readmeResponse = await fetch(baseUrl + "README.md");
-        if (readmeResponse.ok) {
-            readme = await readmeResponse.text();
-        }
-        const changelogResponse = await fetch(baseUrl + "CHANGELOG.md");
-        if (changelogResponse.ok) {
-            changelog = await changelogResponse.text();
-        }
-
-        return { readme, changelog };
+        return {
+            /**The README.md of the workflow fetched from the IWC GitHub repository */
+            readme,
+            /** The CHANGELOG.md of the workflow fetched from the IWC GitHub repository */
+            changelog,
+        };
     } catch (error) {
         rethrowSimple(error);
     }
