@@ -9,14 +9,12 @@ import { useRouter } from "vue-router/composables";
 import type { Creator } from "@/api/workflows";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import type { Workflow } from "@/stores/workflowStore";
 import { copy } from "@/utils/clipboard";
 
 import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
-
-// TODO: replace me with a proper definition
-type Workflow = any;
 
 interface Props {
     workflow: Workflow;
@@ -65,11 +63,11 @@ const sourceType = computed(() => {
 
 const sourceTitle = computed(() => {
     if (sourceType.value.includes("trs")) {
-        return `Imported from TRS ID (version: ${props.workflow.source_metadata.trs_version_id}). Click to copy ID`;
+        return `Imported from TRS ID (version: ${props.workflow.source_metadata?.trs_version_id}). Click to copy ID`;
     } else if (sourceType.value == "url") {
-        return `Imported from ${props.workflow.source_metadata.url}. Click to copy link`;
+        return `Imported from ${props.workflow.source_metadata?.url}. Click to copy link`;
     } else {
-        return `Imported from ${props.workflow.source_type}`;
+        return `Imported from ${(props.workflow as any).source_type}`;
     }
 });
 
@@ -77,10 +75,10 @@ const { success } = useToast();
 
 function onCopyLink() {
     if (sourceType.value == "url") {
-        copy(props.workflow.source_metadata.url);
+        copy(props.workflow.source_metadata?.url);
         success("URL copied");
     } else if (sourceType.value.includes("trs")) {
-        copy(props.workflow.source_metadata.trs_tool_id);
+        copy(props.workflow.source_metadata?.trs_tool_id);
         success("TRS ID copied");
     }
 }
