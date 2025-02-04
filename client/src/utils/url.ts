@@ -10,6 +10,28 @@ export interface UrlDataOptions {
     errorSimplify?: boolean;
 }
 
+export const USER_FILE_PREFIX = "gxuserfiles://";
+export const URI_PREFIXES = [
+    "http://",
+    "https://",
+    "ftp://",
+    "file://",
+    "gxfiles://",
+    "gximport://",
+    "gxuserimport://",
+    USER_FILE_PREFIX,
+    "gxftp://",
+    "drs://",
+    "invenio://",
+    "zenodo://",
+    "dataverse://",
+    "elabftw://",
+];
+
+export function isUrl(content: string): boolean {
+    return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
+}
+
 export async function urlData<R>({ url, headers, params, errorSimplify = true }: UrlDataOptions): Promise<R> {
     try {
         headers = headers || {};

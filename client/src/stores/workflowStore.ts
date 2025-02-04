@@ -6,7 +6,7 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getAppRoot } from "@/onload/loadConfig";
 import { type Steps } from "@/stores/workflowStepStore";
 
-export interface Workflow extends Omit<StoredWorkflowDetailed, 'steps'> {
+export interface Workflow extends Omit<StoredWorkflowDetailed, "steps"> {
     steps: Steps;
 }
 
