@@ -4713,11 +4713,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def display_info(self):
         return self.datatype.display_info(self)
 
-    def get_converted_files_by_type(self, file_type):
+    def get_converted_files_by_type(self, file_type, include_errored=False):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
                 item = assoc.dataset or assoc.dataset_ldda
-                if not item.deleted and item.state in Dataset.valid_input_states:
+                valid_states = (
+                    (Dataset.states.ERROR, *Dataset.valid_input_states)
+                    if include_errored
+                    else Dataset.valid_input_states
+                )
+                if not item.deleted and item.state in valid_states:
                     return item
         return None
 
@@ -4732,7 +4737,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             depends_list = []
         return {dep: self.get_converted_dataset(trans, dep) for dep in depends_list}
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
+    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None, include_errored=False):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -4744,7 +4749,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         converted_dataset = self.get_metadata_dataset(target_ext)
         if converted_dataset:
             return converted_dataset
-        converted_dataset = self.get_converted_files_by_type(target_ext)
+        converted_dataset = self.get_converted_files_by_type(target_ext, include_errored=include_errored)
         if converted_dataset:
             return converted_dataset
         deps = {}
@@ -4966,7 +4971,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
         # Get converted dataset; this will start the conversion if necessary.
         try:
-            converted_dataset = self.get_converted_dataset(trans, target_type)
+            # Include errored datasets here, we let user chose to retry or view error
+            converted_dataset = self.get_converted_dataset(trans, target_type, include_errored=True)
         except NoConverterException:
             return self.conversion_messages.NO_CONVERTER
         except ConverterDependencyException as dep_error:
