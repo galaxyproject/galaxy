@@ -146,28 +146,28 @@ function onDeleteGroup() {
                         <FontAwesomeIcon :icon="faTrash" />
                     </button>
                     <div class="set-management-bar">
-                    <button
-                        v-if="!isAddingNewSet"
-                        title="Create a new set for these credentials so you can choose between them."
-                        @click="onAddingNewSet">
-                        Create new set
-                    </button>
-                    <div v-else class="set-management-bar">
-                        <FormElement
-                            v-if="isAddingNewSet"
-                            v-model="newSetName"
-                            type="text"
-                            placeholder="Enter new set name" />
                         <button
-                            v-if="isAddingNewSet"
-                            :disabled="!canCreateNewSet"
-                            class="btn-primary"
-                            @click="onCreateNewSet">
-                            Confirm
+                            v-if="!isAddingNewSet"
+                            title="Create a new set for these credentials so you can choose between them."
+                            @click="onAddingNewSet">
+                            Create new set
                         </button>
-                        <button v-if="isAddingNewSet" @click="onCancelAddingNewSet">Cancel</button>
+                        <div v-else class="set-management-bar">
+                            <FormElement
+                                v-if="isAddingNewSet"
+                                v-model="newSetName"
+                                type="text"
+                                placeholder="Enter new set name" />
+                            <button
+                                v-if="isAddingNewSet"
+                                :disabled="!canCreateNewSet"
+                                class="btn-primary"
+                                @click="onCreateNewSet">
+                                Confirm
+                            </button>
+                            <button v-if="isAddingNewSet" @click="onCancelAddingNewSet">Cancel</button>
+                        </div>
                     </div>
-                </div>
                 </div>
 
                 <div v-for="variable in selectedSet.variables" :key="variable.name">
@@ -199,15 +199,18 @@ function onDeleteGroup() {
     display: flex;
     align-items: center;
 }
+
 .tick-icon {
     color: green;
     margin-left: 0.5em;
 }
+
 .set-management-bar {
     display: flex;
     gap: 1em;
     align-items: center;
 }
+
 .set-selection-bar {
     display: grid;
     grid-template-columns: auto 1fr auto;
