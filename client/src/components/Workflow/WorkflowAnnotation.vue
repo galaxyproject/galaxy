@@ -12,7 +12,7 @@ import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import { fetchReadmeForIwcWorkflow } from "./workflows.services";
+import { fetchDocsForIwcWorkflow } from "./workflows.services";
 
 import Heading from "../Common/Heading.vue";
 import TextSummary from "../Common/TextSummary.vue";
@@ -62,15 +62,17 @@ const workflowTags = computed(() => {
     return workflow.value?.tags || [];
 });
 
-const readme = ref<string | null>(null);
-const readMeLoading = ref<boolean | null>(null);
-const readMeShown = ref(false);
+const iwcReadme = ref<string | null>(null);
+const iwcChangelog = ref<string | null>(null);
+const iwcReadmeShown = ref(false);
+const iwcChangelogShown = ref(false);
+const iwcDocsLoading = ref<boolean | null>(null);
 
 watch(
     () => workflow.value,
     async (wf) => {
         if (wf && props.showDetails) {
-            await setReadmeIfExists();
+            await setIwcDocsIfExists();
         }
     },
     { immediate: true }
@@ -82,19 +84,22 @@ const { renderMarkdown } = useMarkdown({
     increaseHeadingLevelBy: 1,
 });
 
-async function setReadmeIfExists() {
+async function setIwcDocsIfExists() {
     const sourceMetadata = workflow.value?.source_metadata;
     if (sourceMetadata && "trs_tool_id" in sourceMetadata && typeof sourceMetadata.trs_tool_id === "string") {
         try {
-            readMeLoading.value = true;
-            const fetchedReadme = await fetchReadmeForIwcWorkflow(sourceMetadata.trs_tool_id);
-            if (fetchedReadme) {
-                readme.value = renderMarkdown(fetchedReadme);
+            iwcDocsLoading.value = true;
+            const { readme, changelog } = await fetchDocsForIwcWorkflow(sourceMetadata.trs_tool_id);
+            if (readme) {
+                iwcReadme.value = renderMarkdown(readme);
+            }
+            if (changelog) {
+                iwcChangelog.value = renderMarkdown(changelog);
             }
         } catch (error) {
-            // there is no readme
+            // there is no iwcReadme
         } finally {
-            readMeLoading.value = false;
+            iwcDocsLoading.value = false;
         }
     }
 }
@@ -136,21 +141,34 @@ async function setReadmeIfExists() {
         <div v-if="props.showDetails">
             <TextSummary v-if="description" class="my-1" :description="description" one-line-summary component="span" />
             <StatelessTags v-if="workflowTags.length" :value="workflowTags" :disabled="true" />
-            <BAlert v-if="readMeLoading" variant="info" show>
+            <BAlert v-if="iwcDocsLoading" variant="info" show>
                 <LoadingSpan message="Loading workflow README" />
             </BAlert>
-            <div v-else-if="readme" class="mt-2">
+            <div v-else-if="iwcReadme || iwcChangelog" class="mt-2">
                 <Heading
+                    v-if="iwcReadme"
                     h2
                     separator
                     bold
                     size="sm"
-                    :collapse="readMeShown ? 'open' : 'closed'"
-                    @click="readMeShown = !readMeShown">
+                    :collapse="iwcReadmeShown ? 'open' : 'closed'"
+                    @click="iwcReadmeShown = !iwcReadmeShown">
                     <span v-localize>Help</span>
                 </Heading>
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <p v-if="readMeShown" v-html="readme" />
+                <p v-if="iwcReadmeShown" v-html="iwcReadme" />
+                <Heading
+                    v-if="iwcChangelog"
+                    h2
+                    separator
+                    bold
+                    size="sm"
+                    :collapse="iwcChangelogShown ? 'open' : 'closed'"
+                    @click="iwcChangelogShown = !iwcChangelogShown">
+                    <span v-localize>Version History</span>
+                </Heading>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <p v-if="iwcChangelogShown" v-html="iwcChangelog" />
             </div>
             <hr class="mb-0 mt-2" />
         </div>

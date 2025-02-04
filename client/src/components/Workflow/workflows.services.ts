@@ -109,9 +109,9 @@ export async function getWorkflowInfo(workflowId: string) {
 /**
  * For dockstore imported IWC workflows, fetch the README file from the GitHub repository.
  * @param trsId of form `#workflow/github.com/iwc-workflows/<directory>/...`
- * @returns the README file content
+ * @returns the README and CHANGELOG file contents
  */
-export async function fetchReadmeForIwcWorkflow(trsId: string) {
+export async function fetchDocsForIwcWorkflow(trsId: string) {
     try {
         const parts = trsId.split("/");
         if (parts.length !== 5) {
@@ -125,14 +125,22 @@ export async function fetchReadmeForIwcWorkflow(trsId: string) {
 
         const directory = parts[3];
 
-        // Construct the URL for the README file
-        const readmeUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/heads/main/README.md`;
+        // Construct the URL for the README and CHANGELOG files
+        const baseUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/heads/main/`;
+        let readme;
+        let changelog;
 
-        // Now fetch the README file
-        const response = await fetch(readmeUrl);
-        if (response.ok) {
-            return await response.text();
+        // Now fetch the files
+        const readmeResponse = await fetch(baseUrl + "README.md");
+        if (readmeResponse.ok) {
+            readme = await readmeResponse.text();
         }
+        const changelogResponse = await fetch(baseUrl + "CHANGELOG.md");
+        if (changelogResponse.ok) {
+            changelog = await changelogResponse.text();
+        }
+
+        return { readme, changelog };
     } catch (error) {
         rethrowSimple(error);
     }
