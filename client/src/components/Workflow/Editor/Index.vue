@@ -1,5 +1,6 @@
 <template>
     <div id="columns" class="d-flex">
+        <div>{{ lintData.disconnectedInputs }}</div>
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -57,7 +58,7 @@
                     @insertModule="onInsertModule" />
                 <WorkflowLint
                     v-else-if="isActiveSideBar('workflow-best-practices')"
-                    :untyped-parameters="parameters"
+                    :lint-data="lintData"
                     :annotation="annotation"
                     :creator="creator"
                     :license="license"
@@ -220,6 +221,7 @@ import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivitie
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { useLintData } from "./modules/useLinting";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -481,6 +483,8 @@ export default {
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const lintData = useLintData(id, steps, datatypesMapper);
+
         return {
             id,
             name,
@@ -526,6 +530,7 @@ export default {
             saveWorkflowTitle,
             confirm,
             inputs,
+            lintData,
         };
     },
     data() {
