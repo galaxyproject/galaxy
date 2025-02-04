@@ -325,7 +325,12 @@ class JobSearch:
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
-                src = current_case["src"]
+                src = current_case.get("src")
+                if src is None:
+                    # just a parameter named id.
+                    # TODO: dispatch on tool parameter type instead of values,
+                    # maybe with tool state variant
+                    return key, value
                 current_case = param
                 for i, p in enumerate(path):
                     if p == "values" and i == len(path) - 2:
