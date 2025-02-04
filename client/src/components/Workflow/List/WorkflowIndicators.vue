@@ -11,6 +11,7 @@ import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import type { Workflow } from "@/stores/workflowStore";
 import { copy } from "@/utils/clipboard";
+import { isUrl } from "@/utils/url";
 
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -93,15 +94,15 @@ function onViewUserPublished() {
     emit("updateFilter", "user", `'${props.workflow.owner}'`);
 }
 
-function getOrcidLink(creator: Creator) {
-    if (!creator.identifier) {
-        return null;
-    }
+function getCreatorUrl(creator: Creator) {
     const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
-    if (!orcidRegex.test(creator.identifier)) {
-        return null;
+    if (creator.identifier && orcidRegex.test(creator.identifier)) {
+        return { orcid: creator.identifier };
     }
-    return creator.identifier;
+    if (creator.url && isUrl(creator.url)) {
+        return { url: creator.url };
+    }
+    return null;
 }
 
 function getStepText(steps: number) {
@@ -189,9 +190,9 @@ function getStepText(steps: number) {
                 v-b-tooltip.noninteractive.hover
                 data-description="external creator badge"
                 class="outline-badge mx-1"
-                :class="{ 'cursor-pointer': getOrcidLink(creator) }"
-                :title="getOrcidLink(creator) ? 'Click to view ORCID profile' : 'Workflow Author'"
-                :href="getOrcidLink(creator)"
+                :class="{ 'cursor-pointer': getCreatorUrl(creator) }"
+                :title="getCreatorUrl(creator)?.orcid ? 'Click to view ORCID profile' : 'Workflow Author'"
+                :href="getCreatorUrl(creator)?.orcid || getCreatorUrl(creator)?.url"
                 target="_blank">
                 <FontAwesomeIcon :icon="faUserEdit" size="sm" fixed-width />
                 <span class="font-weight-bold"> {{ creator.name }} </span>
