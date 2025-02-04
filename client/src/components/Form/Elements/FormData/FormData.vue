@@ -255,7 +255,11 @@ function clearHighlighting(timeout = 1000) {
  */
 function createValue(val?: Array<DataOption> | DataOption | null) {
     if (val) {
-        const values = Array.isArray(val) ? val : [val];
+        let values = Array.isArray(val) ? val : [val];
+
+        // Remove duplicates based on item.id
+        values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
+
         if (variant.value && values.length > 0 && values[0]) {
             const hasMapOverType = values.find((v) => !!v.map_over_type);
             const isMultiple = values.length > 1;
