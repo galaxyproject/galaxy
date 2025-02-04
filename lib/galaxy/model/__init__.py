@@ -1751,7 +1751,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         else:
             self.state = Job.states.STOPPED
 
-    def mark_deleted(self, track_jobs_in_database=False):
+    def mark_deleted(self, track_jobs_in_database=False, message=None):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
         """
@@ -1762,7 +1762,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             self.state = Job.states.DELETING
         else:
             self.state = Job.states.DELETED
-        self.info = "Job output deleted by user before job completed."
+        info = message or "Job output deleted by user before job completed."
+        self.info = info
         for jtoda in self.output_datasets:
             output_hda = jtoda.dataset
             output_hda.deleted = True
@@ -1772,7 +1773,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 shared_hda.deleted = True
                 shared_hda.blurb = "deleted"
                 shared_hda.peek = "Job deleted"
-                shared_hda.info = "Job output deleted by user before job completed"
+                shared_hda.info = info
 
     def mark_failed(self, info="Job execution failed", blurb=None, peek=None):
         """
