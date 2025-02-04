@@ -6,7 +6,7 @@ import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { Person } from "@/api/workflows";
+import type { Creator } from "@/api/workflows";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
@@ -33,10 +33,6 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const userStore = useUserStore();
-
-const creatorUsers = computed<Person[]>(() => {
-    return props.workflow.creator.filter((user: Person) => user.class === "Person");
-});
 
 const publishedTitle = computed(() => {
     if (props.workflow.published && !props.publishedView) {
@@ -99,7 +95,7 @@ function onViewUserPublished() {
     emit("updateFilter", "user", `'${props.workflow.owner}'`);
 }
 
-function getOrcidLink(creator: Person) {
+function getOrcidLink(creator: Creator) {
     if (!creator.identifier) {
         return null;
     }
@@ -188,9 +184,9 @@ function getStepText(steps: number) {
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>
 
-        <template v-if="creatorUsers?.length">
+        <template v-if="props.workflow.creator?.length">
             <BBadge
-                v-for="creator in creatorUsers"
+                v-for="creator in props.workflow.creator"
                 :key="creator.name"
                 v-b-tooltip.noninteractive.hover
                 data-description="external creator badge"
