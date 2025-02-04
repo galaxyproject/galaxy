@@ -65,10 +65,8 @@ export async function submitReportTool(
         if (error) {
             return { messages: [], error: errorMessageAsString(error) };
         }
-        // return { messages: data.messages };
-        return { messages: [["Success!", "success"]] };
+        return { messages: data.messages };
     } catch (err) {
-        console.log("api error (err)", err);
         return { messages: [], error: errorMessageAsString(err) };
     }
 }

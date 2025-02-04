@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCollapse, BLink } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { dispatchReport, type ReportType } from "@/components/Collections/common/reporting";
@@ -39,7 +39,7 @@ const fieldMessages = computed(() =>
         Boolean
     )
 );
-const expandedIcon = computed(() => (isExpanded.value ? "-" : "+"));
+const expandedIcon = computed(() => (isExpanded.value ? '-' : '+'));
 
 async function handleSubmit(reportType: ReportType, data?: any, email?: string | null) {
     if (!data || !email) {

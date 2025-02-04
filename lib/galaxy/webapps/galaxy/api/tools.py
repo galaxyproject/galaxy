@@ -59,6 +59,9 @@ from . import (
     Router,
 )
 from galaxy.tools.errors import EmailErrorReporterTool
+from galaxy.schema.schema import (
+    ToolErrorSummary
+)
 
 log = logging.getLogger(__name__)
 
@@ -122,21 +125,19 @@ class EmailReportTools:
         "/api/tools/{tool_id}/error",
         public=True,
         summary="Get tool error details",
-        response_model=None,
     )
     def error(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        tool_id: str = Path(..., description="The ID of the tool"),
         payload: dict = Body(..., description="The Payload from the form"),
-    ) -> Any:
+    ) -> ToolErrorSummary:
         args = _kwd_or_payload(payload)
         email = args.get("email", None)
         message = args.get("message", None)
         reportable_data = args.get("reportable_data", None)
         try:
             error_reporter = EmailErrorReporterTool
-            error_reporter.create_report_tool(
+            response = error_reporter.create_report_tool(
                 self=trans,
                 user=trans.user,
                 reportable_data=reportable_data,
@@ -144,10 +145,9 @@ class EmailReportTools:
                 message=message,
                 redact_user_details_in_bugreport=trans.app.config.redact_user_details_in_bugreport,
             )
-            return ("Your error report has been sent", "success")
+            return ToolErrorSummary(messages=response)
         except Exception as e:
             msg = f"An error occurred sending the report by email: {unicodify(e)}"
-            log.info(msg)
             return (msg, "danger")
 
 

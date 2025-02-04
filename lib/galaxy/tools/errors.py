@@ -44,7 +44,7 @@ class ErrorReporter:
         return self.app.security_agent.can_access_dataset(roles, self.hda.dataset)
 
     def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
-        email_str = _redact_email(user, email, redact_user_details_in_bugreport)
+        email_str = ReportPresenter._redact_email(user, email, redact_user_details_in_bugreport)
         hda = self.hda
         job = self.job
         host = self.app.url_for("/", qualified=True)
@@ -81,14 +81,8 @@ class ErrorReporter:
             email_str=email_str,
             message=util.unicodify(message),
         )
-        self.report = templates.render(REPORT_TEMPLATE_DATASET_TXT, report_variables, self.app.config.templates_dir)
-        
-        # Escape all of the content  for use in the HTML report
-        for parameter in report_variables.keys():
-            if report_variables[parameter] is not None:
-                report_variables[parameter] = markupsafe.escape(unicodify(report_variables[parameter]))
-
-        self.html_report = templates.render(REPORT_TEMPLATE_DATASET_HTML, report_variables, self.app.config.templates_dir)
+        self.report = ReportPresenter._get_body(self, REPORT_TEMPLATE_DATASET_TXT, self.app.config.templates_dir, report_variables)
+        self.html_report = ReportPresenter._get_body(self, REPORT_TEMPLATE_DATASET_HTML, self.app.config.templates_dir, ReportPresenter._escape_html(report_variables))
 
     def _send_report(self, user, email=None, message=None, **kwd):
         return self.report
@@ -136,63 +130,109 @@ class EmailErrorReporterTool:
         redact_user_details_in_bugreport=False, 
         **kwd
     ):
-        email_str = _redact_email(user, email, redact_user_details_in_bugreport)
-        history_id = self.history.id
-        history_id_encoded=self.app.security.encode_id(history_id)
-        job_tool_id = reportable_data.get("tool_id", None)
-        tool_version = reportable_data.get("tool_version", None)
-        report_variables = dict(
-            host=self.app.url_for("/", qualified=True),
-            history_id=history_id,
-            history_id_encoded=history_id_encoded,
-            history_view_link=self.app.url_for("/histories/view", id=history_id_encoded, qualified=True),
-            job_tool_id=job_tool_id,
-            job_tool_version=tool_version,
-            transcript=json.dumps(reportable_data, indent=4, ensure_ascii=False),
-            # TODO are there any errors that can be captured and...
-            # ...displayed here ? Even browser ones ? Previously...
-            # ...we could capture: job_stderr, job_stdout, job_info,...
-            # ...job_traceback
-            email_str=email_str,
-            message=util.unicodify(message),
-        )
-        self.report = templates.render(REPORT_TEMPLATE_TOOL_TXT, report_variables, self.app.config.templates_dir)
-        
-        # Escape all of the content  for use in the HTML report
-        for parameter in report_variables.keys():
-            if report_variables[parameter] is not None:
-                report_variables[parameter] = markupsafe.escape(unicodify(report_variables[parameter]))
-
-        self.html_report = templates.render(REPORT_TEMPLATE_TOOL_HTML, report_variables, self.app.config.templates_dir)
-
-        error_reporter = EmailErrorReporter(self.hda, self.app)
-        error_reporter.create_report(user, email=email, message=message, redact_user_details_in_bugreport=redact_user_details_in_bugreport, **kwd)
-        return error_reporter
+        try:
+            email_str = ReportPresenter._redact_email(user, email, redact_user_details_in_bugreport)
+            history_id = self.history.id
+            history_id_encoded=self.app.security.encode_id(history_id)
+            job_tool_id = reportable_data.get("tool_id", None)
+            tool_version = reportable_data.get("tool_version", None)
+            report_variables = dict(
+                host=self.app.url_for("/", qualified=True),
+                history_id=history_id,
+                history_id_encoded=history_id_encoded,
+                history_view_link=self.app.url_for("/histories/view", id=history_id_encoded, qualified=True),
+                job_tool_id=job_tool_id,
+                job_tool_version=tool_version,
+                transcript=json.dumps(reportable_data, indent=4, ensure_ascii=False),
+                email_str=email_str,
+                message=util.unicodify(message),
+            )
+            body = templates.render(REPORT_TEMPLATE_TOOL_TXT, report_variables, self.app.config.templates_dir)
+            html = templates.render(REPORT_TEMPLATE_TOOL_HTML, ReportPresenter._escape_html(report_variables), self.app.config.templates_dir)       
+            subject = ReportPresenter._get_subject(self, email, job_tool_id, tool_version)
+            email_to = ReportPresenter._get_email_to(email, self.app.config.error_email_to)
+            ReportEmailer().send_report(user, email=email_to, message=message, subject=subject, body=body, html=html)
+            return [["Your error report has been sent", "success"]]
+        except Exception as e:
+            msg = f"An error occurred sending the report by email: {unicodify(e)}"
+            return (msg, "danger")
 
 
-def _redact_email(user, email=None, redact_user_details_in_bugreport=False) -> str:
-    if redact_user_details_in_bugreport:
-        # This is sub-optimal but it is hard to solve fully. This affects
-        # the GitHub posting method more than the traditional email plugin.
-        # There is no way around CCing the person with the traditional
-        # email bug report plugin, however with the GitHub plugin we can
-        # submit to GitHub without putting the email in the bug report.
-        #
-        # A secondary system with access to the GitHub issue and access to
-        # the Galaxy database can shuttle email back and forth between
-        # GitHub comments and user-emails.
-        # Thus preventing issue helpers from every knowing the identity of
-        # the bug reporter (and preventing information about the bug
-        # reporter from leaving the EU until it hits email directly to the
-        # user.)
-        email_str = "redacted"
-        if user:
-            email_str += f" (user: {user.id})"
-    else:
-        if user:
-            email_str = f"'{user.email}'"
-            if email and user.email != email:
-                email_str += f" (providing preferred contact email '{email}')"
+class ReportPresenter:
+    def _get_email_to(email, error_email_to):
+        error_msg = validate_email_str(email)
+        if not error_msg:
+            return f"{error_email_to}, {email.strip()}"
+        return error_email_to
+
+    def _get_subject(self, email, tool_id, tool_version):
+        subject = f"Galaxy tool error report from {email}"
+        try:
+            subject = f"{subject} ({self.app.toolbox.get_tool(tool_id, tool_version).old_id})"
+        except Exception:
+            pass
+        return subject
+
+    def _get_body(self, template_file, template_directory, template_variables):
+        return templates.render(template_file, template_variables, template_directory)
+
+    def _escape_html(content):
+        # Escape all of the dynamic-content for use in the HTML report
+        for parameter in content.keys():
+            if content[parameter] is not None:
+                content[parameter] = markupsafe.escape(unicodify(content[parameter]))
+        return content
+
+    def _redact_email(user, email=None, redact_user_details_in_bugreport=False) -> str:
+        if redact_user_details_in_bugreport:
+            # This is sub-optimal but it is hard to solve fully. This affects
+            # the GitHub posting method more than the traditional email plugin.
+            # There is no way around CCing the person with the traditional
+            # email bug report plugin, however with the GitHub plugin we can
+            # submit to GitHub without putting the email in the bug report.
+            #
+            # A secondary system with access to the GitHub issue and access to
+            # the Galaxy database can shuttle email back and forth between
+            # GitHub comments and user-emails.
+            # Thus preventing issue helpers from every knowing the identity of
+            # the bug reporter (and preventing information about the bug
+            # reporter from leaving the EU until it hits email directly to the
+            # user.)
+            email_str = "redacted"
+            if user:
+                email_str += f" (user: {user.id})"
         else:
-            email_str = "'%s'" % (email or "anonymous")
-    return email_str
+            if user:
+                email_str = f"'{user.email}'"
+                if email and user.email != email:
+                    email_str += f" (providing preferred contact email '{email}')"
+            else:
+                email_str = "'%s'" % (email or "anonymous")
+        return email_str
+
+class ReportEmailer:
+    def send_report(self, user, email=None, message=None, **kwd):
+        smtp_server = self.app.config.smtp_server
+        assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
+        to = self.app.config.error_email_to
+        assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
+
+        error_msg = validate_email_str(email)
+        if not error_msg and self._can_access_dataset(user):
+            to += f", {email.strip()}"
+        subject = f"Galaxy tool error report from {email}"
+        try:
+            subject = f"{subject} ({self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id})"
+        except Exception:
+            pass
+
+        reply_to = user.email if user else None
+        return util.send_mail(
+            self.app.config.email_from,
+            to,
+            subject,
+            self.report,
+            self.app.config,
+            html=self.html_report,
+            reply_to=reply_to,
+        )

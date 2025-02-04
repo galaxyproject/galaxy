@@ -3928,3 +3928,11 @@ class SanitizedString(str):
             core_schema.str_schema(),
             serialization=core_schema.to_string_ser_schema(),
         )
+
+
+class ToolErrorSummary(Model):
+    messages: List[List[str]] = Field(
+        default=...,
+        title="Error messages",
+        description="The error messages for the specified tool.",
+    )
