@@ -222,6 +222,7 @@ def mull_targets(
     base_image=None,
     determine_base_image=True,
     invfile=INVFILE,
+    strict_channel_priority=True,
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -334,17 +335,13 @@ def mull_targets(
             involucro_args.append("-set")
             involucro_args.append(f"TEST_BINDS={','.join(test_bind)}")
 
-    involucro_args_list = []
-    for strict_channel_priority in [True, False]:
-        involucro_args_list.append(involucro_args[:])
-        if strict_channel_priority:
-            involucro_args_list[-1].extend(["-set", "STRICT_CHANNEL_PRIORITY=1"])
+    if strict_channel_priority:
+        involucro_args.extend(["-set", "STRICT_CHANNEL_PRIORITY=1"])
 
-    for involucro_args in involucro_args_list:
-        involucro_args.append(command)
+    involucro_args.append(command)
 
     if dry_run:
-        cmd = involucro_context.build_command(involucro_args_list[0])
+        cmd = involucro_context.build_command(involucro_args)
         print(f"Executing: {shlex_join(cmd)}")
         return 0
 
@@ -359,18 +356,14 @@ def mull_targets(
             }
             sin_def.write(fill_template)
 
-    for involucro_args in involucro_args_list:
-        cmd = involucro_context.build_command(involucro_args)
-        print(f"Executing: {shlex_join(cmd)}")
+    cmd = involucro_context.build_command(involucro_args)
 
-        with PrintProgress():
-            ret = involucro_context.exec_command(involucro_args)
-        if singularity:
-            # we can not remove this folder as it contains the image wich is owned by root
-            pass
-            # shutil.rmtree('./singularity_import')
-        if not ret:
-            break
+    with PrintProgress():
+        ret = involucro_context.exec_command(involucro_args)
+    if singularity:
+        # we can not remove this folder as it contains the image wich is owned by root
+        pass
+        # shutil.rmtree('./singularity_import')
     return ret
 
 
@@ -476,6 +469,13 @@ def add_build_arguments(parser):
         help="Comma separated list of target conda channels.",
     )
     parser.add_argument(
+        "--disable_strict_channel_priority",
+        dest="strict_channel_priority",
+        default=True,
+        action="store_false",
+        help="Disable strict channel priority. Will decrease speed of the resolver and should only be used in exceptional cases.",
+    )
+    parser.add_argument(
         "--conda-version",
         dest="conda_version",
         default=None,
@@ -576,6 +576,7 @@ def args_to_mull_targets_kwds(args):
         kwds["invfile"] = args.invfile
     if hasattr(args, "verbose"):
         kwds["verbose"] = args.verbose
+    kwds["strict_channel_priority"] = args.strict_channel_priority
 
     kwds["involucro_context"] = context_from_args(args)
 
