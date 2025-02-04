@@ -1,13 +1,12 @@
-<script lang="ts">
+<script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import Vue from "vue";
+import { computed } from "vue";
 
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type { Steps } from "@/stores/workflowStepStore";
 
 import type { LintState } from "./modules/linting";
 import {
@@ -20,183 +19,115 @@ import {
     fixDisconnectedInput,
     fixUnlabeledOutputs,
     fixUntypedParameter,
-    getDisconnectedInputs,
-    getMissingMetadata,
-    getUnlabeledOutputs,
-    getUntypedParameters,
 } from "./modules/linting";
+import type { useLintData } from "./modules/useLinting";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
-Vue.use(BootstrapVue);
+const props = defineProps<{
+    lintData: ReturnType<typeof useLintData>;
+    steps: Steps; // Adjust the type as needed
+    annotation?: String | null;
+    readme?: String | null;
+    license?: String | null;
+    creator?: any;
+    datatypesMapper: DatatypesMapperModel;
+}>();
+const stores = useWorkflowStores();
+const { stepStore, stateStore } = stores;
+const { hasActiveOutputs } = storeToRefs(stepStore);
+const { untypedParameters, unlabeledOutputs, untypedParameterWarnings, disconnectedInputs, missingMetadata } =
+    props.lintData;
+const showRefactor = computed(
+    () => !untypedParameterWarnings.value.length || !disconnectedInputs.value.length || !unlabeledOutputs.value.length,
+);
+const checkAnnotation = computed(() => Boolean(props.annotation));
+const checkAnnotationLength = computed(() => Boolean(!props.annotation || props.annotation.length <= 250));
+const annotationLengthSuccessMessage = computed(() =>
+    props.annotation
+        ? "This workflow has a short description of appropriate length."
+        : "This workflow does not have a short description.",
+);
+const checkReadme = computed(() => Boolean(props.readme));
+const checkLicense = computed(() => Boolean(props.license));
+const checkCreator = computed(() => (props.creator ? props.creator.length > 0 : false));
 
-export default {
-    components: {
-        FontAwesomeIcon,
-        LintSection,
-        ActivityPanel,
-        GLink,
-    },
-    props: {
-        untypedParameters: {
-            type: UntypedParameters,
-            required: true,
-        },
-        steps: {
-            type: Object,
-            required: true,
-        },
-        annotation: {
-            type: String,
-            default: null,
-        },
-        readme: {
-            type: String,
-            default: null,
-        },
-        license: {
-            type: String,
-            default: null,
-        },
-        creator: {
-            type: Array,
-            default: null,
-        },
-        datatypesMapper: {
-            type: DatatypesMapperModel,
-            required: true,
-        },
-    },
-    setup() {
-        const stores = useWorkflowStores();
-        const { connectionStore, stepStore, stateStore } = stores;
-        const { hasActiveOutputs } = storeToRefs(stepStore);
-        return { stores, connectionStore, stepStore, hasActiveOutputs, stateStore };
-    },
-    data() {
-        return {
-            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
-            bestPracticeWarningAnnotationLength: bestPracticeWarningAnnotationLength,
-            bestPracticeWarningCreator: bestPracticeWarningCreator,
-            bestPracticeWarningLicense: bestPracticeWarningLicense,
-            bestPracticeWarningReadme: bestPracticeWarningReadme,
-            faExclamationTriangle,
-        };
-    },
-    computed: {
-        showRefactor() {
-            // we could be even more precise here and check the inputs and such, because
-            // some of these extractions may not be possible.
-            return !this.checkUntypedParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
-        },
-        checkAnnotation() {
-            return !!this.annotation;
-        },
-        checkAnnotationLength() {
-            const annotation = this.annotation;
-            if (annotation && annotation.length > 250) {
-                return false;
-            }
-            return true;
-        },
-        annotationLengthSuccessMessage() {
-            if (this.annotation) {
-                return "This workflow has a short description of appropriate length.";
-            } else {
-                return "This workflow does not have a short description.";
-            }
-        },
-        checkReadme() {
-            return !!this.readme;
-        },
-        checkLicense() {
-            return !!this.license;
-        },
-        checkCreator() {
-            if (this.creator instanceof Array) {
-                return this.creator.length > 0;
-            } else {
-                return !!this.creator;
-            }
-        },
-        checkUntypedParameters() {
-            return this.warningUntypedParameters.length == 0;
-        },
-        checkDisconnectedInputs() {
-            return this.warningDisconnectedInputs.length == 0;
-        },
-        checkUnlabeledOutputs() {
-            return this.warningUnlabeledOutputs.length == 0;
-        },
-        warningUntypedParameters() {
-            return getUntypedParameters(this.untypedParameters);
-        },
-        warningDisconnectedInputs() {
-            return getDisconnectedInputs(this.steps, this.datatypesMapper, this.stores);
-        },
-        warningMissingMetadata() {
-            return getMissingMetadata(this.steps);
-        },
-        warningUnlabeledOutputs() {
-            return getUnlabeledOutputs(this.steps);
-        },
-    },
-    methods: {
-        onAttributes(highlight: string) {
-            const args = { highlight: highlight };
-            this.$emit("onAttributes", args);
-        },
-        onFixUntypedParameter(item: LintState) {
-            if (
-                confirm(
-                    "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
-                )
-            ) {
-                this.$emit("onRefactor", [fixUntypedParameter(item)]);
-            } else {
-                this.$emit("onScrollTo", item.stepId);
-            }
-        },
-        onFixDisconnectedInput(item: LintState) {
-            if (
-                confirm(
-                    "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
-                )
-            ) {
-                this.$emit("onRefactor", [fixDisconnectedInput(item)]);
-            } else {
-                this.$emit("onScrollTo", item.stepId);
-            }
-        },
-        onFixUnlabeledOutputs(item: LintState) {
-            if (
-                confirm(
-                    "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?",
-                )
-            ) {
-                this.$emit("onRefactor", [fixUnlabeledOutputs()]);
-            } else {
-                this.$emit("onScrollTo", item.stepId);
-            }
-        },
-        openAndFocus(item: LintState) {
-            this.stateStore.activeNodeId = item.stepId;
-            this.$emit("onScrollTo", item.stepId);
-        },
-        onHighlight(item: LintState) {
-            this.$emit("onHighlight", item.stepId);
-        },
-        onUnhighlight(item: LintState) {
-            this.$emit("onUnhighlight", item.stepId);
-        },
-        onRefactor() {
-            const actions = fixAllIssues(this.steps, this.untypedParameters, this.datatypesMapper, this.stores);
-            this.$emit("onRefactor", actions);
-        },
-    },
-};
+const emit = defineEmits<{
+    (e: "onAttributes", highlight: { highlight: "highlight" }): void;
+    (
+        e: "onRefactor",
+        action:
+            | [
+                  | ReturnType<typeof fixUntypedParameter>
+                  | ReturnType<typeof fixDisconnectedInput>
+                  | ReturnType<typeof fixUnlabeledOutputs>,
+              ]
+            | ReturnType<typeof fixAllIssues>,
+    ): void;
+    (e: "onScrollTo", stepId: Number): void;
+    (e: "onHighlight", stepId: Number): void;
+    (e: "onUnhighlight", stepId: Number): void;
+}>();
+
+function onAttributes(highlight: string) {
+    emit("onAttributes", { highlight: "highlight" });
+}
+function onFixUntypedParameter(item: LintState) {
+    if (
+        confirm(
+            "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
+        )
+    ) {
+        emit("onRefactor", [fixUntypedParameter(item)]);
+    } else {
+        emit("onScrollTo", item.stepId);
+    }
+}
+function onFixDisconnectedInput(item: LintState) {
+    if (
+        confirm(
+            "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
+        )
+    ) {
+        emit("onRefactor", [fixDisconnectedInput(item)]);
+    } else {
+        emit("onScrollTo", item.stepId);
+    }
+}
+
+function onFixUnlabeledOutputs(item: LintState) {
+    if (
+        confirm(
+            "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?",
+        )
+    ) {
+        emit("onRefactor", [fixUnlabeledOutputs()]);
+    } else {
+        emit("onScrollTo", item.stepId);
+    }
+}
+
+function openAndFocus(item: LintState) {
+    stateStore.activeNodeId = item.stepId;
+    emit("onScrollTo", item.stepId);
+}
+
+function onHighlight(item: LintState) {
+    emit("onHighlight", item.stepId);
+}
+
+function onUnhighlight(item: LintState) {
+    emit("onUnhighlight", item.stepId);
+}
+
+function onRefactor() {
+    if (untypedParameters.value) {
+        const actions = fixAllIssues(props.steps, untypedParameters.value, props.datatypesMapper, stores);
+        emit("onRefactor", actions);
+    }
+}
 </script>
 <template>
     <ActivityPanel title="Best Practices Review">
@@ -243,7 +174,7 @@ export default {
             warning-message="This workflow uses legacy workflow parameters. They should be replaced with
                 formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
                 and executing the workflow via the API more robust:"
-            :warning-items="warningUntypedParameters"
+            :warning-items="untypedParameterWarnings"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUntypedParameter" />
@@ -252,7 +183,7 @@ export default {
             success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
             warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
-            :warning-items="warningDisconnectedInputs"
+            :warning-items="disconnectedInputs"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixDisconnectedInput" />
@@ -260,7 +191,7 @@ export default {
             data-description="linting input metadata"
             success-message="All workflow inputs have labels and annotations."
             warning-message="Some workflow inputs are missing labels and/or annotations:"
-            :warning-items="warningMissingMetadata"
+            :warning-items="missingMetadata"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="openAndFocus" />
@@ -269,7 +200,7 @@ export default {
             success-message="This workflow has outputs and they all have valid labels."
             warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
-            :warning-items="warningUnlabeledOutputs"
+            :warning-items="unlabeledOutputs"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUnlabeledOutputs" />

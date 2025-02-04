@@ -50,7 +50,7 @@
                     @insertModule="onInsertModule" />
                 <WorkflowLint
                     v-else-if="isActiveSideBar('workflow-best-practices')"
-                    :untyped-parameters="parameters"
+                    :lint-data="lintData"
                     :annotation="annotation"
                     :readme="readme"
                     :creator="creator"
@@ -270,6 +270,7 @@ import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
+import { useLintData } from "./modules/useLinting";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -630,6 +631,7 @@ export default {
             stateStore.activeNodeId = toolId;
             this.onScrollTo(toolId);
         }
+        const lintData = useLintData(id, steps, datatypesMapper);
 
         return {
             id,
@@ -698,6 +700,7 @@ export default {
             faKey,
             faWrench,
             showDropdown: false,
+            lintData,
         };
     },
     data() {
