@@ -2,22 +2,12 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-// import type { StoredWorkflowDetailed } from "@/api/workflows"; // TODO: use this instead of locally defined type
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getAppRoot } from "@/onload/loadConfig";
 import { type Steps } from "@/stores/workflowStepStore";
 
-export interface Workflow {
-    name: string;
-    id: string;
+export interface Workflow extends Omit<StoredWorkflowDetailed, 'steps'> {
     steps: Steps;
-    step_count?: number;
-    latest_id?: string;
-    version: number;
-    deleted?: boolean;
-    owner?: string;
-    annotation?: string;
-    tags?: string[];
-    update_time?: string;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
