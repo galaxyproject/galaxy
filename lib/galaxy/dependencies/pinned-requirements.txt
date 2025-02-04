@@ -23,8 +23,8 @@ arcp==0.2.1
 argcomplete==3.5.3
 async-timeout==5.0.1 ; python_full_version < '3.11'
 attmap==0.13.2
-attrs==24.3.0
-babel==2.16.0
+attrs==25.1.0
+babel==2.17.0
 backports-zoneinfo==0.2.1 ; python_full_version < '3.9'
 bagit==1.8.1
 bagit-profile==1.3.1
@@ -35,13 +35,13 @@ billiard==4.2.1
 bioblend==1.4.0
 bleach==6.1.0 ; python_full_version < '3.9'
 bleach==6.2.0 ; python_full_version >= '3.9'
-boltons==24.1.0
+boltons==25.0.0
 boto==2.49.0
 botocore==1.36.3
 bx-python==0.13.0
 cachecontrol==0.14.2
 celery==5.4.0
-certifi==2024.12.14
+certifi==2025.1.31
 cffi==1.17.1
 charset-normalizer==3.4.1
 circus==0.18.0
@@ -74,19 +74,19 @@ dparse==0.6.4
 edam-ontology==1.25.2
 email-validator==2.2.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
-fastapi-slim==0.115.7
+fastapi-slim==0.115.8
 filelock==3.16.1 ; python_full_version < '3.9'
 filelock==3.17.0 ; python_full_version >= '3.9'
 fissix==24.4.24 ; python_full_version >= '3.13'
 frozenlist==1.5.0
 fs==2.4.16
 fsspec==2024.10.0 ; python_full_version < '3.9'
-fsspec==2024.12.0 ; python_full_version >= '3.9'
+fsspec==2025.2.0 ; python_full_version >= '3.9'
 future==1.0.0
 galaxy2cwl==0.1.4 ; python_full_version < '3.9'
 graphene==3.4.3
 graphene-sqlalchemy==3.0.0rc2
-graphql-core==3.2.5
+graphql-core==3.2.6
 graphql-relay==3.2.0
 gravity==1.0.7
 greenlet==3.1.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
@@ -178,14 +178,14 @@ python-magic==0.4.27
 python-multipart==0.0.20
 python-slugify==8.0.4
 python3-openid==3.2.0
-pytz==2024.2
+pytz==2025.1
 pyyaml==6.0.2
-pyzmq==26.2.0
+pyzmq==26.2.1
 rdflib==6.3.2 ; python_full_version < '3.8.1'
 rdflib==7.0.0 ; python_full_version >= '3.8.1' and python_full_version < '3.9'
 rdflib==7.1.3 ; python_full_version >= '3.9'
 referencing==0.35.1 ; python_full_version < '3.9'
-referencing==0.36.1 ; python_full_version >= '3.9'
+referencing==0.36.2 ; python_full_version >= '3.9'
 refgenconf==0.12.2
 regex==2024.11.6
 repoze-lru==0.7
@@ -204,7 +204,7 @@ ruamel-yaml==0.18.10
 ruamel-yaml-clib==0.2.8 ; python_full_version < '3.9' and platform_python_implementation == 'CPython'
 ruamel-yaml-clib==0.2.12 ; python_full_version >= '3.9' and python_full_version < '3.13' and platform_python_implementation == 'CPython'
 s3fs==2024.10.0 ; python_full_version < '3.9'
-s3fs==2024.12.0 ; python_full_version >= '3.9'
+s3fs==2025.2.0 ; python_full_version >= '3.9'
 schema-salad==8.7.20241010092723 ; python_full_version < '3.9'
 schema-salad==8.8.20241206093842 ; python_full_version >= '3.9'
 setuptools==75.3.0 ; python_full_version < '3.9'
