@@ -1,5 +1,6 @@
 import { type components } from "@/api/schema";
 
+export type Person = components["schemas"]["Person"];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 
 //TODO: replace with generated schema model when available
