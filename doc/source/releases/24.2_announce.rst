@@ -70,6 +70,12 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
+Upcoming Deprecation Notices
+===========================================================
+
+**Deprecation of support for Python 3.8 in Galaxy release 25.0**
+  This Galaxy release (24.2) will be the last release that supports Python 3.8.
+  We encourage updating to a newer version of Python if possible.
 
 Admin Notes
 ===========================================================
