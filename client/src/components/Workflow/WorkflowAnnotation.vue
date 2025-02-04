@@ -89,7 +89,9 @@ async function setIwcDocsIfExists() {
     if (sourceMetadata && "trs_tool_id" in sourceMetadata && typeof sourceMetadata.trs_tool_id === "string") {
         try {
             iwcDocsLoading.value = true;
-            const { readme, changelog } = await fetchDocsForIwcWorkflow(sourceMetadata.trs_tool_id);
+            const versionId =
+                typeof sourceMetadata.trs_version_id === "string" ? sourceMetadata.trs_version_id : undefined;
+            const { readme, changelog } = await fetchDocsForIwcWorkflow(sourceMetadata.trs_tool_id, versionId);
             if (readme) {
                 iwcReadme.value = renderMarkdown(readme);
             }

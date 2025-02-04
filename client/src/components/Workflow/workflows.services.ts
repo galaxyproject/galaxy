@@ -109,9 +109,10 @@ export async function getWorkflowInfo(workflowId: string) {
 /**
  * For dockstore imported IWC workflows, fetch the README file from the GitHub repository.
  * @param trsId of form `#workflow/github.com/iwc-workflows/<directory>/...`
+ * @param versionId optional version tag (uses `main` branch if not provided)
  * @returns the README and CHANGELOG file contents
  */
-export async function fetchDocsForIwcWorkflow(trsId: string) {
+export async function fetchDocsForIwcWorkflow(trsId: string, versionId?: string) {
     try {
         const parts = trsId.split("/");
         if (parts.length !== 5) {
@@ -126,7 +127,12 @@ export async function fetchDocsForIwcWorkflow(trsId: string) {
         const directory = parts[3];
 
         // Construct the URL for the README and CHANGELOG files
-        const baseUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/heads/main/`;
+        let baseUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/`;
+        if (!versionId) {
+            baseUrl += "heads/main/";
+        } else {
+            baseUrl += `tags/${versionId}/`;
+        }
         let readme;
         let changelog;
 
