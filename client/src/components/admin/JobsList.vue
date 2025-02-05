@@ -290,7 +290,7 @@ export default {
                             category: "message",
                             subject: "Jobs Cancelled by Admin",
                             message: `The following jobs (${jobs
-                                .map((job) => `**${job.id}**`)
+                                .map((job) => `**[${job.tool_id || job.id}](${this.getJobViewLink(job.id)})**`)
                                 .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`,
                         },
                     },
@@ -315,6 +315,9 @@ export default {
                 this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
                 this.status = "success";
             }
+        },
+        getJobViewLink(jobId) {
+            return `${getAppRoot()}jobs/${jobId}/view`;
         },
         onStopJobs() {
             axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
