@@ -263,7 +263,8 @@ export default {
         onRefresh() {
             this.update();
         },
-        async sendNotificationToUsers(cancelReason) {
+        async sendNotificationToUsers() {
+            const cancelReason = this.stopMessage || "No reason provided";
             const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
             // Group jobs by user
             const userJobsMap = jobsToCancel.reduce((acc, job) => {
@@ -322,8 +323,8 @@ export default {
         },
         onStopJobs() {
             axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
-                if (this.sendNotification && this.stopMessage) {
-                    this.sendNotificationToUsers(this.stopMessage);
+                if (this.sendNotification) {
+                    this.sendNotificationToUsers();
                 }
                 this.update();
                 this.selectedStopJobIds = [];
