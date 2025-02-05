@@ -364,7 +364,7 @@ Assuming,
 
 then
 
-$$tool(i=C) is invalid$$
+$$tool(i=C)\text{ is invalid}$$
 
 :::
 
@@ -394,7 +394,7 @@ Assuming,
 
 then
 
-$$tool(i=C) == tool(i=[d1,...,dn])$$
+$$tool(i=C) == tool(i=[d_1,...,d_n])$$
 
 :::
 
@@ -419,12 +419,12 @@ Assuming,
 
 * $ d_f $, $ d_r $ are datasets
 * $ tool \text{ is } (i: \text{ dataset<multiple=true> }) \Rightarrow \{ o: \text{ dataset } \} $
-* $ C $ is $ \text{CollectionInstance<}paired,\left\{ \text{ forward }=d_f, reverse=d_r \right\}\text{>} $
+* $ C $ is $ \text{CollectionInstance<}paired,\left\{ \text{ forward }=d_f, \text{ reverse }=d_r \right\}\text{>} $
 
 
 then
 
-$$tool(i=C) is invalid$$
+$$tool(i=C)\text{ is invalid}$$
 
 :::
 
@@ -437,12 +437,12 @@ Assuming,
 
 * $ d_f $, $ d_r $ are datasets
 * $ tool \text{ is } (i: \text{ dataset<multiple=true> }) \Rightarrow \{ o: \text{ dataset } \} $
-* $ C $ is $ \text{CollectionInstance<}paired\_or\_unpaired,\left\{ forward=f, reverse=r \right\}\text{>} $
+* $ C $ is $ \text{CollectionInstance<}paired\_or\_unpaired,\left\{ forward=d_f, reverse=d_r \right\}\text{>} $
 
 
 then
 
-$$tool(i=C) is invalid$$
+$$tool(i=C)\text{ is invalid}$$
 
 :::
 
@@ -473,7 +473,7 @@ Assuming,
 
 then
 
-$$tool(i=\text{mapOver}(C, 'paired')) \mapsto \left\{o: collection<\text{list},\left\{el1=tool(i=C\_PAIRED)[o]\right\}>\right\}$$
+$$tool(i=\text{mapOver}(C, 'paired')) \mapsto \left\{o: collection<\text{list}, \left\{el1: tool(i=C\_PAIRED)[o]\right\}>\right\}$$
 
 :::
 
@@ -500,12 +500,12 @@ Assuming,
 
 * $ d_1,...,d_n $ are datasets
 * $ tool \text{ is } (i: \text{ dataset<multiple=true> }) \Rightarrow \{ o: \text{ dataset } \} $
-* $ C $ is $ \text{CollectionInstance<}list:list,\left\{ \text{ o1 }=\left\{ \text{ inner }=d1 \right\}, ..., \text{ on }=\left\{ \text{ inner }=dn \right\} \right\}\text{>} $
+* $ C $ is $ \text{CollectionInstance<}list:list,\left\{ \text{ o1 }=\left\{ \text{ inner }=d_1 \right\}, ..., \text{ on }=\left\{ \text{ inner }=d_n \right\} \right\}\text{>} $
 
 
 then
 
-$$tool(i=\text{mapOver}(C, '\text{list}')) \mapsto \left\{o: collection<\text{list},\left\{o1=tool(i=[d1])[o]\right\},...,on=tool(i=[dn])[o]\right\}>\right\}$$
+$$tool(i=\text{mapOver}(C, '\text{list}')) \mapsto \left\{o: collection<\text{list},\left\{o1: tool(i=[d_1])[o]\right\},...,on: tool(i=[d_n])[o]\right\}>\right\}$$
 
 :::
 
@@ -536,7 +536,7 @@ Assuming,
 
 then
 
-$$tool(i=\text{mapOver}(C, 'paired')) is invalid$$
+$$tool(i=\text{mapOver}(C, 'paired'))\text{ is invalid}$$
 
 :::
 
@@ -554,7 +554,7 @@ Assuming,
 
 then
 
-$$tool(i=\text{mapOver}(C, 'paired\_or\_unpaired')) is invalid$$
+$$tool(i=\text{mapOver}(C, 'paired\_or\_unpaired'))\text{ is invalid}$$
 
 :::
 
@@ -587,7 +587,7 @@ Assuming,
 * $ d_f $, $ d_r $ are datasets
 * $ tool \text{ is } (i: \text{ collection<paired_or_unpaired> }) \Rightarrow \{ o: \text{ dataset } \} $
 * $ C $ is $ \text{CollectionInstance<}paired,\left\{ \text{ forward }=d_f, \text{ reverse }=d_r \right\}\text{>} $
-* $ C_AS_MIXED = CollectionInstance<paired\_or\_unpaired,\left\{\text{forward}=f, \text{reverse}=r\right\}> $
+* $ C_AS_MIXED = CollectionInstance<paired\_or\_unpaired, \left\{\text{forward}: d_f, \text{reverse}: d_r\right\}> $
 
 
 then

@@ -4,6 +4,7 @@
 # PYTHONPATH=lib python lib/galaxy/model/dataset_collections/types/semantics.py
 import argparse
 import os
+import sys
 from io import StringIO
 from typing import (
     Any,
@@ -33,8 +34,19 @@ class DocEntry(BaseModel):
     doc: str
 
 
+class ToolRuntimeApi(BaseModel):
+    api_test: str
+
+
+class ToolRuntimeFramework(BaseModel):
+    tool: str
+
+
+ToolRuntimeTest = Union[ToolRuntimeApi, ToolRuntimeFramework]
+
+
 class ExampleTests(BaseModel):
-    tool_runtime: Optional[str] = None
+    tool_runtime: Optional[ToolRuntimeTest] = None
     workflow_editor: Optional[str] = None
 
 
@@ -145,7 +157,23 @@ def collect_docs_with_examples(root: YAMLRootModel) -> List[Tuple[DocEntry, List
     return docs_with_examples
 
 
-def main():
+def main(argv=None) -> None:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    args = arg_parser().parse_args(argv)
+    if args.check:
+        check()
+
+    generate_docs()
+
+
+def check():
+    # todo
+    pass
+
+
+def generate_docs():
     semantics_yaml = yaml.safe_load(
         resource_string("galaxy.model.dataset_collections.types", "collection_semantics.yml")
     )
@@ -204,6 +232,7 @@ def main():
 
 def arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument("-c", "--check", action="store_true", default=False)
     return parser
 
 

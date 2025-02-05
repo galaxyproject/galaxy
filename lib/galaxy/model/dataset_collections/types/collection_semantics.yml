@@ -40,7 +40,8 @@
         C: [paired, {forward: d_f, reverse: d_r}]
     then: "tool(i=mapOver(C)) ~> {o: collection<paired, {forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}> }"
     tests:
-        tool_runtime: "test_tool_execute.py::test_map_over_collection"
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_collection"
         wf_editor: "accepts paired data -> data connection"
 
 - example:
@@ -54,7 +55,8 @@
         C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
     then: "tool(i=mapOver(C)) ~> {o: collection<paired_or_unpaired,{forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}>}"
     tests:
-        tool_runtime: test_map_over_data_with_paired_or_unpaired_unpaired
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_unpaired"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
 
 - example:
@@ -68,7 +70,8 @@
         C: [paired_or_unpaired, {unpaired: d_u}]
     then: "tool(i=mapOver(C)) ~> {o: collection<paired_or_unpaired,{unpaired=tool(i=d_u)[o]}>}"
     tests:
-        tool_runtime: test_map_over_data_with_paired_or_unpaired_paired
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_paired"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
 
 - example:
@@ -82,7 +85,6 @@
         C: [list, {i1: "d_1", ..., in: "d_n"}]
     then: "tool(i=mapOver(C)) ~> {o: collection<list,{i1=tool(i=d_1)[o],...,in=tool(i=d_n)[o]]}>}"
     tests:
-        tool_runtime: "test_tool_execute::test_map_over_list_collection"
         workflow_editor: "accepts collection data -> data connection"
 
 - doc: |
@@ -100,7 +102,8 @@
         C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
     then: "tool(i=mapOver(C)) ~> {o: collection<list:list,{o1={inner=tool(i=d_1)[o]}},...,{on={inner=tool(i=d_n)[o]}}>}"
     tests:
-        tool_runtime: test_map_over_nested_collections
+        tool_runtime:
+            api_test: "test_tools.py::TestToolsApi::test_map_over_nested_collections"
         workflow_editor: "accepts list:list data -> data connection"
 
 - example:
@@ -114,7 +117,8 @@
         C: ["list:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
     then: "tool(i=mapOver(C)) ~> {o: collection<list:paired_or_unpaired,{el1={forward=tool(i=d_f)[o],reverse=tool(i=d_r)[o]}}>}"
     tests:
-        tool_runtime: "test_tool_execute::test_map_over_data_with_list_paired_or_unpaired"
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_data_with_list_paired_or_unpaired"
         workflow_editor: "accepts list:paired_or_unpaired data -> data connection"
 
 - doc: |
@@ -133,6 +137,9 @@
     - collections:
         C: ["list", {i1: d_1, ..., in: d_n}]
     then: "tool(i=mapOver(C),i2=d_o) ~> {o: collection<list,{i1=tool(i=d_1, i2=d_o)[o],...,in=tool(i=d_n, i2=d_o)[o]}>}"
+    tests:
+        tool_runtime:
+            api_test: "test_tools.py::TestToolsApi::test_map_over_collected_and_individual_datasets"
 
 - doc: |
     If a tool consumes two input datasets and produces one output dataset, you can map two
@@ -163,7 +170,8 @@
         C2: ["list", {i1: d2_1, ..., in: d2_n}]
     then: "tool(i=mapOver(C1), i2=mapOver(C2)) ~> {o: collection<list,{i1=tool(i=d1_1, i2=d2_1)[o],...,in=tool(i=d1_n, i2=d2_n)[o]]}>}"
     tests:
-        tool_runtime: test_tools.py::test_map_over_two_collections
+        tool_runtime:
+            api_test: test_tools.py::TestToolsApi::test_map_over_two_collections
 
 - doc: "## Reduction"
 - doc: | 
@@ -186,7 +194,8 @@
         C: [paired, {forward: d_f, reverse: d_r}]
     then: "tool(i=C) -> {o: dataset}"
     tests:
-        tool_runtime: framework tests for collection_paired_test.xml
+        tool_runtime: 
+            tool: collection_paired_test
         workflow_editor: "accepts paired -> paired connection"
 
 - example:
@@ -213,7 +222,8 @@
         C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
     then: "tool(i=C) -> {o: dataset}"
     tests:
-        tool_runtime: collection_paired_or_unpaired tool framework tests
+        tool_runtime:
+            tool: collection_paired_or_unpaired
         workflow_editor: "accepts paired_or_unpaired data -> paired_or_unpaired connection"
 
 - example:
@@ -227,7 +237,8 @@
         C: ["list:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
     then: "tool(i=C) -> {o: dataset}"
     tests:
-        tool_runtime: collection_list_paired_or_unpaired tool framework tests
+        tool_runtime:
+            tool: collection_list_paired_or_unpaired
         workflow_editor: "accepts list:paired_or_unpaired data -> list:paired_or_unpaired connection"
 
 - doc: |
@@ -288,7 +299,8 @@
         C: [list, {i1: d_1, ..., in: d_n}]
     then: "tool(i=C) == tool(i=[d_1,...,d_n])"
     tests:
-        tool_runtime: test_tools.py::test_reduce_collections
+        tool_runtime:
+            api_test: "test_tools.py::TestToolsApi::test_tools.py::test_reduce_collections"
         workflow_editor: "treats multi data input as list input"
 
 - doc: |
@@ -339,7 +351,8 @@
         "C\\_PAIRED": [paired, {forward: d_f,reverse: d_r}]
     then: "tool(i=mapOver(C, 'paired')) ~> {o: collection<list, {el1: tool(i=C\\_PAIRED)[o]}>}"
     tests:
-        tool_runtime: "test_tools.py::test_subcollection_mapping"
+        tool_runtime:
+            api_test: "test_tools.py::TestToolsApi::test_subcollection_mapping"
         workflow_editor: "accepts list:paired -> paired connection"
 
 - doc: |
@@ -418,7 +431,8 @@
     - "C_AS_MIXED = CollectionInstance<paired_or_unpaired, {forward: d_f, reverse: d_r}>"
     then: "tool(i=C) == tool(i=C_AS_MIXED)"
     tests:
-        tool_runtime: collection_paired_or_unpaired tool framework test (third)
+        tool_runtime:
+            tool: collection_paired_or_unpaired
         workflow_editor: "accepts paired -> paired_or_unpaired connection"
 
 - doc: |
@@ -517,7 +531,8 @@
     - "C_AS_UNPAIRED_i = CollectionInstance<paired_or_unpaired,{unpaired=di}> for i from 1...n"
     then: "tool(i=mapOver(C, 'single_datasets')) ~> {o: collection<list,{i1=tool(i=C_AS_UNPAIRED_1)[o],...,in=tool(i=C_AS_UNPAIRED_n)[o]]}>}"
     tests:
-        tool_runtime: test_map_over_paired_or_unpaired_with_list
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list"
         workflow_editor: "accepts list -> paired_or_unpaired connection"
 
 - doc: |
