@@ -259,7 +259,7 @@ class WorkflowInvoker:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
-                log_function = log.exception
+                log_function = log.error
                 if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
                     log_function = log.info
                 log_function(
@@ -700,7 +700,8 @@ class WorkflowProgress:
         for input_subworkflow_step in subworkflow.input_steps:
             connection_found = False
             subworkflow_step_id = input_subworkflow_step.id
-            for input_connection in step.input_connections:
+            input_connections = step.input_connections
+            for input_connection in input_connections:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
                     is_data = input_connection.output_step.type != "parameter_input"
                     replacement = self.replacement_for_connection(
@@ -711,7 +712,18 @@ class WorkflowProgress:
                     connection_found = True
                     break
 
-            if not connection_found and not input_subworkflow_step.input_optional:
+            if not input_subworkflow_step.input_optional and not connection_found:
+
+                if not input_connections:
+                    # TODO: Prevent this on import / runtime !
+                    raise modules.FailWorkflowEvaluation(
+                        InvocationUnexpectedFailure(
+                            reason=FailureReason.unexpected_failure,
+                            workflow_step_id=step.id,
+                            details="Subworkflow has disconnected required input.",
+                        )
+                    )
+
                 raise modules.FailWorkflowEvaluation(
                     InvocationFailureOutputNotFound(
                         reason=FailureReason.output_not_found,

@@ -111,18 +111,18 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             ):
                 pass
             else:
-                trans.response.status = "403"
+                trans.response.status = 403
                 return "You are not allowed to access this dataset."
             try:
                 self.app.hda_manager.ensure_dataset_on_disk(trans, data)
             except exceptions.MessageException as e:
-                trans.response.status = str(e.status_code)
+                trans.response.status = e.status_code
                 return str(e)
             trans.response.set_content_type(data.get_mime())
             trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
             return data.as_display_type(display_app, **kwd)
         else:
-            trans.response.status = "400"
+            trans.response.status = 400
             return f"No data with id={id}"
 
     @web.expose

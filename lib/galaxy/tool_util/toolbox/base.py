@@ -141,6 +141,10 @@ class ToolLoadError(Exception):
     pass
 
 
+class ToolLoadConfigurationConflict(Exception):
+    pass
+
+
 class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -1081,6 +1085,8 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     self._load_tool_panel_views()
                     self._save_integrated_tool_panel()
                 return tool.id
+            except ToolLoadConfigurationConflict as e:
+                log.warning(f"Configuration does not permit loading tool {tool_file} - {e}")
             except ToolLoadError as e:
                 # no need for full stack trace - ToolLoadError corresponds to a known load
                 # error with defined cause that is included in the message

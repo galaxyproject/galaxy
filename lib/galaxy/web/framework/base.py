@@ -492,7 +492,7 @@ class Response:
         """
         Create a new Response defaulting to HTML content and "200 OK" status
         """
-        self.status = "200 OK"
+        self.status: int = 200
         self.headers = HeaderDict({"content-type": "text/html; charset=UTF-8"})
         self.cookies = SimpleCookie()
 

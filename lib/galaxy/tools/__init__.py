@@ -98,6 +98,7 @@ from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
+    ToolLoadConfigurationConflict,
     ToolLoadError,
     ToolSection,
 )
@@ -3194,7 +3195,9 @@ class InteractiveTool(Tool):
 
     def __init__(self, config_file, tool_source, app, **kwd):
         if not app.config.interactivetools_enable:
-            raise ToolLoadError("Trying to load an InteractiveTool, but InteractiveTools are not enabled.")
+            raise ToolLoadConfigurationConflict(
+                "Trying to load an InteractiveTool, but InteractiveTools are not enabled."
+            )
         super().__init__(config_file, tool_source, app, **kwd)
 
     def __remove_interactivetool_by_job(self, job):

@@ -374,6 +374,7 @@ def build_workflow_run_configs(
             step = steps_by_id[key]
             if step.type == "parameter_input":
                 module_injector.inject(step)
+                assert step.module
                 input_param = step.module.get_runtime_inputs(step.module)["input"]
                 try:
                     input_param.validate(input_dict, trans=trans)
@@ -542,6 +543,7 @@ def workflow_run_config_to_request(
     for step in workflow.steps:
         steps_by_id[step.id] = step
         assert step.module
+        assert step.state
         serializable_runtime_state = step.module.encode_runtime_state(step, step.state)
 
         step_state = WorkflowRequestStepState()

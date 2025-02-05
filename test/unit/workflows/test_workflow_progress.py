@@ -99,7 +99,7 @@ class TestWorkflowProgress(TestCase):
 
             workflow_invocation_step_state = model.WorkflowRequestStepState()
             workflow_invocation_step_state.workflow_step_id = step_id
-            workflow_invocation_step_state.value = cast(bytes, True)
+            workflow_invocation_step_state.value = {"my_param": True}
             self.invocation.step_states.append(workflow_invocation_step_state)
 
     def _step(self, index):

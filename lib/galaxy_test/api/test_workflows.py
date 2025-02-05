@@ -209,8 +209,8 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
     def _ds_entry(self, history_content):
         return self.dataset_populator.ds_entry(history_content)
 
-    def _invocation_details(self, workflow_id, invocation_id, **kwds):
-        invocation_details_response = self._get(f"workflows/{workflow_id}/usage/{invocation_id}", data=kwds)
+    def _invocation_details(self, workflow_id: Optional[str], invocation_id: str, **kwds):
+        invocation_details_response = self._get(f"invocations/{invocation_id}", data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
@@ -3482,6 +3482,33 @@ input_c:
                 history_id, content_id=output_filtered_id, assert_ok=False
             )
             assert output_filtered["element_count"] == 2, output_filtered
+
+    def test_subworkflow_missing_input_connection_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        my_input:
+          type: data
+      steps: []
+""",
+                history_id=history_id,
+                assert_ok=False,
+            )
+            workflow_details = self._invocation_details(summary.workflow_id, summary.invocation_id)
+            assert workflow_details["messages"] == [
+                {
+                    "details": "Subworkflow has disconnected required input.",
+                    "reason": "unexpected_failure",
+                    "workflow_step_id": 0,
+                }
+            ]
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")

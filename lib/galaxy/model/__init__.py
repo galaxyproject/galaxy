@@ -1893,7 +1893,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         else:
             self.state = Job.states.STOPPED
 
-    def mark_deleted(self, track_jobs_in_database=False):
+    def mark_deleted(self, track_jobs_in_database=False, message=None):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
         """
@@ -1904,7 +1904,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             self.state = Job.states.DELETING
         else:
             self.state = Job.states.DELETED
-        self.info = "Job output deleted by user before job completed."
+        info = message or "Job output deleted by user before job completed."
+        self.info = info
         for jtoda in self.output_datasets:
             output_hda = jtoda.dataset
             output_hda.deleted = True
@@ -1914,7 +1915,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 shared_hda.deleted = True
                 shared_hda.blurb = "deleted"
                 shared_hda.peek = "Job deleted"
-                shared_hda.info = "Job output deleted by user before job completed"
+                shared_hda.info = info
 
     def mark_failed(self, info="Job execution failed", blurb=None, peek=None):
         """
@@ -3686,6 +3687,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         """Return all active contents ordered by hid."""
         return self.contents_iter(types=["dataset", "dataset_collection"], deleted=False, visible=True)
 
+    @property
+    def visible_contents(self):
+        return self.contents_iter(types=["dataset", "dataset_collection"], visible=True)
+
     def contents_iter(self, **kwds):
         """
         Fetch filtered list of contents of history.
@@ -4979,11 +4984,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def display_info(self):
         return self.datatype.display_info(self)
 
-    def get_converted_files_by_type(self, file_type):
+    def get_converted_files_by_type(self, file_type, include_errored=False):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
                 item = assoc.dataset or assoc.dataset_ldda
-                if not item.deleted and item.state in Dataset.valid_input_states:
+                valid_states = (
+                    (Dataset.states.ERROR, *Dataset.valid_input_states)
+                    if include_errored
+                    else Dataset.valid_input_states
+                )
+                if not item.deleted and item.state in valid_states:
                     return item
         return None
 
@@ -4998,7 +5008,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             depends_list = []
         return {dep: self.get_converted_dataset(trans, dep) for dep in depends_list}
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
+    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None, include_errored=False):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -5010,7 +5020,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         converted_dataset = self.get_metadata_dataset(target_ext)
         if converted_dataset:
             return converted_dataset
-        converted_dataset = self.get_converted_files_by_type(target_ext)
+        converted_dataset = self.get_converted_files_by_type(target_ext, include_errored=include_errored)
         if converted_dataset:
             return converted_dataset
         deps = {}
@@ -5232,7 +5242,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
         # Get converted dataset; this will start the conversion if necessary.
         try:
-            converted_dataset = self.get_converted_dataset(trans, target_type)
+            # Include errored datasets here, we let user chose to retry or view error
+            converted_dataset = self.get_converted_dataset(trans, target_type, include_errored=True)
         except NoConverterException:
             return self.conversion_messages.NO_CONVERTER
         except ConverterDependencyException as dep_error:
@@ -7871,7 +7882,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     source_metadata: Mapped[Optional[Dict[str, str]]] = mapped_column(JSONType)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
 
-    steps = relationship(
+    steps: Mapped[List["WorkflowStep"]] = relationship(
         "WorkflowStep",
         back_populates="workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),
@@ -7921,7 +7932,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         return rval
 
     @property
-    def steps_by_id(self):
+    def steps_by_id(self) -> Dict[int, "WorkflowStep"]:
         steps = {}
         for step in self.steps:
             step_id = step.id
@@ -8096,7 +8107,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         back_populates="workflow_step",
     )
     post_job_actions = relationship("PostJobAction", back_populates="workflow_step")
-    inputs = relationship("WorkflowStepInput", back_populates="workflow_step")
+    inputs: Mapped[List["WorkflowStepInput"]] = relationship("WorkflowStepInput", back_populates="workflow_step")
     workflow_outputs: Mapped[List["WorkflowOutput"]] = relationship(back_populates="workflow_step")
     output_connections: Mapped[List["WorkflowStepConnection"]] = relationship(
         primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)
@@ -8436,16 +8447,16 @@ class WorkflowStepConnection(Base, RepresentById):
     output_name: Mapped[Optional[str]] = mapped_column(TEXT)
     input_subworkflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
 
-    input_step_input = relationship(
+    input_step_input: Mapped["WorkflowStepInput"] = relationship(
         "WorkflowStepInput",
         back_populates="connections",
         cascade="all",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
     )
-    input_subworkflow_step = relationship(
+    input_subworkflow_step: Mapped[Optional["WorkflowStep"]] = relationship(
         "WorkflowStep", primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id)
     )
-    output_step = relationship(
+    output_step: Mapped["WorkflowStep"] = relationship(
         "WorkflowStep",
         back_populates="output_connections",
         cascade="all",
@@ -8469,7 +8480,7 @@ class WorkflowStepConnection(Base, RepresentById):
 
     @property
     def input_step(self) -> Optional[WorkflowStep]:
-        return self.input_step_input and self.input_step_input.workflow_step
+        return self.input_step_input.workflow_step
 
     @property
     def input_step_id(self):
@@ -8678,7 +8689,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="workflow_invocation",
         order_by=lambda: WorkflowInvocationStep.order_index,
     )
-    workflow = relationship("Workflow")
+    workflow: Mapped[Workflow] = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation",
         back_populates="workflow_invocation",
@@ -9594,7 +9605,7 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    value: Mapped[Optional[Dict[str, Any]]] = mapped_column(MutableJSONType)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="step_states")
 
