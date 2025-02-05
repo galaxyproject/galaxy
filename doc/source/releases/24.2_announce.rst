@@ -49,7 +49,16 @@ their user directory or import directory into a library.
 **Live Reporting of Job Console Outputs**. If enabled by the Galaxy
 administrators, it will now be possible to view live console output for running
 jobs. The job output will be available on the Job Information page where these
-logs have always been available for completed jobs. 
+logs have always been available for completed jobs.
+
+** ChatGXY - Job Error Wizard **. With this release, we're excited to introduce
+ChatGXY — AI assistance built directly into the Galaxy interface. The first
+functionality being rolled out is an AI-driven job error diagnoser that
+automatically inspects errored jobs and provides actionable insights. Users on
+supported servers can access this feature through the Dataset Error interface,
+where ChatGXY offers targeted suggestions to help diagnose and resolve job
+errors quickly and efficiently.
+
 
 Please see the `24.2 user release notes <24.2_announce_user.html>`__ for a summary of new user features.
 
