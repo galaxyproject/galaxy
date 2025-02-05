@@ -586,10 +586,12 @@ export default {
         }
 
         const isNewTempWorkflow = computed(() => !props.workflowId);
+        const lintData = useLintData(id, steps, datatypesMapper);
 
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
+                lintData: lintData,
             })),
         );
 
@@ -631,7 +633,6 @@ export default {
             stateStore.activeNodeId = toolId;
             this.onScrollTo(toolId);
         }
-        const lintData = useLintData(id, steps, datatypesMapper);
 
         return {
             id,

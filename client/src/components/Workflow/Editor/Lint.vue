@@ -100,7 +100,7 @@ function onFixDisconnectedInput(item: LintState) {
 function onFixUnlabeledOutputs(item: LintState) {
     if (
         confirm(
-            "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?",
+            "This issue can be fixed automatically by removing all unlabeled workflow outputs. Do you want to proceed?",
         )
     ) {
         emit("onRefactor", [fixUnlabeledOutputs()]);

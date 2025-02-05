@@ -20,6 +20,8 @@ import { computed, type Ref } from "vue";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
 
+import type { LintData } from "./useLinting";
+
 export const workflowEditorActivities = [
     {
         title: "Attributes",
@@ -77,16 +79,7 @@ export const workflowEditorActivities = [
         visible: true,
         optional: true,
     },
-    {
-        title: "Best Practices",
-        id: "workflow-best-practices",
-        description: "Show and test for the best practices in this workflow.",
-        tooltip: "Test workflow for best practices",
-        icon: faMagic,
-        panel: true,
-        visible: true,
-        optional: true,
-    },
+
     {
         title: "Changes",
         id: "workflow-undo-redo",
@@ -198,6 +191,7 @@ export function useActivityLogic(options: Ref<ActivityLogicOptions>) {
 
 interface SpecialActivityOptions {
     hasInvalidConnections: boolean;
+    lintData: LintData;
 }
 
 export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions>) {
@@ -206,6 +200,21 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
             return "Workflow has invalid connections, review and remove invalid connections";
         } else {
             return "Save this workflow, then exit the workflow editor";
+        }
+    });
+    const disconnectedCount = computed(() => {
+        const disconnectedCount = options.value.lintData.disconnectedInputs.value.length;
+        if (disconnectedCount > 0) {
+            return disconnectedCount;
+        } else {
+            return undefined;
+        }
+    });
+    const bestPracticeHover = computed(() => {
+        if (disconnectedCount.value) {
+            return `${disconnectedCount.value} required inputs are not connected`;
+        } else {
+            return "Test workflow for best practices";
         }
     });
 
@@ -219,6 +228,17 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
             visible: false,
             click: true,
             mutable: false,
+        },
+        {
+            title: "Best Practices",
+            id: "workflow-best-practices",
+            description: "Show and test for the best practices in this workflow.",
+            tooltip: bestPracticeHover.value,
+            indicator: disconnectedCount.value,
+            icon: faMagic,
+            panel: true,
+            visible: true,
+            optional: true,
         },
     ]);
 
