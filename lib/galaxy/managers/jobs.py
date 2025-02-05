@@ -286,7 +286,7 @@ class JobManager:
 
     def stop(self, job, message=None):
         if not job.finished:
-            job.mark_deleted(self.app.config.track_jobs_in_database)
+            job.mark_deleted(self.app.config.track_jobs_in_database, message)
             session = self.app.model.session
             with transaction(session):
                 session.commit()
