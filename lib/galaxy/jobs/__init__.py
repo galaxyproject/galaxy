@@ -2521,7 +2521,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if self.__user_system_pwent is None:
             job = self.get_job()
             self.__user_system_pwent = job.user.system_user_pwent(
-                self.get_destination_configuration("real_system_username", None)
+                self.get_destination_configuration("real_system_username", self.app.config.real_system_username)
             )
         return self.__user_system_pwent
 
