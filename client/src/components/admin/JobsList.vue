@@ -51,9 +51,12 @@
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
-                <b-form-checkbox id="send-notification" v-model="sendNotification" switch class="mb-4">
-                    Send a warning notification to users (must provide stop message)
-                </b-form-checkbox>
+                <b-form-group
+                    description="Only one notification will be sent for each user containing the reason and the list of affected jobs.">
+                    <b-form-checkbox id="send-notification" v-model="sendNotification" switch>
+                        Send a warning notification to users
+                    </b-form-checkbox>
+                </b-form-group>
             </b-form>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
