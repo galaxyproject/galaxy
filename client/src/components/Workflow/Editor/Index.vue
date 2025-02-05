@@ -1,6 +1,5 @@
 <template>
     <div id="columns" class="d-flex">
-        <div>{{ lintData.disconnectedInputs }}</div>
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -460,10 +459,12 @@ export default {
         }
 
         const isNewTempWorkflow = computed(() => !props.workflowId);
+        const lintData = useLintData(id, steps, datatypesMapper);
 
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
+                lintData: lintData,
             }))
         );
 
@@ -482,8 +483,6 @@ export default {
 
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
-
-        const lintData = useLintData(id, steps, datatypesMapper);
 
         return {
             id,
