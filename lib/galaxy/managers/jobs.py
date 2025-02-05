@@ -346,7 +346,7 @@ class JobManager:
 
     def stop(self, job, message=None):
         if not job.finished:
-            job.mark_deleted(self.app.config.track_jobs_in_database)
+            job.mark_deleted(self.app.config.track_jobs_in_database, message)
             session = self.app.model.session
             with transaction(session):
                 session.commit()
@@ -393,7 +393,12 @@ class JobSearch:
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
-                src = current_case["src"]
+                src = current_case.get("src")
+                if src is None:
+                    # just a parameter named id.
+                    # TODO: dispatch on tool parameter type instead of values,
+                    # maybe with tool state variant
+                    return key, value
                 current_case = param
                 for i, p in enumerate(path):
                     if p == "values" and i == len(path) - 2:
