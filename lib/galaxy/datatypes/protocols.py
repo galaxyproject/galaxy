@@ -23,7 +23,7 @@ class HasCreatingJob(Protocol):
 
 
 class HasDeleted(Protocol):
-    deleted: bool
+    deleted: "Mapped[bool]"
 
 
 class HasExt(Protocol):
