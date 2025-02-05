@@ -162,6 +162,18 @@ been an option in Galaxy. A huge thanks to Gregory Cage at Oak Ridge National La
 this valuable contribution!
 [`#16975 <https://github.com/galaxyproject/galaxy/pull/16975>`__]
 
+
+ChatGXY - Job Error Wizard
+-----------------------------------------------------------
+
+With this release, we're excited to introduce ChatGXY — AI assistance built
+directly into the Galaxy interface. The first functionality being rolled out is
+an AI-driven job error diagnoser that automatically inspects errored jobs and
+provides actionable insights. Users on supported servers can access this
+feature through the Dataset Error interface, where ChatGXY offers targeted
+suggestions to help diagnose and resolve job errors quickly and efficiently.
+[`#15860 <https://github.com/galaxyproject/galaxy/pull/15860>`__]
+
 Visualizations
 ===========================================================
 
