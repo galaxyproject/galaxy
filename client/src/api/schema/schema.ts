@@ -13183,6 +13183,11 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this job.
+             */
+            user_id?: string | null;
         };
         /**
          * LabelValuePair
