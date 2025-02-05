@@ -51,6 +51,9 @@
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
+                <b-form-checkbox id="send-notification" v-model="sendNotification" switch class="mb-4">
+                    Send a warning notification to users (must provide stop message)
+                </b-form-checkbox>
             </b-form>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
@@ -104,6 +107,8 @@ import { jobsProvider } from "components/providers/JobProvider";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
+
+import { GalaxyApi } from "@/api";
 
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
@@ -167,6 +172,7 @@ export default {
             showAllRunning: false,
             titleSearch: `search jobs`,
             helpHtml: helpHtml,
+            sendNotification: false,
         };
     },
     computed: {
@@ -257,8 +263,42 @@ export default {
         onRefresh() {
             this.update();
         },
+        async sendNotificationToUsers(cancelReason) {
+            const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            const userIds = jobsToCancel.map((job) => job.user_id).filter((userId) => userId);
+            const notificationRequest = {
+                notification: {
+                    source: "admin",
+                    variant: "warning",
+                    category: "message",
+                    content: {
+                        category: "message",
+                        subject: "Job Cancelled by Admin",
+                        message: `One of your jobs was cancelled by an administrator with the following reason: **${cancelReason}**.`,
+                    },
+                },
+                recipients: {
+                    user_ids: userIds,
+                },
+            };
+            const { error } = await GalaxyApi().POST("/api/notifications", {
+                body: notificationRequest,
+            });
+
+            if (error) {
+                this.status = "danger";
+                this.message = errorMessageAsString(error);
+                return;
+            }
+
+            this.status = "success";
+            this.message = "Notification sent to users.";
+        },
         onStopJobs() {
             axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
+                if (this.sendNotification && this.stopMessage) {
+                    this.sendNotificationToUsers(this.stopMessage);
+                }
                 this.update();
                 this.selectedStopJobIds = [];
                 this.stopMessage = "";
