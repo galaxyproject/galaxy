@@ -29,8 +29,12 @@ from galaxy.model.deferred import (
     materializer_factory,
 )
 from galaxy.model.none_like import NoneDataset
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.security.vault import UserVaultWrapper
+from galaxy.security.vault import (
+    UserVaultWrapper,
+    Vault,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
@@ -133,17 +137,24 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
 
 
 class UserCredentialsConfigurator:
-    def __init__(self, app: MinimalToolApp, job: model.Job, environment_variables: list[dict[str, str]]):
-        self.app = app
-        self.job = job
+    def __init__(
+        self,
+        vault: Vault,
+        session: galaxy_scoped_session,
+        user: model.User,
+        environment_variables: list[dict[str, str]],
+    ):
+        self.vault = vault
+        self.session = session
+        self.user = user
         self.environment_variables = environment_variables
 
     def set_environment_variables(self, source_type: str, source_id: str, credentials: list[CredentialsRequirement]):
-        user_vault = UserVaultWrapper(self.app.vault, self.job.user)
+        user_vault = UserVaultWrapper(self.vault, self.user)
         for credential in credentials:
             service_name = credential.name
             service_version = credential.version
-            user_id = self.job.user_id
+            user_id = self.user.id
             if not user_id:
                 raise ValueError("User does not exist.")
             user_cred_alias = aliased(model.UserCredentials)
@@ -160,11 +171,7 @@ class UserCredentialsConfigurator:
                 .where(user_cred_alias.name == service_name)
                 .where(user_cred_alias.version == service_version)
             )
-            sa_session = self.app.install_model.context
-            if sa_session:
-                result = sa_session.execute(stmt).tuples().all()
-            else:
-                raise ValueError("Session is not available.")
+            result = self.session.execute(stmt).tuples().all()
             if not result:
                 raise ValueError(
                     f"Credentials not found for {source_type}|{source_id}|{service_name}|{service_version}."
@@ -265,8 +272,10 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        if hasattr(self.tool, "credentials") and self.tool.id:
-            user_credentials_configurator = UserCredentialsConfigurator(self.app, self.job, self.environment_variables)
+        if hasattr(self.tool, "credentials") and self.tool.id and self.job.user:
+            user_credentials_configurator = UserCredentialsConfigurator(
+                self.app.vault, self.app.install_model.session, self.job.user, self.environment_variables
+            )
             user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
