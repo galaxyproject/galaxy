@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
+    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -39,6 +40,7 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
     MinimalToolApp,
+    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
@@ -151,12 +153,12 @@ class UserCredentialsConfigurator:
 
     def set_environment_variables(self, source_type: str, source_id: str, credentials: list[CredentialsRequirement]):
         user_vault = UserVaultWrapper(self.vault, self.user)
+        user_id = self.user.id
+        if not user_id:
+            raise ValueError("User does not exist.")
         for credential in credentials:
             service_name = credential.name
             service_version = credential.version
-            user_id = self.user.id
-            if not user_id:
-                raise ValueError("User does not exist.")
             user_cred_alias = aliased(model.UserCredentials)
             group_alias = aliased(model.CredentialsGroup)
             cred_alias = aliased(model.Credential)
@@ -272,11 +274,31 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        if hasattr(self.tool, "credentials") and self.tool.id and self.job.user:
-            user_credentials_configurator = UserCredentialsConfigurator(
-                self.app.vault, self.app.install_model.session, self.job.user, self.environment_variables
-            )
-            user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
+        def tool_uses_credentials() -> bool:
+            return hasattr(self.tool, "credentials") and bool(self.tool.credentials)
+
+        if isinstance(self.app, StructuredApp):
+            structured_app = cast(StructuredApp, self.app)
+
+            if (
+                tool_uses_credentials()
+                and self.tool.id is not None
+                and self.job.user is not None
+                and bool(structured_app.vault)
+                and bool(structured_app.model.session)
+            ):
+                user_credentials_configurator = UserCredentialsConfigurator(
+                    structured_app.vault, structured_app.model.session, self.job.user, self.environment_variables
+                )
+                user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
+        else:
+            if tool_uses_credentials():
+                pass
+                # for credential in credentials:
+                #     for secret in credential.secrets:
+                #         self.environment_variables.append({"name": secret.name, "value": secret.value})
+                #     for variable in credential.variables:
+                #         self.environment_variables.append({"name": variable.name, "value": variable.value})
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
