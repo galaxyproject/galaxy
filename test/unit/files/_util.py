@@ -151,10 +151,13 @@ def write_from(
     user_context: OptionalUserContext = None,
 ) -> str:
     file_source_path = file_sources.get_file_source_path(uri)
+    file_source = file_source_path.file_source
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
         f.flush()
-        return file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
+        return f"{file_source.get_scheme()}://{file_source.get_prefix()}" + file_source.write_from(
+            file_source_path.path, f.name, user_context=user_context
+        )
 
 
 def configured_file_sources(conf_file, file_sources_config: Optional[FileSourcePluginsConfig] = None):

@@ -32,7 +32,6 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
-from urllib.parse import urlparse
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -2659,11 +2658,10 @@ class FileSourceModelExportStore(abc.ABC, DirectoryModelExportStore):
             # upload output file to file source
             if not self.file_sources:
                 raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_uri = urlparse(str(self.file_source_uri))
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            self.file_source_uri = f"{file_source_uri.scheme}://{file_source_uri.netloc}" + file_source.write_from(
+            self.file_source_uri = f"{file_source.get_scheme()}://{file_source.get_prefix()}" + file_source.write_from(
                 file_source_path.path, self.out_file, user_context=self.user_context
             )
         shutil.rmtree(self.temp_output_dir)
