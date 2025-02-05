@@ -265,34 +265,56 @@ export default {
         },
         async sendNotificationToUsers(cancelReason) {
             const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
-            const userIds = jobsToCancel.map((job) => job.user_id).filter((userId) => userId);
-            const notificationRequest = {
-                notification: {
-                    source: "admin",
-                    variant: "warning",
-                    category: "message",
-                    content: {
+            const userJobsMap = jobsToCancel.reduce((acc, job) => {
+                if (job.user_id) {
+                    if (!acc[job.user_id]) {
+                        acc[job.user_id] = [];
+                    }
+                    acc[job.user_id].push(job);
+                }
+                return acc;
+            }, {});
+            const userIds = Object.keys(userJobsMap);
+            const totalUsers = userIds.length;
+            let numSuccess = 0;
+            const errors = [];
+            for (const userId of userIds) {
+                const jobs = userJobsMap[userId];
+                // Send a notification per user listing all the jobs IDs that were cancelled
+                const notificationRequest = {
+                    notification: {
+                        source: "admin",
+                        variant: "warning",
                         category: "message",
-                        subject: "Job Cancelled by Admin",
-                        message: `One of your jobs was cancelled by an administrator with the following reason: **${cancelReason}**.`,
+                        content: {
+                            category: "message",
+                            subject: "Jobs Cancelled by Admin",
+                            message: `The following jobs (${jobs
+                                .map((job) => `**${job.id}**`)
+                                .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`,
+                        },
                     },
-                },
-                recipients: {
-                    user_ids: userIds,
-                },
-            };
-            const { error } = await GalaxyApi().POST("/api/notifications", {
-                body: notificationRequest,
-            });
-
-            if (error) {
-                this.status = "danger";
-                this.message = errorMessageAsString(error);
-                return;
+                    recipients: {
+                        user_ids: [userId],
+                    },
+                };
+                const { error } = await GalaxyApi().POST("/api/notifications", {
+                    body: notificationRequest,
+                });
+                if (error) {
+                    errors.push(error);
+                } else {
+                    numSuccess++;
+                }
             }
 
-            this.status = "success";
-            this.message = "Notification sent to users.";
+            if (errors.length) {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
+                this.status = "warning";
+            } else {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
+                this.status = "success";
+            }
         },
         onStopJobs() {
             axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
