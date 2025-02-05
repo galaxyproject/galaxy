@@ -38,8 +38,10 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (event: "on-create", options: CreateNewCollectionPayload): void;
-    (event: "on-cancel"): void;
+    (e: "name", value: string): void;
+    (e: "input-valid", value: boolean): void;
+    (e: "on-create", options: CreateNewCollectionPayload): void;
+    (e: "on-cancel"): void;
 }>();
 
 const state = ref("build");
@@ -85,6 +87,7 @@ const pairHasMixedExtensions = computed(() => {
 });
 
 const {
+    collectionName,
     removeExtensions,
     hideSourceItems,
     onUpdateHideSourceItems,
@@ -92,7 +95,7 @@ const {
     onCollectionCreate,
     showButtonsForModal,
     onUpdateCollectionName,
-} = useCollectionCreator(props);
+} = useCollectionCreator(props, emit);
 
 // check if we have scrolled to the top or bottom of the scrollable div
 const scrollableDiv = ref<HTMLDivElement | null>(null);
@@ -302,6 +305,8 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 :show-upload="!fromSelection"
                 :show-buttons="showButtonsForModal"
+                :collection-name="collectionName"
+                :mode="mode"
                 @on-update-collection-name="onUpdateCollectionName"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
