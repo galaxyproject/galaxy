@@ -9,6 +9,14 @@ import type { LintState } from "./linting";
 import { getDisconnectedInputs, getMissingMetadata, getUnlabeledOutputs, getUntypedParameters } from "./linting";
 import { getUntypedWorkflowParameters, type UntypedParameters } from "./parameters";
 
+export interface LintData {
+    untypedParameters: Ref<LintState[]>;
+    untypedParameterWarnings: Ref<LintState[]>;
+    disconnectedInputs: Ref<LintState[]>;
+    unlabeledOutputs: Ref<LintState[]>;
+    missingMetadata: Ref<LintState[]>;
+}
+
 export function useLintData(workflowId: Ref<string>, steps: Ref<Steps>, datatypesMapper: Ref<DatatypesMapperModel>) {
     const workflowStores = useWorkflowStores(workflowId);
 

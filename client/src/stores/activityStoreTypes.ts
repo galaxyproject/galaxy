@@ -25,6 +25,8 @@ export interface Activity {
     tooltip: string;
     // indicate wether the activity should be visible by default
     visible?: boolean;
+    // show number
+    indicator?: number;
     // if activity should cause a click event
     click?: true;
     variant?: ActivityVariant;
