@@ -54,6 +54,7 @@
                 <hr class="solid m-0" />
                 <CellConfigure
                     v-if="configure"
+                    :name="name"
                     :content="content"
                     @cancel="$emit('configure')"
                     @change="$emit('change', $event)" />

@@ -9,14 +9,7 @@
                 <FontAwesomeIcon :icon="faTimes" class="fa-lg" />
             </BButton>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Workflow</label>
-            <input type="text" class="form-control" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">History Dataset</label>
-            <input type="text" class="form-control" />
-        </div>
+        <ConfigureGalaxy v-if="name === 'galaxy'" :content="content" @change="$emit('change', $event)" />
         <div class="d-flex justify-content-end">
             <BButton variant="outline-primary" class="mr-2" @click="$emit('cancel')">Cancel</BButton>
             <BButton variant="outline-primary">OK</BButton>
@@ -28,7 +21,10 @@
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import ConfigureGalaxy from "./configurations/ConfigureGalaxy.vue";
+
 defineProps<{
+    name: string;
     content: string;
 }>();
 
