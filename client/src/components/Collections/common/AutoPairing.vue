@@ -87,8 +87,8 @@ function onApply() {
             <span v-if="hasUnmatchedDatasets">
                 <div class="summary-list-header mt-2">Un-matched Datasets</div>
                 <div class="summary-list-description">
-                    These datasets were not paired automatically. This builder will allow you to match any of pairs of these
-                    manually {{ whereIsTheBuilder }}.
+                    These datasets were not paired automatically. This builder will allow you to match any of pairs of
+                    these manually {{ whereIsTheBuilder }}.
                     <span v-if="collectionType == 'list:paired'">
                         All unmatched datasets will not be included in the final list of paired datasets.
                     </span>
@@ -106,8 +106,8 @@ function onApply() {
             <span v-else>
                 <div class="summary-list-header mt-2">No Un-matched Datasets</div>
                 <div class="summary-list-description">
-                    All datasets successfully auto-paired, this is generally a good sign Galaxy
-                    was able to correctly pair off all supplied datasets using their names.
+                    All datasets successfully auto-paired, this is generally a good sign Galaxy was able to correctly
+                    pair off all supplied datasets using their names.
                 </div>
             </span>
         </div>

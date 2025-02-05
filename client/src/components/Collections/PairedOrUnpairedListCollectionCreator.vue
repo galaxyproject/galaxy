@@ -266,12 +266,7 @@ function initialize() {
             currentForwardFilter.value = forwardFilter;
             currentReverseFilter.value = reverseFilter;
         } else {
-            autoPair(
-                activeElements.value,
-                "",
-                "",
-                removeExtensions.value
-            );
+            autoPair(activeElements.value, "", "", removeExtensions.value);
         }
     } else {
         autoPair(
