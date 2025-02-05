@@ -26,6 +26,14 @@ CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 NO_YARN_MSG="Could not find yarn, which is required to build the Galaxy client.\nIt should be shipped with Galaxy's virtualenv, but to install yarn manually please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+SPACE := $() $()
+NEVER_PYUPGRADE_PATHS := .venv/ .tox/ lib/galaxy/schema/bco/ \
+	lib/galaxy/schema/drs/ lib/tool_shed_client/schema/trs \
+	scripts/check_python.py tools/ test/functional/tools/cwl_tools/
+PY37_PYUPGRADE_PATHS := lib/galaxy/exceptions/ lib/galaxy/job_metrics/ \
+	lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ \
+	test/unit/job_metrics/ test/unit/objectstore/ test/unit/tool_util/ \
+	test/unit/util/
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -54,10 +62,10 @@ format:  ## Format Python code base
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
-pyupgrade:  ## Convert older code patterns to Python3.7/3.8 idiomatic ones
-	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/exceptions/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs pyupgrade --py38-plus
-	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/exceptions/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs auto-walrus
-	ack --type=python -f lib/galaxy/exceptions/ lib/galaxy/job_metrics/ lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ | xargs pyupgrade --py37-plus
+pyupgrade:  ## Convert older code patterns to Python 3.7/3.9 idiomatic ones
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY37_PYUPGRADE_PATHS))' | xargs pyupgrade --py39-plus
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY37_PYUPGRADE_PATHS))' | xargs auto-walrus
+	ack --type=python -f $(PY37_PYUPGRADE_PATHS) | xargs pyupgrade --py37-plus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
