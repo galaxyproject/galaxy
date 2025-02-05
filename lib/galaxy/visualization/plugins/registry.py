@@ -233,7 +233,7 @@ class VisualizationsRegistry:
         """
         result = []
         for vis_name, vis_plugin in self.plugins.items():
-            if not vis_plugin.config.get("visible"):
+            if vis_plugin.config.get("hidden"):
                 continue
             if embeddable and not vis_plugin.config.get("embeddable"):
                 continue

@@ -81,9 +81,9 @@ class VisualizationsConfigParser:
             returned["embeddable"] = asbool(xml_tree.attrib.get("embeddable"))
 
         # record the visible flag - defaults to true
-        returned["visible"] = True
-        if "visible" in xml_tree.attrib:
-            returned["visible"] = asbool(xml_tree.attrib.get("visible"))
+        returned["hidden"] = False
+        if "hidden" in xml_tree.attrib:
+            returned["hidden"] = asbool(xml_tree.attrib.get("hidden"))
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find("description")

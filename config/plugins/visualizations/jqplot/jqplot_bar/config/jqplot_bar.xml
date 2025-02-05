@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Bar diagram (jqPlot)" visible="false">
+<visualization name="Bar diagram (jqPlot)" hidden="true">
     <macros>
         <import>jqplot_shared.xml</import>
     </macros>

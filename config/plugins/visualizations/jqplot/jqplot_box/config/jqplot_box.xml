@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Box plot (jqPlot)" embeddable="false" visible="false">
+<visualization name="Box plot (jqPlot)" embeddable="false" hidden="true">
     <macros>
         <import>../../jqplot_bar/config/jqplot_shared.xml</import>
     </macros>

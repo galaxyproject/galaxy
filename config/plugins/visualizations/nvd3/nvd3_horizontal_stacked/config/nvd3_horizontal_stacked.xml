@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Bar Horizontal Stacked (NVD3)" visible="false">
+<visualization name="Bar Horizontal Stacked (NVD3)" hidden="true">
     <macros>
         <import>../../nvd3_bar/config/nvd3_shared.xml</import>
     </macros>

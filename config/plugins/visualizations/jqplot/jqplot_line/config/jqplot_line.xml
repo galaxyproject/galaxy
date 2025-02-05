@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Line chart (jqPlot)" visible="false">
+<visualization name="Line chart (jqPlot)" hidden="true">
     <macros>
         <import>../../jqplot_bar/config/jqplot_shared.xml</import>
     </macros>
