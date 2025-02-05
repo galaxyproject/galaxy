@@ -21,6 +21,7 @@ from galaxy.metadata.set_metadata import (
 from galaxy.model import store
 from galaxy.model.store import SessionlessContext
 from galaxy.objectstore import BaseObjectStore
+from galaxy.security.vault import VaultFactory
 from galaxy.structured_app import MinimalToolApp
 from galaxy.tools import (
     create_tool_from_representation,
@@ -70,6 +71,8 @@ class ToolApp(MinimalToolApp):
         self.file_sources = file_sources
         self.biotools_metadata_source = None
         self.security = None  # type: ignore[assignment]
+        self.install_model = None  # type: ignore[assignment]
+        self.vault = VaultFactory.from_app(self)
 
 
 def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY) -> None:
