@@ -36,7 +36,6 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
     MinimalToolApp,
-    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
@@ -136,7 +135,7 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
 
 class UserCredentialsConfigurator:
     def __init__(self, app: MinimalToolApp, job: model.Job, environment_variables: list[dict[str, str]]):
-        self.app = cast(StructuredApp, app)
+        self.app = app
         self.job = job
         self.environment_variables = environment_variables
 
@@ -162,7 +161,7 @@ class UserCredentialsConfigurator:
                 .where(user_cred_alias.name == service_name)
                 .where(user_cred_alias.version == service_version)
             )
-            sa_session = self.app.model.context
+            sa_session = self.app.install_model.context
             if sa_session:
                 result = sa_session.execute(stmt).tuples().all()
             else:
