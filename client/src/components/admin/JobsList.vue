@@ -265,6 +265,7 @@ export default {
         },
         async sendNotificationToUsers(cancelReason) {
             const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            // Group jobs by user
             const userJobsMap = jobsToCancel.reduce((acc, job) => {
                 if (job.user_id) {
                     if (!acc[job.user_id]) {
@@ -280,26 +281,26 @@ export default {
             const errors = [];
             for (const userId of userIds) {
                 const jobs = userJobsMap[userId];
-                // Send a notification per user listing all the jobs IDs that were cancelled
-                const notificationRequest = {
-                    notification: {
-                        source: "admin",
-                        variant: "warning",
-                        category: "message",
-                        content: {
+                const notificationMessage = `The following jobs (${jobs
+                    .map((job) => `**[${job.tool_id || job.id}](${this.getJobViewLink(job.id)})**`)
+                    .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`;
+
+                const { error } = await GalaxyApi().POST("/api/notifications", {
+                    body: {
+                        notification: {
+                            source: "admin",
+                            variant: "warning",
                             category: "message",
-                            subject: "Jobs Cancelled by Admin",
-                            message: `The following jobs (${jobs
-                                .map((job) => `**[${job.tool_id || job.id}](${this.getJobViewLink(job.id)})**`)
-                                .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`,
+                            content: {
+                                category: "message",
+                                subject: "Jobs Cancelled by Admin",
+                                message: notificationMessage,
+                            },
+                        },
+                        recipients: {
+                            user_ids: [userId],
                         },
                     },
-                    recipients: {
-                        user_ids: [userId],
-                    },
-                };
-                const { error } = await GalaxyApi().POST("/api/notifications", {
-                    body: notificationRequest,
                 });
                 if (error) {
                     errors.push(error);
