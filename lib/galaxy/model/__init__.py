@@ -1453,7 +1453,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     library_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
-    tool_id: Mapped[Optional[str]] = mapped_column(String(255))
+    tool_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     tool_version: Mapped[Optional[str]] = mapped_column(TEXT, default="1.0.0")
     galaxy_version: Mapped[Optional[str]] = mapped_column(String(64), default=None)
     dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
