@@ -68,6 +68,10 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
 
+    function closeSideBar() {
+        toggledSideBar.value = "closed";
+    }
+
     function overrideDefaultActivities(activities: Activity[]) {
         customDefaultActivities.value = activities;
         sync();
@@ -197,6 +201,8 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     return {
         toggledSideBar,
         toggleSideBar,
+        closeSideBar,
+        isSideBarOpen,
         activities,
         activityMeta,
         metaForId,
