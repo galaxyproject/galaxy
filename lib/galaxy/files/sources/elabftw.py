@@ -742,7 +742,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :type user_context: OptionalUserContext
         :param opts: A set of options to exercise additional control over this method. Defaults to ``None``
         :type opts: Optional[FilesSourceOptions], optional
-        :return: URI *assigned by eLabFTW* to the uploaded file.
+        :return: Path *assigned by eLabFTW* to the uploaded file.
         :rtype: str
 
         :raises requests.RequestException: When there is a connection error.
@@ -804,7 +804,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         entity_type, entity_id, attachment_id = match.groups()
         entity_type = entity_type.replace("items", "resources")
 
-        return f"elabftw://{location.netloc}/{entity_type}/{entity_id}/{attachment_id}"
+        return f"/{entity_type}/{entity_id}/{attachment_id}"
 
     def _realize_to(
         self,
