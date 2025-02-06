@@ -54,6 +54,7 @@ import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
 import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
 import { getAppRoot } from "onload/loadConfig";
+import { PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 import VueRouter from "vue-router";
 
@@ -62,6 +63,7 @@ import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateI
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
+import { useActivityStore } from "@/stores/activityStore";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -87,6 +89,8 @@ import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 Vue.use(VueRouter);
+// Load Pinia
+// Vue.use(PiniaVuePlugin);
 
 // patches $router.push() to trigger an event and hide duplication warnings
 patchRouterPush(VueRouter);
@@ -518,6 +522,16 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflow_landings/:uuid",
                         component: WorkflowLanding,
+                        // On this route, we close any open activity panel
+                        beforeEnter: (to, from, next) => {
+                            // We currently only use the default activity store for routing concerns.
+                            const activityStore = useActivityStore("default");
+                            // Toggle the sidebar to close
+                            console.debug("Closing activity panel");
+                            activityStore.toggleSideBar("");
+                            activityStore.closeSideBar();
+                            next();
+                        },
                         props: (route) => ({
                             uuid: route.params.uuid,
                             public: route.query.public.toLowerCase() === "true",
