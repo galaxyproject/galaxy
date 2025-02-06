@@ -72,14 +72,8 @@ else
 end
 
 local preinstall = VAR.PREINSTALL
-if preinstall ~= '' then
-    preinstall = preinstall .. ' && '
-end
 
 local postinstall = VAR.POSTINSTALL
-if postinstall ~= '' then
-    postinstall = '&&' .. postinstall
-end
 
 inv.task('build')
     .using(conda_image)
@@ -87,14 +81,11 @@ inv.task('build')
         .run('rm', '-rf', '/data/dist')
     .using(conda_image)
         .withHostConfig({binds = bind_args})
-        .run('/bin/sh', '-c', preinstall
-            .. conda_bin .. ' create --quiet --yes -p /usr/local/env --copy  && '
-            .. conda_bin .. ' install '
-            .. channel_args .. ' '
-            .. target_args
-            .. ' --strict-channel-priority -p /usr/local/env --copy --yes '
-            .. verbose
-            .. postinstall)
+        .run('/bin/sh', '-c', preinstall)
+        .run('/bin/sh', '-c', conda_bin .. ' create --quiet --yes -p /usr/local/env --copy')
+        .run('/bin/sh', '-c', conda_bin .. ' install ' .. channel_args .. ' ' .. target_args
+             .. ' --strict-channel-priority -p /usr/local/env --copy --yes ' .. verbose)
+        .run('/bin/sh', '-c', postinstall)
     .wrap('build/dist/env')
         .at('/usr/local')
         .inImage(destination_base_image)
