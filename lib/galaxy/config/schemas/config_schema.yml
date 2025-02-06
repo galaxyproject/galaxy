@@ -4240,3 +4240,24 @@ mapping:
           Number of seconds before file source content listings are refreshed. Shorter times will result in more
           queries while browsing a file sources. Longer times will result in fewer requests to file sources but
           outdated contents might be displayed to the user. Currently only affects s3fs file sources.
+
+      install_tool_dependencies:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Install tool dependencies when installing tools from the Tool Shed.
+
+      install_repository_dependencies:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Install repository dependencies when installing tools from the Tool Shed.
+
+      install_resolver_dependencies:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Install resolver dependencies when installing tools from the Tool Shed.

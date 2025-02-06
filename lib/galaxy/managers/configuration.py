@@ -96,7 +96,7 @@ class ConfigurationManager:
 #   but doesn't have a model like them. It might be better in config.py or a
 #   totally new area, but I'm leaving it in managers for now for class consistency.
 class ConfigSerializer(base.ModelSerializer):
-    """Configuration (galaxy.ini) settings viewable by all users"""
+    """Configuration (galaxy.yml) settings viewable by all users"""
 
     def __init__(self, app):
         super().__init__(app)
@@ -230,6 +230,9 @@ class ConfigSerializer(base.ModelSerializer):
             "help_forum_api_url": _use_config,
             "enable_help_forum_tool_panel_integration": _use_config,
             "llm_api_configured": lambda item, key, **context: bool(item.openai_api_key),
+            "install_tool_dependencies": _use_config,
+            "install_repository_dependencies": _use_config,
+            "install_resolver_dependencies": _use_config,
         }
 
 

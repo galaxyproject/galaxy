@@ -5747,4 +5747,37 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_tool_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Install tool dependencies when installing tools from the Tool
+    Shed.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_repository_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Install repository dependencies when installing tools from the
+    Tool Shed.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_resolver_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Install resolver dependencies when installing tools from the Tool
+    Shed.
+:Default: ``true``
+:Type: bool
+
+
 

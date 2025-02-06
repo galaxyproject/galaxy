@@ -189,9 +189,9 @@ gravity:
     # Public-facing port of the proxy
     # port: 4002
 
-    # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set``.
+    # Database to monitor.
+    # Should be set to the same value as ``interactivetools_map`` (or ``interactivetoolsproxy_map``) in the ``galaxy:`` section. This is
+    # ignored if either ``interactivetools_map`` or ``interactivetoolsproxy_map`` are set.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -3066,4 +3066,15 @@ galaxy:
   # but outdated contents might be displayed to the user. Currently only
   # affects s3fs file sources.
   #file_source_listings_expiry_time: 60
+
+  # Install tool dependencies when installing tools from the Tool Shed.
+  #install_tool_dependencies: true
+
+  # Install repository dependencies when installing tools from the Tool
+  # Shed.
+  #install_repository_dependencies: true
+
+  # Install resolver dependencies when installing tools from the Tool
+  # Shed.
+  #install_resolver_dependencies: true
 
