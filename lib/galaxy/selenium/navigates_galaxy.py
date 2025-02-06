@@ -914,13 +914,24 @@ class NavigatesGalaxy(HasDriver):
         if not hide_source_items:
             self.collection_builder_hide_originals()
 
-        self.ensure_collection_builder_filters_cleared()
         assert len(test_paths) == 2
-        self.collection_builder_click_paired_item("forward", 0)
-        self.collection_builder_click_paired_item("reverse", 1)
+        self.collection_builder_pair_rows(0, 1)
+
+        row0 = self.components.collection_builders.list_wizard.row._(index=0)
+        row0.link_button.assert_absent()
 
         self.collection_builder_set_name(name)
         self.collection_builder_create()
+
+    def collection_builder_pair_rows(self, row_forward: int, row_reverse: int):
+        row0 = self.components.collection_builders.list_wizard.row._(index=row_forward)
+        row1 = self.components.collection_builders.list_wizard.row._(index=row_reverse)
+
+        row0.unlink_button.assert_absent()
+        row1.unlink_button.assert_absent()
+
+        row0.link_button.wait_for_and_click()
+        row1.link_button.wait_for_and_click()
 
     def _collection_upload_start(self, test_paths, ext, genome, collection_type):
         # Perform upload of files and open the collection builder for specified
@@ -2075,12 +2086,6 @@ class NavigatesGalaxy(HasDriver):
             list_wizard_create.wait_for_and_click()
         else:
             modal_create.wait_for_and_click()
-
-    def ensure_collection_builder_filters_cleared(self):
-        clear_filters = self.components.collection_builders.clear_filters
-        element = clear_filters.wait_for_present()
-        if "disabled" not in element.get_attribute("class").split(" "):
-            self.collection_builder_clear_filters()
 
     def collection_builder_clear_filters(self):
         clear_filters = self.components.collection_builders.clear_filters
