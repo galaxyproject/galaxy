@@ -203,7 +203,7 @@ export default {
             return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
         },
         canDelete: function () {
-            return !!(this.contains_file_or_folder && this.is_admin);
+            return !!this.is_admin;
         },
         dataset_manipulation: function () {
             const Galaxy = getGalaxyInstance();
