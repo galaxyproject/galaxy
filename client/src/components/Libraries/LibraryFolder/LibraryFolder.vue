@@ -450,7 +450,12 @@ export default {
                 }
             });
 
-            return this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length;
+            const numComputedItems = this.$refs.folder_content_table.computedItems.length;
+            if (numComputedItems === 0 || numComputedItems === unselectable) {
+                return false;
+            }
+
+            return this.selected.length + unselectable === numComputedItems;
         },
         toggleSelect() {
             this.unselected = [];
