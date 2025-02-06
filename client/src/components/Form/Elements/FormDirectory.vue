@@ -74,6 +74,9 @@ export default {
             return regex.test(this.currentDirectoryName);
         },
     },
+    mounted() {
+        this.updateURL(true);
+    },
     methods: {
         removePath(index) {
             this.pathChunks = this.pathChunks.slice(0, index);
