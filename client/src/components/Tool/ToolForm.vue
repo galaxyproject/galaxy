@@ -13,6 +13,7 @@
         <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
+                <ErrorPluginTracker />
             </b-alert>
             <b-alert v-if="submissionRequestFailed" show variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
@@ -133,6 +134,7 @@ import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import ErrorPluginTracker from "../Common/ErrorPluginTracker.vue";
 
 export default {
     components: {
@@ -145,6 +147,7 @@ export default {
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
+        ErrorPluginTracker,
     },
     props: {
         id: {
