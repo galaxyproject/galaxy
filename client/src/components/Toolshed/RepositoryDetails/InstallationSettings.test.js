@@ -10,10 +10,10 @@ jest.mock("@/composables/config", () => ({
         config: {
             install_tool_dependencies: true,
             install_repository_dependencies: true,
-            install_resolver_dependencies: true
+            install_resolver_dependencies: true,
         },
-        isConfigLoaded: true
-    })
+        isConfigLoaded: true,
+    }),
 }));
 
 const localVue = getLocalVue();

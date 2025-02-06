@@ -122,6 +122,16 @@ utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
 test bed and check them for rendered features. Please use jest-based mocking
 for isolating test functionality.
 
+### Linting
+
+We use [Prettier](https://prettier.io/) to enforce code style and best
+practices. Before submitting a pull request, from the `client` folder, run the
+following commands as appropriate to ensure all the code is properly formatted:
+
+    yarn prettier --check .
+    yarn prettier --write .
+    yarn prettier --write src/components/MyComponent.js
+
 ### Running the tests
 
 #### At Build-Time
