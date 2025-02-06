@@ -89,7 +89,7 @@ const emit = defineEmits<{
 }>();
 
 // activities from store
-const { activities } = storeToRefs(activityStore);
+const { activities, isSideBarOpen } = storeToRefs(activityStore);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
