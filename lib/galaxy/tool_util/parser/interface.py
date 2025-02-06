@@ -8,6 +8,7 @@ from abc import (
 from enum import Enum
 from os.path import join
 from typing import (
+    Annotated,
     Any,
     cast,
     Dict,
@@ -19,7 +20,10 @@ from typing import (
 )
 
 import packaging.version
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from typing_extensions import (
     Literal,
     NotRequired,
@@ -34,7 +38,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
-        ResourceRequirement,
+        ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_objects import (
@@ -45,6 +49,71 @@ if TYPE_CHECKING:
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+
+
+class Container(BaseModel):
+    type: Literal["docker", "singularity"]
+    container_id: str
+
+
+class Requirement(BaseModel):
+    type: Literal["package", "set_environment"]
+
+
+class ContainerRequirement(Requirement):
+    type: Literal["container"]
+    container: Container
+
+
+class PackageRequirement(Requirement):
+    type: Literal["package"]
+    name: str
+    version: Optional[str]
+
+
+class SetEnvironmentRequirement(Requirement):
+    type: Literal["set_environment"]
+    environment: str
+
+
+class ResourceRequirement(BaseModel):
+    type: Literal["resource"]
+    cores_min: Optional[Union[int, float]]
+    cores_max: Optional[Union[int, float]]
+    ram_min: Optional[Union[int, float]]
+    ram_max: Optional[Union[int, float]]
+    tmpdir_min: Optional[Union[int, float]]
+    tmpdir_max: Optional[Union[int, float]]
+    cuda_version_min: Optional[Union[int, float]]
+    cuda_compute_capability: Optional[Union[int, float]]
+    gpu_memory_min: Optional[Union[int, float]]
+    cuda_device_count_min: Optional[Union[int, float]]
+    cuda_device_count_max: Optional[Union[int, float]]
+    shm_size: Optional[Union[int, float]]
+
+
+class JavascriptRequirement(BaseModel):
+    type: Literal["javascript"]
+    expression_lib: Optional[
+        List[
+            Annotated[
+                str,
+                Field(
+                    title="expression_lib",
+                    description="Provide Javascript/ECMAScript 5.1 code here that will be available for expressions inside the `shell_command` field.",
+                    examples=[
+                        r"""function pickValue() {
+    if (inputs.conditional_parameter.test_parameter == "a") {
+        return inputs.conditional_parameter.integer_parameter
+    } else {
+        return inputs.conditional_parameter.boolean_parameter
+    }
+}"""
+                    ],
+                ),
+            ]
+        ]
+    ]
 
 
 class AssertionDict(TypedDict):
@@ -226,6 +295,18 @@ class ToolSource(metaclass=ABCMeta):
     def parse_command(self):
         """Return string contianing command to run."""
 
+    def parse_shell_command(self) -> Optional[str]:
+        """Return string that after input binding can be executed."""
+        return None
+
+    def parse_base_command(self) -> Optional[List[str]]:
+        """Return string containing script entrypoint."""
+        return None
+
+    def parse_arguments(self) -> Optional[List[str]]:
+        """Return list of strings to append to base_command."""
+        return None
+
     def parse_expression(self):
         """Return string contianing command to run."""
         return None
@@ -313,7 +394,9 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_requirements_and_containers(
         self,
-    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
+    ) -> Tuple[
+        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+    ]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod

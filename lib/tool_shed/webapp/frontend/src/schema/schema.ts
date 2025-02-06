@@ -790,8 +790,15 @@ export interface components {
              * Parameter Type
              * @default gx_baseurl
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_baseurl"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "baseurl"
         }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
@@ -831,10 +838,17 @@ export interface components {
              * Parameter Type
              * @default gx_boolean
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_boolean"
             /** Truevalue */
             truevalue?: string | null
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "boolean"
             /**
              * Value
              * @default false
@@ -913,8 +927,15 @@ export interface components {
              * Parameter Type
              * @default gx_color
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_color"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "color"
             /** Value */
             value?: string | null
         }
@@ -947,12 +968,19 @@ export interface components {
              * Parameter Type
              * @default gx_conditional
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_conditional"
             /** Test Parameter */
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "conditional"
             /** Whens */
             whens: components["schemas"]["ConditionalWhen"][]
         }
@@ -1038,6 +1066,7 @@ export interface components {
              * Parameter Type
              * @default cwl_boolean
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_boolean"
         }
@@ -1070,6 +1099,7 @@ export interface components {
              * Parameter Type
              * @default cwl_directory
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_directory"
         }
@@ -1102,6 +1132,7 @@ export interface components {
              * Parameter Type
              * @default cwl_file
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_file"
         }
@@ -1113,6 +1144,7 @@ export interface components {
              * Parameter Type
              * @default cwl_float
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_float"
         }
@@ -1124,6 +1156,7 @@ export interface components {
              * Parameter Type
              * @default cwl_integer
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_integer"
         }
@@ -1135,6 +1168,7 @@ export interface components {
              * Parameter Type
              * @default cwl_null
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_null"
         }
@@ -1146,6 +1180,7 @@ export interface components {
              * Parameter Type
              * @default cwl_string
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_string"
         }
@@ -1157,6 +1192,7 @@ export interface components {
              * Parameter Type
              * @default cwl_union
              * @constant
+             * @enum {string}
              */
             parameter_type: "cwl_union"
             /** Parameters */
@@ -1209,8 +1245,15 @@ export interface components {
              * Parameter Type
              * @default gx_data_collection
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_data_collection"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data_collection"
             /** Value */
             value: Record<string, never> | null
         }
@@ -1245,8 +1288,15 @@ export interface components {
              * Parameter Type
              * @default gx_data_column
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_data_column"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data_column"
         }
         /** DataParameterModel */
         DataParameterModel: {
@@ -1293,8 +1343,15 @@ export interface components {
              * Parameter Type
              * @default gx_data
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_data"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data"
         }
         /**
          * DescriptorType
@@ -1368,8 +1425,15 @@ export interface components {
              * Parameter Type
              * @default gx_directory_uri
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_directory_uri"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "directory"
             /**
              * Validators
              * @default []
@@ -1430,8 +1494,15 @@ export interface components {
              * Parameter Type
              * @default gx_drill_down
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_drill_down"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "drill_down"
         }
         /** EmptyFieldParameterValidatorModel */
         EmptyFieldParameterValidatorModel: {
@@ -1451,6 +1522,7 @@ export interface components {
              * Type
              * @default empty_field
              * @constant
+             * @enum {string}
              */
             type: "empty_field"
         }
@@ -1479,6 +1551,7 @@ export interface components {
              * Type
              * @default expression
              * @constant
+             * @enum {string}
              */
             type: "expression"
         }
@@ -1496,6 +1569,7 @@ export interface components {
             /**
              * Discover Via
              * @constant
+             * @enum {string}
              */
             discover_via: "pattern"
             /** Format */
@@ -1552,8 +1626,15 @@ export interface components {
              * Parameter Type
              * @default gx_float
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_float"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "float"
             /**
              * Validators
              * @default []
@@ -1593,8 +1674,15 @@ export interface components {
              * Parameter Type
              * @default gx_genomebuild
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_genomebuild"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "genomebuild"
         }
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
@@ -1627,8 +1715,15 @@ export interface components {
              * Parameter Type
              * @default gx_group_tag
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_group_tag"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "group_tag"
         }
         /** HelpContent */
         HelpContent: {
@@ -1669,8 +1764,15 @@ export interface components {
              * Parameter Type
              * @default gx_hidden
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_hidden"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "hidden"
             /**
              * Validators
              * @default []
@@ -1750,6 +1852,7 @@ export interface components {
              * Type
              * @default in_range
              * @constant
+             * @enum {string}
              */
             type: "in_range"
         }
@@ -1788,8 +1891,15 @@ export interface components {
              * Parameter Type
              * @default gx_integer
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_integer"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "integer"
             /**
              * Validators
              * @default []
@@ -1829,6 +1939,7 @@ export interface components {
              * Type
              * @default length
              * @constant
+             * @enum {string}
              */
             type: "length"
         }
@@ -1857,6 +1968,7 @@ export interface components {
              * Type
              * @default no_options
              * @constant
+             * @enum {string}
              */
             type: "no_options"
         }
@@ -1923,8 +2035,8 @@ export interface components {
             name: string
             /** Outputs */
             outputs: (
-                | components["schemas"]["ToolOutputDataset"]
-                | components["schemas"]["ToolOutputCollection"]
+                | components["schemas"]["ToolOutputDatasetG_bool_str_"]
+                | components["schemas"]["ToolOutputCollectionG_bool_str_"]
                 | components["schemas"]["ToolOutputText"]
                 | components["schemas"]["ToolOutputInteger"]
                 | components["schemas"]["ToolOutputFloat"]
@@ -1964,6 +2076,7 @@ export interface components {
              * Type
              * @default regex
              * @constant
+             * @enum {string}
              */
             type: "regex"
         }
@@ -2000,6 +2113,7 @@ export interface components {
              * Parameter Type
              * @default gx_repeat
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_repeat"
             /** Parameters */
@@ -2032,6 +2146,12 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "repeat"
         }
         /** RepositoriesByCategory */
         RepositoriesByCategory: {
@@ -2317,8 +2437,15 @@ export interface components {
              * Parameter Type
              * @default gx_rules
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_rules"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "rules"
         }
         /** SectionParameterModel */
         SectionParameterModel: {
@@ -2349,6 +2476,7 @@ export interface components {
              * Parameter Type
              * @default gx_section
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_section"
             /** Parameters */
@@ -2381,6 +2509,12 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "section"
         }
         /** SelectParameterModel */
         SelectParameterModel: {
@@ -2415,8 +2549,15 @@ export interface components {
              * Parameter Type
              * @default gx_select
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_select"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "select"
             /** Validators */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][]
         }
@@ -2528,8 +2669,15 @@ export interface components {
              * Parameter Type
              * @default gx_text
              * @constant
+             * @enum {string}
              */
             parameter_type: "gx_text"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "text"
             /**
              * Validators
              * @default []
@@ -2621,23 +2769,23 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "boolean"
         }
-        /** ToolOutputCollection */
-        ToolOutputCollection: {
+        /** ToolOutputCollectionG[bool, str] */
+        ToolOutputCollectionG_bool_str_: {
             /** Hidden */
             hidden: boolean
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
             name: string
             structure: components["schemas"]["ToolOutputCollectionStructure"]
@@ -2650,25 +2798,25 @@ export interface components {
         /** ToolOutputCollectionStructure */
         ToolOutputCollectionStructure: {
             /** Collection Type */
-            collection_type: string | null
+            collection_type?: string | null
             /** Collection Type From Rules */
-            collection_type_from_rules: string | null
+            collection_type_from_rules?: string | null
             /** Collection Type Source */
-            collection_type_source: string | null
+            collection_type_source?: string | null
             /** Discover Datasets */
-            discover_datasets:
+            discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null
             /** Structured Like */
-            structured_like: string | null
+            structured_like?: string | null
         }
-        /** ToolOutputDataset */
-        ToolOutputDataset: {
+        /** ToolOutputDatasetG[bool, str] */
+        ToolOutputDatasetG_bool_str_: {
             /** Discover Datasets */
-            discover_datasets:
+            discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
@@ -2677,13 +2825,15 @@ export interface components {
             /** Format */
             format: string
             /** Format Source */
-            format_source: string | null
+            format_source?: string | null
+            /** From Work Dir */
+            from_work_dir?: string | null
             /** Hidden */
             hidden: boolean
             /** Label */
-            label: string | null
+            label?: string | null
             /** Metadata Source */
-            metadata_source: string | null
+            metadata_source?: string | null
             /** Name */
             name: string
             /**
@@ -2695,11 +2845,11 @@ export interface components {
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2709,11 +2859,11 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2723,11 +2873,11 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2743,6 +2893,7 @@ export interface components {
             /**
              * Discover Via
              * @constant
+             * @enum {string}
              */
             discover_via: "tool_provided_metadata"
             /** Format */

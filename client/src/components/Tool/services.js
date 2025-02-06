@@ -2,9 +2,10 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
-export async function updateToolFormData(tool_id, tool_version, history_id, inputs) {
+export async function updateToolFormData(tool_id, tool_uuid, tool_version, history_id, inputs) {
     const current_state = {
         tool_id: tool_id,
+        tool_uuid: tool_uuid,
         tool_version: tool_version,
         inputs: inputs,
         history_id: history_id,

@@ -93,6 +93,7 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
+from galaxy.schema.tools import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
     download_output,
@@ -102,6 +103,7 @@ from galaxy.tool_util.cwl.util import (
     output_to_cwl_json,
     tool_response_to_output,
 )
+from galaxy.tool_util.models import UserToolSource
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,
@@ -837,9 +839,63 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
+    def create_unprivileged_tool(
+        self, representation: UserToolSource, active=True, hidden=False, uuid=None, assert_ok=True
+    ):
+        data = DynamicUnprivilegedToolCreatePayload(
+            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+        ).model_dump(by_alias=True, exclude_unset=True)
+        response = self._post("unprivileged_tools", data=data, json=True)
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
+
+    def build_unprivileged_tool(
+        self,
+        representation: UserToolSource,
+        history_id: str,
+        active=True,
+        hidden=False,
+        uuid=None,
+        assert_ok=True,
+    ):
+        data = DynamicUnprivilegedToolCreatePayload(
+            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+        ).model_dump(by_alias=True, exclude_unset=True)
+        response = self._post(f"unprivileged_tools/build?history_id={history_id}", data=data, json=True)
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
+
+    def build_runtime_model_for_tool(
+        self,
+        representation: UserToolSource,
+        active=True,
+        hidden=False,
+        uuid=None,
+        assert_ok=True,
+    ):
+        data = DynamicUnprivilegedToolCreatePayload(
+            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+        ).model_dump(by_alias=True, exclude_unset=True)
+        response = self._post("unprivileged_tools/runtime_model", data=data, json=True)
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
+
+    def get_unprivileged_tools(self, active=True, assert_ok=True):
+        response = self._get("unprivileged_tools", data={"active": active})
+        if assert_ok:
+            assert response.status_code == 200
+        return response.json()
+
+    def show_unprivileged_tool(self, uuid: str, assert_ok=True):
+        response = self._get(f"unprivileged_tools/{uuid}")
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
+
     def create_tool(self, representation, tool_directory: Optional[str] = None) -> Dict[str, Any]:
-        if isinstance(representation, dict):
-            representation = json.dumps(representation)
         payload = dict(
             representation=representation,
             tool_directory=tool_directory,
@@ -849,9 +905,9 @@ class BaseDatasetPopulator(BasePopulator):
     def _create_tool_raw(self, payload) -> Dict[str, Any]:
         using_requirement("admin")
         try:
-            create_response = self._post("dynamic_tools", data=payload, admin=True)
+            create_response = self._post("dynamic_tools", data=payload, admin=True, json=True)
         except TypeError:
-            create_response = self._post("dynamic_tools", data=payload)
+            create_response = self._post("dynamic_tools", data=payload, json=True)
         assert create_response.status_code == 200, create_response.text
         return create_response.json()
 
@@ -864,12 +920,13 @@ class BaseDatasetPopulator(BasePopulator):
     def show_dynamic_tool(self, uuid) -> dict:
         using_requirement("admin")
         show_response = self._get(f"dynamic_tools/{uuid}", admin=True)
-        assert show_response.status_code == 200, show_response
+        assert show_response.status_code == 200, show_response.text
         return show_response.json()
 
     def deactivate_dynamic_tool(self, uuid) -> dict:
         using_requirement("admin")
-        delete_response = self._delete(f"dynamic_tools/{uuid}", admin=True)
+        delete_response = self._delete(f"dynamic_tools/{uuid}", admin=True, json=True)
+        assert delete_response.status_code == 200, delete_response.text
         return delete_response.json()
 
     @abstractmethod
@@ -2455,7 +2512,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200, upload_response.content
+        assert upload_response.status_code == 200, upload_response.text
         return upload_response.json()
 
     def import_tool(self, tool) -> Dict[str, Any]:
@@ -2463,7 +2520,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         comparable interface into Galaxy.
         """
         upload_response = self._import_tool_response(tool)
-        assert upload_response.status_code == 200, upload_response
+        assert upload_response.status_code == 200, upload_response.text
         return upload_response.json()
 
     def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[Dict[str, Any]] = None):
@@ -2474,9 +2531,8 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
 
     def _import_tool_response(self, tool) -> Response:
         using_requirement("admin")
-        tool_str = json.dumps(tool, indent=4)
-        data = {"representation": tool_str}
-        upload_response = self._post("dynamic_tools", data=data, admin=True)
+        data = {"representation": tool}
+        upload_response = self._post("dynamic_tools", data=data, admin=True, json=True)
         return upload_response
 
     def scaling_workflow_yaml(self, **kwd):
