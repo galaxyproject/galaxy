@@ -379,7 +379,12 @@ function flatListIdentifiers(): CollectionElementIdentifier[] {
 }
 
 function pairedListIdentifiers(): CollectionElementIdentifier[] {
-    return (rowData.value || []).map((v) => {
+    let rows = (rowData.value || []);
+    const strictPairs = props.collectionType.endsWith("paired");
+    if (strictPairs) {
+        rows = rows.filter((value) => !("unpaired" in value.datasets));
+    }
+    return rows.map((v) => {
         const isPaired = "forward" in v.datasets;
         function toElementIdentifierObject(
             collectionType: "paired" | "paired_or_unpaired",
@@ -420,7 +425,7 @@ function pairedListIdentifiers(): CollectionElementIdentifier[] {
                 },
             ];
             return toElementIdentifierObject(
-                props.collectionType == "list:paired" ? "paired" : "paired_or_unpaired",
+                strictPairs ? "paired" : "paired_or_unpaired",
                 identifiers
             );
         }
