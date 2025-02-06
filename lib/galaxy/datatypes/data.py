@@ -60,7 +60,6 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -635,21 +634,16 @@ class Data(metaclass=DataMeta):
         return result
 
     def _yield_user_file_content(self, trans, from_dataset: HasCreatingJob, filename: str, headers: Headers) -> IO:
-        """This method is responsible for sanitizing the HTML if needed."""
+        """This method sets the content type header to text/plain if we don't trust html content."""
         if trans.app.config.sanitize_all_html and headers.get("content-type", None) == "text/html":
-            # Sanitize anytime we respond with plain text/html content.
             # Check to see if this dataset's parent job is allowlisted
             # We cannot currently trust imported datasets for rendering.
-            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id.startswith(
-                tuple(trans.app.config.sanitize_allowlist)
-            ):
-                return open(filename, mode="rb")
-
-            # This is returning to the browser, it needs to be encoded.
-            # TODO Ideally this happens a layer higher, but this is a bad
-            # issue affecting many tools
-            with open(filename) as f:
-                return sanitize_html(f.read()).encode("utf-8")
+            content_type = "text/html"
+            if from_dataset.creating_job.imported:
+                content_type = "text/plain"
+            if not from_dataset.creating_job.tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
+                content_type = "text/plain"
+            headers["content-type"] = content_type
 
         return open(filename, mode="rb")
 
