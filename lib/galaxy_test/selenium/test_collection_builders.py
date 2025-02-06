@@ -64,14 +64,8 @@ class TestCollectionBuilders(SeleniumTestCase):
         )
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
+        self.collection_builder_pair_rows(0, 1)
         row0 = self.components.collection_builders.list_wizard.row._(index=0)
-        row1 = self.components.collection_builders.list_wizard.row._(index=1)
-
-        row0.unlink_button.assert_absent()
-
-        row0.link_button.wait_for_and_click()
-        row1.link_button.wait_for_and_click()
-
         row0.unlink_button.wait_for_present()
         row0.link_button.assert_absent()
 
@@ -98,14 +92,8 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
 
+        self.collection_builder_pair_rows(0, 1)
         row0 = self.components.collection_builders.list_wizard.row._(index=0)
-        row1 = self.components.collection_builders.list_wizard.row._(index=1)
-
-        row0.unlink_button.assert_absent()
-
-        row0.link_button.wait_for_and_click()
-        row1.link_button.wait_for_and_click()
-
         row0.unlink_button.wait_for_present()
         row0.link_button.assert_absent()
 
