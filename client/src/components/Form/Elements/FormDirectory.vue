@@ -4,7 +4,12 @@
             <b-button id="select-btn" @click="reset">
                 <FontAwesomeIcon icon="folder-open" /> {{ selectText }}
             </b-button>
-            <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
+            <FilesDialog
+                :key="modalKey"
+                mode="directory"
+                :callback="setUrl"
+                :require-writable="true"
+                :is-open="isModalShown" />
         </div>
         <b-breadcrumb v-if="url">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
@@ -83,6 +88,7 @@ export default {
         // https://michaelnthiessen.com/force-re-render/
         redrawModal() {
             this.modalKey += 1;
+            this.isModalShown = true;
         },
         removeLastPath(event) {
             // check whether the last item is editable
