@@ -124,6 +124,12 @@ Tool enhancements
 
 .. enhancement_tag_workflows
 
+* Fix problem with multiple layers in workflow metrics
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19283`_
+* Fix workflow metrics chart style
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19291`_
 Workflow enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -232,6 +238,15 @@ Admin enhancements
 
 .. enhancement
 
+* List private file sources first in Remote Files Dialog
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19455`_
+* Various list of pairs builder usability fixes
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19248`_
+* Fix to not display upload when creating collections from existing datasets
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19373`_
 Misc. enhancements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -484,6 +499,9 @@ Misc. enhancements
 
 .. small_enhancement
 
+* Release testing - selenium tests for workflow invocation export
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19262`_
 * Update versions of GitHub actions
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 18197`_
@@ -581,6 +599,9 @@ Fixes
 
 .. bug_tag_viz
 
+* Prevent cycling through failing conversion jobs in trackster
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19494`_
 Vizualization fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -617,6 +638,18 @@ Tool fixes
 
 .. bug_tag_workflows
 
+* Fix error message when subworkflow input connection missing
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19526`_
+* Also check `trs_tool_id` for imported workflow indicator
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19460`_
+* Set a hard limit of 100 invocations per request in api/invocations
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19497`_
+* Fix import of previously-deleted TRS workflow
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19311`_
 Workflow fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -659,6 +692,21 @@ UI fixes
 
 .. bug_tag_jobs
 
+* Use instance wide default ``real_system_username`` if not defined on destination
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19544`_
+* Fix job parameter summary for inputs without label
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19427`_
+* Serialize message exceptions on execution error
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19483`_
+* Partial backport of `#19331 <https://github.com/galaxyproject/galaxy/issues/19331>`__
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19342`_
+* Fixes for console logging
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19381`_
 Job fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -668,8 +716,116 @@ Job fixes
 
 .. bug_tag_admin
 
+* Downgrade 'InteractiveTools are not enabled' to warning
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19518`_
 .. bug
 
+* Use visualizations api in trackster
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19495`_
+* Fix extracting workflows from purged and deleted histories
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19525`_
+* Fix WSGI response status handling in controller methods
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19520`_
+* Fix remap for parameter called id
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19532`_
+* Fix admin cancel job message not being displayed to the user
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19537`_
+* Provide guidance in case of deadlock during db migration
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19551`_
+* Update 24.2 db revision tags
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19550`_
+* Fix to only show ChatGXY when available
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19389`_
+* Display upload help highlight only once and include Rule-based upload info
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19393`_
+* Show message for mixed extensions in collection creator
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19404`_
+* Fix Activity Bar state lost on page reload
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19426`_
+* Show Keycloak provider label in UI
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19447`_
+* `mulled-build-tool` fix for packages wo version
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19450`_
+* Fix parsing of validators with inf limits
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19459`_
+* Fix help text overflow breaking tool inspector
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19465`_
+* Fix object not found handling
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19468`_
+* Remove print statement
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19469`_
+* Bump typescript target to es2020
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19473`_
+* Fail with error message when submitting invalid request
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19489`_
+* Fix invocation query in JobInformation.vue component
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19496`_
+* Fix minor typo in event name in collection creator
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19499`_
+* Fix library dataset current user potentially null
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19505`_
+* Fix workflowID assignment in Markdown.vue
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19507`_
+* Skip token refresh without refresh token in psa
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19514`_
+* Fix tool search constantly loading bug
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19528`_
+* Add tool_id index on job table
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19543`_
+* Outputs filter linter fixes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19208`_
+* Fix some collection builder help and language choices
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19244`_
+* Only allow moving activity bar icons when editing the bar
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19258`_
+* Fix CollectionCreatorModal being reopened on history
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19276`_
+* Fix invocation metrics usability by providing job context
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19279`_
+* Fix inconsistent tab handling in invocation view
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19298`_
+* Don't show published workflows in workflow activity of workflow editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19312`_
+* Fix timeout handling for planemo / galaxy-tool-util
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19384`_
+* Fix for empty string in regex validator message
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19387`_
 Misc. fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

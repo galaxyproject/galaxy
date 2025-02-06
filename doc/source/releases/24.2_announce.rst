@@ -51,7 +51,7 @@ administrators, it will now be possible to view live console output for running
 jobs. The job output will be available on the Job Information page where these
 logs have always been available for completed jobs.
 
-** ChatGXY - Job Error Wizard **. With this release, we're excited to introduce
+**ChatGXY - Job Error Wizard**. With this release, we're excited to introduce
 ChatGXY — AI assistance built directly into the Galaxy interface. The first
 functionality being rolled out is an AI-driven job error diagnoser that
 automatically inspects errored jobs and provides actionable insights. Users on

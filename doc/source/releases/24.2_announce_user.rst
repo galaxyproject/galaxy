@@ -178,6 +178,9 @@ Visualizations
 ===========================================================
 
 .. visualizations
+* Prevent cycling through failing conversion jobs in trackster
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19494`_
 * Update visualizations package versions
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 19232`_
