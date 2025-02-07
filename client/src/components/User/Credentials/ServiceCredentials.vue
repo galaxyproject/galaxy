@@ -20,6 +20,7 @@ type CredentialType = "variable" | "secret";
 interface Props {
     credentialDefinition: ServiceCredentialsDefinition;
     credentialPayload: ServiceCredentialPayload;
+    isProvidedByUser: boolean;
 }
 
 const props = defineProps<Props>();
@@ -51,11 +52,6 @@ const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== default
 const defaultSet = computed<ServiceGroupPayload | undefined>(() =>
     availableSets.value.find((set) => set.name === "default")
 );
-
-const noCredentialsSet = computed<boolean>(() => {
-    // TODO: Implement a real check for no credentials set.
-    return availableSets.value.length === 0;
-});
 
 const emit = defineEmits<{
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
@@ -146,8 +142,10 @@ function onDeleteSet() {
                 </span>
 
                 <span class="text-muted selected-set-info">
-                    <span v-if="noCredentialsSet"> No credentials set</span>
-                    <span v-else-if="selectedSet"> Using: {{ selectedSet.name }} </span>
+                    <span v-if="!isProvidedByUser"> No credentials set</span>
+                    <span v-else-if="selectedSet">
+                        Using: <b>{{ selectedSet.name }}</b>
+                    </span>
                 </span>
             </BButton>
         </div>

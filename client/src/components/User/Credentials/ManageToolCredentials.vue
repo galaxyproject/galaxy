@@ -19,11 +19,11 @@ interface ManageToolCredentialsProps {
     toolId: string;
     toolVersion: string;
     toolCredentialsDefinition: SourceCredentialsDefinition;
-    userToolCredentials?: UserCredentials[];
+    toolUserCredentials?: UserCredentials[];
 }
 
 const props = withDefaults(defineProps<ManageToolCredentialsProps>(), {
-    userToolCredentials: () => [],
+    toolUserCredentials: () => [],
 });
 
 const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCredentials());
@@ -40,9 +40,7 @@ function saveCredentials() {
 function initializeCredentials(): CreateSourceCredentialsPayload {
     const serviceCredentials = [];
     for (const key of props.toolCredentialsDefinition.services.keys()) {
-        const userCredentialForService = props.userToolCredentials.find(
-            (c) => key === getKeyFromCredentialsIdentifier(c)
-        );
+        const userCredentialForService = getUserCredentialsForService(key);
 
         const currentGroup = userCredentialForService?.current_group_name ?? "default";
         const definition = getServiceCredentialsDefinition(key);
@@ -139,6 +137,14 @@ function getServiceCredentialsDefinition(key: string): ServiceCredentialsDefinit
     }
     return definition;
 }
+
+function getUserCredentialsForService(key: string): UserCredentials | undefined {
+    return props.toolUserCredentials.find((c) => getKeyFromCredentialsIdentifier(c) === key);
+}
+
+function hasUserProvided(credential: ServiceCredentialPayload): boolean {
+    return !!getUserCredentialsForService(getKeyFromCredentialsIdentifier(credential));
+}
 </script>
 
 <template>
@@ -153,6 +159,7 @@ function getServiceCredentialsDefinition(key: string): ServiceCredentialsDefinit
                 :key="credential.name"
                 :credential-definition="getServiceCredentialsDefinition(getKeyFromCredentialsIdentifier(credential))"
                 :credential-payload="credential"
+                :is-provided-by-user="hasUserProvided(credential)"
                 class="mb-2"
                 @new-credentials-set="onNewCredentialsSet"
                 @delete-credentials-group="onDeleteCredentialsGroup"
