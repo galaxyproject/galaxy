@@ -144,19 +144,21 @@ function getServiceCredentialsDefinition(key: string): ServiceCredentialsDefinit
 <template>
     <div>
         <p>
-            Here you can manage your credentials for the tool <strong>{{ toolId }}</strong> version
-            <strong> {{ toolVersion }}</strong
-            >. After you make any changes, don't forget to use the <i>Save Credentials</i> button to save them.
+            Manage your credentials for <strong>{{ toolId }}</strong> (<strong>{{ toolVersion }}</strong
+            >) here. After making any changes, be sure to click <strong>Save Credentials</strong> to apply them.
         </p>
-        <ServiceCredentials
-            v-for="credential in providedCredentials.credentials"
-            :key="credential.name"
-            :credential-definition="getServiceCredentialsDefinition(getKeyFromCredentialsIdentifier(credential))"
-            :credential-payload="credential"
-            class="mb-2"
-            @new-credentials-set="onNewCredentialsSet"
-            @delete-credentials-group="onDeleteCredentialsGroup"
-            @update-current-set="onCurrentSetChange" />
+        <div class="accordion">
+            <ServiceCredentials
+                v-for="credential in providedCredentials.credentials"
+                :key="credential.name"
+                :credential-definition="getServiceCredentialsDefinition(getKeyFromCredentialsIdentifier(credential))"
+                :credential-payload="credential"
+                class="mb-2"
+                @new-credentials-set="onNewCredentialsSet"
+                @delete-credentials-group="onDeleteCredentialsGroup"
+                @update-current-set="onCurrentSetChange" />
+        </div>
+
         <button class="btn-primary" @click="saveCredentials">Save Credentials</button>
     </div>
 </template>
