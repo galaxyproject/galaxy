@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
@@ -21,7 +22,7 @@ const props = withDefaults(
     }
 );
 
-const { isAdmin } = useUserStore();
+const { isAdmin } = storeToRefs(useUserStore());
 const srcWithRoot = computed(() => withPrefix(props.src));
 const sanitizedImport = ref(false);
 const sanitizedToolId = ref<String | false>(false);
@@ -74,12 +75,12 @@ function onLoad(ev: Event) {
 }
 </script>
 <template>
-    <div>
-        <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning">
+    <div class="h-100">
+        <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
             <p v-if="isAdmin && sanitizedToolId">
-                <router-link to="/admin/sanitize_allow">Review Allowlist</router-link> if outputs of
-                {{ sanitizedToolId }} are trusted and should be shown as HTML.
+                <router-link data-description="allowlist link" to="/admin/sanitize_allow">Review Allowlist</router-link>
+                if outputs of {{ sanitizedToolId }} are trusted and should be shown as HTML.
             </p>
         </Alert>
         <LoadingSpan v-if="isLoading">Loading ...</LoadingSpan>
