@@ -16,8 +16,14 @@ export function usePopper(
 
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
-    const doCloseForDocument = (e: Event) => {
+    const doCloseDocument = (e: Event) => {
         if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node)) {
+            visible.value = false;
+        }
+    };
+    const doCloseEscape = (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key === "Escape") {
             visible.value = false;
         }
     };
@@ -44,7 +50,8 @@ export function usePopper(
         const trigger = options.trigger ?? defaultTrigger;
         if (trigger === "click") {
             addEventListener(reference.value, "click", doOpen);
-            addEventListener(document, "click", doCloseForDocument);
+            addEventListener(document, "click", doCloseDocument);
+            addEventListener(document, "keydown", doCloseEscape);
         } else if (trigger === "hover") {
             addEventListener(reference.value, "mouseover", doOpen);
             addEventListener(reference.value, "mouseout", doClose);
