@@ -125,12 +125,11 @@ for isolating test functionality.
 ### Linting
 
 We use [Prettier](https://prettier.io/) to enforce code style and best
-practices. Before submitting a pull request, from the `client` folder, run the
-following commands as appropriate to ensure all the code is properly formatted:
+practices. Before submitting a pull request, run the following commands
+as appropriate to ensure all the code is properly formatted:
 
-    yarn prettier --check .
-    yarn prettier --write .
-    yarn prettier --write src/components/MyComponent.js
+    make client-lint
+    make client-format
 
 ### Running the tests
 
