@@ -122,7 +122,16 @@ function areAllSetByUser(credentials: UserCredentials): boolean {
     if (!selectedGroup) {
         return false;
     }
-    return selectedGroup.variables.every((v) => v.is_set) && selectedGroup.secrets.every((s) => s.is_set);
+    return (
+        credentials.credential_definitions.variables.every((v) => {
+            const variable = selectedGroup.variables.find((dv) => v.name === dv.name);
+            return variable?.is_set ?? false;
+        }) &&
+        credentials.credential_definitions.secrets.every((s) => {
+            const secret = selectedGroup.secrets.find((ds) => s.name === ds.name);
+            return secret?.is_set ?? false;
+        })
+    );
 }
 
 function areRequiredSetByUser(credentials: UserCredentials): boolean {
@@ -131,12 +140,14 @@ function areRequiredSetByUser(credentials: UserCredentials): boolean {
         return false;
     }
     return (
-        selectedGroup.variables.every(
-            (v) => v.is_set || credentials.credential_definitions.variables.find((dv) => v.name === dv.name)?.optional
-        ) &&
-        selectedGroup.secrets.every(
-            (s) => s.is_set || credentials.credential_definitions.secrets.find((ds) => s.name === ds.name)?.optional
-        )
+        credentials.credential_definitions.variables.every((v) => {
+            const variable = selectedGroup.variables.find((dv) => v.name === dv.name);
+            return variable ? variable.is_set : v.optional;
+        }) &&
+        credentials.credential_definitions.secrets.every((s) => {
+            const secret = selectedGroup.secrets.find((ds) => s.name === ds.name);
+            return secret ? secret.is_set : s.optional;
+        })
     );
 }
 
