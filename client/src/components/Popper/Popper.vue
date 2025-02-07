@@ -73,20 +73,12 @@ defineExpose({
     color: $brand-light;
     max-width: 12rem;
     opacity: 0.95;
-    .popper-arrow:before {
-        background: $brand-dark;
-        border: popper-border($brand-dark);
-    }
 }
 
 .popper-element-light {
     background: $white;
     border: popper-border($border-color);
     color: $brand-dark;
-    .popper-arrow:before {
-        background: $white;
-        border: popper-border($border-color);
-    }
 }
 
 .popper-element-primary-title {
@@ -97,63 +89,46 @@ defineExpose({
         background: $brand-primary;
         color: $white;
     }
-    .popper-arrow:before {
-        background: $brand-primary;
-        border: popper-border($border-color);
-    }
 }
 
-/** Arrow positioning and border handling */
-.popper-arrow,
-.popper-arrow:before {
-    height: 9px;
-    width: 9px;
+/** Triangle Arrow */
+.popper-arrow {
     position: absolute;
-    content: "";
-    transform: rotate(45deg);
+    width: 0;
+    height: 0;
+    border-style: solid;
 }
 
-.popper-element[data-popper-placement^="top"] {
-    > .popper-arrow {
-        bottom: 0px;
-    }
-    > .popper-arrow:before {
-        bottom: -5px;
-        border-top: none;
-        border-left: none;
-    }
+/** Arrow positioning based on placement */
+.popper-element[data-popper-placement^="top"] > .popper-arrow {
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-color: $brand-dark transparent transparent transparent;
 }
 
-.popper-element[data-popper-placement^="right"] {
-    > .popper-arrow {
-        left: 0px;
-    }
-    > .popper-arrow:before {
-        left: -5px;
-        border-top: none;
-        border-right: none;
-    }
+.popper-element[data-popper-placement^="bottom"] > .popper-arrow {
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-color: transparent transparent $brand-dark transparent;
 }
 
-.popper-element[data-popper-placement^="bottom"] {
-    > .popper-arrow {
-        top: 0px;
-    }
-    > .popper-arrow:before {
-        top: -5px;
-        border-bottom: none;
-        border-right: none;
-    }
+.popper-element[data-popper-placement^="left"] > .popper-arrow {
+    right: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 7px;
+    border-color: transparent transparent transparent $brand-dark;
 }
 
-.popper-element[data-popper-placement^="left"] {
-    > .popper-arrow {
-        right: 0px;
-    }
-    > .popper-arrow:before {
-        right: -5px;
-        border-bottom: none;
-        border-left: none;
-    }
+.popper-element[data-popper-placement^="right"] > .popper-arrow {
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 7px;
+    border-color: transparent $brand-dark transparent transparent;
 }
 </style>
