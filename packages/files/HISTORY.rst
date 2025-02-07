@@ -10,6 +10,24 @@ History
 
 
 -------------------
+24.2.0 (2025-02-06)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Allow OAuth 2.0 user defined file sources (w/Dropbox integration) by `@jmchilton <https://github.com/jmchilton>`_ in `#18272 <https://github.com/galaxyproject/galaxy/pull/18272>`_
+* Add onedata templates by `@bwalkowi <https://github.com/bwalkowi>`_ in `#18457 <https://github.com/galaxyproject/galaxy/pull/18457>`_
+* Add missing version in the file sources and object store templates by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#18497 <https://github.com/galaxyproject/galaxy/pull/18497>`_
+* Add a new version of the production s3fs file source template with the writable configuration variable added by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#18575 <https://github.com/galaxyproject/galaxy/pull/18575>`_
+* Bring your own file sources: Add the WebDAV template and configuration by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#18598 <https://github.com/galaxyproject/galaxy/pull/18598>`_
+* Allow setting a few global defaults for file source plugin types. by `@jmchilton <https://github.com/jmchilton>`_ in `#18909 <https://github.com/galaxyproject/galaxy/pull/18909>`_
+* Type annotations and fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18911 <https://github.com/galaxyproject/galaxy/pull/18911>`_
+* Allow a posix file source to prefer linking. by `@jmchilton <https://github.com/jmchilton>`_ in `#19132 <https://github.com/galaxyproject/galaxy/pull/19132>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

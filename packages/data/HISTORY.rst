@@ -10,6 +10,85 @@ History
 
 
 -------------------
+24.2.0 (2025-02-06)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Drop "Send to cloud" tool and associated cloudauthz code by `@jdavcs <https://github.com/jdavcs>`_ in `#18196 <https://github.com/galaxyproject/galaxy/pull/18196>`_
+* Raise Message Exception when displaying binary data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18503 <https://github.com/galaxyproject/galaxy/pull/18503>`_
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+* Fix new flake8-bugbear B039 and mypy type-var errors by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18755 <https://github.com/galaxyproject/galaxy/pull/18755>`_
+* Fix migration data fixes tests by `@jdavcs <https://github.com/jdavcs>`_ in `#18885 <https://github.com/galaxyproject/galaxy/pull/18885>`_
+* Fix backend role sharing bug by `@jdavcs <https://github.com/jdavcs>`_ in `#18942 <https://github.com/galaxyproject/galaxy/pull/18942>`_
+* Add merge migration to merge 2 heads by `@jdavcs <https://github.com/jdavcs>`_ in `#19163 <https://github.com/galaxyproject/galaxy/pull/19163>`_
+* Record implicitly converted dataset as input dataset by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19301 <https://github.com/galaxyproject/galaxy/pull/19301>`_
+* Fix quota usage with user object stores by `@davelopez <https://github.com/davelopez>`_ in `#19323 <https://github.com/galaxyproject/galaxy/pull/19323>`_
+* Fix workflows with optional non-default parameter input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19332 <https://github.com/galaxyproject/galaxy/pull/19332>`_
+* Fix importing shared workflows with deeply nested subworkflows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19335 <https://github.com/galaxyproject/galaxy/pull/19335>`_
+* Backport fix from #19396 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19399 <https://github.com/galaxyproject/galaxy/pull/19399>`_
+* Prevent cycling through failing conversion jobs in trackster by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19494 <https://github.com/galaxyproject/galaxy/pull/19494>`_
+* Fix extracting workflows from purged and deleted histories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19525 <https://github.com/galaxyproject/galaxy/pull/19525>`_
+* Fix error message when subworkflow input connection missing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19526 <https://github.com/galaxyproject/galaxy/pull/19526>`_
+* Fix admin cancel job message not being displayed to the user by `@davelopez <https://github.com/davelopez>`_ in `#19537 <https://github.com/galaxyproject/galaxy/pull/19537>`_
+* Add tool_id index on job table by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19543 <https://github.com/galaxyproject/galaxy/pull/19543>`_
+* Update 24.2 db revision tags by `@jdavcs <https://github.com/jdavcs>`_ in `#19550 <https://github.com/galaxyproject/galaxy/pull/19550>`_
+* Provide guidance in case of deadlock during db migration by `@jdavcs <https://github.com/jdavcs>`_ in `#19551 <https://github.com/galaxyproject/galaxy/pull/19551>`_
+
+============
+Enhancements
+============
+
+* Experimental galactic wizard by `@dannon <https://github.com/dannon>`_ in `#15860 <https://github.com/galaxyproject/galaxy/pull/15860>`_
+* Improve usability of Directory datatype by `@wm75 <https://github.com/wm75>`_ in `#17614 <https://github.com/galaxyproject/galaxy/pull/17614>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18226 <https://github.com/galaxyproject/galaxy/pull/18226>`_
+* Allow OAuth 2.0 user defined file sources (w/Dropbox integration) by `@jmchilton <https://github.com/jmchilton>`_ in `#18272 <https://github.com/galaxyproject/galaxy/pull/18272>`_
+* More data access tests, some refactoring and cleanup by `@jdavcs <https://github.com/jdavcs>`_ in `#18312 <https://github.com/galaxyproject/galaxy/pull/18312>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18406 <https://github.com/galaxyproject/galaxy/pull/18406>`_
+* Add pod5 datatype by `@TomHarrop <https://github.com/TomHarrop>`_ in `#18419 <https://github.com/galaxyproject/galaxy/pull/18419>`_
+* Prepare for NumPy 2.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18422 <https://github.com/galaxyproject/galaxy/pull/18422>`_
+* Add unique constraints to the email and username fields in the galaxy_user table by `@jdavcs <https://github.com/jdavcs>`_ in `#18493 <https://github.com/galaxyproject/galaxy/pull/18493>`_
+* Improvements for K8S deployment (especially ITs) by `@almahmoud <https://github.com/almahmoud>`_ in `#18514 <https://github.com/galaxyproject/galaxy/pull/18514>`_
+* Refactor ``LibraryDatasetsManager`` and fix type annotation issue by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18773 <https://github.com/galaxyproject/galaxy/pull/18773>`_
+* Handle compressed content in dataset preview for all sequence classes by `@PlushZ <https://github.com/PlushZ>`_ in `#18776 <https://github.com/galaxyproject/galaxy/pull/18776>`_
+* Backend handling of setting user-role, user-group, and group-role associations by `@jdavcs <https://github.com/jdavcs>`_ in `#18777 <https://github.com/galaxyproject/galaxy/pull/18777>`_
+* Workflow Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#18807 <https://github.com/galaxyproject/galaxy/pull/18807>`_
+* Update Mypy to 1.11.2 and fix new signature override errors by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18811 <https://github.com/galaxyproject/galaxy/pull/18811>`_
+* Refactor migration testing setup code by `@jdavcs <https://github.com/jdavcs>`_ in `#18886 <https://github.com/galaxyproject/galaxy/pull/18886>`_
+* Allow setting a few global defaults for file source plugin types. by `@jmchilton <https://github.com/jmchilton>`_ in `#18909 <https://github.com/galaxyproject/galaxy/pull/18909>`_
+* Type annotations and fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18911 <https://github.com/galaxyproject/galaxy/pull/18911>`_
+* Add filter null collection operation tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18928 <https://github.com/galaxyproject/galaxy/pull/18928>`_
+* Fix extra files path type hint by `@davelopez <https://github.com/davelopez>`_ in `#18958 <https://github.com/galaxyproject/galaxy/pull/18958>`_
+* Decouple user email from role name by `@jdavcs <https://github.com/jdavcs>`_ in `#18966 <https://github.com/galaxyproject/galaxy/pull/18966>`_
+* Optimize to_history_dataset_association in create_datasets_from_library_folder by `@arash77 <https://github.com/arash77>`_ in `#18970 <https://github.com/galaxyproject/galaxy/pull/18970>`_
+* Workflow landing improvements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18979 <https://github.com/galaxyproject/galaxy/pull/18979>`_
+* Allow recovering a normalized version of workflow request state from API by `@jmchilton <https://github.com/jmchilton>`_ in `#18985 <https://github.com/galaxyproject/galaxy/pull/18985>`_
+* Add some Zarr-based datatypes by `@davelopez <https://github.com/davelopez>`_ in `#19040 <https://github.com/galaxyproject/galaxy/pull/19040>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
+* Annotate ``DatasetAssociationManager`` as generic type by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19063 <https://github.com/galaxyproject/galaxy/pull/19063>`_
+* Move TRS import into WorkflowContentManager by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19070 <https://github.com/galaxyproject/galaxy/pull/19070>`_
+* Allow deferred datasets to behave as URIs by `@davelopez <https://github.com/davelopez>`_ in `#19077 <https://github.com/galaxyproject/galaxy/pull/19077>`_
+* Better cleanup of sharing roles on user purge by `@jdavcs <https://github.com/jdavcs>`_ in `#19096 <https://github.com/galaxyproject/galaxy/pull/19096>`_
+* Add XML based `vtk` datatype by `@tStehling <https://github.com/tStehling>`_ in `#19104 <https://github.com/galaxyproject/galaxy/pull/19104>`_
+* Access public history in job cache / job search by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19108 <https://github.com/galaxyproject/galaxy/pull/19108>`_
+* Always validate hashes when provided by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19110 <https://github.com/galaxyproject/galaxy/pull/19110>`_
+* Enable specifying dataset hash in test jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19113 <https://github.com/galaxyproject/galaxy/pull/19113>`_
+* Enhance UTF-8 support for filename handling in downloads by `@arash77 <https://github.com/arash77>`_ in `#19161 <https://github.com/galaxyproject/galaxy/pull/19161>`_
+* Backport of Workflow Editor Activity Bar by `@dannon <https://github.com/dannon>`_ in `#19212 <https://github.com/galaxyproject/galaxy/pull/19212>`_
+* Fix default value handling for parameters connected to required parameters by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19219 <https://github.com/galaxyproject/galaxy/pull/19219>`_
+
+=============
+Other changes
+=============
+
+* Merge 24.1 by `@jdavcs <https://github.com/jdavcs>`_ in `#18386 <https://github.com/galaxyproject/galaxy/pull/18386>`_
+* Format dev to fix linting. by `@jmchilton <https://github.com/jmchilton>`_ in `#18860 <https://github.com/galaxyproject/galaxy/pull/18860>`_
+* Add 24.2 migration tags by `@jdavcs <https://github.com/jdavcs>`_ in `#19169 <https://github.com/galaxyproject/galaxy/pull/19169>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

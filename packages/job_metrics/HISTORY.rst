@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.2.0 (2025-02-06)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Record container id and type in core job metrics by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18579 <https://github.com/galaxyproject/galaxy/pull/18579>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

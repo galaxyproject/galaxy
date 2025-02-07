@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.2.0 (2025-02-06)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 
