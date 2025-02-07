@@ -224,7 +224,7 @@ checkUserCredentials();
                 :tool-id="props.toolId"
                 :tool-version="props.toolVersion"
                 :tool-credentials-definition="credentialsDefinition"
-                :user-tool-credentials="userCredentials"
+                :tool-user-credentials="userCredentials"
                 @delete-credentials-group="onDeleteCredentialsGroup"
                 @save-credentials="onSavedCredentials" />
         </BModal>
