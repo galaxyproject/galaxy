@@ -96,6 +96,8 @@ export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets"
         draggedNodeId: null as string | null,
         // Current drop target node (null if no target)
         dropTargetId: null as string | null,
+        // If a link has been clicked, it will marked here
+        unpairedTarget: null as string | null,
     }),
     actions: {
         // Start dragging a node by its ID
@@ -111,5 +113,11 @@ export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets"
             this.draggedNodeId = null;
             this.dropTargetId = null;
         },
+        setUnpairedTarget(targetId: string) {
+            this.unpairedTarget = targetId;
+        },
+        resetUnpairedTarget() {
+            this.unpairedTarget = null;
+        }
     },
 });

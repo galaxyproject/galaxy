@@ -10,6 +10,7 @@ import { splitIntoPairedAndUnpaired } from "@/components/Collections/pairing";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useAgGrid } from "@/composables/useAgGrid";
+import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 import localize from "@/utils/localization";
 
 import type { GenericPair } from "../History/adapters/buildCollectionModal";
@@ -32,6 +33,9 @@ const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this 
 const { confirm } = useConfirmDialog();
 
 const pinia = getActivePinia();
+
+const pairingTargetsStore = usePairingDatasetTargetsStore();
+
 
 interface Props {
     historyId: string;
@@ -379,7 +383,7 @@ function flatListIdentifiers(): CollectionElementIdentifier[] {
 }
 
 function pairedListIdentifiers(): CollectionElementIdentifier[] {
-    let rows = (rowData.value || []);
+    let rows = rowData.value || [];
     const strictPairs = props.collectionType.endsWith("paired");
     if (strictPairs) {
         rows = rows.filter((value) => !("unpaired" in value.datasets));
@@ -424,10 +428,7 @@ function pairedListIdentifiers(): CollectionElementIdentifier[] {
                     src: ("src" in unpaired ? unpaired.src : "hda") as CollectionSourceType,
                 },
             ];
-            return toElementIdentifierObject(
-                strictPairs ? "paired" : "paired_or_unpaired",
-                identifiers
-            );
+            return toElementIdentifierObject(strictPairs ? "paired" : "paired_or_unpaired", identifiers);
         }
     });
 }
@@ -530,10 +531,12 @@ const activeUnpairedTarget = ref<UnpairedValue | null>(null);
 function onUnpairedClick(value: UnpairedValue) {
     if (activeUnpairedTarget.value == null) {
         activeUnpairedTarget.value = value;
+        pairingTargetsStore.setUnpairedTarget(value.unpaired.id);
     } else {
         const forwardId = activeUnpairedTarget.value.unpaired.id;
         activeUnpairedTarget.value = null;
         onPair(forwardId, value.unpaired.id);
+        pairingTargetsStore.resetUnpairedTarget();
     }
 }
 

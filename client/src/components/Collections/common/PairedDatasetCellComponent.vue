@@ -26,6 +26,15 @@ export default defineComponent({
         isPaired(): boolean {
             return "forward" in (this.params?.value || {});
         },
+        isUnpairedTarget(): boolean {
+            const value = (this.params?.value || {});
+            if( "unpaired" in value) {
+                const unpaired = value.unpaired;
+                return this.pairingTargetsStore().unpairedTarget == unpaired.id;
+            } else {
+                return false;
+            }
+        },
         dragging(): boolean {
             return this.pairingTargetsStore().draggedNodeId == this.params.value.unpaired?.id;
         },
@@ -96,7 +105,7 @@ export default defineComponent({
                 @dragleave="onDragLeave"
                 @dragend="onDragEnd"
                 @drop="onDrop">
-                <FontAwesomeIcon size="2x" icon="fa-link" class="paired-action-icon" :class="{ dragging: dragging }" />
+                <FontAwesomeIcon size="2x" icon="fa-link" class="paired-action-icon" :class="{ dragging: dragging, 'active-target': isUnpairedTarget, 'fa-beat': isUnpairedTarget }" />
             </div>
             <div class="text-container">
                 <div><span class="direction">UNPAIRED</span></div>
@@ -138,6 +147,11 @@ export default defineComponent({
 .paired-datasets-cell .dragging {
     color: $brand-primary;
 }
+
+.paired-datasets-cell .active-target {
+    color: $brand-primary;
+}
+
 
 .paired-datasets-cell .drop-target {
     color: $brand-success;
