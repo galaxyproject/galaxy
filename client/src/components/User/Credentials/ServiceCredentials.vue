@@ -34,6 +34,10 @@ const isAddingNewSet = ref(false);
 
 const newSetName = ref<string>("");
 
+const hasNameConflict = computed<boolean>(() => {
+    return newSetName.value.trim() !== "" && availableSets.value.some((set) => set.name === newSetName.value);
+});
+
 const serviceName = computed<string>(() => props.credentialDefinition.label || props.credentialDefinition.name);
 
 const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
@@ -168,6 +172,10 @@ function onDeleteSet() {
                     <BButton variant="outline-danger" size="sm" title="Cancel" @click="onCancelAddingNewSet">
                         Cancel
                     </BButton>
+
+                    <span v-if="hasNameConflict" class="text-danger">
+                        This name is already in use. Please choose another.
+                    </span>
                 </div>
             </div>
             <form v-else autocomplete="off" class="credentials-form">
