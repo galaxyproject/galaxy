@@ -34,6 +34,8 @@ const isAddingNewSet = ref(false);
 
 const newSetName = ref<string>("");
 
+const serviceName = computed<string>(() => props.credentialDefinition.label || props.credentialDefinition.name);
+
 const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
 
 const canCreateNewSet = computed<boolean>(
@@ -136,7 +138,7 @@ function onDeleteSet() {
                 <span>
                     <FontAwesomeIcon v-if="!isExpanded" :icon="faCaretRight" />
                     <FontAwesomeIcon v-else :icon="faCaretRight" rotation="90" />
-                    {{ credentialDefinition.label || credentialDefinition.name }}
+                    {{ serviceName }}
                 </span>
 
                 <span class="text-muted selected-set-info">
@@ -152,9 +154,8 @@ function onDeleteSet() {
                     type="text"
                     title="New set name"
                     :optional="false"
-                    :help="`Enter a name for the new set of credentials for ${
-                        credentialDefinition.label || credentialDefinition.name
-                    }`" />
+                    :help="`Enter a name for the new set of credentials for ${serviceName}`" />
+
                 <div>
                     <BButton
                         variant="outline-info"
@@ -182,7 +183,7 @@ function onDeleteSet() {
                             :track-by="`name`"
                             :allow-empty="false"
                             :show-labels="false"
-                            :placeholder="`Select ${credentialDefinition.label || credentialDefinition.name} set`"
+                            :placeholder="`Select ${serviceName} set`"
                             @input="onCurrentSetChange" />
                     </BFormGroup>
 
