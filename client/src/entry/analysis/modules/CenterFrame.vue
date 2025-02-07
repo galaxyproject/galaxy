@@ -78,10 +78,11 @@ function onLoad(ev: Event) {
     <div class="h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
-            <p v-if="isAdmin && sanitizedToolId">
+            <span v-if="isAdmin && sanitizedToolId">
+                <br />
                 <router-link data-description="allowlist link" to="/admin/sanitize_allow">Review Allowlist</router-link>
                 if outputs of {{ sanitizedToolId }} are trusted and should be shown as HTML.
-            </p>
+            </span>
         </Alert>
         <LoadingSpan v-if="isLoading">Loading ...</LoadingSpan>
         <iframe
