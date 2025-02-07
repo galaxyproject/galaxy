@@ -5753,7 +5753,13 @@
 
 :Description:
     Install tool dependencies when installing tools from the Tool
-    Shed.
+    Shed. These are the software packages and libraries required for a
+    tool to function properly. Tool dependencies are typically
+    specified in the tool's XML configuration using <requirement>
+    tags. Galaxy can automatically install these dependencies if the
+    tool_dependency_dir is properly configured in the galaxy.yml file.
+    This option should be set to false if containerized versions of
+    tools are used.
 :Default: ``true``
 :Type: bool
 
@@ -5764,7 +5770,11 @@
 
 :Description:
     Install repository dependencies when installing tools from the
-    Tool Shed.
+    Tool Shed. These are other Tool Shed repositories that the tool
+    being installed depends on. Repository dependencies ensure that
+    all necessary components are installed for the tool to work
+    correctly within the Galaxy environment. This option should be set
+    to false if containerized versions of tools are used.
 :Default: ``true``
 :Type: bool
 
@@ -5775,7 +5785,11 @@
 
 :Description:
     Install resolver dependencies when installing tools from the Tool
-    Shed.
+    Shed. These are mechanisms used by Galaxy to locate and make
+    available the required software packages for tools. Galaxy uses
+    dependency resolvers (e.g., Conda) to determine how to satisfy
+    tool requirements. This option should be set to false if
+    containerized versions of tools are used.
 :Default: ``true``
 :Type: bool
 
