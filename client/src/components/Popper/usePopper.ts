@@ -21,6 +21,12 @@ export function usePopper(
             visible.value = false;
         }
     };
+    const doCloseElement = (event: Event) => {
+        const target = event.target as Element;
+        if (target && target.closest(".popper-close")) {
+            doClose();
+        }
+    };
     const doCloseEscape = (event: Event) => {
         const keyboardEvent = event as KeyboardEvent;
         if (keyboardEvent.key === "Escape") {
@@ -50,6 +56,7 @@ export function usePopper(
         const trigger = options.trigger ?? defaultTrigger;
         if (trigger === "click") {
             addEventListener(reference.value, "click", doOpen);
+            addEventListener(popper.value, "click", doCloseElement);
             addEventListener(document, "click", doCloseDocument);
             addEventListener(document, "keydown", doCloseEscape);
         } else if (trigger === "hover") {

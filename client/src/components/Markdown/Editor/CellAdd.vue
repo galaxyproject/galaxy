@@ -12,7 +12,7 @@
                         <span class="d-flex justify-content-between">
                             <small class="my-1 mx-3 text-info">{{ category.name }}</small>
                         </span>
-                        <div v-if="category.templates.length > 0" class="cell-add-options">
+                        <div v-if="category.templates.length > 0" class="cell-add-options popper-close">
                             <CellOption
                                 v-for="(option, optionIndex) of category.templates"
                                 :key="optionIndex"
