@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+-------------------
+24.2.0 (2025-02-06)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+
+============
+Enhancements
+============
+
+* Implement Declarative Testing for Workflow Behaviors by `@jmchilton <https://github.com/jmchilton>`_ in `#18542 <https://github.com/galaxyproject/galaxy/pull/18542>`_
+* Allow a posix file source to prefer linking. by `@jmchilton <https://github.com/jmchilton>`_ in `#19132 <https://github.com/galaxyproject/galaxy/pull/19132>`_
 
 -------------------
 24.1.4 (2024-12-11)

@@ -3,11 +3,33 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+-------------------
+24.2.0 (2025-02-06)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+* Fix transiently failing selenium tooltip issues by `@jmchilton <https://github.com/jmchilton>`_ in `#18847 <https://github.com/galaxyproject/galaxy/pull/18847>`_
+* release testing - UI tests for new workflow parameters by `@jmchilton <https://github.com/jmchilton>`_ in `#19182 <https://github.com/galaxyproject/galaxy/pull/19182>`_
+
+============
+Enhancements
+============
+
+* Masthead Revision by `@guerler <https://github.com/guerler>`_ in `#17927 <https://github.com/galaxyproject/galaxy/pull/17927>`_
+* Moves Libraries from Masthead to Activity Bar by `@guerler <https://github.com/guerler>`_ in `#18468 <https://github.com/galaxyproject/galaxy/pull/18468>`_
+* Replace History Dataset Picker in Library Folder by `@itisAliRH <https://github.com/itisAliRH>`_ in `#18518 <https://github.com/galaxyproject/galaxy/pull/18518>`_
+* Workflow Invocation view improvements by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18615 <https://github.com/galaxyproject/galaxy/pull/18615>`_
+* Guide users to collection builders by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18857 <https://github.com/galaxyproject/galaxy/pull/18857>`_
+* Workflow license and creator edit keyboard access by `@itisAliRH <https://github.com/itisAliRH>`_ in `#18936 <https://github.com/galaxyproject/galaxy/pull/18936>`_
+* Workflow landing improvements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18979 <https://github.com/galaxyproject/galaxy/pull/18979>`_
+* Backport of Workflow Editor Activity Bar by `@dannon <https://github.com/dannon>`_ in `#19212 <https://github.com/galaxyproject/galaxy/pull/19212>`_
+* Various list of pairs builder usability fixes. by `@jmchilton <https://github.com/jmchilton>`_ in `#19248 <https://github.com/galaxyproject/galaxy/pull/19248>`_
+* Workflow Inputs Activity by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#19252 <https://github.com/galaxyproject/galaxy/pull/19252>`_
 
 -------------------
 24.1.4 (2024-12-11)

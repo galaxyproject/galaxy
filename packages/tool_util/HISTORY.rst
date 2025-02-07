@@ -3,11 +3,80 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+-------------------
+24.2.0 (2025-02-06)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix some deprecations by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18433 <https://github.com/galaxyproject/galaxy/pull/18433>`_
+* Fix handling of v2 hashes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18522 <https://github.com/galaxyproject/galaxy/pull/18522>`_
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+* Handle output parsing when tool is not available for tool-centric API. by `@jmchilton <https://github.com/jmchilton>`_ in `#18643 <https://github.com/galaxyproject/galaxy/pull/18643>`_
+* Fix new flake8-bugbear B039 and mypy type-var errors by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18755 <https://github.com/galaxyproject/galaxy/pull/18755>`_
+* Fix commas that shouldn't be in biotools_mappings.tsv by `@jmchilton <https://github.com/jmchilton>`_ in `#18919 <https://github.com/galaxyproject/galaxy/pull/18919>`_
+* Allow modes `z` and `Z` for docker volumes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18998 <https://github.com/galaxyproject/galaxy/pull/18998>`_
+* Add requirement/resource to schema docs by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19172 <https://github.com/galaxyproject/galaxy/pull/19172>`_
+* Fix mulled_hash by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19199 <https://github.com/galaxyproject/galaxy/pull/19199>`_
+* Outputs filter linter fixes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19208 <https://github.com/galaxyproject/galaxy/pull/19208>`_
+* Replace mambaforge Docker image with miniforge3 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19327 <https://github.com/galaxyproject/galaxy/pull/19327>`_
+* Partial backport of #19331 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19342 <https://github.com/galaxyproject/galaxy/pull/19342>`_
+* Backport fix for ``test_singularity_container_test`` test by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19349 <https://github.com/galaxyproject/galaxy/pull/19349>`_
+* Remove unnecessary quoting in conda package specification by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19382 <https://github.com/galaxyproject/galaxy/pull/19382>`_
+* Fix timeout handling for planemo / galaxy-tool-util by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19384 <https://github.com/galaxyproject/galaxy/pull/19384>`_
+* Fix for empty string in regex validator message. by `@jmchilton <https://github.com/jmchilton>`_ in `#19387 <https://github.com/galaxyproject/galaxy/pull/19387>`_
+* `mulled-build-tool` fix for packages wo version by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19450 <https://github.com/galaxyproject/galaxy/pull/19450>`_
+* Fix parsing of validators with inf limits by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19459 <https://github.com/galaxyproject/galaxy/pull/19459>`_
+* Remove print statement by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19469 <https://github.com/galaxyproject/galaxy/pull/19469>`_
+* Downgrade 'InteractiveTools are not enabled' to warning by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19518 <https://github.com/galaxyproject/galaxy/pull/19518>`_
+
+============
+Enhancements
+============
+
+* Add linters for datatypes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17600 <https://github.com/galaxyproject/galaxy/pull/17600>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18406 <https://github.com/galaxyproject/galaxy/pull/18406>`_
+* Stray small changes from structured_tool_state branch. by `@jmchilton <https://github.com/jmchilton>`_ in `#18453 <https://github.com/galaxyproject/galaxy/pull/18453>`_
+* Add Tool-Centric APIs to the Tool Shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18524 <https://github.com/galaxyproject/galaxy/pull/18524>`_
+* Mixed enhancements from CWL branch by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18539 <https://github.com/galaxyproject/galaxy/pull/18539>`_
+* Implement Declarative Testing for Workflow Behaviors by `@jmchilton <https://github.com/jmchilton>`_ in `#18542 <https://github.com/galaxyproject/galaxy/pull/18542>`_
+* Improvements to Tool Test Parsing by `@jmchilton <https://github.com/jmchilton>`_ in `#18560 <https://github.com/galaxyproject/galaxy/pull/18560>`_
+* More tool test typing. by `@jmchilton <https://github.com/jmchilton>`_ in `#18590 <https://github.com/galaxyproject/galaxy/pull/18590>`_
+* Parameter Model Improvements by `@jmchilton <https://github.com/jmchilton>`_ in `#18641 <https://github.com/galaxyproject/galaxy/pull/18641>`_
+* Another round of parameter model improvements. by `@jmchilton <https://github.com/jmchilton>`_ in `#18673 <https://github.com/galaxyproject/galaxy/pull/18673>`_
+* De-couple XML from tool interface for test collections. by `@jmchilton <https://github.com/jmchilton>`_ in `#18676 <https://github.com/galaxyproject/galaxy/pull/18676>`_
+* Another round of parameter model enhancements and tool tests by `@jmchilton <https://github.com/jmchilton>`_ in `#18678 <https://github.com/galaxyproject/galaxy/pull/18678>`_
+* Dynamic Models for Tool Test Validation by `@jmchilton <https://github.com/jmchilton>`_ in `#18679 <https://github.com/galaxyproject/galaxy/pull/18679>`_
+* Improvements to help terms & tool help. by `@jmchilton <https://github.com/jmchilton>`_ in `#18722 <https://github.com/galaxyproject/galaxy/pull/18722>`_
+* Implement tool upgrade assistant. by `@jmchilton <https://github.com/jmchilton>`_ in `#18728 <https://github.com/galaxyproject/galaxy/pull/18728>`_
+* Improvements to parameter models for test case inputs by `@jmchilton <https://github.com/jmchilton>`_ in `#18743 <https://github.com/galaxyproject/galaxy/pull/18743>`_
+* Remove `defaults` channel for conda usage by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18757 <https://github.com/galaxyproject/galaxy/pull/18757>`_
+* Modelling for Test Assertions by `@jmchilton <https://github.com/jmchilton>`_ in `#18787 <https://github.com/galaxyproject/galaxy/pull/18787>`_
+* Workflow Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#18807 <https://github.com/galaxyproject/galaxy/pull/18807>`_
+* Add docs on indexing for filter column by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18844 <https://github.com/galaxyproject/galaxy/pull/18844>`_
+* Implement Pydantic model for workflow test format.  by `@jmchilton <https://github.com/jmchilton>`_ in `#18884 <https://github.com/galaxyproject/galaxy/pull/18884>`_
+* Improvements to Planemo test format based on feedback/discussions. by `@jmchilton <https://github.com/jmchilton>`_ in `#18889 <https://github.com/galaxyproject/galaxy/pull/18889>`_
+* Add support for arbitrarily ordered image axes in image content assertions by `@kostrykin <https://github.com/kostrykin>`_ in `#18891 <https://github.com/galaxyproject/galaxy/pull/18891>`_
+* Remove some unused dynamic drill down options. by `@jmchilton <https://github.com/jmchilton>`_ in `#18892 <https://github.com/galaxyproject/galaxy/pull/18892>`_
+* Type annotations and fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18911 <https://github.com/galaxyproject/galaxy/pull/18911>`_
+* Add filter null collection operation tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18928 <https://github.com/galaxyproject/galaxy/pull/18928>`_
+* Assert that `data_column` parameters have a valid `data_ref` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18949 <https://github.com/galaxyproject/galaxy/pull/18949>`_
+* More concise, readable tool execution testing. by `@jmchilton <https://github.com/jmchilton>`_ in `#18977 <https://github.com/galaxyproject/galaxy/pull/18977>`_
+* Workflow landing improvements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18979 <https://github.com/galaxyproject/galaxy/pull/18979>`_
+* Add hint to the tool schema about runtime conditional changes by `@martenson <https://github.com/martenson>`_ in `#18996 <https://github.com/galaxyproject/galaxy/pull/18996>`_
+* A variety of improvements around tool parameter modeling (second try) by `@jmchilton <https://github.com/jmchilton>`_ in `#19027 <https://github.com/galaxyproject/galaxy/pull/19027>`_
+* Better logging around tool loading by `@jmchilton <https://github.com/jmchilton>`_ in `#19029 <https://github.com/galaxyproject/galaxy/pull/19029>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#19031 <https://github.com/galaxyproject/galaxy/pull/19031>`_
+* Integrate Tool Parameter Modeling into Linting (for Planemo) by `@jmchilton <https://github.com/jmchilton>`_ in `#19073 <https://github.com/galaxyproject/galaxy/pull/19073>`_
+* Allow deferred datasets to behave as URIs by `@davelopez <https://github.com/davelopez>`_ in `#19077 <https://github.com/galaxyproject/galaxy/pull/19077>`_
+* Implement workflow parameter validators. by `@jmchilton <https://github.com/jmchilton>`_ in `#19092 <https://github.com/galaxyproject/galaxy/pull/19092>`_
+* Enable specifying dataset hash in test jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19113 <https://github.com/galaxyproject/galaxy/pull/19113>`_
+* Add linter to check validity of output filters by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19114 <https://github.com/galaxyproject/galaxy/pull/19114>`_
+* Also use miniforge docker for container building by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19128 <https://github.com/galaxyproject/galaxy/pull/19128>`_
+* Fix default value handling for parameters connected to required parameters by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19219 <https://github.com/galaxyproject/galaxy/pull/19219>`_
 
 -------------------
 24.1.4 (2024-12-11)
