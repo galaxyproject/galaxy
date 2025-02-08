@@ -15,10 +15,6 @@
             :content="content"
             @change="$emit('change', $event)" />
         <b-alert v-else variant="warning" show> Data cannot be linked to this cell type. </b-alert>
-        <div class="d-flex justify-content-end">
-            <BButton variant="outline-primary" class="mr-2" @click="$emit('cancel')">Cancel</BButton>
-            <BButton variant="outline-primary">OK</BButton>
-        </div>
     </div>
 </template>
 
