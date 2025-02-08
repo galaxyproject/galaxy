@@ -45,6 +45,7 @@
     "@types/jest": "^29.5.12",
     "@vueuse/core": "^10.5.0",
     "@vueuse/math": "^10.9.0",
+    "ace-builds": "^1.37.5",
     "assert": "^2.1.0",
     "axios": "^1.6.2",
     "babel-runtime": "^6.26.0",
