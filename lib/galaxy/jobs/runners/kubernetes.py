@@ -286,7 +286,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 except Exception:
                     log.warning(
                         'param %s passed to Kubernetes runner needs to be an integer or the strings "$uid" or "$gid". Value %s is invalid',
-                        param_name, substitutable_user_group_id,
+                        param_name,
+                        substitutable_user_group_id,
                     )
                     return None
         return None
