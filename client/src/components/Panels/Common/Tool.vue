@@ -8,7 +8,7 @@
             v-else
             :class="targetClass"
             :data-tool-id="tool.id"
-            :href="tool.link"
+            :href="href"
             :target="tool.target"
             :title="tool.help"
             @click="onClick">
@@ -69,6 +69,13 @@ export default {
                 return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer`;
             } else {
                 return `title-link cursor-pointer`;
+            }
+        },
+        href() {
+            if (this.tool.model_class === "DataSourceTool") {
+                return `/tool_runner/data_source_redirect?tool_id=${encodeURIComponent(this.tool.id)}`;
+            } else {
+                return `/?tool_id=${encodeURIComponent(this.tool.id)}&version=latest`;
             }
         },
     },
