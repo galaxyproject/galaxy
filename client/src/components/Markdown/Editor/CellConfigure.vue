@@ -10,7 +10,10 @@
             </BButton>
         </div>
         <ConfigureGalaxy v-if="name === 'galaxy'" :content="content" @change="$emit('change', $event)" />
-        <ConfigureGalaxy v-else-if="name === 'visualization'" :content="content" @change="$emit('change', $event)" />
+        <ConfigureVisualization
+            v-else-if="name === 'visualization'"
+            :content="content"
+            @change="$emit('change', $event)" />
         <b-alert v-else variant="warning" show> Data cannot be linked to this cell type. </b-alert>
         <div class="d-flex justify-content-end">
             <BButton variant="outline-primary" class="mr-2" @click="$emit('cancel')">Cancel</BButton>
@@ -24,6 +27,7 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ConfigureGalaxy from "./configurations/ConfigureGalaxy.vue";
+import ConfigureVisualization from "./configurations/ConfigureVisualization.vue";
 
 defineProps<{
     name: string;
