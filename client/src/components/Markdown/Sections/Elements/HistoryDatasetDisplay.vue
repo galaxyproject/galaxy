@@ -51,30 +51,29 @@
                 </span>
                 <span>
                     <span>Dataset:</span>
-                    <span class="font-weight-light">{{ metaData.name }}</span>
+                    <span class="font-weight-light">{{ metaData?.name }}</span>
                 </span>
             </b-card-header>
             <b-card-body>
-                <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
-                    <UrlDataProvider v-slot="{ result: datatypesModel, loading: datatypesLoading }" :url="datatypesUrl">
-                        <LoadingSpan v-if="loading" message="Loading Dataset" />
-                        <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
-                        <div v-else-if="error">{{ error }}</div>
-                        <div v-else :class="contentClass">
-                            <b-embed
-                                v-if="isSubTypeOfAny(metaData.ext, ['pdf', 'html'], datatypesModel)"
-                                type="iframe"
-                                aspect="16by9"
-                                :src="displayUrl" />
-                            <HistoryDatasetAsImage
-                                v-else-if="
-                                    isSubTypeOfAny(metaData.ext, ['galaxy.datatypes.images.Image'], datatypesModel)
-                                "
-                                :dataset-id="datasetId" />
-                            <div v-else-if="itemContent.item_data">
-                                <div v-if="isSubTypeOfAny(metaData.ext, ['tabular'], datatypesModel)">
-                                    <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-                                    <div v-else-if="metaError">{{ metaError }}</div>
+                <UrlDataProvider v-slot="{ result: itemContent, loading: datasetLoading, error }" :url="itemUrl">
+                    <LoadingSpan v-if="datasetLoading" message="Loading Dataset" />
+                    <LoadingSpan v-else-if="datatypesMapperStore.loading" message="Loading Datatypes" />
+                    <div v-else-if="error">{{ error }}</div>
+                    <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
+                    <div v-else :class="contentClass(metaData?.ext)">
+                        <b-embed
+                            v-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['pdf', 'html'])"
+                            type="iframe"
+                            aspect="16by9"
+                            :src="displayUrl" />
+                        <HistoryDatasetAsImage
+                            v-else-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['galaxy.datatypes.images.Image'])"
+                            :args="args" />
+                        <div v-else-if="itemContent.item_data">
+                            <div v-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['tabular'])">
+                                <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                                <div v-else-if="metaError">{{ metaError }}</div>
+                                <div v-else>
                                     <b-table
                                         id="tabular-dataset-table"
                                         sticky-header
@@ -85,15 +84,21 @@
                                         :current-page="currentPage"
                                         :fields="getFields(metaData)"
                                         :items="getItems(itemContent.item_data, metaData)" />
+                                    <b-pagination
+                                        v-model="currentPage"
+                                        align="center"
+                                        :total-rows="getItems(itemContent.item_data, metaData).length"
+                                        :per-page="perPage"
+                                        aria-controls="tabular-dataset-table" />
                                 </div>
-                                <pre v-else>
-                                    <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
-                                </pre>
                             </div>
-                            <div v-else>No content found.</div>
-                            <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                            <pre v-else>
+                                <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
+                            </pre>
                         </div>
-                    </UrlDataProvider>
+                        <div v-else>No content found.</div>
+                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                    </div>
                 </UrlDataProvider>
             </b-card-body>
         </b-card>
@@ -101,41 +106,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+// Props
 const props = defineProps<{
     datasetId: string;
     embedded?: boolean;
 }>();
 
+// Reactive state
+const currentPage = ref(1);
 const expanded = ref(false);
+const perPage = ref(100);
 
-const contentClass = computed(() => (expanded.value ? "embedded-dataset-expanded" : "embedded-dataset"));
+// Store
+const datatypesMapperStore = useDatatypesMapperStore();
+const { datatypesMapper } = datatypesMapperStore;
 
-const datatypesUrl = computed(() => "/api/datatypes/types_and_mapping");
+// Computed
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
 const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
 const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
 const itemUrl = computed(() => `/api/datasets/${props.datasetId}/get_content_as_text`);
 const metaUrl = computed(() => `/api/datasets/${props.datasetId}`);
 
-function onExpand() {
-    expanded.value = !expanded.value;
-}
+// Methods
+const contentClass = (datasetType: string) => {
+    if (datatypesMapper?.isSubTypeOfAny(datasetType, ["tabular"])) {
+        return "";
+    }
+    return expanded.value ? "embedded-dataset-expanded" : "embedded-dataset";
+};
 
-function isSubTypeOfAny(child: string, parents: string[], datatypesModel: any) {
-    const datatypesMapper = new DatatypesMapperModel(datatypesModel);
-    return datatypesMapper.isSubTypeOfAny(child, parents);
-}
-
-function getFields(metaData: any) {
+const getFields = (metaData: any) => {
     const fields = [];
     const columnNames = metaData.metadata_column_names || [];
     const columnCount = metaData.metadata_columns;
@@ -147,10 +157,10 @@ function getFields(metaData: any) {
         });
     }
     return fields;
-}
+};
 
-function getItems(textData: string, metaData: any) {
-    const tableData: any = [];
+const getItems = (textData: string, metaData: any) => {
+    const tableData: any[] = [];
     const delimiter = metaData.metadata_delimiter || "\t";
     const comments = metaData.metadata_comment_lines || 0;
     const lines = textData.split("\n");
@@ -172,16 +182,14 @@ function getItems(textData: string, metaData: any) {
         }
     });
     return tableData;
-}
-</script>
+};
 
-<style scoped>
-.embedded-dataset {
-    max-height: 20rem;
-    overflow-y: auto;
-}
-.embedded-dataset-expanded {
-    max-height: 40rem;
-    overflow-y: auto;
-}
-</style>
+const onExpand = () => {
+    expanded.value = !expanded.value;
+};
+
+// Lifecycle hooks
+onMounted(() => {
+    datatypesMapperStore.createMapper();
+});
+</script>
