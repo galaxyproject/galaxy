@@ -216,16 +216,25 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 url = trans.app.config.organization_url
                 rval = self.handle_instance_organization_link(line, title, url)
             elif container == "invocation_inputs":
-                rval = self.handle_invocation_inputs(line, title, url)
+                if object_id is not None:
+                    invocation = workflow_manager.get_invocation(
+                        trans, object_id, check_ownership=False, check_accessible=True
+                    )
+                    rval = self.handle_invocation_inputs(line, invocation)
             elif container == "invocation_outputs":
-                rval = self.handle_invocation_outputs(line, title, url)
+                if object_id is not None:
+                    invocation = workflow_manager.get_invocation(
+                        trans, object_id, check_ownership=False, check_accessible=True
+                    )
+                    rval = self.handle_invocation_outputs(line, invocation)
             elif container == "invocation_time":
-                invocation = workflow_manager.get_invocation(
-                    trans, object_id, check_ownership=False, check_accessible=True
-                )
-                rval = self.handle_invocation_time(line, invocation)
+                if object_id is not None:
+                    invocation = workflow_manager.get_invocation(
+                        trans, object_id, check_ownership=False, check_accessible=True
+                    )
+                    rval = self.handle_invocation_time(line, invocation)
             elif container == "visualization":
-                rval = self.handle_visualization(line, title, url)
+                rval = self.handle_visualization(line)
             else:
                 raise MalformedContents(f"Unknown Galaxy Markdown directive encountered [{container}].")
             if rval is not None:
@@ -357,19 +366,19 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_invocation_time(self, line, date):
+    def handle_invocation_time(self, line, invocation):
         pass
 
     @abc.abstractmethod
-    def handle_invocation_inputs(self, line, date):
+    def handle_invocation_inputs(self, line, invocation):
         pass
 
     @abc.abstractmethod
-    def handle_invocation_outputs(self, line, date):
+    def handle_invocation_outputs(self, line, invocation):
         pass
 
     @abc.abstractmethod
-    def handle_visualization(self, line, date):
+    def handle_visualization(self, line):
         pass
 
     @abc.abstractmethod
@@ -481,13 +490,13 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
             "%Y-%m-%d, %H:%M:%S"
         )
 
-    def handle_invocation_inputs(self, line, date):
+    def handle_invocation_inputs(self, line, invocation):
         pass
 
-    def handle_invocation_outputs(self, line, date):
+    def handle_invocation_outputs(self, line, invocation):
         pass
 
-    def handle_visualization(self, line, date):
+    def handle_visualization(self, line):
         pass
 
     def handle_dataset_type(self, line, hda):
@@ -751,13 +760,13 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
         return (content, True)
 
-    def handle_invocation_inputs(self, line, date):
+    def handle_invocation_inputs(self, line, invocation):
         return ("*Invocation inputs not implemented*", True)
 
-    def handle_invocation_outputs(self, line, date):
+    def handle_invocation_outputs(self, line, invocation):
         return ("*Invocation outputs not implemented*", True)
 
-    def handle_visualization(self, line, date):
+    def handle_visualization(self, line):
         return ("*Visualization inputs not implemented*", True)
 
     def handle_dataset_name(self, line, hda):
