@@ -28,11 +28,11 @@ describe("parse.ts", () => {
             expect(sections.length).toBe(4);
             expect(sections[0].name).toBe("galaxy");
             expect(sections[0].content).toBe("job_metrics(job_id=THISFAKEID)");
-            expect(sections[1].name).toBe("default");
+            expect(sections[1].name).toBe("markdown");
             expect(sections[1].content).toBe("DEFAULT_CONTENT");
             expect(sections[2].name).toBe("special");
             expect(sections[2].content).toBe("SPECIAL_CONTENT");
-            expect(sections[3].name).toBe("default");
+            expect(sections[3].name).toBe("markdown");
             expect(sections[3].content).toBe("MORE_DEFAULT_CONTENT");
         });
     });
