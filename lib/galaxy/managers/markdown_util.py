@@ -921,7 +921,7 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
         input_match = re.search(INPUT_LABEL_PATTERN, line)
         step_match = re.search(STEP_LABEL_PATTERN, line)
         target_match = input_match or output_match or step_match
-        if (target_match):
+        if target_match:
             line = line.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
 
         return (line, False)
