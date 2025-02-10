@@ -1,6 +1,7 @@
 <template>
     <div>
-        <div v-if="isConfigLoaded">
+        <div class="ui-form-header-underlay sticky-top" />
+        <div v-if="isConfigLoaded" class="sticky-top">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history
@@ -12,7 +13,7 @@
                 :run-disabled="hasValidationErrors || !canRunOnHistory"
                 :run-waiting="waitingForRequest"
                 @on-execute="onExecute">
-                <template v-slot:workflow-run-actions>
+                <template v-slot:workflow-title-actions>
                     <b-dropdown
                         v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"

@@ -154,7 +154,6 @@ describe("CreateForm", () => {
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
         const errorEl = wrapper.find("[data-description='object-store-creation-error']");
-        console.log(wrapper.html());
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("Error creating this");
     });

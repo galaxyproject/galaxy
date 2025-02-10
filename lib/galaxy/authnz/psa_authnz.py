@@ -25,7 +25,6 @@ from galaxy.model import (
     PSAPartial,
     UserAuthnzToken,
 )
-from galaxy.model.base import transaction
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
@@ -177,7 +176,11 @@ class PSAAuthnz(IdentityProvider):
         user_authnz_token.set_extra_data(extra_data)
 
     def refresh(self, trans, user_authnz_token):
-        if not user_authnz_token or not user_authnz_token.extra_data:
+        if (
+            not user_authnz_token
+            or not user_authnz_token.extra_data
+            or "refresh_token" not in user_authnz_token.extra_data
+        ):
             return False
         # refresh tokens if they reached their half lifetime
         if "expires" in user_authnz_token.extra_data:
@@ -494,5 +497,4 @@ def disconnect(
     sa_session.delete(user_authnz)
     # option B
     # user_authnz.extra_data = None
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()

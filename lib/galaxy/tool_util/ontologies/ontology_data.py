@@ -27,7 +27,7 @@ def _multi_dict_mapping(content: str) -> Dict[str, List[str]]:
 
 
 def _read_ontology_data_text(filename: str) -> str:
-    return resource_string(__package__, filename)
+    return resource_string(__name__, filename)
 
 
 BIOTOOLS_MAPPING_FILENAME = "biotools_mappings.tsv"

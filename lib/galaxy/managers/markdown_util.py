@@ -94,7 +94,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         if id_match := re.search(ENCODED_ID_PATTERN, line):
             object_id = id_match.group(2)
             decoded_id = trans.security.decode_id(object_id)
-            line = line.replace(id_match.group(), "%s=%d" % (id_match.group(1), decoded_id))
+            line = line.replace(id_match.group(), f"{id_match.group(1)}={decoded_id}")
         return (line, False)
 
     internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
@@ -594,7 +594,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         workflow = stored_workflow.get_internal_version(workflow_version)
         for order_index, step in enumerate(workflow.steps):
             annotation = get_item_annotation_str(self.trans.sa_session, self.trans.user, step) or ""
-            markdown += "|{}|{}|\n".format(step.label or "Step %d" % (order_index + 1), annotation)
+            markdown += "|{}|{}|\n".format(step.label or f"Step {order_index + 1}", annotation)
         markdown += "\n---\n"
         return (markdown, True)
 
@@ -767,7 +767,7 @@ def to_pdf_raw(basic_markdown: str, css_paths: Optional[List[str]] = None) -> by
         output_file.write(as_html)
         output_file.close()
         html = weasyprint.HTML(filename=index)
-        stylesheets = [weasyprint.CSS(string=resource_string(__package__, "markdown_export_base.css"))]
+        stylesheets = [weasyprint.CSS(string=resource_string(__name__, "markdown_export_base.css"))]
         for css_path in css_paths:
             with open(css_path) as f:
                 css_content = f.read()

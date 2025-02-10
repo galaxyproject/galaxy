@@ -4,10 +4,10 @@
   description: Setup access to a private AWS bucket using a secret access key.
   configuration:
     type: s3fs
-    bucket: "{{ bucket }}"
-    writable: "{{ writable }}"
-    secret: "{{ secret_key }}"
-    key: "{{ access_key }}"
+    bucket: "{{ variables.bucket }}"
+    writable: "{{ variables.writable }}"
+    secret: "{{ secrets.secret_key }}"
+    key: "{{ variables.access_key }}"
   variables:
     access_key:
       label: Access Key ID

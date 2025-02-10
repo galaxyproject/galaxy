@@ -4,10 +4,29 @@ History
 .. to_doc
 
 ---------
-24.2.dev0
+25.0.dev0
 ---------
 
 
+
+-------------------
+24.2.0 (2025-02-06)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Add Tool-Centric APIs to the Tool Shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18524 <https://github.com/galaxyproject/galaxy/pull/18524>`_
+* Rip repository_registry out of tool shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18647 <https://github.com/galaxyproject/galaxy/pull/18647>`_
+* Assert that `data_column` parameters have a valid `data_ref` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18949 <https://github.com/galaxyproject/galaxy/pull/18949>`_
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 24.1.3 (2024-10-25)

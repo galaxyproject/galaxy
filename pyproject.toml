@@ -30,6 +30,7 @@ dependencies = [
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
+    "cwl-utils>=0.13",
     "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
     "dictobj",
     "dnspython",
@@ -49,7 +50,7 @@ dependencies = [
     "h5grove>=1.2.1",
     "h5py",  # Python 3.8 support
     "h5py>=3.12 ; python_version>='3.9'",  # Python 3.13 support
-    "importlib-resources ; python_version<'3.9'",  # for importlib.{abc.Traversable,resources.{files, Package}}
+    "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
     "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",

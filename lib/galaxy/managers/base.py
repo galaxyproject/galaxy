@@ -55,10 +55,7 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -223,8 +220,7 @@ class ModelManager(Generic[U]):
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     # .... query foundation wrapper
@@ -493,8 +489,7 @@ class ModelManager(Generic[U]):
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def copy(self, item, **kwargs) -> U:
@@ -515,8 +510,7 @@ class ModelManager(Generic[U]):
         session = self.session()
         session.add(item)
         if flush:
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def associate(self, associate_with, item, foreign_key_name=None):
@@ -932,8 +926,7 @@ class ModelDeserializer(HasAModelManager[T]):
         # TODO:?? add and flush here or in manager?
         if flush and len(new_dict):
             sa_session.add(item)
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
 
         return new_dict
 

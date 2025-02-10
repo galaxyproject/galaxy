@@ -25,6 +25,7 @@ import {
     InputParameterTerminal,
     InputTerminal,
     InvalidOutputTerminal,
+    NO_COLLECTION_TYPE_INFORMATION_MESSAGE,
     OutputCollectionTerminal,
     OutputParameterTerminal,
     OutputTerminal,
@@ -41,6 +42,7 @@ function useStores(id = "mock-workflow") {
     const undoRedoStore = useUndoRedoStore(id);
 
     return {
+        workflowId: id,
         connectionStore,
         stateStore,
         stepStore,
@@ -49,6 +51,17 @@ function useStores(id = "mock-workflow") {
         undoRedoStore,
     };
 }
+
+// Suppress debug messages about node configurations, we're testing esoteric things here -
+// we might want these messages at runtime to help debug complex things but we don't need it
+// during unit testing.
+jest.spyOn(console, "debug").mockImplementation(
+    jest.fn((msg) => {
+        if (msg != NO_COLLECTION_TYPE_INFORMATION_MESSAGE) {
+            console.debug(msg);
+        }
+    })
+);
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};

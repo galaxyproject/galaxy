@@ -4,10 +4,27 @@ History
 .. to_doc
 
 ---------
-24.2.dev0
+25.0.dev0
 ---------
 
 
+
+-------------------
+24.2.0 (2025-02-06)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Record container id and type in core job metrics by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18579 <https://github.com/galaxyproject/galaxy/pull/18579>`_
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 24.1.3 (2024-10-25)

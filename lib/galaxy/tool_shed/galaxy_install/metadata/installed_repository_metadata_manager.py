@@ -9,7 +9,6 @@ from typing import (
 from sqlalchemy import false
 
 from galaxy import util
-from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
@@ -30,7 +29,6 @@ log = logging.getLogger(__name__)
 
 
 class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
-    app: InstallationTarget
 
     def __init__(
         self,
@@ -136,8 +134,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
 
                 session = self.app.install_model.context
                 session.add(self.repository)
-                with transaction(session):
-                    session.commit()
+                session.commit()
 
                 log.debug(f"Metadata has been reset on repository {self.repository.name}.")
             else:
@@ -178,12 +175,12 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
                 except Exception:
                     log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
                     unsuccessful_count += 1
-            message = "Successfully reset metadata on %d %s.  " % (
+            message = "Successfully reset metadata on {} {}.  ".format(
                 successful_count,
                 inflector.cond_plural(successful_count, "repository"),
             )
             if unsuccessful_count:
-                message += "Error setting metadata on %d %s - see the galaxy log for details.  " % (
+                message += "Error setting metadata on {} {} - see the galaxy log for details.  ".format(
                     unsuccessful_count,
                     inflector.cond_plural(unsuccessful_count, "repository"),
                 )

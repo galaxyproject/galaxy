@@ -525,7 +525,7 @@ def recipe_cellar_path(cellar_path, recipe, version):
     if revision_paths:
         revisions = (int(x.rsplit("_", 1)[-1]) for x in revision_paths)
         max_revision = max(revisions)
-        recipe_path = "%s_%d" % (recipe_base_path, max_revision)
+        recipe_path = f"{recipe_base_path}_{max_revision}"
     else:
         recipe_path = recipe_base_path
     return recipe_path

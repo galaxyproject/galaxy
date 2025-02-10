@@ -13,6 +13,7 @@ export function useSelectMany({
     unselectedDisplayCount,
     selectedDisplayCount,
     caseSensitive,
+    maintainSelectionOrder,
 }) {
     // only start a single worker
     if (!worker) {
@@ -64,6 +65,7 @@ export function useSelectMany({
             unselectedDisplayCount: unselectedDisplayCount.value,
             selectedDisplayCount: selectedDisplayCount.value,
             caseSensitive: caseSensitive.value,
+            maintainSelectionOrder: maintainSelectionOrder.value,
         });
     });
 

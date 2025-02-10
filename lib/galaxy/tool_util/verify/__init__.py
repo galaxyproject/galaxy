@@ -270,12 +270,10 @@ def files_delta(file1, file2, attributes=None):
     s1 = os.path.getsize(file1)
     s2 = os.path.getsize(file2)
     if abs(s1 - s2) > delta:
-        raise AssertionError(
-            "Files %s=%db but %s=%db - compare by size (delta=%s) failed" % (file1, s1, file2, s2, delta)
-        )
+        raise AssertionError(f"Files {file1}={s1}b but {file2}={s2}b - compare by size (delta={delta}) failed")
     if delta_frac is not None and not (s1 - (s1 * delta_frac) <= s2 <= s1 + (s1 * delta_frac)):
         raise AssertionError(
-            "Files %s=%db but %s=%db - compare by size (delta_frac=%s) failed" % (file1, s1, file2, s2, delta_frac)
+            f"Files {file1}={s1}b but {file2}={s2}b - compare by size (delta_frac={delta_frac}) failed"
         )
 
 
@@ -365,8 +363,12 @@ def files_diff(file1, file2, attributes=None):
                         if not valid_diff:
                             invalid_diff_lines += 1
                 log.info(
-                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d"
-                    % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines)
+                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d",
+                    file1,
+                    file2,
+                    allowed_diff_count,
+                    diff_lines,
+                    invalid_diff_lines,
                 )
                 if invalid_diff_lines > allowed_diff_count:
                     # Print out diff_slice so we can see what failed
@@ -374,8 +376,11 @@ def files_diff(file1, file2, attributes=None):
                     raise AssertionError("".join(diff_slice))
             else:
                 log.info(
-                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d"
-                    % (file1, file2, allowed_diff_count, diff_lines)
+                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d",
+                    file1,
+                    file2,
+                    allowed_diff_count,
+                    diff_lines,
                 )
                 raise AssertionError("".join(diff_slice))
 
@@ -398,10 +403,9 @@ def files_re_match(file1, file2, attributes=None):
             history_data = fh.readlines()
         with open(file1, "rb") as fh:
             local_file = fh.readlines()
-    assert len(local_file) == len(history_data), (
-        "Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s"
-        % (len(local_file), len(history_data), join_char.join(history_data[:40]))
-    )
+    assert len(local_file) == len(
+        history_data
+    ), f"Data File and Regular Expression File contain a different number of lines ({len(local_file)} != {len(history_data)})\nHistory Data (first 40 lines):\n{join_char.join(history_data[:40])}"
     if attributes.get("sort", False):
         history_data.sort()
         local_file.sort()
@@ -416,7 +420,7 @@ def files_re_match(file1, file2, attributes=None):
             diffs.append(f"Regular Expression: {regex_line}, Data file: {data_line}\n")
     if line_diff_count > lines_diff:
         raise AssertionError(
-            "Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs))
+            "Regular expression did not match data file (allowed variants={}):\n{}".format(lines_diff, "".join(diffs))
         )
 
 

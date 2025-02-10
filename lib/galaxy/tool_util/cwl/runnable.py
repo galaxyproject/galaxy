@@ -5,7 +5,7 @@ from .parser import workflow_proxy
 from .util import guess_artifact_type
 
 
-def get_outputs(path):
+def get_outputs(path: str):
     tool_or_workflow = guess_artifact_type(path)
     if tool_or_workflow == "tool":
         tool_source = get_tool_source(path)

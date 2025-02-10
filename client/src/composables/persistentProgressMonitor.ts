@@ -1,7 +1,7 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
 import { computed, readonly, watch } from "vue";
 
-import { type TaskMonitor } from "./genericTaskMonitor";
+import type { StoredTaskStatus, TaskMonitor } from "./genericTaskMonitor";
 
 type TaskType = "task" | "short_term_storage";
 
@@ -71,7 +71,7 @@ export interface MonitoringRequest {
     remoteUri?: string;
 }
 
-export interface MonitoringData {
+export interface MonitoringData extends StoredTaskStatus {
     /**
      * The ID of the task or short-term storage request to monitor.
      */
@@ -92,13 +92,6 @@ export interface MonitoringData {
      * The time when the task was started.
      */
     startedAt: Date;
-
-    /**
-     * The status of the task when it was last checked.
-     * The meaning of the status string is up to the monitor implementation.
-     * In case of an error, this will be the error message.
-     */
-    status?: string;
 }
 
 /**
@@ -119,8 +112,9 @@ export function usePersistentProgressTaskMonitor(
         isRunning,
         isCompleted,
         hasFailed,
+        failureReason,
         requestHasFailed,
-        status,
+        taskStatus,
         expirationTime,
     } = useMonitor;
 
@@ -152,12 +146,25 @@ export function usePersistentProgressTaskMonitor(
     });
 
     watch(
-        status,
+        () => taskStatus.value,
         (newStatus) => {
             if (newStatus && currentMonitoringData.value) {
                 currentMonitoringData.value = {
                     ...currentMonitoringData.value,
-                    status: newStatus,
+                    taskStatus: newStatus,
+                };
+            }
+        },
+        { immediate: true }
+    );
+
+    watch(
+        () => failureReason.value,
+        (newReason) => {
+            if (newReason && currentMonitoringData.value) {
+                currentMonitoringData.value = {
+                    ...currentMonitoringData.value,
+                    failureReason: newReason,
                 };
             }
         },
@@ -173,10 +180,10 @@ export function usePersistentProgressTaskMonitor(
             throw new Error("No monitoring data provided or stored. Cannot start monitoring progress.");
         }
 
-        if (isFinalState(currentMonitoringData.value.status)) {
+        if (isFinalState(currentMonitoringData.value.taskStatus)) {
             // The task has already finished no need to start monitoring again.
             // Instead, reload the stored status to update the UI.
-            return loadStatus(currentMonitoringData.value.status!);
+            return loadStatus(currentMonitoringData.value);
         }
 
         if (hasExpired.value) {
@@ -221,6 +228,11 @@ export function usePersistentProgressTaskMonitor(
         hasFailed,
 
         /**
+         * The reason why the task has failed.
+         */
+        failureReason,
+
+        /**
          * If true, the status of the task cannot be determined because of a request error.
          */
         requestHasFailed,
@@ -238,9 +250,8 @@ export function usePersistentProgressTaskMonitor(
         /**
          * The current status of the task.
          * The meaning of the status string is up to the monitor implementation.
-         * In case of an error, this will be the error message.
          */
-        status,
+        status: taskStatus,
 
         /**
          * True if the monitoring data can expire.

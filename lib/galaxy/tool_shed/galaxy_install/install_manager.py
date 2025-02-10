@@ -15,7 +15,6 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.model.base import transaction
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
@@ -172,8 +171,7 @@ class InstallRepositoryManager:
 
         session = self.install_model.context
         session.add(tool_shed_repository)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         if "sample_files" in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get("sample_files", [])
@@ -565,8 +563,7 @@ class InstallRepositoryManager:
         tool_panel_section_mapping = tool_panel_section_mapping or {}
 
         session = self.app.install_model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section(tool_panel_section_key)
@@ -865,8 +862,7 @@ class InstallRepositoryManager:
 
         session = self.install_model.context
         session.add(tool_shed_repository)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
 
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):

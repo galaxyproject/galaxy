@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRoute } from "vue-router/composables";
 
 interface Props {
     title: string;
@@ -14,16 +13,11 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     goToAllTitle: undefined,
     href: undefined,
-    goToOnHref: true,
 });
-
-const route = useRoute();
 
 const emit = defineEmits(["goToAll"]);
 
-const hasGoToAll = computed(
-    () => props.goToAllTitle && props.href && (props.goToOnHref || (!props.goToOnHref && route.path !== props.href))
-);
+const hasGoToAll = computed(() => props.goToAllTitle && props.href);
 </script>
 
 <template>
@@ -32,7 +26,9 @@ const hasGoToAll = computed(
             <nav unselectable="on" class="activity-panel-header-top">
                 <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">{{ props.title }}</h2>
 
-                <slot name="header-buttons" />
+                <BButtonGroup>
+                    <slot name="header-buttons" />
+                </BButtonGroup>
             </nav>
 
             <slot name="header" class="activity-panel-header-description" />
@@ -83,18 +79,8 @@ const hasGoToAll = computed(
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        overflow-y: hidden;
-        button:first-child {
-            background: none;
-            border: none;
-            text-align: left;
-            transition: none;
-            width: 100%;
-            border-color: transparent;
-        }
-        button:first-child:hover {
-            background: $gray-200;
-        }
+        overflow-y: auto;
+        position: relative;
     }
 
     .activity-panel-footer {

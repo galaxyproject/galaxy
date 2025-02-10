@@ -218,9 +218,7 @@ export function upgradeForm(template: TemplateSummary, instance: Instance): Form
     }
     for (const secret of secrets) {
         const secretName = secret.name;
-        if (secretsSet.indexOf(secretName) >= 0) {
-            console.log("skipping...");
-        } else {
+        if (secretsSet.indexOf(secretName) < 0) {
             form.push(templateSecretFormEntry(secret));
         }
     }

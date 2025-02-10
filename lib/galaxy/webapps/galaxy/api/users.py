@@ -41,7 +41,6 @@ from galaxy.model import (
     UserObjectstoreUsage,
     UserQuotaUsage,
 )
-from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.schema import (
     AnonUserModel,
@@ -376,8 +375,7 @@ class FastAPIUsers:
         user = self.service.get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return payload
 
@@ -401,8 +399,7 @@ class FastAPIUsers:
                 del favorite_tools[favorite_tools.index(object_id)]
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             else:
                 raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
         return FavoriteObjectsSummary.model_validate(favorites)
@@ -433,8 +430,7 @@ class FastAPIUsers:
                 favorite_tools.append(tool_id)
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
@@ -450,8 +446,7 @@ class FastAPIUsers:
     ) -> str:
         user = self.service.get_user(trans, user_id)
         user.preferences["theme"] = theme
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return theme
 
     @router.put(
@@ -496,8 +491,7 @@ class FastAPIUsers:
                     trans.app.object_store.create(new_len.dataset)
                 except ObjectInvalid:
                     raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 counter = 0
                 lines_skipped = 0
                 with open(new_len.get_file_name(), "w") as f:
@@ -537,8 +531,7 @@ class FastAPIUsers:
                     raise exceptions.ToolExecutionError("Failed to convert dataset.")
             dbkeys[key] = build_dict
             user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
@@ -589,8 +582,7 @@ class FastAPIUsers:
         if key and key in dbkeys:
             del dbkeys[key]
             user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return DeletedCustomBuild(message=f"Deleted {key}.")
         else:
             raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
@@ -734,7 +726,7 @@ class FastAPIUsers:
     @router.get(
         "/api/users/{user_id}/roles",
         name="get user roles",
-        description="Return a collection of roles associated with this user. Only admins can see user roles.",
+        description="Return a list of roles associated with this user. Only admins can see user roles.",
         require_admin=True,
     )
     def get_user_roles(
@@ -832,7 +824,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "type": "text",
                     "label": "Email address",
                     "value": email,
-                    "help": "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.",
+                    "help": (
+                        "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it."
+                        if trans.app.config.user_activation_on
+                        else ""
+                    ),
                 }
             )
         if is_galaxy_app:
@@ -954,8 +950,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 user.email = email
                 trans.sa_session.add(user)
                 trans.sa_session.add(private_role)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
@@ -1044,8 +1039,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         trans.log_event("User information added")
         return {"message": "User information has been saved."}
 
@@ -1160,8 +1154,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         new_filters.append(prefixed_name[len(prefix) :])
             user.preferences[filter_type] = ",".join(new_filters)
         trans.sa_session.add(user)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return {"message": "Toolbox filters have been saved."}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):

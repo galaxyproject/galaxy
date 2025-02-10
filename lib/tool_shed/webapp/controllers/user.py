@@ -8,7 +8,6 @@ from galaxy import (
     web,
 )
 from galaxy.managers.api_keys import ApiKeyManager
-from galaxy.model.base import transaction
 from galaxy.model.db.user import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -255,8 +254,7 @@ class User(BaseUser):
                 if reset_user:
                     prt = trans.app.model.PasswordResetToken(reset_user)
                     trans.sa_session.add(prt)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     host = trans.request.host.split(":")[0]
                     if host in ["localhost", "127.0.0.1", "0.0.0.0"]:
                         host = socket.getfqdn()
@@ -271,8 +269,7 @@ class User(BaseUser):
                     try:
                         util.send_mail(frm, email, subject, body, trans.app.config)
                         trans.sa_session.add(reset_user)
-                        with transaction(trans.sa_session):
-                            trans.sa_session.commit()
+                        trans.sa_session.commit()
                         trans.log_event(f"User reset password: {email}")
                     except Exception:
                         log.exception("Unable to reset password.")
@@ -341,8 +338,7 @@ class User(BaseUser):
             else:
                 user.username = username
                 trans.sa_session.add(user)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 message = "The username has been updated with the changes."
         return trans.fill_template(
             "/webapps/tool_shed/user/username.mako",
@@ -391,13 +387,11 @@ class User(BaseUser):
                     # Change the email itself
                     user.email = email
                     trans.sa_session.add_all((user, private_role))
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     if trans.webapp.name == "galaxy" and trans.app.config.user_activation_on:
                         user.active = False
                         trans.sa_session.add(user)
-                        with transaction(trans.sa_session):
-                            trans.sa_session.commit()
+                        trans.sa_session.commit()
                         is_activation_sent = self.user_manager.send_activation_email(trans, user.email, user.username)
                         if is_activation_sent:
                             message = "The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message."
@@ -408,8 +402,7 @@ class User(BaseUser):
                 if user.username != username:
                     user.username = username
                     trans.sa_session.add(user)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                 message = "The login information has been updated with the changes."
         elif user and params.get("edit_user_info_button", False):
             # Edit user information - webapp MUST BE 'galaxy'
@@ -440,8 +433,7 @@ class User(BaseUser):
                 flush_needed = True
             if flush_needed:
                 trans.sa_session.add(user)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             message = "The user information has been updated with the changes."
         if user and trans.webapp.name == "galaxy" and is_admin:
             kwd["user_id"] = trans.security.encode_id(user.id)

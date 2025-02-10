@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
-from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -325,8 +324,7 @@ WHERE default_quota_association.type = :default_type
         else:
             target_default = self.model.DefaultQuotaAssociation(default_type, quota)
         self.sa_session.add(target_default)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
@@ -366,16 +364,14 @@ WHERE default_quota_association.type = :default_type
                     self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
+                    self.sa_session.commit()
             for user in users:
                 uqa = self.model.UserQuotaAssociation(user, quota)
                 self.sa_session.add(uqa)
             for group in groups:
                 gqa = self.model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def is_over_quota(self, app, job, job_destination):
         # Doesn't work because job.object_store_id until inside handler :_(

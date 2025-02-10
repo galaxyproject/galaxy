@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { rootResponse } from "@/components/FilesDialog/testingData";
@@ -13,6 +14,7 @@ const localVue = getLocalVue();
 jest.mock("app");
 
 const { server, http } = useServerMock();
+setupMockConfig({});
 
 describe("DirectoryPathEditableBreadcrumb", () => {
     let wrapper;
@@ -56,10 +58,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json(rootResponse);
-            }),
-
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({});
             })
         );
 

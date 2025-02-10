@@ -27,9 +27,8 @@ export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
-    // explicitly pass current User, because userStore might not exist yet
-    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
     const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
+    const hasSeenUploadHelp = useUserLocalStorage("user-store-seen-upload-help", false, currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
@@ -132,10 +131,6 @@ export const useUserStore = defineStore("userStore", () => {
         preferredListViewMode.value = view;
     }
 
-    function toggleSideBar(currentOpen = "") {
-        toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
-    }
-
     function processUserPreferences(user: RegisteredUser): Preferences {
         // Favorites are returned as a JSON string by the API
         const favorites =
@@ -153,8 +148,8 @@ export const useUserStore = defineStore("userStore", () => {
         isAnonymous,
         currentTheme,
         currentFavorites,
-        toggledSideBar,
         preferredListViewMode,
+        hasSeenUploadHelp,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,
@@ -162,7 +157,6 @@ export const useUserStore = defineStore("userStore", () => {
         setPreferredListViewMode,
         addFavoriteTool,
         removeFavoriteTool,
-        toggleSideBar,
         $reset,
     };
 });

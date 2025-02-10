@@ -21,6 +21,7 @@ describe("ToolSearch", () => {
                 showAdvanced: false,
                 toolsList: [],
                 currentPanel: {},
+                useWorker: false,
             },
             localVue,
             router,

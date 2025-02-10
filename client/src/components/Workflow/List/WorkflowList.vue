@@ -1,30 +1,38 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
+import { faTrashRestore } from "font-awesome-6";
 import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
+import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
+import { deleteWorkflow, undeleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import WorkflowCardList from "./WorkflowCardList.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
+import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import WorkflowCard from "@/components/Workflow/List/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
-
-library.add(faStar, faTrash);
 
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
+
+// Interface to match the `Workflow` interface from `WorkflowCard`
+interface SelectedWorkflow {
+    id: string;
+    name: string;
+    published: boolean;
+}
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
@@ -36,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter();
 const userStore = useUserStore();
+const { confirm } = useConfirmDialog();
 
 const limit = ref(24);
 const offset = ref(0);
@@ -45,7 +54,11 @@ const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const listHeader = ref<any>(null);
+const showBulkAddTagsModal = ref(false);
+const bulkTagsLoading = ref(false);
+const bulkDeleteOrRestoreLoading = ref(false);
 const workflowsLoaded = ref<WorkflowsList>([]);
+const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -70,14 +83,13 @@ const view = computed(() => (userStore.preferredListViewMode as ListView) || "gr
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
-const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && filterText.value);
+const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted workflows" : "Show deleted workflows"));
 const bookmarkButtonTitle = computed(() =>
     showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows"
 );
 
-// Filtering computed refs
-const workflowFilters = computed(() => WorkflowFilters(props.activeList));
+const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
 const rawFilters = computed(() =>
     Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false))
 );
@@ -85,6 +97,10 @@ const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFil
 const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+const indeterminateSelected = computed(() => selectedWorkflowIds.value.length > 0 && !allSelected.value);
+const allSelected = computed(
+    () => selectedWorkflowIds.value.length !== 0 && selectedWorkflowIds.value.length === workflowsLoaded.value.length
+);
 
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
@@ -107,7 +123,9 @@ async function load(overlayLoading = false, silent = false) {
             loading.value = true;
         }
     }
+
     let search;
+
     if (!hasInvalidFilters.value) {
         search = validatedFilterText();
 
@@ -178,8 +196,154 @@ function validatedFilterText() {
     return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
+function onSelectWorkflow(w: SelectedWorkflow) {
+    const index = selectedWorkflowIds.value.findIndex((selected) => selected.id === w.id);
+
+    if (index === -1) {
+        selectedWorkflowIds.value.push(w);
+    } else {
+        selectedWorkflowIds.value.splice(index, 1);
+    }
+}
+
+function onSelectAllWorkflows() {
+    if (selectedWorkflowIds.value.length === workflowsLoaded.value.length) {
+        selectedWorkflowIds.value = [];
+    } else {
+        selectedWorkflowIds.value = workflowsLoaded.value.map((w: any) => {
+            return {
+                id: w.id,
+                name: w.name,
+                published: w.published,
+            };
+        });
+    }
+}
+
+async function onBulkDelete() {
+    const totalSelected = selectedWorkflowIds.value.length;
+    const hasPublished = selectedWorkflowIds.value.some((w) => w.published);
+
+    const confirmed = await confirm(
+        `${hasPublished ? "Some of the selected workflows are published and will be removed from public view. " : ""}
+            Are you sure you want to delete ${totalSelected} workflows?`,
+        {
+            title: "Delete workflows",
+            okTitle: "Delete workflows",
+            okVariant: "danger",
+        }
+    );
+
+    if (confirmed) {
+        const tmpSelected = [...selectedWorkflowIds.value];
+
+        try {
+            overlay.value = true;
+            bulkDeleteOrRestoreLoading.value = true;
+
+            for (const w of selectedWorkflowIds.value) {
+                await deleteWorkflow(w.id);
+
+                tmpSelected.splice(
+                    tmpSelected.findIndex((s) => s.id === w.id),
+                    1
+                );
+            }
+
+            Toast.success(`Deleted ${totalSelected} workflows.`);
+
+            selectedWorkflowIds.value = [];
+        } catch (e) {
+            Toast.error(`Failed to delete some workflows.`);
+        } finally {
+            bulkDeleteOrRestoreLoading.value = false;
+
+            selectedWorkflowIds.value = tmpSelected;
+
+            await load(true);
+        }
+    }
+}
+
+async function onBulkRestore() {
+    const totalSelected = selectedWorkflowIds.value.length;
+
+    const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} workflows?`, {
+        okTitle: "Restore workflows",
+        okVariant: "primary",
+    });
+
+    if (confirmed) {
+        const tmpSelected = [...selectedWorkflowIds.value];
+
+        try {
+            overlay.value = true;
+            bulkDeleteOrRestoreLoading.value = true;
+
+            for (const w of selectedWorkflowIds.value) {
+                await undeleteWorkflow(w.id);
+
+                tmpSelected.splice(
+                    tmpSelected.findIndex((s) => s.id === w.id),
+                    1
+                );
+            }
+
+            Toast.success(`Restored ${totalSelected} workflows.`);
+
+            selectedWorkflowIds.value = [];
+        } catch (e) {
+            Toast.error(`Failed to restore some workflows.`);
+        } finally {
+            bulkDeleteOrRestoreLoading.value = false;
+
+            selectedWorkflowIds.value = tmpSelected;
+
+            await load(true);
+        }
+    }
+}
+
+async function onToggleBulkTags() {
+    showBulkAddTagsModal.value = !showBulkAddTagsModal.value;
+}
+
+async function onBulkTagsAdd(tags: string[]) {
+    const tmpSelected = [...selectedWorkflowIds.value];
+    const totalSelected = selectedWorkflowIds.value.length;
+
+    try {
+        overlay.value = true;
+        bulkTagsLoading.value = true;
+
+        for (const w of selectedWorkflowIds.value) {
+            const prevTags = workflowsLoaded.value.find((workflow) => workflow.id === w.id)?.tags || [];
+
+            await updateWorkflow(w.id, { tags: [...new Set([...prevTags, ...tags])] });
+
+            tmpSelected.splice(
+                tmpSelected.findIndex((s) => s.id === w.id),
+                1
+            );
+        }
+
+        Toast.success(`Added tag(s) to ${totalSelected} workflows.`);
+    } catch (e) {
+        Toast.error(`Failed to add tag(s) to some workflows. ${e}`);
+    } finally {
+        bulkTagsLoading.value = false;
+
+        selectedWorkflowIds.value = tmpSelected;
+
+        await load(true);
+    }
+}
+
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
+
+    selectedWorkflowIds.value = [];
+
     await load(true);
 });
 
@@ -236,7 +400,14 @@ onMounted(() => {
                 </template>
             </FilterMenu>
 
-            <ListHeader ref="listHeader" show-view-toggle>
+            <ListHeader
+                ref="listHeader"
+                show-view-toggle
+                :show-select-all="!published && !sharedWithMe"
+                :select-all-disabled="loading || overlay || noItems || noResults"
+                :all-selected="allSelected"
+                :indeterminate-selected="indeterminateSelected"
+                @select-all="onSelectAllWorkflows">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         Filter:
@@ -268,16 +439,17 @@ onMounted(() => {
             </ListHeader>
         </div>
 
-        <BAlert v-if="loading" variant="info" show>
-            <LoadingSpan message="Loading workflows..." />
-        </BAlert>
-
-        <BAlert v-if="!loading && !overlay && noItems" id="workflow-list-empty" variant="info" show>
-            No workflows found. You may create or import new workflows using the buttons above.
-        </BAlert>
-
-        <!-- There are either `noResults` or `invalidFilters` -->
-        <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)">
+        <div v-if="loading" class="workflow-list-alert">
+            <BAlert variant="info" show>
+                <LoadingSpan message="Loading workflows" />
+            </BAlert>
+        </div>
+        <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
+            <BAlert id="workflow-list-empty" variant="info" show>
+                No workflows found. You may create or import new workflows using the buttons above.
+            </BAlert>
+        </div>
+        <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
             <BAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
                 No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
             </BAlert>
@@ -304,43 +476,93 @@ onMounted(() => {
                 </a>
             </BAlert>
         </span>
-
-        <BOverlay
-            v-else
-            id="workflow-cards"
-            :show="overlay"
-            rounded="sm"
-            class="cards-list mt-2"
-            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
-            <WorkflowCard
-                v-for="w in workflowsLoaded"
-                :key="w.id"
-                :workflow="w"
+        <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list">
+            <WorkflowCardList
+                :workflows="workflowsLoaded"
                 :published-view="published"
                 :grid-view="view === 'grid'"
-                :class="view === 'grid' ? 'grid-view' : 'list-view'"
+                :selected-workflow-ids="selectedWorkflowIds"
+                @select="onSelectWorkflow"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
-                @update-filter="updateFilterValue" />
+                @updateFilter="updateFilterValue" />
+        </BOverlay>
+
+        <div class="workflow-list-footer">
+            <div
+                v-if="!published && !sharedWithMe && selectedWorkflowIds.length"
+                class="workflow-list-footer-bulk-actions">
+                <BButton
+                    v-if="!showDeleted"
+                    id="workflow-list-footer-bulk-delete-button"
+                    v-b-tooltip.hover
+                    :title="bulkDeleteOrRestoreLoading ? 'Deleting workflows' : 'Delete selected workflows'"
+                    :disabled="bulkDeleteOrRestoreLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="onBulkDelete">
+                    <span v-if="!bulkDeleteOrRestoreLoading">
+                        <FontAwesomeIcon :icon="faTrash" fixed-width />
+                        Delete ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Deleting" />
+                </BButton>
+                <BButton
+                    v-else
+                    id="workflow-list-footer-bulk-restore-button"
+                    v-b-tooltip.hover
+                    :title="bulkDeleteOrRestoreLoading ? 'Restoring workflows' : 'Restore selected workflows'"
+                    :disabled="bulkDeleteOrRestoreLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="onBulkRestore">
+                    <span v-if="!bulkDeleteOrRestoreLoading">
+                        <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
+                        Restore ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Restoring" />
+                </BButton>
+
+                <BButton
+                    v-if="!showDeleted"
+                    id="workflow-list-footer-bulk-add-tags-button"
+                    v-b-tooltip.hover
+                    :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected workflows'"
+                    :disabled="bulkTagsLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="onToggleBulkTags">
+                    <span v-if="!bulkTagsLoading">
+                        <FontAwesomeIcon :icon="faTags" fixed-width />
+                        Add tags ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Adding tags" />
+                </BButton>
+            </div>
 
             <BPagination
-                v-if="!loading && totalWorkflows > limit"
-                class="mt-2 w-100"
+                class="workflow-list-footer-pagination"
                 :value="currentPage"
                 :total-rows="totalWorkflows"
                 :per-page="limit"
-                align="center"
+                align="right"
+                size="sm"
                 first-number
                 last-number
                 @change="onPageChange" />
-        </BOverlay>
+        </div>
+
+        <TagsSelectionDialog
+            v-if="showBulkAddTagsModal"
+            :title="`Add tags to ${selectedWorkflowIds.length} selected workflow${
+                selectedWorkflowIds.length > 1 ? 's' : ''
+            }`"
+            @cancel="onToggleBulkTags"
+            @ok="onBulkTagsAdd" />
     </div>
 </template>
 
 <style lang="scss">
-@import "scss/mixins.scss";
-@import "breakpoints.scss";
-
 .workflows-list {
     overflow: auto;
     display: flex;
@@ -357,32 +579,36 @@ onMounted(() => {
         z-index: 100;
     }
 
+    .workflow-list-alert {
+        height: 100%;
+    }
+
     .cards-list {
-        container: card-list / inline-size;
+        height: 100%;
         scroll-behavior: smooth;
         min-height: 150px;
+        display: flex;
+        flex-direction: column;
 
         overflow-y: auto;
         overflow-x: hidden;
+    }
 
-        .list-view {
+    .workflow-list-footer {
+        display: flex;
+        align-items: center;
+        margin-top: 0.5rem;
+
+        .workflow-list-footer-bulk-actions {
+            display: flex;
+            gap: 0.5rem;
             width: 100%;
+            position: absolute;
         }
 
-        .grid-view {
-            width: calc(100% / 3);
-        }
-
-        @container card-list (max-width: #{$breakpoint-xl}) {
-            .grid-view {
-                width: calc(100% / 2);
-            }
-        }
-
-        @container card-list (max-width: #{$breakpoint-sm}) {
-            .grid-view {
-                width: 100%;
-            }
+        .workflow-list-footer-pagination {
+            margin: 0 auto;
+            width: 100%;
         }
     }
 }

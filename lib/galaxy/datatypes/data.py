@@ -556,8 +556,7 @@ class Data(metaclass=DataMeta):
                         dir_items = sorted(os.listdir(file_path))
                         base_path, item_name = os.path.split(file_path)
                         tmp_fh.write(
-                            "<html><head><h3>Directory %s contents: %d items</h3></head>\n"
-                            % (escape(item_name), len(dir_items))
+                            f"<html><head><h3>Directory {escape(item_name)} contents: {len(dir_items)} items</h3></head>\n"
                         )
                         tmp_fh.write('<body><p/><table cellpadding="2">\n')
                         for index, fname in enumerate(dir_items):
@@ -850,7 +849,11 @@ class Data(metaclass=DataMeta):
         job, converted_datasets, *_ = converter.execute(
             trans, incoming=params, set_output_hid=visible, history=history, flush_job=False
         )
+        # We should only have a single converted output, but let's be defensive here
+        n_converted_datasets = len(converted_datasets)
         for converted_dataset in converted_datasets.values():
+            if converted_dataset.extension == "auto" and n_converted_datasets == 1:
+                converted_dataset.extension = target_type
             original_dataset.attach_implicitly_converted_dataset(trans.sa_session, converted_dataset, target_type)
         trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:

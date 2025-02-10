@@ -7,7 +7,6 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils import tools_support
-from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
@@ -446,12 +445,11 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def _new_history(self, hdas=None, flush=True):
         hdas = hdas or []
         history = model.History()
-        self.app.model.context.add(history)
+        session = self.app.model.context
+        session.add(history)
         for hda in hdas:
             history.add_dataset(hda, set_hid=False)
-        session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         return history
 
 

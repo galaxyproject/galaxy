@@ -1099,7 +1099,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             else:
                 initialize_test = None
             tag = str(discriminator) if not is_boolean else str(discriminator).lower()
-            extra_kwd = {test_param_name: (Union[str, bool], initialize_test)}
+            extra_kwd = {test_param_name: (Literal[when.discriminator], initialize_test)}
             when_types.append(
                 cast(
                     Type[BaseModel],

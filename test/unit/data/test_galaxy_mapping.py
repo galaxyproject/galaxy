@@ -14,7 +14,6 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy import model
-from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -234,9 +233,7 @@ class TestMappings(BaseModelTestCase):
         self.new_hda(h2, name="2")
 
         session = self.session()
-
-        with transaction(session):
-            session.commit()
+        session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)

@@ -20,7 +20,6 @@ from galaxy.managers.workflows import (
     WorkflowsManager,
 )
 from galaxy.model import StoredWorkflow
-from galaxy.model.base import transaction
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -70,7 +69,9 @@ class WorkflowsService(ServiceBase):
         query, total_matches = self._workflows_manager.index_query(trans, payload, include_total_count)
         rval = []
         for wf in query.all():
-            item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
+            item = wf.to_dict(
+                value_mapper={"id": trans.security.encode_id, "latest_workflow_id": trans.security.encode_id}
+            )
             encoded_id = trans.security.encode_id(wf.id)
             item["annotations"] = [x.annotation for x in wf.annotations]
             item["url"] = web.url_for("workflow", id=encoded_id)
@@ -173,8 +174,7 @@ class WorkflowsService(ServiceBase):
             )
             invocations.append(workflow_invocation)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         encoded_invocations = [WorkflowInvocationResponse(**invocation.to_dict()) for invocation in invocations]
         if is_batch:
             return encoded_invocations

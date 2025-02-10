@@ -69,7 +69,7 @@ export const statePlaceholders: Record<string, string> = {
 };
 
 /** Only one job needs to be in one of these states for the graph step to be in that state */
-const SINGLE_INSTANCE_STATES = ["error", "running", "paused"];
+const SINGLE_INSTANCE_STATES = ["error", "running", "paused", "deleting"];
 /** All jobs need to be in one of these states for the graph step to be in that state */
 const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
 
@@ -98,9 +98,13 @@ export function useInvocationGraph(
     /** The workflow that was invoked */
     const loadedWorkflow = ref<any>(null);
 
+    const loading = ref(true);
+
     provideScopedWorkflowStores(storeId);
 
     async function loadInvocationGraph() {
+        loading.value = true;
+
         try {
             if (!workflowId) {
                 throw new Error("Workflow Id is not defined");
@@ -143,6 +147,8 @@ export function useInvocationGraph(
             }
         } catch (e) {
             rethrowSimple(e);
+        } finally {
+            loading.value = false;
         }
     }
 
@@ -293,6 +299,9 @@ export function useInvocationGraph(
     function getStepStateFromJobStates(jobStates: string[]): GraphStep["state"] | undefined {
         for (const state of SINGLE_INSTANCE_STATES) {
             if (jobStates.includes(state)) {
+                if (state === "deleting") {
+                    return "deleted";
+                }
                 return state as GraphStep["state"];
             }
         }
@@ -355,6 +364,7 @@ export function useInvocationGraph(
          * and displays the job states on the workflow graph steps.
          */
         loadInvocationGraph,
+        loading,
     };
 }
 

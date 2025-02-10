@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
@@ -73,6 +73,7 @@ const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
         paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: "false" }),
         subsubdirectoryResponse,
     ],
+    [paramsToKey({ target: "gxftp://", recursive: "false" }), pdbResponse],
 ]);
 
 const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
@@ -128,6 +129,14 @@ describe("FilesDialog, file mode", () => {
     it("should show the number of items expected", async () => {
         await utils.openRootDirectory();
         expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
+    });
+
+    it("should list the user defined file sources first", async () => {
+        await utils.openRoot();
+        const rows = utils.getRenderedRows();
+        const firstItem = rows[0];
+        expect(firstItem).toBeDefined();
+        expect(firstItem!.url).toContain("gxuserfiles://");
     });
 
     it("should allow selecting files and update OK button accordingly", async () => {
@@ -231,6 +240,8 @@ describe("FilesDialog, file mode", () => {
     it("should show loading error and can return back when there is an error", async () => {
         utils.expectNoErrorMessage();
 
+        suppressDebugConsole(); // expecting error message.
+
         // open directory with error
         await utils.openDirectoryById("empty-dir");
         utils.expectErrorMessage();
@@ -274,6 +285,8 @@ describe("FilesDialog, directory mode", () => {
     it("should show loading error and can return back when there is an error", async () => {
         utils.expectNoErrorMessage();
 
+        suppressDebugConsole(); // expecting error message.
+
         // open directory with error
         await utils.openDirectoryById("empty-dir");
         utils.expectErrorMessage();
@@ -291,9 +304,13 @@ class Utils {
         this.wrapper = wrapper;
     }
 
-    async openRootDirectory() {
+    async openRoot() {
         expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         expect(this.getRenderedRows().length).toBe(rootResponse.length);
+    }
+
+    async openRootDirectory() {
+        await this.openRoot();
         await this.openDirectoryById(rootId);
     }
 

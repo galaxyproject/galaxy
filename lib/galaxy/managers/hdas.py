@@ -51,7 +51,6 @@ from galaxy.model import (
     JobStateHistory,
     JobToOutputDatasetAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
 from galaxy.model.dereference import dereference_to_model
 from galaxy.schema.schema import DatasetSourceType
@@ -158,8 +157,7 @@ class HDAManager(
         self.session().add(hda)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return hda
 
     def materialize(self, request: MaterializeDatasetInstanceTaskRequest, in_place: bool = False) -> bool:
@@ -182,8 +180,7 @@ class HDAManager(
         else:
             new_hda.set_total_size()
         session = self.session()
-        with transaction(session):
-            session.commit()
+        session.commit()
         return new_hda.is_ok
 
     def copy(
@@ -215,8 +212,7 @@ class HDAManager(
                 history.add_pending_items()
             session = object_session(copy)
             assert session
-            with transaction(session):
-                session.commit()
+            session.commit()
 
         return copy
 
@@ -230,23 +226,23 @@ class HDAManager(
         else:
             self._purge(item, flush=flush)
 
-    def _purge(self, hda, flush=True):
+    def _purge(self, hda: HistoryDatasetAssociation, flush: bool = True):
         """
         Purge this HDA and the dataset underlying it.
         """
         user = hda.history.user or None
-        quota_amount_reduction = 0
         if user:
+            # Need to calculate this before purging
             quota_amount_reduction = hda.quota_amount(user)
         super().purge(hda, flush=flush)
         # decrease the user's space used
-        quota_source_info = hda.dataset.quota_source_info
-        if quota_amount_reduction and quota_source_info.use:
-            user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
-            # TODO: don't flush above if we're going to re-flush here
-            session = object_session(user)
-            assert session
-            with transaction(session):
+        if user:
+            quota_source_info = hda.dataset.quota_source_info
+            if quota_amount_reduction and quota_source_info.use:
+                user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
+                # TODO: don't flush above if we're going to re-flush here
+                session = object_session(user)
+                assert session
                 session.commit()
 
     # .... states
@@ -342,8 +338,7 @@ def dereference_input(
     hda = dereference_to_model(trans.sa_session, trans.user, target_history, data_request)
     permissions = trans.app.security_agent.history_get_default_permissions(target_history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     return hda
 
 
@@ -438,8 +433,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
 
         if success_item_count:
             session = self.hda_manager.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
 
         self._request_full_delete_all(dataset_ids_to_remove, user)
 

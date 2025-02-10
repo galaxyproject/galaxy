@@ -20,8 +20,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "example",
     "fits_graph_viewer",
     "fits_image_viewer",
-    "h5web",
-    "heatmap/heatmap_default",
     "hyphyvision",
     "jqplot/jqplot_bar",
     "media_player",
@@ -30,13 +28,24 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "nvd3/nvd3_bar",
     "openseadragon",
     "PCA_3Dplot",
-    "phylocanvas",
     "pv",
     "scatterplot",
     "tiffviewer",
     "ts_visjs",
 ];
-const INSTALL_PLUGIN_BUILD_IDS = ["cytoscape", "ngl", "msa", "openlayers", "venn", "vizarr"]; // todo: derive from XML
+const INSTALL_PLUGIN_BUILD_IDS = [
+    "cytoscape",
+    "h5web",
+    "heatmap",
+    "ngl",
+    "msa",
+    "openlayers",
+    "phylocanvas",
+    "plotly",
+    "venn",
+    "vitessce",
+    "vizarr",
+]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 

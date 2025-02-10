@@ -45,7 +45,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         self.job.history = History()
         self.job.history.id = 42
         self.job.parameters = [JobParameter(name="thresh", value="4")]
-        self.evaluator = ToolEvaluator(self.app, self.tool, self.job, self.test_directory)
+        self.evaluator = ToolEvaluator(self.app, self.tool, self.job, self.test_directory)  # type: ignore[arg-type]
 
     def tearDown(self):
         self.tear_down_app()

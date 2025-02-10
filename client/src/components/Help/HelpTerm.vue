@@ -21,7 +21,7 @@ const { loading, hasHelp, help } = useHelpForTerm(toRef(props, "term"));
         <div v-if="loading">
             <LoadingSpan message="Loading Galaxy help terms" />
         </div>
-        <div v-else-if="hasHelp">
+        <div v-else-if="hasHelp && help">
             <ConfigurationMarkdown :markdown="help" :admin="true" />
         </div>
         <div v-else>

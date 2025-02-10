@@ -15,7 +15,6 @@ from sqlalchemy.sql.expression import func
 
 import galaxy.model
 from galaxy.exceptions import ItemOwnershipException
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     strip_control_characters,
@@ -93,8 +92,7 @@ class TagHandler:
         new_tags_str = ",".join(new_tags_list)
         self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush)
         if flush:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         item.update()
         return item.tags
 
@@ -247,8 +245,7 @@ class TagHandler:
         item_tag_assoc.user_value = value
         item_tag_assoc.value = lc_value
         if flush:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         return item_tag_assoc
 
     def apply_item_tags(
@@ -336,8 +333,7 @@ class TagHandler:
         with Session() as separate_session:
             separate_session.add(tag)
             try:
-                with transaction(separate_session):
-                    separate_session.commit()
+                separate_session.commit()
             except IntegrityError:
                 # tag already exists, get from database
                 separate_session.rollback()

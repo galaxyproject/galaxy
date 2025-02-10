@@ -16,7 +16,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_summary_includes(1, "28 lines")
@@ -28,7 +28,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
     @selenium_test
     def test_upload_pasted_url_content(self):
@@ -37,7 +37,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
     @selenium_test
     def test_upload_composite_dataset_pasted_data(self):
@@ -46,7 +46,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
@@ -62,7 +62,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(1)
         history_contents = self.history_contents()
         history_count = len(history_contents)
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         hda = history_contents[0]
         assert hda["name"] == "1.sam", hda

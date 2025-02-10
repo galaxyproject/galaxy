@@ -50,6 +50,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 
 USER_MODEL_CLASS = Literal["User"]
@@ -119,15 +120,6 @@ class DatasetCollectionPopulatedState(str, Enum):
     NEW = "new"  # New dataset collection, unpopulated elements
     OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
     FAILED = "failed"  # some problem populating state, won't be populated
-
-
-class HashFunctionNames(str, Enum):
-    """Hash function names that can be used to generate checksums for datasets."""
-
-    md5 = "MD5"
-    sha1 = "SHA-1"
-    sha256 = "SHA-256"
-    sha512 = "SHA-512"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -241,7 +233,7 @@ PopulatedField = Annotated[
     ),
 ]
 
-ElementsField = Field(
+ElementsField: List["DCESummary"] = Field(
     [],
     title="Elements",
     description="The summary information of each of the elements inside the dataset collection.",
@@ -733,7 +725,7 @@ class DatasetHash(Model):
         title="ID",
         description="Encoded ID of the dataset hash.",
     )
-    hash_function: HashFunctionNames = Field(
+    hash_function: HashFunctionNameEnum = Field(
         ...,
         title="Hash Function",
         description="The hash function used to generate the hash.",
@@ -1841,7 +1833,31 @@ class ExportObjectRequestMetadata(Model):
 
 class ExportObjectResultMetadata(Model):
     success: bool
+    uri: Optional[str] = None
     error: Optional[str] = None
+
+    @model_validator(mode="after")
+    @classmethod
+    def validate_success(cls, model):
+        """
+        Ensure successful exports do not have error text.
+        """
+        if model.success and model.error is not None:
+            raise ValueError("successful exports cannot have error text")
+
+        return model
+
+    @model_validator(mode="after")
+    @classmethod
+    def validate_uri(cls, model):
+        """
+        Ensure unsuccessful exports do not have a URI.
+        """
+
+        if not model.success and model.uri:
+            raise ValueError("unsuccessful exports cannot have a URI")
+
+        return model
 
 
 class ExportObjectMetadata(Model):
@@ -2173,6 +2189,7 @@ class JobMetric(Model):
 
 class WorkflowJobMetric(JobMetric):
     tool_id: str
+    job_id: str
     step_index: int
     step_label: Optional[str]
 
@@ -3794,6 +3811,11 @@ class PageSummary(PageSummaryBase, WithModelClass):
         ...,  # Required
         title="Encoded email",
         description="The encoded email of the user.",
+    )
+    author_deleted: bool = Field(
+        ...,  # Required
+        title="Author deleted",
+        description="Whether the author of this Page has been deleted.",
     )
     published: bool = Field(
         ...,  # Required

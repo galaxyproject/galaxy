@@ -22,10 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from galaxy import util
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
@@ -61,8 +58,8 @@ def check_for_updates(
                 repository_names_not_updated.append(f"<b>{escape(str(repository.name))}</b>")
             if updated:
                 updated_count += 1
-        message = "Checked the status in the tool shed for %d repositories.  " % success_count
-        message += "Updated the tool shed status for %d repositories.  " % updated_count
+        message = f"Checked the status in the tool shed for {success_count} repositories.  "
+        message += f"Updated the tool shed status for {updated_count} repositories.  "
         if repository_names_not_updated:
             message += "Unable to retrieve status from the tool shed for the following repositories:\n"
             message += ", ".join(repository_names_not_updated)
@@ -98,8 +95,7 @@ def _check_or_update_tool_shed_status_for_installed_repository(
             repository.tool_shed_status = tool_shed_status_dict
             session = install_model_context
             session.add(repository)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
             updated = True
     else:
@@ -183,8 +179,7 @@ def create_or_update_tool_shed_repository(
             status=status,
         )
     context.add(tool_shed_repository)
-    with transaction(context):
-        context.commit()
+    context.commit()
     return tool_shed_repository
 
 
@@ -769,8 +764,7 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
 
     session = app.install_model.context
     session.add(repository)
-    with transaction(session):
-        session.commit()
+    session.commit()
 
 
 __all__ = (

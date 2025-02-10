@@ -1,4 +1,3 @@
-import contextlib
 import os
 import tempfile
 import uuid
@@ -508,19 +507,6 @@ def make_workflow_invocation(session, make_workflow):
     return f
 
 
-# utility functions
-
-
-@contextlib.contextmanager
-def transaction(session):
-    if not session.in_transaction():
-        with session.begin():
-            yield
-    else:
-        yield
-
-
 def write_to_db(session, model) -> None:
-    with transaction(session):
-        session.add(model)
-        session.commit()
+    session.add(model)
+    session.commit()

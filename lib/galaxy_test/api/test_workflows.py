@@ -209,8 +209,8 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
     def _ds_entry(self, history_content):
         return self.dataset_populator.ds_entry(history_content)
 
-    def _invocation_details(self, workflow_id, invocation_id, **kwds):
-        invocation_details_response = self._get(f"workflows/{workflow_id}/usage/{invocation_id}", data=kwds)
+    def _invocation_details(self, workflow_id: Optional[str], invocation_id: str, **kwds):
+        invocation_details_response = self._get(f"invocations/{invocation_id}", data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
@@ -2260,6 +2260,38 @@ some_file:
         assert dataset_details["metadata_bam_index"]
         assert dataset_details["file_ext"] == "bam"
 
+    def test_expression_tool_output_in_format_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+steps:
+  skip:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: input
+    when: $(false)
+  pick_larger:
+    tool_id: expression_pick_larger_file
+    in:
+      input1: skip/out_file1
+      input2: input
+  format_source:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: pick_larger/larger_file
+test_data:
+  input:
+    value: 1.fastqsanger.gz
+    type: File
+    file_type: fastqsanger.gz
+""",
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
+
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -3212,7 +3244,7 @@ steps:
 """,
                 test_data="""
 num_lines_param:
-  type: int
+  type: raw
   value: 2
 input collection 1:
   collection_type: list
@@ -3450,6 +3482,33 @@ input_c:
                 history_id, content_id=output_filtered_id, assert_ok=False
             )
             assert output_filtered["element_count"] == 2, output_filtered
+
+    def test_subworkflow_missing_input_connection_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        my_input:
+          type: data
+      steps: []
+""",
+                history_id=history_id,
+                assert_ok=False,
+            )
+            workflow_details = self._invocation_details(summary.workflow_id, summary.invocation_id)
+            assert workflow_details["messages"] == [
+                {
+                    "details": "Subworkflow has disconnected required input.",
+                    "reason": "unexpected_failure",
+                    "workflow_step_id": 0,
+                }
+            ]
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
@@ -7034,12 +7093,14 @@ inputs:
   outer_input_1:
     type: int
     default: 1
+    optional: true
     position:
       left: 0
       top: 0
   outer_input_2:
     type: int
     default: 2
+    optional: true
     position:
       left: 100
       top: 0

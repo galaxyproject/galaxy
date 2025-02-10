@@ -202,7 +202,7 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
 
     def _elements_to_datasets(self, elements, level=0):
         for element in elements:
-            extra_kwds = {"identifier_%d" % level: element["name"]}
+            extra_kwds = {f"identifier_{level}": element["name"]}
             if "elements" in element:
                 for inner_element in self._elements_to_datasets(element["elements"], level=level + 1):
                     dataset = extra_kwds.copy()

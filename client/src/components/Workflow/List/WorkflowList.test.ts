@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -13,6 +14,8 @@ import { generateRandomWorkflowList } from "../testUtils";
 import WorkflowList from "./WorkflowList.vue";
 
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
 const { server, http } = useServerMock();
 
@@ -29,19 +32,10 @@ async function mountWorkflowList() {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const mockRouter = {
-        push: jest.fn(),
-        currentRoute: {
-            query: {},
-        },
-    };
-
     const wrapper = mount(WorkflowList as object, {
         localVue,
         pinia,
-        mocks: {
-            $router: mockRouter,
-        },
+        router,
     });
 
     const userStore = useUserStore();
@@ -51,6 +45,9 @@ async function mountWorkflowList() {
 
     return wrapper;
 }
+
+// The use of the tool tip in statelesstag without a real dom is causing issues
+suppressBootstrapVueWarnings();
 
 describe("WorkflowList", () => {
     beforeEach(() => {
@@ -122,5 +119,6 @@ describe("WorkflowList", () => {
         await wrapper.vm.$nextTick();
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
+        await flushPromises();
     });
 });

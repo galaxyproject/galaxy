@@ -25,7 +25,6 @@ from galaxy.model import (
     Library,
     tags,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
@@ -58,7 +57,7 @@ MaybeLibraryFolderOrDatasetID = Annotated[
     str,
     Path(
         title="The encoded ID of a library folder or dataset.",
-        example="F0123456789ABCDEF",
+        examples=["F0123456789ABCDEF"],
         min_length=16,
         pattern="F?[0-9a-fA-F]+",
     ),
@@ -197,8 +196,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 metadata_safe=True,
             )
             trans.sa_session.add(assoc)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
     def delete(
         self,
@@ -218,8 +216,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         if payload.purge:
             ld.purged = True
             trans.sa_session.add(ld)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
             # TODO: had to change this up a bit from Dataset.user_can_purge
             dataset = ld.library_dataset_dataset_association.dataset
@@ -234,11 +231,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 except Exception:
                     pass
                 # flush now to preserve deleted state in case of later interruption
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             rval["purged"] = True
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         rval["deleted"] = True
         return LibraryContentsDeleteResponse(**rval)
 

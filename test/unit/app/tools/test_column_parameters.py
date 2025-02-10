@@ -4,7 +4,6 @@ test_select_parameters.py.
 
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import datatypes_registry
-from galaxy.model.base import transaction
 from galaxy.util import bunch
 from .util import BaseParameterTestCase
 
@@ -61,10 +60,9 @@ class TestDataColumnParameter(BaseParameterTestCase):
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.trans = bunch.Bunch(
             app=self.app,
             get_history=lambda: self.test_history,

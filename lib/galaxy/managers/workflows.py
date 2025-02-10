@@ -46,7 +46,10 @@ from sqlalchemy.orm import (
     joinedload,
     subqueryload,
 )
-from typing_extensions import Annotated
+from typing_extensions import (
+    Annotated,
+    TypeAlias,
+)
 
 from galaxy import (
     exceptions,
@@ -78,10 +81,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
     WorkflowInvocationToSubworkflowInvocationAssociation,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -197,6 +197,11 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             filters.append(StoredWorkflow.published == true())
 
         stmt = select(StoredWorkflow)
+
+        # Do not include workflows authored by deleted users
+        if show_published or show_shared:
+            stmt = stmt.join(StoredWorkflow.user).where(User.deleted == false())
+
         if show_shared:
             stmt = stmt.outerjoin(StoredWorkflow.users_shared_with)
         stmt = stmt.outerjoin(StoredWorkflow.tags)
@@ -337,8 +342,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                 user=trans.user, name=workflow.name, workflow=workflow, hidden=True
             )
             trans.sa_session.add(stored_workflow)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return stored_workflow
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
@@ -461,8 +465,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return workflow_invocation
 
@@ -499,8 +502,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         performed_action = module.do_invocation_step_action(step, action)
         workflow_invocation_step.action = performed_action
         trans.sa_session.add(workflow_invocation_step)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return workflow_invocation_step
 
     def build_invocations_query(
@@ -620,7 +622,7 @@ class WorkflowContentsManager(UsesAnnotations):
         import_options = ImportOptions()
         import_options.deduplicate_subworkflows = True
         as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
-        raw_description = RawWorkflowDescription(as_dict, path)
+        raw_description = RawWorkflowDescription(as_dict)
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
         return created_workflow.workflow
 
@@ -716,8 +718,7 @@ class WorkflowContentsManager(UsesAnnotations):
             menuEntry.stored_workflow = stored
             trans.user.stored_workflow_menu_entries.append(menuEntry)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return CreatedWorkflow(stored_workflow=stored, workflow=workflow, missing_tools=missing_tool_tups)
 
@@ -738,9 +739,10 @@ class WorkflowContentsManager(UsesAnnotations):
         )
 
         if missing_tool_tups and not workflow_update_options.allow_missing_tools:
-            errors = []
-            for missing_tool_tup in missing_tool_tups:
-                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
+            errors = [
+                f"Step {int(missing_tool_tup[3]) + 1}: Requires tool '{missing_tool_tup[0]}'."
+                for missing_tool_tup in missing_tool_tups
+            ]
             raise MissingToolsException(workflow, errors)
 
         # Connect up
@@ -778,8 +780,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Persist
         if not dry_run:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if stored_workflow.from_path:
                 self._sync_stored_workflow(trans, stored_workflow)
         # Return something informative
@@ -958,8 +959,9 @@ class WorkflowContentsManager(UsesAnnotations):
         return wf_dict
 
     def _sync_stored_workflow(self, trans, stored_workflow):
-        workflow_path = stored_workflow.from_path
-        self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
+        if trans.user_is_admin:
+            workflow_path = stored_workflow.from_path
+            self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
 
     def store_workflow_artifacts(self, directory, filename_base, workflow, **kwd):
         modern_workflow_path = os.path.join(directory, f"{filename_base}.gxwf.yml")
@@ -1107,7 +1109,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if not isinstance(conns, list):
                         conns = [conns]
                     value_list = [
-                        "Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index) + 1)
+                        f"Output '{conn.output_name}' from Step {int(conn.output_step.order_index) + 1}."
                         for conn in conns
                     ]
                     value = ",".join(value_list)
@@ -1132,7 +1134,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         for i in range(len(repeat_values)):
                             nested_input_dict = {}
                             index = repeat_values[i]["__index__"]
-                            nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
+                            nested_input_dict["title"] = f"{i + 1}. {input.title}"
                             try:
                                 nested_input_dict["inputs"] = do_inputs(
                                     input.inputs,
@@ -1825,7 +1827,7 @@ class WorkflowContentsManager(UsesAnnotations):
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        DictConnection = Dict[str, Union[int, str]]
+        DictConnection: TypeAlias = Dict[str, Union[int, str]]
         temp_input_connections: Dict[str, Union[List[DictConnection], DictConnection]] = step_dict.get(
             "input_connections", {}
         )
@@ -2083,6 +2085,7 @@ class WorkflowContentsManager(UsesAnnotations):
             .join(model.Workflow, model.Workflow.id == model.StoredWorkflow.latest_workflow_id)
             .filter(
                 and_(
+                    model.StoredWorkflow.deleted == false(),
                     to_json(model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
                     to_json(model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
                 )
@@ -2094,7 +2097,7 @@ class WorkflowContentsManager(UsesAnnotations):
             )
         else:
             stmnt = stmnt.filter(model.StoredWorkflow.importable == true())
-        return sa_session.execute(stmnt).scalar()
+        return sa_session.execute(stmnt.order_by(model.StoredWorkflow.id.desc()).limit(1)).scalar()
 
 
 class RefactorRequest(RefactorActions):

@@ -365,9 +365,10 @@ class TestFileSourcesTestCase(BaseTestCase):
 
         temp_file = tmp_path / "tmp_file"
         temp_file.write_text("Moo Cow", "utf-8")
-        file_source.write_from("/moo", str(temp_file))
+        actual_path = file_source.write_from("/moo", str(temp_file))
         target = tmp_path / "round_trip"
         file_source.realize_to("/moo", target)
+        assert "/moo" == actual_path
         assert target.read_text("utf-8") == "Moo Cow"
 
     def test_to_dict_filters_hidden(self, tmp_path):
@@ -421,7 +422,8 @@ class TestFileSourcesTestCase(BaseTestCase):
 
         temp_file = tmp_path / "tmp_file"
         temp_file.write_text("Moo Cow", "utf-8")
-        file_source.write_from("/moo", str(temp_file))
+        actual_path = file_source.write_from("/moo", str(temp_file))
+        assert "/moo" == actual_path
         assert expected_target.exists()
         assert (expected_target / "moo").exists()
 
@@ -439,7 +441,8 @@ class TestFileSourcesTestCase(BaseTestCase):
 
         temp_file = tmp_path / "tmp_file"
         temp_file.write_text("Moo Cow", "utf-8")
-        file_source.write_from("/moo", str(temp_file))
+        actual_path = file_source.write_from("/moo", str(temp_file))
+        assert "/moo" == actual_path
         assert expected_target.exists()
         assert (expected_target / "moo").exists()
 
@@ -883,4 +886,4 @@ class MockExceptionResponse:
         self._exception_msg = exception_msg
 
     def raise_for_status(self):
-        raise HTTPError(self._exception_msg, self._exception_msg, response=None)  # type: ignore[arg-type]
+        raise HTTPError(self._exception_msg, self._exception_msg, response=None)  # type: ignore[arg-type,unused-ignore]  # Fixed in types-requests 2.31.0.9 , which requires Python >=3.9 via urllib3 >=2

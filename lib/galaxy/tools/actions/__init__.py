@@ -9,6 +9,7 @@ from typing import (
     cast,
     Dict,
     List,
+    MutableMapping,
     Optional,
     Set,
     Tuple,
@@ -33,7 +34,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
@@ -533,7 +533,7 @@ class DefaultToolAction(ToolAction):
                     output,
                     wrapped_params.params,
                     inp_data,
-                    inp_dataset_collections,
+                    input_collections,
                     input_ext,
                     python_template_version=tool.python_template_version,
                     execution_cache=execution_cache,
@@ -754,15 +754,13 @@ class DefaultToolAction(ToolAction):
             job.set_state(app.model.Job.states.OK)
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             trans.response.send_redirect(redirect_url)
         else:
             if flush_job:
                 # Set HID and add to history.
                 job_flush_timer = ExecutionTimer()
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
         return job, out_data, history
@@ -810,8 +808,7 @@ class DefaultToolAction(ToolAction):
         session = trans.sa_session()
         try:
             session.expire_on_commit = False
-            with transaction(session):
-                session.commit()
+            session.commit()
         finally:
             session.expire_on_commit = True
         try:
@@ -1156,7 +1153,7 @@ def determine_output_format(
     output: "ToolOutput",
     parameter_context,
     input_datasets,
-    input_dataset_collections,
+    input_dataset_collections: MutableMapping[str, model.HistoryDatasetCollectionAssociation],
     random_input_ext,
     python_template_version="3",
     execution_cache=None,
@@ -1198,7 +1195,7 @@ def determine_output_format(
 
         if collection_name in input_dataset_collections:
             try:
-                input_collection = input_dataset_collections[collection_name][0][0]
+                input_collection = input_dataset_collections[collection_name]
                 input_collection_collection = input_collection.collection
                 if element_index is None:
                     # just pick the first HDA

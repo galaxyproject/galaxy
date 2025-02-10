@@ -47,7 +47,7 @@ def _run(args, gi):
 
 def _gi(args):
     gi = galaxy.GalaxyInstance(args.host, key=args.api_key)
-    name = "histexport-user-%d" % random.randint(0, 1000000)
+    name = f"histexport-user-{random.randint(0, 1000000)}"
 
     user = gi.users.create_local_user(name, f"{name}@galaxytesting.dev", "pass123")
     user_id = user["id"]

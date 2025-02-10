@@ -1,4 +1,5 @@
 export const DEFAULT_FILE_NAME = "New File";
+export const USER_FILE_PREFIX = "gxuserfiles://";
 export const URI_PREFIXES = [
     "http://",
     "https://",
@@ -7,11 +8,13 @@ export const URI_PREFIXES = [
     "gxfiles://",
     "gximport://",
     "gxuserimport://",
-    "gxuserfiles://",
+    USER_FILE_PREFIX,
     "gxftp://",
     "drs://",
     "invenio://",
     "zenodo://",
+    "dataverse://",
+    "elabftw://",
 ];
 
 export function isUrl(content) {

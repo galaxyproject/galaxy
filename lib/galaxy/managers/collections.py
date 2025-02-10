@@ -34,7 +34,6 @@ from galaxy.managers.hdas import (
 from galaxy.managers.hdcas import write_dataset_collection
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
@@ -249,7 +248,7 @@ class DatasetCollectionManager:
             if implicit_output_name:
                 dataset_collection_instance.implicit_output_name = implicit_output_name
 
-            log.debug("Created collection with %d elements" % (len(dataset_collection_instance.collection.elements)))
+            log.debug("Created collection with %d elements", len(dataset_collection_instance.collection.elements))
 
             if set_hid:
                 parent.add_dataset_collection(dataset_collection_instance)
@@ -430,8 +429,7 @@ class DatasetCollectionManager:
                 if purge and not dataset.purged:
                     async_result = self.hda_manager.purge(dataset, user=trans.user)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return async_result
 
     def update(self, trans: ProvidesHistoryContext, instance_type, id, payload):
@@ -474,8 +472,7 @@ class DatasetCollectionManager:
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
             parent.add_dataset_collection(new_hdca)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return new_hdca
 
     def _set_from_dict(self, trans: ProvidesUserContext, dataset_collection_instance, new_data):
@@ -501,8 +498,7 @@ class DatasetCollectionManager:
             )
 
         if changed.keys():
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
         # set client tag field response after the flush
         if new_tags is not None:
@@ -530,11 +526,10 @@ class DatasetCollectionManager:
         return collections
 
     def __persist(self, dataset_collection_instance, flush=True):
-        context = self.model.context
-        context.add(dataset_collection_instance)
+        session = self.model.session
+        session.add(dataset_collection_instance)
         if flush:
-            with transaction(context):
-                context.commit()
+            session.commit()
         return dataset_collection_instance
 
     def __recursively_create_collections_for_identifiers(
@@ -615,9 +610,9 @@ class DatasetCollectionManager:
         if "__object__" in element_identifier:
             the_object = element_identifier["__object__"]
             if the_object is not None and the_object.id:
-                context = self.model.context
-                if the_object not in context:
-                    the_object = context.get(type(the_object), the_object.id)
+                session = self.model.session
+                if the_object not in session:
+                    the_object = session.get(type(the_object), the_object.id)
             return the_object
 
         # dataset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}

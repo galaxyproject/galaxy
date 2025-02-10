@@ -42,7 +42,6 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
@@ -61,6 +60,7 @@ from galaxy.schema.schema import (
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
+    ExportRecordData,
     HistoryArchiveExportResult,
     HistoryImportArchiveSourceType,
     JobExportHistoryArchiveModel,
@@ -287,8 +287,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         # an anonymous user can only have one history
         if self.user_manager.is_anonymous(trans.user):
@@ -386,8 +385,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
@@ -404,8 +402,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return task_summary
 
     def update(
@@ -810,15 +807,24 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             serialization_params = SerializationParams()
         archived_history = self._serialize_history(trans, history, serialization_params, default_view)
         export_record_data = self._get_export_record_data(history)
-        archived_history["export_record_data"] = export_record_data.model_dump() if export_record_data else None
+        archived_history["export_record_data"] = export_record_data
         return archived_history
 
-    def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:
+    def _get_export_record_data(self, history: model.History) -> Optional[ExportRecordData]:
         if history.archive_export_id:
             export_record = self.history_export_manager.get_task_export_by_id(history.archive_export_id)
             export_metadata = self.history_export_manager.get_record_metadata(export_record)
-            if export_metadata and isinstance(export_metadata.request_data.payload, WriteStoreToPayload):
-                return export_metadata.request_data.payload
+            if export_metadata and isinstance(
+                request_data_payload := export_metadata.request_data.payload, WriteStoreToPayload
+            ):
+                request_uri = request_data_payload.target_uri
+                result_uri = export_metadata.result_data.uri if export_metadata.result_data else None
+
+                export_record_data_dict = request_data_payload.model_dump()
+                export_record_data_dict.update({"target_uri": result_uri or request_uri})
+                export_record_data = ExportRecordData(**export_record_data_dict)
+
+                return export_record_data
         return None
 
 

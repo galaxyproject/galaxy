@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import { types_to_icons } from "./utilities";
 
@@ -16,13 +16,11 @@ import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
 
-library.add(faCaretDown);
-
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array, default: null },
+    useSearchWorker: { type: Boolean, default: true },
 });
 
 const emit = defineEmits<{
@@ -40,17 +38,20 @@ const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, pa
 const loadingView = ref<string | undefined>(undefined);
 const query = ref("");
 const showAdvanced = ref(false);
+const errorMessage = ref<string | undefined>(undefined);
 
-onMounted(async () => {
+initializeToolPanel();
+async function initializeToolPanel() {
     try {
         await toolStore.fetchPanelViews();
         await initializeTools();
     } catch (error) {
         console.error(error);
+        errorMessage.value = errorMessageAsString(error);
     } finally {
         arePanelsFetched.value = true;
     }
-});
+}
 
 watch(
     () => currentPanelView.value,
@@ -100,12 +101,29 @@ const viewIcon = computed(() => {
     }
 });
 
+const showFavorites = computed({
+    get() {
+        return query.value.includes("#favorites");
+    },
+    set(value) {
+        if (value) {
+            if (!query.value.includes("#favorites")) {
+                query.value = `#favorites ${query.value}`.trim();
+            }
+        } else {
+            query.value = query.value.replace("#favorites", "").trim();
+        }
+    },
+});
+
 async function initializeTools() {
     try {
         await toolStore.fetchTools();
         await toolStore.initCurrentPanelView(defaultPanelView.value);
     } catch (error: any) {
         console.error("ToolPanel - Intialize error:", error);
+        errorMessage.value = errorMessageAsString(error);
+        rethrowSimple(error);
     }
 }
 
@@ -130,10 +148,17 @@ function onInsertWorkflow(workflowId: string | undefined, workflowName: string) 
 function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | undefined) {
     emit("onInsertWorkflowSteps", workflowId, workflowStepCount);
 }
+
+watch(
+    () => query.value,
+    (newQuery) => {
+        showFavorites.value = newQuery.includes("#favorites");
+    }
+);
 </script>
 
 <template>
-    <div v-if="arePanelsFetched" class="unified-panel" aria-labelledby="toolbox-heading">
+    <div v-if="arePanelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
@@ -163,13 +188,13 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                                 </Heading>
                             </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">
-                                <FontAwesomeIcon icon="caret-down" />
+                                <FontAwesomeIcon :icon="faCaretDown" />
                             </div>
                         </div>
                     </template>
                 </PanelViewMenu>
                 <div v-if="!showAdvanced" class="panel-header-buttons">
-                    <FavoritesButton :query="query" @onFavorites="(q) => (query = q)" />
+                    <FavoritesButton v-model="showFavorites" />
                 </div>
             </div>
         </div>
@@ -179,14 +204,19 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
             :panel-query.sync="query"
             :panel-view="currentPanelView"
             :show-advanced.sync="showAdvanced"
-            :editor-workflows="editorWorkflows"
             :data-managers="dataManagers"
             :module-sections="moduleSections"
+            :use-search-worker="useSearchWorker"
             @updatePanelView="updatePanelView"
             @onInsertTool="onInsertTool"
             @onInsertModule="onInsertModule"
             @onInsertWorkflow="onInsertWorkflow"
             @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+        <div v-else-if="errorMessage" data-description="tool panel error message">
+            <b-alert class="m-2" variant="danger" show>
+                {{ errorMessage }}
+            </b-alert>
+        </div>
         <div v-else>
             <b-badge class="alert-info w-100">
                 <LoadingSpan message="Loading Toolbox" />

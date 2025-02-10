@@ -59,7 +59,45 @@ galaxy:
       These lists will be gathered together in a nested list structured (collection type ``list:list``) where
       the outer element count and structure matches that of the input and the inner list for each of those
       is just the outputs of the tool for the corresponding element of the input.
+    collectionBuilder:
+      hideOriginalElements: |
+        Toggling this on means that the original history items that will become a part of the collection
+        will be hidden from the history panel (they will still be searchable via the 'visible: false' filter).
+      filteredExtensions: |
+        The history is filtered for the formats that are required for this collection. You might see some
+        items with other formats since those can still be valid inputs via implicit conversion.
+      requiredUploadExtensions: |
+        The formats that are required for this collection. The files you upload will be assumed to have
+        these formats. In the case of more than one format, you can select a specific format for
+        each individual file above. If there is only one format, Galaxy will attempt to set that as the
+        format for each file.
+      whyHomogenousCollections: |
+        Dataset collections are designed to streamline the analysis of large numbers of datasets by grouping
+        them together into a single, manageable entity. Unlike generic folders on your computer, which can hold
+        any mix of file types, dataset collections are specifically intended to be homogenous. This homogeneity
+        is crucial for consistency in processing. Homogeneous datasets ensure that each dataset in the collection
+        can be processed uniformly with the same tools and workflows. This eliminates the need for individual
+        adjustments, which can be time-consuming and prone to error. Most tools and workflows in Galaxy are designed
+        to operate on collections of similar data types. Homogeneous collections allow these tools to operate
+        uniformly over the collection.
+
   jobs:
+    metrics:
+      cores: |
+        This is how many [cores](https://en.wikipedia.org/wiki/Central_processing_unit) (or distinct central processing units (CPUs)) are
+        allocated to run the job for the tool. This value is generally configured for the tool by the Galaxy administrator. This value
+        does not guarantee how many cores the job actually used - the job may have used more and less based on how Galaxy is configured
+        and how the tool is programmed.
+
+      walltime: |
+        This is estimate of the length of time the job ran created by recording the start and stop of the job in the job script
+        created for the tool execution and subtracting these values. 
+
+      allocated_core_time: |
+        This is the number of cores Galaxy believes is allocated for the job times the estimated walltime for the job. This can be thought
+        of as scaling the runtime/walltime metric by the number of cores allocated - when purchasing compute time per core hour or consuming
+        compute time from a compute center's allocation - this is likely to be a more interesting and useful number than the walltime.
+
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.
       ok: |
@@ -116,3 +154,21 @@ galaxy:
       A utility for uploading files to a Galaxy server from the command line. Use ``galaxy-upload`` to upload
       file(s) to a Galaxy server, and ``galaxy-history-search``, a helper utility to find Galaxy histories
       to pass to the ``galaxy-upload`` command.
+    ruleBased: |
+      Galaxy can bulk import lists & tables of URLs into datasets or collections using reproducible rules.
+  
+  datasets:
+    formatVsDatatypeVsExtension: |
+      In Galaxy, the terms "datatype," "format," and "extension" are used to describe the nature of a dataset,
+      each with specific meanings.
+      
+      The ``datatype`` defines how a dataset is interpreted, validated, and processed, such as "fastqsanger", "bam",
+      or "vcf". Each datatype corresponds to a Python class that specifies how Galaxy should handle the file.
+      
+      The ``format`` is the user-facing label for the dataset's datatype, appearing in the Galaxy user interface
+      to indicate the structure and content expectations of the dataset.
+      
+      The ``extension`` is a string associated with each datatype, stored in Galaxy’s database to identify the
+      dataset’s datatype. This extension can match a file’s actual disk suffix (e.g., ".vcf") but may also be more
+      specialized (e.g., "fastqsanger"). Understanding these distinctions ensures that datasets are processed
+      correctly within Galaxy, maintaining the integrity and reproducibility of analyses.

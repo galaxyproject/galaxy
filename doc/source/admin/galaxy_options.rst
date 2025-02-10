@@ -1817,6 +1817,44 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``email_ban_file``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    E-mail ban file is used to specify email addresses that have been
+    banned. If a user attempts to register a new account using an
+    email address listed in this file, registration will be denied.
+    This file does not affect user sign-in. Email addresses are
+    matched against a canonical address representation based on rules
+    defined in <canonical_email_rules>. The file should include one
+    email address per line. Lines starting with the "#" character are
+    ignored.
+    Example value "banned_emails.conf"
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``canonical_email_rules``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Specifies how email addresses are reduced to their canonical form
+    by assigning rules to email service domains and domain aliases.
+    Available rules - ignore_case   Values are not case-sensitive
+    (RickDeckard@foo.cOM == rickdeckard@foo.com) - ignore_dots
+    Periods in the local-part of an email address are ignored
+    (rick.deckard@foo.com == rickdeckard@foo.com) - sub_addressing
+    Suffixes prefixed with <sub_addressing_delim> in the local-part of
+    an email address are ignored   (rickdeckard+anything@foo.com ==
+    rickdeckard@foo.com if delimiter is the character '+')
+:Default: ``{'all': {'ignore_case': False, 'ignore_dots': False, 'sub_addressing': False, 'sub_addressing_delim': '+'}, 'gmail.com': {'aliases': ['googlemail.com'], 'ignore_case': True, 'ignore_dots': True, 'sub_addressing': True}, 'proton.me': {'aliases': ['pm.me', 'protonmail.com'], 'ignore_case': True, 'sub_addressing': True}}``
+:Type: map
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``registration_warning_message``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4717,6 +4755,33 @@
     increase CPU usage of handler processes. Float values are allowed.
 :Default: ``1.0``
 :Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``calculate_dataset_hash``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    In which cases Galaxy should calculate a hash for a new dataset.
+    Dataset hashes can be used by the Galaxy job cache/search to check
+    if job inputs match. Setting the 'enable_celery_tasks' option to
+    true is also required for dataset hash calculation. Possible
+    values are: 'always', 'upload' (the default), 'never'. If set to
+    'upload', the hash is calculated only for the outputs of upload
+    jobs.
+:Default: ``upload``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``hash_function``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Hash function to use if 'calculate_dataset_hash' is enabled.
+    Possible values are: 'md5', 'sha1', 'sha256', 'sha512'
+:Default: ``sha256``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~

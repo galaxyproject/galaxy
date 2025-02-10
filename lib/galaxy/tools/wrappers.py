@@ -517,7 +517,7 @@ class HasDatasets:
         pass
 
     def _dataset_wrapper(
-        self, dataset: Union[DatasetInstance, DatasetCollectionElement], **kwargs: Any
+        self, dataset: Optional[Union[DatasetInstance, DatasetCollectionElement]], **kwargs: Any
     ) -> DatasetFilenameWrapper:
         return DatasetFilenameWrapper(dataset, **kwargs)
 
@@ -647,6 +647,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             collection = has_collection.collection
             self.name = has_collection.name
         elif isinstance(has_collection, DatasetCollectionElement):
+            assert has_collection.child_collection
             collection = has_collection.child_collection
             self.name = has_collection.element_identifier
         else:
@@ -661,8 +662,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
+            assert element_identifier is not None
 
-            if dataset_collection_element.is_collection:
+            if isinstance(element_object, DatasetCollection):
                 element_wrapper: DatasetCollectionElementWrapper = DatasetCollectionWrapper(
                     job_working_directory, dataset_collection_element, **kwargs
                 )

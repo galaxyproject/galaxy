@@ -111,28 +111,18 @@ describe("Lint", () => {
 
     it("test checked vs unchecked issues", async () => {
         const checked = wrapper.findAll("[data-icon='check']");
-        // Expecting 5 checks:
-        // 1. Workflow is annotated
-        // 2. Non-optional inputs (if available) are formal inputs
-        // 3. Inputs (if available) have labels and annotations
         expect(checked.length).toBe(2);
+
         const unchecked = wrapper.findAll("[data-icon='exclamation-triangle']");
-        // Expecting 3 warnings:
-        // 1. Workflow creator is not specified
-        // 2. Workflow license is not specified
-        // 3. Workflow has no labeled outputs
-        // 4. Untyped parameter found
-        // 5. Missing an annotation
-        // 6. Unlabeled output found
         expect(unchecked.length).toBe(5);
+
         const links = wrapper.findAll("a");
-        expect(links.length).toBe(6);
-        expect(links.at(0).text()).toContain("Try to automatically fix issues.");
-        expect(links.at(1).text()).toContain("Provide Creator Details.");
-        expect(links.at(2).text()).toContain("Specify a License.");
-        expect(links.at(3).text()).toContain("untyped_parameter");
-        expect(links.at(4).text()).toContain("data input: Missing an annotation");
-        expect(links.at(5).text()).toContain("step label: output");
+        expect(links.length).toBe(5);
+        expect(links.at(0).text()).toContain("Provide Creator Details.");
+        expect(links.at(1).text()).toContain("Specify a License.");
+        expect(links.at(2).text()).toContain("untyped_parameter");
+        expect(links.at(3).text()).toContain("data input: Missing an annotation");
+        expect(links.at(4).text()).toContain("step label: output");
     });
 
     it("should fire refactor event to extract untyped parameter and remove unlabeled workflows", async () => {

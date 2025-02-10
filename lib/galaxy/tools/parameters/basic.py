@@ -49,7 +49,10 @@ from galaxy.tool_util.parser.util import (
     ParameterParseException,
     text_input_is_optional,
 )
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    NO_REPLACEMENT,
+    workflow_building_modes,
+)
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -247,6 +250,8 @@ class ToolParameter(UsesDictVisibleKeys):
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
             return runtime_to_json(value)
+        elif value == NO_REPLACEMENT:
+            return {"__class__": "NoReplacement"}
         return self.to_json(value, app, use_security)
 
     def value_from_basic(self, value, app, ignore_errors=False):
@@ -255,16 +260,18 @@ class ToolParameter(UsesDictVisibleKeys):
             if isinstance(self, HiddenToolParameter):
                 raise ParameterValueError(message_suffix="Runtime Parameter not valid", parameter_name=self.name)
             return runtime_to_object(value)
-        elif isinstance(value, MutableMapping) and value.get("__class__") == "UnvalidatedValue":
-            return value["value"]
+        elif isinstance(value, MutableMapping):
+            if value.get("__class__") == "UnvalidatedValue":
+                return value["value"]
+            elif value.get("__class__") == "NoReplacement":
+                return NO_REPLACEMENT
         # Delegate to the 'to_python' method
-        if ignore_errors:
-            try:
-                return self.to_python(value, app)
-            except Exception:
-                return value
-        else:
+        try:
             return self.to_python(value, app)
+        except Exception:
+            if not ignore_errors:
+                raise
+            return value
 
     def value_to_display_text(self, value) -> str:
         if is_runtime_value(value):
@@ -368,11 +375,7 @@ class SimpleTextToolParameter(ToolParameter):
 
     def to_json(self, value, app, use_security):
         """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            rval = "" if not self.optional else None
-        else:
-            rval = unicodify(value)
-        return rval
+        return unicodify(value)
 
     def get_initial_value(self, trans, other_values):
         return self.value
@@ -1995,6 +1998,7 @@ class BaseDataToolParameter(ToolParameter):
                         dataset_count += 1
                         do_validate(v.hda)
                     else:
+                        assert v.child_collection
                         for dataset_instance in v.child_collection.dataset_instances:
                             dataset_count += 1
                             do_validate(dataset_instance)
@@ -2004,10 +2008,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if self.min is not None:
             if self.min > dataset_count:
-                raise ValueError("At least %d datasets are required for %s" % (self.min, self.name))
+                raise ValueError(f"At least {self.min} datasets are required for {self.name}")
         if self.max is not None:
             if self.max < dataset_count:
-                raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
+                raise ValueError(f"At most {self.max} datasets are required for {self.name}")
 
 
 def src_id_to_item(
@@ -2173,33 +2177,39 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
+            value_to_check: Union[
+                DatasetInstance, DatasetCollection, DatasetCollectionElement, HistoryDatasetCollectionAssociation
+            ] = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
-                    v = hda
+                    value_to_check = hda
                 elif ldda := v.ldda:
-                    v = ldda
+                    value_to_check = ldda
                 elif collection := v.child_collection:
-                    v = collection
-                elif not v.collection and v.collection.populated_optimized:
+                    value_to_check = collection
+                elif v.collection and not v.collection.populated_optimized:
                     raise ParameterValueError("the selected collection has not been populated.", self.name)
                 else:
                     raise ParameterValueError("Collection element in unexpected state", self.name)
-            if isinstance(v, DatasetInstance):
-                if v.deleted:
+            if isinstance(value_to_check, DatasetInstance):
+                if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset has been deleted.", self.name)
-                elif v.dataset and v.dataset.state in [Dataset.states.ERROR, Dataset.states.DISCARDED]:
+                elif value_to_check.dataset and value_to_check.dataset.state in [
+                    Dataset.states.ERROR,
+                    Dataset.states.DISCARDED,
+                ]:
                     raise ParameterValueError(
                         "the previously selected dataset has entered an unusable state", self.name
                     )
-                match = dataset_matcher.hda_match(v)
+                match = dataset_matcher.hda_match(value_to_check)
                 if match and match.implicit_conversion:
-                    v.implicit_conversion = True  # type:ignore[union-attr]
-            elif isinstance(v, HistoryDatasetCollectionAssociation):
-                if v.deleted:
+                    value_to_check.implicit_conversion = True  # type:ignore[attr-defined]
+            elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
+                if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)
-                v = v.collection
-            if isinstance(v, DatasetCollection):
-                if v.elements_deleted:
+                value_to_check = value_to_check.collection
+            if isinstance(value_to_check, DatasetCollection):
+                if value_to_check.elements_deleted:
                     raise ParameterValueError(
                         "the previously selected dataset collection has elements that are deleted.", self.name
                     )
@@ -2520,7 +2530,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if isinstance(value, HistoryDatasetCollectionAssociation):
                 display_text = f"{value.hid}: {value.name}"
             else:
-                display_text = "Element %d:%s" % (value.identifier_index, value.identifier_name)
+                display_text = f"Element {value.identifier_index}:{value.identifier_name}"
         except AttributeError:
             display_text = "No dataset collection."
         return display_text

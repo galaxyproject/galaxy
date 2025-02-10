@@ -393,6 +393,8 @@ CORSPreflightRequired = Depends(cors_preflight)
 
 
 class BaseGalaxyAPIController(BaseAPIController):
+    app: StructuredApp
+
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 

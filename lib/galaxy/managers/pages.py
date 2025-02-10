@@ -54,7 +54,6 @@ from galaxy.model import (
     User,
     Visualization,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -157,6 +156,10 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(message)
 
         stmt = select(self.model_class)
+
+        # Do not include pages authored by deleted users
+        if show_published:
+            stmt = stmt.join(Page.user).where(User.deleted == false())
 
         filters = []
         if show_own or (not show_published and not show_shared and not is_admin):
@@ -284,8 +287,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         # Persist
         session = trans.sa_session
         session.add(page)
-        with transaction(session):
-            session.commit()
+        session.commit()
         return page
 
     def save_new_revision(self, trans, page, payload):
@@ -317,8 +319,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
         # Persist
         session = trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
         return page_revision
 
     def rewrite_content_for_import(self, trans, content, content_format: str):

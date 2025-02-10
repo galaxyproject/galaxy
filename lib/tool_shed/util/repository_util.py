@@ -23,7 +23,6 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
@@ -229,8 +228,7 @@ def create_repository(
     lhs = f"{app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
     # Flush to get the id.
     session = sa_session()
-    with transaction(session):
-        session.commit()
+    session.commit()
     final_repository_path = repository.ensure_hg_repository_path(app.config.file_path)
     os.rename(repository_path, final_repository_path)
     app.hgweb_config_manager.add_entry(lhs, final_repository_path)
@@ -390,12 +388,7 @@ def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
             roles=[role], users=in_users, groups=in_groups, repositories=in_repositories
         )
         sa_session.refresh(role)
-        message += "Role <b>%s</b> has been associated with %d users, %d groups and %d repositories.  " % (
-            escape(str(role.name)),
-            len(in_users),
-            len(in_groups),
-            len(in_repositories),
-        )
+        message += f"Role <b>{escape(str(role.name))}</b> has been associated with {len(in_users)} users, {len(in_groups)} groups and {len(in_repositories)} repositories.  "
     in_users = []
     out_users = []
     in_groups = []
@@ -503,8 +496,7 @@ def update_validated_repository(
 
     if flush_needed:
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         message = "The repository information has been updated."
     else:
         message = None

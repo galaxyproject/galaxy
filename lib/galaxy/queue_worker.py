@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 from inspect import ismodule
+from typing import TYPE_CHECKING
 
 from kombu import (
     Consumer,
@@ -31,6 +32,9 @@ from galaxy.util.logging import set_log_levels
 
 logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import MinimalManagerApp
 
 
 def send_local_control_task(app, task, get_response=False, kwargs=None):
@@ -245,7 +249,7 @@ def rebuild_toolbox_search_index(app, **kwargs):
         log.debug("App is not a webapp, not building a search index")
 
 
-def reload_job_rules(app, **kwargs):
+def reload_job_rules(app: "MinimalManagerApp", **kwargs):
     reload_timer = util.ExecutionTimer()
     for module in job_rule_modules(app):
         rules_module_name = module.__name__
@@ -266,7 +270,7 @@ def reload_tour(app, **kwargs):
     log.debug("Tour reloaded")
 
 
-def __job_rule_module_names(app):
+def __job_rule_module_names(app: "MinimalManagerApp"):
     rules_module_names = {"galaxy.jobs.rules"}
     if app.job_config.dynamic_params is not None:
         module_name = app.job_config.dynamic_params.get("rules_module")
@@ -280,7 +284,7 @@ def __job_rule_module_names(app):
     return rules_module_names
 
 
-def job_rule_modules(app):
+def job_rule_modules(app: "MinimalManagerApp"):
     rules_module_list = []
     for rules_module_name in __job_rule_module_names(app):
         rules_module = sys.modules.get(rules_module_name, None)

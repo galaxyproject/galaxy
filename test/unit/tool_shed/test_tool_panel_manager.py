@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from galaxy.app_unittest_utils.toolbox_support import (
     BaseToolBoxTestCase,
@@ -71,7 +72,7 @@ class TestToolPanelManager(BaseToolBoxTestCase):
 
     def test_add_twice(self):
         self._init_dynamic_tool_conf()
-        previous_guid = None
+        previous_guid: Optional[str] = None
         for v in "1", "2", "3":
             self.__toolbox = self.get_new_toolbox()
             changeset = f"0123456789abcde{v}"
@@ -107,7 +108,7 @@ class TestToolPanelManager(BaseToolBoxTestCase):
             # New GUID replaced old one in tool panel but both
             # appear in integrated tool panel.
             if previous_guid:
-                assert (f"tool_{previous_guid}") not in section.panel_items()  # type: ignore[unreachable]
+                assert (f"tool_{previous_guid}") not in section.panel_items()
             assert (f"tool_{guid}") in self.toolbox._integrated_tool_panel["tid1"].panel_items()
             previous_guid = guid
 

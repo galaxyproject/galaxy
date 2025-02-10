@@ -24,7 +24,6 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import transaction
 from galaxy.webapps.base.webapp import create_new_session
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.users import (
@@ -329,8 +328,7 @@ def replace_previous_session(trans, user):
     new_session = create_new_session(trans, prev_galaxy_session, user)
     trans.set_galaxy_session(new_session)
     trans.sa_session.add_all((prev_galaxy_session, new_session))
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     set_auth_cookie(trans, new_session)
 
 
@@ -342,5 +340,4 @@ def invalidate_user_sessions(session, user_id):
         .where(GalaxySession.is_valid == true())
     )
     session.execute(stmt)
-    with transaction(session):
-        session.commit()
+    session.commit()

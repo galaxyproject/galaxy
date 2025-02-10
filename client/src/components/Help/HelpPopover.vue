@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { BPopover } from "bootstrap-vue";
-
 import HelpTerm from "./HelpTerm.vue";
+import Popper from "@/components/Popper/Popper.vue";
 
 interface Props {
-    target: any;
+    target: HTMLElement;
     term: string;
 }
 
@@ -12,7 +11,7 @@ defineProps<Props>();
 </script>
 
 <template>
-    <BPopover v-if="target" :target="target" triggers="hover" placement="bottom">
-        <HelpTerm :term="term" />
-    </BPopover>
+    <Popper v-if="target" :reference-el="target" mode="light">
+        <HelpTerm :term="term" class="p-2" />
+    </Popper>
 </template>

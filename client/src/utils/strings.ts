@@ -41,3 +41,11 @@ export function snakeCaseToTitleCase(str: string): string {
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
 }
+
+/**
+ * Capitalize the first letter of a string
+ */
+export function capitalizeFirstLetter(str: string): string {
+    str = str.trim();
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}

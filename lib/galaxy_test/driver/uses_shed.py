@@ -7,7 +7,6 @@ from typing import ClassVar
 from unittest import SkipTest
 
 from galaxy.app import UniverseApplication
-from galaxy.model.base import transaction
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 from galaxy.util.unittest_utils import is_site_up
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
@@ -102,5 +101,4 @@ class UsesShed(UsesShedApi):
         ]
         for item in models_to_delete:
             model.context.query(item).delete()
-        with transaction(model.context):
-            model.context.commit()
+        model.context.commit()

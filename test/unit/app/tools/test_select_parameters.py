@@ -3,7 +3,6 @@ from unittest.mock import Mock
 import pytest
 
 from galaxy import model
-from galaxy.model.base import transaction
 from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from .util import BaseParameterTestCase
 
@@ -57,10 +56,9 @@ class TestSelectToolParameter(BaseParameterTestCase):
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.app.tool_data_tables["test_table"] = MockToolDataTable()
         self.trans = Mock(
             app=self.app,

@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watchImmediate } from "@vueuse/core";
 import { BButton, BButtonGroup, BModal } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
@@ -54,7 +55,12 @@ const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
-const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
+const historyPreferredObjectStoreId = ref<string | null | undefined>();
+
+watchImmediate(
+    () => props.history,
+    () => (historyPreferredObjectStoreId.value = props.history.preferred_object_store_id)
+);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 const canManageStorage = computed(

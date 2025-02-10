@@ -2,7 +2,6 @@ import logging
 import re
 
 from galaxy import util
-from galaxy.model.base import transaction
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
 
@@ -46,8 +45,7 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
             session = trans.install_model.context
             session.delete(rrda)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
 
 def generate_tool_guid(repository_clone_url, tool):
