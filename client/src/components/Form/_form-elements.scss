@@ -34,15 +34,15 @@
                 display: flex;
                 align-items: center;
                 font-weight: normal;
+                font-size: 100%;
+
+                &.populated {
+                    background-color: map-get($galaxy-state-bg, "ok");
+                }
+                &.unpopulated {
+                    background-color: $state-info-bg;
+                }
             }
-        }
-
-        .populated {
-            background-color: map-get($galaxy-state-bg, "ok");
-        }
-
-        .unpopulated {
-            background-color: $state-info-bg;
         }
     }
 
