@@ -305,8 +305,8 @@ class TestUserSerializer(BaseTestCase):
         self.assertKeys(serialized, self.user_serializer.views["summary"] + ["create_time"])
 
         self.log("should be able to use keys on their own")
-        serialized = self.user_serializer.serialize_to_view(user, keys=["tags_used", "is_admin"])
-        self.assertKeys(serialized, ["tags_used", "is_admin"])
+        serialized = self.user_serializer.serialize_to_view(user, keys=["is_admin"])
+        self.assertKeys(serialized, ["is_admin"])
 
     def test_serializers(self):
         user = self.user_manager.create(**user2_data)
@@ -326,7 +326,6 @@ class TestUserSerializer(BaseTestCase):
         assert isinstance(serialized["total_disk_usage"], float)
         assert isinstance(serialized["nice_total_disk_usage"], str)
         assert isinstance(serialized["quota_percent"], (type(None), float))
-        assert isinstance(serialized["tags_used"], list)
 
         self.log("serialized should jsonify well")
         self.assertIsJsonifyable(serialized)
