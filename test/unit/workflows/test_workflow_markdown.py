@@ -17,7 +17,7 @@ workflow_display()
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow\n" in galaxy_markdown
-    assert "```galaxy\nworkflow_display(workflow_id=342,workflow_checkpoint=0)\n```\n" in galaxy_markdown
+    assert "```galaxy\nworkflow_display(workflow_id=342, workflow_checkpoint=0)\n```\n" in galaxy_markdown
 
 
 def test_inputs_section_expansion():
@@ -29,7 +29,7 @@ invocation_inputs()
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow Inputs" in galaxy_markdown
-    assert "```galaxy\nhistory_dataset_display(history_dataset_id=567)\n" in galaxy_markdown
+    assert "```galaxy\ninvocation_outputs(invocation_id=44)\n" in galaxy_markdown
     assert len(galaxy_markdown.split("```")) == 3
 
 
@@ -42,7 +42,7 @@ invocation_outputs()
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow Outputs" in galaxy_markdown
-    assert "```galaxy\nhistory_dataset_display(history_dataset_id=563)" in galaxy_markdown
+    assert "```galaxy\ninvocation_outputs(invocation_id=44)" in galaxy_markdown
 
 
 def test_input_reference_mapping():
@@ -54,7 +54,7 @@ history_dataset_peek(input=input1)
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
-    assert "```galaxy\nhistory_dataset_peek(history_dataset_id=567)\n```" in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_peek(invocation_id=44, input=input1)\n```" in galaxy_markdown
 
 
 def test_invocation_time():
@@ -78,7 +78,7 @@ history_dataset_as_image(output=output_label)
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
-    assert "```galaxy\nhistory_dataset_as_image(history_dataset_id=563)\n```" in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_as_image(invocation_id=44, output=output_label)\n```" in galaxy_markdown
 
 
 def resolved_markdown(workflow_markdown):
