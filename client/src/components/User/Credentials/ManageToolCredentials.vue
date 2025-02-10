@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import {
@@ -31,6 +32,7 @@ const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCreden
 const emit = defineEmits<{
     (e: "save-credentials", credentials: CreateSourceCredentialsPayload): void;
     (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
+    (e: "close"): void;
 }>();
 
 function saveCredentials() {
@@ -148,7 +150,13 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
 </script>
 
 <template>
-    <div>
+    <BModal
+        visible
+        title="Manage Tool Credentials"
+        hide-footer
+        no-close-on-backdrop
+        no-close-on-esc
+        @close="emit('close')">
         <p>
             Manage your credentials for <strong>{{ toolId }}</strong> (<strong>{{ toolVersion }}</strong
             >) here. After making any changes, be sure to click <strong>Save Credentials</strong> to apply them.
@@ -166,8 +174,9 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
                 @update-current-set="onCurrentSetChange" />
         </div>
 
-        <button class="btn-primary" @click="saveCredentials">Save Credentials</button>
-    </div>
+        <BButton variant="outline-danger" size="sm" @click="emit('close')"> Discard changes </BButton>
+        <BButton class="btn-primary" @click="saveCredentials">Save Credentials</BButton>
+    </BModal>
 </template>
 
 <style scoped>
