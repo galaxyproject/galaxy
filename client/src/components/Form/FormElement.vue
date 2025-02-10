@@ -186,7 +186,9 @@ const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
-const showField = computed(() => !collapsed.value && !props.disabled);
+const showField = computed(
+    () => !collapsed.value && !props.disabled && (!props.workflowRun || props.type !== "boolean")
+);
 const isUriDataField = computed(() => {
     const dataField = props.type == "data";
     if (dataField && props.value && "src" in props.value) {
@@ -313,7 +315,10 @@ function onAlert(value: string | undefined) {
                 </span>
             </div>
             <div v-if="props.workflowRun" class="d-flex align-items-center">
-                <BBadge class="flex-gapx-1 workflow-run-element-title" :class="populatedClass">
+                <BBadge
+                    v-if="props.type !== 'boolean'"
+                    class="flex-gapx-1 workflow-run-element-title"
+                    :class="populatedClass">
                     <i>{{ workflowRunFormTitleItems.message }}</i>
                     <FontAwesomeIcon
                         v-if="workflowRunFormTitleItems?.icon"
@@ -321,6 +326,7 @@ function onAlert(value: string | undefined) {
                         :class="workflowRunFormTitleItems.class"
                         fixed-width />
                 </BBadge>
+                <FormBoolean v-else :id="props.id" v-model="currentValue" />
                 <slot name="workflow-run-form-title-items" />
             </div>
         </div>
