@@ -31,7 +31,7 @@ def init():
 if __name__ == "__main__":
     print("Loading Galaxy model...")
     model, object_store = init()
-    sa_session = model.context.current
+    sa_session = model.context
     session = sa_session()
 
     set = 0

@@ -70,7 +70,7 @@ def quotacheck(sa_session, users, engine, object_store):
 if __name__ == "__main__":
     print("Loading Galaxy model...")
     model, object_store, engine = init()
-    sa_session = model.context.current
+    sa_session = model.context
 
     if not args.username and not args.email:
         user_count = sa_session.query(model.User).count()
