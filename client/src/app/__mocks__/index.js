@@ -20,7 +20,6 @@ export function getGalaxyInstance() {
             total_disk_usage: 61815527,
             nice_total_disk_usage: "59.0 MB",
             email: "test@test.test",
-            tags_used: ["test"],
             model_class: "User",
             id: "f2db41e1fa331b3e",
             attributes: {},
