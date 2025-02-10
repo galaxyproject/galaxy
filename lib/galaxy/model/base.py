@@ -59,9 +59,6 @@ class ModelMapping(Bunch):
         self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)
         context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
-        # For backward compatibility with "context.current"
-        # deprecated?
-        context.current = context
         self.session = context
         self.scoped_registry = context.registry
 

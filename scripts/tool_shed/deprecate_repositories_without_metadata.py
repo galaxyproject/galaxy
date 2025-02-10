@@ -205,7 +205,7 @@ class DeprecateRepositoriesApplication:
         session from the threadlocal session context, but this is provided
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
-        return self.model.context.current
+        return self.model.context
 
     def shutdown(self):
         pass

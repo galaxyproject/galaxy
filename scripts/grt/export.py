@@ -124,7 +124,7 @@ def main(argv):
 
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
-    sa_session = model.context.current
+    sa_session = model.context
     annotate("galaxy_end")
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
