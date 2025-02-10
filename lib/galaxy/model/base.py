@@ -11,8 +11,10 @@ from inspect import (
     getmembers,
     isclass,
 )
+from types import ModuleType
 from typing import (
     Dict,
+    List,
     Type,
     Union,
 )
@@ -54,7 +56,7 @@ def check_database_connection(session):
 
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
-    def __init__(self, model_modules, engine):
+    def __init__(self, model_modules: List[ModuleType], engine):
         self.engine = engine
         self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)
@@ -62,11 +64,11 @@ class ModelMapping(Bunch):
         self.session = context
         self.scoped_registry = context.registry
 
-        model_classes = {}
+        model_classes: Dict[str, type] = {}
         for module in model_modules:
-            m_obs = getmembers(module, isclass)
-            m_obs = dict([m for m in m_obs if m[1].__module__ == module.__name__])
-            model_classes.update(m_obs)
+            name_class_pairs = getmembers(module, isclass)
+            filtered_module_classes_dict = dict(m for m in name_class_pairs if m[1].__module__ == module.__name__)
+            model_classes.update(filtered_module_classes_dict)
 
         super().__init__(**model_classes)
 

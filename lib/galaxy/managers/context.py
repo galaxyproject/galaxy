@@ -63,7 +63,6 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.base import ModelMapping
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
@@ -155,10 +154,10 @@ class ProvidesAppContext:
             self.sa_session.commit()
 
     @property
-    def sa_session(self) -> galaxy_scoped_session:
+    def sa_session(self):
         """Provide access to Galaxy's SQLAlchemy session.
 
-        :rtype: galaxy.model.scoped_session.galaxy_scoped_session
+        :rtype: sqlalchemy.orm.scoped_session
         """
         return self.app.model.session
 
