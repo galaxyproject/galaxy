@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { getGalaxyInstance } from "@/app";
 import { computed } from "vue";
 
-const errorReportingAvailable = computed(() =>{
+import { getGalaxyInstance } from "@/app";
+
+const errorReportingAvailable = computed(() => {
     const Galaxy = getGalaxyInstance();
-    if (!!Galaxy.Sentry.isInitialized) {
-        return "Your error has been logged in Sentry to improve your experience.";
-    }
+    return Galaxy.Sentry.isInitialized ?? "Your error has been logged in Sentry to improve your experience.";
 });
 </script>
 <template>

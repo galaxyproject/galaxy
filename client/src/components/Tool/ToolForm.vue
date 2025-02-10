@@ -141,6 +141,7 @@ import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
+import ErrorPluginTracker from "@/components/Common/ErrorPluginTracker.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 export default {
@@ -266,7 +267,7 @@ export default {
             return "Run Tool";
         },
         expandedIcon() {
-            return this.isExpanded ? '-' : '+';
+            return this.isExpanded ? "-" : "+";
         },
     },
     watch: {
