@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton, BModal } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { isRegisteredUser } from "@/api";
@@ -151,8 +151,8 @@ function areRequiredSetByUser(credentials: UserCredentials): boolean {
     );
 }
 
-function provideCredentials() {
-    showModal.value = true;
+function toggleDialog() {
+    showModal.value = !showModal.value;
 }
 
 async function onSavedCredentials(providedCredentials: CreateSourceCredentialsPayload) {
@@ -225,20 +225,20 @@ checkUserCredentials();
                     </span>
                 </div>
 
-                <BButton variant="primary" size="sm" class="provide-credentials-btn" @click="provideCredentials">
+                <BButton variant="primary" size="sm" class="provide-credentials-btn" @click="toggleDialog">
                     {{ provideCredentialsButtonTitle }}
                 </BButton>
             </div>
         </BAlert>
-        <BModal v-model="showModal" title="Manage Tool Credentials" hide-footer>
-            <ManageToolCredentials
-                :tool-id="props.toolId"
-                :tool-version="props.toolVersion"
-                :tool-credentials-definition="credentialsDefinition"
-                :tool-user-credentials="userCredentials"
-                @delete-credentials-group="onDeleteCredentialsGroup"
-                @save-credentials="onSavedCredentials" />
-        </BModal>
+        <ManageToolCredentials
+            v-if="showModal"
+            :tool-id="props.toolId"
+            :tool-version="props.toolVersion"
+            :tool-credentials-definition="credentialsDefinition"
+            :tool-user-credentials="userCredentials"
+            @delete-credentials-group="onDeleteCredentialsGroup"
+            @save-credentials="onSavedCredentials"
+            @close="toggleDialog" />
     </div>
 </template>
 
