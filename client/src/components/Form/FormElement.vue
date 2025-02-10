@@ -117,36 +117,6 @@ const unPopulatedError = computed(
         props.workflowRun && alerts.value?.length === 1 && alerts.value[0] === "Please provide a value for this option."
 );
 
-// TODO: Uncomment and unify and when decided on badge or not
-// const titleClass = computed(() => {
-//     return props.workflowRun
-//         ? {
-//               "card-header": true,
-//               "mb-2": true,
-//               populated: !isEmpty.value,
-//               unpopulated: hasAlert.value || (isEmpty.value && !isOptional.value),
-//           }
-//         : {};
-// });
-
-// TODO: Temporary, remove and unify and when decided on badge or not
-const isBadge = true;
-// TODO: Temporary, remove and unify and when decided on badge or not
-const titleClass = computed(() => {
-    if (!props.workflowRun) {
-        return {};
-    }
-    const retClass: Record<string, boolean> = {
-        "card-header": true,
-        "mb-2": true,
-    };
-    if (!isBadge) {
-        if (populatedClass.value) {
-            retClass[`${populatedClass.value}`] = true;
-        }
-    }
-    return retClass;
-});
 const populatedClass = computed<string>(() => {
     if (hasAlert.value || (isEmpty.value && !isOptional.value)) {
         return "unpopulated";
@@ -155,7 +125,6 @@ const populatedClass = computed<string>(() => {
     }
     return "";
 });
-// -------------------------------------------------------------------
 
 const workflowRunFormTitleItems = computed(() => {
     switch (true) {
@@ -305,7 +274,7 @@ function onAlert(value: string | undefined) {
         }">
         <FormError v-if="hasAlert && !props.workflowRun" :alerts="alerts" />
 
-        <div class="ui-form-title" :class="titleClass">
+        <div class="ui-form-title" :class="{ 'card-header mb-2': props.workflowRun }">
             <div>
                 <span v-if="collapsible || connectable">
                     <b-button
@@ -344,17 +313,14 @@ function onAlert(value: string | undefined) {
                 </span>
             </div>
             <div v-if="props.workflowRun" class="d-flex align-items-center">
-                <component
-                    :is="isBadge ? BBadge : 'div'"
-                    class="flex-gapx-1 workflow-run-element-title"
-                    :class="isBadge ? populatedClass : ''">
+                <BBadge class="flex-gapx-1 workflow-run-element-title" :class="populatedClass">
                     <i>{{ workflowRunFormTitleItems.message }}</i>
                     <FontAwesomeIcon
                         v-if="workflowRunFormTitleItems?.icon"
                         :icon="workflowRunFormTitleItems.icon"
                         :class="workflowRunFormTitleItems.class"
                         fixed-width />
-                </component>
+                </BBadge>
                 <slot name="workflow-run-form-title-items" />
             </div>
         </div>
