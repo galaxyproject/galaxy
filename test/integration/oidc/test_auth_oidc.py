@@ -10,6 +10,7 @@ from string import Template
 from typing import ClassVar
 from urllib import parse
 
+from galaxy import model
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
@@ -205,8 +206,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     def test_oidc_login_existing_user(self):
         # pre-create a user account manually
         sa_session = self._app.model.session
-        User = self._app.model.User
-        user = User(email="gxyuser_existing@galaxy.org", username="precreated_user")
+        user = model.User(email="gxyuser_existing@galaxy.org", username="precreated_user")
         user.set_password_cleartext("test123")
         sa_session.add(user)
         try:
@@ -230,8 +230,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     def test_oidc_login_account_linkup(self):
         # pre-create a user account manually
         sa_session = self._app.model.session
-        User = self._app.model.User
-        user = User(email="gxyuser_existing@galaxy.org", username="precreated_user")
+        user = model.User(email="gxyuser_existing@galaxy.org", username="precreated_user")
         user.set_password_cleartext("test123")
         sa_session.add(user)
         try:

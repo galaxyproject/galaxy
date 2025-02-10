@@ -144,6 +144,7 @@ class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integratio
             assert content == "a\n", content
             stmt = select(Dataset).order_by(Dataset.create_time.desc()).limit(1)
             dataset = self._app.model.session.execute(stmt).unique().scalar_one()
+            assert dataset.external_filename is not None
             assert dataset.external_filename.endswith("/root/a")
             assert os.path.exists(dataset.external_filename)
             assert open(dataset.external_filename).read() == "a\n"

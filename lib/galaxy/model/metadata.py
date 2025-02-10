@@ -25,7 +25,6 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
@@ -37,6 +36,8 @@ from galaxy.util import (
 from galaxy.util.json import safe_dumps
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
+
     from galaxy.model import DatasetInstance
     from galaxy.model.none_like import NoneDataset
     from galaxy.model.store import SessionlessContext
@@ -84,7 +85,7 @@ class MetadataCollection(Mapping):
     def __init__(
         self,
         parent: Union["DatasetInstance", "NoneDataset"],
-        session: Optional[Union[galaxy_scoped_session, "SessionlessContext"]] = None,
+        session: Optional[Union["scoped_session", "SessionlessContext"]] = None,
     ) -> None:
         self.parent = parent
         self._session = session

@@ -168,8 +168,8 @@ class HistoryContentsManager(base.SortableManager):
         statement: Select = (
             select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
-        counts = self.app.model.session().execute(statement).fetchall()
-        return dict(counts)
+        counts = self.app.model.session.execute(statement).fetchall()
+        return dict(counts)  # type:ignore[arg-type]
 
     def active_counts(self, history):
         """

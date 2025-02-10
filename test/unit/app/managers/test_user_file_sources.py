@@ -824,7 +824,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert sec_val in ["", None]
 
     def _assert_modify_throws_exception(
-        self, user_file_source: UserFileSourceModel, modify: ModifyInstancePayload, exception_type: Type
+        self, user_file_source: UserFileSourceModel, modify: ModifyInstancePayload, exception_type: Type[Exception]
     ):
         exception_thrown = False
         try:

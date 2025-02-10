@@ -54,7 +54,6 @@ from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
-from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import (
     hg_util,
     metadata_util,
@@ -493,11 +492,13 @@ class Repository(Base, Dictifiable):
         # have repository dependencies. However, if a readme file is uploaded, or some other change
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
+        from tool_shed.dependencies.repository.relation_builder import RelationBuilder
+
         repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(app, self, changeset)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                rb = relation_builder.RelationBuilder(app, self, repository_metadata, toolshed_url)
+                rb = RelationBuilder(app, self, repository_metadata, toolshed_url)
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 if repository_dependencies:
                     return repository_dependencies

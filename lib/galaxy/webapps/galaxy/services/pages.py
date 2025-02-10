@@ -1,5 +1,8 @@
 import logging
-from typing import Tuple
+from typing import (
+    Tuple,
+    Union,
+)
 
 from galaxy import exceptions
 from galaxy.celery.tasks import prepare_pdf_download
@@ -60,7 +63,7 @@ class PagesService(ServiceBase):
 
     def index(
         self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[PageSummaryList, int]:
+    ) -> Tuple[PageSummaryList, Union[int, None]]:
         """Return a list of Pages viewable by the user
 
         :rtype:     list

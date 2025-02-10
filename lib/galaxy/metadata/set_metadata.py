@@ -56,6 +56,7 @@ from galaxy.model import (
 )
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.store import SessionlessContext
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import (
     build_object_store_from_config,
@@ -303,6 +304,7 @@ def set_metadata_portable(
     import_model_store = store.imported_store_for_metadata(
         tool_job_working_directory / "metadata/outputs_new", object_store=object_store
     )
+    assert isinstance(import_model_store.sa_session, SessionlessContext)
 
     tool_script_file = tool_job_working_directory / "tool_script.sh"
     job: Optional[Job] = None

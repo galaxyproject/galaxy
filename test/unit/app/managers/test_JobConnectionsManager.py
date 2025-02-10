@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import pytest
 from sqlalchemy import union
 
@@ -7,8 +9,10 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     Job,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.unittest_utils import GalaxyDataTestApp
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
 @pytest.fixture
@@ -23,7 +27,7 @@ def job_connections_manager(sa_session) -> JobConnectionsManager:
 
 
 # =============================================================================
-def setup_connected_dataset(sa_session: galaxy_scoped_session):
+def setup_connected_dataset(sa_session: "scoped_session"):
     center_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hdca = HistoryDatasetCollectionAssociation()
@@ -52,7 +56,7 @@ def setup_connected_dataset(sa_session: galaxy_scoped_session):
     return center_hda, expected_graph
 
 
-def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
+def setup_connected_dataset_collection(sa_session: "scoped_session"):
     center_hdca = HistoryDatasetCollectionAssociation()
     input_hda1 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hda2 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
