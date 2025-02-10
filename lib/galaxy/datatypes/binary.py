@@ -667,7 +667,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
         """
-        pysam.merge("-O", "BAM", output_file, *split_files)  # type: ignore[attr-defined]
+        pysam.merge("-O", "BAM", output_file, *split_files)  # type: ignore[attr-defined, unused-ignore]
 
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
@@ -735,7 +735,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             [f"-@{slots}", file_name, "-T", tmp_sorted_dataset_file_name_prefix, "-O", "BAM", "-o", sorted_file_name]
         )
         try:
-            pysam.sort(*sort_args)  # type: ignore[attr-defined]
+            pysam.sort(*sort_args)  # type: ignore[attr-defined, unused-ignore]
         except Exception:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise
@@ -932,9 +932,9 @@ class Bam(BamNative):
             )
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore [attr-defined]
+            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore[attr-defined, unused-ignore]
         else:
-            pysam.index(index_flag, "-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore [attr-defined]
+            pysam.index(index_flag, "-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore[attr-defined, unused-ignore]
         dataset.metadata.bam_index = index_file
 
     def sniff(self, filename: str) -> bool:
@@ -1125,7 +1125,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset: HasFileName, index_file) -> bool:
         try:
-            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore [attr-defined]
+            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore[attr-defined, unused-ignore]
             return True
         except Exception as exc:
             log.warning("%s, set_index_file Exception: %s", self, exc)
