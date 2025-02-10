@@ -29,7 +29,7 @@ invocation_inputs()
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow Inputs" in galaxy_markdown
-    assert "```galaxy\ninvocation_outputs(invocation_id=44)\n" in galaxy_markdown
+    assert "```galaxy\ninvocation_inputs(invocation_id=44)\n" in galaxy_markdown
     assert len(galaxy_markdown.split("```")) == 3
 
 
