@@ -35,7 +35,7 @@ const hasDetails = computed(() => {
 
         <div v-if="toolStderr">
             <p>Tool generated the following standard error:</p>
-
+            
             <pre id="dataset-error-tool-stderr" class="rounded code">
                 {{ toolStderr }}
             </pre>

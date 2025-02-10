@@ -19,9 +19,16 @@
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
             </b-alert>
-            <small class="text-muted">
-                <pre>{{ errorContentPretty }}</pre>
-            </small>
+            <BLink
+                :aria-expanded="isExpanded ? 'true' : 'false'"
+                aria-controls="collapse-previous"
+                @click="isExpanded = !isExpanded">
+                ({{ expandedIcon }}) Error transcript:
+            </BLink>
+            <BCollapse id="collapse-previous" v-model="isExpanded">
+                <pre class="rounded code">{{ errorContentPretty }}</pre>
+            </BCollapse>
+            <br />
         </b-modal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
         <ToolCard
@@ -112,6 +119,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import { BCollapse, BLink } from "bootstrap-vue";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
@@ -134,7 +142,6 @@ import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
-import ErrorPluginTracker from "../Common/ErrorPluginTracker.vue";
 
 export default {
     components: {
@@ -148,6 +155,8 @@ export default {
         ToolRecommendation,
         Heading,
         ErrorPluginTracker,
+        BCollapse,
+        BLink,
     },
     props: {
         id: {
@@ -208,6 +217,7 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            isExpanded: false,
         };
     },
     computed: {
@@ -254,6 +264,9 @@ export default {
         },
         runButtonTitle() {
             return "Run Tool";
+        },
+        expandedIcon() {
+            return this.isExpanded ? '-' : '+';
         },
     },
     watch: {
