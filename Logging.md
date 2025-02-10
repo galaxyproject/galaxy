@@ -2,7 +2,7 @@ This is a planning and discussion issue for enhancements I would like to make to
 
 # TL;DR
 
-I want to add a ton of `logger.trace()` calls to the Galaxy codebase, but before doing that we need to get some infrastructure in place.
+I want to add `logger.trace()` calls to the Galaxy codebase, but before doing that I would like to get some infrastructure in place.
 
 # What is proposed
 
@@ -29,7 +29,7 @@ My proof of concept is based on the collective wisdom of [StackOverflow](https:/
 
 If we monkeypatch Python's `logging` library early enough in the code loading process then the `trace()` method is automagically available to all loggers.  There are ~750  configured loggers in a running Galaxy instance.
 
-This works well in a running Galaxy instance, but may present problems for Galaxy packages meant to be used as libraries. Calling `galaxy.util.logging.addTraceLoggingLevel()` in the [package.__init__.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/package.__init__.py) may be sufficient.
+This works well in a running Galaxy instance, but may present problems for Galaxy packages meant to be used as libraries. Calling `galaxy.util.logging.addTraceLoggingLevel()` in the [package.__init__.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/package.__init__.py) may be sufficient. The goal is to make it as easy as possible for developers to add `trace()` calls to their code and not require the use of a special logger class.
 
 ## Logging configuration
 
@@ -44,7 +44,7 @@ logging_levels:
 
 ## Changes at runtime
 
-Adding `trace()` level logging statements has the potential to blow up log files and Galaxy should not be configured to use `TRACE` as the default logging level. We will need some way to enable `TRACE` level logging at runtime.  Options include, but are not limited to:
+Adding `trace()` level logging statements has the potential to blow up log files and Galaxy should not be configured to use `TRACE` as the default logging level. Therefore we will need some way to enable `TRACE` level logging at runtime.  Options include, but are not limited to:
 
 1. set up a file watcher on the config file and reconfigure loggers when changes are detected
 2. provide an API that allows log levels to be changed.  
