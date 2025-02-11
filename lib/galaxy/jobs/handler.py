@@ -559,7 +559,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 elif job_state == JOB_ADMIN_DELETED:
                     log.info("(%d) Job deleted by admin while still queued", job.id)
                 elif job_state == JOB_USER_OVER_TOTAL_WALLTIME:
-                    log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                    log.info("(%d) User (%s) is over total walltime limit: job paused", job.id, job.user_id)
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
