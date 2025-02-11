@@ -231,13 +231,12 @@ class CredentialsService:
                         raise RequestParameterInvalidException(
                             f"Variable '{variable_payload.name}' is not defined for service '{service_name}'."
                         )
-                    if variable_payload.value is not None:
-                        self.credentials_manager.add_or_update_credential(
-                            existing_user_credentials,
-                            user_credential_group_id,
-                            variable_payload.name,
-                            variable_payload.value,
-                        )
+                    self.credentials_manager.add_or_update_credential(
+                        existing_user_credentials,
+                        user_credential_group_id,
+                        variable_payload.name,
+                        variable_payload.value,
+                    )
                 for secret_payload in group.secrets:
                     if not any(s.name == secret_payload.name for s in source_credentials.secrets):
                         raise RequestParameterInvalidException(
@@ -246,13 +245,13 @@ class CredentialsService:
                     if secret_payload.value is not None:
                         vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{group.name}|{secret_payload.name}"
                         user_vault.write_secret(vault_ref, secret_payload.value)
-                        self.credentials_manager.add_or_update_credential(
-                            existing_user_credentials,
-                            user_credential_group_id,
-                            secret_payload.name,
-                            secret_payload.value,
-                            is_secret=True,
-                        )
+                    self.credentials_manager.add_or_update_credential(
+                        existing_user_credentials,
+                        user_credential_group_id,
+                        secret_payload.name,
+                        secret_payload.value,
+                        is_secret=True,
+                    )
             self.credentials_manager.update_current_group(user.id, user_credentials_id, service_payload.current_group)
         session.commit()
 
