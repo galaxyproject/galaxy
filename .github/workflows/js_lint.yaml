@@ -33,3 +33,42 @@ jobs:
       - name: Run prettier checks
         run: yarn run format-check
         working-directory: client
+      # Run vue-tsc, compare with base, only fail if errors increased.
+      - name: Run vue-tsc on PR
+        id: current
+        run: |
+          npx vue-tsc --noEmit > current.log 2>&1 || true
+          CURRENT_ERRORS=$(grep -c "error" current.log || true)
+          echo "Current vue-tsc errors: $CURRENT_ERRORS"
+          echo "current_errors=$CURRENT_ERRORS" >> $GITHUB_OUTPUT
+      - name: Compute merge-base commit
+        id: mergebase
+        run: |
+          BASE_COMMIT=$(git merge-base HEAD origin/main)
+          echo "Using baseline commit: $BASE_COMMIT"
+          echo "base_commit=$BASE_COMMIT" >> $GITHUB_OUTPUT
+      - name: Add baseline worktree
+        run: |
+          BASE_COMMIT=${{ steps.mergebase.outputs.base_commit }}
+          git worktree add baseline $BASE_COMMIT
+      - name: Run vue-tsc on baseline commit
+        id: baseline
+        working-directory: baseline
+        run: |
+          # Check deps, rerun vue-tsc
+          npx vue-tsc --noEmit > baseline.log 2>&1 || true
+          BASE_ERRORS=$(grep -c "error" baseline.log || true)
+          echo "Baseline vue-tsc errors: $BASE_ERRORS"
+          echo "baseline_errors=$BASE_ERRORS" >> $GITHUB_OUTPUT
+      - name: Compare vue-tsc error counts
+        run: |
+          CURRENT=${{ steps.current.outputs.current_errors }}
+          BASE=${{ steps.baseline.outputs.baseline_errors }}
+          echo "Current errors: ${CURRENT}"
+          echo "Baseline errors: ${BASE}"
+          if [ "$CURRENT" -gt "$BASE" ]; then
+            echo "vue-tsc error count increased from ${BASE} to ${CURRENT}. Failing the build."
+            exit 1
+          else
+            echo "vue-tsc error count did not increase"
+          fi
