@@ -49,6 +49,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
+      - run: yarn install --frozen-lockfile
+        working-directory: client
       # Run vue-tsc on the base branch and capture its error count.
       - name: Run vue-tsc on base branch
         id: baseline
@@ -60,7 +62,6 @@ jobs:
           BASE_ERRORS=$(grep -oE 'Found [0-9]+ errors' baseline.log | head -1 | grep -oE '[0-9]+' || echo 0)
           echo "Baseline vue-tsc errors: $BASE_ERRORS"
           echo "baseline_errors=$BASE_ERRORS" >> $GITHUB_OUTPUT
-
       # Compare the error counts between the PR branch and the base branch.
       - name: Compare vue-tsc error counts
         run: |
