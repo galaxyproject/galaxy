@@ -223,6 +223,15 @@ const isHiddenType = computed(
         (props.attributes && props.attributes.titleonly)
 );
 
+/** Determines if the element renders content below the title. */
+const rendersContent = computed(
+    () =>
+        (props.workflowRun && hasAlert.value && !unPopulatedError.value) ||
+        showField.value ||
+        showPreview.value ||
+        helpText.value
+);
+
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
 const connectText = computed(() => (connected.value ? props.connectedEnableText : props.connectedDisableText));
 
@@ -272,11 +281,11 @@ function onAlert(value: string | undefined) {
         :class="{
             alert: hasAlert || props.workflowRun,
             'alert-info': hasAlert && !props.workflowRun,
-            'workflow-run-element': props.workflowRun,
+            'workflow-run-element p-0': props.workflowRun,
         }">
         <FormError v-if="hasAlert && !props.workflowRun" :alerts="alerts" />
 
-        <div class="ui-form-title" :class="{ 'card-header mb-2': props.workflowRun }">
+        <div class="ui-form-title" :class="{ 'card-header m-0 px-3 py-2': props.workflowRun }">
             <div>
                 <span v-if="collapsible || connectable">
                     <b-button
@@ -331,111 +340,115 @@ function onAlert(value: string | undefined) {
             </div>
         </div>
 
-        <FormError v-if="props.workflowRun && hasAlert && !unPopulatedError" :alerts="alerts" has-alert-class />
+        <div v-if="rendersContent" :class="{ 'form-element-content px-3 py-1 mb-2': props.workflowRun }">
+            <FormError v-if="props.workflowRun && hasAlert && !unPopulatedError" :alerts="alerts" has-alert-class />
 
-        <div v-if="showField" class="ui-form-field" :data-label="props.title">
-            <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
-            <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
-            <FormNumber
-                v-else-if="props.type === 'integer' || props.type === 'float'"
-                :id="props.id"
-                v-model="currentValue"
-                :max="attrs.max"
-                :min="attrs.min"
-                :placeholder="computedPlaceholder"
-                :optional="isOptional"
-                :show-state="props.workflowRun"
-                :type="props.type ?? 'float'"
-                :workflow-building-mode="workflowBuildingMode" />
-            <FormOptionalText
-                v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
-                :id="id"
-                v-model="currentValue"
-                :readonly="attrs.readonly"
-                :value="attrs.value"
-                :area="attrs.area"
-                :placeholder="computedPlaceholder"
-                :multiple="attrs.multiple"
-                :datalist="attrs.datalist"
-                :type="props.type" />
-            <FormText
-                v-else-if="
-                    ['text', 'password'].includes(props.type ?? '') ||
-                    (attrs.is_workflow &&
-                        ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? ''))
-                "
-                :id="id"
-                v-model="currentValue"
-                :readonly="attrs.readonly"
-                :value="attrs.value"
-                :area="attrs.area"
-                :placeholder="computedPlaceholder"
-                :optional="isOptional"
-                :show-state="props.workflowRun"
-                :color="attrs.color"
-                :multiple="attrs.multiple"
-                :cls="attrs.cls"
-                :datalist="attrs.datalist"
-                :type="props.type" />
-            <FormSelection
-                v-else-if="
-                    (props.type === undefined && attrs.options) ||
-                    ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? '')
-                "
-                :id="id"
-                v-model="currentValue"
-                :data="attrs.data"
-                :display="attrs.display"
-                :options="attrs.options"
-                :optional="attrs.optional"
-                :multiple="attrs.multiple" />
-            <FormDataUri
-                v-else-if="isUriDataField"
-                :id="id"
-                v-model="currentValue"
-                :value="attrs.value"
-                :multiple="attrs.multiple" />
-            <FormData
-                v-else-if="['data', 'data_collection'].includes(props.type ?? '')"
-                :id="id"
-                v-model="currentValue"
-                :loading="loading"
-                :extensions="attrs.extensions"
-                :flavor="attrs.flavor"
-                :multiple="attrs.multiple"
-                :optional="attrs.optional"
-                :options="attrs.options"
-                :tag="attrs.tag"
-                :type="props.type"
-                :collection-types="attrs.collection_types"
-                :workflow-run="props.workflowRun"
-                @alert="onAlert"
-                @focus="addTempFocus" />
-            <FormDrilldown
-                v-else-if="props.type === 'drill_down'"
-                :id="id"
-                v-model="currentValue"
-                :options="attrs.options"
-                :multiple="attrs.multiple" />
-            <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
-            <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
-            <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
-            <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
-            <FormTags
-                v-else-if="props.type === 'tags'"
-                v-model="currentValue"
-                :placeholder="props.attributes?.placeholder" />
-            <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
+            <div v-if="showField" class="ui-form-field" :data-label="props.title">
+                <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
+                <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
+                <FormNumber
+                    v-else-if="props.type === 'integer' || props.type === 'float'"
+                    :id="props.id"
+                    v-model="currentValue"
+                    :max="attrs.max"
+                    :min="attrs.min"
+                    :placeholder="computedPlaceholder"
+                    :optional="isOptional"
+                    :show-state="props.workflowRun"
+                    :type="props.type ?? 'float'"
+                    :workflow-building-mode="workflowBuildingMode" />
+                <FormOptionalText
+                    v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
+                    :id="id"
+                    v-model="currentValue"
+                    :readonly="attrs.readonly"
+                    :value="attrs.value"
+                    :area="attrs.area"
+                    :placeholder="computedPlaceholder"
+                    :multiple="attrs.multiple"
+                    :datalist="attrs.datalist"
+                    :type="props.type" />
+                <FormText
+                    v-else-if="
+                        ['text', 'password'].includes(props.type ?? '') ||
+                        (attrs.is_workflow &&
+                            ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(
+                                props.type ?? ''
+                            ))
+                    "
+                    :id="id"
+                    v-model="currentValue"
+                    :readonly="attrs.readonly"
+                    :value="attrs.value"
+                    :area="attrs.area"
+                    :placeholder="computedPlaceholder"
+                    :optional="isOptional"
+                    :show-state="props.workflowRun"
+                    :color="attrs.color"
+                    :multiple="attrs.multiple"
+                    :cls="attrs.cls"
+                    :datalist="attrs.datalist"
+                    :type="props.type" />
+                <FormSelection
+                    v-else-if="
+                        (props.type === undefined && attrs.options) ||
+                        ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? '')
+                    "
+                    :id="id"
+                    v-model="currentValue"
+                    :data="attrs.data"
+                    :display="attrs.display"
+                    :options="attrs.options"
+                    :optional="attrs.optional"
+                    :multiple="attrs.multiple" />
+                <FormDataUri
+                    v-else-if="isUriDataField"
+                    :id="id"
+                    v-model="currentValue"
+                    :value="attrs.value"
+                    :multiple="attrs.multiple" />
+                <FormData
+                    v-else-if="['data', 'data_collection'].includes(props.type ?? '')"
+                    :id="id"
+                    v-model="currentValue"
+                    :loading="loading"
+                    :extensions="attrs.extensions"
+                    :flavor="attrs.flavor"
+                    :multiple="attrs.multiple"
+                    :optional="attrs.optional"
+                    :options="attrs.options"
+                    :tag="attrs.tag"
+                    :type="props.type"
+                    :collection-types="attrs.collection_types"
+                    :workflow-run="props.workflowRun"
+                    @alert="onAlert"
+                    @focus="addTempFocus" />
+                <FormDrilldown
+                    v-else-if="props.type === 'drill_down'"
+                    :id="id"
+                    v-model="currentValue"
+                    :options="attrs.options"
+                    :multiple="attrs.multiple" />
+                <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
+                <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
+                <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
+                <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
+                <FormTags
+                    v-else-if="props.type === 'tags'"
+                    v-model="currentValue"
+                    :placeholder="props.attributes?.placeholder" />
+                <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
+            </div>
+
+            <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
+            <span
+                v-if="Boolean(helpText) && helpFormat != 'markdown'"
+                class="ui-form-info form-text text-muted"
+                v-html="helpText" />
+            <span v-else-if="Boolean(helpText)" class="ui-form-info form-text text-muted">
+                <FormElementHelpMarkdown :content="helpText ?? ''" />
+            </span>
         </div>
-
-        <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
-        <span
-            v-if="Boolean(helpText) && helpFormat != 'markdown'"
-            class="ui-form-info form-text text-muted"
-            v-html="helpText" />
-        <span v-else-if="Boolean(helpText)" class="ui-form-info form-text text-muted"
-            ><FormElementHelpMarkdown :content="helpText ?? ''"
-        /></span>
     </div>
 </template>
 
