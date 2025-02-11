@@ -186,6 +186,7 @@ const canGenerateTours = computed(() =>
         <template v-slot>
             <ToolCredentials
                 v-if="props.options.credentials"
+                class="mt-2"
                 :tool-id="props.id"
                 :tool-version="props.version"
                 :tool-credentials-definition="props.options.credentials" />
