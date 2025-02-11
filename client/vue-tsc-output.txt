@@ -1,0 +1,206 @@
+Script started on 2025-02-11 09:50:42-05:00 [COMMAND="npx vue-tsc --noEmit src/components/Workflow/Invocation/Graph/InvocationGraph.vue" TERM="xterm-256color" TTY="/dev/pts/29" COLUMNS="183" LINES="93"]
+[96mnode_modules/@types/node/globals.d.ts[0m:[93m72[0m:[93m13[0m - [91merror[0m[90m TS2403: [0mSubsequent variable declarations must have the same type.  Variable 'AbortSignal' must be of type '{ new (): AbortSignal; prototype: AbortSignal; abort(reason?: any): AbortSignal; any(signals: AbortSignal[]): AbortSignal; timeout(milliseconds: number): AbortSignal; }', but here has type '{ new (): AbortSignal; prototype: AbortSignal; }'.
+
+[7m72[0m declare var AbortSignal: {
+[7m  [0m [91m            ~~~~~~~~~~~[0m
+
+  [96m../../../.nvm/versions/node/v20.13.1/lib/node_modules/vue-tsc/node_modules/typescript/lib/lib.dom.d.ts[0m:[93m2363[0m:[93m13[0m
+    [7m2363[0m declare var AbortSignal: {
+    [7m    [0m [96m            ~~~~~~~~~~~[0m
+    'AbortSignal' was also declared here.
+
+[96mnode_modules/@types/node/module.d.ts[0m:[93m106[0m:[93m13[0m - [91merror[0m[90m TS2386: [0mOverload signatures must all be optional or required.
+
+[7m106[0m             resolve?(specified: string, parent?: string | URL): Promise<string>;
+[7m   [0m [91m            ~~~~~~~[0m
+
+[96mnode_modules/@types/ws/index.d.ts[0m:[93m333[0m:[93m18[0m - [91merror[0m[90m TS2315: [0mType 'Server' is not generic.
+
+[7m333[0m         server?: HTTPServer<V> | HTTPSServer<V> | undefined;
+[7m   [0m [91m                 ~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@types/ws/index.d.ts[0m:[93m333[0m:[93m34[0m - [91merror[0m[90m TS2315: [0mType 'Server' is not generic.
+
+[7m333[0m         server?: HTTPServer<V> | HTTPSServer<V> | undefined;
+[7m   [0m [91m                                 ~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/core/index.d.cts[0m:[93m5[0m:[93m42[0m - [91merror[0m[90m TS2305: [0mModule '"vue-demi"' has no exported member 'Slot'.
+
+[7m5[0m import { Ref, InjectionKey, ComputedRef, Slot, DefineComponent, TransitionGroupProps, ComponentPublicInstance, Component, ShallowRef, WritableComputedRef, UnwrapRef, WatchOptions, UnwrapNestedRefs, WatchSource, ToRefs, StyleValue } from 'vue-demi';
+[7m [0m [91m                                         ~~~~[0m
+
+[96mnode_modules/@vueuse/core/index.d.cts[0m:[93m5[0m:[93m65[0m - [91merror[0m[90m TS2305: [0mModule '"vue-demi"' has no exported member 'TransitionGroupProps'.
+
+[7m5[0m import { Ref, InjectionKey, ComputedRef, Slot, DefineComponent, TransitionGroupProps, ComponentPublicInstance, Component, ShallowRef, WritableComputedRef, UnwrapRef, WatchOptions, UnwrapNestedRefs, WatchSource, ToRefs, StyleValue } from 'vue-demi';
+[7m [0m [91m                                                                ~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/core/index.d.cts[0m:[93m5[0m:[93m220[0m - [91merror[0m[90m TS2305: [0mModule '"vue-demi"' has no exported member 'StyleValue'.
+
+[7m5[0m import { Ref, InjectionKey, ComputedRef, Slot, DefineComponent, TransitionGroupProps, ComponentPublicInstance, Component, ShallowRef, WritableComputedRef, UnwrapRef, WatchOptions, UnwrapNestedRefs, WatchSource, ToRefs, StyleValue } from 'vue-demi';
+[7m [0m [91m                                                                                                                                                                                                                           ~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m2[0m:[93m250[0m - [91merror[0m[90m TS2305: [0mModule '"vue-demi"' has no exported member 'MaybeRef'.
+
+[7m2[0m import { WatchOptionsBase, Ref, ComputedRef, WritableComputedRef, WatchSource, ComputedGetter, WritableComputedOptions, WatchOptions, InjectionKey, ShallowUnwrapRef as ShallowUnwrapRef$1, inject, provide, UnwrapNestedRefs, UnwrapRef, ToRef, ToRefs, MaybeRef as MaybeRef$1, WatchCallback, WatchStopHandle } from 'vue-demi';
+[7m [0m [91m                                                                                                                                                                                                                                                         ~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m146[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'flush' does not exist on type 'WatchOptions'.
+
+[7m146[0m     flush?: WatchOptions['flush'];
+[7m   [0m [91m                         ~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m155[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'flush' does not exist on type 'WatchOptions'.
+
+[7m155[0m     flush?: WatchOptions['flush'];
+[7m   [0m [91m                         ~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m642[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'flush' does not exist on type 'WatchOptions'.
+
+[7m642[0m     flush?: WatchOptions['flush'];
+[7m   [0m [91m                         ~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m938[0m:[93m128[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m938[0m interface UseLastChangedOptions<Immediate extends boolean, InitialValue extends number | null | undefined = undefined> extends WatchOptions<Immediate> {
+[7m   [0m [91m                                                                                                                               ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1052[0m:[93m196[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1052[0m declare function watchArray<T, Immediate extends Readonly<boolean> = false>(source: WatchSource<T[]> | T[], cb: WatchArrayCallback<T[], Immediate extends true ? T[] | undefined : T[]>, options?: WatchOptions<Immediate>): vue_demi.WatchStopHandle;
+[7m    [0m [91m                                                                                                                                                                                                   ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1054[0m:[93m53[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1054[0m interface WatchWithFilterOptions<Immediate> extends WatchOptions<Immediate>, ConfigurableEventFilter {
+[7m    [0m [91m                                                    ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1070[0m:[93m52[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1070[0m interface WatchDebouncedOptions<Immediate> extends WatchOptions<Immediate>, DebounceFilterOptions {
+[7m    [0m [91m                                                   ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1077[0m:[93m201[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1077[0m declare function watchDeep<T extends Readonly<MultiWatchSources>, Immediate extends Readonly<boolean> = false>(source: T, cb: WatchCallback<MapSources<T>, MapOldSources<T, Immediate>>, options?: Omit<WatchOptions<Immediate>, 'deep'>): WatchStopHandle;
+[7m    [0m [91m                                                                                                                                                                                                        ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1078[0m:[93m181[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1078[0m declare function watchDeep<T, Immediate extends Readonly<boolean> = false>(source: WatchSource<T>, cb: WatchCallback<T, Immediate extends true ? T | undefined : T>, options?: Omit<WatchOptions<Immediate>, 'deep'>): WatchStopHandle;
+[7m    [0m [91m                                                                                                                                                                                    ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1079[0m:[93m183[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1079[0m declare function watchDeep<T extends object, Immediate extends Readonly<boolean> = false>(source: T, cb: WatchCallback<T, Immediate extends true ? T | undefined : T>, options?: Omit<WatchOptions<Immediate>, 'deep'>): WatchStopHandle;
+[7m    [0m [91m                                                                                                                                                                                      ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1091[0m:[93m156[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1091[0m declare function watchImmediate<T extends Readonly<MultiWatchSources>>(source: T, cb: WatchCallback<MapSources<T>, MapOldSources<T, true>>, options?: Omit<WatchOptions<true>, 'immediate'>): WatchStopHandle;
+[7m    [0m [91m                                                                                                                                                           ~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1092[0m:[93m112[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1092[0m declare function watchImmediate<T>(source: WatchSource<T>, cb: WatchCallback<T, T | undefined>, options?: Omit<WatchOptions<true>, 'immediate'>): WatchStopHandle;
+[7m    [0m [91m                                                                                                               ~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1093[0m:[93m114[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1093[0m declare function watchImmediate<T extends object>(source: T, cb: WatchCallback<T, T | undefined>, options?: Omit<WatchOptions<true>, 'immediate'>): WatchStopHandle;
+[7m    [0m [91m                                                                                                                 ~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1095[0m:[93m206[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1095[0m declare function watchOnce<T extends Readonly<WatchSource<unknown>[]>, Immediate extends Readonly<boolean> = false>(source: [...T], cb: WatchCallback<MapSources<T>, MapOldSources<T, Immediate>>, options?: WatchOptions<Immediate>): void;
+[7m    [0m [91m                                                                                                                                                                                                             ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1096[0m:[93m177[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1096[0m declare function watchOnce<T, Immediate extends Readonly<boolean> = false>(sources: WatchSource<T>, cb: WatchCallback<T, Immediate extends true ? T | undefined : T>, options?: WatchOptions<Immediate>): void;
+[7m    [0m [91m                                                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/@vueuse/shared/index.d.cts[0m:[93m1105[0m:[93m52[0m - [91merror[0m[90m TS2315: [0mType 'WatchOptions' is not generic.
+
+[7m1105[0m interface WatchThrottledOptions<Immediate> extends WatchOptions<Immediate> {
+[7m    [0m [91m                                                   ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mnode_modules/pinia/dist/pinia.d.ts[0m:[93m354[0m:[93m26[0m - [91merror[0m[90m TS2536: [0mType 'key' cannot be used to index type 'Store<string, S, G, {}>'.
+
+[7m354[0m     [key in Keys]: () => Store<string, S, G, {}>[key];
+[7m   [0m [91m                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m17[0m:[93m52[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/api/invocations' or its corresponding type declarations.
+
+[7m17[0m import type { WorkflowInvocationElementView } from "@/api/invocations";
+[7m  [0m [91m                                                   ~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m18[0m:[93m36[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/composables/datatypesMapper' or its corresponding type declarations.
+
+[7m18[0m import { useDatatypesMapper } from "@/composables/datatypesMapper";
+[7m  [0m [91m                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m19[0m:[93m36[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/composables/useInvocationGraph' or its corresponding type declarations.
+
+[7m19[0m import { useInvocationGraph } from "@/composables/useInvocationGraph";
+[7m  [0m [91m                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m20[0m:[93m39[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/stores/workflowEditorStateStore' or its corresponding type declarations.
+
+[7m20[0m import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+[7m  [0m [91m                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m21[0m:[93m31[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/stores/workflowStore' or its corresponding type declarations.
+
+[7m21[0m import type { Workflow } from "@/stores/workflowStore";
+[7m  [0m [91m                              ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m23[0m:[93m21[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/components/Common/Heading.vue' or its corresponding type declarations.
+
+[7m23[0m import Heading from "@/components/Common/Heading.vue";
+[7m  [0m [91m                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m24[0m:[93m25[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/components/LoadingSpan.vue' or its corresponding type declarations.
+
+[7m24[0m import LoadingSpan from "@/components/LoadingSpan.vue";
+[7m  [0m [91m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m25[0m:[93m27[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/components/Workflow/Editor/WorkflowGraph.vue' or its corresponding type declarations.
+
+[7m25[0m import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
+[7m  [0m [91m                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m26[0m:[93m36[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/components/WorkflowInvocationState/WorkflowInvocationStep.vue' or its corresponding type declarations.
+
+[7m26[0m import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
+[7m  [0m [91m                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m27[0m:[93m42[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/components/WorkflowInvocationState/WorkflowInvocationStepHeader.vue' or its corresponding type declarations.
+
+[7m27[0m import WorkflowInvocationStepHeader from "@/components/WorkflowInvocationState/WorkflowInvocationStepHeader.vue";
+[7m  [0m [91m                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m29[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type 'IconDefinition' is not assignable to parameter of type 'IconDefinitionOrPack'.
+  Type 'IconDefinition' is not assignable to type 'IconPack'.
+    Index signature for type 'string' is missing in type 'IconDefinition'.
+
+[7m29[0m library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes);
+[7m  [0m [91m            ~~~~~~~~~~~[0m
+
+[96msrc/components/Workflow/Invocation/Graph/InvocationGraph.vue[0m:[93m85[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'toBe' does not exist on type 'UntilArrayInstance<any>'.
+
+[7m85[0m     await until(loading).toBe(false);
+[7m  [0m [91m                         ~~~~[0m
+
+
+Found 37 errors in 7 files.
+
+Errors  Files
+     1  node_modules/@types/node/globals.d.ts[90m:72[0m
+     1  node_modules/@types/node/module.d.ts[90m:106[0m
+     2  node_modules/@types/ws/index.d.ts[90m:333[0m
+     3  node_modules/@vueuse/core/index.d.cts[90m:5[0m
+    17  node_modules/@vueuse/shared/index.d.cts[90m:2[0m
+     1  node_modules/pinia/dist/pinia.d.ts[90m:354[0m
+    12  src/components/Workflow/Invocation/Graph/InvocationGraph.vue[90m:17[0m
+
+Script done on 2025-02-11 09:50:47-05:00 [COMMAND_EXIT_CODE="2"]

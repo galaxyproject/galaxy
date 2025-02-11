@@ -37,8 +37,10 @@ jobs:
       - name: Run vue-tsc on PR
         id: current
         run: |
-          npx vue-tsc --noEmit > current.log 2>&1 || true
-          CURRENT_ERRORS=$(grep -c "error" current.log || true)
+          # Run vue-tsc in a simulated TTY to capture the summary output.
+          script -q -c 'npx vue-tsc --noEmit' current.log 
+          # Extract the error count from the summary line; default to 0 if not found.
+          CURRENT_ERRORS=$(grep -oE 'Found [0-9]+ errors' current.log | head -1 | grep -oE '[0-9]+' || echo 0)
           echo "Current vue-tsc errors: $CURRENT_ERRORS"
           echo "current_errors=$CURRENT_ERRORS" >> $GITHUB_OUTPUT
       - name: Compute merge-base commit
@@ -57,9 +59,10 @@ jobs:
         id: baseline
         working-directory: baseline
         run: |
-          # Check deps, rerun vue-tsc
-          npx vue-tsc --noEmit > baseline.log 2>&1 || true
-          BASE_ERRORS=$(grep -c "error" baseline.log || true)
+          # Run vue-tsc in a simulated TTY to capture the summary output.
+          script -q -c 'npx vue-tsc --noEmit' baseline.log 
+          # Extract the error count from the summary line; default to 0 if not found.
+          BASE_ERRORS=$(grep -oE 'Found [0-9]+ errors' baseline.log | head -1 | grep -oE '[0-9]+' || echo 0)
           echo "Baseline vue-tsc errors: $BASE_ERRORS"
           echo "baseline_errors=$BASE_ERRORS" >> $GITHUB_OUTPUT
       - name: Compare vue-tsc error counts
