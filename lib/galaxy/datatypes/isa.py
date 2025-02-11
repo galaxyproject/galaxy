@@ -17,12 +17,22 @@ from typing import (
     TYPE_CHECKING,
 )
 
-# Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
-logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import (
-    isajson,
-    isatab_meta,
-)
+logger = logging.getLogger(__name__)
+
+ISA_MISSING_MODULE_MESSAGE = "Please install the missing isatools dependency from `isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master`"
+
+try:
+    # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
+    logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
+    from isatools import (
+        isajson,
+        isatab_meta,
+    )
+except ImportError:
+    isajson = None
+    isatab_meta = None
+    logger.exception(ISA_MISSING_MODULE_MESSAGE)
+
 from markupsafe import escape
 
 from galaxy import util
@@ -55,7 +65,6 @@ _MAX_LINES_HISTORY_PEEK = 11
 # Configure logger {{{1
 ################################################################
 
-logger = logging.getLogger(__name__)
 
 # Function for opening correctly a CSV file for csv.reader() for both Python 2 and 3 {{{1
 ################################################################
@@ -346,6 +355,8 @@ class IsaTab(_Isa):
     ################################################################
 
     def _make_investigation_instance(self, filename: str) -> "Investigation":
+        if not isatab_meta:
+            return
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
@@ -379,6 +390,8 @@ class IsaJson(_Isa):
     ################################################################
 
     def _make_investigation_instance(self, filename: str) -> "Investigation":
+        if not isajson:
+            return
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:
             isa = isajson.load(fp)
