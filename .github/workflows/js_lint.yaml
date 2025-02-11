@@ -36,6 +36,7 @@ jobs:
       # Run vue-tsc, compare with base, only fail if errors increased.
       - name: Run vue-tsc on PR
         id: current
+        working-directory: client
         run: |
           # Run vue-tsc in a simulated TTY to capture the summary output.
           script -q -c 'npx vue-tsc --noEmit' current.log 
