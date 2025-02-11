@@ -57,6 +57,7 @@
     <datatype extension="probam" type="galaxy.datatypes.binary:ProBam" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
       <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
+      <display file="igb/cram.xml"/>
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
