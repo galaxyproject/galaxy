@@ -27,6 +27,7 @@ from requests import (
 
 from galaxy.exceptions import error_codes
 from galaxy.util import UNKNOWN
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -1175,6 +1176,7 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
+    @skip_if_github_down
     def test_url_import(self):
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
         workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
