@@ -22,6 +22,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    username: undefined,
 });
 </script>
 
@@ -32,7 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
             <div v-if="!userStore.isAnonymous">
                 <BButton id="page-create" size="sm" variant="outline-primary" to="/pages/create">
                     <Icon :icon="faPlus" />
-                    <span v-localize>Create Page</span>
+                    <span v-localize>Create</span>
                 </BButton>
             </div>
         </div>
