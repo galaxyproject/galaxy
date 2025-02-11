@@ -82,7 +82,7 @@ export async function browseRemoteFiles(
             query: {
                 format: "uri",
                 target: uri,
-                recursive: isRecursive,
+                recursive: false,
                 writeable,
                 limit,
                 offset,
