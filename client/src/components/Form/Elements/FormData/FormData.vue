@@ -681,12 +681,6 @@ const noOptionsWarningMessage = computed(() => {
                                 {{ v.tooltip }}
                             </BDropdownItem>
                         </BDropdown>
-                        <FormDataExtensions
-                            v-if="restrictsExtensions"
-                            popover
-                            :extensions="props.extensions"
-                            :formats-button-id="formatsButtonId"
-                            :formats-visible.sync="formatsVisible" />
                     </div>
                 </div>
 

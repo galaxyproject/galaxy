@@ -9,6 +9,7 @@ import { faCheck } from "font-awesome-6";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
+import { useUid } from "@/composables/utils/uid";
 import { linkify } from "@/utils/utils";
 
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
@@ -16,6 +17,7 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormData from "./Elements/FormData/FormData.vue";
+import FormDataExtensions from "./Elements/FormData/FormDataExtensions.vue";
 import FormDataUri from "./Elements/FormData/FormDataUri.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
@@ -208,6 +210,17 @@ const helpText = computed(() => {
     }
 });
 
+// Rendering formats for data and data_collection elements (if `props.workflowRun`)
+const formatsVisible = ref(false);
+const formatsButtonId = useUid("form-element-formats-");
+const renderFormats = computed(
+    () =>
+        props.type &&
+        ["data", "data_collection"].includes(props.type) &&
+        attrs.value.extensions?.length &&
+        attrs.value.extensions.indexOf("data") < 0
+);
+
 const currentValue = computed({
     get() {
         return props.value;
@@ -323,7 +336,15 @@ function onAlert(value: string | undefined) {
                     - optional
                 </span>
             </div>
-            <div v-if="props.workflowRun" class="d-flex align-items-center">
+            <div v-if="props.workflowRun" class="d-flex align-items-center flex-gapx-1">
+                <FormDataExtensions
+                    v-if="renderFormats"
+                    class="mr-1"
+                    popover
+                    minimal
+                    :extensions="attrs.extensions"
+                    :formats-button-id="formatsButtonId"
+                    :formats-visible.sync="formatsVisible" />
                 <BBadge
                     v-if="workflowRunFormTitleItems.message && props.type !== 'boolean'"
                     class="flex-gapx-1 workflow-run-element-title"

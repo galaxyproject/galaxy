@@ -11,6 +11,7 @@ const props = defineProps<{
     formatsButtonId: string;
     formatsVisible: boolean;
     popover?: boolean;
+    minimal?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -27,7 +28,11 @@ const localFormatsVisible = computed({
 });
 </script>
 <template>
-    <div>
+    <div v-if="props.minimal && props.extensions.length <= 2" class="font-italic font-weight-normal">
+        <span v-localize>accepted formats:</span>
+        <span>{{ orList([...props.extensions]) }}</span>
+    </div>
+    <div v-else>
         <BButton
             :id="props.formatsButtonId"
             class="ui-link d-flex align-items-center text-nowrap flex-gapx-1"
