@@ -36,6 +36,7 @@ const emit = defineEmits<{
 }>();
 
 function saveCredentials() {
+    // TODO: Select
     emit("save-credentials", providedCredentials.value);
 }
 
@@ -152,15 +153,20 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
 <template>
     <BModal
         visible
-        title="Manage Tool Credentials"
-        hide-footer
+        scrollable
+        title="Select Credentials for this tool"
         no-close-on-backdrop
         no-close-on-esc
+        button-size="md"
+        size="lg"
+        modal-class="manage-tool-credentials-modal"
+        body-class="manage-tool-credentials-body"
         @close="emit('close')">
         <p>
             Manage your credentials for <strong>{{ toolId }}</strong> (<strong>{{ toolVersion }}</strong
-            >) here. After making any changes, be sure to click <strong>Save Credentials</strong> to apply them.
+            >) here. After making any changes, select the credentials you want to use with this tool.
         </p>
+
         <div class="accordion">
             <ServiceCredentials
                 v-for="credential in providedCredentials.credentials"
@@ -174,24 +180,23 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
                 @update-current-set="onCurrentSetChange" />
         </div>
 
-        <BButton variant="outline-danger" size="sm" @click="emit('close')"> Discard changes </BButton>
-        <BButton class="btn-primary" @click="saveCredentials">Save Credentials</BButton>
+        <template v-slot:modal-footer>
+            <div class="manage-tool-credentials-footer">
+                <BButton variant="outline-danger" @click="emit('close')">Discard</BButton>
+                <BButton class="btn-primary" @click="saveCredentials">Select Credentials</BButton>
+            </div>
+        </template>
     </BModal>
 </template>
 
-<style scoped>
-.credential-card {
-    border: 1px solid #ccc;
-    padding: 1em;
-    margin-bottom: 1em;
-    border-radius: 5px;
+<style>
+.manage-tool-credentials-body {
+    height: 80vh;
 }
-.secret-input {
+
+.manage-tool-credentials-footer {
     display: flex;
-    align-items: center;
-}
-.tick-icon {
-    color: green;
-    margin-left: 0.5em;
+    gap: 1em;
+    justify-content: space-between;
 }
 </style>
