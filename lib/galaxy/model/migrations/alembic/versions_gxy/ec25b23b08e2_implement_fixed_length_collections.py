@@ -1,7 +1,7 @@
 """Implement fixed length collection types.
 
 Revision ID: ec25b23b08e2
-Revises: 75348cfb3715
+Revises: a4c3ef999ab5
 Create Date: 2024-12-09 10:28:54.902847
 
 """
@@ -17,7 +17,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "ec25b23b08e2"
-down_revision = "75348cfb3715"
+down_revision = "a4c3ef999ab5"
 branch_labels = None
 depends_on = None
 
