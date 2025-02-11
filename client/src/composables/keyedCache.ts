@@ -108,11 +108,11 @@ export function useKeyedCache<T>(
          */
         getItemById,
         /**
-         * A computed function that returns true if the item with the given id is currently being fetched.
+         * A computed function holding errors
          */
         getItemLoadError,
         /**
-         * A computed function holding errors
+         * A computed function that returns true if the item with the given id is currently being fetched.
          */
         isLoadingItem,
         /**
