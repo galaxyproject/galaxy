@@ -44,28 +44,23 @@ jobs:
           CURRENT_ERRORS=$(grep -oE 'Found [0-9]+ errors' current.log | head -1 | grep -oE '[0-9]+' || echo 0)
           echo "Current vue-tsc errors: $CURRENT_ERRORS"
           echo "current_errors=$CURRENT_ERRORS" >> $GITHUB_OUTPUT
-      - name: Compute merge-base commit
-        id: mergebase
-        run: |
-          BASE_BRANCH="origin/${{ github.event.pull_request.base.ref }}"
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          BASE_COMMIT=$(git merge-base HEAD "$BASE_BRANCH")
-          echo "Using baseline commit: $BASE_COMMIT"
-          echo "base_commit=$BASE_COMMIT" >> $GITHUB_OUTPUT
-      - name: Add baseline worktree
-        run: |
-          BASE_COMMIT=${{ steps.mergebase.outputs.base_commit }}
-          git worktree add baseline $BASE_COMMIT
-      - name: Run vue-tsc on baseline commit
+      # Check out the target base branch into a separate directory called "base".
+      - name: Checkout target base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      # Run vue-tsc on the base branch and capture its error count.
+      - name: Run vue-tsc on base branch
         id: baseline
-        working-directory: baseline
         run: |
-          # Run vue-tsc in a simulated TTY to capture the summary output.
+          # Run vue-tsc in a simulated TTY and save the output to baseline.log.
           script -q -c 'npx vue-tsc --noEmit' baseline.log 
           # Extract the error count from the summary line; default to 0 if not found.
           BASE_ERRORS=$(grep -oE 'Found [0-9]+ errors' baseline.log | head -1 | grep -oE '[0-9]+' || echo 0)
           echo "Baseline vue-tsc errors: $BASE_ERRORS"
           echo "baseline_errors=$BASE_ERRORS" >> $GITHUB_OUTPUT
+
+      # Compare the error counts between the PR branch and the base branch.
       - name: Compare vue-tsc error counts
         run: |
           CURRENT=${{ steps.current.outputs.current_errors }}
@@ -76,5 +71,5 @@ jobs:
             echo "vue-tsc error count increased from ${BASE} to ${CURRENT}. Failing the build."
             exit 1
           else
-            echo "vue-tsc error count did not increase"
+            echo "vue-tsc error count did not increase."
           fi
