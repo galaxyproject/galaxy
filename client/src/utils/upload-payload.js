@@ -21,6 +21,19 @@ export function isUrl(content) {
     return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
 }
 
+export function isGalaxyFile(content) {
+    if (content === undefined || content === null) {
+        return false;
+    }
+    const galaxyRegexPattern = /Galaxy\d+-\[(.*?)\](\..+)/;
+    const match = content.match(galaxyRegexPattern);
+    if (match) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 export function uploadPayload(items, historyId, composite = false) {
     const files = [];
     const elements = items
@@ -30,6 +43,11 @@ export function uploadPayload(items, historyId, composite = false) {
                 let fileName = item.fileName;
                 if (fileName === DEFAULT_FILE_NAME) {
                     fileName = null;
+                }
+                if (isGalaxyFile(item.fileName)) {
+                    const modifiedFileName = item.fileName.replace(/Galaxy\d+-\[(.*?)\](\..+)/, "$1");
+                    item.fileName = modifiedFileName;
+                    fileName = modifiedFileName;
                 }
                 // consolidate exclusive file content attributes
                 const urlContent = (item.fileUri || item.filePath || item.fileContent || "").trim();
