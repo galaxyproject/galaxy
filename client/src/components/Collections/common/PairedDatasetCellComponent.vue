@@ -27,8 +27,8 @@ export default defineComponent({
             return "forward" in (this.params?.value || {});
         },
         isUnpairedTarget(): boolean {
-            const value = (this.params?.value || {});
-            if( "unpaired" in value) {
+            const value = this.params?.value || {};
+            if ("unpaired" in value) {
                 const unpaired = value.unpaired;
                 return this.pairingTargetsStore().unpairedTarget == unpaired.id;
             } else {
@@ -75,7 +75,7 @@ export default defineComponent({
             const dropTargetId = this.params.value.unpaired?.id;
 
             if (draggedNodeId && draggedNodeId !== dropTargetId) {
-                this.params.context.onPair(dropTargetId, draggedNodeId);
+                this.params.context.onPair(dropTargetId, draggedNodeId, "drag_and_drop");
             }
 
             pairingTargetsStore.endDrag(); // Clear drag state
@@ -105,7 +105,11 @@ export default defineComponent({
                 @dragleave="onDragLeave"
                 @dragend="onDragEnd"
                 @drop="onDrop">
-                <FontAwesomeIcon size="2x" icon="fa-link" class="paired-action-icon" :class="{ dragging: dragging, 'active-target': isUnpairedTarget, 'fa-beat': isUnpairedTarget }" />
+                <FontAwesomeIcon
+                    size="2x"
+                    icon="fa-link"
+                    class="paired-action-icon"
+                    :class="{ dragging: dragging, 'active-target': isUnpairedTarget, 'fa-beat': isUnpairedTarget }" />
             </div>
             <div class="text-container">
                 <div><span class="direction">UNPAIRED</span></div>
@@ -151,7 +155,6 @@ export default defineComponent({
 .paired-datasets-cell .active-target {
     color: $brand-primary;
 }
-
 
 .paired-datasets-cell .drop-target {
     color: $brand-success;

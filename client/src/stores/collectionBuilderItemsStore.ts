@@ -118,6 +118,6 @@ export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets"
         },
         resetUnpairedTarget() {
             this.unpairedTarget = null;
-        }
+        },
     },
 });

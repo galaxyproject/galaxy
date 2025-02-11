@@ -36,7 +36,6 @@ const pinia = getActivePinia();
 
 const pairingTargetsStore = usePairingDatasetTargetsStore();
 
-
 interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
@@ -476,23 +475,55 @@ function applyFilters(forwardFilter: string, reverseFilter: string) {
     initialize();
 }
 
-function onPair(forwardId: string, reverseId: string) {
-    let forwardIndex = -1;
-    let reverseIndex = -1;
+// two ways to pair, can drag and drop rows or more accessible can just click links in
+// pairs. This type is used to indicate what type of pairing is occurring.
+type PairBy = "click" | "drag_and_drop";
+// do you drag forward to reverse or drag reverse to forward, I'm not sure what is more intuitive
+// so leaving this configurable for now - not by the user but in the code. Same with clicking,
+// do you click first than second or second than first. Here I think it makes a bit more sense
+// to click forward to reverse.
+type PairDirection = "from_1_to_2" | "from_2_to_1";
+const pairDirections: Record<PairBy, PairDirection> = {
+    click: "from_1_to_2",
+    drag_and_drop: "from_1_to_2",
+};
+// when dragging - do you insert the pair at the drop target ("2") or at where the dragging
+// starting from ("1") - this is independent of what is forward or reverse. Likewise if pairing
+// by clicking, do you do that from the first click ("1") or the second click ("2")
+const insertPairAtIndexType: Record<PairBy, "1" | "2"> = {
+    click: "2",
+    drag_and_drop: "2",
+};
+
+function onPair(firstId: string, secondId: string, pairBy: PairBy) {
+    // if pairBy is click -> firstId is the first thing clicked, secondId is the second
+    // if pairBy is drag_and_drop -> firstId is what is being dragged, secondId is what it is dragged to
+    let firstIndex = -1;
+    let secondIndex = -1;
     let forward: HistoryItemSummary | null = null;
     let reverse: HistoryItemSummary | null = null;
 
+    const pairDirection = pairDirections[pairBy];
     rowData.value.forEach((row, index) => {
-        if (row.id == forwardId && "unpaired" in row.datasets) {
-            forwardIndex = index;
-            forward = row.datasets.unpaired as HistoryItemSummary;
+        if (row.id == firstId && "unpaired" in row.datasets) {
+            firstIndex = index;
+            if (pairDirection == "from_1_to_2") {
+                forward = row.datasets.unpaired as HistoryItemSummary;
+            } else {
+                reverse = row.datasets.unpaired as HistoryItemSummary;
+            }
         }
-        if (row.id == reverseId && "unpaired" in row.datasets) {
-            reverseIndex = index;
-            reverse = row.datasets.unpaired as HistoryItemSummary;
+        if (row.id == secondId && "unpaired" in row.datasets) {
+            secondIndex = index;
+            if (pairDirection == "from_1_to_2") {
+                reverse = row.datasets.unpaired as HistoryItemSummary;
+            } else {
+                forward = row.datasets.unpaired as HistoryItemSummary;
+            }
         }
     });
-    if (forwardIndex !== -1 && reverseIndex !== -1 && forward && reverse) {
+
+    if (firstIndex !== -1 && secondIndex !== -1 && forward && reverse) {
         const nameForPair = guessNameForPair(
             forward,
             reverse,
@@ -501,16 +532,39 @@ function onPair(forwardId: string, reverseId: string) {
             removeExtensions.value
         );
         const pair = { forward, reverse, name: nameForPair };
-        if (reverseIndex > forwardIndex) {
-            rowData.value.splice(reverseIndex, 1);
-            rowData.value.splice(forwardIndex, 1);
-            rowData.value.splice(forwardIndex, 0, pairedRow(pair));
+        const insertPairAt = insertPairAtIndexType[pairBy];
+        let targetIndex;
+        // try to splice the targets so the pair ends up at the correct spot
+        // based on insertPairAtIndexType (does it replace the first element
+        // or the second element).
+        if (insertPairAt == "1") {
+            if (firstIndex < secondIndex) {
+                targetIndex = firstIndex;
+            } else {
+                targetIndex = firstIndex - 1;
+            }
         } else {
-            rowData.value.splice(forwardIndex, 1);
-            rowData.value.splice(reverseIndex, 1);
-            rowData.value.splice(forwardIndex + 1, 0, pairedRow(pair));
+            if (secondIndex < firstIndex) {
+                targetIndex = secondIndex;
+            } else {
+                targetIndex = secondIndex - 1;
+            }
         }
+        // need to remove the latter item first to preserve indices
+        if (firstIndex < secondIndex) {
+            rowData.value.splice(secondIndex, 1);
+            rowData.value.splice(firstIndex, 1);
+        } else {
+            rowData.value.splice(firstIndex, 1);
+            rowData.value.splice(secondIndex, 1);
+        }
+        rowData.value.splice(targetIndex, 0, pairedRow(pair));
         _refresh();
+
+        // reset pairing targets and such... even if coming from drag_and_drop reset this
+        // because we might have paired the current target with a drag and drop.
+        activeUnpairedTarget.value = null;
+        pairingTargetsStore.resetUnpairedTarget();
     }
 }
 
@@ -534,9 +588,16 @@ function onUnpairedClick(value: UnpairedValue) {
         pairingTargetsStore.setUnpairedTarget(value.unpaired.id);
     } else {
         const forwardId = activeUnpairedTarget.value.unpaired.id;
-        activeUnpairedTarget.value = null;
-        onPair(forwardId, value.unpaired.id);
-        pairingTargetsStore.resetUnpairedTarget();
+        const reverseId = value.unpaired.id;
+        if (forwardId == reverseId) {
+            // cannot pair an element with itself, assuming user wants to make this no longer
+            // the active target
+            activeUnpairedTarget.value = null;
+            pairingTargetsStore.resetUnpairedTarget();
+            return;
+        } else {
+            onPair(forwardId, reverseId, "click");
+        }
     }
 }
 
