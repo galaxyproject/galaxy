@@ -459,14 +459,14 @@ class TestQuota(BaseModelTestCase):
                 user.total_disk_usage = 1000
                 job = self.model.Job()
                 job.user = user
-                assert not self.quota_agent.is_over_quota(None, job, None)
+                assert not self.quota_agent.is_over_quota(None, job)
             else:
                 job = self.model.Job()
                 job.user = user
                 user.total_disk_usage = amount - 1
-                assert not self.quota_agent.is_over_quota(None, job, None)
+                assert not self.quota_agent.is_over_quota(None, job)
                 user.total_disk_usage = amount + 1
-                assert self.quota_agent.is_over_quota(None, job, None)
+                assert self.quota_agent.is_over_quota(None, job)
 
 
 class TestUsage(BaseModelTestCase):
