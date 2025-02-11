@@ -325,7 +325,7 @@ function onAlert(value: string | undefined) {
             </div>
             <div v-if="props.workflowRun" class="d-flex align-items-center">
                 <BBadge
-                    v-if="props.type !== 'boolean'"
+                    v-if="workflowRunFormTitleItems.message && props.type !== 'boolean'"
                     class="flex-gapx-1 workflow-run-element-title"
                     :class="populatedClass">
                     <i>{{ workflowRunFormTitleItems.message }}</i>
@@ -335,7 +335,7 @@ function onAlert(value: string | undefined) {
                         :class="workflowRunFormTitleItems.class"
                         fixed-width />
                 </BBadge>
-                <FormBoolean v-else :id="props.id" v-model="currentValue" />
+                <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <slot name="workflow-run-form-title-items" />
             </div>
         </div>
