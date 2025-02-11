@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { faCaretRight, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faCaretRight, faPlus, faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse, BFormGroup } from "bootstrap-vue";
+import { BButton, BButtonGroup, BCollapse, BFormGroup } from "bootstrap-vue";
+import { faPencil } from "font-awesome-6";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -12,6 +13,7 @@ import type {
     ServiceGroupPayload,
     ServiceVariableDefinition,
 } from "@/api/users";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 
 import FormElement from "@/components/Form/FormElement.vue";
 
@@ -25,15 +27,44 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const emit = defineEmits<{
+    (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
+    (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
+    (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
+}>();
+
+const { confirm } = useConfirmDialog();
+
 const selectedSet = ref<ServiceGroupPayload | undefined>(
     props.credentialPayload.groups.find((group) => group.name === props.credentialPayload.current_group)
 );
 
 const isExpanded = ref(false);
 
-const isAddingNewSet = ref(false);
+const newNameError = ref<string | undefined>(undefined);
 
-const newSetName = ref<string>("");
+const newSetName = computed<string>({
+    get: () => selectedSet.value?.name ?? "",
+    set: (inputValue) => {
+        if (
+            inputValue.trim() !== "" &&
+            !availableSets.value.some((set) => set.name === inputValue) &&
+            inputValue !== defaultSet.value?.name
+        ) {
+            selectedSet.value!.name = inputValue;
+            newNameError.value = undefined;
+        } else if (inputValue.trim() === "" || inputValue === defaultSet.value?.name) {
+            newNameError.value = "This name is not allowed.";
+        }
+    },
+});
+const setNameHelp = computed<string>(() => {
+    if (selectedSet.value?.name === defaultSet.value?.name) {
+        return "The default set cannot be renamed.";
+    }
+
+    return `Enter a name for the set of credentials for ${serviceName.value}`;
+});
 
 const hasNameConflict = computed<boolean>(() => {
     return newSetName.value.trim() !== "" && availableSets.value.some((set) => set.name === newSetName.value);
@@ -44,7 +75,9 @@ const serviceName = computed<string>(() => props.credentialDefinition.label || p
 const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
 
 const canCreateNewSet = computed<boolean>(
-    () => newSetName.value.trim() !== "" && !availableSets.value.some((set) => set.name === newSetName.value)
+    () =>
+        selectedSet.value?.name.trim() !== "" &&
+        !availableSets.value.some((set) => set.name === selectedSet.value?.name)
 );
 
 const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== defaultSet.value?.name ?? false);
@@ -52,12 +85,6 @@ const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== default
 const defaultSet = computed<ServiceGroupPayload | undefined>(() =>
     availableSets.value.find((set) => set.name === "default")
 );
-
-const emit = defineEmits<{
-    (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
-    (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
-    (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
-}>();
 
 function generateUniqueName(template: string, sets: ServiceGroupPayload[]): string {
     let name = template;
@@ -91,43 +118,66 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
     return getVariableDefinition(name, type).optional;
 }
 
-function onAddingNewSet() {
-    isAddingNewSet.value = true;
-}
-
-function onCancelAddingNewSet() {
-    isAddingNewSet.value = false;
-    newSetName.value = "";
-}
-
 function onCreateNewSet() {
     const newSet: ServiceGroupPayload = {
-        name: generateUniqueName(newSetName.value, props.credentialPayload.groups),
+        name: generateUniqueName("new credential", props.credentialPayload.groups),
         variables: selectedSet.value?.variables.map((variable) => ({ ...variable, value: null })) || [],
         secrets: selectedSet.value?.secrets.map((secret) => ({ ...secret, value: null, alreadySet: false })) || [],
     };
+
     emit("new-credentials-set", props.credentialPayload, newSet);
     selectedSet.value = newSet;
     onCurrentSetChange(newSet);
-    isAddingNewSet.value = false;
-    newSetName.value = "";
+
+    toggleEditingMode(true);
 }
 
 function onCurrentSetChange(selectedSet: ServiceGroupPayload) {
     emit("update-current-set", props.credentialPayload, selectedSet);
 }
 
-function onDeleteSet() {
-    if (selectedSet.value) {
-        //TODO: Implement confirmation dialog.
+const editMode = ref(false);
+
+function toggleEditingMode(state: boolean) {
+    editMode.value = state;
+}
+
+async function onDeleteSet() {
+    const confirmed = await confirm("Are you sure you want to delete this set of credentials?", {
+        title: "Delete credentials set",
+        okTitle: "Delete set",
+        okVariant: "danger",
+        cancelVariant: "outline-primary",
+    });
+
+    if (confirmed && selectedSet.value) {
         const groupNameToDelete = selectedSet.value.name;
         const defaultSet = availableSets.value.find((set) => set.name === "default");
+
         if (defaultSet) {
             selectedSet.value = defaultSet;
             onCurrentSetChange(defaultSet);
         }
+
         emit("delete-credentials-group", props.credentialPayload, groupNameToDelete);
     }
+}
+
+function onDiscardSet() {
+    selectedSet.value = availableSets.value.find((set) => set.name === props.credentialPayload.current_group);
+    toggleEditingMode(false);
+}
+
+function onSaveSet() {
+    if (newNameError.value) {
+        return;
+    }
+
+    if (selectedSet.value) {
+        emit("update-current-set", props.credentialPayload, selectedSet.value);
+    }
+
+    toggleEditingMode(false);
 }
 </script>
 
@@ -149,34 +199,9 @@ function onDeleteSet() {
                 </span>
             </BButton>
         </div>
-        <BCollapse :id="`accordion-${credentialDefinition.name}`" v-model="isExpanded" accordion="my-accordion">
-            <div v-if="isAddingNewSet" class="credentials-form">
-                <FormElement
-                    v-model="newSetName"
-                    type="text"
-                    title="New set name"
-                    :optional="false"
-                    :help="`Enter a name for the new set of credentials for ${serviceName}`" />
 
-                <div>
-                    <BButton
-                        variant="outline-info"
-                        size="sm"
-                        title="Create new set"
-                        :disabled="!canCreateNewSet"
-                        @click="onCreateNewSet">
-                        Create
-                    </BButton>
-                    <BButton variant="outline-danger" size="sm" title="Cancel" @click="onCancelAddingNewSet">
-                        Cancel
-                    </BButton>
-
-                    <span v-if="hasNameConflict" class="text-danger">
-                        This name is already in use. Please choose another.
-                    </span>
-                </div>
-            </div>
-            <form v-else autocomplete="off" class="credentials-form">
+        <BCollapse :id="`accordion-${credentialDefinition.name}`" v-model="isExpanded">
+            <form autocomplete="off" class="credentials-form">
                 <p>{{ credentialDefinition.description }}</p>
 
                 <div class="set-actions">
@@ -193,44 +218,99 @@ function onDeleteSet() {
                             @input="onCurrentSetChange" />
                     </BFormGroup>
 
-                    <BButton
-                        v-if="canDeleteSet"
-                        variant="danger"
-                        size="sm"
-                        title="Delete selected set"
-                        @click="onDeleteSet">
-                        <FontAwesomeIcon :icon="faTrash" />
-                    </BButton>
-                    <BButton
-                        variant="outline-info"
-                        size="sm"
-                        title="Create a new set of credentials"
-                        @click="onAddingNewSet">
-                        <FontAwesomeIcon :icon="faPlus" />
-                    </BButton>
+                    <BButtonGroup>
+                        <BButton
+                            v-b-tooltip.hover.noninteractive
+                            :disabled="!canDeleteSet"
+                            variant="outline-danger"
+                            size="sm"
+                            title="Delete selected set"
+                            @click="onDeleteSet">
+                            <FontAwesomeIcon :icon="faTrash" />
+                        </BButton>
+
+                        <BButton
+                            v-b-tooltip.hover.noninteractive
+                            variant="outline-info"
+                            size="sm"
+                            title="Edit selected set"
+                            @click="toggleEditingMode(true)">
+                            <FontAwesomeIcon :icon="faPencil" />
+                        </BButton>
+
+                        <BButton
+                            v-b-tooltip.hover.noninteractive
+                            :disabled="canCreateNewSet"
+                            variant="outline-info"
+                            size="sm"
+                            title="Create a new set of credentials"
+                            @click="onCreateNewSet">
+                            <FontAwesomeIcon :icon="faPlus" />
+                        </BButton>
+                    </BButtonGroup>
                 </div>
 
-                <div v-if="selectedSet" class="set-body">
-                    <div v-for="variable in selectedSet.variables" :key="variable.name">
+                <BCollapse v-if="selectedSet" :visible="editMode" class="set-body">
+                    <div class="d-flex justify-content-between">
+                        <span>
+                            Editing set: <b>{{ selectedSet.name }}</b>
+                        </span>
+
+                        <div class="d-flex justify-content-center flex-gapx-1">
+                            <BButton
+                                v-b-tooltip.hover.noninteractive
+                                variant="outline-danger"
+                                size="sm"
+                                title="Discard changes to this set"
+                                @click="onDiscardSet">
+                                Discard
+                            </BButton>
+
+                            <BButton
+                                v-b-tooltip.hover.noninteractive
+                                variant="outline-info"
+                                size="sm"
+                                title="Save changes to this set"
+                                :disabled="newNameError"
+                                @click="onSaveSet">
+                                <FontAwesomeIcon :icon="faSave" />
+                                Save
+                            </BButton>
+                        </div>
+                    </div>
+
+                    <div class="p-2">
                         <FormElement
-                            :id="`${selectedSet.name}-${variable.name}-variable`"
-                            v-model="variable.value"
+                            v-if="selectedSet?.name !== defaultSet?.name"
+                            v-model="newSetName"
                             type="text"
-                            :title="getVariableTitle(variable.name, 'variable')"
-                            :optional="isVariableOptional(variable.name, 'variable')"
-                            :help="getVariableDescription(variable.name, 'variable')" />
+                            title="Set name"
+                            :warning="newNameError"
+                            :optional="false"
+                            :help="setNameHelp" />
+
+                        <div v-for="variable in selectedSet.variables" :key="variable.name">
+                            <FormElement
+                                :id="`${selectedSet.name}-${variable.name}-variable`"
+                                v-model="variable.value"
+                                type="text"
+                                :title="getVariableTitle(variable.name, 'variable')"
+                                :optional="isVariableOptional(variable.name, 'variable')"
+                                :help="getVariableDescription(variable.name, 'variable')" />
+                        </div>
+
+                        <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
+                            <FormElement
+                                :id="`${selectedSet.name}-${secret.name}-secret`"
+                                v-model="secret.value"
+                                type="password"
+                                :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
+                                :title="getVariableTitle(secret.name, 'secret')"
+                                :optional="isVariableOptional(secret.name, 'secret')"
+                                :help="getVariableDescription(secret.name, 'secret')" />
+                        </div>
                     </div>
-                    <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
-                        <FormElement
-                            :id="`${selectedSet.name}-${secret.name}-secret`"
-                            v-model="secret.value"
-                            type="password"
-                            :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
-                            :title="getVariableTitle(secret.name, 'secret')"
-                            :optional="isVariableOptional(secret.name, 'secret')"
-                            :help="getVariableDescription(secret.name, 'secret')" />
-                    </div>
-                </div>
+                </BCollapse>
             </form>
         </BCollapse>
     </div>
@@ -276,6 +356,7 @@ function onDeleteSet() {
     border-top: none;
     padding: 1rem;
 }
+
 .secret-input {
     display: flex;
     align-items: center;
