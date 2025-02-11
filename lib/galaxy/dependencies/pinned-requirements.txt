@@ -55,7 +55,7 @@ cloudbridge==3.2.0
 colorama==0.4.6 ; sys_platform == 'win32'
 coloredlogs==15.0.1
 conda-package-streaming==0.11.0
-cryptography==44.0.0
+cryptography==44.0.1
 ct3==3.4.0
 cwl-upgrader==1.2.11 ; python_full_version < '3.9'
 cwl-upgrader==1.2.12 ; python_full_version >= '3.9'
