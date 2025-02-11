@@ -817,6 +817,13 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.license = data.get("license")
         workflow.creator_metadata = data.get("creator")
 
+        if "logo_url" in data:
+            workflow.logo_url = data["logo_url"]
+        if "help" in data:
+            workflow.help = data["help"]
+        if "readme" in data:
+            workflow.readme = data["readme"]
+
         if getattr(workflow_state_resolution_options, "archive_source", None):
             source_metadata = {}
             if workflow_state_resolution_options.archive_source in ("trs_tool", "trs_url"):
@@ -1232,6 +1239,9 @@ class WorkflowContentsManager(UsesAnnotations):
         data["report"] = workflow.reports_config or {}
         data["license"] = workflow.license
         data["creator"] = workflow.creator_metadata
+        data["readme"] = workflow.readme
+        data["help"] = workflow.help
+        data["logo_url"] = workflow.logo_url
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
         data["comments"] = [comment.to_dict() for comment in workflow.comments]
@@ -1488,6 +1498,13 @@ class WorkflowContentsManager(UsesAnnotations):
             data["license"] = workflow.license
         if workflow.source_metadata:
             data["source_metadata"] = workflow.source_metadata
+        if workflow.readme is not None:
+            data["readme"] = workflow.readme
+        if workflow.help is not None:
+            data["help"] = workflow.help
+        if workflow.logo_url is not None:
+            data["logo_url"] = workflow.logo_url
+
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
@@ -1691,6 +1708,10 @@ class WorkflowContentsManager(UsesAnnotations):
         item["license"] = workflow.license
         item["creator"] = workflow.creator_metadata
         item["source_metadata"] = workflow.source_metadata
+        item["readme"] = workflow.readme
+        item["help"] = workflow.help
+        item["logo_url"] = workflow.logo_url
+
         steps = {}
         steps_to_order_index = {}
         for step in workflow.steps:

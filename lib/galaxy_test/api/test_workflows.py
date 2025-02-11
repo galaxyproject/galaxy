@@ -1194,6 +1194,25 @@ steps:
         workflow = self._download_workflow(workflow_id)
         assert "TestWorkflow1" in workflow["name"]
 
+    def test_readme_metadata(self):
+        base_workflow_json = json.loads(workflow_str)
+        readme = "This is the body of my readme..."
+        logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
+        help = "This is my instruction for the workflow!"
+        base_workflow_json["readme"] = readme
+        base_workflow_json["logo_url"] = logo_url
+        base_workflow_json["help"] = help
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert "TestWorkflow1" in workflow["name"]
+        assert workflow["readme"] == readme
+        assert workflow["help"] == help
+        assert workflow["logo_url"] == logo_url
+
     def test_trs_import(self):
         trs_payload = {
             "archive_source": "trs_tool",
