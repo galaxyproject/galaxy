@@ -20,8 +20,6 @@
         }
 
         .ui-form-title {
-            padding: 0.75rem 0.75rem 0.25rem 1.25rem;
-            margin: -0.75rem -1.25rem 0 -1.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -42,6 +40,15 @@
                 &.unpopulated {
                     background-color: $state-info-bg;
                 }
+            }
+        }
+        .form-element-content {
+            display: flex;
+            flex-direction: column;
+            row-gap: 0.25rem;
+
+            .ui-form-info {
+                order: -1;
             }
         }
     }
