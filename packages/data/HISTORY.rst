@@ -3,14 +3,8 @@ History
 
 .. to_doc
 
------------
-24.2.1.dev0
------------
-
-
-
 -------------------
-24.2.0 (2025-02-06)
+24.2.0 (2025-02-11)
 -------------------
 
 
@@ -37,6 +31,8 @@ Bug fixes
 * Add tool_id index on job table by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19543 <https://github.com/galaxyproject/galaxy/pull/19543>`_
 * Update 24.2 db revision tags by `@jdavcs <https://github.com/jdavcs>`_ in `#19550 <https://github.com/galaxyproject/galaxy/pull/19550>`_
 * Provide guidance in case of deadlock during db migration by `@jdavcs <https://github.com/jdavcs>`_ in `#19551 <https://github.com/galaxyproject/galaxy/pull/19551>`_
+* Fix job paused on user defined object store by `@davelopez <https://github.com/davelopez>`_ in `#19578 <https://github.com/galaxyproject/galaxy/pull/19578>`_
+* Handle isatools dependency by `@jdavcs <https://github.com/jdavcs>`_ in `#19582 <https://github.com/galaxyproject/galaxy/pull/19582>`_
 
 ============
 Enhancements
@@ -87,6 +83,7 @@ Other changes
 * Merge 24.1 by `@jdavcs <https://github.com/jdavcs>`_ in `#18386 <https://github.com/galaxyproject/galaxy/pull/18386>`_
 * Format dev to fix linting. by `@jmchilton <https://github.com/jmchilton>`_ in `#18860 <https://github.com/galaxyproject/galaxy/pull/18860>`_
 * Add 24.2 migration tags by `@jdavcs <https://github.com/jdavcs>`_ in `#19169 <https://github.com/galaxyproject/galaxy/pull/19169>`_
+* Fix type annotations for pysam 0.23.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19571 <https://github.com/galaxyproject/galaxy/pull/19571>`_
 
 -------------------
 24.1.4 (2024-12-11)

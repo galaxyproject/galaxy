@@ -3,14 +3,8 @@ History
 
 .. to_doc
 
------------
-24.2.1.dev0
------------
-
-
-
 -------------------
-24.2.0 (2025-02-06)
+24.2.0 (2025-02-11)
 -------------------
 
 
@@ -61,6 +55,7 @@ Bug fixes
 * Fix remap for parameter called id by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19532 <https://github.com/galaxyproject/galaxy/pull/19532>`_
 * Fix admin cancel job message not being displayed to the user by `@davelopez <https://github.com/davelopez>`_ in `#19537 <https://github.com/galaxyproject/galaxy/pull/19537>`_
 * Use instance wide default ``real_system_username`` if not defined on destination by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19544 <https://github.com/galaxyproject/galaxy/pull/19544>`_
+* Fix job paused on user defined object store by `@davelopez <https://github.com/davelopez>`_ in `#19578 <https://github.com/galaxyproject/galaxy/pull/19578>`_
 
 ============
 Enhancements
