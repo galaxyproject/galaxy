@@ -15,6 +15,7 @@ from fastapi import (
 from fastapi.param_functions import Query
 from typing_extensions import Annotated
 
+from galaxy.exceptions import InternalServerError
 from galaxy.files.sources import PluginKind
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.remote_files import RemoteFilesManager
@@ -146,6 +147,8 @@ class FastAPIRemoteFiles:
 
         The total count of files and directories is returned in the 'total_matches' header.
         """
+        if recursive:
+            raise InternalServerError("recursive parameter temporarily disabled")
         result, count = self.manager.index(
             user_ctx, target, format, recursive, disable, writeable, limit, offset, query, sort_by
         )
