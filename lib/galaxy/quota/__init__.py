@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
+from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
 
@@ -374,8 +375,8 @@ WHERE default_quota_association.type = :default_type
             self.sa_session.commit()
 
     def is_over_quota(self, app, job, job_destination):
-        # Doesn't work because job.object_store_id until inside handler :_(
-        # quota_source_label = job.quota_source_label
+        if is_user_object_store(job.object_store_id):
+            return False  # User object stores are not subject to quotas
         if job_destination is not None:
             object_store_id = job_destination.params.get("object_store_id", None)
             object_store = app.object_store
