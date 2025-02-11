@@ -1518,7 +1518,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job = self.get_job()
         if message is None:
             message = "Execution of this dataset's job is paused"
-        if job.state == job.states.NEW:
+        if job.state in (job.states.NEW, job.states.QUEUED):
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset_assoc.dataset.dataset.state = dataset_assoc.dataset.dataset.states.PAUSED
                 dataset_assoc.dataset.info = message
@@ -1618,9 +1618,17 @@ class MinimalJobWrapper(HasResourceParameters):
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
+        # Now that we have the object store id, check if we are over the limit
+        self._pause_job_if_over_quota(job)
         with transaction(self.sa_session):
             self.sa_session.commit()
         return True
+
+    def _pause_job_if_over_quota(self, job):
+        if self.app.quota_agent.is_over_quota(self.app, job, self.job_destination):
+            log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+            message = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+            self.pause(job, message)
 
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
         """Subclasses should implement this to persist a destination, if necessary."""
