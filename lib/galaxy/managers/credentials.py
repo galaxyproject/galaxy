@@ -129,7 +129,7 @@ class CredentialsManager:
         existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]],
         group_id: DecodedDatabaseIdField,
         name: str,
-        value: str,
+        value: Optional[str],
         is_secret: bool = False,
     ) -> None:
         credential = next(
@@ -140,11 +140,12 @@ class CredentialsManager:
             ),
             None,
         )
-
         if credential:
-            credential.is_set = bool(value)
-            if not is_secret:
-                credential.value = value
+            if value is not None:
+                credential.is_set = True
+                if not is_secret:
+                    credential.value = value
+                self.session.add(credential)
         else:
             credential = Credential(
                 group_id=group_id,
@@ -153,8 +154,7 @@ class CredentialsManager:
                 is_set=bool(value),
                 value=value if not is_secret else None,
             )
-
-        self.session.add(credential)
+            self.session.add(credential)
 
     def update_current_group(
         self,
