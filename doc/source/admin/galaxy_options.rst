@@ -5771,10 +5771,10 @@
 :Description:
     Install repository dependencies when installing tools from the
     Tool Shed. These are other Tool Shed repositories that the tool
-    being installed depends on. Repository dependencies ensure that
-    all necessary components are installed for the tool to work
-    correctly within the Galaxy environment. This option should be set
-    to false if containerized versions of tools are used.
+    being installed depends on. This is commonly used with tool
+    suites. Repository dependencies ensure that all necessary
+    components are installed for the tool (or suite) to work correctly
+    within the Galaxy environment.
 :Default: ``true``
 :Type: bool
 
