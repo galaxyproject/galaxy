@@ -44,7 +44,9 @@ jobs:
       - name: Compute merge-base commit
         id: mergebase
         run: |
-          BASE_COMMIT=$(git merge-base HEAD origin/main)
+          BASE_BRANCH="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          BASE_COMMIT=$(git merge-base HEAD "$BASE_BRANCH")
           echo "Using baseline commit: $BASE_COMMIT"
           echo "base_commit=$BASE_COMMIT" >> $GITHUB_OUTPUT
       - name: Add baseline worktree
