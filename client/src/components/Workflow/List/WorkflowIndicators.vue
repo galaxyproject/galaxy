@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFileImport, faGlobe, faShieldAlt, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faFileImport, faGlobe, faShieldAlt, faUser, faUserEdit, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import type { Creator } from "@/api/workflows";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import type { Workflow } from "@/stores/workflowStore";
 import { copy } from "@/utils/clipboard";
+import { isUrl } from "@/utils/url";
 
 import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
-
-// TODO: replace me with a proper definition
-type Workflow = any;
 
 interface Props {
     workflow: Workflow;
@@ -64,11 +64,11 @@ const sourceType = computed(() => {
 
 const sourceTitle = computed(() => {
     if (sourceType.value.includes("trs")) {
-        return `Imported from TRS ID (version: ${props.workflow.source_metadata.trs_version_id}). Click to copy ID`;
+        return `Imported from TRS ID (version: ${props.workflow.source_metadata?.trs_version_id}). Click to copy ID`;
     } else if (sourceType.value == "url") {
-        return `Imported from ${props.workflow.source_metadata.url}. Click to copy link`;
+        return `Imported from ${props.workflow.source_metadata?.url}. Click to copy link`;
     } else {
-        return `Imported from ${props.workflow.source_type}`;
+        return `Imported from ${(props.workflow as any).source_type}`;
     }
 });
 
@@ -76,10 +76,10 @@ const { success } = useToast();
 
 function onCopyLink() {
     if (sourceType.value == "url") {
-        copy(props.workflow.source_metadata.url);
+        copy(props.workflow.source_metadata?.url);
         success("URL copied");
     } else if (sourceType.value.includes("trs")) {
-        copy(props.workflow.source_metadata.trs_tool_id);
+        copy(props.workflow.source_metadata?.trs_tool_id);
         success("TRS ID copied");
     }
 }
@@ -92,6 +92,17 @@ function onViewMySharedByUser() {
 function onViewUserPublished() {
     router.push(`/workflows/list_published?owner=${props.workflow.owner}`);
     emit("updateFilter", "user", `'${props.workflow.owner}'`);
+}
+
+function getCreatorUrl(creator: Creator) {
+    const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
+    if (creator.identifier && orcidRegex.test(creator.identifier)) {
+        return { orcid: creator.identifier };
+    }
+    if (creator.url && isUrl(creator.url)) {
+        return { url: creator.url };
+    }
+    return null;
 }
 
 function getStepText(steps: number) {
@@ -171,6 +182,22 @@ function getStepText(steps: number) {
             <FontAwesomeIcon :icon="faUser" size="sm" fixed-width />
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>
+
+        <template v-if="props.workflow.creator?.length">
+            <BBadge
+                v-for="creator in props.workflow.creator"
+                :key="creator.name"
+                v-b-tooltip.noninteractive.hover
+                data-description="external creator badge"
+                class="outline-badge mx-1"
+                :class="{ 'cursor-pointer': getCreatorUrl(creator) }"
+                :title="getCreatorUrl(creator)?.orcid ? 'Click to view ORCID profile' : 'Workflow Author'"
+                :href="getCreatorUrl(creator)?.orcid || getCreatorUrl(creator)?.url"
+                target="_blank">
+                <FontAwesomeIcon :icon="faUserEdit" size="sm" fixed-width />
+                <span class="font-weight-bold"> {{ creator.name }} </span>
+            </BBadge>
+        </template>
     </div>
 </template>
 
