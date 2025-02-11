@@ -70,7 +70,7 @@ export function useKeyedCache<T>(
         };
     });
 
-    const hasItemLoadError = computed(() => {
+    const getItemLoadError = computed(() => {
         return (id: string) => {
             return loadingErrors.value[id] ?? null;
         };
@@ -110,7 +110,7 @@ export function useKeyedCache<T>(
         /**
          * A computed function that returns true if the item with the given id is currently being fetched.
          */
-        hasItemLoadError,
+        getItemLoadError,
         /**
          * A computed function holding errors
          */

@@ -5,7 +5,7 @@ import { fetchCollectionAttributes } from "@/api/datasetCollections";
 import { useKeyedCache } from "@/composables/keyedCache";
 
 export const useCollectionAttributesStore = defineStore("collectionAttributesStore", () => {
-    const { storedItems, getItemById, isLoadingItem, hasItemLoadError } = useKeyedCache<DatasetCollectionAttributes>(
+    const { storedItems, getItemById, isLoadingItem, getItemLoadError } = useKeyedCache<DatasetCollectionAttributes>(
         (params) => fetchCollectionAttributes({ id: params.id, instance_type: "history" })
     );
 
@@ -13,6 +13,6 @@ export const useCollectionAttributesStore = defineStore("collectionAttributesSto
         storedAttributes: storedItems,
         getAttributes: getItemById,
         isLoadingAttributes: isLoadingItem,
-        hasItemLoadError: hasItemLoadError,
+        getItemLoadError: getItemLoadError,
     };
 });

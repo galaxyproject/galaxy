@@ -55,18 +55,26 @@ const collectionChangeKey = ref(0);
 const attributesData = computed(() => {
     return collectionAttributesStore.getAttributes(props.collectionId);
 });
-const attributesLoadError = computed(() =>
-    errorMessageAsString(collectionAttributesStore.hasItemLoadError(props.collectionId))
-);
+
+const attributesLoadError = computed(() => {
+    const itemLoadError = collectionAttributesStore.getItemLoadError(props.collectionId);
+    if (itemLoadError) {
+        return errorMessageAsString(itemLoadError);
+    }
+    return undefined;
+});
 
 const collection = computed(() => {
     return collectionStore.getCollectionById(props.collectionId);
 });
 const collectionLoadError = computed(() => {
     if (collection.value) {
-        return errorMessageAsString(collectionStore.hasLoadingCollectionElementsError(collection.value));
+        const collectionElementLoadError = collectionStore.getLoadingCollectionElementsError(collection.value);
+        if (collectionElementLoadError) {
+            return errorMessageAsString(collectionElementLoadError);
+        }
     }
-    return "";
+    return undefined;
 });
 watch([attributesLoadError, collectionLoadError], () => {
     if (attributesLoadError.value) {
