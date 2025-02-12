@@ -306,6 +306,9 @@ export type DatasetTransform = {
  */
 export type MessageException = components["schemas"]["MessageExceptionModel"];
 
+export type FieldDict = components["schemas"]["FieldDict"];
+export type FieldType = FieldDict["type"];
+
 export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];

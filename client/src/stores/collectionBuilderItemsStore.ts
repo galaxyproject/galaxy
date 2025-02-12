@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, set } from "vue";
 
-import { GalaxyApi, type HDASummary } from "@/api";
+import { GalaxyApi, type HDASummary, type HistoryItemSummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { filtersToQueryValues } from "@/components/History/model/queries";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -75,4 +75,49 @@ export const useCollectionBuilderItemsStore = defineStore("collectionBuilderItem
         isFetching,
         fetchDatasetsForFiltertext,
     };
+});
+
+/**
+ * Stores the history items selected for collection building.
+ */
+export const useCollectionBuilderItemSelection = defineStore("collectionBuilderItemSelection", () => {
+    const selectedItems = ref<HistoryItemSummary[]>([]);
+
+    function setSelectedItems(newSelectedItems: HistoryItemSummary[]) {
+        selectedItems.value = newSelectedItems;
+    }
+
+    return { selectedItems, setSelectedItems };
+});
+
+export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets", {
+    state: () => ({
+        // Currently dragged node (null if no drag in progress)
+        draggedNodeId: null as string | null,
+        // Current drop target node (null if no target)
+        dropTargetId: null as string | null,
+        // If a link has been clicked, it will marked here
+        unpairedTarget: null as string | null,
+    }),
+    actions: {
+        // Start dragging a node by its ID
+        startDrag(nodeId: string) {
+            this.draggedNodeId = nodeId;
+        },
+        // Set the current drop target by its ID
+        setDropTarget(nodeId: string | null) {
+            this.dropTargetId = nodeId;
+        },
+        // Clear drag state
+        endDrag() {
+            this.draggedNodeId = null;
+            this.dropTargetId = null;
+        },
+        setUnpairedTarget(targetId: string) {
+            this.unpairedTarget = targetId;
+        },
+        resetUnpairedTarget() {
+            this.unpairedTarget = null;
+        },
+    },
 });
