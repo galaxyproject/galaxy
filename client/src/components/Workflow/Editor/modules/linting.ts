@@ -16,11 +16,13 @@ interface LintState {
 }
 
 export const bestPracticeWarningAnnotation =
-    "This workflow is not annotated. Providing an annotation helps workflow executors understand the purpose and usage of the workflow.";
+    "This workflow does not provide a short description. Providing a short description helps workflow executors understand the purpose and usage of the workflow.";
 export const bestPracticeWarningCreator =
     "This workflow does not specify creator(s). This is important metadata for workflows that will be published and/or shared to help workflow executors know how to cite the workflow authors.";
 export const bestPracticeWarningLicense =
     "This workflow does not specify a license. This is important metadata for workflows that will be published and/or shared to help workflow executors understand how it may be used.";
+export const bestPracticeWarningReadme =
+    "This workflow does not provide a readme. Providing a detailed readme helps workflow executors understand the details, purpose, and limitations of the workflow.";
 
 export function getDisconnectedInputs(
     steps: Steps = {},

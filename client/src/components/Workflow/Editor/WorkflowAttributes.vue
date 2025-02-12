@@ -301,6 +301,7 @@ export default {
                     this.showAnnotationHightlight = true;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showAnnotationHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -308,6 +309,7 @@ export default {
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = true;
                     this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showCreatorHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -315,8 +317,17 @@ export default {
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = true;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showLicenseHightlight = false;
+                    }, bestPracticeHighlightTime);
+                } else if (newHighlight == "readme") {
+                    this.showAnnotationHighlight = false;
+                    this.showCreatorHightlight = false;
+                    this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = true;
+                    setTimeout(() => {
+                        this.showReadmeHightlight = false;
                     }, bestPracticeHighlightTime);
                 }
             },
