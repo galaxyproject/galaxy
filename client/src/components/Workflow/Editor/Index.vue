@@ -369,7 +369,7 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify annotation"
+            "modify short description"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {

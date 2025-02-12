@@ -5,11 +5,17 @@
         </template>
         <LintSection
             :okay="checkAnnotation"
-            success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
+            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
             :warning-message="bestPracticeWarningAnnotation"
             attribute-link="Annotate your Workflow."
             @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkReadme"
+            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
+            :warning-message="bestPracticeWarningReadme"
+            attribute-link="Annotate your Workflow."
+            @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
             success-message="This workflow defines creator information."
@@ -77,6 +83,7 @@ import {
     bestPracticeWarningAnnotation,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
@@ -138,6 +145,7 @@ export default {
             bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
         };
     },
     computed: {
@@ -147,6 +155,9 @@ export default {
             return !this.checkUntypedParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
         checkAnnotation() {
+            return !!this.annotation;
+        },
+        checkReadme() {
             return !!this.annotation;
         },
         checkLicense() {
