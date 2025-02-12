@@ -57,7 +57,7 @@
                     @insertModule="onInsertModule" />
                 <WorkflowLint
                     v-else-if="isActiveSideBar('workflow-best-practices')"
-                    :untyped-parameters="parameters"
+                    :lint-data="lintData"
                     :annotation="annotation"
                     :creator="creator"
                     :license="license"
@@ -220,6 +220,7 @@ import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivitie
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { useLintData } from "./modules/useLinting";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -458,10 +459,12 @@ export default {
         }
 
         const isNewTempWorkflow = computed(() => !props.workflowId);
+        const lintData = useLintData(id, steps, datatypesMapper);
 
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
+                lintData: lintData,
             }))
         );
 
@@ -526,6 +529,7 @@ export default {
             saveWorkflowTitle,
             confirm,
             inputs,
+            lintData,
         };
     },
     data() {

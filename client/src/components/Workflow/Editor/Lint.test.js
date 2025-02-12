@@ -2,11 +2,12 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-import { getUntypedWorkflowParameters } from "./modules/parameters";
+import { useLintData } from "./modules/useLinting";
 
 import Lint from "./Lint.vue";
 
@@ -30,6 +31,8 @@ const steps = {
             },
         ],
         annotation: "",
+        input_connections: null,
+        tool_state: null,
     },
     1: {
         id: 1,
@@ -72,6 +75,7 @@ const steps = {
                 output_name: "output",
             },
         ],
+        tool_state: null,
     },
     2: {
         id: 2,
@@ -80,8 +84,11 @@ const steps = {
         annotation: "",
         outpus: {},
         inputs: [],
+        input_connections: null,
+        tool_state: null,
     },
 };
+const stepsRef = ref(steps);
 
 describe("Lint", () => {
     let wrapper;
@@ -93,7 +100,7 @@ describe("Lint", () => {
 
         wrapper = mount(Lint, {
             propsData: {
-                untypedParameters: getUntypedWorkflowParameters(steps),
+                lintData: useLintData(ref("1"), stepsRef, ref(testDatatypesMapper)),
                 steps: steps,
                 annotation: "annotation",
                 license: null,
