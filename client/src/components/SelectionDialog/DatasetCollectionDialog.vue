@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { onMounted, ref } from "vue";
 
@@ -81,7 +82,7 @@ onMounted(() => {
         :options-show="optionsShow"
         :modal-show="modalShow"
         :modal-static="modalStatic"
-        leaf-icon="fa fa-folder"
+        :leaf-icon="faFolder"
         :items="items"
         @onCancel="onCancel"
         @onClick="onClick" />
