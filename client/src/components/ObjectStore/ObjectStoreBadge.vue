@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import "./badgeIcons";
-
+import {
+    faArchive,
+    faBan,
+    faChartLine,
+    faCircleNotch,
+    faCloud,
+    faKey,
+    faPlug,
+    faRecycle,
+    faShieldAlt,
+    faTachometerAlt,
+    faUserLock,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type components } from "@/api/schema";
-
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
-
-type BadgeType = components["schemas"]["BadgeDict"];
+import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
+import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
 const MESSAGES = {
     restricted:
@@ -32,15 +40,13 @@ const MESSAGES = {
     cloud: "This is cloud storage.",
 };
 
-interface ObjectStoreBadgeProps {
-    badge: BadgeType;
+interface Props {
+    badge: ObjectStoreBadgeType;
     size?: string;
-    moreOnHover?: boolean;
 }
 
-const props = withDefaults(defineProps<ObjectStoreBadgeProps>(), {
-    size: "3x",
-    moreOnHover: true,
+const props = withDefaults(defineProps<Props>(), {
+    size: "lg",
 });
 
 const advantage = "storage-advantage";
@@ -67,78 +73,79 @@ const shrink = computed(() => {
 const message = computed<string>(() => {
     return props.badge.message || "";
 });
+
+const title = computed(() => {
+    return stockMessage.value + (message.value ? "\n\n" + markup(message.value ?? "", true) : "");
+});
 </script>
 
 <template>
     <span>
-        <span ref="iconTarget" class="object-store-badge-wrapper">
+        <span ref="iconTarget" v-b-tooltip.hover.noninteractive="title" class="object-store-badge-wrapper">
             <FontAwesomeLayers :class="layerClasses" :data-badge-type="badgeType">
-                <FontAwesomeIcon v-if="badgeType == 'restricted'" icon="user-lock" :class="disadvantage" />
-                <FontAwesomeIcon v-if="badgeType == 'user_defined'" icon="plug" :class="neutral" />
-                <FontAwesomeIcon v-if="badgeType == 'quota'" icon="chart-line" :class="disadvantage" />
-                <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="chart-line" :class="neutral" v-bind="shrink" />
-                <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="ban" :class="[transparent, advantage]" />
-                <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="circle-notch" :class="advantage" />
+                <FontAwesomeIcon v-if="badgeType == 'restricted'" :icon="faUserLock" :class="disadvantage" />
+                <FontAwesomeIcon v-if="badgeType == 'user_defined'" :icon="faPlug" :class="neutral" />
+                <FontAwesomeIcon v-if="badgeType == 'quota'" :icon="faChartLine" :class="disadvantage" />
+                <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faChartLine" :class="neutral" v-bind="shrink" />
+                <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faBan" :class="[transparent, advantage]" />
+                <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faCircleNotch" :class="advantage" />
                 <FontAwesomeIcon
                     v-if="badgeType == 'no_quota'"
-                    icon="circle-notch"
+                    :icon="faCircleNotch"
                     :class="advantage"
                     flip="vertical" />
-                <FontAwesomeIcon v-if="badgeType == 'faster'" icon="tachometer-alt" :class="advantage" />
+                <FontAwesomeIcon v-if="badgeType == 'faster'" :icon="faTachometerAlt" :class="advantage" />
                 <FontAwesomeIcon
                     v-if="badgeType == 'slower'"
-                    icon="tachometer-alt"
+                    :icon="faTachometerAlt"
                     :class="disadvantage"
                     flip="horizontal" />
-                <FontAwesomeIcon v-if="badgeType == 'short_term'" icon="recycle" :class="disadvantage" />
+                <FontAwesomeIcon v-if="badgeType == 'short_term'" :icon="faRecycle" :class="disadvantage" />
 
-                <FontAwesomeIcon v-if="badgeType == 'backed_up'" icon="archive" :class="advantage" />
-                <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" icon="archive" :class="neutral" v-bind="shrink" />
-                <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" icon="ban" :class="[transparent, disadvantage]" />
-                <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" icon="circle-notch" :class="disadvantage" />
+                <FontAwesomeIcon v-if="badgeType == 'backed_up'" :icon="faArchive" :class="advantage" />
                 <FontAwesomeIcon
                     v-if="badgeType == 'not_backed_up'"
-                    icon="circle-notch"
+                    :icon="faArchive"
+                    :class="neutral"
+                    v-bind="shrink" />
+                <FontAwesomeIcon
+                    v-if="badgeType == 'not_backed_up'"
+                    :icon="faBan"
+                    :class="[transparent, disadvantage]" />
+                <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" :icon="faCircleNotch" :class="disadvantage" />
+                <FontAwesomeIcon
+                    v-if="badgeType == 'not_backed_up'"
+                    :icon="faCircleNotch"
                     :class="disadvantage"
                     flip="vertical" />
 
-                <FontAwesomeIcon v-if="badgeType == 'more_secure'" icon="key" :class="advantage" />
-                <FontAwesomeIcon v-if="badgeType == 'less_secure'" icon="key" :class="neutral" v-bind="shrink" />
-                <FontAwesomeIcon v-if="badgeType == 'less_secure'" icon="ban" :class="[transparent, disadvantage]" />
-                <FontAwesomeIcon v-if="badgeType == 'less_secure'" icon="circle-notch" :class="disadvantage" />
+                <FontAwesomeIcon v-if="badgeType == 'more_secure'" :icon="faKey" :class="advantage" />
+                <FontAwesomeIcon v-if="badgeType == 'less_secure'" :icon="faKey" :class="neutral" v-bind="shrink" />
+                <FontAwesomeIcon v-if="badgeType == 'less_secure'" :icon="faBan" :class="[transparent, disadvantage]" />
+                <FontAwesomeIcon v-if="badgeType == 'less_secure'" :icon="faCircleNotch" :class="disadvantage" />
                 <FontAwesomeIcon
                     v-if="badgeType == 'less_secure'"
-                    icon="circle-notch"
+                    :icon="faCircleNotch"
                     :class="disadvantage"
                     flip="vertical" />
 
-                <FontAwesomeIcon v-if="badgeType == 'more_stable'" icon="shield-alt" :class="advantage" />
-                <FontAwesomeIcon v-if="badgeType == 'less_stable'" icon="shield-alt" :class="neutral" v-bind="shrink" />
-                <FontAwesomeIcon v-if="badgeType == 'less_stable'" icon="ban" :class="[transparent, disadvantage]" />
-                <FontAwesomeIcon v-if="badgeType == 'less_stable'" icon="circle-notch" :class="disadvantage" />
+                <FontAwesomeIcon v-if="badgeType == 'more_stable'" :icon="faShieldAlt" :class="advantage" />
                 <FontAwesomeIcon
                     v-if="badgeType == 'less_stable'"
-                    icon="circle-notch"
+                    :icon="faShieldAlt"
+                    :class="neutral"
+                    v-bind="shrink" />
+                <FontAwesomeIcon v-if="badgeType == 'less_stable'" :icon="faBan" :class="[transparent, disadvantage]" />
+                <FontAwesomeIcon v-if="badgeType == 'less_stable'" :icon="faCircleNotch" :class="disadvantage" />
+                <FontAwesomeIcon
+                    v-if="badgeType == 'less_stable'"
+                    :icon="faCircleNotch"
                     :class="disadvantage"
                     flip="vertical" />
 
-                <FontAwesomeIcon v-if="badgeType == 'cloud'" icon="cloud" :class="neutral" />
+                <FontAwesomeIcon v-if="badgeType == 'cloud'" :icon="faCloud" :class="neutral" />
             </FontAwesomeLayers>
         </span>
-        <b-popover
-            v-if="moreOnHover"
-            :target="
-                () => {
-                    return $refs.iconTarget;
-                }
-            "
-            triggers="hover"
-            placement="bottom"
-            variant="secondary"
-            class="object-store-badge-popover">
-            <p v-localize>{{ stockMessage }}</p>
-            <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
-        </b-popover>
     </span>
 </template>
 
