@@ -238,6 +238,7 @@ export function getRouter(Galaxy) {
                         component: CenterFrame,
                         props: (route) => ({
                             src: `/datasets/${route.params.datasetId}/display/?preview=True`,
+                            isPreview: true,
                         }),
                     },
                     {
