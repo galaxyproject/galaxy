@@ -10,7 +10,7 @@ History
 
 
 -------------------
-24.2.0 (2025-02-06)
+24.2.0 (2025-02-11)
 -------------------
 
 
@@ -40,6 +40,7 @@ Bug fixes
 * Fix deleting lddas in batch by `@davelopez <https://github.com/davelopez>`_ in `#19506 <https://github.com/galaxyproject/galaxy/pull/19506>`_
 * Fix WSGI response status handling in controller methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19520 <https://github.com/galaxyproject/galaxy/pull/19520>`_
 * Fix saved visualization (non-trackster ones) not displaying by `@davelopez <https://github.com/davelopez>`_ in `#19561 <https://github.com/galaxyproject/galaxy/pull/19561>`_
+* Allow unused query params in ``workflows/export_to_file`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19574 <https://github.com/galaxyproject/galaxy/pull/19574>`_
 
 ============
 Enhancements
