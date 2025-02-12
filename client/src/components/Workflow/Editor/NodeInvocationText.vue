@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormInput } from "bootstrap-vue";
+import { sanitize } from "dompurify";
 
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { type GraphStep, iconClasses, statePlaceholders } from "@/composables/useInvocationGraph";
@@ -8,6 +10,14 @@ import { type GraphStep, iconClasses, statePlaceholders } from "@/composables/us
 const props = defineProps<{
     invocationStep: GraphStep;
 }>();
+
+function isColor(value?: string): boolean {
+    return value ? value.match(/^#[0-9a-f]{6}$/i) !== null : false;
+}
+
+function textHtml(value: string): string {
+    return sanitize(value, { ALLOWED_TAGS: ["b"] });
+}
 </script>
 <template>
     <div class="p-1 unselectable">
@@ -30,8 +40,19 @@ const props = defineProps<{
                 <FontAwesomeIcon :icon="props.invocationStep.nodeText ? faCheckSquare : faSquare" />
                 {{ props.invocationStep.nodeText }}
             </span>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-else-if="props.invocationStep.nodeText !== undefined" v-html="props.invocationStep.nodeText" />
+            <span v-else-if="isColor(props.invocationStep.nodeText)" class="d-flex align-items-center">
+                <i> {{ props.invocationStep.nodeText }}: </i>
+                <BFormInput
+                    :value="props.invocationStep.nodeText"
+                    class="ml-1 p-0 color-input"
+                    type="color"
+                    size="sm"
+                    readonly />
+            </span>
+            <!-- eslint-disable vue/no-v-html -->
+            <span
+                v-else-if="props.invocationStep.nodeText !== undefined"
+                v-html="textHtml(props.invocationStep.nodeText)" />
             <span v-else>This is an input</span>
         </div>
         <div v-else-if="props.invocationStep.type === 'subworkflow'">This is a subworkflow.</div>
@@ -44,5 +65,9 @@ const props = defineProps<{
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+
+    .color-input {
+        max-height: 1rem;
+    }
 }
 </style>
