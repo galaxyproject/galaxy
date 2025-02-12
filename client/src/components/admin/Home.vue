@@ -1,3 +1,16 @@
+<script setup lang="ts">
+import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+
+import Heading from "components/Common/Heading.vue";
+
+const props = defineProps({
+    isToolshedInstalled: {
+        type: Boolean,
+        default: false,
+    },
+});
+</script>
+
 <template>
     <div>
         <h1>Administration</h1>
@@ -9,7 +22,7 @@
             keep your Galaxy in best shape.
         </p>
 
-        <Heading h2 icon="fa-server" size="md">Server</Heading>
+        <Heading h2 :icon="faServer" size="md">Server</Heading>
         <ul>
             <li>
                 <strong>
@@ -51,7 +64,7 @@
             </li>
         </ul>
 
-        <Heading h2 icon="fa-user" size="md">User Management</Heading>
+        <Heading h2 :icon="faUser" size="md">User Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -91,7 +104,7 @@
             </li>
         </ul>
 
-        <Heading h2 icon="fa-wrench" size="md">Tool Management</Heading>
+        <Heading h2 :icon="faWrench" size="md">Tool Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -99,7 +112,7 @@
                 </strong>
                 - Manage HTML rendering for installed tools' output datasets.
             </li>
-            <li v-if="isToolshedInstalled">
+            <li v-if="props.isToolshedInstalled">
                 <strong>
                     <router-link to="/admin/toolshed">Install and Uninstall</router-link>
                 </strong>
@@ -117,22 +130,3 @@
         </ul>
     </div>
 </template>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
-
-import Heading from "components/Common/Heading.vue";
-
-library.add(faServer, faUser, faWrench);
-
-export default {
-    components: { Heading },
-    props: {
-        isToolshedInstalled: {
-            type: Boolean,
-            default: false,
-        },
-    },
-};
-</script>

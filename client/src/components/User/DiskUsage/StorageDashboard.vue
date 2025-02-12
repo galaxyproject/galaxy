@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faBroom, faChartPie, faHdd } from "font-awesome-6";
 import { reactive } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -17,7 +18,7 @@ const texts = reactive({
         description: localize(
             "Find out what is eating up your space and learn how to easily and safely free up some of it."
         ),
-        icon: "fas fa-broom fa-6x",
+        icon: faBroom,
         buttonText: localize("Free up disk usage"),
     },
     explore_by_history: {
@@ -25,7 +26,7 @@ const texts = reactive({
         description: localize(
             "Want to know what histories or datasets take up the most space in your account? Here you can explore your disk usage in a visual way by history."
         ),
-        icon: "fas fa-chart-pie fa-6x",
+        icon: faChartPie,
         buttonText: localize("Explore now"),
     },
     explore_by_objectstore: {
@@ -33,7 +34,7 @@ const texts = reactive({
         description: localize(
             "Want to know how the space in your account is being distributed across storage locations? Here you can explore your disk usage in a visual way by where it is physically stored."
         ),
-        icon: "fas fa-hdd fa-6x",
+        icon: faHdd,
         buttonText: localize("Explore now"),
     },
 });
@@ -66,6 +67,7 @@ function goToObjectStoresOverview() {
             :title="texts.freeSpace.title"
             :description="texts.freeSpace.description"
             :icon="texts.freeSpace.icon"
+            icon-size="6x"
             :button-text="texts.freeSpace.buttonText"
             @onButtonClick="goToStorageManager" />
 
@@ -75,6 +77,7 @@ function goToObjectStoresOverview() {
             :title="texts.explore_by_history.title"
             :description="texts.explore_by_history.description"
             :icon="texts.explore_by_history.icon"
+            icon-size="6x"
             :button-text="texts.explore_by_history.buttonText"
             @onButtonClick="goToHistoriesOverview" />
 
@@ -84,6 +87,7 @@ function goToObjectStoresOverview() {
             :title="texts.explore_by_objectstore.title"
             :description="texts.explore_by_objectstore.description"
             :icon="texts.explore_by_objectstore.icon"
+            icon-size="6x"
             :button-text="texts.explore_by_objectstore.buttonText"
             @onButtonClick="goToObjectStoresOverview" />
     </div>

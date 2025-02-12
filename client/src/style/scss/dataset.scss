@@ -3,90 +3,6 @@
 @import "~@fortawesome/fontawesome-free/scss/_variables";
 
 // ---------------------------------------------------------------------------- dataset states
-//.dataset .state-icon {
-
-.state-icon {
-    @extend .fa;
-    display: inline-block;
-    margin-right: 4px;
-    vertical-align: middle;
-    width: 14px;
-    height: 14px;
-    line-height: 14px;
-    text-align: center;
-    font-size: 14px;
-}
-
-.state-icon-running {
-    @extend .fa-spin;
-    @extend .fa-spinner;
-    filter: blur(0);
-}
-
-.state-icon-upload {
-    overflow: hidden;
-
-    &:before {
-        display: inline-block;
-        -webkit-animation: eclipse 2s infinite linear;
-        -moz-animation: eclipse 2s infinite linear;
-        -o-animation: eclipse 2s infinite linear;
-        animation: eclipse 2s infinite linear;
-
-        @-moz-keyframes eclipse {
-            0% {
-                -moz-transform: translate(0px, 16px);
-            }
-            100% {
-                -moz-transform: translate(0px, -16px);
-            }
-        }
-        @-webkit-keyframes eclipse {
-            0% {
-                -webkit-transform: translate(0px, 16px);
-            }
-            100% {
-                -webkit-transform: translate(0px, -16px);
-            }
-        }
-        @-o-keyframes eclipse {
-            0% {
-                -o-transform: translate(0px, 16px);
-            }
-            100% {
-                -o-transform: translate(0px, -16px);
-            }
-        }
-        @-ms-keyframes eclipse {
-            0% {
-                -ms-transform: translate(0px, 16px);
-            }
-            100% {
-                -ms-transform: translate(0px, -16px);
-            }
-        }
-        @keyframes eclipse {
-            0% {
-                transform: translate(0px, 16px);
-            }
-            100% {
-                transform: translate(0px, -16px);
-            }
-        }
-        content: fa-content($fa-var-arrow-up);
-    }
-}
-
-.state-icon-error {
-    background-color: white;
-    border-radius: 8px;
-    &:before {
-        font-size: 20px;
-        line-height: 16px;
-        color: red;
-        content: fa-content($fa-var-times-circle);
-    }
-}
 
 // ............................................................................ state bgs and icons
 .has-job-state-mixin {
@@ -94,59 +10,32 @@
     &.state-ok,
     &.state-failed_metadata {
         background: $state-success-bg;
-        .state-icon {
-            display: none;
-        }
     }
 
     &.state-error,
     &.state-empty {
         background: $state-danger-bg;
-        .state-icon {
-            @extend .state-icon-error;
-        }
     }
 
     &.state-upload {
         background: $state-info-bg;
-        .state-icon {
-            @extend .state-icon-upload;
-        }
     }
 
     &.state-queued {
         background: $state-default-bg;
-        .state-icon {
-            &:before {
-                content: fa-content($fa-var-clock);
-            }
-        }
     }
 
     &.state-running,
     &.state-setting_metadata {
         background: $state-running-bg;
-        .state-icon {
-            @extend .state-icon-running;
-        }
     }
 
     &.state-paused {
         background: $state-info-bg;
-        .state-icon {
-            &:before {
-                content: fa-content($fa-var-pause);
-            }
-        }
     }
 
     &.state-discarded {
         background: $state-default-bg;
-        .state-icon {
-            &:before {
-                content: fa-content($fa-var-trash);
-            }
-        }
     }
 
     &.state-noPermission {
@@ -154,28 +43,14 @@
         filter: alpha(opacity=60);
         -moz-opacity: 0.6;
         opacity: 0.6;
-        .state-icon {
-            font-size: 20px;
-            &:before {
-                content: fa-content($fa-var-lock);
-            }
-        }
     }
 
     &.state-new {
         background: $state-default-bg;
-        .state-icon {
-            &:before {
-                content: fa-content($fa-var-clock);
-            }
-        }
     }
 
     &.state-loading {
         background: $state-default-bg;
-        .state-icon {
-            @extend .state-icon-running;
-        }
     }
 }
 

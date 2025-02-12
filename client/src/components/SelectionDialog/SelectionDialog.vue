@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCaretLeft, faCheck, faFileAlt, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -32,7 +32,7 @@ interface Props {
     itemsProvider?: ItemsProvider;
     providerUrl?: string;
     totalItems?: number;
-    leafIcon?: string;
+    leafIcon?: IconDefinition | null;
     folderIcon?: IconDefinition;
     modalShow?: boolean;
     modalStatic?: boolean;
@@ -58,7 +58,7 @@ const props = withDefaults(defineProps<Props>(), {
     itemsProvider: undefined,
     providerUrl: undefined,
     totalItems: 0,
-    leafIcon: "fa fa-file-o",
+    leafIcon: () => faFileAlt,
     folderIcon: () => faFolder,
     modalShow: true,
     modalStatic: false,
@@ -232,8 +232,11 @@ watch(
                                 :title="`label-${data.item.url}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
                             <span v-else>
                                 <div v-if="data.item.isLeaf">
-                                    <i :class="leafIcon" />
-                                    <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
+                                    <FontAwesomeIcon :icon="props.leafIcon">
+                                        <span :title="`label-${data.item.url}`">{{
+                                            data.value ? data.value : "-"
+                                        }}</span>
+                                    </FontAwesomeIcon>
                                 </div>
                                 <div v-else @click.stop="emit('onOpen', data.item)">
                                     <FontAwesomeIcon :icon="props.folderIcon" />
