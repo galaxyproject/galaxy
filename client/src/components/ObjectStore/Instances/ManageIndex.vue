@@ -9,6 +9,7 @@ import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering"
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 import _l from "@/utils/localization";
 
+import InstanceDropdown from "./InstanceDropdown.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
