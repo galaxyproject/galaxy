@@ -124,6 +124,7 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
     relationship,
+    validates,
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
@@ -235,6 +236,8 @@ log = logging.getLogger(__name__)
 
 _datatypes_registry = None
 
+MAX_WORKFLOW_README_SIZE = 20000
+MAX_WORKFLOW_HELP_SIZE = 40000
 STR_TO_STR_DICT = Dict[str, str]
 
 
@@ -7919,6 +7922,26 @@ class Workflow(Base, Dictifiable, RepresentById):
     def __init__(self, uuid=None):
         self.user = None
         self.uuid = get_uuid(uuid)
+
+    @validates("readme")
+    def validates_readme(self, key, readme):
+        if readme is None:
+            return None
+        size = len(readme)
+        if size > MAX_WORKFLOW_README_SIZE:
+            raise ValueError(
+                f"Workflow readme too large ({size}), maximum allowed length ({MAX_WORKFLOW_README_SIZE})."
+            )
+        return readme
+
+    @validates("help")
+    def validates_help(self, key, help):
+        if help is None:
+            return None
+        size = len(help)
+        if size > MAX_WORKFLOW_HELP_SIZE:
+            raise ValueError(f"Workflow help too large ({size}), maximum allowed length ({MAX_WORKFLOW_HELP_SIZE}).")
+        return help
 
     def has_outputs_defined(self):
         """
