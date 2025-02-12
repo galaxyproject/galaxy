@@ -32,13 +32,16 @@
             id="workflow-annotation-area"
             class="mt-2"
             :class="{ 'bg-secondary': showAnnotationHightlight, 'highlight-attribute': showAnnotationHightlight }">
-            <b>Annotation</b>
+            <b>Short Description</b>
             <meta itemprop="description" :content="annotationCurrent" />
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
-            <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
+            <div class="form-text text-muted">
+                This short description will be visible when this workflow is viewed and should be limited to a sentence
+                or two.
+            </div>
             <b-popover
                 custom-class="best-practice-popover"
                 target="workflow-annotation"
@@ -89,6 +92,35 @@
             <StatelessTags :value="tags" @input="onTags" />
             <div class="form-text text-muted">
                 Apply tags to make it easy to search for and find items with the same tag.
+            </div>
+        </div>
+        <div class="mt-2">
+            <b>Readme</b>
+            <b-textarea
+                id="workflow-readme"
+                v-model="readmeCurrent"
+                @keyup="$emit('update:readmeCurrent', readmeCurrent)" />
+            <div class="form-text text-muted">
+                A detailed description of what the workflow does. It is best to include descriptions of what kinds of
+                data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
+            </div>
+        </div>
+        <div class="mt-2">
+            <b>Help</b>
+            <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
+            <div class="form-text text-muted">
+                A detailed description of how to use the workflow and debug problems with it. Researchers running this
+                workflow will see this text. Markdown is enabled.
+            </div>
+        </div>
+        <div class="mt-2">
+            <b>Logo URL</b>
+            <b-input
+                id="workflow-logo-url"
+                v-model="logoUrlCurrent"
+                @keyup="$emit('update:logoUrlCurrent', logoUrlCurrent)" />
+            <div class="form-text text-muted">
+                An logo image used when generating publication artifacts for your workflow. This is completely optional.
             </div>
         </div>
     </ActivityPanel>
@@ -150,6 +182,18 @@ export default {
             type: Array,
             default: null,
         },
+        logoUrl: {
+            type: String,
+            default: null,
+        },
+        readme: {
+            type: String,
+            default: null,
+        },
+        help: {
+            type: String,
+            default: null,
+        },
         version: {
             type: Number,
             default: null,
@@ -173,6 +217,9 @@ export default {
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
+            logoUrlCurrent: this.logoUrl,
+            readmeCurrent: this.readme,
+            helpCurrent: this.help,
             showAnnotationHightlight: false,
             showLicenseHightlight: false,
             showCreatorHightlight: false,
@@ -234,6 +281,15 @@ export default {
         },
         name() {
             this.nameCurrent = this.name;
+        },
+        readme() {
+            this.readmeCurrent = this.readme;
+        },
+        help() {
+            this.helpCurrent = this.help;
+        },
+        logoUrl() {
+            this.logoUrlCurrent = this.logoUrl;
         },
         highlight: {
             immediate: true,
