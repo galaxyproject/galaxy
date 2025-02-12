@@ -19,6 +19,7 @@ from sqlalchemy import (
     and_,
     false,
 )
+from typing_extensions import TypeIs
 
 from galaxy import util
 from galaxy.model.base import check_database_connection
@@ -33,6 +34,7 @@ from galaxy.util.tool_shed.tool_shed_registry import Registry
 
 if TYPE_CHECKING:
     from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+    from tool_shed.structured_app import RequiredAppT
 
 log = logging.getLogger(__name__)
 
@@ -604,7 +606,7 @@ def get_tool_shed_status_for_installed_repository(app, repository: ToolShedRepos
     return get_tool_shed_status_for(tool_shed_registry, repository)
 
 
-def is_tool_shed_client(app):
+def is_tool_shed_client(app: "RequiredAppT") -> TypeIs["InstallationTarget"]:
     """
     The tool shed and clients to the tool (i.e. Galaxy) require a lot
     of similar functionality in this file but with small differences. This

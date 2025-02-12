@@ -18,9 +18,9 @@ from sqlalchemy import select
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
+from galaxy.tool_shed.tools.data_table_manager import BaseShedToolDataTableManager
 from galaxy.util import checkers
 from galaxy.util.path import safe_relpath
-from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import (
     basic_util,
     hg_util,
@@ -216,7 +216,7 @@ def handle_directory_changes(
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables
             # dictionary.
-            stdtm = ShedToolDataTableManager(app)
+            stdtm = BaseShedToolDataTableManager(app)
             error, message = stdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
             if error:
                 return (
