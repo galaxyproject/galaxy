@@ -1,18 +1,3 @@
-.markdown-editor {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    .markdown-textarea {
-        @extend .p-4;
-        @extend .w-100;
-        border: none;
-        resize: none;
-        outline: none;
-        font: 16px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
-        flex: 1;
-    }
-}
-
 .markdown-wrapper {
     @extend .px-4;
     .markdown-components {
