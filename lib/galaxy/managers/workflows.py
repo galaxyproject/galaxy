@@ -819,10 +819,13 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "logo_url" in data:
             workflow.logo_url = data["logo_url"]
-        if "help" in data:
-            workflow.help = data["help"]
-        if "readme" in data:
-            workflow.readme = data["readme"]
+        try:
+            if "help" in data:
+                workflow.help = data["help"]
+            if "readme" in data:
+                workflow.readme = data["readme"]
+        except ValueError as e:
+            raise exceptions.RequestParameterInvalidException(str(e))
 
         if getattr(workflow_state_resolution_options, "archive_source", None):
             source_metadata = {}

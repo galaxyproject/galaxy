@@ -1213,6 +1213,30 @@ steps:
         assert workflow["help"] == help
         assert workflow["logo_url"] == logo_url
 
+    def test_readme_too_large(self):
+        big_but_valid_readme = "READ_" * 3999
+        too_big_readme = "READ_" * 4001
+        base_workflow_json = json.loads(workflow_str)
+        logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
+        help = "This is my instruction for the workflow!"
+        base_workflow_json["readme"] = too_big_readme
+        base_workflow_json["logo_url"] = logo_url
+        base_workflow_json["help"] = help
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+
+        base_workflow_json["readme"] = big_but_valid_readme
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["readme"] == big_but_valid_readme
+
     def test_trs_import(self):
         trs_payload = {
             "archive_source": "trs_tool",
