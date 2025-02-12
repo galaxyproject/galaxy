@@ -5,7 +5,6 @@ Manager and Serializer for Users.
 import hashlib
 import logging
 import random
-import re
 import string
 import time
 from datetime import datetime
@@ -428,35 +427,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def quota_bytes(self, user, quota_source_label: Optional[str] = None):
         return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
 
-    def tags_used(self, user, tag_models=None):
-        """
-        Return a list of distinct 'user_tname:user_value' strings that the
-        given user has used.
-        """
-        # TODO: simplify and unify with tag manager
-        if self.is_anonymous(user):
-            return []
-
-        # get all the taggable model TagAssociations
-        if not tag_models:
-            tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
-
-        if not tag_models:
-            return []
-
-        # create a union of select statements for each tag model for this user - getting only the tname and user_value
-        all_stmts = []
-        for tag_model in tag_models:
-            stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
-            all_stmts.append(stmt)
-        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
-
-        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
-        tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
-        # consider named tags while sorting
-        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
-
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
         Allows to change a user password with a token.
@@ -702,8 +672,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "purged",
                 # 'active',
                 "preferences",
-                #  all tags
-                "tags_used",
                 # all annotations
                 # 'annotations'
                 "preferred_object_store_id",
@@ -726,7 +694,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
                 "quota_bytes": lambda i, k, **c: self.user_manager.quota_bytes(i),
-                "tags_used": lambda i, k, **c: self.user_manager.tags_used(i),
             }
         )
 
