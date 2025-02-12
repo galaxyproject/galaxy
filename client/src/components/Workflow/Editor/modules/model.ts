@@ -19,6 +19,9 @@ export interface Workflow {
     steps: Steps;
     comments: WorkflowComment[];
     tags: string[];
+    logo_url?: string | null;
+    readme?: string | null;
+    help?: string | null;
 }
 
 export interface LoadWorkflowOptions {
@@ -138,6 +141,9 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
     const annotation = workflow.annotation;
     const name = workflow.name;
     const tags = workflow.tags;
+    const logo_url = workflow.logo_url;
+    const readme = workflow.readme;
+    const help = workflow.help;
 
     const commentStore = useWorkflowCommentStore(id);
     commentStore.resolveCommentsInFrames();
@@ -145,5 +151,5 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
 
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
-    return { steps, report, license, creator, annotation, name, comments, tags };
+    return { steps, report, license, creator, annotation, name, comments, tags, readme, help, logo_url };
 }
