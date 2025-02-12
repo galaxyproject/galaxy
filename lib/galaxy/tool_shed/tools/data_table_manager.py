@@ -4,7 +4,6 @@ import shutil
 from typing import (
     List,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
@@ -16,18 +15,49 @@ from galaxy.util import (
 from galaxy.util.tool_shed import xml_util
 
 if TYPE_CHECKING:
-    from galaxy.structured_app import BasicSharedApp
+    from galaxy.model.tool_shed_install import ToolShedRepository
+    from galaxy.util.path import StrPath
+    from tool_shed.structured_app import RequiredAppT
 
 log = logging.getLogger(__name__)
 
 
-RequiredAppT = Union["BasicSharedApp", InstallationTarget]
+class BaseShedToolDataTableManager:
+    def __init__(self, app: "RequiredAppT"):
+        self.app = app
+
+    def handle_sample_tool_data_table_conf_file(self, filename: "StrPath", persist: bool = False):
+        """
+        Parse the incoming filename and add new entries to the in-memory
+        self.app.tool_data_tables dictionary.  If persist is True (should
+        only occur if call is from the Galaxy side, not the tool shed), the
+        new entries will be appended to Galaxy's shed_tool_data_table_conf.xml
+        file on disk.
+        """
+        error = False
+        try:
+            new_table_elems, message = self.app.tool_data_tables.add_new_entries_from_config_file(
+                config_filename=filename,
+                tool_data_path=self.app.config.shed_tool_data_path,
+                shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
+                persist=persist,
+            )
+            if message:
+                error = True
+        except Exception as e:
+            message = str(e)
+            error = True
+        return error, message
+
+    def reset_tool_data_tables(self):
+        # Reset the tool_data_tables to an empty dictionary.
+        self.app.tool_data_tables.data_tables = {}
 
 
-class ShedToolDataTableManager:
-    app: RequiredAppT
+class ShedToolDataTableManager(BaseShedToolDataTableManager):
+    app: InstallationTarget
 
-    def __init__(self, app: RequiredAppT):
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
     def generate_repository_info_elem(
@@ -105,30 +135,7 @@ class ShedToolDataTableManager:
             self.reset_tool_data_tables()
         return repository_tools_tups
 
-    def handle_sample_tool_data_table_conf_file(self, filename, persist=False):
-        """
-        Parse the incoming filename and add new entries to the in-memory
-        self.app.tool_data_tables dictionary.  If persist is True (should
-        only occur if call is from the Galaxy side, not the tool shed), the
-        new entries will be appended to Galaxy's shed_tool_data_table_conf.xml
-        file on disk.
-        """
-        error = False
-        try:
-            new_table_elems, message = self.app.tool_data_tables.add_new_entries_from_config_file(
-                config_filename=filename,
-                tool_data_path=self.app.config.shed_tool_data_path,
-                shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
-                persist=persist,
-            )
-            if message:
-                error = True
-        except Exception as e:
-            message = str(e)
-            error = True
-        return error, message
-
-    def get_target_install_dir(self, tool_shed_repository):
+    def get_target_install_dir(self, tool_shed_repository: "ToolShedRepository"):
         tool_path, relative_target_dir = tool_shed_repository.get_tool_relative_path(self.app)
         # This is where index files will reside on a per repo/installed version basis.
         target_dir = os.path.join(self.app.config.shed_tool_data_path, relative_target_dir)
@@ -136,7 +143,7 @@ class ShedToolDataTableManager:
             os.makedirs(target_dir)
         return target_dir, tool_path, relative_target_dir
 
-    def install_tool_data_tables(self, tool_shed_repository, tool_index_sample_files):
+    def install_tool_data_tables(self, tool_shed_repository: "ToolShedRepository", tool_index_sample_files):
         TOOL_DATA_TABLE_FILE_NAME = "tool_data_table_conf.xml"
         TOOL_DATA_TABLE_FILE_SAMPLE_NAME = f"{TOOL_DATA_TABLE_FILE_NAME}.sample"
         SAMPLE_SUFFIX = ".sample"
@@ -168,7 +175,7 @@ class ShedToolDataTableManager:
             if tree:
                 root = tree.getroot()
                 if root.tag == "tables":
-                    elems = list(root)
+                    elems = list(iter(root))
                 else:
                     log.warning(
                         "The '%s' data table file has '%s' instead of <tables> as root element, skipping.",
@@ -195,10 +202,6 @@ class ShedToolDataTableManager:
             # Persist new data_table content.
             self.app.tool_data_tables.to_xml_file(tool_data_table_conf_filename, elems)
         return tool_data_table_conf_filename, elems
-
-    def reset_tool_data_tables(self):
-        # Reset the tool_data_tables to an empty dictionary.
-        self.app.tool_data_tables.data_tables = {}
 
 
 # For backwards compatibility with exisiting data managers

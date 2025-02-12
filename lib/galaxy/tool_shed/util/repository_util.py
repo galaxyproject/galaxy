@@ -9,6 +9,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 from urllib.error import HTTPError
@@ -20,6 +21,7 @@ from sqlalchemy import (
     or_,
 )
 from sqlalchemy.orm import joinedload
+from typing_extensions import TypeIs
 
 from galaxy import util
 from galaxy.model.base import check_database_connection
@@ -31,6 +33,11 @@ from galaxy.util.tool_shed import (
     encoding_util,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import BasicSharedApp
+    from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+    from tool_shed.structured_app import RequiredAppT
 
 log = logging.getLogger(__name__)
 
@@ -401,7 +408,7 @@ def get_repository_admin_role_name(repository_name, repository_owner):
     return f"{repository_name}_{repository_owner}_admin"
 
 
-def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):
+def get_repository_and_repository_dependencies_from_repo_info_dict(app: "RequiredAppT", repo_info_dict):
     """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
     repository_name = list(repo_info_dict.keys())[0]
     repo_info_tuple = repo_info_dict[repository_name]
@@ -414,7 +421,7 @@ def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_inf
         repository_dependencies,
         tool_dependencies,
     ) = get_repo_info_tuple_contents(repo_info_tuple)
-    if hasattr(app, "install_model"):
+    if is_tool_shed_client(app):
         # In a tool shed client (Galaxy, or something install repositories like Galaxy)
         tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
         repository = get_repository_for_dependency_relationship(
@@ -426,7 +433,7 @@ def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_inf
     return repository, repository_dependencies
 
 
-def get_repository_by_id(app, id):
+def get_repository_by_id(app: "RequiredAppT", id):
     """Get a repository from the database via id."""
     if is_tool_shed_client(app):
         return app.install_model.context.query(app.install_model.ToolShedRepository).get(app.security.decode_id(id))
@@ -435,7 +442,7 @@ def get_repository_by_id(app, id):
         return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
 
 
-def get_repository_by_name_and_owner(app, name, owner, eagerload_columns=None):
+def get_repository_by_name_and_owner(app: "RequiredAppT", name, owner, eagerload_columns=None):
     """Get a repository from the database via name and owner"""
     repository_query = get_repository_query(app)
     if is_tool_shed_client(app):
@@ -607,7 +614,7 @@ def get_repository_owner_from_clone_url(repository_clone_url):
     return get_repository_owner(tmp_url)
 
 
-def get_repository_query(app):
+def get_repository_query(app: "RequiredAppT"):
     if is_tool_shed_client(app):
         query = app.install_model.context.query(app.install_model.ToolShedRepository)
     else:
@@ -615,7 +622,7 @@ def get_repository_query(app):
     return query
 
 
-def get_role_by_id(app, role_id):
+def get_role_by_id(app: "BasicSharedApp", role_id):
     """Get a Role from the database by id."""
     sa_session = app.model.session
     return sa_session.query(app.model.Role).get(app.security.decode_id(role_id))
@@ -680,7 +687,7 @@ def get_tool_shed_status_for_installed_repository(app, repository: ToolShedRepos
     return get_tool_shed_status_for(tool_shed_registry, repository)
 
 
-def is_tool_shed_client(app):
+def is_tool_shed_client(app: "RequiredAppT") -> TypeIs["InstallationTarget"]:
     """
     The tool shed and clients to the tool (i.e. Galaxy) require a lot
     of similar functionality in this file but with small differences. This

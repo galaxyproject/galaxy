@@ -73,7 +73,10 @@ if TYPE_CHECKING:
         ProvidesRepositoriesContext,
         ProvidesUserContext,
     )
-    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.structured_app import (
+        RequiredAppT,
+        ToolShedApp,
+    )
 
 
 log = logging.getLogger(__name__)
@@ -251,7 +254,7 @@ def generate_sharable_link_for_repository_in_tool_shed(
     return sharable_url
 
 
-def get_repository_in_tool_shed(app, id, eagerload_columns=None):
+def get_repository_in_tool_shed(app: "RequiredAppT", id, eagerload_columns=None):
     """Get a repository on the tool shed side from the database via id."""
     q = get_repository_query(app)
     if eagerload_columns:
