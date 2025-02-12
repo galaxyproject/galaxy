@@ -4260,4 +4260,4 @@ mapping:
         required: false
         default: 86400
         desc: |
-          The interval in seconds between attempts to delete all failed Galaxy job's working directories from the filesystem (every 24 hours by default). Runs in a Celery task.
+          The interval in seconds between attempts to delete all failed Galaxy job's working directories from the filesystem (every 24 hours by default) if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
