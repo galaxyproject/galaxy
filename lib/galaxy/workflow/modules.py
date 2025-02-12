@@ -278,6 +278,7 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
             # In any case I believe the CWL secret hint can be bypassed if the value is passed on
             # to another step input that doesn't have the secret set.
             # Complicated stuff, ignore for now.
+            log.debug("Expression evaluation failed", exc_info=True)
             raise FailWorkflowEvaluation(
                 InvocationFailureExpressionEvaluationFailed(
                     reason=FailureReason.expression_evaluation_failed, workflow_step_id=step.id
