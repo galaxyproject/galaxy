@@ -30,7 +30,9 @@ from galaxy.util.config_templates import (
     UserDetailsDict,
 )
 
-FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure", "onedata", "webdav", "dropbox", "googledrive"]
+FileSourceTemplateType = Literal[
+    "ftp", "posix", "s3fs", "azure", "onedata", "webdav", "dropbox", "googledrive", "elabftw"
+]
 
 
 class PosixFileSourceTemplateConfiguration(StrictModel):
@@ -195,6 +197,20 @@ class WebdavFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class eLabFTWFileSourceTemplateConfiguration(StrictModel):  # noqa
+    type: Literal["elabftw"]
+    endpoint: Union[str, TemplateExpansion]
+    api_key: Union[str, TemplateExpansion]
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class eLabFTWFileSourceConfiguration(StrictModel):  # noqa
+    type: Literal["elabftw"]
+    endpoint: str
+    api_key: str
+
+
 FileSourceTemplateConfiguration = Union[
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceTemplateConfiguration,
@@ -204,6 +220,7 @@ FileSourceTemplateConfiguration = Union[
     WebdavFileSourceTemplateConfiguration,
     DropboxFileSourceTemplateConfiguration,
     GoogleDriveFileSourceTemplateConfiguration,
+    eLabFTWFileSourceTemplateConfiguration,
 ]
 FileSourceConfiguration = Union[
     PosixFileSourceConfiguration,
@@ -214,6 +231,7 @@ FileSourceConfiguration = Union[
     WebdavFileSourceConfiguration,
     DropboxFileSourceConfiguration,
     GoogleDriveFileSourceConfiguration,
+    eLabFTWFileSourceConfiguration,
 ]
 
 
@@ -284,6 +302,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
     "googledrive": GoogleDriveFileSourceConfiguration,
+    "elabftw": eLabFTWFileSourceConfiguration,
 }
 
 
