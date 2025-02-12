@@ -4253,7 +4253,7 @@ mapping:
         required: false
         default: 5
         desc: |
-          The number of days to keep failed Galaxy job's working directories before attempting to delete them. Runs in a Celery task.
+          The number of days to keep failed Galaxy job's working directories before attempting to delete them if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
 
       failed_jobs_working_directory_cleanup_interval:
         type: int
