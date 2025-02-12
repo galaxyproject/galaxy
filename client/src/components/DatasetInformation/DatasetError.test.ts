@@ -102,7 +102,7 @@ describe("DatasetError", () => {
     });
 
     it("hides form fields and button on success", async () => {
-        const wrapper = await montDatasetError();
+        const wrapper = await montDatasetError(false, false, "test_email");
 
         server.use(
             http.post("/api/jobs/{job_id}/error", ({ response }) => {
@@ -112,10 +112,10 @@ describe("DatasetError", () => {
             })
         );
 
-        const FormAndSubmitButton = "#dataset-error-form";
+        const FormAndSubmitButton = "#data-error-form";
         expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
 
-        const submitButton = "#dataset-error-submit";
+        const submitButton = "#data-error-submit";
         expect(wrapper.find(submitButton).exists()).toBe(true);
 
         await wrapper.find(submitButton).trigger("click");

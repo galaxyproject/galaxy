@@ -1,0 +1,44 @@
+GALAXY TOOL ERROR REPORT
+------------------------
+
+This error report was sent from the Galaxy instance hosted on the server
+"{{ host }}"
+-----------------------------------------------------------------------------
+This is in reference to dataset id {{ dataset_id }} ({{ dataset_id_encoded }}) from history id {{ history_id }} ({{ history_id_encoded }})
+-----------------------------------------------------------------------------
+You should be able to view the history containing the related history item ({{ hda_id_encoded }})
+
+{{ hid }}: {{ history_item_name }}
+
+by logging in as a Galaxy admin user to the Galaxy instance referenced above
+and pointing your browser to the following link.
+
+{{ history_view_link }}
+-----------------------------------------------------------------------------
+The user {{ email_str }} provided the following information:
+
+{{ message }}
+-----------------------------------------------------------------------------
+info url: {{ hda_show_params_link }}
+job id: {{ job_id }} ({{ job_id_encoded }})
+tool id: {{ job_tool_id }}
+tool version: {{ tool_version }}
+job pid or drm id: {{ job_runner_external_id }}
+job tool version: {{ job_tool_version }}
+-----------------------------------------------------------------------------
+job command line:
+{{ job_command_line }}
+-----------------------------------------------------------------------------
+job stderr:
+{{ job_stderr }}
+-----------------------------------------------------------------------------
+job stdout:
+{{ job_stdout }}
+-----------------------------------------------------------------------------
+job info:
+{{ job_info }}
+-----------------------------------------------------------------------------
+job traceback:
+{{ job_traceback }}
+-----------------------------------------------------------------------------
+(This is an automated message).
