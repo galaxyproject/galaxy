@@ -3072,11 +3072,14 @@ galaxy:
   #enable_failed_jobs_working_directory_cleanup: false
 
   # The number of days to keep failed Galaxy job's working directories
-  # before attempting to delete them. Runs in a Celery task.
+  # before attempting to delete them if
+  # enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a
+  # Celery task.
   #failed_jobs_working_directory_cleanup_days: 5
 
   # The interval in seconds between attempts to delete all failed Galaxy
   # job's working directories from the filesystem (every 24 hours by
-  # default). Runs in a Celery task.
+  # default) if enable_failed_jobs_working_directory_cleanup is
+  # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
 
