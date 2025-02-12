@@ -281,65 +281,6 @@ export default {
     }
 }
 
-// Single list item
-
-.external-id-key {
-    header hgroup {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-
-        > * {
-            margin-bottom: 0;
-        }
-    }
-
-    form {
-        @extend .my-3;
-        @extend .pt-3;
-        // removes weird double arrows on select
-        .custom-select {
-            background: none;
-        }
-        // Allow side-by-side labels to work
-        .form-row {
-            display: flex;
-            input,
-            select {
-                max-width: none;
-            }
-            label {
-                font-weight: 400;
-            }
-        }
-
-        // button list at bottom of form
-        footer {
-            display: flex;
-            flex-direction: row;
-            justify-content: flex-end;
-            @extend .pt-3;
-
-            button:not(:first-child) {
-                @extend .ml-1;
-            }
-        }
-    }
-
-    // icon menu
-    .operations {
-        list-style-type: none;
-
-        .delete a,
-        button {
-            @include fontawesome($fa-var-times);
-        }
-    }
-}
-
 // Transitions
 .fade-enter-active,
 .fade-leave-active {
