@@ -85,6 +85,14 @@
                         :options="bundleOptions"
                         title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
                 </div>
+                <FormElement
+                    id="tags"
+                    :attributes="{ optional: true }"
+                    :value="tags"
+                    title="Output tags"
+                    type="tags"
+                    help="Adding tags to output datasets will help you organize and find them later."
+                    @input="updateTags" />
             </template>
             <template v-slot:header-buttons>
                 <ButtonSpinner
@@ -205,6 +213,7 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            tags: [],
         };
     },
     computed: {
@@ -345,6 +354,7 @@ export default {
                 tool_version: this.formConfig.version,
                 inputs: {
                     ...this.formData,
+                    tags: this.tags,
                 },
             };
             if (this.useEmail) {
@@ -432,6 +442,9 @@ export default {
                     }
                 }
             );
+        },
+        updateTags(newTags) {
+            this.tags = newTags;
         },
     },
 };
