@@ -11,7 +11,7 @@ import { UploadQueue } from "@/utils/upload-queue.js";
 import { defaultModel } from "./model.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
-import CollectionCreatorModal from "../Collections/CollectionCreatorModal.vue";
+import CollectionCreatorIndex from "../Collections/CollectionCreatorIndex.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -415,7 +415,13 @@ defineExpose({
                     Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
                 </div>
             </div>
-            <input ref="uploadFile" type="file" :multiple="multiple" @change="addFiles($event.target.files)" />
+            <label class="sr-only" for="upload-file">Uploaded File</label>
+            <input
+                id="upload-file"
+                ref="uploadFile"
+                type="file"
+                :multiple="multiple"
+                @change="addFiles($event.target.files)" />
         </UploadBox>
         <div v-if="!disableFooter" class="upload-footer text-center">
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
@@ -447,7 +453,7 @@ defineExpose({
                 @input="updateDbKey" />
         </div>
         <slot name="footer" />
-        <div class="upload-buttons d-flex justify-content-end">
+        <div class="d-flex justify-content-end" :class="!disableFooter && 'upload-buttons'">
             <BButton id="btn-local" :disabled="!enableSources" @click="uploadFile.click()">
                 <FontAwesomeIcon icon="fa-laptop" />
                 <span v-localize>Choose local file</span>
@@ -500,12 +506,12 @@ defineExpose({
                 <span v-else v-localize>Close</span>
             </BButton>
         </div>
-        <CollectionCreatorModal
+        <CollectionCreatorIndex
             v-if="isCollection && historyId"
             :history-id="historyId"
             :collection-type="collectionType"
             :selected-items="collectionSelection"
-            :show-modal.sync="collectionModalShow"
+            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

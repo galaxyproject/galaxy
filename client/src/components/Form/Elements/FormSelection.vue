@@ -106,10 +106,14 @@ const showSelectPreference = computed(
 const displayMany = computed(() => showSelectPreference.value && useMany.value);
 const showManyButton = computed(() => showSelectPreference.value && !useMany.value);
 const showMultiButton = computed(() => displayMany.value);
+
+defineExpose({
+    displayMany,
+});
 </script>
 
 <template>
-    <div>
+    <div class="form-selection">
         <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
         <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
         <FormSelectMany v-else-if="displayMany" v-model="currentValue" :options="currentOptions" />
@@ -145,3 +149,11 @@ const showMultiButton = computed(() => displayMany.value);
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+.form-selection {
+    &:deep(.alert) {
+        margin-bottom: 0;
+    }
+}
+</style>
