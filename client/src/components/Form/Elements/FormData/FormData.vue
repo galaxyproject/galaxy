@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faExclamation, faLink, faSpinner, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
@@ -16,6 +16,7 @@ import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
+import FormDataContextButtons from "./FormDataContextButtons.vue";
 import FormDataExtensions from "./FormDataExtensions.vue";
 import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
@@ -74,9 +75,6 @@ const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
 const workflowTab = ref("view");
-
-// Workflow Run Tabs element reference
-const browseSection = ref<HTMLDivElement | null>(null);
 
 const restrictsExtensions = computed(() => {
     const extensions = props.extensions;
@@ -240,6 +238,16 @@ const variant = computed(() => {
     const variantKey = `${flavorKey}${props.type}${multipleKey}`;
     return VARIANTS[variantKey];
 });
+
+const formSelectionRef = ref<InstanceType<typeof FormSelection> | null>(null);
+/**
+ * Determines if the `FormSelection` field is a simple select or a column select field
+ */
+const usingSimpleSelect = computed(
+    () =>
+        !formSelectionRef.value ||
+        ("displayMany" in formSelectionRef.value && formSelectionRef.value.displayMany === false)
+);
 
 /**
  * Clears highlighting with delay
@@ -489,11 +497,6 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
-function scrollToBrowseSection() {
-    $emit("focus");
-    browseSection.value?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
 // Drag/Drop event handlers
 function onDragEnter(evt: DragEvent) {
     const eventData = eventStore.getDragData();
@@ -530,7 +533,7 @@ function onDragEnter(evt: DragEvent) {
         if (hasFiles) {
             currentHighlighting.value = "success";
             $emit("alert", "Drop files in the upload area below to create datasets.");
-            workflowTab.value = "upload";
+            workflowTab.value = "create";
             dragTarget.value = evt.target;
         }
     }
@@ -645,44 +648,21 @@ const noOptionsWarningMessage = computed(() => {
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <div ref="browseSection" class="d-flex flex-gapx-1" :class="{ 'align-items-center': props.workflowRun }">
+        <div class="d-flex flex-gapx-1">
             <div class="d-flex flex-column">
-                <div v-if="variant && variant.length > 1">
-                    <BButtonGroup v-if="!props.workflowRun" buttons class="align-self-start">
-                        <BButton
-                            v-for="(v, index) in variant"
-                            :key="index"
-                            v-b-tooltip.hover.bottom
-                            :pressed="currentField === index"
-                            :title="v.tooltip"
-                            @click="currentField = index">
-                            <FontAwesomeIcon :icon="['far', v.icon]" />
-                        </BButton>
-                        <BButton
-                            v-if="canBrowse"
-                            v-b-tooltip.hover.bottom
-                            title="Browse or Upload Datasets"
-                            @click="onBrowse">
-                            <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
-                            <span v-else class="font-weight-bold">...</span>
-                        </BButton>
-                    </BButtonGroup>
-                    <div v-else class="d-flex align-items-center flex-column">
-                        <BDropdown variant="link" toggle-class="text-decoration-none text-nowrap">
-                            <template v-slot:button-content>
-                                <FontAwesomeIcon v-if="currentVariant?.icon" :icon="currentVariant?.icon" />
-                                <span v-localize>{{ currentVariant?.tooltip }}</span>
-                            </template>
-                            <BDropdownItem
-                                v-for="(v, index) in variant"
-                                :key="index"
-                                :active="index === currentField"
-                                @click="currentField = index">
-                                {{ v.tooltip }}
-                            </BDropdownItem>
-                        </BDropdown>
-                    </div>
-                </div>
+                <FormDataContextButtons
+                    :variant="variant"
+                    :current-field="currentField"
+                    :can-browse="canBrowse"
+                    :loading="props.loading"
+                    :workflow-run="props.workflowRun"
+                    :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                    :is-populated="currentValue && currentValue.length > 0"
+                    show-field-options
+                    :show-view-create-options="props.workflowRun && !usingSimpleSelect"
+                    :workflow-tab.sync="workflowTab"
+                    @on-browse="onBrowse"
+                    @set-current-field="(value) => (currentField = value)" />
 
                 <FormDataExtensions
                     v-if="restrictsExtensions && !props.workflowRun"
@@ -691,11 +671,11 @@ const noOptionsWarningMessage = computed(() => {
                     :formats-visible.sync="formatsVisible" />
             </div>
 
-            <div class="w-100">
+            <div class="w-100 d-flex flex-gapx-1">
                 <FormSelect
                     v-if="currentVariant && !currentVariant.multiple"
                     v-model="currentValue"
-                    class="align-self-start"
+                    class="align-self-start w-100"
                     :multiple="currentVariant.multiple"
                     :optional="currentVariant.multiple || optional"
                     :options="formattedOptions"
@@ -708,10 +688,19 @@ const noOptionsWarningMessage = computed(() => {
                 </FormSelect>
                 <FormSelection
                     v-else-if="currentVariant?.multiple"
+                    ref="formSelectionRef"
                     v-model="currentValue"
+                    class="w-100"
                     :data="formattedOptions"
                     optional
                     multiple />
+                <FormDataContextButtons
+                    v-if="props.workflowRun && usingSimpleSelect"
+                    compact
+                    :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                    :is-populated="currentValue && currentValue.length > 0"
+                    show-view-create-options
+                    :workflow-tab.sync="workflowTab" />
             </div>
         </div>
 
@@ -748,14 +737,14 @@ const noOptionsWarningMessage = computed(() => {
 
         <FormDataWorkflowRunTabs
             v-if="props.workflowRun"
-            class="mt-2"
+            class="mt-3"
             :current-value="currentValue"
             :current-variant="currentVariant"
             :can-browse="canBrowse"
             :extensions="props.extensions"
             :collection-types="props.collectionTypes"
             :workflow-tab.sync="workflowTab"
-            @focus="scrollToBrowseSection"
+            @focus="$emit('focus')"
             @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
     </div>
 </template>
