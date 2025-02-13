@@ -24,3 +24,4 @@
     type: elabftw
     endpoint: "{{ variables.endpoint }}"
     api_key: "{{ secrets.api_key }}"
+    writable: true

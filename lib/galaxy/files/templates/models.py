@@ -201,6 +201,7 @@ class eLabFTWFileSourceTemplateConfiguration(StrictModel):  # noqa
     type: Literal["elabftw"]
     endpoint: Union[str, TemplateExpansion]
     api_key: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = True
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
@@ -209,6 +210,7 @@ class eLabFTWFileSourceConfiguration(StrictModel):  # noqa
     type: Literal["elabftw"]
     endpoint: str
     api_key: str
+    writable: bool = True
 
 
 FileSourceTemplateConfiguration = Union[
