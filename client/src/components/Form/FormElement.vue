@@ -274,6 +274,7 @@ const alerts = computed(() => {
 function addTempFocus() {
     const element = document.getElementById(elementId.value);
     if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
         element.classList.add("temp-focus");
         setTimeout(() => {
             element.classList.remove("temp-focus");

@@ -5,6 +5,7 @@ import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
+import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import localize from "@/utils/localization";
 
@@ -66,17 +67,9 @@ const validInput = computed(() => {
     return collectionName.value.length > 0;
 });
 
+/** Plain language for what is being created */
 const shortWhatIsBeingCreated = computed<string>(() => {
-    // plain language for what is being created
-    if (props.collectionType === "list") {
-        return "list";
-    } else if (props.collectionType === "list:paired") {
-        return "list of pairs";
-    } else if (props.collectionType == "paired") {
-        return "dataset pair";
-    } else {
-        return "collection";
-    }
+    return COLLECTION_TYPE_TO_LABEL[props.collectionType] || "collection";
 });
 
 function addUploadedFiles(value: HDASummary[]) {
