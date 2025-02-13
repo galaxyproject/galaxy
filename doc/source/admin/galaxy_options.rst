@@ -1864,7 +1864,7 @@
     registering multiple accounts.  Applies mostly for the main Galaxy
     instance. If no message specified the warning box will not be
     shown.
-:Default: ``Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.``
+:Default: ``Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.``
 :Type: str
 
 
