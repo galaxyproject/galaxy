@@ -4240,3 +4240,24 @@ mapping:
           Number of seconds before file source content listings are refreshed. Shorter times will result in more
           queries while browsing a file sources. Longer times will result in fewer requests to file sources but
           outdated contents might be displayed to the user. Currently only affects s3fs file sources.
+
+      enable_failed_jobs_working_directory_cleanup:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables the cleanup of failed Galaxy job's working directories. Runs in a Celery task.
+
+      failed_jobs_working_directory_cleanup_days:
+        type: int
+        required: false
+        default: 5
+        desc: |
+          The number of days to keep failed Galaxy job's working directories before attempting to delete them if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
+
+      failed_jobs_working_directory_cleanup_interval:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          The interval in seconds between attempts to delete all failed Galaxy job's working directories from the filesystem (every 24 hours by default) if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
