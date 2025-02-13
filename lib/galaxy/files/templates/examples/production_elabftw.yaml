@@ -12,6 +12,14 @@
       help: |
         The endpoint of the eLabFTW server you are connecting to. This should be the full URL including the protocol
         (http or https) and the domain name.
+    writable:
+      label: Allow Galaxy to export data to eLabFTW?
+      type: boolean
+      default: true
+      help: |
+        Allow Galaxy to write data to this eLabFTW instance. Set it to "Yes" if you want to export data from Galaxy to
+        eLabFTW, set it to "No" if you only need to import data from eLabFTW to Galaxy. Keep in mind that your API key
+        must have matching permissions.
   secrets:
     api_key:
       label: API Key
@@ -24,4 +32,4 @@
     type: elabftw
     endpoint: "{{ variables.endpoint }}"
     api_key: "{{ secrets.api_key }}"
-    writable: true
+    writable: "{{ variables.writable }}"
