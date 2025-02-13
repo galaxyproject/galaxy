@@ -50,7 +50,7 @@
                 :show.sync="showAnnotationHightlight"
                 triggers="manual"
                 title="Best Practice"
-                :content="bestPracticeWarningAnnotation">
+                :content="annotationBestPracticeMessage">
             </b-popover>
         </div>
         <div
@@ -133,6 +133,7 @@ import { Services } from "@/components/Workflow/services";
 
 import {
     bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
 } from "./modules/linting";
@@ -209,7 +210,6 @@ export default {
     },
     data() {
         return {
-            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
             message: null,
@@ -259,6 +259,13 @@ export default {
             }
             return versions;
         },
+        annotationBestPracticeMessage() {
+            if (this.annotationCurrent) {
+                return bestPracticeWarningAnnotationLength;
+            } else {
+                return bestPracticeWarningAnnotation;
+            }
+        },
     },
     watch: {
         version() {
@@ -277,6 +284,7 @@ export default {
             this.creatorCurrent = creator;
         },
         annotation() {
+            this.showAnnotationHightlight = false;
             this.annotationCurrent = this.annotation;
         },
         name() {

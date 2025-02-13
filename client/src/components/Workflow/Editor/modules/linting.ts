@@ -17,6 +17,8 @@ interface LintState {
 
 export const bestPracticeWarningAnnotation =
     "This workflow does not provide a short description. Providing a short description helps workflow executors understand the purpose and usage of the workflow.";
+export const bestPracticeWarningAnnotationLength =
+    "This workflow includes a very long short description. The best practice is to break up long descriptions of a workflow into readme and help text and keep the short description field a relatively brief description of the workflow appropriate for displaying in lists of workflows.";
 export const bestPracticeWarningCreator =
     "This workflow does not specify creator(s). This is important metadata for workflows that will be published and/or shared to help workflow executors know how to cite the workflow authors.";
 export const bestPracticeWarningLicense =
