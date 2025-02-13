@@ -106,6 +106,10 @@ const showSelectPreference = computed(
 const displayMany = computed(() => showSelectPreference.value && useMany.value);
 const showManyButton = computed(() => showSelectPreference.value && !useMany.value);
 const showMultiButton = computed(() => displayMany.value);
+
+defineExpose({
+    displayMany,
+});
 </script>
 
 <template>
