@@ -8,13 +8,19 @@
             success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
             :warning-message="bestPracticeWarningAnnotation"
-            attribute-link="Annotate your Workflow."
+            attribute-link="Describe your Workflow."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkAnnotationLength"
+            :success-message="annotationLengthSuccessMessage"
+            :warning-message="bestPracticeWarningAnnotationLength"
+            attribute-link="Shorten your Workflow Description."
             @onClick="onAttributes('annotation')" />
         <LintSection
             :okay="checkReadme"
             success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
             :warning-message="bestPracticeWarningReadme"
-            attribute-link="Annotate your Workflow."
+            attribute-link="Provider Readme for your Workflow."
             @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
@@ -81,6 +87,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 
 import {
     bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
     bestPracticeWarningReadme,
@@ -143,6 +150,7 @@ export default {
     data() {
         return {
             bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
+            bestPracticeWarningAnnotationLength: bestPracticeWarningAnnotationLength,
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
             bestPracticeWarningReadme: bestPracticeWarningReadme,
@@ -156,6 +164,20 @@ export default {
         },
         checkAnnotation() {
             return !!this.annotation;
+        },
+        checkAnnotationLength() {
+            const annotation = this.annotation;
+            if (annotation && annotation.length > 250) {
+                return false;
+            }
+            return true;
+        },
+        annotationLengthSuccessMessage() {
+            if (this.annotation) {
+                return "This workflow has a short description of appropriate length.";
+            } else {
+                return "This workflow does not have a short description.";
+            }
         },
         checkReadme() {
             return !!this.annotation;
