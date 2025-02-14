@@ -33,13 +33,6 @@ CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True"""
-PREPARE_DIRS = """mkdir -p working outputs configs
-if [ -d _working ]; then
-    rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
-else
-    cp -R working _working; cp -R outputs _outputs; cp -R configs _configs
-fi
-cd working"""
 
 
 def build_command(
@@ -125,12 +118,9 @@ def build_command(
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
-        # usually working will already exist, but it will not for task
-        # split jobs.
-
-        # Copy working and outputs before job submission so that these can be restored on resubmission
-        # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command(PREPARE_DIRS)
+        # Working (and outputs, configs) are backed up and restored in the job script for both Galaxy and Pulsar jobs,
+        # but Pulsar automatically changes into the working dir, whereas Galaxy does not.
+        commands_builder.prepend_command("cd working")
 
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
