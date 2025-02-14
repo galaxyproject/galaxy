@@ -305,19 +305,6 @@ class Strategy(BaseStrategy):
     def render_html(self, tpl=None, html=None, context=None):
         raise NotImplementedError("Not implemented.")
 
-    def start(self):
-        self.clean_partial_pipeline()
-        if self.backend.uses_redirect():
-            return self.redirect(self.backend.auth_url())
-        else:
-            return self.html(self.backend.auth_html())
-
-    def complete(self, *args, **kwargs):
-        return self.backend.auth_complete(*args, **kwargs)
-
-    def continue_pipeline(self, *args, **kwargs):
-        return self.backend.continue_pipeline(*args, **kwargs)
-
 
 class Storage:
     user = UserAuthnzToken
