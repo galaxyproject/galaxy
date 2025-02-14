@@ -2,13 +2,19 @@ from typing import (
     Any,
     Dict,
     List,
-    Literal,
     Optional,
     Type,
     Union,
 )
 
-from pydantic import RootModel
+from pydantic import (
+    Field,
+    RootModel,
+)
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.util.config_templates import (
     ConfiguredOAuth2Sources,
@@ -213,27 +219,34 @@ class eLabFTWFileSourceConfiguration(StrictModel):  # noqa
     writable: bool = True
 
 
-FileSourceTemplateConfiguration = Union[
-    PosixFileSourceTemplateConfiguration,
-    S3FSFileSourceTemplateConfiguration,
-    FtpFileSourceTemplateConfiguration,
-    AzureFileSourceTemplateConfiguration,
-    OnedataFileSourceTemplateConfiguration,
-    WebdavFileSourceTemplateConfiguration,
-    DropboxFileSourceTemplateConfiguration,
-    GoogleDriveFileSourceTemplateConfiguration,
-    eLabFTWFileSourceTemplateConfiguration,
+FileSourceTemplateConfiguration = Annotated[
+    Union[
+        PosixFileSourceTemplateConfiguration,
+        S3FSFileSourceTemplateConfiguration,
+        FtpFileSourceTemplateConfiguration,
+        AzureFileSourceTemplateConfiguration,
+        OnedataFileSourceTemplateConfiguration,
+        WebdavFileSourceTemplateConfiguration,
+        DropboxFileSourceTemplateConfiguration,
+        GoogleDriveFileSourceTemplateConfiguration,
+        eLabFTWFileSourceTemplateConfiguration,
+    ],
+    Field(discriminator="type"),
 ]
-FileSourceConfiguration = Union[
-    PosixFileSourceConfiguration,
-    S3FSFileSourceConfiguration,
-    FtpFileSourceConfiguration,
-    AzureFileSourceConfiguration,
-    OnedataFileSourceConfiguration,
-    WebdavFileSourceConfiguration,
-    DropboxFileSourceConfiguration,
-    GoogleDriveFileSourceConfiguration,
-    eLabFTWFileSourceConfiguration,
+
+FileSourceConfiguration = Annotated[
+    Union[
+        PosixFileSourceConfiguration,
+        S3FSFileSourceConfiguration,
+        FtpFileSourceConfiguration,
+        AzureFileSourceConfiguration,
+        OnedataFileSourceConfiguration,
+        WebdavFileSourceConfiguration,
+        DropboxFileSourceConfiguration,
+        GoogleDriveFileSourceConfiguration,
+        eLabFTWFileSourceConfiguration,
+    ],
+    Field(discriminator="type"),
 ]
 
 
