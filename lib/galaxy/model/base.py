@@ -16,6 +16,7 @@ from typing import (
     Dict,
     List,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -27,6 +28,20 @@ from sqlalchemy.orm import (
 )
 
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        APIKeys as GalaxyAPIKeys,
+        GalaxySession as GalaxyGalaxySession,
+        PasswordResetToken as GalaxyPasswordResetToken,
+        User as GalaxyUser,
+    )
+    from tool_shed.webapp.model import (
+        APIKeys as ToolShedAPIKeys,
+        GalaxySession as ToolShedGalaxySession,
+        PasswordResetToken as ToolShedPasswordResetToken,
+        User as ToolShedUser,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -128,10 +143,10 @@ class SharedModelMapping(ModelMapping):
     a way to do app.model.<CLASS> for common code shared by the tool shed and Galaxy.
     """
 
-    User: Type
-    GalaxySession: Type
-    APIKeys: Type
-    PasswordResetToken: Type
+    User: Union[Type["GalaxyUser"], Type["ToolShedUser"]]
+    GalaxySession: Union[Type["GalaxyGalaxySession"], Type["ToolShedGalaxySession"]]
+    APIKeys: Union[Type["GalaxyAPIKeys"], Type["ToolShedAPIKeys"]]
+    PasswordResetToken: Union[Type["GalaxyPasswordResetToken"], Type["ToolShedPasswordResetToken"]]
 
 
 def versioned_objects(iter):
