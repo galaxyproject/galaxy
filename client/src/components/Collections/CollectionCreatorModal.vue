@@ -242,10 +242,9 @@ function resetModal() {
         :busy="(fromSelection && isFetchingItems) || creatingCollection"
         modal-class="ui-modal collection-creator-modal"
         :hide-footer="!createdCollection && !createCollectionError"
-        :ok-disabled="!!createdCollection || !!createCollectionError"
-        :cancel-title="localize('Exit')"
-        footer-class="d-flex justify-content-between"
-        :ok-title="localize('Create Collection')"
+        ok-only
+        :ok-title="localize('Exit')"
+        ok-variant="secondary"
         @hidden="resetModal">
         <template v-slot:modal-header>
             <Heading class="w-100" size="sm">
