@@ -673,13 +673,14 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 
         as_dicts = []
         for files_source_properties in self._all_user_file_source_properties(user_context):
-            plugin_kind = PluginKind.rfs
+            files_source_type = files_source_properties["type"]
+            plugin_type_class = self._plugin_loader.get_plugin_type_class(files_source_type)
+            plugin_kind = plugin_type_class.plugin_kind
             if include_kind and plugin_kind not in include_kind:
                 continue
             if exclude_kind and plugin_kind in exclude_kind:
                 continue
-            files_source_type = files_source_properties["type"]
-            is_browsable = file_source_type_is_browsable(self._plugin_loader.get_plugin_type_class(files_source_type))
+            is_browsable = file_source_type_is_browsable(plugin_type_class)
             if browsable_only and not is_browsable:
                 continue
             file_source = self._file_source(files_source_properties)
