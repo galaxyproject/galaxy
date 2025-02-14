@@ -112,9 +112,9 @@ class ChatAPI:
             {"role": "user", "content": payload.query},
         ]
 
-        user_msg = self._get_user_context_message(trans)
-        if user_msg:
-            messages.append({"role": "system", "content": user_msg})
+        #user_msg = self._get_user_context_message(trans)
+        #if user_msg:
+        #    messages.append({"role": "system", "content": user_msg})
 
         return messages
 
