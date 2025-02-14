@@ -15,6 +15,8 @@ from galaxy.files.templates.models import (
     FileSourceTemplate,
     FtpFileSourceConfiguration,
     FtpFileSourceTemplateConfiguration,
+    InvenioFileSourceConfiguration,
+    InvenioFileSourceTemplateConfiguration,
     PosixFileSourceConfiguration,
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
@@ -65,6 +67,8 @@ class_to_diagram = {
     WebdavFileSourceConfiguration: "file_source_webdav_configuration",
     eLabFTWFileSourceTemplateConfiguration: "file_source_elabftw_configuration_template",
     eLabFTWFileSourceConfiguration: "file_source_elabftw_configuration",
+    InvenioFileSourceTemplateConfiguration: "file_source_invenio_configuration_template",
+    InvenioFileSourceConfiguration: "file_source_invenio_configuration",
 }
 
 for clazz, diagram_name in class_to_diagram.items():

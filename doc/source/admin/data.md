@@ -386,6 +386,19 @@ configuration).
 
 ![](file_source_elabftw_configuration.png)
 
+#### `inveniordm`
+
+The syntax for the `configuration` section of `inveniordm` templates looks like this.
+
+![](file_source_invenio_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_invenio_configuration.png)
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)
@@ -449,6 +462,14 @@ and you are comfortable with it storing your user's secrets.
 ```
 
 ![Screenshot](user_file_source_form_full_elabftw.png)
+
+#### Allow Users to Define InvenioRDM Servers as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_invenio.png)
 
 ### Production OAuth 2.0 File Source Templates
 
