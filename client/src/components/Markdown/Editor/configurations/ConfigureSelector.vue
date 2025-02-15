@@ -15,24 +15,18 @@ import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
 
+import type { ApiResponse, OptionType } from "./types";
+
 const DELAY = 300;
 
-interface OptionType {
-    id: string | null | undefined;
-    name: string | null | undefined;
-}
-
-interface ContentType {
-    dataset_id: string;
-    dataset_name?: string;
-}
-
 const props = defineProps<{
-    contentObject: ContentType;
+    type: "datasets" | "workflows";
+    name?: string;
+    id?: string;
 }>();
 
 const emit = defineEmits<{
-    (e: "change", content: OptionType): void;
+    (e: "change", newValue: OptionType): void;
 }>();
 
 const errorMessage = ref("");
@@ -40,8 +34,8 @@ const options: Ref<Array<OptionType>> = ref([]);
 
 const currentValue = computed({
     get: () => ({
-        id: props.contentObject?.dataset_id,
-        name: props.contentObject?.dataset_name || props.contentObject?.dataset_id,
+        id: props.name,
+        name: props.name || props.id,
     }),
     set: (newValue: OptionType) => {
         emit("change", newValue);
@@ -50,24 +44,33 @@ const currentValue = computed({
 
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
-        const { data, error } = await GalaxyApi().GET("/api/datasets", {
-            params: {
-                query: {
-                    q: ["name-contains"],
-                    qv: [query],
-                    offset: 0,
-                    limit: 50,
-                },
-            },
-        });
+        const { data, error } = await getDatasets(query);
         if (error) {
             errorMessage.value = error.err_msg;
         } else {
             errorMessage.value = "";
-            options.value = data.map((d) => ({ id: d.id, name: d.name }));
+            if (data) {
+                options.value = data.map((d) => ({ id: d.id, name: d.name }));
+            } else {
+                options.value = [];
+            }
         }
     }
 }, DELAY);
+
+async function getDatasets(query: string = ""): Promise<ApiResponse> {
+    const { data, error } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                q: ["name-contains"],
+                qv: [query],
+                offset: 0,
+                limit: 50,
+            },
+        },
+    });
+    return { data, error };
+}
 
 search();
 </script>
