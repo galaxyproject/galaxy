@@ -1,0 +1,70 @@
+- id: irods
+  name: iRODS Storage
+  version: 0
+  description: |
+    If you have an account on an iRODS server, you can use such an object store as
+    a storage location for your Galaxy datasets; they will be stored in
+    the iRODS of your choice.
+  variables:
+    host:
+      label: iRODS host
+      type: string
+      help: Host url to connect to.
+    port:
+      label: iRODS host port
+      type: integer
+      help: Host port to connect to.
+      default: 1247
+    username:
+      label: Username
+      type: string
+      help: |
+        Your iRODS username
+    timeout:
+      label: Connection timeout
+      type: integer
+      help: Connection timeout in seconds.
+      default: 30
+    refresh_time:
+      label: Refresh time
+      type: integer
+      help: Connection refresh time in seconds.
+      default: 300
+    connection_pool_monitor_interval:
+      label: Connection pool monitor interval
+      type: integer
+      help: Interval for monitoring the connection pool in seconds.
+      default: 3600
+    zone:
+      label: iRODS zone
+      type: string
+      help: |
+        An iRODS Zone is an independent iRODS system consisting of a Catalog Service 
+        Provider
+    resource:
+      label: Resource
+      type: string
+      help: |
+        The iRODS resource to use
+      default: "default"
+  secrets:
+    password:
+      label: Password
+      help: |
+        Your irods password
+  configuration:
+    type: irods
+    auth:
+      username: '{{ variables.username }}'
+      password: '{{ secrets.password }}'
+    resource:
+      name: '{{ variables.resource }}'
+    zone:
+      name: '{{ variables.zone }}'
+    connection:
+      host: '{{ variables.host }}'
+      port: '{{ variables.port }}'
+      timeout: '{{ variables.timeout }}'
+      refresh_time: '{{ variables.refresh_time }}'
+      connection_pool_monitor_interval: '{{ variables.connection_pool_monitor_interval }}'
+
