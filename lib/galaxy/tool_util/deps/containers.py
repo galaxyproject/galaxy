@@ -149,7 +149,7 @@ class ContainerFinder:
             return container
 
         def container_from_description_from_dicts(
-            destination_container_dicts: List[Dict[str, Any]]
+            destination_container_dicts: List[Dict[str, Any]],
         ) -> Optional[Container]:
             for destination_container_dict in destination_container_dicts:
                 container_description = ContainerDescription.from_dict(destination_container_dict)

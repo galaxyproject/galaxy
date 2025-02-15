@@ -766,7 +766,7 @@ class TestCollectionDef:
 
     @staticmethod
     def from_dict(
-        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict]
+        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict],
     ) -> "TestCollectionDef":
         if "model_class" in as_dict:
             xml_as_dict = cast(XmlTestCollectionDefDict, as_dict)

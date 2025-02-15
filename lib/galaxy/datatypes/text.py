@@ -1,5 +1,4 @@
-""" Clearing house for generic text datatypes that are not XML or tabular.
-"""
+"""Clearing house for generic text datatypes that are not XML or tabular."""
 
 import gzip
 import json

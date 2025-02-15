@@ -1,5 +1,4 @@
-"""Module containing Galaxy workflow report generator plugins.
-"""
+"""Module containing Galaxy workflow report generator plugins."""
 
 from abc import (
     ABCMeta,

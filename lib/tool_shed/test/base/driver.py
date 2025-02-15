@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""Test driver for tool shed functional tests.
-"""
+"""Test driver for tool shed functional tests."""
 
 import os
 import string

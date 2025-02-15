@@ -1,4 +1,4 @@
-""" This module contains functionality to aid in extracting workflows from
+"""This module contains functionality to aid in extracting workflows from
 histories.
 """
 
