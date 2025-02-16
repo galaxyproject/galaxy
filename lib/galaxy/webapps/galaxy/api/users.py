@@ -990,6 +990,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         extra_user_pref_data = {}
         extra_pref_keys = self._get_extra_user_preferences(trans)
         user_vault = UserVaultWrapper(trans.app.vault, user)
+        current_extra_user_pref_data = json.loads(user.preferences.get("extra_user_preferences", "{}"))
         if extra_pref_keys is not None:
             for key in extra_pref_keys:
                 key_prefix = f"{key}|"
@@ -1002,8 +1003,17 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                             input = matching_input[0]
                             if input.get("required") and payload[item] == "":
                                 raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                            if not (input.get("type") == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"):
-                                if input.get("store") == "vault":
+                            input_type = input.get("type")
+                            is_secret_value_unchanged = (
+                                input_type == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"
+                            )
+                            is_stored_in_vault = input.get("store") == "vault"
+                            if is_secret_value_unchanged:
+                                if not is_stored_in_vault:
+                                    # If the value is unchanged, keep the current value
+                                    extra_user_pref_data[item] = current_extra_user_pref_data.get(item, "")
+                            else:
+                                if is_stored_in_vault:
                                     user_vault.write_secret(f"preferences/{keys[0]}/{keys[1]}", str(payload[item]))
                                 else:
                                     extra_user_pref_data[item] = payload[item]
