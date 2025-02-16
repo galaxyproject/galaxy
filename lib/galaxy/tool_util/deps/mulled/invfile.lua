@@ -88,13 +88,14 @@ inv.task('build')
     .using(conda_image)
         .withHostConfig({binds = bind_args})
         .run('/bin/sh', '-c', preinstall
+            .. conda_bin .. ' create --quiet --yes -p /usr/local/env --copy  && '
             .. conda_bin .. ' install '
             .. channel_args .. ' '
             .. target_args
-            .. ' --strict-channel-priority -p /usr/local --copy --yes '
+            .. ' --strict-channel-priority -p /usr/local/env --copy --yes '
             .. verbose
             .. postinstall)
-    .wrap('build/dist')
+    .wrap('build/dist/env')
         .at('/usr/local')
         .inImage(destination_base_image)
         .as(repo)

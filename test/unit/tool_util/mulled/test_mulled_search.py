@@ -25,10 +25,10 @@ def test_quay_search():
 @skip_unless_executable("conda")
 def test_conda_search():
     t = CondaSearch("bioconda")
-    search1 = t.get_json("asdfasdf")
-    search2 = t.get_json("bioconductor-gosemsim")
-    assert search1 == []
-    assert all(r["package"] == "bioconductor-gosemsim" for r in search2)
+    search = t.get_json("asdfasdf")
+    assert search == []
+    search = t.get_json("bioconductor-gosemsim")
+    assert all(r["package"] == "bioconductor-gosemsim" for r in search)
 
 
 @external_dependency_management
