@@ -5,6 +5,10 @@ import json
 import logging
 import sys
 import tempfile
+from typing import (
+    Dict,
+    List,
+)
 
 import requests
 
@@ -123,7 +127,7 @@ class CondaSearch:
     def __init__(self, channel):
         self.channel = channel
 
-    def get_json(self, search_string):
+    def get_json(self, search_string) -> List[Dict[str, str]]:
         """
         Function takes search_string variable and returns results from the bioconda channel in JSON format
 
@@ -136,8 +140,16 @@ class CondaSearch:
         except Exception as e:
             logging.info(f"Search failed with: {e}")
             return []
+        header_found = False
+        lines_fields: List[List[str]] = []
+        for line in raw_out.splitlines():
+            if line.startswith("#"):
+                header_found = True
+            elif header_found:
+                lines_fields.append(line.split())
         return [
-            {"package": n.split()[0], "version": n.split()[1], "build": n.split()[2]} for n in raw_out.split("\n")[2:-1]
+            {"package": line_fields[0], "version": line_fields[1], "build": line_fields[2]}
+            for line_fields in lines_fields
         ]
 
 
