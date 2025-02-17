@@ -7883,9 +7883,9 @@ class Workflow(Base, Dictifiable, RepresentById):
     creator_metadata: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONType)
     license: Mapped[Optional[str]] = mapped_column(TEXT)
     source_metadata: Mapped[Optional[Dict[str, str]]] = mapped_column(JSONType)
-    readme: Mapped[Optional[str]] = mapped_column(TEXT)
-    logo_url: Mapped[Optional[str]] = mapped_column(TEXT)
-    help: Mapped[Optional[str]] = mapped_column(TEXT)
+    readme: Mapped[Optional[str]] = mapped_column(Text)
+    logo_url: Mapped[Optional[str]] = mapped_column(Text)
+    help: Mapped[Optional[str]] = mapped_column(Text)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
 
     steps: Mapped[List["WorkflowStep"]] = relationship(
