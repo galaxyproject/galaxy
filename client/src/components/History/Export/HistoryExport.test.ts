@@ -7,7 +7,7 @@ import { setActivePinia } from "pinia";
 import { type HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import { type FilesSourcePlugin } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
@@ -39,7 +39,7 @@ const FAKE_HISTORY: HistorySummary = {
     url: FAKE_HISTORY_URL,
 };
 
-const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
+const REMOTE_FILES_API_RESPONSE: BrowsableFilesSourcePlugin[] = [
     {
         id: "test-posix-source",
         type: "posix",
@@ -54,6 +54,7 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
             search: false,
             sorting: false,
         },
+        uri_root: "gxfiles://test-posix-source",
     },
 ];
 
@@ -143,7 +144,7 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should display the ZENODO tab if the Zenodo plugin is available", async () => {
-        const zenodoPlugin: FilesSourcePlugin = {
+        const zenodoPlugin: BrowsableFilesSourcePlugin = {
             id: "zenodo",
             type: "rdm",
             label: "Zenodo",
@@ -155,6 +156,7 @@ describe("HistoryExport.vue", () => {
                 search: false,
                 sorting: false,
             },
+            uri_root: "zenodo://",
         };
         server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([zenodoPlugin])));
 
