@@ -23,9 +23,9 @@ depends_on = None
 
 
 def upgrade():
-    add_column(workflow_table_name, sa.Column("readme", sa.TEXT, nullable=True))
-    add_column(workflow_table_name, sa.Column("help", sa.TEXT, nullable=True))
-    add_column(workflow_table_name, sa.Column("logo_url", sa.TEXT, nullable=True))
+    add_column(workflow_table_name, sa.Column("readme", sa.Text, nullable=True))
+    add_column(workflow_table_name, sa.Column("help", sa.Text, nullable=True))
+    add_column(workflow_table_name, sa.Column("logo_url", sa.Text, nullable=True))
 
 
 def downgrade():
