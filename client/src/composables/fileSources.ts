@@ -25,6 +25,10 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
         return fileSources.value.find((fs) => fs.id === id);
     }
 
+    function getFileSourcesByType(type: string) {
+        return fileSources.value.filter((fs) => fs.type === type);
+    }
+
     function getFileSourceByUri(uri: string) {
         const sourceId = getFileSourceIdFromUri(uri);
         let matchedFileSource = getFileSourceById(sourceId);
@@ -69,5 +73,12 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * @returns The file source that matches the given URI, if found.
          */
         getFileSourceByUri,
+        /**
+         * Get the file sources that match the given type.
+         *
+         * @param type - The type to match.
+         * @returns The file sources that match the given type.
+         */
+        getFileSourcesByType,
     };
 }
