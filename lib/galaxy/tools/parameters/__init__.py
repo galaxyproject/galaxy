@@ -546,7 +546,9 @@ def populate_state(
                     errors[input.name] = error
                 state[input.name] = value
     else:
-        raise Exception(f"Input format {input_format} not recognized; input_format must be either legacy or 21.01.")
+        raise RequestParameterInvalidException(
+            f"Input format {input_format} not recognized; input_format must be either legacy or 21.01."
+        )
 
 
 def _populate_state_legacy(

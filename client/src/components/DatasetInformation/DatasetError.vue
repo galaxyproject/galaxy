@@ -28,7 +28,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
-const { currentUser } = storeToRefs(userStore);
+const { currentUser, isAnonymous } = storeToRefs(userStore);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 const { config, isConfigLoaded } = useConfig();
@@ -49,7 +49,7 @@ const showForm = computed(() => {
     return noResult || hasError;
 });
 
-const showWizard = computed(() => isConfigLoaded && config.value?.llm_api_configured);
+const showWizard = computed(() => isConfigLoaded && config.value?.llm_api_configured && !isAnonymous.value);
 
 async function getDatasetDetails() {
     datasetLoading.value = true;
