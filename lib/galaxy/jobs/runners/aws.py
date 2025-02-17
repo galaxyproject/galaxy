@@ -1,5 +1,4 @@
-""" Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch.
-"""
+"""Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch."""
 
 import bisect
 import hashlib

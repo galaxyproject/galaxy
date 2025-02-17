@@ -1,5 +1,4 @@
-""" Package responsible for parsing tools from files/abstract tool sources.
-"""
+"""Package responsible for parsing tools from files/abstract tool sources."""
 
 from .factory import (
     get_input_source,

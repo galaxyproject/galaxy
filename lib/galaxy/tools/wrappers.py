@@ -560,7 +560,7 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
                 DatasetInstance,
                 DatasetCollectionInstance,
                 DatasetCollectionElement,
-            ]
+            ],
         ) -> DatasetFilenameWrapper:
             if isinstance(dataset, DatasetCollectionElement):
                 dataset2 = dataset.dataset_instance

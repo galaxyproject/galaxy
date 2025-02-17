@@ -1,4 +1,4 @@
-""" This module define an abstract class for reasoning about Galaxy's
+"""This module define an abstract class for reasoning about Galaxy's
 dataset collection after jobs are finished.
 """
 
