@@ -2,6 +2,7 @@ import { onMounted, readonly, ref } from "vue";
 
 import { type BrowsableFilesSourcePlugin, type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useFileSourcesStore } from "@/stores/fileSourcesStore";
+import { USER_FILE_PREFIX } from "@/utils/upload-payload";
 
 /**
  * Composable for accessing and working with file sources.
@@ -27,6 +28,10 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
 
     function getFileSourcesByType(type: string) {
         return fileSources.value.filter((fs) => fs.type === type);
+    }
+
+    function isPrivateFileSource(fs: BrowsableFilesSourcePlugin) {
+        return fs.uri_root.startsWith(USER_FILE_PREFIX);
     }
 
     function getFileSourceByUri(uri: string) {
@@ -80,5 +85,12 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * @returns The file sources that match the given type.
          */
         getFileSourcesByType,
+        /**
+         * Check if the given file source is a private file source provided by the user.
+         *
+         * @param fs - The file source to check.
+         * @returns Whether the file source is a private file source.
+         */
+        isPrivateFileSource,
     };
 }
