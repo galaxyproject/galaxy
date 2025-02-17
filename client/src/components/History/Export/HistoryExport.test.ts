@@ -165,6 +165,31 @@ describe("HistoryExport.vue", () => {
         expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
     });
 
+    it("should display the ZENODO tab if the user has a user-defined Zenodo file source", async () => {
+        const userZenodoPlugin: BrowsableFilesSourcePlugin = {
+            id: "998c5bba-b18f-4223-9c93-0f36fa2fdae8",
+            type: "zenodo",
+            label: "ZENODO",
+            doc: "My integration with Zenodo",
+            browsable: true,
+            writable: true,
+            requires_roles: null,
+            requires_groups: null,
+            url: "https://zenodo.org/",
+            supports: {
+                pagination: true,
+                search: true,
+                sorting: false,
+            },
+            uri_root: "gxuserfiles://998c5bba-b18f-4223-9c93-0f36fa2fdae8",
+        };
+        server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([userZenodoPlugin])));
+
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
+    });
+
     it("should not display a fatal error alert if the history is found and loaded", async () => {
         suppressDebugConsole(); // we rightfully debug message the fact we don't have a history in this test
 
