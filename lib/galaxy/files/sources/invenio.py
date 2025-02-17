@@ -212,7 +212,8 @@ class InvenioRDMFilesSource(RDMFilesSource):
         public_name = self.get_public_name(user_context) or "No name"
         record = self.repository.create_draft_file_container(entry_data["name"], public_name, user_context=user_context)
         record_id = record.get("id")
-        if not record_id or not isinstance(record_id, str):
+        record_id = str(record_id) if record_id else None
+        if not record_id:
             raise Exception("Failed to create record.")
         uri = self.repository.to_plugin_uri(record_id=record_id)
         name = record.get("title") or "Untitled"
