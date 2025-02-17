@@ -8,7 +8,6 @@ import type { HDASummary, HistoryItemSummary } from "@/api";
 import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
-import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 

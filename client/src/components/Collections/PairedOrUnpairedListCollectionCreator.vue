@@ -743,7 +743,10 @@ export default {
                             <BAlert show variant="warning" dismissible>
                                 {{ unpairedProblemDatasetCount }} unmatched datasets, these should be either dismissed
                                 or paired off.
-                                <BLink style="font-weight: bold" data-description="dismiss unmatched datasets" @click="dismissUnmatchedDatasets"
+                                <BLink
+                                    style="font-weight: bold"
+                                    data-description="dismiss unmatched datasets"
+                                    @click="dismissUnmatchedDatasets"
                                     >Click here to discard all remaining unpaired datasets.</BLink
                                 >
                             </BAlert>
