@@ -219,7 +219,7 @@ class eLabFTWFileSourceConfiguration(StrictModel):  # noqa
     writable: bool = True
 
 
-class InvenioFileSourceTemplateConfiguration(StrictModel):  # noqa
+class InvenioFileSourceTemplateConfiguration(StrictModel):
     type: Literal["inveniordm"]
     url: Union[str, TemplateExpansion]
     public_name: Union[str, TemplateExpansion]
@@ -229,7 +229,7 @@ class InvenioFileSourceTemplateConfiguration(StrictModel):  # noqa
     template_end: Optional[str] = None
 
 
-class InvenioFileSourceConfiguration(StrictModel):  # noqa
+class InvenioFileSourceConfiguration(StrictModel):
     type: Literal["inveniordm"]
     url: str
     public_name: str

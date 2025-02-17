@@ -465,7 +465,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define InvenioRDM Servers as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yml
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yaml
 :language: yaml
 ```
 
