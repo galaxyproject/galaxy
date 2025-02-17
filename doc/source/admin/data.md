@@ -442,6 +442,14 @@ and you are comfortable with it storing your user's secrets.
 
 ![Screenshot](user_file_source_form_full_webdav.png)
 
+#### Allow Users to Define eLabFTW Instances as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_elabftw.yaml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_elabftw.png)
+
 ### Production OAuth 2.0 File Source Templates
 
 Unlike the examples in the previous section. These examples will require a bit of
