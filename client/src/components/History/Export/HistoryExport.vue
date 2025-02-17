@@ -41,6 +41,7 @@ const {
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
 const {
     hasWritable: hasWritableRDMFileSources,
+    getFileSourceById,
     getFileSourcesByType,
     isPrivateFileSource,
 } = useFileSources({ include: ["rdm"] });
@@ -113,7 +114,7 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 function getZenodoSource() {
     const zenodoSources = getFileSourcesByType("zenodo");
     // Prioritize the one provided by the user in case there are multiple
-    return zenodoSources.find(isPrivateFileSource) ?? zenodoSources.at(0);
+    return zenodoSources.find(isPrivateFileSource) ?? getFileSourceById("zenodo");
 }
 
 async function loadHistory() {
