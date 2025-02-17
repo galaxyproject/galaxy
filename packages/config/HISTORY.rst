@@ -10,6 +10,47 @@ History
 
 
 -------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix loading error for built in tool `sift` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18357 <https://github.com/galaxyproject/galaxy/pull/18357>`_
+* Add gtf to auto_compressed_types by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19175 <https://github.com/galaxyproject/galaxy/pull/19175>`_
+* Partial backport of #19331 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19342 <https://github.com/galaxyproject/galaxy/pull/19342>`_
+* Fix to only show ChatGXY when available. by `@dannon <https://github.com/dannon>`_ in `#19389 <https://github.com/galaxyproject/galaxy/pull/19389>`_
+
+============
+Enhancements
+============
+
+* Experimental galactic wizard by `@dannon <https://github.com/dannon>`_ in `#15860 <https://github.com/galaxyproject/galaxy/pull/15860>`_
+* Improve usability of Directory datatype by `@wm75 <https://github.com/wm75>`_ in `#17614 <https://github.com/galaxyproject/galaxy/pull/17614>`_
+* Add pod5 datatype by `@TomHarrop <https://github.com/TomHarrop>`_ in `#18419 <https://github.com/galaxyproject/galaxy/pull/18419>`_
+* Add onedata templates by `@bwalkowi <https://github.com/bwalkowi>`_ in `#18457 <https://github.com/galaxyproject/galaxy/pull/18457>`_
+* Support high-availability setups for the interactive tools proxy by `@kysrpex <https://github.com/kysrpex>`_ in `#18481 <https://github.com/galaxyproject/galaxy/pull/18481>`_
+* Minor config documentation enhancements by `@bgruening <https://github.com/bgruening>`_ in `#18499 <https://github.com/galaxyproject/galaxy/pull/18499>`_
+* Add Tool-Centric APIs to the Tool Shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18524 <https://github.com/galaxyproject/galaxy/pull/18524>`_
+* Bring your own file sources: Add the WebDAV template and configuration by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#18598 <https://github.com/galaxyproject/galaxy/pull/18598>`_
+* Add BlobToolkit to the list of interactive tools by `@Delphine-L <https://github.com/Delphine-L>`_ in `#18630 <https://github.com/galaxyproject/galaxy/pull/18630>`_
+* Remove `defaults` channel for conda usage by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18757 <https://github.com/galaxyproject/galaxy/pull/18757>`_
+* Workflow Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#18807 <https://github.com/galaxyproject/galaxy/pull/18807>`_
+* Jupyter Interactive Tool 1.0.1/24.07 by `@natefoo <https://github.com/natefoo>`_ in `#18861 <https://github.com/galaxyproject/galaxy/pull/18861>`_
+* Allow setting a few global defaults for file source plugin types. by `@jmchilton <https://github.com/jmchilton>`_ in `#18909 <https://github.com/galaxyproject/galaxy/pull/18909>`_
+* Add filter null collection operation tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18928 <https://github.com/galaxyproject/galaxy/pull/18928>`_
+* Add hint to the tool schema about runtime conditional changes by `@martenson <https://github.com/martenson>`_ in `#18996 <https://github.com/galaxyproject/galaxy/pull/18996>`_
+* Irods ssl connection by `@pauldg <https://github.com/pauldg>`_ in `#19014 <https://github.com/galaxyproject/galaxy/pull/19014>`_
+* Add some Zarr-based datatypes by `@davelopez <https://github.com/davelopez>`_ in `#19040 <https://github.com/galaxyproject/galaxy/pull/19040>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
+* Add XML based `vtk` datatype by `@tStehling <https://github.com/tStehling>`_ in `#19104 <https://github.com/galaxyproject/galaxy/pull/19104>`_
+* Allow a posix file source to prefer linking. by `@jmchilton <https://github.com/jmchilton>`_ in `#19132 <https://github.com/galaxyproject/galaxy/pull/19132>`_
+* Add bcsp datatype by `@SantaMcCloud <https://github.com/SantaMcCloud>`_ in `#19365 <https://github.com/galaxyproject/galaxy/pull/19365>`_
+* add MuData as subclass of H5 by `@pavanvidem <https://github.com/pavanvidem>`_ in `#19416 <https://github.com/galaxyproject/galaxy/pull/19416>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

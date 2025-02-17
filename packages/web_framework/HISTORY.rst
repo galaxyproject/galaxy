@@ -10,6 +10,25 @@ History
 
 
 -------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix WSGI response status handling in controller methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19520 <https://github.com/galaxyproject/galaxy/pull/19520>`_
+
+============
+Enhancements
+============
+
+* Parse stored config details to script-based visualizations by `@guerler <https://github.com/guerler>`_ in `#18651 <https://github.com/galaxyproject/galaxy/pull/18651>`_
+* Enable extra user preferences for remotely authorized users by `@maartenschermer <https://github.com/maartenschermer>`_ in `#18887 <https://github.com/galaxyproject/galaxy/pull/18887>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

@@ -1,5 +1,4 @@
-"""Path manipulation functions.
-"""
+"""Path manipulation functions."""
 
 import errno
 import importlib

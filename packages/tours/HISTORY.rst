@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Type annotations and fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18911 <https://github.com/galaxyproject/galaxy/pull/18911>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

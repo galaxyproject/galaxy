@@ -1864,7 +1864,7 @@
     registering multiple accounts.  Applies mostly for the main Galaxy
     instance. If no message specified the warning box will not be
     shown.
-:Default: ``Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.``
+:Default: ``Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.``
 :Type: str
 
 
@@ -5792,6 +5792,43 @@
     containerized versions of tools are used.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_failed_jobs_working_directory_cleanup``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the cleanup of failed Galaxy job's working directories.
+    Runs in a Celery task.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``failed_jobs_working_directory_cleanup_days``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The number of days to keep failed Galaxy job's working directories
+    before attempting to delete them if
+    enable_failed_jobs_working_directory_cleanup is ``true``. Runs in
+    a Celery task.
+:Default: ``5``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``failed_jobs_working_directory_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete all failed
+    Galaxy job's working directories from the filesystem (every 24
+    hours by default) if enable_failed_jobs_working_directory_cleanup
+    is ``true``. Runs in a Celery task.
+:Default: ``86400``
+:Type: int
 
 
 

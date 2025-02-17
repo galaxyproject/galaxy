@@ -1260,7 +1260,7 @@ galaxy:
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
   # instance. If no message specified the warning box will not be shown.
-  #registration_warning_message: Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+  #registration_warning_message: Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.
 
   # User account activation feature global flag.  If set to false, the
   # rest of the Account activation configuration is ignored and user
@@ -3091,4 +3091,20 @@ galaxy:
   # requirements. This option should be set to false if containerized
   # versions of tools are used.
   #install_resolver_dependencies: true
+
+  # Enables the cleanup of failed Galaxy job's working directories. Runs
+  # in a Celery task.
+  #enable_failed_jobs_working_directory_cleanup: false
+
+  # The number of days to keep failed Galaxy job's working directories
+  # before attempting to delete them if
+  # enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a
+  # Celery task.
+  #failed_jobs_working_directory_cleanup_days: 5
+
+  # The interval in seconds between attempts to delete all failed Galaxy
+  # job's working directories from the filesystem (every 24 hours by
+  # default) if enable_failed_jobs_working_directory_cleanup is
+  # ``true``. Runs in a Celery task.
+  #failed_jobs_working_directory_cleanup_interval: 86400
 

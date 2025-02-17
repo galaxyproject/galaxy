@@ -544,7 +544,7 @@ def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
 
 
 def get_image_metric(
-    attributes: Dict[str, Any]
+    attributes: Dict[str, Any],
 ) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], "numpy.floating"]:
     metric_name = attributes.get("metric", DEFAULT_METRIC)
     pin_labels = _parse_label_list(attributes.get("pin_labels", DEFAULT_PIN_LABELS))

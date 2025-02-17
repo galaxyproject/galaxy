@@ -1,5 +1,4 @@
-"""Utilities for converting between request states.
-"""
+"""Utilities for converting between request states."""
 
 import logging
 from typing import (

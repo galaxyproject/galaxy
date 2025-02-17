@@ -2,13 +2,19 @@ from typing import (
     Any,
     Dict,
     List,
-    Literal,
     Optional,
     Type,
     Union,
 )
 
-from pydantic import RootModel
+from pydantic import (
+    Field,
+    RootModel,
+)
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.util.config_templates import (
     ConfiguredOAuth2Sources,
@@ -30,7 +36,9 @@ from galaxy.util.config_templates import (
     UserDetailsDict,
 )
 
-FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure", "onedata", "webdav", "dropbox", "googledrive"]
+FileSourceTemplateType = Literal[
+    "ftp", "posix", "s3fs", "azure", "onedata", "webdav", "dropbox", "googledrive", "elabftw", "inveniordm"
+]
 
 
 class PosixFileSourceTemplateConfiguration(StrictModel):
@@ -195,25 +203,70 @@ class WebdavFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-FileSourceTemplateConfiguration = Union[
-    PosixFileSourceTemplateConfiguration,
-    S3FSFileSourceTemplateConfiguration,
-    FtpFileSourceTemplateConfiguration,
-    AzureFileSourceTemplateConfiguration,
-    OnedataFileSourceTemplateConfiguration,
-    WebdavFileSourceTemplateConfiguration,
-    DropboxFileSourceTemplateConfiguration,
-    GoogleDriveFileSourceTemplateConfiguration,
+class eLabFTWFileSourceTemplateConfiguration(StrictModel):  # noqa
+    type: Literal["elabftw"]
+    endpoint: Union[str, TemplateExpansion]
+    api_key: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = True
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class eLabFTWFileSourceConfiguration(StrictModel):  # noqa
+    type: Literal["elabftw"]
+    endpoint: str
+    api_key: str
+    writable: bool = True
+
+
+class InvenioFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["inveniordm"]
+    url: Union[str, TemplateExpansion]
+    public_name: Union[str, TemplateExpansion]
+    token: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = True
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class InvenioFileSourceConfiguration(StrictModel):
+    type: Literal["inveniordm"]
+    url: str
+    public_name: str
+    token: str
+    writable: bool = True
+
+
+FileSourceTemplateConfiguration = Annotated[
+    Union[
+        PosixFileSourceTemplateConfiguration,
+        S3FSFileSourceTemplateConfiguration,
+        FtpFileSourceTemplateConfiguration,
+        AzureFileSourceTemplateConfiguration,
+        OnedataFileSourceTemplateConfiguration,
+        WebdavFileSourceTemplateConfiguration,
+        DropboxFileSourceTemplateConfiguration,
+        GoogleDriveFileSourceTemplateConfiguration,
+        eLabFTWFileSourceTemplateConfiguration,
+        InvenioFileSourceTemplateConfiguration,
+    ],
+    Field(discriminator="type"),
 ]
-FileSourceConfiguration = Union[
-    PosixFileSourceConfiguration,
-    S3FSFileSourceConfiguration,
-    FtpFileSourceConfiguration,
-    AzureFileSourceConfiguration,
-    OnedataFileSourceConfiguration,
-    WebdavFileSourceConfiguration,
-    DropboxFileSourceConfiguration,
-    GoogleDriveFileSourceConfiguration,
+
+FileSourceConfiguration = Annotated[
+    Union[
+        PosixFileSourceConfiguration,
+        S3FSFileSourceConfiguration,
+        FtpFileSourceConfiguration,
+        AzureFileSourceConfiguration,
+        OnedataFileSourceConfiguration,
+        WebdavFileSourceConfiguration,
+        DropboxFileSourceConfiguration,
+        GoogleDriveFileSourceConfiguration,
+        eLabFTWFileSourceConfiguration,
+        InvenioFileSourceConfiguration,
+    ],
+    Field(discriminator="type"),
 ]
 
 
@@ -284,6 +337,8 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
     "googledrive": GoogleDriveFileSourceConfiguration,
+    "elabftw": eLabFTWFileSourceConfiguration,
+    "inveniordm": InvenioFileSourceConfiguration,
 }
 
 

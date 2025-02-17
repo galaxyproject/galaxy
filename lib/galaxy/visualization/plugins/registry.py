@@ -225,26 +225,22 @@ class VisualizationsRegistry:
             raise ObjectNotFound(f"Unknown or invalid visualization: {key}")
         return self.plugins[key]
 
-    def get_plugins(self, embeddable=None):
-        result = []
-        for plugin in self.plugins.values():
-            if embeddable and not plugin.config.get("embeddable"):
-                continue
-            result.append(plugin.to_dict())
-        return sorted(result, key=lambda k: k.get("html"))
-
     # -- building links to visualizations from objects --
-    def get_visualizations(self, trans, target_object):
+    def get_visualizations(self, trans, target_object=None, embeddable=None):
         """
         Get the names of visualizations usable on the `target_object` and
         the urls to call in order to render the visualizations.
         """
-        applicable_visualizations = []
-        for vis_name in self.plugins:
-            url_data = self.get_visualization(trans, vis_name, target_object)
-            if url_data:
-                applicable_visualizations.append(url_data)
-        return sorted(applicable_visualizations, key=lambda k: k.get("html"))
+        result = []
+        for vis_name, vis_plugin in self.plugins.items():
+            if vis_plugin.config.get("hidden"):
+                continue
+            if embeddable and not vis_plugin.config.get("embeddable"):
+                continue
+            if target_object is not None and self.get_visualization(trans, vis_name, target_object) is None:
+                continue
+            result.append(vis_plugin.to_dict())
+        return sorted(result, key=lambda k: k.get("html"))
 
     def get_visualization(self, trans, visualization_name, target_object):
         """

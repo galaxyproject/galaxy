@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18406 <https://github.com/galaxyproject/galaxy/pull/18406>`_
+
+-------------------
 24.1.4 (2024-12-11)
 -------------------
 

@@ -1,0 +1,42 @@
+- id: invenio
+  version: 0
+  name: InvenioRDM
+  description: |
+      InvenioRDM is a research data management platform that allows you to store, share, and publish research data. It is
+      built on top of the Invenio framework and is designed to be highly customizable. This template configuration allows you
+      to connect to an InvenioRDM instance of your choice.
+  variables:
+      url:
+          label: InvenioRDM instance endpoint (e.g. https://invenio.example.com)
+          type: string
+          help: |
+              The endpoint of the InvenioRDM server you are connecting to. This should be the full URL including the protocol
+              (http or https) and the domain name.
+      writable:
+          label: Allow Galaxy to export data to InvenioRDM?
+          type: boolean
+          default: true
+          help: |
+              Allow Galaxy to write data to this InvenioRDM instance. Set it to "Yes" if you want to export data from Galaxy to
+              InvenioRDM, set it to "No" if you only need to import data from InvenioRDM to Galaxy.
+      public_name:
+          label: Publication Name
+          type: string
+          help: |
+              The name of the person or organization that is creating the records in InvenioRDM. This will be used as the
+              "creator" field in the metadata of the records. You can always change this value later by editing the records in
+              InvenioRDM. If left blank, an anonymous user will be used as the creator.
+  secrets:
+      token:
+          label: Personal Access Token
+          help: |
+              The personal access token to use to connect to the InvenioRDM server. In your InvenioRDM instance, go to your
+              Account Settings and then go to Applications to generate a new token if you don't have one yet.
+              This will allow Galaxy to display your draft records and upload files to them.
+
+  configuration:
+      type: inveniordm
+      url: "{{ variables.url }}"
+      token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"
+      public_name: "{{ variables.public_name }}"

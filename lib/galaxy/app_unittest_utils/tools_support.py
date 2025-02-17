@@ -1,4 +1,4 @@
-""" Module contains test fixtures meant to aide in the testing of jobs and
+"""Module contains test fixtures meant to aide in the testing of jobs and
 tool evaluation. Such extensive "fixtures" are something of an anti-pattern
 so use of this should be limited to tests of very 'extensive' classes.
 """
