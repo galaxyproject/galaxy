@@ -68,7 +68,7 @@ interface boxplotData {
     values?: { x: string; y: Number }[];
 }
 
-interface piechartData {
+interface barChartData {
     category_title: string;
     y_title: string;
     helpTerm?: string;
@@ -147,6 +147,7 @@ function metricToSpecData(
             y,
             x: itemToX(item),
             job_id: item.job_id,
+            step_index: item.step_index,
             tooltip: "click to view job",
         };
     });
@@ -164,7 +165,7 @@ function metricToAggregateData(
     yTitle: string,
     helpTerm?: string,
     transform?: (param: number) => number
-): piechartData {
+): barChartData {
     const thisMetric = jobMetrics?.filter((jobMetric) => jobMetric.name == metricName);
     const aggregateByX: Record<string, number> = {};
     thisMetric?.forEach((item) => {
@@ -214,7 +215,7 @@ const wallclock: ComputedRef<boxplotData> = computed(() => {
     return metricToSpecData(jobMetrics.value, "runtime_seconds", title, "galaxy.jobs.metrics.walltime", transformTime);
 });
 
-const wallclockAggregate: ComputedRef<piechartData> = computed(() => {
+const wallclockAggregate: ComputedRef<barChartData> = computed(() => {
     const title = `Runtime (in ${timingInTitles.value})`;
     return metricToAggregateData(
         jobMetrics.value,
@@ -236,7 +237,7 @@ const allocatedCoreTimeSpec: ComputedRef<boxplotData> = computed(() => {
     );
 });
 
-const allocatedCoreTimeAggregate: ComputedRef<piechartData> = computed(() => {
+const allocatedCoreTimeAggregate: ComputedRef<barChartData> = computed(() => {
     const title = `Allocated Core Time (in ${timingInTitles.value})`;
     return metricToAggregateData(
         allocatedCoreTime.value as AnyMetric[],
@@ -265,24 +266,25 @@ const peakMemory: ComputedRef<boxplotData> = computed(() => {
     );
 });
 
-function itemToPieChartSpec(item: piechartData) {
+function itemToBarChartSpec(item: barChartData) {
     const spec: VisualizationSpec = {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
         description: "Aggregate data.",
         data: {
             values: item.values!,
         },
-        mark: { type: "arc", tooltip: true },
+        mark: { type: "bar", tooltip: true },
         encoding: {
-            theta: { field: "y", type: "quantitative" },
+            order: { field: "y", type: "quantitative", sort: "descending" },
+            y: { field: "y", type: "quantitative", title: item.y_title },
             color: {
                 field: "category",
                 type: "nominal",
+                sort: { field: "y", order: "descending" },
                 legend: {
                     type: "symbol",
                     title: item.category_title,
-                    titleFontSize: 16,
-                    labelFontSize: 14,
+                    labelExpr: "truncate(replace(datum.label, /(^\\d+: )?.*\\/repos\\/[^/]+\\/[^/]+\\//, '$1'), 32)",
                 },
             },
             tooltip: [
@@ -316,6 +318,10 @@ function itemToSpec(item: boxplotData) {
                 calculate: "'" + getAppRoot() + "jobs/' + datum.job_id + '/view'",
                 as: "url",
             },
+            {
+                calculate: "parseInt(datum.step_index)",
+                as: "x_numeric",
+            },
         ],
         encoding: {
             y: {
@@ -326,11 +332,16 @@ function itemToSpec(item: boxplotData) {
             },
             x: {
                 field: "x",
-                type: "nominal",
+                type: "ordinal",
                 title: item.x_title,
                 axis: {
                     labelAngle: -45,
                     labelAlign: "right",
+                    // 35 seems to be the maximum amount of characters we can display
+                    labelExpr: "truncate(replace(datum.label, /(^\\d+: )?.*\\/repos\\/[^/]+\\/[^/]+\\//, '$1'), 35)",
+                },
+                sort: {
+                    field: "step_index",
                 },
             },
         },
@@ -411,7 +422,7 @@ const groupByInTitles = computed(() => {
                         <HelpText :for-title="true" uri="galaxy.jobs.metrics.walltime" text="Runtime Time" /> (in
                         {{ timingInTitles }})
                     </h2>
-                    <VegaWrapper :spec="itemToPieChartSpec(wallclockAggregate)" :fill-width="false" />
+                    <VegaWrapper :spec="itemToBarChartSpec(wallclockAggregate)" :fill-width="false" />
                 </BCol>
                 <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
@@ -422,7 +433,7 @@ const groupByInTitles = computed(() => {
                             text="Allocated Core Time" />
                         (in {{ timingInTitles }})
                     </h2>
-                    <VegaWrapper :spec="itemToPieChartSpec(allocatedCoreTimeAggregate)" :fill-width="false" />
+                    <VegaWrapper :spec="itemToBarChartSpec(allocatedCoreTimeAggregate)" :fill-width="false" />
                 </BCol>
             </BRow>
             <BRow v-for="({ spec, item }, key) in metrics" :key="key">
