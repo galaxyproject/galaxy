@@ -37,7 +37,7 @@ from galaxy.util.config_templates import (
 )
 
 FileSourceTemplateType = Literal[
-    "ftp", "posix", "s3fs", "azure", "onedata", "webdav", "dropbox", "googledrive", "elabftw"
+    "ftp", "posix", "s3fs", "azure", "onedata", "webdav", "dropbox", "googledrive", "elabftw", "inveniordm"
 ]
 
 
@@ -219,6 +219,24 @@ class eLabFTWFileSourceConfiguration(StrictModel):  # noqa
     writable: bool = True
 
 
+class InvenioFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["inveniordm"]
+    url: Union[str, TemplateExpansion]
+    public_name: Union[str, TemplateExpansion]
+    token: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = True
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class InvenioFileSourceConfiguration(StrictModel):
+    type: Literal["inveniordm"]
+    url: str
+    public_name: str
+    token: str
+    writable: bool = True
+
+
 FileSourceTemplateConfiguration = Annotated[
     Union[
         PosixFileSourceTemplateConfiguration,
@@ -230,6 +248,7 @@ FileSourceTemplateConfiguration = Annotated[
         DropboxFileSourceTemplateConfiguration,
         GoogleDriveFileSourceTemplateConfiguration,
         eLabFTWFileSourceTemplateConfiguration,
+        InvenioFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -245,6 +264,7 @@ FileSourceConfiguration = Annotated[
         DropboxFileSourceConfiguration,
         GoogleDriveFileSourceConfiguration,
         eLabFTWFileSourceConfiguration,
+        InvenioFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -318,6 +338,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "dropbox": DropboxFileSourceConfiguration,
     "googledrive": GoogleDriveFileSourceConfiguration,
     "elabftw": eLabFTWFileSourceConfiguration,
+    "inveniordm": InvenioFileSourceConfiguration,
 }
 
 

@@ -133,7 +133,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         self.repository: InvenioRepositoryInteractor
 
     def get_scheme(self) -> str:
-        return "invenio"
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "invenio"
 
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
