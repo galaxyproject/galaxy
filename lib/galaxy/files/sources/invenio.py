@@ -126,6 +126,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     plugin_type = "inveniordm"
     supports_pagination = True
     supports_search = True
+    rdm_scheme = "invenio"
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
@@ -133,7 +134,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         self.repository: InvenioRepositoryInteractor
 
     def get_scheme(self) -> str:
-        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "invenio"
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else self.rdm_scheme
 
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
