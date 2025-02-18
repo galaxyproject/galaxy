@@ -807,11 +807,19 @@ class DynamicOptions:
                 by_dbkey.update(table_entries)
             for data_table_entry in by_dbkey.values():
                 field_entry = []
-                for column_key in self.tool_data_table.columns.keys():
-                    field_entry.append(data_table_entry[column_key])
                 if hda := data_table_entry.get("__hda__"):
                     field_entry.append(hda)
-                fields.append(field_entry)
+                missing_columns = False
+                for column_key in self.tool_data_table.columns.keys():
+                    if column_key not in data_table_entry:
+                        # currrent data table definition (as in self.tool_data_table)
+                        # may not match against the data manager bundle.
+                        # Breaking here fixes https://github.com/galaxyproject/galaxy/issues/18749.
+                        missing_columns = True
+                        break
+                    field_entry.append(data_table_entry[column_key])
+                if not missing_columns:
+                    fields.append(field_entry)
         return fields
 
     @staticmethod
