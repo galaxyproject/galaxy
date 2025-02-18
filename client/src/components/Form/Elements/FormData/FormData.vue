@@ -74,7 +74,7 @@ const currentHighlighting: Ref<string | null> = ref(null);
 const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
-const workflowTab = ref("view");
+const workflowTab = ref("");
 
 const restrictsExtensions = computed(() => {
     const extensions = props.extensions;
