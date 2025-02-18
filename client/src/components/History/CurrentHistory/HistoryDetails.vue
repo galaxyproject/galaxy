@@ -5,6 +5,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import type { DetailsLayoutSummarized } from "../Layout/types";
 
 import HistoryIndicators from "../HistoryIndicators.vue";
+import StorageLocationIndicator from "./StorageLocationIndicator.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
@@ -51,5 +52,7 @@ function onSave(newDetails: HistorySummary) {
         <template v-if="summarized" v-slot:update-time>
             <HistoryIndicators :history="history" detailed-time />
         </template>
+        <!-- todo: check if object store feature active -->
+        <StorageLocationIndicator />
     </DetailsLayout>
 </template>
