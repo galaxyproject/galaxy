@@ -460,9 +460,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime(
-            "%Y-%m-%d, %H:%M:%S"
-        )
+        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
 
     def handle_dataset_type(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
@@ -505,6 +503,9 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
 class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def __init__(self, trans):
         self.trans = trans
+
+    def _format_printable_time(self, time):
+        return time.strftime("%Y-%m-%d, %H:%M:%S UTC")
 
     def handle_dataset_display(self, line, hda):
         name = hda.name or ""
@@ -689,7 +690,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (content, True)
 
     def handle_generate_time(self, line, generate_time):
-        content = literal_via_fence(generate_time.isoformat())
+        content = literal_via_fence(self._format_printable_time(generate_time))
         return (content, True)
 
     def handle_instance_access_link(self, line, url):
@@ -722,7 +723,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (f"[{title}]({url})", True)
 
     def handle_invocation_time(self, line, invocation):
-        content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
+        content = literal_via_fence(self._format_printable_time(invocation.create_time))
         return (content, True)
 
     def handle_dataset_name(self, line, hda):
