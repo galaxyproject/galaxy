@@ -4,6 +4,8 @@ import { reactive, ref } from "vue";
 
 import type { Workflow } from "@/components/Workflow/workflows.services";
 
+import type { SelectedWorkflow } from "./types";
+
 import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowRename from "./WorkflowRename.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -16,7 +18,7 @@ interface Props {
     publishedView?: boolean;
     editorView?: boolean;
     currentWorkflowId?: string;
-    selectedWorkflowIds?: Workflow[];
+    selectedWorkflowIds?: SelectedWorkflow[];
 }
 
 const props = withDefaults(defineProps<Props>(), {

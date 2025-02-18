@@ -15,6 +15,8 @@ import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import type { SelectedWorkflow } from "./types";
+
 import WorkflowCardList from "./WorkflowCardList.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -26,13 +28,6 @@ import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.
 
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
-
-// Interface to match the `Workflow` interface from `WorkflowCard`
-interface SelectedWorkflow {
-    id: string;
-    name: string;
-    published: boolean;
-}
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
