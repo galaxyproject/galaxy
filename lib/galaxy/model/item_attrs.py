@@ -5,6 +5,7 @@ from sqlalchemy.sql.expression import func
 
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +148,7 @@ def get_item_annotation_str(db_session, user, item):
     else:
         annotation_obj = get_item_annotation_obj(db_session, user, item)
     if annotation_obj:
-        return galaxy.util.unicodify(annotation_obj.annotation)
+        return unicodify(annotation_obj.annotation)
     return None
 
 

@@ -271,7 +271,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             app = self._app
             sa_session = app.model.session
             job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
-
+            assert job
             self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
             assert not job.finished
 
@@ -308,7 +308,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             app = self._app
             sa_session = app.model.session
             job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
-
+            assert job
             self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
 
             external_id = job.job_runner_external_id
@@ -342,6 +342,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         job_id = app.security.decode_id(running_response.json()["jobs"][0]["id"])
         sa_session = app.model.session
         job = sa_session.get(app.model.Job, job_id)
+        assert job
         self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
 
         external_id = job.job_runner_external_id

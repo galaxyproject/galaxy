@@ -211,7 +211,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         owner = repository.user.username
         name = repository.name
         assert name
-        repository = _get_repository_by_name_and_owner(app.model.session().current, name, owner, app.model.User)
+        repository = _get_repository_by_name_and_owner(app.model.session, name, owner, app.model.User)
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue

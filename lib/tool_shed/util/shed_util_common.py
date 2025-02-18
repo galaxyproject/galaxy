@@ -89,7 +89,9 @@ def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
         .select_from(app.model.RepositoryCategoryAssociation)
         .where(app.model.RepositoryCategoryAssociation.category_id == app.security.decode_id(category_id))
     )
-    return app.model.session.scalar(stmt)
+    count = app.model.session.scalar(stmt)
+    assert count is not None
+    return count
 
 
 def get_categories(app: "ToolShedApp"):

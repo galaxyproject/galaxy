@@ -218,7 +218,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         payload: HistoryIndexQueryPayload,
         serialization_params: SerializationParams,
         include_total_count: bool = False,
-    ) -> Tuple[List[AnyHistoryView], int]:
+    ) -> Tuple[List[AnyHistoryView], Union[int, None]]:
         """Return a list of History accessible by the user
 
         :rtype:     list

@@ -233,7 +233,7 @@ class SessionlessContext:
     def add(self, obj: model.RepresentById) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
-    def query(self, model_class: model.RepresentById) -> Bunch:
+    def query(self, model_class: Type[model.RepresentById]) -> Bunch:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
@@ -243,7 +243,7 @@ class SessionlessContext:
 
         return Bunch(find=find, get=find, filter_by=filter_by)
 
-    def get(self, model_class: model.RepresentById, primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
+    def get(self, model_class: Type[model.RepresentById], primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
         return self.query(model_class).get(primary_key)
 
 
@@ -265,6 +265,7 @@ def replace_metadata_file(
 class ModelImportStore(metaclass=abc.ABCMeta):
     app: Optional[StoreAppProtocol]
     archive_dir: str
+    sa_session: Union[scoped_session, SessionlessContext]
 
     def __init__(
         self,
@@ -494,7 +495,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
                 model_class = getattr(model, dataset_attrs["model_class"])
-                dataset_instance: model.DatasetInstance = self.sa_session.get(model_class, dataset_attrs["id"])
+                dataset_instance = self.sa_session.get(model_class, dataset_attrs["id"])
+                assert isinstance(dataset_instance, model.DatasetInstance)
                 attributes = [
                     "name",
                     "extension",
@@ -876,6 +878,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc = import_collection(collection_attrs["collection"])
                 if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
                     hdca = self.sa_session.get(model.HistoryDatasetCollectionAssociation, collection_attrs["id"])
+                    assert hdca is not None
                     # TODO: edit attributes...
                 else:
                     hdca = model.HistoryDatasetCollectionAssociation(
@@ -2209,7 +2212,8 @@ class DirectoryModelExportStore(ModelExportStore):
         )
         datasets = sa_session.scalars(stmt_hda).unique()
         for dataset in datasets:
-            dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
+            # Add a new "annotation" attribute so that the user annotation for the dataset can be serialized without needing the user
+            dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)  # type: ignore[attr-defined]
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
             if not dataset.deleted and dataset.id in self.collection_datasets:
                 should_include_file = True

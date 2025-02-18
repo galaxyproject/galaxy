@@ -692,6 +692,7 @@ class FastAPIUsers:
         payload: Optional[UserDeletionPayload] = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
+        assert user_to_update is not None
         purge = payload and payload.purge or purge
         if trans.user_is_admin:
             if purge:
