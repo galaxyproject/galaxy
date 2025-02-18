@@ -53,45 +53,25 @@ async function handleSubmit(preferred: string | null) {
 </script>
 
 <template>
-    <BRow class="ml-3 mb-1">
-        <FontAwesomeIcon :icon="faHdd" class="pt-1 mr-auto" size="lg" />
-
-        <div class="pref-content pr-1">
-            <a
-                id="select-preferred-object-store"
-                v-b-modal.modal-select-preferred-object-store
-                class="preferred-storage"
-                href="javascript:void(0)">
-                <b v-localize>{{ title }}</b>
-            </a>
-
-            <div v-localize class="form-text text-muted">
-                Select a {{ preferredOrEmptyString }} Galaxy storage for the outputs of new jobs.
-            </div>
-
-            <BModal
-                id="modal-select-preferred-object-store"
-                ref="modal"
-                scrollable
-                centered
-                :title="title"
-                static
-                size="lg"
-                title-tag="h3"
-                dialog-class="modal-select-preferred-object-store"
-                ok-only
-                ok-title="Close"
-                @hidden="resetModal">
-                <SelectObjectStore
-                    :parent-error="error"
-                    :selected-object-store-id="selectedObjectStoreId"
-                    for-what="New dataset outputs from tools and workflows"
-                    default-option-title="Galaxy Defaults"
-                    default-option-description="Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator."
-                    @onSubmit="handleSubmit" />
-            </BModal>
-        </div>
-    </BRow>
+    <BModal
+        id="modal-select-preferred-object-store"
+        ref="modal"
+        centered
+        :title="title"
+        :title-tag="titleTag"
+        hide-footer
+        static
+        visible
+        :size="modalSize"
+        @hidden="resetModal">
+        <SelectObjectStore
+            :parent-error="error"
+            :for-what="newDatasetsDescription"
+            :selected-object-store-id="selectedObjectStoreId"
+            :default-option-title="galaxySelectionDefaultTitle"
+            :default-option-description="galaxySelectionDefaultDescription"
+            @onSubmit="handleSubmit" />
+    </BModal>
 </template>
 
 <style>
