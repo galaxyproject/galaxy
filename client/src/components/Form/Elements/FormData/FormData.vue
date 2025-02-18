@@ -15,6 +15,7 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -88,7 +89,7 @@ const dragTarget: Ref<EventTarget | null> = ref(null);
 
 // Collection creator modal settings
 const collectionModalShow = ref(false);
-const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
+const collectionModalType = ref<CollectionType>("list");
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 const restrictsExtensions = computed(() => {
     const extensions = props.extensions;
@@ -497,16 +498,25 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const collectionTypesWithBuilders = [
+    "list",
+    "list:paired",
+    "paired",
+    "list:list",
+    "list:list:paired",
+    "list:paired_or_unpaired",
+];
+
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
+    collectionTypesWithBuilders.includes(collectionType)
 );
 
 function buildNewCollection(collectionType: string) {
-    if (!["list", "list:paired", "paired"].includes(collectionType)) {
+    if (!collectionTypesWithBuilders.includes(collectionType)) {
         throw Error(`Unknown collection type: ${collectionType}`);
     }
-    collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
+    collectionModalType.value = collectionType as CollectionType;
     collectionModalShow.value = true;
 }
 

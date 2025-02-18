@@ -6,8 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
-import type { CompositeFileInfo } from "@/api/datatypes";
-import { AUTO_EXTENSION, getUploadDatatypes } from "@/components/Upload/utils";
+import { useUploadDatatypes } from "@/components/Upload/useUploadDatatypes";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -25,15 +24,6 @@ const Tabs = {
     upload: 1,
 };
 
-type ExtensionDetails = {
-    id: string;
-    text: string;
-    description: string | null;
-    description_url: string | null;
-    composite_files?: CompositeFileInfo[] | null;
-    upload_warning?: string | null;
-};
-
 interface Props {
     oncancel: () => void;
     historyId: string;
@@ -45,6 +35,9 @@ interface Props {
     noItems?: boolean;
     collectionType?: string;
     showUpload: boolean;
+    showButtons?: boolean;
+    collectionName: string;
+    mode: "wizard" | "modal";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,9 +46,12 @@ const props = withDefaults(defineProps<Props>(), {
     extensionsToggle: false,
     showUpload: true,
     collectionType: undefined,
+    showButtons: true,
+    mode: "modal",
 });
 
 const emit = defineEmits<{
+    (e: "on-update-collection-name", name: string): void;
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
@@ -64,13 +60,13 @@ const emit = defineEmits<{
 }>();
 
 const currentTab = ref(Tabs.create);
-const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
-const listExtensions = ref<ExtensionDetails[]>([]);
-const extensionsSet = ref(false);
+const name = ref(props.collectionName);
+
+const { listExtensions, extensionsSet, loadExtensions } = useUploadDatatypes();
 
 const validInput = computed(() => {
-    return collectionName.value.length > 0;
+    return props.collectionName.length > 0;
 });
 
 // If there are props.extensions, filter the list of extensions to only include those
@@ -136,17 +132,24 @@ function removeExtensionsToggle() {
     emit("remove-extensions-toggle");
 }
 
-async function loadExtensions() {
-    listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
-    extensionsSet.value = true;
-}
-
 loadExtensions();
+
+function updateName(newName: string) {
+    name.value = newName;
+    emit("on-update-collection-name", newName);
+}
 
 watch(
     () => localHideSourceItems.value,
     () => {
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
+    }
+);
+
+watch(
+    () => props.collectionName,
+    () => {
+        name.value = props.collectionName;
     }
 );
 </script>
@@ -158,7 +161,7 @@ watch(
                 <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
             </div>
             <div v-else>
-                <CollectionCreatorHelpHeader>
+                <CollectionCreatorHelpHeader :mode="mode">
                     <slot name="help-content"></slot>
                 </CollectionCreatorHelpHeader>
 
@@ -177,12 +180,14 @@ watch(
                                 :extensions-toggle="extensionsToggle"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
-                                v-model="collectionName"
-                                :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                :value="name"
+                                :short-what-is-being-created="shortWhatIsBeingCreated"
+                                @input="updateName" />
                         </div>
                     </div>
 
                     <CollectionCreatorFooterButtons
+                        v-if="showButtons"
                         :short-what-is-being-created="shortWhatIsBeingCreated"
                         :valid-input="validInput"
                         @clicked-cancel="cancelCreate"
@@ -196,7 +201,7 @@ watch(
                     <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
                 </div>
                 <div v-else>
-                    <CollectionCreatorHelpHeader>
+                    <CollectionCreatorHelpHeader :mode="mode">
                         <slot name="help-content"></slot>
                     </CollectionCreatorHelpHeader>
 
@@ -214,12 +219,14 @@ watch(
                                     :render-extensions-toggle="renderExtensionsToggle"
                                     :extensions-toggle="extensionsToggle" />
                                 <CollectionNameInput
-                                    v-model="collectionName"
-                                    :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                    :value="collectionName"
+                                    :short-what-is-being-created="shortWhatIsBeingCreated"
+                                    @input="updateName" />
                             </div>
                         </div>
 
                         <CollectionCreatorFooterButtons
+                            v-if="showButtons"
                             :short-what-is-being-created="shortWhatIsBeingCreated"
                             :valid-input="validInput"
                             @clicked-cancel="cancelCreate"
@@ -266,6 +273,17 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
 @import "~@fortawesome/fontawesome-free/scss/solid";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/brands";
+
+// Outside the modal - we need to set a max width on the help so ellipses display
+// doesn't cause it to grow without bound. Would greater appreciate a better workaround.
+.collection-creator-bounded-help {
+    .header {
+        .main-help {
+            max-width: 600px;
+        }
+    }
+}
+
 .collection-creator {
     height: 100%;
     overflow: hidden;
@@ -404,11 +422,15 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                 .help-content {
                     p:first-child {
                         overflow: hidden;
-                        white-space: nowrap;
                         text-overflow: ellipsis;
                     }
                     > *:not(:first-child) {
                         display: none;
+                    }
+                }
+                .help-content-nowrap {
+                    p:first-child {
+                        white-space: nowrap;
                     }
                 }
             }
@@ -429,11 +451,13 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                     list-style: circle;
                     margin-left: 16px;
                 }
+                /* This is not referenced anywhere I think.
                 .scss-help {
                     display: inline-block;
                     width: 100%;
                     text-align: right;
                 }
+                */
             }
             .more-help {
                 //display: inline-block;

@@ -452,12 +452,20 @@
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
+                        v-if="gridImplementation == 'hot'"
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
                         stretch-h="all"></HotTable>
+                    <RuleGrid
+                        v-else
+                        id="hot-table"
+                        ref="hotTable"
+                        :data="hotData.data"
+                        :col-headers="colHeadersDisplay"
+                        stretch-h="all"></RuleGrid>
                 </div>
             </div>
         </RuleModalMiddle>
@@ -504,7 +512,7 @@
                     </div>
                 </div>
             </template>
-            <b-row class="mx-auto">
+            <b-row v-if="mode == 'modal'" class="mx-auto">
                 <b-button
                     :help="titleCancel"
                     class="creator-cancel-btn rule-btn-cancel"
@@ -545,7 +553,7 @@
                 )
             }}
         </RuleModalHeader>
-        <RuleModalFooter>
+        <RuleModalFooter v-if="mode == 'modal'">
             <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</b-button>
         </RuleModalFooter>
     </StateDiv>
@@ -555,7 +563,7 @@
         <RuleModalMiddle>
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
-        <RuleModalFooter>
+        <RuleModalFooter v-if="mode == 'modal'">
             <b-button v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
                 l("Close")
             }}</b-button>
@@ -576,6 +584,7 @@ import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInpu
 import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
 import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import RuleGrid from "components/RuleBuilder/RuleGrid";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
@@ -612,6 +621,7 @@ export default {
     components: {
         TooltipOnHover,
         HotTable,
+        RuleGrid,
         RuleComponent,
         RuleTargetComponent,
         SavedRulesSelector,
@@ -661,19 +671,31 @@ export default {
             required: false,
             default: true,
         },
-        // Callbacks sent in by modal code.
+        // Callbacks sent in by modal code, optional if mode is not modal
         oncancel: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         oncreate: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         ftpUploadSite: {
             type: String,
             required: false,
             default: null,
+        },
+        gridImplementation: {
+            type: String,
+            required: false,
+            default: "aggrid",
+        },
+        mode: {
+            type: String,
+            required: false,
+            default: "modal", // set to wizard to use embedded formatting
         },
     },
     data: function () {
@@ -1157,6 +1179,9 @@ export default {
                 }
             }
         },
+        validInput: function (newState) {
+            this.$emit("validInput", newState);
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
@@ -1206,9 +1231,11 @@ export default {
     mounted() {
         // something bizarre is up with the rendering of hands-on-table, needs a click to render.
         // Vue.nextTick() didn't work here.
-        setTimeout(() => {
-            this.$refs.hotTable.$el.click();
-        }, 200);
+        if (this.gridImplementation == "hot") {
+            setTimeout(() => {
+                this.$refs.hotTable.$el.click();
+            }, 200);
+        }
     },
     methods: {
         restoreRules(event) {
@@ -1346,7 +1373,11 @@ export default {
                     this.doFullJobCheck(jobId);
                 } else {
                     refreshContentsWrapper();
-                    this.oncreate();
+                    this.$emit("onCreate", jobResponse.data);
+                    if (this.oncreate) {
+                        // legacy non-event handling
+                        this.oncreate();
+                    }
                 }
             };
             const doJobCheck = () => {
@@ -1398,6 +1429,9 @@ export default {
                 });
             }
         },
+        attemptCreate() {
+            this.createCollection();
+        },
         createCollection() {
             const asJson = {
                 rules: this.rules,
@@ -1415,21 +1449,36 @@ export default {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    const deferreds = Object.entries(elements).map(([name, els]) => {
-                        // This looks like a promise but it is not one because creationFn and
-                        // oncreate are references to function from the backbone models which means
-                        // they are expecting their arguments in a different order. So, looks like,
-                        // jQuery.Deferred and therefore jQuery are still dependencies
-                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
-                    });
-                    const promises = deferreds.map(deferredToPromise);
-                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    if (this.creationFn) {
+                        const deferreds = Object.entries(elements).map(([name, els]) => {
+                            // This looks like a promise but it is not one because creationFn and
+                            // oncreate are references to function from the backbone models which means
+                            // they are expecting their arguments in a different order. So, looks like,
+                            // jQuery.Deferred and therefore jQuery are still dependencies
+                            return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                        });
+                        const promises = deferreds.map(deferredToPromise);
+                        return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    } else {
+                        const request = Object.entries(elements).map(([name, els]) => {
+                            return {
+                                name,
+                                elementIdentifiers: els,
+                                collectionType: collectionType,
+                                hideSourceItems,
+                            };
+                        });
+                        this.$emit("onAttemptCreate", request);
+                    }
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
                 if (this.state !== "error") {
                     this.saveRulesFn(this.ruleSourceJson);
-                    this.oncreate();
+                    this.$emit("onCreate");
+                    if (this.oncreate) {
+                        this.oncreate();
+                    }
                 }
             } else {
                 const Galaxy = getGalaxyInstance();
