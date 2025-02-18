@@ -1,44 +1,28 @@
 <template>
-    <BRow class="ml-3 mb-1">
-        <i class="pref-icon pt-1 fa fa-lg fa-hdd" />
-        <div class="pref-content pr-1">
-            <a
-                id="select-preferred-object-store"
-                v-b-modal.modal-select-preferred-object-store
-                class="preferred-storage"
-                href="javascript:void(0)"
-                ><b v-localize>{{ title }}</b></a
-            >
-            <div v-localize class="form-text text-muted">
-                Select a {{ preferredOrEmptyString }} storage location for the outputs of new jobs.
-            </div>
-            <BModal
-                id="modal-select-preferred-object-store"
-                ref="modal"
-                v-model="showModal"
-                centered
-                :title="title"
-                :title-tag="titleTag"
-                hide-footer
-                static
-                :size="modalSize"
-                @show="resetModal"
-                @hidden="resetModal">
-                <SelectObjectStore
-                    :parent-error="error"
-                    :for-what="newDatasetsDescription"
-                    :selected-object-store-id="selectedObjectStoreId"
-                    :default-option-title="galaxySelectionDefaultTitle"
-                    :default-option-description="galaxySelectionDefaultDescription"
-                    @onSubmit="handleSubmit" />
-            </BModal>
-        </div>
-    </BRow>
+    <BModal
+        id="modal-select-preferred-object-store"
+        ref="modal"
+        centered
+        :title="title"
+        :title-tag="titleTag"
+        hide-footer
+        static
+        visible
+        :size="modalSize"
+        @hidden="resetModal">
+        <SelectObjectStore
+            :parent-error="error"
+            :for-what="newDatasetsDescription"
+            :selected-object-store-id="selectedObjectStoreId"
+            :default-option-title="galaxySelectionDefaultTitle"
+            :default-option-description="galaxySelectionDefaultDescription"
+            @onSubmit="handleSubmit" />
+    </BModal>
 </template>
 
 <script>
 import axios from "axios";
-import { BModal, BRow, VBModal } from "bootstrap-vue";
+import { BModal, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
 import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
@@ -52,7 +36,6 @@ Vue.use(VBModal);
 export default {
     components: {
         BModal,
-        BRow,
         SelectObjectStore,
     },
     props: {
@@ -93,7 +76,9 @@ export default {
         },
     },
     methods: {
-        resetModal() {},
+        resetModal() {
+            this.$emit("reset");
+        },
         async handleSubmit(preferredObjectStoreId) {
             const payload = { preferred_object_store_id: preferredObjectStoreId };
             const url = prependPath("api/users/current");
