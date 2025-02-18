@@ -49,12 +49,6 @@
             description="Manage your notification settings."
             to="/user/notifications/preferences" />
         <UserPreferencesElement
-            id="edit-preferences-cloud-auth"
-            icon="fa-cloud"
-            title="Manage Cloud Authorization"
-            description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
-            to="/user/cloud_auth" />
-        <UserPreferencesElement
             v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
             icon="fa-id-card-o"
