@@ -4713,6 +4713,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists all credentials the user has provided */
+        get: operations["list_user_credentials_api_users__user_id__credentials_get"];
+        put?: never;
+        /** Allows users to provide credentials for a secret/variable */
+        post: operations["provide_credential_api_users__user_id__credentials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deletes all credentials for a specific service */
+        delete: operations["delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deletes a specific credential */
+        delete: operations["delete_credentials_api_users__user_id__credentials__user_credentials_id___group_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/custom_builds": {
         parameters: {
             query?: never;
@@ -7309,6 +7361,20 @@ export interface components {
              */
             url: string;
         };
+        /** CreateSourceCredentialsPayload */
+        CreateSourceCredentialsPayload: {
+            /** Credentials */
+            credentials: components["schemas"]["ServiceCredentialPayload"][];
+            /** Source Id */
+            source_id: string;
+            /**
+             * Source Type
+             * @constant
+             */
+            source_type: "tool";
+            /** Source Version */
+            source_version: string;
+        };
         /**
          * CreateType
          * @enum {string}
@@ -7403,6 +7469,59 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /** CredentialDefinitionResponse */
+        CredentialDefinitionResponse: {
+            /** Description */
+            description: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+        };
+        /** CredentialDefinitionsResponse */
+        CredentialDefinitionsResponse: {
+            /** Secrets */
+            secrets: components["schemas"]["CredentialDefinitionResponse"][];
+            /** Variables */
+            variables: components["schemas"]["CredentialDefinitionResponse"][];
+        };
+        /** CredentialGroupResponse */
+        CredentialGroupResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["CredentialResponse"][];
+            /** Variables */
+            variables: components["schemas"]["CredentialResponse"][];
+        };
+        /** CredentialPayload */
+        CredentialPayload: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: string | null;
+        };
+        /** CredentialResponse */
+        CredentialResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Is Set */
+            is_set: boolean;
+            /** Name */
+            name: string;
+            /** Value */
+            value: string | null;
         };
         /** CustomArchivedHistoryView */
         CustomArchivedHistoryView: {
@@ -15848,6 +15967,29 @@ export interface components {
              */
             version: string;
         };
+        /** ServiceCredentialPayload */
+        ServiceCredentialPayload: {
+            /**
+             * Current Group
+             * @default default
+             */
+            current_group: string | null;
+            /** Groups */
+            groups: components["schemas"]["ServiceGroupPayload"][];
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+        };
+        /** ServiceGroupPayload */
+        ServiceGroupPayload: {
+            /** Name */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["CredentialPayload"][];
+            /** Variables */
+            variables: components["schemas"]["CredentialPayload"][];
+        };
         /** ServiceType */
         ServiceType: {
             /**
@@ -17562,6 +17704,45 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /** UserCredentialsListResponse */
+        UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
+        /** UserCredentialsResponse */
+        UserCredentialsResponse: {
+            credential_definitions: components["schemas"]["CredentialDefinitionsResponse"];
+            /** Current Group Name */
+            current_group_name: string;
+            /** Description */
+            description: string;
+            /** Groups */
+            groups: {
+                [key: string]: components["schemas"]["CredentialGroupResponse"];
+            };
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Source Id */
+            source_id: string;
+            /**
+             * Source Type
+             * @constant
+             */
+            source_type: "tool";
+            /** Source Version */
+            source_version: string;
+            /**
+             * User Id
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /** Version */
+            version: string;
         };
         /** UserDeletionPayload */
         UserDeletionPayload: {
@@ -33807,6 +33988,192 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    list_user_credentials_api_users__user_id__credentials_get: {
+        parameters: {
+            query?: {
+                /** @description The type of source to filter by. */
+                source_type?: "tool" | null;
+                /** @description The ID of the source to filter by. */
+                source_id?: string | null;
+                /** @description The version of the source to filter by. By default it is the latest version. */
+                source_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserCredentialsListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    provide_credential_api_users__user_id__credentials_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSourceCredentialsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserCredentialsListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_credentials_api_users__user_id__credentials__user_credentials_id___group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+                user_credentials_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
