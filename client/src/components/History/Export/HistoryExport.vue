@@ -39,7 +39,12 @@ const {
 } = useTaskMonitor();
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-const { hasWritable: hasWritableRDMFileSources, getFileSourceById } = useFileSources({ include: ["rdm"] });
+const {
+    hasWritable: hasWritableRDMFileSources,
+    getFileSourceById,
+    getFileSourcesByType,
+    isPrivateFileSource,
+} = useFileSources({ include: ["rdm"] });
 
 const {
     isPreparing: isPreparingDownload,
@@ -91,7 +96,7 @@ const isFatalError = ref(false);
 const errorMessage = ref<string>();
 const actionMessage = ref<string>();
 const actionMessageVariant = ref<ColorVariant>();
-const zenodoSource = computed(() => getFileSourceById("zenodo"));
+const zenodoSource = computed(() => getZenodoSource());
 
 onMounted(async () => {
     if (await loadHistory()) {
@@ -105,6 +110,12 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
         updateExports();
     }
 });
+
+function getZenodoSource() {
+    const zenodoSources = getFileSourcesByType("zenodo");
+    // Prioritize the one provided by the user in case there are multiple
+    return zenodoSources.find(isPrivateFileSource) ?? getFileSourceById("zenodo");
+}
 
 async function loadHistory() {
     isLoadingHistory.value = true;

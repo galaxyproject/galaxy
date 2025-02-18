@@ -126,6 +126,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     plugin_type = "inveniordm"
     supports_pagination = True
     supports_search = True
+    rdm_scheme = "invenio"
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
@@ -133,7 +134,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         self.repository: InvenioRepositoryInteractor
 
     def get_scheme(self) -> str:
-        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "invenio"
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else self.rdm_scheme
 
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
@@ -212,7 +213,8 @@ class InvenioRDMFilesSource(RDMFilesSource):
         public_name = self.get_public_name(user_context) or "No name"
         record = self.repository.create_draft_file_container(entry_data["name"], public_name, user_context=user_context)
         record_id = record.get("id")
-        if not record_id or not isinstance(record_id, str):
+        record_id = str(record_id) if record_id else None
+        if not record_id:
             raise Exception("Failed to create record.")
         uri = self.repository.to_plugin_uri(record_id=record_id)
         name = record.get("title") or "Untitled"
