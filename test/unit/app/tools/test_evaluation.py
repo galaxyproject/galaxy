@@ -12,6 +12,7 @@ from galaxy.model import (
     JobToInputDatasetAssociation,
     JobToOutputDatasetAssociation,
 )
+from galaxy.tool_util.parameters.models import ParameterOption
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.evaluation import ToolEvaluator
 
@@ -171,7 +172,7 @@ class TestToolEvaluator(TestCase, UsesApp):
             return ["/old/path/human"]
 
         def get_options(trans, other_values):
-            return [["", "/old/path/human", ""]]
+            return [ParameterOption("", "/old/path/human", False)]
 
         parameter.options = Bunch(get_field_by_name_for_value=get_field_by_name_for_value, get_options=get_options)
         self.tool.set_params({"index_path": parameter})

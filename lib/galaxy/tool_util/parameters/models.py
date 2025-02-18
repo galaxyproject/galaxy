@@ -13,6 +13,7 @@ from typing import (
     Optional,
     Sequence,
     Type,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -42,6 +43,7 @@ from typing_extensions import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model import HistoryDatasetAssociation
 from galaxy.tool_util.parser.interface import (
     DrillDownOptionsDict,
     JsonTestCollectionDefDict,
@@ -65,6 +67,10 @@ from ._types import (
     optional_if_needed,
     union_type,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
+    from galaxy.security.idencoding import IdEncodingHelper
 
 # TODO:
 # - implement data_ref on rules and implement some cross model validation
@@ -104,6 +110,25 @@ class StrictModel(BaseModel):
 
 class ConnectedValue(BaseModel):
     discriminator: Literal["ConnectedValue"] = Field(alias="__class__")
+
+
+class ParameterOption(NamedTuple):
+    name: str
+    value: str
+    selected: bool = False
+    dataset: Optional["DatasetInstance"] = None
+
+    def serialize(self, security: "IdEncodingHelper"):
+        if self.dataset:
+            return (
+                self.name,
+                {
+                    "src": "hda" if isinstance(self.dataset, HistoryDatasetAssociation) else "ldda",
+                    "id": security.encode_id(self.dataset.id),
+                },
+                self.selected,
+            )
+        return (self.name, self.value, self.selected)
 
 
 def allow_connected_value(type: Type):
