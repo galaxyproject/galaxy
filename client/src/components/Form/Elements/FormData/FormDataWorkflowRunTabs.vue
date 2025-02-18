@@ -55,7 +55,7 @@ const {
 
 function addUploadedFiles(value: any[]) {
     emit("uploaded-data", value);
-    emit("focus");
+    goToFirstWorkflowTab();
 }
 
 function collectionCreated(collection: any) {
