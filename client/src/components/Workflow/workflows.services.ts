@@ -105,3 +105,46 @@ export async function getWorkflowInfo(workflowId: string) {
     const { data } = await axios.get(withPrefix(`/api/workflows/${workflowId}`));
     return data;
 }
+
+/**
+ * For dockstore imported IWC workflows, fetch the README file from the GitHub repository.
+ * @param trsId of form `#workflow/github.com/iwc-workflows/<directory>/...`
+ * @param versionId optional version tag (uses `main` branch if not provided)
+ * @returns the README and CHANGELOG file contents
+ */
+export async function fetchDocsForIwcWorkflow(trsId: string, versionId?: string) {
+    // Ensure that the trsID is for a GitHub workflow at iwc-workflows
+    const parts = trsId.split("/");
+    if (parts.length !== 5 || parts[0] !== "#workflow" || parts[1] !== "github.com" || parts[2] !== "iwc-workflows") {
+        return { readme: null, changelog: null };
+    }
+
+    const directory = parts[3];
+
+    // Construct the URL for the README and CHANGELOG files
+    let baseUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/`;
+    if (!versionId) {
+        baseUrl += "heads/main/";
+    } else {
+        baseUrl += `tags/${versionId}/`;
+    }
+    try {
+        // Fetch the files
+        const [readmeResponse, changelogResponse] = await Promise.all([
+            fetch(baseUrl + "README.md"),
+            fetch(baseUrl + "CHANGELOG.md"),
+        ]);
+
+        const readme = readmeResponse.ok ? await readmeResponse.text() : null;
+        const changelog = changelogResponse.ok ? await changelogResponse.text() : null;
+
+        return {
+            /**The README.md of the workflow fetched from the IWC GitHub repository */
+            readme,
+            /** The CHANGELOG.md of the workflow fetched from the IWC GitHub repository */
+            changelog,
+        };
+    } catch (error) {
+        rethrowSimple(error);
+    }
+}
