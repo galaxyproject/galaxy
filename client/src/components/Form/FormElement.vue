@@ -131,11 +131,11 @@ const populatedClass = computed<string>(() => {
 const workflowRunFormTitleItems = computed(() => {
     switch (true) {
         case hasAlert.value:
-            return { icon: faExclamation, class: "text-danger", message: "Fix error(s) for this step." };
+            return { icon: faExclamation, class: "text-danger", message: "Fix error(s) for this step" };
         case isEmpty.value && !isOptional.value:
-            return { icon: faExclamation, message: "Provide a value for this step." };
+            return { icon: faExclamation, message: "Provide a value for this step" };
         case !isEmpty.value:
-            return { icon: faCheck, class: "text-success", message: "Step is populated." };
+            return { icon: faCheck, class: "text-success", message: "Step is populated" };
         default:
             return {};
     }
@@ -348,9 +348,10 @@ function onAlert(value: string | undefined) {
                     :formats-visible.sync="formatsVisible" />
                 <BBadge
                     v-if="workflowRunFormTitleItems.message && props.type !== 'boolean'"
+                    v-b-tooltip.hover.noninteractive
                     class="flex-gapx-1 workflow-run-element-title"
-                    :class="populatedClass">
-                    <i>{{ workflowRunFormTitleItems.message }}</i>
+                    :class="populatedClass"
+                    :title="workflowRunFormTitleItems.message">
                     <FontAwesomeIcon
                         v-if="workflowRunFormTitleItems?.icon"
                         :icon="workflowRunFormTitleItems.icon"
