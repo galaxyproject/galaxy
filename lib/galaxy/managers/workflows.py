@@ -31,8 +31,6 @@ from pydantic import (
 )
 from sqlalchemy import (
     and_,
-    Cast,
-    ColumnElement,
     desc,
     false,
     func,
@@ -40,7 +38,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     aliased,
     joinedload,
@@ -72,6 +69,7 @@ from galaxy.model import (
     StoredWorkflow,
     StoredWorkflowTagAssociation,
     StoredWorkflowUserShareAssociation,
+    to_json,
     User,
     Workflow,
     WorkflowInvocation,
@@ -2067,26 +2065,14 @@ class WorkflowContentsManager(UsesAnnotations):
     ) -> Optional[model.StoredWorkflow]:
         sa_session = self.app.model.session
 
-        def to_json(column, keys: List[str]):
-            assert sa_session.bind
-            if sa_session.bind.dialect.name == "postgresql":
-                cast: Union[ColumnElement[Any], Cast[Any]] = func.cast(func.convert_from(column, "UTF8"), JSONB)
-                for key in keys:
-                    cast = cast.__getitem__(key)
-                return cast.astext
-            else:
-                for key in keys:
-                    column = func.json_extract(column, f"$.{key}")
-                return column
-
         stmnt = (
             select(model.StoredWorkflow)
             .join(model.Workflow, model.Workflow.id == model.StoredWorkflow.latest_workflow_id)
             .filter(
                 and_(
                     model.StoredWorkflow.deleted == false(),
-                    to_json(model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
-                    to_json(model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
+                    to_json(sa_session, model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
+                    to_json(sa_session, model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
                 )
             )
         )

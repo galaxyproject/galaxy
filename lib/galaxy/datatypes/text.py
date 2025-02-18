@@ -138,6 +138,7 @@ class DataManagerJson(Json):
     MetadataElement(
         name="data_tables", default=None, desc="Data tables represented by this dataset", readonly=True, visible=True
     )
+    MetadataElement(name="is_bundle", default=False, desc="Dataset represents bundle", readonly=True, visible=True)
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)

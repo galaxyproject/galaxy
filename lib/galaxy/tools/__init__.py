@@ -3261,6 +3261,7 @@ class DataManagerTool(OutputParameterJSONTool):
                     create=True,
                     preserve_symlinks=True,
                 )
+                hda.metadata.is_bundle = True
 
         else:
             raise Exception("Unknown data manager mode encountered type...")
