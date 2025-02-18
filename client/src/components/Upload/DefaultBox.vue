@@ -389,6 +389,7 @@ defineExpose({
             <UploadSelect
                 v-if="isCollection"
                 class="upload-footer-collection-type"
+                title="Select Type"
                 :value="collectionType"
                 :disabled="isRunning"
                 :options="COLLECTION_TYPES"
@@ -406,6 +407,7 @@ defineExpose({
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSelect
                 class="upload-footer-genome"
+                title="Select Reference"
                 :value="dbKey"
                 :disabled="isRunning"
                 :options="listDbKeys"
