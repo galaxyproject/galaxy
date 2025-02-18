@@ -5,25 +5,27 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { useUserStore } from "@/stores/userStore";
+import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
 library.add(faAngleDown, faAngleUp, faBars, faGripVertical);
 
-type ListView = "grid" | "list";
 type SortBy = "create_time" | "update_time" | "name";
 
 interface Props {
+    listId: string;
     allSelected?: boolean;
     showSelectAll?: boolean;
     showViewToggle?: boolean;
+    showSortOptions?: boolean;
     selectAllDisabled?: boolean;
     indeterminateSelected?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     allSelected: false,
     showSelectAll: false,
     showViewToggle: false,
+    showSortOptions: false,
     selectAllDisabled: false,
     indeterminateSelected: false,
 });
@@ -36,7 +38,7 @@ const userStore = useUserStore();
 
 const sortDesc = ref(true);
 const sortBy = ref<SortBy>("update_time");
-const listViewMode = computed<ListView>(() => (userStore.preferredListViewMode as ListView) || "grid");
+const currentListView = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
 function onSort(newSortBy: SortBy) {
     if (sortBy.value === newSortBy) {
@@ -46,14 +48,13 @@ function onSort(newSortBy: SortBy) {
     }
 }
 
-function onToggleView(newView: ListView) {
-    userStore.setPreferredListViewMode(newView);
+function onToggleView(newView: ListViewMode) {
+    userStore.setListViewPreference(props.listId, newView);
 }
 
 defineExpose({
     sortBy,
     sortDesc,
-    listViewMode,
 });
 </script>
 
@@ -74,7 +75,7 @@ defineExpose({
         </div>
 
         <div class="list-header-filters">
-            <div>
+            <div v-if="showSortOptions">
                 Sort by:
                 <BButtonGroup>
                     <BButton
@@ -114,7 +115,7 @@ defineExpose({
                     v-b-tooltip
                     title="Grid view"
                     size="sm"
-                    :pressed="listViewMode === 'grid'"
+                    :pressed="currentListView === 'grid'"
                     variant="outline-primary"
                     @click="onToggleView('grid')">
                     <FontAwesomeIcon :icon="faGripVertical" />
@@ -125,7 +126,7 @@ defineExpose({
                     v-b-tooltip
                     title="List view"
                     size="sm"
-                    :pressed="listViewMode === 'list'"
+                    :pressed="currentListView === 'list'"
                     variant="outline-primary"
                     @click="onToggleView('list')">
                     <FontAwesomeIcon :icon="faBars" />
@@ -140,6 +141,7 @@ defineExpose({
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 0.5rem 0;
 
     .list-header-filters {
         display: flex;

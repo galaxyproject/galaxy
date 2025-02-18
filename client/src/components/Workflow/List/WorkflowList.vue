@@ -24,7 +24,6 @@ import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
 
-type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
 
 // Interface to match the `Workflow` interface from `WorkflowCard`
@@ -79,7 +78,7 @@ const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
 const showBookmarked = computed(() => filterText.value.includes("is:bookmarked"));
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
-const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
+const currentListView = computed(() => userStore.currentListViewPreferences.workflows || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
@@ -387,7 +386,6 @@ onMounted(() => {
             <FilterMenu
                 id="workflow-list-filter"
                 name="workflows"
-                class="mb-2"
                 :filter-class="workflowFilters"
                 :filter-text.sync="filterText"
                 :loading="loading || overlay"
@@ -402,6 +400,8 @@ onMounted(() => {
 
             <ListHeader
                 ref="listHeader"
+                list-id="workflows"
+                show-sort-options
                 show-view-toggle
                 :show-select-all="!published && !sharedWithMe"
                 :select-all-disabled="loading || overlay || noItems || noResults"
@@ -480,7 +480,7 @@ onMounted(() => {
             <WorkflowCardList
                 :workflows="workflowsLoaded"
                 :published-view="published"
-                :grid-view="view === 'grid'"
+                :grid-view="currentListView === 'grid'"
                 :selected-workflow-ids="selectedWorkflowIds"
                 @select="onSelectWorkflow"
                 @refreshList="load"
