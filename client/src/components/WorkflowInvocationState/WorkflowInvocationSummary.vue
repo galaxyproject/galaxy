@@ -12,6 +12,7 @@
                     View Report
                 </b-button>
                 <b-button
+                    v-if="isConfigLoaded && config.enable_beta_markdown_export"
                     v-b-tooltip.hover
                     :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
@@ -77,6 +78,8 @@ import LoadingSpan from "components/LoadingSpan";
 import ProgressBar from "components/ProgressBar";
 import { getRootFromIndexLink } from "onload";
 
+import { useConfig } from "@/composables/config";
+
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
@@ -111,6 +114,10 @@ export default {
             required: false,
             default: null,
         },
+    },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
