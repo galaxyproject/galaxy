@@ -4,7 +4,8 @@ import { computed } from "vue";
 const emit = defineEmits(["input"]);
 const props = defineProps({
     value: {
-        default: null,
+        type: String,
+        default: "",
     },
     options: {
         type: Array,

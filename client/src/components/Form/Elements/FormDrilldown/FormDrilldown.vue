@@ -10,12 +10,13 @@ const props = withDefaults(
     defineProps<{
         id: string;
         value?: Value;
-        options: Array<Option>;
+        options?: Array<Option>;
         multiple: boolean;
         showIcons?: boolean;
     }>(),
     {
         value: null,
+        options: () => [],
         multiple: true,
         showIcons: false,
     }
