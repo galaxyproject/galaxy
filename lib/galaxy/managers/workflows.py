@@ -1942,10 +1942,12 @@ class WorkflowContentsManager(UsesAnnotations):
                         if "output_name" not in conn_dict or "id" not in conn_dict:
                             template = "Invalid connection [%s] - must be dict with output_name and id fields."
                             message = template % conn_dict
-                            raise exceptions.MessageException(message)
+                            raise exceptions.MalformedContents(message)
                         external_id = conn_dict["id"]
                         if external_id not in steps_by_external_id:
-                            raise KeyError(f"Failed to find external id {external_id} in {steps_by_external_id.keys()}")
+                            raise exceptions.MalformedContents(
+                                f"Invalid connection. Failed to find input step id {external_id}"
+                            )
                         output_step = steps_by_external_id[external_id]
 
                         output_name = conn_dict["output_name"]
