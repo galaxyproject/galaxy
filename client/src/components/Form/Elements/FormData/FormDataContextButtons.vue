@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { faEye, faPlus, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faEye, faPlus, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
+import { COLLECTION_TYPE_TO_LABEL, type CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import type { VariantInterface } from "./variants";
 
@@ -17,6 +18,7 @@ const props = defineProps<{
     workflowTab: string;
     compact?: boolean;
     collectionType?: string;
+    currentSource?: string;
     isPopulated?: boolean;
     showFieldOptions?: boolean;
     showViewCreateOptions?: boolean;
@@ -26,6 +28,7 @@ const emit = defineEmits<{
     (e: "on-browse"): void;
     (e: "set-current-field", value: number): void;
     (e: "update:workflow-tab", value: string): void;
+    (e: "create-collection-type", value: CollectionType): void;
 }>();
 
 const createTitle = computed(() => {
@@ -34,8 +37,13 @@ const createTitle = computed(() => {
         : "Upload dataset(s)";
 });
 
-function clickedCreate() {
-    emit("update:workflow-tab", props.workflowTab === "create" ? "view" : "create");
+function clickedTab(tab: string) {
+    emit("update:workflow-tab", props.workflowTab === tab ? "" : tab);
+}
+
+function createCollectionType(colType: string) {
+    emit("create-collection-type", colType as CollectionType);
+    emit("update:workflow-tab", "create");
 }
 </script>
 
@@ -69,17 +77,35 @@ function clickedCreate() {
             class="d-flex flex-gapx-1 align-items-center"
             title="View currently selected"
             :pressed="props.workflowTab === 'view'"
-            @click="emit('update:workflow-tab', 'view')">
+            @click="clickedTab('view')">
             <FontAwesomeIcon :icon="faEye" />
             <span v-if="!props.compact" v-localize>View</span>
         </BButton>
+        <BDropdown
+            v-if="props.showViewCreateOptions && props.currentSource === 'hdca' && !props.collectionType"
+            v-b-tooltip.bottom.hover.noninteractive
+            class="d-flex flex-gapx-1 align-items-center"
+            title="Create a new collection"
+            no-caret
+            toggle-class="d-flex flex-gapx-1 align-items-center">
+            <template v-slot:button-content>
+                <FontAwesomeIcon :icon="faCaretDown" />
+                <span v-localize>Create</span>
+            </template>
+            <BDropdownItem
+                v-for="colType in Object.keys(COLLECTION_TYPE_TO_LABEL)"
+                :key="colType"
+                @click="createCollectionType(colType)">
+                {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
+            </BDropdownItem>
+        </BDropdown>
         <BButton
-            v-if="props.showViewCreateOptions"
+            v-else-if="props.showViewCreateOptions"
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
             :title="createTitle"
             :pressed="props.workflowTab === 'create'"
-            @click="clickedCreate">
+            @click="clickedTab('create')">
             <FontAwesomeIcon :icon="!props.collectionType ? faUpload : faPlus" />
             <span v-localize>{{ !props.collectionType ? "Upload" : "Create" }}</span>
         </BButton>

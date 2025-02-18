@@ -26,7 +26,7 @@ const props = defineProps<{
     currentValue?: DataOption[];
     canBrowse?: boolean;
     extensions?: string[];
-    collectionTypes?: CollectionType[];
+    collectionType?: CollectionType;
     workflowTab: string;
 }>();
 
@@ -42,11 +42,6 @@ const currentWorkflowTab = computed({
         emit("update:workflow-tab", Object.keys(WorkflowRunTabs).find((key) => WorkflowRunTabs[key] === value) || "");
     },
 });
-
-/** Allowed collection types for collection creation */
-const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
-);
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -87,7 +82,11 @@ function goToFirstWorkflowTab() {
                 <GenericItem class="mr-2 w-100" :item-id="item.id" :item-src="item.src" />
             </div>
         </div>
-        <div v-show="canBrowse && currentWorkflowTab === WorkflowRunTabs.create" class="bordered-container">
+        <div
+            v-show="
+                props.canBrowse && props.currentVariant?.src !== 'hdca' && currentWorkflowTab === WorkflowRunTabs.create
+            "
+            class="bordered-container">
             <div class="heading-container d-flex align-items-center flex-gapx-1">
                 <FontAwesomeIcon :icon="faUpload" fixed-width />
                 <h4 class="m-0">Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}</h4>
@@ -110,16 +109,11 @@ function goToFirstWorkflowTab() {
                 </template>
             </DefaultBox>
         </div>
-        <div v-show="currentWorkflowTab === WorkflowRunTabs.create">
+        <div v-show="currentWorkflowTab === WorkflowRunTabs.create && props.currentVariant?.src === 'hdca'">
             <CollectionCreatorIndex
-                v-if="
-                    currentHistoryId &&
-                    effectiveCollectionTypes &&
-                    effectiveCollectionTypes?.length > 0 &&
-                    effectiveCollectionTypes[0]
-                "
+                v-if="currentHistoryId && props.collectionType"
                 :history-id="currentHistoryId"
-                :collection-type="effectiveCollectionTypes[0]"
+                :collection-type="props.collectionType"
                 show
                 not-modal
                 :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"

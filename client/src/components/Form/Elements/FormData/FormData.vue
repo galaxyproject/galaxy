@@ -497,6 +497,12 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+/** Allowed collection types for collection creation */
+const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
+    ["list", "list:paired", "paired"].includes(collectionType)
+);
+const currentCollectionTypeTab = ref(effectiveCollectionTypes?.[0]);
+
 // Drag/Drop event handlers
 function onDragEnter(evt: DragEvent) {
     const eventData = eventStore.getDragData();
@@ -657,10 +663,12 @@ const noOptionsWarningMessage = computed(() => {
                     :loading="props.loading"
                     :workflow-run="props.workflowRun"
                     :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                    :current-source="currentSource || undefined"
                     :is-populated="currentValue && currentValue.length > 0"
                     show-field-options
                     :show-view-create-options="props.workflowRun && !usingSimpleSelect"
                     :workflow-tab.sync="workflowTab"
+                    @create-collection-type="(value) => (currentCollectionTypeTab = value)"
                     @on-browse="onBrowse"
                     @set-current-field="(value) => (currentField = value)" />
 
@@ -698,9 +706,11 @@ const noOptionsWarningMessage = computed(() => {
                     v-if="props.workflowRun && usingSimpleSelect"
                     compact
                     :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                    :current-source="currentSource || undefined"
                     :is-populated="currentValue && currentValue.length > 0"
                     show-view-create-options
-                    :workflow-tab.sync="workflowTab" />
+                    :workflow-tab.sync="workflowTab"
+                    @create-collection-type="(value) => (currentCollectionTypeTab = value)" />
             </div>
         </div>
 
@@ -742,7 +752,7 @@ const noOptionsWarningMessage = computed(() => {
             :current-variant="currentVariant"
             :can-browse="canBrowse"
             :extensions="props.extensions"
-            :collection-types="props.collectionTypes"
+            :collection-type="currentCollectionTypeTab"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
             @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
