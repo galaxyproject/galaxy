@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
+import { faUserGear } from "font-awesome-6";
 import { computed, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
@@ -9,6 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
 
+import Heading from "@/components/Common/Heading.vue";
 import CreateForm from "@/components/FileSources/Instances/CreateForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -80,6 +84,19 @@ watch(
 
 <template>
     <div>
+        <div class="d-flex">
+            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">
+                <RouterLink to="/user">
+                    <FontAwesomeIcon v-b-tooltip.hover.noninteractive :icon="faUserGear" title="User preferences" />
+                </RouterLink>
+                /
+                <RouterLink to="/file_source_instances/index"> Remote File Sources</RouterLink>
+                /
+                <RouterLink to="/file_source_instances/create"> Templates</RouterLink>
+                / {{ template?.name || "Template" }}
+            </Heading>
+        </div>
+
         <BAlert v-if="loading" show variant="info">
             <LoadingSpan v-if="!template" message="Loading file source templates" />
             <LoadingSpan v-else-if="requiresOAuth2AuthorizeRedirect && !errorMessage" :message="redirectMessage" />
