@@ -32,44 +32,44 @@
         <UserPreferencesElement
             v-if="isConfigLoaded && !config.single_user"
             id="edit-preferences-permissions"
-            icon="fa-users"
+            :icon="faUsers"
             title="Set Dataset Permissions for New Histories"
             description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
             to="/user/permissions" />
         <UserPreferencesElement
             id="edit-preferences-api-key"
-            icon="fa-key"
+            :icon="faKey"
             title="Manage API Key"
             description="Access your current API key or create a new one."
             to="/user/api_key" />
         <UserPreferencesElement
             id="edit-preferences-notifications"
-            icon="fa-bell"
+            :icon="faBell"
             title="Manage Notifications"
             description="Manage your notification settings."
             to="/user/notifications/preferences" />
         <UserPreferencesElement
             id="edit-preferences-cloud-auth"
-            icon="fa-cloud"
+            :icon="faCloud"
             title="Manage Cloud Authorization"
             description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
             to="/user/cloud_auth" />
         <UserPreferencesElement
             v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
-            icon="fa-id-card-o"
+            :icon="faIdCardAlt"
             title="Manage Third-Party Identities"
             description="Connect or disconnect access to your third-party identities."
             to="/user/external_ids" />
         <UserPreferencesElement
             id="edit-preferences-custom-builds"
-            icon="fa-cubes"
+            :icon="faCubes"
             title="Manage Custom Builds"
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
         <UserPreferencesElement
             v-if="hasThemes"
-            icon="fa-palette"
+            :icon="faPalette"
             title="Pick a Color Theme"
             description="Click here to change the user interface color theme."
             badge="New!"
@@ -81,7 +81,7 @@
         <UserPreferencesElement
             v-if="isConfigLoaded && !config.single_user"
             id="edit-preferences-make-data-private"
-            icon="fa-lock"
+            :icon="faLock"
             title="Make All Data Private"
             description="Click here to make all data private."
             @click="makeDataPrivate" />
@@ -96,7 +96,7 @@
             v-if="hasObjectStoreTemplates"
             id="manage-object-stores"
             class="manage-object-stores"
-            icon="fa-hdd"
+            :icon="faHdd"
             title="Manage Your Storage Locations"
             description="Add, remove, or update your personally configured storage locations."
             to="/object_store_instances/index" />
@@ -104,7 +104,7 @@
             v-if="hasFileSourceTemplates"
             id="manage-file-sources"
             class="manage-file-sources"
-            icon="fa-file"
+            :icon="faFile"
             title="Manage Your Remote File Sources"
             description="Add, remove, or update your personally configured location to find files from and write files to."
             to="/file_source_instances/index" />
@@ -116,7 +116,7 @@
         <UserPreferencesElement
             v-if="hasLogout"
             id="edit-preferences-sign-out"
-            icon="fa-sign-out"
+            :icon="faSignOutAlt"
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="showLogoutModal = true" />
@@ -140,10 +140,22 @@
 </template>
 
 <script>
+import {
+    faBell,
+    faCloud,
+    faCubes,
+    faFile,
+    faHdd,
+    faIdCardAlt,
+    faKey,
+    faLock,
+    faPalette,
+    faSignOutAlt,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import { mapActions, mapState } from "pinia";
 import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
@@ -151,6 +163,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
 import { useConfig } from "@/composables/config";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
@@ -197,6 +210,17 @@ export default {
             showLogoutModal: false,
             showDataPrivateModal: false,
             toggleTheme: false,
+            faBell,
+            faCloud,
+            faCubes,
+            faFile,
+            faHdd,
+            faIdCardAlt,
+            faKey,
+            faLock,
+            faPalette,
+            faSignOutAlt,
+            faUsers,
         };
     },
     computed: {

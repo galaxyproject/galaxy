@@ -1,7 +1,6 @@
 <template>
-    <div class="clickToEdit" :class="{ empty: !value.length }">
+    <div class="click-to-edit" :class="{ empty: !value.length }">
         <component :is="tagName" v-if="!editing" class="m-0" @click="toggleEdit(true)">
-            <span class="editable"></span>
             <span>{{ displayValue }}</span>
             <slot name="tooltip" :editing="editing" :local-value="localValue"></slot>
         </component>
@@ -83,16 +82,9 @@ export default {
 @import "theme/blue.scss";
 @import "~scss/mixins.scss";
 
-.clickToEdit {
+.click-to-edit {
     position: relative;
-    &:hover .editable {
-        @include fontawesome($fa-var-edit);
-        position: absolute;
-        top: 0;
-        right: 0;
-        color: $brand-info;
-        font-size: 0.8rem;
-    }
+
     /* changes placeholder text, it's a brittle and ugly selector
     but bootstrap-vue doesn't give us much to work with */
     &.empty > p > span {

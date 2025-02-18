@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
@@ -287,7 +288,7 @@ if (props.argumentType == "workflow_id") {
             v-else-if="workflowShow"
             :get-data="getWorkflows"
             title="Workflow"
-            leaf-icon="fa fa-sitemap fa-rotate-270"
+            :leaf-icon="faSitemap"
             label-key="name"
             @onOk="onWorkflow"
             @onCancel="onCancel" />

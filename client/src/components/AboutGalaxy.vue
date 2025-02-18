@@ -7,6 +7,7 @@ import { RouterLink } from "vue-router";
 
 import { useConfig } from "@/composables/config";
 import { getAppRoot } from "@/onload/loadConfig";
+import { galaxyLogo } from "@/utils/typedIcons";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -29,7 +30,7 @@ const versionUserDocumentationUrl = computed(() => {
 
 <template>
     <div v-if="isConfigLoaded" class="about-galaxy">
-        <Heading h1 :icon="['gxd', 'galaxyLogo']" size="lg">Help and Support</Heading>
+        <Heading h1 :icon="galaxyLogo" size="lg">Help and Support</Heading>
         <div class="p-2">
             <Heading h2 separator size="md">Support</Heading>
             <div v-if="config.wiki_url">

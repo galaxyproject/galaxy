@@ -382,119 +382,6 @@ var DraggableViewMixin = {
 };
 
 //==============================================================================
-/** Mixin that allows a view to be selected (gen. from a list).
- *      Selection controls ($selector) may be hidden/shown/toggled.
- *          The bbone event 'selectable' is fired when the controls are shown/hidden (passed T/F).
- *      Default rendering is a font-awesome checkbox.
- *      Default selector is '.selector' within the view's $el.
- *      The bbone events 'selected' and 'de-selected' are fired when the $selector is clicked.
- *          Both events are passed the view and the (jQuery) event.
- */
-var SelectableViewMixin = {
-    /** Set up instance state vars for whether the selector is shown and whether the view has been selected */
-    initialize: function (attributes) {
-        /** is the view currently in selection mode? */
-        this.selectable = attributes.selectable || false;
-        /** is the view currently selected? */
-        this.selected = attributes.selected || false;
-    },
-
-    /** $el sub-element where the selector is rendered and what can be clicked to select. */
-    $selector: function () {
-        return this.$(".selector");
-    },
-
-    /** How the selector is rendered - defaults to font-awesome checkbox */
-    _renderSelected: function () {
-        // override
-        this.$selector()
-            .find("span")
-            .toggleClass("fa-check-square-o", this.selected)
-            .toggleClass("fa-square-o", !this.selected);
-    },
-
-    /** Toggle whether the selector is shown */
-    toggleSelector: function () {
-        //TODO: use this.selectable
-        if (!this.$selector().is(":visible")) {
-            this.showSelector();
-        } else {
-            this.hideSelector();
-        }
-    },
-
-    /** Display the selector control.
-     *  @param {Number} a jQuery fx speed
-     *  @fires: selectable which is passed true (IOW, the selector is shown) and the view
-     */
-    showSelector: function (speed) {
-        speed = speed !== undefined ? speed : this.fxSpeed;
-        // make sure selected state is represented properly
-        this.selectable = true;
-        this.trigger("selectable", true, this);
-        this._renderSelected();
-        if (speed) {
-            this.$selector().show(speed);
-        } else {
-            this.$selector().show();
-        }
-    },
-
-    /** remove the selector control
-     *  @param {Number} a jQuery fx speed
-     *  @fires: selectable which is passed false (IOW, the selector is not shown) and the view
-     */
-    hideSelector: function (speed) {
-        speed = speed !== undefined ? speed : this.fxSpeed;
-        // reverse the process from showSelect
-        this.selectable = false;
-        this.trigger("selectable", false, this);
-        if (speed) {
-            this.$selector().hide(speed);
-        } else {
-            this.$selector().hide();
-        }
-    },
-
-    /** Toggle whether the view is selected */
-    toggleSelect: function (event) {
-        if (this.selected) {
-            this.deselect(event);
-        } else {
-            this.select(event);
-        }
-    },
-
-    /** Select this view and re-render the selector control to show it
-     *  @param {Event} a jQuery event that caused the selection
-     *  @fires: selected which is passed the view and the DOM event that triggered it (optionally)
-     */
-    select: function (event) {
-        // switch icon, set selected, and trigger event
-        if (!this.selected) {
-            this.trigger("selected", this, event);
-            this.selected = true;
-            this._renderSelected();
-        }
-        return false;
-    },
-
-    /** De-select this view and re-render the selector control to show it
-     *  @param {Event} a jQuery event that caused the selection
-     *  @fires: de-selected which is passed the view and the DOM event that triggered it (optionally)
-     */
-    deselect: function (event) {
-        // switch icon, set selected, and trigger event
-        if (this.selected) {
-            this.trigger("de-selected", this, event);
-            this.selected = false;
-            this._renderSelected();
-        }
-        return false;
-    },
-};
-
-//==============================================================================
 /** Return an underscore template fn from an array of strings.
  *  @param {String[]} template      the template strings to compile into the underscore template fn
  *  @param {String} jsonNamespace   an optional namespace for the json data passed in (defaults to 'model')
@@ -546,7 +433,6 @@ export default {
     SearchableModelMixin: SearchableModelMixin,
     HiddenUntilActivatedViewMixin: HiddenUntilActivatedViewMixin,
     DraggableViewMixin: DraggableViewMixin,
-    SelectableViewMixin: SelectableViewMixin,
     wrapTemplate: wrapTemplate,
     buildComparator: buildComparator,
 };

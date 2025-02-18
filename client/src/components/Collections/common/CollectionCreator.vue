@@ -469,22 +469,6 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
     }
-    .element-drop-placeholder {
-        width: 60px;
-        height: 3px;
-        margin: 2px 0px 0px 14px;
-        background: black;
-        &:before {
-            @extend .fas;
-            float: left;
-            font-size: 120%;
-            margin: -9px 0px 0px -8px;
-            content: fa-content($fa-var-caret-right);
-        }
-        &:last-child {
-            margin-bottom: 8px;
-        }
-    }
     // ------------------------------------------------------------------------ footer
     .footer {
         .inputs-form-group > div {

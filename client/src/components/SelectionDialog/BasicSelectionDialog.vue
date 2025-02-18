@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { IconDefinition } from "font-awesome-6";
 import { computed, onMounted, type Ref, ref } from "vue";
 
 import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -11,7 +12,7 @@ interface Props {
     getData: () => Promise<object[]>;
     isEncoded?: boolean;
     labelKey?: string;
-    leafIcon?: string;
+    leafIcon?: IconDefinition | null;
     timeKey?: string;
     title: string;
 }
@@ -20,7 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
     detailsKey: "",
     isEncoded: false,
     labelKey: "id",
-    leafIcon: "",
+    leafIcon: null,
     timeKey: "update_time",
 });
 
