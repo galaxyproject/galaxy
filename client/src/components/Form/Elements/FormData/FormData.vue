@@ -44,8 +44,10 @@ const props = withDefaults(
         loading?: boolean;
         multiple?: boolean;
         optional?: boolean;
-        options: Record<string, Array<DataOption>>;
+        options?: Record<string, Array<DataOption>>;
         value?: {
+            batch: boolean;
+            product: boolean;
             values: Array<DataOption>;
         };
         extensions?: Array<string>;
@@ -60,6 +62,7 @@ const props = withDefaults(
         loading: false,
         multiple: false,
         optional: false,
+        options: () => ({ dce: [], hda: [], hdca: [] }),
         value: undefined,
         extensions: () => [],
         type: "data",
