@@ -50,6 +50,8 @@ interface Props {
     mode: "wizard" | "modal"; // in modal mode we need to show buttons and manage pairing components, wizard takes care these details
 }
 
+const props = defineProps<Props>();
+
 const { gridApi, AgGridVue, onGridReady, theme } = useAgGrid(resize);
 
 const { updateIdentifierIfUnchanged } = useUpdateIdentifiersForRemoveExtensions(props);
@@ -69,8 +71,6 @@ const emit = defineEmits<{
     (e: "name", value: string): void;
     (e: "input-valid", value: boolean): void;
 }>();
-
-const props = defineProps<Props>();
 
 const currentForwardFilter = ref(props.forwardFilter);
 const currentReverseFilter = ref(props.reverseFilter);
