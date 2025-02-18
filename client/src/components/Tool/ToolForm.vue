@@ -27,6 +27,7 @@
             v-if="showForm"
             :id="formConfig.id"
             :version="formConfig.version"
+            :tool-uuid="uuid"
             :title="formConfig.name"
             :description="formConfig.description"
             :options="formConfig"
@@ -148,6 +149,10 @@ export default {
     },
     props: {
         id: {
+            type: String,
+            default: null,
+        },
+        uuid: {
             type: String,
             default: null,
         },
@@ -291,7 +296,7 @@ export default {
         onUpdate() {
             this.disabled = true;
             console.debug("ToolForm - Updating input parameters.", this.formData);
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
+            updateToolFormData(this.formConfig.id, this.uuid, this.currentVersion, this.history_id, this.formData)
                 .then((data) => {
                     this.formConfig = data;
                 })
@@ -343,6 +348,7 @@ export default {
                 history_id: historyId,
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
+                tool_uuid: this.uuid,
                 inputs: {
                     ...this.formData,
                 },

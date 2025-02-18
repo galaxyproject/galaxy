@@ -1357,6 +1357,17 @@ class ToolRequest(Base, Dictifiable, RepresentById):
     history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
 
 
+class UserDynamicToolAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = "user_dynamic_tool_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    dynamic_tool_id: Mapped[int] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    hidden: Mapped[Optional[bool]] = mapped_column(default=False)
+    active: Mapped[Optional[bool]] = mapped_column(default=True)
+
+
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = "dynamic_tool"
 
@@ -1372,9 +1383,29 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     hidden: Mapped[Optional[bool]] = mapped_column(default=True)
     active: Mapped[Optional[bool]] = mapped_column(default=True)
     value: Mapped[Optional[Dict[str, Any]]] = mapped_column(MutableJSONType)
+    public: Mapped[bool] = mapped_column(default=False, server_default=false())
 
-    dict_collection_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
-    dict_element_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
+    dict_collection_visible_keys = (
+        "id",
+        "tool_id",
+        "tool_format",
+        "tool_version",
+        "uuid",
+        "active",
+        "hidden",
+        "create_time",
+    )
+    dict_element_visible_keys = (
+        "id",
+        "tool_id",
+        "tool_format",
+        "tool_version",
+        "uuid",
+        "active",
+        "hidden",
+        "create_time",
+        "representation",
+    )
 
     def __init__(self, active=True, hidden=True, **kwd):
         super().__init__(**kwd)
@@ -1382,6 +1413,11 @@ class DynamicTool(Base, Dictifiable, RepresentById):
         self.hidden = hidden
         _uuid = kwd.get("uuid")
         self.uuid = get_uuid(_uuid)
+
+    def to_dict(self, view="collection", value_mapper=None):
+        rval = super().to_dict(view, value_mapper=None)
+        rval["representation"] = self.value
+        return rval
 
 
 class BaseJobMetric(Base):
@@ -1515,6 +1551,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     state_history: Mapped[List["JobStateHistory"]] = relationship()
     text_metrics: Mapped[List["JobMetricText"]] = relationship()
     numeric_metrics: Mapped[List["JobMetricNumeric"]] = relationship()
+    dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     interactivetool_entry_points: Mapped[List["InteractiveToolEntryPoint"]] = relationship(
         back_populates="job", uselist=True
     )
@@ -1860,7 +1897,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         dict of tool parameter values.
         """
         param_dict = self.raw_param_dict()
-        tool = app.toolbox.get_tool(self.tool_id, tool_version=self.tool_version)
+        tool = app.toolbox.get_tool(
+            self.tool_id,
+            tool_version=self.tool_version,
+            tool_uuid=self.dynamic_tool and self.dynamic_tool.uuid,
+            user=self.user,
+        )
         param_dict = tool.params_from_strings(param_dict, app, ignore_errors=ignore_errors)
         return param_dict
 
@@ -3816,6 +3858,8 @@ class Role(Base, Dictifiable, RepresentById):
         USER = "user"
         ADMIN = "admin"
         SHARING = "sharing"
+        USER_TOOL_CREATION = "user_tool_create"
+        USER_TOOL_EXECUTION = "user_tool_execution"
 
     @staticmethod
     def default_name(role_type):

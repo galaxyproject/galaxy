@@ -8,6 +8,7 @@ const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -70,6 +71,9 @@ module.exports = (env = {}, argv = {}) => {
                 querystring: require.resolve("querystring-es3"),
                 util: require.resolve("util/"),
                 assert: require.resolve("assert/"),
+                url: false,
+                perf_hooks: false,
+                buffer: require.resolve("buffer/"),
             },
             alias: {
                 vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
@@ -202,6 +206,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.ya?ml$/,
                     use: "yaml-loader",
                 },
+                {
+                    test: /\.ttf$/,
+                    type: "asset/resource",
+                },
             ],
         },
         resolveLoader: {
@@ -229,6 +237,11 @@ module.exports = (env = {}, argv = {}) => {
                 __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
                 __license__: JSON.stringify(require("./package.json").license),
             }),
+            new webpack.DefinePlugin({
+                // Define empty stubs for required modules
+                "node:stream": JSON.stringify({}),
+                "node:url": JSON.stringify({}),
+            }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
@@ -241,6 +254,27 @@ module.exports = (env = {}, argv = {}) => {
                     hash: stats.hash,
                     epoch: Date.parse(buildDate),
                 }),
+            }),
+            new MonacoWebpackPlugin({
+                languages: ["yaml", "javascript"],
+                customLanguages: [
+                    {
+                        label: "yaml",
+                        entry: "monaco-yaml",
+                        worker: {
+                            id: "monaco-yaml/yamlWorker",
+                            entry: "monaco-yaml/yaml.worker",
+                        },
+                    },
+                    {
+                        label: "typescript",
+                        entry: "vs/language/typescript/ts.worker", // TypeScript worker
+                        worker: {
+                            id: "vs/language/typescript/ts.worker",
+                            entry: "vs/language/typescript/ts.worker",
+                        },
+                    },
+                ],
             }),
         ],
         devServer: {

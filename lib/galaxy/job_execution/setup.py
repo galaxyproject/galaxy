@@ -148,7 +148,7 @@ class JobIO(UsesDictVisibleKeys):
         self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
 
     @property
-    def job(self):
+    def job(self) -> Job:
         return self.sa_session.get(Job, self.job_id)
 
     @classmethod
@@ -279,6 +279,9 @@ class JobIO(UsesDictVisibleKeys):
         job_outputs = []
         for da in job.output_datasets + job.output_library_datasets:
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
+            if da_false_path:
+                with open(da_false_path, "wb"):
+                    pass
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(
                 da.dataset.dataset.id,

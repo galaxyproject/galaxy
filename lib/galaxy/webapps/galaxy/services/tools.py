@@ -27,6 +27,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
+    User,
 )
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
@@ -118,7 +119,10 @@ class ToolsService(ServiceBase):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
-        tool = trans.app.toolbox.get_tool(**get_kwds)
+        if tool_uuid:
+            tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
+        else:
+            tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool:
             log.debug(f"Not found tool with kwds [{get_kwds}]")
             raise exceptions.ToolMissingException("Tool not found.")
@@ -300,10 +304,17 @@ class ToolsService(ServiceBase):
     #
     # -- Helper methods --
     #
-    def _get_tool(self, trans, id, tool_version=None, user=None) -> Tool:
+    def _get_tool(
+        self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: Optional[User] = None
+    ) -> Tool:
         tool = trans.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id}'.")
+            if user:
+                # FIXME: id as tool_uuid is for raw_tool_source endpoint, port to fastapi and fix
+                tool = trans.app.toolbox.get_unprivileged_tool(user=user, tool_uuid=tool_uuid or id)
+                if tool:
+                    return tool
+            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool

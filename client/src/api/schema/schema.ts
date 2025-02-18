@@ -911,6 +911,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dynamic_tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Index */
+        get: operations["index_api_dynamic_tools_get"];
+        put?: never;
+        /** Create */
+        post: operations["create_api_dynamic_tools_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dynamic_tools/{dynamic_tool_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show */
+        get: operations["show_api_dynamic_tools__dynamic_tool_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete
+         * @description DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
+         *
+         *     Deactivate the specified dynamic tool. Deactivated tools will not
+         *     be loaded into the toolbox.
+         */
+        delete: operations["delete_api_dynamic_tools__dynamic_tool_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dynamic_tools/{tool_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete
+         * @description DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
+         *
+         *     Deactivate the specified dynamic tool. Deactivated tools will not
+         *     be loaded into the toolbox.
+         */
+        delete: operations["delete_api_dynamic_tools__tool_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/file_source_instances": {
         parameters: {
             query?: never;
@@ -4514,6 +4579,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/unprivileged_tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Index */
+        get: operations["index_api_unprivileged_tools_get"];
+        put?: never;
+        /** Create */
+        post: operations["create_api_unprivileged_tools_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/unprivileged_tools/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build */
+        post: operations["build_api_unprivileged_tools_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/unprivileged_tools/runtime_model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Runtime Model */
+        post: operations["runtime_model_api_unprivileged_tools_runtime_model_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/unprivileged_tools/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show */
+        get: operations["show_api_unprivileged_tools__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -5985,6 +6119,70 @@ export interface components {
              */
             type: string;
         };
+        /** AdminToolSource */
+        AdminToolSource: {
+            /** Citations */
+            citations?: components["schemas"]["Citation"][] | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "GalaxyTool";
+            /** Command */
+            command: string;
+            /** Container */
+            container?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Edam Operations */
+            edam_operations?: string[] | null;
+            /** Edam Topics */
+            edam_topics?: string[] | null;
+            help?: components["schemas"]["HelpContent"] | null;
+            /** Id */
+            id?: string | null;
+            /**
+             * Inputs
+             * @default []
+             */
+            inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
+            /** License */
+            license?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * Outputs
+             * @default []
+             */
+            outputs: (
+                | components["schemas"]["ToolOutputDatasetG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___"]
+                | components["schemas"]["ToolOutputCollectionG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___-Input"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[];
+            /** Profile */
+            profile?: number | null;
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
+            /**
+             * Version
+             * @default 1.0
+             */
+            version: string | null;
+            /** Xrefs */
+            xrefs?: components["schemas"]["XrefDict"][] | null;
+        };
         /** AnonUserModel */
         AnonUserModel: {
             /**
@@ -6075,6 +6273,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -6191,6 +6390,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -6294,6 +6494,44 @@ export interface components {
                       | "less_stable"
                   )
                 | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
+        };
+        /** BaseUrlParameterModel */
+        BaseUrlParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_baseurl
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_baseurl";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "baseurl";
         };
         /** BasicRoleModel */
         BasicRoleModel: {
@@ -6410,6 +6648,53 @@ export interface components {
             /** Targets */
             targets: unknown;
         };
+        /** BooleanParameterModel */
+        BooleanParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Falsevalue */
+            falsevalue?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_boolean";
+            /** Truevalue */
+            truevalue?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean";
+            /**
+             * Value
+             * @default false
+             */
+            value: boolean | null;
+        };
         /** BroadcastNotificationContent */
         BroadcastNotificationContent: {
             /**
@@ -6442,6 +6727,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category: "broadcast";
             /**
@@ -6484,6 +6770,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category: "broadcast";
             content: components["schemas"]["BroadcastNotificationContent"];
@@ -6532,6 +6819,7 @@ export interface components {
             /**
              * Browsable
              * @constant
+             * @enum {boolean}
              */
             browsable: true;
             /**
@@ -6602,6 +6890,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "change_datatype";
         };
@@ -6612,6 +6901,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "change_dbkey";
         };
@@ -6656,6 +6946,13 @@ export interface components {
              *     The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
              *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
              */
+            type: string;
+        };
+        /** Citation */
+        Citation: {
+            /** Content */
+            content: string;
+            /** Type */
             type: string;
         };
         /** ClaimLandingPayload */
@@ -6719,6 +7016,46 @@ export interface components {
          * @enum {string}
          */
         ColletionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
+        /** ColorParameterModel */
+        ColorParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_color
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_color";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "color";
+            /** Value */
+            value?: string | null;
+        };
         /** CompositeDataElement */
         CompositeDataElement: {
             /** Md5 */
@@ -6868,6 +7205,168 @@ export interface components {
              */
             source: string | null;
         };
+        /** ConditionalParameterModel */
+        "ConditionalParameterModel-Input": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_conditional
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_conditional";
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["SelectParameterModel"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conditional";
+            /** Whens */
+            whens: components["schemas"]["ConditionalWhen-Input"][];
+        };
+        /** ConditionalParameterModel */
+        "ConditionalParameterModel-Output": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_conditional
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_conditional";
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["SelectParameterModel"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conditional";
+            /** Whens */
+            whens: components["schemas"]["ConditionalWhen-Output"][];
+        };
+        /** ConditionalWhen */
+        "ConditionalWhen-Input": {
+            /** Discriminator */
+            discriminator: boolean | string;
+            /** Is Default When */
+            is_default_when: boolean;
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Input"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel-Input"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel-Input"]
+                | components["schemas"]["RepeatParameterModel-Input"]
+                | components["schemas"]["SectionParameterModel-Input"]
+            )[];
+        };
+        /** ConditionalWhen */
+        "ConditionalWhen-Output": {
+            /** Discriminator */
+            discriminator: boolean | string;
+            /** Is Default When */
+            is_default_when: boolean;
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Output"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel-Output"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel-Output"]
+                | components["schemas"]["RepeatParameterModel-Output"]
+                | components["schemas"]["SectionParameterModel-Output"]
+            )[];
+        };
         /** ConnectAction */
         ConnectAction: {
             /**
@@ -6881,6 +7380,26 @@ export interface components {
             output:
                 | components["schemas"]["OutputReferenceByOrderIndex"]
                 | components["schemas"]["OutputReferenceByLabel"];
+        };
+        /** Container */
+        Container: {
+            /** Container Id */
+            container_id: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "docker" | "singularity";
+        };
+        /** ContainerRequirement */
+        ContainerRequirement: {
+            container: components["schemas"]["Container"];
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "container";
         };
         /** ContentsObject */
         ContentsObject: {
@@ -7290,6 +7809,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -7381,6 +7901,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "User";
             /**
@@ -7781,6 +8302,178 @@ export interface components {
              */
             username_and_slug?: string | null;
         };
+        /** CwlBooleanParameterModel */
+        CwlBooleanParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_boolean";
+        };
+        /** CwlDirectoryParameterModel */
+        CwlDirectoryParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default cwl_directory
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_directory";
+        };
+        /** CwlFileParameterModel */
+        CwlFileParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default cwl_file
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_file";
+        };
+        /** CwlFloatParameterModel */
+        CwlFloatParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_float";
+        };
+        /** CwlIntegerParameterModel */
+        CwlIntegerParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_integer";
+        };
+        /** CwlNullParameterModel */
+        CwlNullParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_null
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_null";
+        };
+        /** CwlStringParameterModel */
+        CwlStringParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_string
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_string";
+        };
+        /** CwlUnionParameterModel */
+        "CwlUnionParameterModel-Input": {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_union
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_union";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Input"]
+            )[];
+        };
+        /** CwlUnionParameterModel */
+        "CwlUnionParameterModel-Output": {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_union
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_union";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Output"]
+            )[];
+        };
         /**
          * DCESummary
          * @description Dataset Collection Element summary information.
@@ -7810,6 +8503,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetCollectionElement";
             /**
@@ -7860,6 +8554,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetCollection";
             /**
@@ -7867,6 +8562,95 @@ export interface components {
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
             populated?: boolean;
+        };
+        /** DataCollectionParameterModel */
+        DataCollectionParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Collection Type */
+            collection_type?: string | null;
+            /**
+             * Extensions
+             * @default [
+             *       "data"
+             *     ]
+             */
+            extensions: string[];
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_data_collection
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data_collection";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data_collection";
+            /** Value */
+            value: Record<string, never> | null;
+        };
+        /** DataColumnParameterModel */
+        DataColumnParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_data_column
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data_column";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data_column";
         };
         /** DataElementsFromTarget */
         DataElementsFromTarget: {
@@ -7924,6 +8708,60 @@ export interface components {
          * @enum {string}
          */
         DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /** DataParameterModel */
+        DataParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /**
+             * Extensions
+             * @default [
+             *       "data"
+             *     ]
+             */
+            extensions: string[];
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_data
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data";
+        };
         /** DatasetAssociationRoles */
         DatasetAssociationRoles: {
             /**
@@ -7965,6 +8803,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             tags: components["schemas"]["TagCollection"];
@@ -8027,6 +8866,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetHash";
         };
@@ -8328,6 +9168,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DefaultQuotaAssociation";
             /**
@@ -8551,6 +9392,54 @@ export interface components {
              */
             username: string;
         };
+        /** DirectoryUriParameterModel */
+        DirectoryUriParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_directory_uri
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_directory_uri";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "directory";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+        };
         /** DisconnectAction */
         DisconnectAction: {
             /**
@@ -8583,7 +9472,7 @@ export interface components {
         };
         /** DisplayApplication */
         DisplayApplication: {
-            /** Filename */
+            /** Filename  */
             filename_: string;
             /** Id */
             id: string;
@@ -8593,6 +9482,122 @@ export interface components {
             name: string;
             /** Version */
             version: string;
+        };
+        /** DrillDownOptionsDict */
+        "DrillDownOptionsDict-Input": {
+            /** Name */
+            name: string | null;
+            /** Options */
+            options: components["schemas"]["DrillDownOptionsDict-Input"][];
+            /** Selected */
+            selected: boolean;
+            /** Value */
+            value: string;
+        };
+        /** DrillDownOptionsDict */
+        "DrillDownOptionsDict-Output": {
+            /** Name */
+            name: string | null;
+            /** Options */
+            options: components["schemas"]["DrillDownOptionsDict-Output"][];
+            /** Selected */
+            selected: boolean;
+            /** Value */
+            value: string;
+        };
+        /** DrillDownParameterModel */
+        "DrillDownParameterModel-Input": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Hierarchy
+             * @enum {string}
+             */
+            hierarchy: "recurse" | "exact";
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Options */
+            options?: components["schemas"]["DrillDownOptionsDict-Input"][] | null;
+            /**
+             * Parameter Type
+             * @default gx_drill_down
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_drill_down";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "drill_down";
+        };
+        /** DrillDownParameterModel */
+        "DrillDownParameterModel-Output": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Hierarchy
+             * @enum {string}
+             */
+            hierarchy: "recurse" | "exact";
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Options */
+            options?: components["schemas"]["DrillDownOptionsDict-Output"][] | null;
+            /**
+             * Parameter Type
+             * @default gx_drill_down
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_drill_down";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "drill_down";
         };
         /** DrsObject */
         DrsObject: {
@@ -8681,11 +9686,90 @@ export interface components {
              */
             version?: string | null;
         };
+        /** DynamicToolCreatePayload */
+        DynamicToolCreatePayload: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean | null;
+            /**
+             * Allow Load
+             * @default true
+             */
+            allow_load: boolean | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean | null;
+            /** Representation */
+            representation: components["schemas"]["UserToolSource-Input"] | components["schemas"]["AdminToolSource"];
+            /**
+             * Src
+             * @default representation
+             * @constant
+             * @enum {string}
+             */
+            src: "representation";
+            /** Uuid */
+            uuid?: string | null;
+        };
+        /** DynamicUnprivilegedToolCreatePayload */
+        DynamicUnprivilegedToolCreatePayload: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean | null;
+            /**
+             * Allow Load
+             * @default true
+             */
+            allow_load: boolean | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean | null;
+            representation: components["schemas"]["UserToolSource-Input"];
+            /**
+             * Src
+             * @default representation
+             * @constant
+             * @enum {string}
+             */
+            src: "representation";
+            /** Uuid */
+            uuid?: string | null;
+        };
         /**
          * ElementsFromType
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /** EmptyFieldParameterValidatorModel */
+        EmptyFieldParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default empty_field
+             * @constant
+             * @enum {string}
+             */
+            type: "empty_field";
+        };
         /** EncodedDataItemSourceId */
         EncodedDataItemSourceId: {
             /**
@@ -8742,6 +9826,7 @@ export interface components {
              * Source
              * @description The source of this dataset, which in the case of the model can only be `hdca`.
              * @constant
+             * @enum {string}
              */
             src: "hdca";
         };
@@ -8828,6 +9913,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -9001,6 +10087,35 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /**
+         * ExpressionParameterValidatorModel
+         * @description Check if a one line python expression given expression evaluates to True.
+         *
+         *     The expression is given is the content of the validator tag.
+         */
+        ExpressionParameterValidatorModel: {
+            /** Expression */
+            expression: string;
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default expression
+             * @constant
+             * @enum {string}
+             */
+            type: "expression";
+        };
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -9064,6 +10179,7 @@ export interface components {
         };
         /**
          * FavoriteObjectType
+         * @constant
          * @enum {string}
          */
         FavoriteObjectType: "tools";
@@ -9233,6 +10349,39 @@ export interface components {
              */
             update_time: string;
         };
+        /** FilePatternDatasetCollectionDescription */
+        FilePatternDatasetCollectionDescription: {
+            /** Assign Primary Output */
+            assign_primary_output: boolean;
+            /** Directory */
+            directory: string | null;
+            /**
+             * Discover Via
+             * @constant
+             * @enum {string}
+             */
+            discover_via: "pattern";
+            /** Format */
+            format: string | null;
+            /** Match Relative Path */
+            match_relative_path: boolean;
+            /** Pattern */
+            pattern: string;
+            /** Recurse */
+            recurse: boolean;
+            /**
+             * Sort Comp
+             * @enum {string}
+             */
+            sort_comp: "lexical" | "numeric";
+            /**
+             * Sort Key
+             * @enum {string}
+             */
+            sort_key: "filename" | "name" | "designation" | "dbkey";
+            /** Visible */
+            visible: boolean;
+        };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
         /** FileSourceTemplateSummary */
@@ -9376,6 +10525,55 @@ export interface components {
             /** Step */
             step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
         };
+        /** FloatParameterModel */
+        FloatParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_float";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][];
+            /** Value */
+            value?: number | null;
+        };
         /** FolderLibraryFolderItem */
         FolderLibraryFolderItem: {
             /** Can Manage */
@@ -9499,10 +10697,93 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "ftp_import";
             /** Tags */
             tags?: string[] | null;
+        };
+        /** GalaxyToolParameterModel */
+        "GalaxyToolParameterModel-Input":
+            | components["schemas"]["TextParameterModel"]
+            | components["schemas"]["IntegerParameterModel"]
+            | components["schemas"]["FloatParameterModel"]
+            | components["schemas"]["BooleanParameterModel"]
+            | components["schemas"]["HiddenParameterModel"]
+            | components["schemas"]["SelectParameterModel"]
+            | components["schemas"]["DataParameterModel"]
+            | components["schemas"]["DataCollectionParameterModel"]
+            | components["schemas"]["DataColumnParameterModel"]
+            | components["schemas"]["DirectoryUriParameterModel"]
+            | components["schemas"]["RulesParameterModel"]
+            | components["schemas"]["DrillDownParameterModel-Input"]
+            | components["schemas"]["GroupTagParameterModel"]
+            | components["schemas"]["BaseUrlParameterModel"]
+            | components["schemas"]["GenomeBuildParameterModel"]
+            | components["schemas"]["ColorParameterModel"]
+            | components["schemas"]["ConditionalParameterModel-Input"]
+            | components["schemas"]["RepeatParameterModel-Input"]
+            | components["schemas"]["SectionParameterModel-Input"];
+        /** GalaxyToolParameterModel */
+        "GalaxyToolParameterModel-Output":
+            | components["schemas"]["TextParameterModel"]
+            | components["schemas"]["IntegerParameterModel"]
+            | components["schemas"]["FloatParameterModel"]
+            | components["schemas"]["BooleanParameterModel"]
+            | components["schemas"]["HiddenParameterModel"]
+            | components["schemas"]["SelectParameterModel"]
+            | components["schemas"]["DataParameterModel"]
+            | components["schemas"]["DataCollectionParameterModel"]
+            | components["schemas"]["DataColumnParameterModel"]
+            | components["schemas"]["DirectoryUriParameterModel"]
+            | components["schemas"]["RulesParameterModel"]
+            | components["schemas"]["DrillDownParameterModel-Output"]
+            | components["schemas"]["GroupTagParameterModel"]
+            | components["schemas"]["BaseUrlParameterModel"]
+            | components["schemas"]["GenomeBuildParameterModel"]
+            | components["schemas"]["ColorParameterModel"]
+            | components["schemas"]["ConditionalParameterModel-Output"]
+            | components["schemas"]["RepeatParameterModel-Output"]
+            | components["schemas"]["SectionParameterModel-Output"];
+        /** GenomeBuildParameterModel */
+        GenomeBuildParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_genomebuild
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_genomebuild";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "genomebuild";
         };
         /**
          * GroupCreatePayload
@@ -9542,6 +10823,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Group";
             /**
@@ -9561,6 +10843,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "GroupQuotaAssociation";
         };
@@ -9578,6 +10861,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Group";
             /** name of the group */
@@ -9610,6 +10894,46 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /** GroupTagParameterModel */
+        GroupTagParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_group_tag
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_group_tag";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "group_tag";
         };
         /** GroupUpdatePayload */
         GroupUpdatePayload: {
@@ -9916,6 +11240,7 @@ export interface components {
              * @description TODO
              * @default file
              * @constant
+             * @enum {string}
              */
             api_type: "file";
             /**
@@ -10022,6 +11347,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -10058,6 +11384,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /**
@@ -10106,6 +11433,7 @@ export interface components {
              * @description This is always `file` for datasets.
              * @default file
              * @constant
+             * @enum {string}
              */
             type: "file";
             /**
@@ -10154,6 +11482,7 @@ export interface components {
             /**
              * Accessible
              * @constant
+             * @enum {boolean}
              */
             accessible: false;
             /** Copied From Ldda Id */
@@ -10177,6 +11506,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -10256,6 +11586,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /** Purged */
@@ -10313,6 +11644,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -10559,6 +11891,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -10595,6 +11928,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -10623,6 +11957,7 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
+             * @enum {string}
              */
             type: "collection";
             /**
@@ -10696,6 +12031,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -10727,6 +12063,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -10750,6 +12087,7 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
+             * @enum {string}
              */
             type: "collection";
             /**
@@ -10938,8 +12276,19 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "hdca";
+        };
+        /** HelpContent */
+        HelpContent: {
+            /** Content */
+            content: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "restructuredtext" | "plain_text" | "markdown";
         };
         /**
          * HelpForumCategory
@@ -11195,6 +12544,56 @@ export interface components {
         HelpForumUser: {
             [key: string]: unknown;
         };
+        /** HiddenParameterModel */
+        HiddenParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_hidden
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_hidden";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "hidden";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+            /** Value */
+            value: string | null;
+        };
         /**
          * HistoryActiveContentCounts
          * @description Contains the number of active, deleted or hidden items in a History.
@@ -11375,6 +12774,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -11489,6 +12889,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -11604,6 +13005,42 @@ export interface components {
              * @description URI to fetch tool data bundle from (file:// URIs are fine because this is an admin-only operation)
              */
             uri: string;
+        };
+        /** InRangeParameterValidatorModel */
+        InRangeParameterValidatorModel: {
+            /**
+             * Exclude Max
+             * @default false
+             */
+            exclude_max: boolean;
+            /**
+             * Exclude Min
+             * @default false
+             */
+            exclude_min: boolean;
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Max */
+            max?: number | null;
+            /** Message */
+            message?: string | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default in_range
+             * @constant
+             * @enum {string}
+             */
+            type: "in_range";
         };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
@@ -11823,6 +13260,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "ToolShedRepository";
             /**
@@ -11846,6 +13284,52 @@ export interface components {
             tool_shed_status: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
+        };
+        /** IntegerParameterModel */
+        IntegerParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_integer";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][];
+            /** Value */
+            value?: number | null;
         };
         /** InvocationCancellationHistoryDeletedResponse */
         InvocationCancellationHistoryDeletedResponse: {
@@ -12094,6 +13578,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocation";
             /**
@@ -12133,6 +13618,7 @@ export interface components {
              * Source
              * @description Source model of the output dataset.
              * @constant
+             * @enum {string}
              */
             src: "hda";
             /**
@@ -12153,6 +13639,7 @@ export interface components {
              * Source
              * @description Source model of the output dataset collection.
              * @constant
+             * @enum {string}
              */
             src: "hdca";
             /**
@@ -12227,6 +13714,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Report";
             /**
@@ -12234,6 +13722,7 @@ export interface components {
              * @description Format of the invocation report.
              * @default markdown
              * @constant
+             * @enum {string}
              */
             render_format: "markdown";
             /**
@@ -12306,6 +13795,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocationStep";
             /**
@@ -12371,6 +13861,7 @@ export interface components {
              * @description The source model of the output.
              * @default hdca
              * @constant
+             * @enum {string}
              */
             src: "hdca";
         };
@@ -12385,6 +13876,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "ImplicitCollectionJobs";
             /**
@@ -12411,6 +13903,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "Job";
             /**
@@ -12437,6 +13930,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocationStep";
             /**
@@ -12465,6 +13959,7 @@ export interface components {
              * @description The source model of the output.
              * @default hda
              * @constant
+             * @enum {string}
              */
             src: "hda";
             /**
@@ -12689,6 +14184,17 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
+        /** JavascriptRequirement */
+        JavascriptRequirement: {
+            /** Expression Lib */
+            expression_lib: string[] | null;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "javascript";
+        };
         /** JobBaseModel */
         JobBaseModel: {
             /**
@@ -12721,6 +14227,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -12903,6 +14410,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -13170,6 +14678,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -13193,6 +14702,15 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+        };
+        /** LabelValue */
+        LabelValue: {
+            /** Label */
+            label: string;
+            /** Selected */
+            selected: boolean;
+            /** Value */
+            value: string;
         };
         /**
          * LabelValuePair
@@ -13241,6 +14759,32 @@ export interface components {
              * @default []
              */
             LIBRARY_MODIFY_in: string[] | string | null;
+        };
+        /** LengthParameterValidatorModel */
+        LengthParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Max */
+            max?: number | null;
+            /** Message */
+            message?: string | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default length
+             * @constant
+             * @enum {string}
+             */
+            type: "length";
         };
         /** LibraryAvailablePermissions */
         LibraryAvailablePermissions: {
@@ -13365,6 +14909,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "LibraryDatasetDatasetAssociation";
             /** Name */
@@ -13648,6 +15193,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "LibraryDataset";
             /** Name */
@@ -13692,6 +15238,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "LibraryFolder";
             /** Name */
@@ -13832,6 +15379,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "LibraryFolder";
             /**
@@ -13879,6 +15427,7 @@ export interface components {
         };
         /**
          * LibraryFolderPermissionAction
+         * @constant
          * @enum {string}
          */
         LibraryFolderPermissionAction: "set_permissions";
@@ -13937,6 +15486,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -14047,6 +15597,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -14180,6 +15731,7 @@ export interface components {
          * @description These notification categories cannot be opt-out by the user.
          *
          *     The user will always receive notifications from these categories.
+         * @constant
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
@@ -14369,6 +15921,28 @@ export interface components {
              * @description The slug of the shared item. Used for the link to the item.
              */
             slug: string;
+        };
+        /** NoOptionsParameterValidatorModel */
+        NoOptionsParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default no_options
+             * @constant
+             * @enum {string}
+             */
+            type: "no_options";
         };
         /**
          * NotificationBroadcastUpdateRequest
@@ -14814,6 +16388,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -14895,6 +16470,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -15002,6 +16578,30 @@ export interface components {
              * @default false
              */
             to_posix_lines: boolean;
+        };
+        /** PathBasedDynamicToolCreatePayload */
+        PathBasedDynamicToolCreatePayload: {
+            /** Active */
+            active?: boolean | null;
+            /**
+             * Allow Load
+             * @default true
+             */
+            allow_load: boolean;
+            /** Hidden */
+            hidden?: boolean | null;
+            /** Path */
+            path: string;
+            /**
+             * Src
+             * @constant
+             * @enum {string}
+             */
+            src: "from_path";
+            /** Tool Directory */
+            tool_directory?: string | null;
+            /** Uuid */
+            uuid?: string | null;
         };
         /** PathDataElement */
         PathDataElement: {
@@ -15294,6 +16894,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -15346,6 +16947,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -15513,6 +17115,37 @@ export interface components {
             /** Workflow */
             workflow: string;
         };
+        /**
+         * RegexParameterValidatorModel
+         * @description Check if a regular expression **matches** the value, i.e. appears
+         *     at the beginning of the value. To enforce a match of the complete value use
+         *     ``$`` at the end of the expression. The expression is given is the content
+         *     of the validator tag. Note that for ``selects`` each option is checked
+         *     separately.
+         */
+        RegexParameterValidatorModel: {
+            /** Expression */
+            expression: string;
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default regex
+             * @constant
+             * @enum {string}
+             */
+            type: "regex";
+        };
         /** ReloadFeedback */
         ReloadFeedback: {
             /** Failed */
@@ -15604,6 +17237,150 @@ export interface components {
              */
             action_type: "remove_unlabeled_workflow_outputs";
         };
+        /** RepeatParameterModel */
+        "RepeatParameterModel-Input": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_repeat
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_repeat";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Input"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel-Input"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel-Input"]
+                | components["schemas"]["RepeatParameterModel-Input"]
+                | components["schemas"]["SectionParameterModel-Input"]
+            )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "repeat";
+        };
+        /** RepeatParameterModel */
+        "RepeatParameterModel-Output": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_repeat
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_repeat";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Output"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel-Output"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel-Output"]
+                | components["schemas"]["RepeatParameterModel-Output"]
+                | components["schemas"]["SectionParameterModel-Output"]
+            )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "repeat";
+        };
         /** Report */
         Report: {
             /** Markdown */
@@ -15648,6 +17425,39 @@ export interface components {
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
+        /** ResourceRequirement */
+        ResourceRequirement: {
+            /** Cores Max */
+            cores_max: number | null;
+            /** Cores Min */
+            cores_min: number | null;
+            /** Cuda Compute Capability */
+            cuda_compute_capability: number | null;
+            /** Cuda Device Count Max */
+            cuda_device_count_max: number | null;
+            /** Cuda Device Count Min */
+            cuda_device_count_min: number | null;
+            /** Cuda Version Min */
+            cuda_version_min: number | null;
+            /** Gpu Memory Min */
+            gpu_memory_min: number | null;
+            /** Ram Max */
+            ram_max: number | null;
+            /** Ram Min */
+            ram_min: number | null;
+            /** Shm Size */
+            shm_size: number | null;
+            /** Tmpdir Max */
+            tmpdir_max: number | null;
+            /** Tmpdir Min */
+            tmpdir_min: number | null;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "resource";
+        };
         /** RoleDefinitionModel */
         RoleDefinitionModel: {
             /**
@@ -15687,6 +17497,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Role";
             /**
@@ -15710,6 +17521,44 @@ export interface components {
         RootModel_Dict_str__int__: {
             [key: string]: number;
         };
+        /** RulesParameterModel */
+        RulesParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_rules
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_rules";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "rules";
+        };
         /** SearchJobsPayload */
         SearchJobsPayload: {
             /**
@@ -15729,6 +17578,186 @@ export interface components {
             tool_id: string;
         } & {
             [key: string]: unknown;
+        };
+        /** SectionParameterModel */
+        "SectionParameterModel-Input": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_section
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_section";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Input"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel-Input"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel-Input"]
+                | components["schemas"]["RepeatParameterModel-Input"]
+                | components["schemas"]["SectionParameterModel-Input"]
+            )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
+        };
+        /** SectionParameterModel */
+        "SectionParameterModel-Output": {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_section
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_section";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel-Output"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel-Output"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel-Output"]
+                | components["schemas"]["RepeatParameterModel-Output"]
+                | components["schemas"]["SectionParameterModel-Output"]
+            )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
+        };
+        /** SelectParameterModel */
+        SelectParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Options */
+            options?: components["schemas"]["LabelValue"][] | null;
+            /**
+             * Parameter Type
+             * @default gx_select
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_select";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "select";
+            /** Validators */
+            validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
         };
         /** ServerDirElement */
         ServerDirElement: {
@@ -16219,6 +18248,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -16459,6 +18489,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "StoredWorkflow";
             /**
@@ -16681,6 +18712,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "boolean";
         };
@@ -16700,6 +18732,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "integer";
         };
@@ -16716,6 +18749,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "path_component";
         };
@@ -16735,6 +18769,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "string";
         };
@@ -16757,6 +18792,66 @@ export interface components {
             variables: {
                 [key: string]: string | boolean | number;
             };
+        };
+        /** TextParameterModel */
+        TextParameterModel: {
+            /**
+             * Area
+             * @default false
+             */
+            area: boolean;
+            /** Argument */
+            argument?: string | null;
+            /**
+             * Default Options
+             * @default []
+             */
+            default_options: components["schemas"]["LabelValue"][];
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_text
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_text";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+            /** Value */
+            value?: string | null;
         };
         /** ToolDataDetails */
         ToolDataDetails: {
@@ -16837,6 +18932,160 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolOutputBoolean */
+        ToolOutputBoolean: {
+            /** Hidden */
+            hidden: unknown;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: unknown;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean";
+        };
+        /** ToolOutputCollectionG[Annotated[Union[bool, NoneType], FieldInfo(annotation=NoneType, required=False, default=None)], Annotated[Union[str, NoneType], FieldInfo(annotation=NoneType, required=False, default=None)]] */
+        "ToolOutputCollectionG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___-Input": {
+            /** Hidden */
+            hidden?: boolean | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name?: string | null;
+            structure: components["schemas"]["ToolOutputCollectionStructure"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "collection";
+        };
+        /** ToolOutputCollectionG[Annotated[Union[bool, NoneType], FieldInfo(annotation=NoneType, required=False, default=None)], Annotated[Union[str, NoneType], FieldInfo(annotation=NoneType, required=False, default=None)]] */
+        "ToolOutputCollectionG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___-Output": {
+            /** Hidden */
+            hidden?: boolean | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name?: string | null;
+            structure: components["schemas"]["ToolOutputCollectionStructure"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "collection";
+        };
+        /** ToolOutputCollectionStructure */
+        ToolOutputCollectionStructure: {
+            /** Collection Type */
+            collection_type?: string | null;
+            /** Collection Type From Rules */
+            collection_type_from_rules?: string | null;
+            /** Collection Type Source */
+            collection_type_source?: string | null;
+            /** Discover Datasets */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null;
+            /** Structured Like */
+            structured_like?: string | null;
+        };
+        /** ToolOutputDatasetG[Annotated[Union[bool, NoneType], FieldInfo(annotation=NoneType, required=False, default=None)], Annotated[Union[str, NoneType], FieldInfo(annotation=NoneType, required=False, default=None)]] */
+        ToolOutputDatasetG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___: {
+            /** Discover Datasets */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null;
+            /** Format */
+            format?: string | null;
+            /** Format Source */
+            format_source?: string | null;
+            /** From Work Dir */
+            from_work_dir?: string | null;
+            /** Hidden */
+            hidden?: boolean | null;
+            /** Label */
+            label?: string | null;
+            /** Metadata Source */
+            metadata_source?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data";
+        };
+        /** ToolOutputFloat */
+        ToolOutputFloat: {
+            /** Hidden */
+            hidden: unknown;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: unknown;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float";
+        };
+        /** ToolOutputInteger */
+        ToolOutputInteger: {
+            /** Hidden */
+            hidden: unknown;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: unknown;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer";
+        };
+        /** ToolOutputText */
+        ToolOutputText: {
+            /** Hidden */
+            hidden: unknown;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: unknown;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+        };
+        /** ToolProvidedMetadataDatasetCollection */
+        ToolProvidedMetadataDatasetCollection: {
+            /** Assign Primary Output */
+            assign_primary_output: boolean;
+            /** Directory */
+            directory: string | null;
+            /**
+             * Discover Via
+             * @constant
+             * @enum {string}
+             */
+            discover_via: "tool_provided_metadata";
+            /** Format */
+            format: string | null;
+            /** Match Relative Path */
+            match_relative_path: boolean;
+            /** Recurse */
+            recurse: boolean;
+            /** Visible */
+            visible: boolean;
         };
         /** ToolStep */
         ToolStep: {
@@ -16991,6 +19240,30 @@ export interface components {
              * @description List of history IDs to be undeleted.
              */
             ids: string[];
+        };
+        /** UnprivilegedToolResponse */
+        UnprivilegedToolResponse: {
+            /** Active */
+            active: boolean;
+            /**
+             * Create Time
+             * Format: date-time
+             */
+            create_time: string;
+            /** Hidden */
+            hidden: boolean;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            representation: components["schemas"]["UserToolSource-Output"];
+            /** Tool Format */
+            tool_format: string | null;
+            /** Tool Id */
+            tool_id: string | null;
+            /** Uuid */
+            uuid: string;
         };
         /** UpdateAnnotationAction */
         UpdateAnnotationAction: {
@@ -17664,6 +19937,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "User";
             /**
@@ -17802,6 +20076,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "UserQuotaAssociation";
             /**
@@ -17822,6 +20097,125 @@ export interface components {
             quota_source_label?: string | null;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /** UserToolSource */
+        "UserToolSource-Input": {
+            /** Citations */
+            citations?: components["schemas"]["Citation"][] | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "GalaxyUserTool";
+            /** Container */
+            container: string;
+            /** Description */
+            description?: string | null;
+            /** Edam Operations */
+            edam_operations?: string[] | null;
+            /** Edam Topics */
+            edam_topics?: string[] | null;
+            help?: components["schemas"]["HelpContent"] | null;
+            /** Id */
+            id: string | null;
+            /**
+             * Inputs
+             * @default []
+             */
+            inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
+            /** License */
+            license?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Outputs
+             * @default []
+             */
+            outputs: (
+                | components["schemas"]["ToolOutputDatasetG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___"]
+                | components["schemas"]["ToolOutputCollectionG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___-Input"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[];
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
+            /** Shell Command */
+            shell_command: string;
+            /** Version */
+            version: string | null;
+            /** Xrefs */
+            xrefs?: components["schemas"]["XrefDict"][] | null;
+        };
+        /** UserToolSource */
+        "UserToolSource-Output": {
+            /** Citations */
+            citations?: components["schemas"]["Citation"][] | null;
+            /**
+             * Class
+             * @constant
+             * @enum {string}
+             */
+            class: "GalaxyUserTool";
+            /** Container */
+            container: string;
+            /** Description */
+            description?: string | null;
+            /** Edam Operations */
+            edam_operations?: string[] | null;
+            /** Edam Topics */
+            edam_topics?: string[] | null;
+            help?: components["schemas"]["HelpContent"] | null;
+            /** Id */
+            id: string | null;
+            /**
+             * Inputs
+             * @default []
+             */
+            inputs: components["schemas"]["GalaxyToolParameterModel-Output"][];
+            /** License */
+            license?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Outputs
+             * @default []
+             */
+            outputs: (
+                | components["schemas"]["ToolOutputDatasetG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___"]
+                | components["schemas"]["ToolOutputCollectionG_Annotated_Union_bool__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___Annotated_Union_str__NoneType___FieldInfo_annotation_NoneType__required_False__default_None___-Output"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[];
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
+            /** Shell Command */
+            shell_command: string;
+            /** Version */
+            version: string | null;
+            /** Xrefs */
+            xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** UserUpdatePayload */
         UserUpdatePayload: {
@@ -17972,6 +20366,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "VisualizationRevision";
             /**
@@ -18018,6 +20413,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Visualization";
             /**
@@ -18220,6 +20616,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -18288,6 +20685,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -18362,6 +20760,7 @@ export interface components {
              * @description This API yields a particular workflow instance, newer workflows belonging to the same storedworkflow may have different state.
              * @default true
              * @constant
+             * @enum {boolean}
              */
             instance: true;
             /**
@@ -18374,6 +20773,7 @@ export interface components {
              * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
              * @default true
              * @constant
+             * @enum {boolean}
              */
             parameters_normalized: true;
             /**
@@ -18600,6 +21000,13 @@ export interface components {
              * @description Galaxy Files URI to write mode store content to.
              */
             target_uri: string;
+        };
+        /** XrefDict */
+        XrefDict: {
+            /** Reftype */
+            reftype: string;
+            /** Value */
+            value: string;
         };
         /** XrefItem */
         XrefItem: {
@@ -21043,6 +23450,217 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_dynamic_tools_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_dynamic_tools_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["DynamicToolCreatePayload"]
+                    | components["schemas"]["PathBasedDynamicToolCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_dynamic_tools__dynamic_tool_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dynamic_tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_dynamic_tools__dynamic_tool_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                dynamic_tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_dynamic_tools__tool_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Request Error */
             "4XX": {
@@ -33046,6 +35664,229 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TourDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_unprivileged_tools_get: {
+        parameters: {
+            query?: {
+                active?: boolean;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnprivilegedToolResponse"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_unprivileged_tools_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnprivilegedToolResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    build_api_unprivileged_tools_build_post: {
+        parameters: {
+            query: {
+                history_id: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    runtime_model_api_unprivileged_tools_runtime_model_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_unprivileged_tools__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnprivilegedToolResponse"];
                 };
             };
             /** @description Request Error */

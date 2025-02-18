@@ -25,6 +25,7 @@ import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -331,6 +332,7 @@ defineExpose({
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
+            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" />
             <SettingsPanel
                 v-else-if="isActiveSideBar('settings')"
                 :activity-bar-id="props.activityBarId"
