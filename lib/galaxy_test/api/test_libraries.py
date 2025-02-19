@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 
 from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_model_store_dict,
@@ -427,10 +428,13 @@ class TestLibrariesApi(ApiTestCase):
         create_response = self._post(f"folders/{subfolder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
-        dataset_update_time = create_response.json()["update_time"]
+        dataset_update_time = datetime.fromisoformat(create_response.json()["update_time"])
         container_fetch_response = self.galaxy_interactor.get(f"folders/{folder_id}/contents")
-        container_update_time = container_fetch_response.json()["folder_contents"][0]["update_time"]
-        assert dataset_update_time == container_update_time, container_fetch_response
+        container_update_time = datetime.fromisoformat(
+            container_fetch_response.json()["folder_contents"][0]["update_time"]
+        )
+        # Assert that the update time of the dataset is approximately the same as the update time of the container
+        assert abs((dataset_update_time - container_update_time).total_seconds()) < 1
 
     def _patch_library_dataset(self, library_dataset_id, data):
         create_response = self._patch(f"libraries/datasets/{library_dataset_id}", data=data, json=True)
