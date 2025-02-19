@@ -657,6 +657,7 @@ const noOptionsWarningMessage = computed(() => {
         <div class="d-flex flex-gapx-1">
             <div class="d-flex flex-column">
                 <FormDataContextButtons
+                    :class="{ 'field-options': props.workflowRun && !currentVariant?.multiple }"
                     :variant="variant"
                     :current-field="currentField"
                     :can-browse="canBrowse"
@@ -684,6 +685,7 @@ const noOptionsWarningMessage = computed(() => {
                     v-if="currentVariant && !currentVariant.multiple"
                     v-model="currentValue"
                     class="align-self-start w-100"
+                    :class="{ 'form-select': props.workflowRun }"
                     :multiple="currentVariant.multiple"
                     :optional="currentVariant.multiple || optional"
                     :options="formattedOptions"
@@ -704,6 +706,7 @@ const noOptionsWarningMessage = computed(() => {
                     multiple />
                 <FormDataContextButtons
                     v-if="props.workflowRun && usingSimpleSelect"
+                    :class="{ 'h-100': !currentVariant?.multiple }"
                     compact
                     :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
                     :current-source="currentSource || undefined"
@@ -772,6 +775,23 @@ const noOptionsWarningMessage = computed(() => {
 </style>
 
 <style lang="scss">
+// To ensure the field options, select field and the workflow run options are all the same height
+.form-data {
+    .form-select {
+        height: 100%;
+        .multiselect,
+        .multiselect__tags {
+            height: 100%;
+        }
+    }
+    .field-options {
+        height: 100%;
+        .btn-group {
+            height: 100%;
+        }
+    }
+}
+
 .form-data-extensions-tooltip {
     display: flex;
     flex-wrap: wrap;
