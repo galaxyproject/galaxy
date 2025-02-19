@@ -16,6 +16,7 @@ import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 
 import DelayedInput from "../Common/DelayedInput.vue";
 import HelpText from "../Help/HelpText.vue";
+import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -535,7 +536,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         <div class="flex-row mb-3">
                             <div v-for="dataset in ['forward', 'reverse']" :key="dataset">
                                 {{ localize(dataset) }}:
-                                <DatasetCollectionElementView
+                                <FixedIdentifierDatasetCollectionElementView
                                     v-if="getPairElement(dataset)"
                                     :key="getPairElement(dataset)?.id"
                                     :element="getPairElement(dataset)"
