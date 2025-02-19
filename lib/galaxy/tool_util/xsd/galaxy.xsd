@@ -4315,14 +4315,14 @@ parameter should be checked (or ``true``) by default. Used only when the
         <xs:attribute name="truevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``true`` or checked by the user. Used only when the
+template if the parameter is ``true`` or checked by the user (defaults to "true"). Used only when the
 ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="falsevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``false`` or not checked by the user. Used only
+template if the parameter is ``false`` or not checked by the user (defaults to "false"). Used only
 when the ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
