@@ -6,7 +6,7 @@ import { type ValidFilter } from "@/utils/filtering";
 
 import FilterObjectStoreLink from "./FilterObjectStoreLink.vue";
 
-type FilterType = string | boolean | undefined;
+type FilterType = string | undefined;
 
 interface Props {
     name: string;
@@ -41,14 +41,14 @@ watch(
 
 const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
 
-function onChange(value: string | null) {
-    localValue.value = (value || undefined) as FilterType;
+function onChange(value: string | undefined) {
+    localValue.value = value;
 }
 </script>
 
 <template>
     <div v-if="hasSelectableObjectStores">
         <small>Filter by storage source:</small>
-        <FilterObjectStoreLink :object-stores="selectableObjectStores" :value="localValue" @change="onChange" />
+        <FilterObjectStoreLink :object-stores="selectableObjectStores || []" :value="localValue" @change="onChange" />
     </div>
 </template>
