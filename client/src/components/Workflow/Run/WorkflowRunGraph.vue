@@ -6,8 +6,8 @@ import { ref, set, watch } from "vue";
 
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getHeaderClass } from "@/composables/useInvocationGraph";
-import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { isWorkflowInput } from "../constants";
@@ -53,8 +53,7 @@ const hasLoadedGraph = ref(false);
 const errorMessage = ref<string | null>(null);
 const loadedWorkflow = ref<any | null>(null);
 
-const { stateStore } = provideScopedWorkflowStores(props.workflowId);
-const { activeNodeId } = storeToRefs(stateStore);
+const { activeNodeId } = storeToRefs(useWorkflowStateStore(props.workflowId));
 
 const datatypesMapperStore = useDatatypesMapperStore();
 const { datatypesMapper, loading: datatypesMapperLoading } = storeToRefs(datatypesMapperStore);
