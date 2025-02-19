@@ -5,6 +5,7 @@ import { ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
+import { useActivityStore } from "@/stores/activityStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -32,6 +33,8 @@ const router = useRouter();
 userStore.loadUser(false);
 const { isAnonymous, currentUser } = storeToRefs(userStore);
 
+const activityStore = useActivityStore("default");
+
 watch(
     currentUser,
     async () => {
@@ -42,6 +45,8 @@ watch(
         } else if (currentUser.value) {
             let claim;
             let claimError;
+            activityStore.toggleSideBar("");
+            activityStore.closeSideBar();
             if (props.public) {
                 const { data, error } = await GalaxyApi().GET("/api/workflow_landings/{uuid}", {
                     params: {

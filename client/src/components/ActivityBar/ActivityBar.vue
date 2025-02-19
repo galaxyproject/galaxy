@@ -112,8 +112,6 @@ function isActiveSideBar(menuKey: string) {
     return activityStore.toggledSideBar === menuKey;
 }
 
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
-
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
  */
