@@ -100,7 +100,6 @@ const isDragging = ref(false);
 
 // computed values
 const canDrag = computed(() => isActiveSideBar("settings"));
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
