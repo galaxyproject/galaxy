@@ -76,6 +76,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    size: {
+        type: String,
+        default: "md",
+    },
 });
 
 const emit = defineEmits(["dismiss", "progress", "uploaded"]);
@@ -453,21 +457,27 @@ defineExpose({
                 @input="updateDbKey" />
         </div>
         <slot name="footer" />
-        <div class="d-flex justify-content-end" :class="!disableFooter && 'upload-buttons'">
-            <BButton id="btn-local" :disabled="!enableSources" @click="uploadFile.click()">
+        <div class="d-flex justify-content-end flex-wrap" :class="!disableFooter && 'upload-buttons'">
+            <BButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile.click()">
                 <FontAwesomeIcon icon="fa-laptop" />
                 <span v-localize>Choose local file</span>
             </BButton>
-            <BButton v-if="hasRemoteFiles" id="btn-remote-files" :disabled="!enableSources" @click="eventRemoteFiles">
+            <BButton
+                v-if="hasRemoteFiles"
+                id="btn-remote-files"
+                :size="size"
+                :disabled="!enableSources"
+                @click="eventRemoteFiles">
                 <FontAwesomeIcon icon="fa-folder-open" />
                 <span v-localize>Choose remote files</span>
             </BButton>
-            <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
+            <BButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
                 <FontAwesomeIcon icon="fa-edit" />
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
                 id="btn-start"
+                :size="size"
                 :disabled="!enableStart"
                 title="Start"
                 :variant="enableStart ? 'primary' : null"
@@ -477,6 +487,7 @@ defineExpose({
             <BButton
                 v-if="isCollection"
                 id="btn-build"
+                :size="size"
                 :disabled="!enableBuild"
                 title="Build"
                 :variant="enableBuild ? 'primary' : null"
@@ -486,6 +497,7 @@ defineExpose({
             <BButton
                 v-if="emitUploaded"
                 id="btn-emit"
+                :size="size"
                 :disabled="!enableBuild"
                 title="Use Uploaded Files"
                 :variant="enableBuild ? 'primary' : null"
@@ -495,13 +507,13 @@ defineExpose({
                 </slot>
                 ({{ counterSuccess }})
             </BButton>
-            <BButton id="btn-stop" title="Pause" :disabled="!isRunning" @click="eventStop">
+            <BButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
             </BButton>
-            <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="eventReset">
+            <BButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
                 <span v-localize>Reset</span>
             </BButton>
-            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
+            <BButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
                 <span v-if="hasCallback" v-localize>Cancel</span>
                 <span v-else v-localize>Close</span>
             </BButton>
