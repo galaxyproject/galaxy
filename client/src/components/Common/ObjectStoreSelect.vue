@@ -11,7 +11,7 @@ interface RelocateProps {
 defineProps<RelocateProps>();
 
 const emit = defineEmits<{
-    (e: "select", value: string): void;
+    (e: "select", value: string | undefined | null): void;
 }>();
 
 const toWhat = "Datasets will be filtered to those stored in";
