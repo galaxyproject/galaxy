@@ -1,0 +1,11 @@
+- doc: |
+    Test that passing directory indexes works
+  job:
+    reference:
+      type: File
+      value: 1.fasta
+      file_type: fasta
+  outputs:
+    alignment:
+      class: File
+      file: bwa_mem2.sam

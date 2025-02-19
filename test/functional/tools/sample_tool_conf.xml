@@ -270,6 +270,8 @@
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
+  <tool file="bwa_mem2_idx.xml" />
+  <tool file="bwa_mem2.xml" />
 
   <tool_dir dir="parameters/" />
 

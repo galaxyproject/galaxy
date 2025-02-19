@@ -304,6 +304,7 @@
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
+    <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory" />
     <datatype extension="ome_zarr" type="galaxy.datatypes.images:OMEZarr" />
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />

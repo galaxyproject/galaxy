@@ -60,6 +60,7 @@
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory">
     </datatype>
+    <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
   </registration>
 </datatypes>

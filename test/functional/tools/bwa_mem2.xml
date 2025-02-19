@@ -1,0 +1,22 @@
+<tool id="bwa_mem2" name="BWA-MEM2" version="2.2.1" profile="24.2">
+    <requirements>
+        <requirement type="package" version="2.2.1">bwa-mem2</requirement>
+    </requirements>
+    <command><![CDATA[
+bwa-mem2 mem '$reference.extra_files_path'/index '$sequence' > '$alignment'
+    ]]></command>
+    <inputs>
+        <param name="reference" type="data" label="Select an index" format="bwa_mem2_index"/>
+        <param name="sequence" type="data" label="Select sequences" format="fasta,fastq"/>
+    </inputs>
+    <outputs>
+        <data name="alignment" format="sam"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="reference" value="bwa_mem2_index"></param>
+            <param name="sequence" value="1.fasta"></param>
+            <output name="alignment" value="bwa_mem2.sam"/>
+        </test>
+    </tests>
+</tool>

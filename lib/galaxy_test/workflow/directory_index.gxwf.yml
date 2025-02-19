@@ -1,0 +1,19 @@
+class: GalaxyWorkflow
+inputs:
+  reference:
+    type: data
+outputs:
+  alignment:
+    outputSource: bwa_mem2/alignment
+steps:
+  bwa_mem2_index:
+    tool_id: bwa_mem2_idx
+    in:
+      input_fasta:
+        source: reference
+  bwa_mem2:
+    tool_id: bwa_mem2
+    in:
+      reference: bwa_mem2_index/index
+      sequence:
+        source: reference
