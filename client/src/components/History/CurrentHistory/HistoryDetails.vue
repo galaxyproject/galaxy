@@ -53,6 +53,6 @@ function onSave(newDetails: HistorySummary) {
             <HistoryIndicators :history="history" detailed-time />
         </template>
         <!-- todo: check if object store feature active -->
-        <StorageLocationIndicator />
+        <StorageLocationIndicator :history="history" />
     </DetailsLayout>
 </template>
