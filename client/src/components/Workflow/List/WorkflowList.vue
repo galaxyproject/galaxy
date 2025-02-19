@@ -78,7 +78,7 @@ const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
 const showBookmarked = computed(() => filterText.value.includes("is:bookmarked"));
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
-const currentListView = computed(() => userStore.currentListViewPreferences.workflows || "grid");
+const currentListViewMode = computed(() => userStore.currentListViewPreferences.workflows || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
@@ -480,7 +480,7 @@ onMounted(() => {
             <WorkflowCardList
                 :workflows="workflowsLoaded"
                 :published-view="published"
-                :grid-view="currentListView === 'grid'"
+                :grid-view="currentListViewMode === 'grid'"
                 :selected-workflow-ids="selectedWorkflowIds"
                 @select="onSelectWorkflow"
                 @refreshList="load"

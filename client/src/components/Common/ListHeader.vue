@@ -38,7 +38,7 @@ const userStore = useUserStore();
 
 const sortDesc = ref(true);
 const sortBy = ref<SortBy>("update_time");
-const currentListView = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
+const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
 function onSort(newSortBy: SortBy) {
     if (sortBy.value === newSortBy) {
@@ -115,7 +115,7 @@ defineExpose({
                     v-b-tooltip
                     title="Grid view"
                     size="sm"
-                    :pressed="currentListView === 'grid'"
+                    :pressed="currentListViewMode === 'grid'"
                     variant="outline-primary"
                     @click="onToggleView('grid')">
                     <FontAwesomeIcon :icon="faGripVertical" />
@@ -126,7 +126,7 @@ defineExpose({
                     v-b-tooltip
                     title="List view"
                     size="sm"
-                    :pressed="currentListView === 'list'"
+                    :pressed="currentListViewMode === 'list'"
                     variant="outline-primary"
                     @click="onToggleView('list')">
                     <FontAwesomeIcon :icon="faBars" />
