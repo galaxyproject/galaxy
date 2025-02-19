@@ -40,7 +40,7 @@ const texts = reactive({
     },
 });
 
-const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: texts.title }];
+const breadcrumbItems = [{ title: texts.title }];
 
 function goToStorageManager() {
     router.push({ name: "StorageManager" });

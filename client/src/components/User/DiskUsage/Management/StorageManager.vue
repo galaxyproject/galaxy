@@ -18,7 +18,6 @@ interface ModalDialog {
 }
 
 const breadcrumbItems = [
-    { title: "User Preferences", to: "/user" },
     { title: "Storage Dashboard", to: "StorageDashboard" },
     { title: "Manage your account storage", superText: "(Beta)" },
 ];
