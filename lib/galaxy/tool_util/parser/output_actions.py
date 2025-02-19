@@ -5,6 +5,12 @@ Support for dynamically modifying output attributes.
 import logging
 import os.path
 import re
+from typing import (
+    Any,
+    List,
+)
+
+from typing_extensions import Protocol
 
 from galaxy import util
 
@@ -16,6 +22,16 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
+class ToolOutputActionAppConfig(Protocol):
+    tool_data_path: str
+
+
+class ToolOutputActionApp(Protocol):
+    tool_data_tables: Any  # TODO after refactor "ToolDataTableManager"
+    config: ToolOutputActionAppConfig
+    datatypes_registry: Any  # TODO after refactor galaxy.datatypes.registry.Registry
+
+
 class ToolOutputActionGroup:
     """
     Manages a set of tool output dataset actions directives
@@ -23,15 +39,15 @@ class ToolOutputActionGroup:
 
     tag = "group"
 
-    def __init__(self, parent, config_elem):
-        self.parent = parent
+    def __init__(self, app: ToolOutputActionApp, config_elem):
+        self._app = app
         self.actions = []
         if config_elem is not None:
             for elem in config_elem:
                 if elem.tag == "conditional":
-                    self.actions.append(ToolOutputActionConditional(self, elem))
+                    self.actions.append(ToolOutputActionConditional(app, elem))
                 elif elem.tag == "action":
-                    self.actions.append(ToolOutputAction.from_elem(self, elem))
+                    self.actions.append(ToolOutputAction.from_elem(app, elem))
                 else:
                     log.debug(f"Unknown ToolOutputAction tag specified: {elem.tag}")
 
@@ -40,8 +56,8 @@ class ToolOutputActionGroup:
             action.apply_action(output_dataset, other_values)
 
     @property
-    def tool(self):
-        return self.parent.tool
+    def app(self) -> ToolOutputActionApp:
+        return self._app
 
     def __len__(self):
         return len(self.actions)
@@ -51,19 +67,22 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
     tag = "when"
 
     @classmethod
-    def from_elem(cls, parent, when_elem):
+    def from_elem(cls, app: ToolOutputActionApp, conditional_name_parts: List[str], when_elem):
         """Loads the proper when by attributes of elem"""
         when_value = when_elem.get("value", None)
         if when_value is not None:
-            return ValueToolOutputActionConditionalWhen(parent, when_elem, when_value)
+            return ValueToolOutputActionConditionalWhen(app, conditional_name_parts, when_elem, when_value)
         else:
             when_value = when_elem.get("datatype_isinstance", None)
             if when_value is not None:
-                return DatatypeIsInstanceToolOutputActionConditionalWhen(parent, when_elem, when_value)
+                return DatatypeIsInstanceToolOutputActionConditionalWhen(
+                    app, conditional_name_parts, when_elem, when_value
+                )
         raise TypeError("When type not implemented")
 
-    def __init__(self, parent, config_elem, value):
-        super().__init__(parent, config_elem)
+    def __init__(self, app: ToolOutputActionApp, conditional_name_parts: List[str], config_elem, value):
+        super().__init__(app, config_elem)
+        self.conditional_name_parts = conditional_name_parts
         self.value = value
 
     def is_case(self, other_values):
@@ -71,7 +90,7 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
 
     def get_ref(self, other_values):
         ref = other_values
-        for ref_name in self.parent.name:
+        for ref_name in self.conditional_name_parts:
             assert ref_name in ref, f"Required dependency '{ref_name}' not found in incoming values"
             ref = ref.get(ref_name)
         return ref
@@ -92,9 +111,9 @@ class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
 class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
     tag = "when datatype_isinstance"
 
-    def __init__(self, parent, config_elem, value):
-        super().__init__(parent, config_elem, value)
-        self.value = type(self.tool.app.datatypes_registry.get_datatype_by_extension(value))
+    def __init__(self, app: ToolOutputActionApp, conditional_name_parts: List[str], config_elem, value):
+        super().__init__(app, conditional_name_parts, config_elem, value)
+        self.value = type(app.datatypes_registry.get_datatype_by_extension(value))
 
     def is_case(self, other_values) -> bool:
         ref = self.get_ref(other_values)
@@ -104,53 +123,53 @@ class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditio
 class ToolOutputActionConditional:
     tag = "conditional"
 
-    def __init__(self, parent, config_elem):
-        self.parent = parent
-        self.name = config_elem.get("name", None)
-        assert self.name is not None, "Required 'name' attribute missing from ToolOutputActionConditional"
-        self.name = self.name.split(".")
+    def __init__(self, app: ToolOutputActionApp, config_elem):
+        self._app = app
+        raw_name = config_elem.get("name", None)
+        assert raw_name is not None, "Required 'name' attribute missing from ToolOutputActionConditional"
+        self.name = raw_name.split(".")
         self.cases = []
         for when_elem in config_elem.findall("when"):
-            self.cases.append(ToolOutputActionConditionalWhen.from_elem(self, when_elem))
+            self.cases.append(ToolOutputActionConditionalWhen.from_elem(app, self.name, when_elem))
 
     def apply_action(self, output_dataset, other_values) -> None:
         for case in self.cases:
             case.apply_action(output_dataset, other_values)
 
     @property
-    def tool(self):
-        return self.parent.tool
+    def app(self) -> ToolOutputActionApp:
+        return self._app
 
 
 class ToolOutputAction:
     tag = "action"
 
     @classmethod
-    def from_elem(cls, parent, elem):
+    def from_elem(cls, app: ToolOutputActionApp, elem):
         """Loads the proper action by the type attribute of elem"""
         action_type = elem.get("type", None)
         assert action_type is not None, "Required 'type' attribute missing from ToolOutputAction"
-        return action_types[action_type](parent, elem)
+        return action_types[action_type](app, elem)
 
-    def __init__(self, parent, elem):
-        self.parent = parent
+    def __init__(self, app: ToolOutputActionApp, elem):
+        self._app = app
         self.default = elem.get("default", None)
         option_elem = elem.find("option")
-        self.option = ToolOutputActionOption.from_elem(self, option_elem)
+        self.option = ToolOutputActionOption.from_elem(app, option_elem)
 
     def apply_action(self, output_dataset, other_values):
         raise TypeError("Not implemented")
 
     @property
-    def tool(self):
-        return self.parent.tool
+    def app(self) -> ToolOutputActionApp:
+        return self._app
 
 
 class ToolOutputActionOption:
     tag = "object"
 
     @classmethod
-    def from_elem(cls, parent, elem):
+    def from_elem(cls, app: ToolOutputActionApp, elem):
         """Loads the proper action by the type attribute of elem"""
         if elem is None:
             option_type = (
@@ -159,21 +178,21 @@ class ToolOutputActionOption:
         else:
             option_type = elem.get("type", None)
         assert option_type is not None, "Required 'type' attribute missing from ToolOutputActionOption"
-        return option_types[option_type](parent, elem)
+        return option_types[option_type](app, elem)
 
-    def __init__(self, parent, elem):
-        self.parent = parent
+    def __init__(self, app: ToolOutputActionApp, elem):
+        self._app = app
         self.filters = []
         if elem is not None:
             for filter_elem in elem.findall("filter"):
-                self.filters.append(ToolOutputActionOptionFilter.from_elem(self, filter_elem))
+                self.filters.append(ToolOutputActionOptionFilter.from_elem(app, filter_elem))
 
     def get_value(self, other_values):
         raise TypeError("Not implemented")
 
     @property
-    def tool(self):
-        return self.parent.tool
+    def app(self) -> ToolOutputActionApp:
+        return self._app
 
 
 class NullToolOutputActionOption(ToolOutputActionOption):
@@ -186,8 +205,8 @@ class NullToolOutputActionOption(ToolOutputActionOption):
 class FromFileToolOutputActionOption(ToolOutputActionOption):
     tag = "from_file"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.name = elem.get("name", None)
         assert self.name is not None, "Required 'name' attribute missing from FromFileToolOutputActionOption"
         self.column = elem.get("column", None)
@@ -199,7 +218,7 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
         self.options = []
         data_file = self.name
         if not os.path.isabs(data_file):
-            data_file = os.path.join(self.tool.app.config.tool_data_path, data_file)
+            data_file = os.path.join(self.app.config.tool_data_path, data_file)
         for line in open(data_file):
             self.options.append(line.rstrip("\n\r").split(self.separator))
 
@@ -218,8 +237,8 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
 class FromParamToolOutputActionOption(ToolOutputActionOption):
     tag = "from_param"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.name = elem.get("name", None)
         assert self.name is not None, "Required 'name' attribute missing from FromFileToolOutputActionOption"
         self.name = self.name.split(".")
@@ -268,13 +287,13 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
     tag = "from_data_table"
 
     # TODO: allow accessing by column 'name' not just index
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.name = elem.get("name", None)
         assert self.name is not None, "Required 'name' attribute missing from FromDataTableOutputActionOption"
         self.missing_tool_data_table_name = None
-        if self.name in self.tool.app.tool_data_tables:
-            self.options = self.tool.app.tool_data_tables[self.name].get_fields()
+        if self.name in self.app.tool_data_tables:
+            self.options = self.app.tool_data_tables[self.name].get_fields()
             self.column = elem.get("column", None)
             assert self.column is not None, "Required 'column' attribute missing from FromDataTableOutputActionOption"
             self.column = int(self.column)
@@ -302,8 +321,8 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
 class MetadataToolOutputAction(ToolOutputAction):
     tag = "metadata"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.name = elem.get("name", None)
         assert self.name is not None, "Required 'name' attribute missing from MetadataToolOutputAction"
 
@@ -333,8 +352,8 @@ class MetadataToolOutputAction(ToolOutputAction):
 class FormatToolOutputAction(ToolOutputAction):
     tag = "format"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.default = elem.get("default", None)
 
     def apply_action(self, output_dataset, other_values) -> None:
@@ -349,28 +368,28 @@ class ToolOutputActionOptionFilter:
     tag = "filter"
 
     @classmethod
-    def from_elem(cls, parent, elem):
+    def from_elem(cls, app: ToolOutputActionApp, elem):
         """Loads the proper action by the type attribute of elem"""
         filter_type = elem.get("type", None)
         assert filter_type is not None, "Required 'type' attribute missing from ToolOutputActionOptionFilter"
-        return filter_types[filter_type](parent, elem)
+        return filter_types[filter_type](app, elem)
 
-    def __init__(self, parent, elem):
-        self.parent = parent
+    def __init__(self, app: ToolOutputActionApp, elem):
+        self._app = app
 
     def filter_options(self, options, other_values):
         raise TypeError("Not implemented")
 
     @property
-    def tool(self):
-        return self.parent.tool
+    def app(self) -> ToolOutputActionApp:
+        return self._app
 
 
 class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
     tag = "param_value"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.ref = elem.get("ref", None)
         if self.ref:
             self.ref = self.ref.split(".")
@@ -417,8 +436,8 @@ class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
 class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
     tag = "insert_column"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.ref = elem.get("ref", None)
         if self.ref:
             self.ref = self.ref.split(".")
@@ -460,8 +479,8 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
 class MultipleSplitterFilter(ToolOutputActionOptionFilter):
     tag = "multiple_splitter"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.column = elem.get("column", None)
         assert self.column is not None, "Required 'column' attribute missing from MultipleSplitterFilter"
         self.column = int(self.column)
@@ -478,8 +497,8 @@ class MultipleSplitterFilter(ToolOutputActionOptionFilter):
 class ColumnStripFilter(ToolOutputActionOptionFilter):
     tag = "column_strip"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.column = elem.get("column", None)
         assert self.column is not None, "Required 'column' attribute missing from ColumnStripFilter"
         self.column = int(self.column)
@@ -495,8 +514,8 @@ class ColumnStripFilter(ToolOutputActionOptionFilter):
 class ColumnReplaceFilter(ToolOutputActionOptionFilter):
     tag = "column_replace"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.old_column = elem.get("old_column", None)
         self.old_value = elem.get("old_value", None)
         self.new_value = elem.get("new_value", None)
@@ -534,8 +553,8 @@ class ColumnReplaceFilter(ToolOutputActionOptionFilter):
 class MetadataValueFilter(ToolOutputActionOptionFilter):
     tag = "metadata_value"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.ref = elem.get("ref", None)
         assert self.ref is not None, "Required 'ref' attribute missing from MetadataValueFilter"
         self.ref = self.ref.split(".")
@@ -563,8 +582,8 @@ class MetadataValueFilter(ToolOutputActionOptionFilter):
 class BooleanFilter(ToolOutputActionOptionFilter):
     tag = "boolean"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.column = elem.get("column", None)
         assert self.column is not None, "Required 'column' attribute missing from BooleanFilter"
         self.column = int(self.column)
@@ -587,8 +606,8 @@ class BooleanFilter(ToolOutputActionOptionFilter):
 class StringFunctionFilter(ToolOutputActionOptionFilter):
     tag = "string_function"
 
-    def __init__(self, parent, elem):
-        super().__init__(parent, elem)
+    def __init__(self, app: ToolOutputActionApp, elem):
+        super().__init__(app, elem)
         self.column = elem.get("column", None)
         assert self.column is not None, "Required 'column' attribute missing from StringFunctionFilter"
         self.column = int(self.column)

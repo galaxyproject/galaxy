@@ -37,11 +37,11 @@ if TYPE_CHECKING:
         ResourceRequirement,
         ToolRequirements,
     )
+    from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
     from galaxy.tool_util.parser.output_objects import (
         ToolOutput,
         ToolOutputCollection,
     )
-    from galaxy.tools import Tool
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
@@ -338,7 +338,7 @@ class ToolSource(metaclass=ABCMeta):
 
     @abstractmethod
     def parse_outputs(
-        self, tool: Optional["Tool"]
+        self, app: Optional["ToolOutputActionApp"]
     ) -> Tuple[Dict[str, "ToolOutput"], Dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
