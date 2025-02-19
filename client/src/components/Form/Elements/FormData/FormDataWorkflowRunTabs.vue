@@ -100,6 +100,7 @@ function goToFirstWorkflowTab() {
                 :list-db-keys="listDbKeys"
                 disable-footer
                 emit-uploaded
+                size="sm"
                 @uploaded="addUploadedFiles"
                 @dismiss="goToFirstWorkflowTab">
                 <template v-slot:footer>
