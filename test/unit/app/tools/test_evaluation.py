@@ -12,7 +12,6 @@ from galaxy.model import (
     JobToInputDatasetAssociation,
     JobToOutputDatasetAssociation,
 )
-from galaxy.tool_util.parameters.models import ParameterOption
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.evaluation import ToolEvaluator
 
@@ -28,6 +27,7 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat,
 )
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase

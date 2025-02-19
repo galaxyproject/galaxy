@@ -4,7 +4,7 @@ import pytest
 
 from galaxy import model
 from galaxy.model.base import transaction
-from galaxy.tool_util.parameters.models import ParameterOption
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from .util import BaseParameterTestCase
 

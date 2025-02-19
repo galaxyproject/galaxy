@@ -31,8 +31,8 @@ from galaxy.model import (
     MetadataFile,
     User,
 )
-from galaxy.tool_util.parameters.models import ParameterOption
 from galaxy.tools.expressions import do_eval
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
     is_runtime_value,
     workflow_building_modes,

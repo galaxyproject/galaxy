@@ -1,6 +1,6 @@
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
-from galaxy.tool_util.parameters.models import ParameterOption
 from galaxy.tools.parameters.dynamic_options import DynamicOptions
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.work.context import WorkRequestContext
