@@ -40,7 +40,7 @@ describe("DatasetStorage.vue", () => {
             })
         );
 
-        wrapper = shallowMount(DatasetStorage, {
+        wrapper = shallowMount(DatasetStorage as object, {
             propsData: { datasetId: TEST_DATASET_ID },
             localVue,
         });
