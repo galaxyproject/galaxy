@@ -300,7 +300,7 @@ function updateExportParams(newParams: ExportParams) {
                     <BTab
                         v-if="zenodoSource"
                         id="zenodo-file-source-tab"
-                        title="to ZENODO"
+                        :title="`to ${zenodoSource.label}`"
                         title-link-class="tab-export-to-zenodo-repo">
                         <div class="zenodo-info">
                             <img
@@ -318,7 +318,10 @@ function updateExportParams(newParams: ExportParams) {
                             </p>
                         </div>
 
-                        <RDMCredentialsInfo what="history export archive" selected-repository="ZENODO" />
+                        <RDMCredentialsInfo
+                            what="history export archive"
+                            :selected-repository="zenodoSource"
+                            :is-private-file-source="isPrivateFileSource(zenodoSource)" />
                         <ExportToRDMRepositoryForm
                             what="history"
                             :default-filename="defaultFileName"
