@@ -11,10 +11,16 @@ import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/m
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 interface ModalDialog {
     openModal: () => void;
 }
+
+const breadcrumbItems = [
+    { title: "Storage Dashboard", to: "StorageDashboard" },
+    { title: "Manage your account storage", superText: "(Beta)" },
+];
 
 const { config } = useConfig();
 const { cleanupCategories } = useCleanupCategories();
@@ -50,11 +56,8 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
 </script>
 
 <template>
-    <b-container fluid>
-        <b-link to="StorageDashboard">{{ localize("Back to Dashboard") }}</b-link>
-        <h2 class="text-center my-3">
-            <b>{{ localize("Manage your account storage") }}</b> <sup class="text-beta">(Beta)</sup>
-        </h2>
+    <div>
+        <BreadcrumbHeading :items="breadcrumbItems" />
 
         <b-row class="justify-content-md-center">
             <b-alert show dismissible variant="warning">
@@ -96,11 +99,5 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
         <CleanupResultDialog ref="resultModal" :result="cleanupResult" />
-    </b-container>
+    </div>
 </template>
-
-<style lang="css" scoped>
-.text-beta {
-    color: #717273;
-}
-</style>
