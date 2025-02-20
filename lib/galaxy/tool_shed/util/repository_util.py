@@ -17,7 +17,6 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     false,
-    or_,
 )
 from sqlalchemy.orm import joinedload
 
@@ -240,30 +239,6 @@ def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):
                 if name == stripped_file_name:
                     return os.path.abspath(os.path.join(root, name))
     return file_path
-
-
-def get_ids_of_tool_shed_repositories_being_installed(app, as_string=False):
-    installing_repository_ids = []
-    new_status = app.install_model.ToolShedRepository.installation_status.NEW
-    cloning_status = app.install_model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = (
-        app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    )
-    loading_datatypes_status = app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in app.install_model.context.query(app.install_model.ToolShedRepository).filter(
-        or_(
-            app.install_model.ToolShedRepository.status == new_status,
-            app.install_model.ToolShedRepository.status == cloning_status,
-            app.install_model.ToolShedRepository.status == setting_tool_versions_status,
-            app.install_model.ToolShedRepository.status == installing_dependencies_status,
-            app.install_model.ToolShedRepository.status == loading_datatypes_status,
-        )
-    ):
-        installing_repository_ids.append(app.security.encode_id(tool_shed_repository.id))
-    if as_string:
-        return ",".join(installing_repository_ids)
-    return installing_repository_ids
 
 
 def get_installed_repository(
@@ -773,7 +748,6 @@ __all__ = (
     "extract_components_from_tuple",
     "generate_tool_shed_repository_install_dir",
     "get_absolute_path_to_file_in_repository",
-    "get_ids_of_tool_shed_repositories_being_installed",
     "get_installed_repository",
     "get_installed_tool_shed_repository",
     "get_prior_import_or_install_required_dict",
