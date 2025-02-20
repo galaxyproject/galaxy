@@ -23,6 +23,7 @@ interface Props {
     annotation?: string;
     showAnnotation?: boolean;
     summarized?: DetailsLayoutSummarized;
+    noNameEdit?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -152,6 +153,7 @@ function selectText() {
 
         <div v-else class="mt-3" data-description="edit form">
             <BFormInput
+                v-if="!props.noNameEdit"
                 ref="name"
                 v-model="localProps.name"
                 class="mb-2"

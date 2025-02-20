@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 interface Props {
     value: string;
     title?: string;
+    component?: string;
 }
 
 const props = defineProps<Props>();
@@ -15,6 +16,7 @@ const emit = defineEmits<{
     (e: "input", value: string): void;
 }>();
 
+const clickToEditInput = ref<HTMLInputElement | null>(null);
 const editable = ref(false);
 const localValue = ref(props.value);
 
@@ -25,28 +27,48 @@ watch(
     (value) => {
         if (!value) {
             emit("input", localValue.value);
+        } else {
+            setTimeout(() => {
+                clickToEditInput.value?.focus();
+            });
         }
     }
 );
+
+watch(
+    () => props.value,
+    (value) => {
+        if (!editable.value) {
+            localValue.value = value;
+        }
+    }
+);
+
+function revertToOriginal() {
+    localValue.value = props.value;
+    editable.value = false;
+}
 </script>
 
 <template>
     <div v-if="editable">
         <input
             id="click-to-edit-input"
+            ref="clickToEditInput"
             v-model="localValue"
             tabindex="0"
             contenteditable
             @blur.prevent.stop="editable = false"
             @keyup.prevent.stop.enter="editable = false"
-            @keyup.prevent.stop.escape="editable = false"
+            @keyup.prevent.stop.escape="revertToOriginal"
             @click.prevent.stop />
         <BButton class="p-0" style="border: none" variant="link" size="sm" @click.prevent.stop="editable = false">
             <FontAwesomeIcon :icon="faSave" />
         </BButton>
     </div>
 
-    <label
+    <component
+        :is="props.component || 'label'"
         v-else
         role="button"
         for="click-to-edit-input"
@@ -56,7 +78,7 @@ watch(
         @click.stop="editable = true">
         <span v-if="computedValue">{{ computedValue }}</span>
         <i v-else>{{ title }}</i>
-    </label>
+    </component>
 </template>
 
 <style scoped lang="scss">
