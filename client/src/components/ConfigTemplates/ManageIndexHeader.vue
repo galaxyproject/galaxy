@@ -2,12 +2,11 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
-import { faUserGear } from "font-awesome-6";
-import { RouterLink } from "vue-router";
+import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
-import Heading from "@/components/Common/Heading.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 interface Props {
     header: string;
@@ -18,18 +17,14 @@ interface Props {
 const props = defineProps<Props>();
 
 const createUrl = props.createRoute;
+
+const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user" }, { title: props.header }]);
 </script>
 
 <template>
     <div>
         <div class="d-flex">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">
-                <RouterLink to="/user">
-                    <FontAwesomeIcon v-b-tooltip.hover.noninteractive :icon="faUserGear" title="User preferences" />
-                </RouterLink>
-                /
-                {{ header }}
-            </Heading>
+            <BreadcrumbHeading :items="breadcrumbItems" />
 
             <div>
                 <BButton
