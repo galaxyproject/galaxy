@@ -45,7 +45,6 @@ watch(
         } else if (currentUser.value) {
             let claim;
             let claimError;
-            activityStore.toggleSideBar("");
             activityStore.closeSideBar();
             if (props.public) {
                 const { data, error } = await GalaxyApi().GET("/api/workflow_landings/{uuid}", {
