@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, ref } from "vue";
+import { computed, type PropType, ref } from "vue";
 
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
 import { prependPath } from "@/utils/redirect";
@@ -10,7 +10,11 @@ import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 const props = defineProps({
     userPreferredObjectStoreId: {
-        type: String,
+        type: String as PropType<string | null>,
+        default: null,
+    },
+    preferredObjectStoreId: {
+        type: String as PropType<string | null>,
         default: null,
     },
     history: {
@@ -20,7 +24,6 @@ const props = defineProps({
 });
 
 const error = ref<string | null>(null);
-const selectedObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history";
 const galaxySelectionDefaultTitle = "Use Galaxy Defaults";
@@ -76,7 +79,6 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
     } catch (e) {
         error.value = errorMessageAsString(e);
     }
-    selectedObjectStoreId.value = preferredObjectStoreId;
     emit("updated", preferredObjectStoreId);
 }
 </script>
@@ -84,7 +86,7 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
     <SelectObjectStore
         :parent-error="error || undefined"
         :for-what="newDatasetsDescription"
-        :selected-object-store-id="selectedObjectStoreId"
+        :selected-object-store-id="preferredObjectStoreId"
         :default-option-title="defaultOptionTitle"
         :default-option-description="defaultOptionDescription"
         @onSubmit="handleSubmit" />
