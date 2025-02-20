@@ -41,7 +41,7 @@ watch(
 
 const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
 
-function onChange(value: string | undefined) {
+function onChange(value: FilterType) {
     localValue.value = value;
 }
 </script>

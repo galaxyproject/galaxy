@@ -3,14 +3,14 @@ import type { HDASummary } from "@/api";
 import localize from "@/utils/localization";
 
 interface Props {
-    element: HDASummary | undefined;
+    element?: HDASummary;
     hasActions?: boolean;
 }
 
 defineProps<Props>();
 
 const emit = defineEmits<{
-    (event: "element-is-discarded", element: any): void;
+    (event: "element-is-discarded", element: HDASummary): void;
 }>();
 </script>
 
@@ -18,7 +18,7 @@ const emit = defineEmits<{
     <span>
         <DatasetCollectionElementView
             v-if="element"
-            :key="element?.id"
+            :key="element.id"
             :element="element"
             has-actions
             @element-is-discarded="emit('element-is-discarded', element)" />
