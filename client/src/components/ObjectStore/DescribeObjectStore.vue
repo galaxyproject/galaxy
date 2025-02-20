@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
-import type { ConcreteObjectStoreModel } from "./types";
+import type { AnyStorageDescription } from "./types";
 
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
@@ -11,7 +11,7 @@ import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 interface Props {
-    storageInfo: ConcreteObjectStoreModel;
+    storageInfo: AnyStorageDescription;
     what: string;
 }
 

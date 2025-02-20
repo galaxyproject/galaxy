@@ -21,6 +21,7 @@ const TEST_STORAGE_API_RESPONSE_WITHOUT_ID: DatasetStorageDetails = {
     hashes: [],
     sources: [],
     percent_used: 0,
+    private: false,
 };
 const TEST_DATASET_ID = "1";
 const TEST_ERROR_MESSAGE = "Opps all errors.";

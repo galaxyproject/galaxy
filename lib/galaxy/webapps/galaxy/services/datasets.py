@@ -154,6 +154,9 @@ class DatasetStorageDetails(Model):
     relocatable: bool = Field(
         description="Indicator of whether the objectstore for this dataset can be switched by this user."
     )
+    private: bool = Field(
+        description="Indicator of whether the objectstore is marked as private.",
+    )
 
 
 class DatasetInheritanceChainEntry(Model):
@@ -438,6 +441,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
         badges = object_store.get_concrete_store_badges(dataset)
+        private = object_store.is_private(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -469,6 +473,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             quota=quota,
             badges=badges,
             relocatable=relocatable,
+            private=private,
         )
 
     def show_inheritance_chain(
