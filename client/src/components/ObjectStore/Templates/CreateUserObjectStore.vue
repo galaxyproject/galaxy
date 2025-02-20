@@ -158,7 +158,7 @@ function getTypeIcon(t: ObjectStoreTypes) {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "breakpoints.scss";
+@import "_breakpoints.scss";
 
 .user-object-store-templates {
     .user-object-store-templates-search {

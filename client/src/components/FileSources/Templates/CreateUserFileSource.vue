@@ -177,7 +177,7 @@ function getTypeIcon(t: FileSourceTypes) {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "breakpoints.scss";
+@import "_breakpoints.scss";
 
 .file-source-templates {
     .file-source-templates-search {

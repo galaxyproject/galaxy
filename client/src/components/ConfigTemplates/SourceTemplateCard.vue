@@ -53,7 +53,7 @@ function markdownToHTML(text: string) {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "breakpoints.scss";
+@import "_breakpoints.scss";
 
 .source-template-card {
     width: calc(100% / 3 - 1rem);
