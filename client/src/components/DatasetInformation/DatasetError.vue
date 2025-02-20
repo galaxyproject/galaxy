@@ -126,6 +126,14 @@ function onMissingJobId() {
     errorMessage.value = "No job ID found for this dataset.";
 }
 
+const userEmail = computed<string | null>(() => {
+    if (currentUser && currentUser.value && "email" in currentUser.value) {
+        return currentUser.value.email;
+    } else {
+        return null;
+    }
+});
+
 onMounted(async () => {
     await getDatasetDetails();
 
@@ -166,19 +174,21 @@ onMounted(async () => {
                         may not always be accurate.
                     </span>
                 </p>
-                <BCard class="mb-2">
+                <BCard v-if="'tool_stderr' in jobDetails" class="mb-2">
                     <GalaxyWizard
                         view="error"
-                        :query="jobDetails.tool_stderr"
+                        :query="jobDetails.tool_stderr ?? ''"
                         context="tool_error"
                         :job-id="jobDetails.id" />
                 </BCard>
             </template>
 
-            <DatasetErrorDetails
-                :tool-stderr="jobDetails.tool_stderr"
-                :job-stderr="jobDetails.job_stderr"
-                :job-messages="jobDetails.job_messages" />
+            <span v-if="'tool_stderr' in jobDetails">
+                <DatasetErrorDetails
+                    :tool-stderr="jobDetails.tool_stderr ?? undefined"
+                    :job-stderr="jobDetails.job_stderr ?? undefined"
+                    :job-messages="jobDetails.job_messages" />
+            </span>
 
             <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                 <h4 class="common_problems mt-3 h-md">Detected Common Potential Problems</h4>
@@ -216,7 +226,7 @@ onMounted(async () => {
 
             <div v-if="showForm" id="dataset-error-form">
                 <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
-                <span v-if="currentUser?.email">{{ currentUser.email }}</span>
+                <span v-if="userEmail">{{ userEmail }}</span>
                 <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
 
                 <FormElement
