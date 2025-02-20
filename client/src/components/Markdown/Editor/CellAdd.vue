@@ -18,7 +18,7 @@
                                 :key="optionIndex"
                                 :title="option.title"
                                 :description="option.description"
-                                @click="$emit('click', { ...option.cell, configure: false, toggle: true })" />
+                                @click="$emit('click', { configure: false, toggle: true, ...option.cell })" />
                         </div>
                     </div>
                 </div>

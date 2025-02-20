@@ -29,7 +29,9 @@ const errorMessage = ref("");
 
 function onChange(newValue: OptionType) {
     const newValues = { ...contentObject.value?.args, history_dataset_id: newValue.id };
-    const newContent = Object.entries(newValues).map(([key, value]) => `${key}=${value}`).join(" ");
+    const newContent = Object.entries(newValues)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(" ");
     emit("change", `${contentObject.value?.name}(${newContent})`);
 }
 
