@@ -221,7 +221,7 @@ onMounted(async () => {
 
             <h4 class="mb-3 h-md">Issue Report</h4>
             <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
-                <span v-html="renderMarkdown(resultMessage[0])" />
+                <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
             </BAlert>
 
             <div v-if="showForm" id="dataset-error-form">
