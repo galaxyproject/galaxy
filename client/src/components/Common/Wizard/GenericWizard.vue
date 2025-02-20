@@ -109,6 +109,10 @@ const stepsGridColumnsTemplate = computed(() => {
             .join(" ") + " max-content"
     );
 });
+
+const steps = computed<[string, WizardStep][]>(() => {
+    return Object.entries(props.use.steps.value);
+});
 </script>
 
 <template>
@@ -120,7 +124,7 @@ const stepsGridColumnsTemplate = computed(() => {
             <BCard>
                 <BCardBody class="wizard-steps">
                     <div
-                        v-for="(step, id, i) in props.use.steps.value"
+                        v-for="([id, step], i) in steps"
                         :key="id"
                         class="wizard-step"
                         :class="step.isSkippable() ? 'skipped ' : ''">
