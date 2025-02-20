@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormInput } from "bootstrap-vue";
-import { faNetworkWired, faUserGear } from "font-awesome-6";
+import { faNetworkWired } from "font-awesome-6";
 import { computed, ref } from "vue";
-import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import {
@@ -16,10 +14,16 @@ import { Toast } from "@/composables/toast";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import Filtering from "@/utils/filtering";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SourceTemplateCard from "@/components/ConfigTemplates/SourceTemplateCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const breadcrumbItems = [
+    { title: "User Preferences", to: "/user" },
+    { title: "Remote File Sources", to: "/file_source_instances/index" },
+    { title: "Create New" },
+];
 type AvailableTypes = { type: FileSourceTypes } & FileSourceTypesDetail[keyof FileSourceTypesDetail];
 
 const router = useRouter();
@@ -91,14 +95,7 @@ function getTypeIcon(t: FileSourceTypes) {
 <template>
     <div class="file-source-templates">
         <div class="file-source-templates-list-header">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">
-                <RouterLink to="/user">
-                    <FontAwesomeIcon v-b-tooltip.hover.noninteractive :icon="faUserGear" title="User preferences" />
-                </RouterLink>
-                /
-                <RouterLink to="/file_source_instances/index"> Remote File Sources</RouterLink>
-                / Templates
-            </Heading>
+            <BreadcrumbHeading :items="breadcrumbItems" />
         </div>
 
         <div class="file-source-templates-search">
