@@ -46,6 +46,14 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a remote file source plugin based on the WebDAV protocol.",
     },
+    elabftw: {
+        icon: faNetworkWired,
+        message: "This is a remote file source that connects with an eLabFTW instance.",
+    },
+    inveniordm: {
+        icon: faNetworkWired,
+        message: "This is a remote file source that connects with an InvenioRDM instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {
