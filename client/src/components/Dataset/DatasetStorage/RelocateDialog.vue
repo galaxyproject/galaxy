@@ -16,6 +16,17 @@ const emit = defineEmits<{
     (e: "closeModal"): void;
 }>();
 
+function relocate(objectStoreId: string | undefined | null) {
+    if (objectStoreId) {
+        // all the target object stores will have an object store id - they were
+        // generated thusly. But the type system doesn't know this. So this function
+        // wraps the emit.
+        emit("relocate", objectStoreId);
+    } else {
+        console.error("Serious logic problem, this branch should be unreachable.");
+    }
+}
+
 const fromWhat = "This dataset location is";
 const toWhat = "This dataset will be relocated to";
 </script>
@@ -41,7 +52,7 @@ const toWhat = "This dataset will be relocated to";
                 class="swap-target-object-store-select-button"
                 variant="outline-primary"
                 :object-store="objectStore"
-                @click="emit('relocate', objectStore.object_store_id)" />
+                @click="relocate(objectStore.object_store_id)" />
         </b-button-group>
         <ObjectStoreSelectButtonDescribePopover
             id-prefix="swap-target"
