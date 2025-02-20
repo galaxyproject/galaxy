@@ -18,6 +18,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 import type { SelectedWorkflow } from "./types";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
@@ -35,6 +36,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
 });
+
+const breadcrumbItems = [{ title: "Workflows" }];
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -352,11 +355,9 @@ onMounted(() => {
 <template>
     <div id="workflows-list" class="workflows-list">
         <div id="workflows-list-header" class="workflows-list-header mb-2">
-            <div class="d-flex flex-gapx-1">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
-
+            <BreadcrumbHeading :items="breadcrumbItems">
                 <WorkflowListActions />
-            </div>
+            </BreadcrumbHeading>
 
             <BNav pills justified class="mb-2">
                 <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
