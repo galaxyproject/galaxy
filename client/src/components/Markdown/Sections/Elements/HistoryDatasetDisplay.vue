@@ -55,7 +55,10 @@
                 </span>
             </b-card-header>
             <b-card-body>
-                <UrlDataProvider v-slot="{ result: itemContent, loading: datasetLoading, error }" :url="itemUrl">
+                <UrlDataProvider
+                    v-slot="{ result: itemContent, loading: datasetLoading, error }"
+                    :key="itemUrl"
+                    :url="itemUrl">
                     <LoadingSpan v-if="datasetLoading" message="Loading Dataset" />
                     <LoadingSpan v-else-if="datatypesMapperStore.loading" message="Loading Datatypes" />
                     <div v-else-if="error">{{ error }}</div>
@@ -68,7 +71,7 @@
                             :src="displayUrl" />
                         <HistoryDatasetAsImage
                             v-else-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['galaxy.datatypes.images.Image'])"
-                            :args="args" />
+                            :dataset-id="datasetId" />
                         <div v-else-if="itemContent.item_data">
                             <div v-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['tabular'])">
                                 <LoadingSpan v-if="metaLoading" message="Loading Metadata" />

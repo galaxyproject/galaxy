@@ -1,10 +1,11 @@
 <template>
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
+    <ConfigureSelector v-else-if="variant === 'workflow_id'" type="workflows" @change="onChange($event)" />
     <ConfigureSelector v-else type="datasets" @change="onChange($event)" />
 </template>
 
 <script setup lang="ts">
-import { type Ref, ref, watch } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import type { OptionType } from "@/components/Markdown/Editor/Configurations/types";
 import { getArgs } from "@/components/Markdown/parse";
@@ -27,8 +28,18 @@ interface ObjectType {
 const contentObject: Ref<ObjectType | undefined> = ref();
 const errorMessage = ref("");
 
+const variant = computed(() => {
+    const name = contentObject.value?.name || "";
+    if (["workflow_display"].includes(name)) {
+        return "workflow_id";
+    } else {
+        return "history_dataset_id";
+    }
+});
+
 function onChange(newValue: OptionType) {
-    const newValues = { ...contentObject.value?.args, history_dataset_id: newValue.id };
+    const newValues = { ...contentObject.value?.args };
+    newValues[variant.value] = newValue.id;
     const newContent = Object.entries(newValues)
         .map(([key, value]) => `${key}=${value}`)
         .join(" ");

@@ -44,7 +44,7 @@ const currentValue = computed({
 
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
-        const { data, error } = await getDatasets(query);
+        const { data, error } = await doQuery(query);
         if (error) {
             errorMessage.value = error.err_msg;
         } else {
@@ -58,6 +58,14 @@ const search = debounce(async (query: string = "") => {
     }
 }, DELAY);
 
+async function doQuery(query: string = ""): Promise<ApiResponse> {
+    if (props.type === "workflows") {
+        return getWorkflows(query);
+    } else {
+        return getDatasets(query);
+    }
+}
+
 async function getDatasets(query: string = ""): Promise<ApiResponse> {
     const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
@@ -69,6 +77,11 @@ async function getDatasets(query: string = ""): Promise<ApiResponse> {
             },
         },
     });
+    return { data, error };
+}
+
+async function getWorkflows(query: string = ""): Promise<ApiResponse> {
+    const { data, error } = await GalaxyApi().GET("/api/workflows");
     return { data, error };
 }
 
