@@ -270,9 +270,9 @@ function onAlert(value: string | undefined) {
                 :type="props.type" />
             <FormText
                 v-else-if="
-                    ['text', 'password'].includes(props.type) ||
+                    ['text', 'password'].includes(props.type ?? '') ||
                     (attrs.is_workflow &&
-                        ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(props.type))
+                        ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? ''))
                 "
                 :id="id"
                 v-model="currentValue"
@@ -288,7 +288,7 @@ function onAlert(value: string | undefined) {
             <FormSelection
                 v-else-if="
                     (props.type === undefined && attrs.options) ||
-                    ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type)
+                    ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? '')
                 "
                 :id="id"
                 v-model="currentValue"
@@ -304,7 +304,7 @@ function onAlert(value: string | undefined) {
                 :value="attrs.value"
                 :multiple="attrs.multiple" />
             <FormData
-                v-else-if="['data', 'data_collection'].includes(props.type)"
+                v-else-if="['data', 'data_collection'].includes(props.type ?? '')"
                 :id="id"
                 v-model="currentValue"
                 :loading="loading"
@@ -345,7 +345,7 @@ function onAlert(value: string | undefined) {
             class="ui-form-info form-text text-muted"
             v-html="helpText" />
         <span v-else-if="Boolean(helpText)" class="ui-form-info form-text text-muted"
-            ><FormElementHelpMarkdown :content="helpText"
+            ><FormElementHelpMarkdown :content="helpText ?? ''"
         /></span>
     </div>
 </template>
