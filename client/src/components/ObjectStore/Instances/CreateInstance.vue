@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
+import localize from "@/utils/localization";
 
 import { useInstanceRouting } from "./routing";
 import type { UserConcreteObjectStore } from "./types";
@@ -41,7 +43,9 @@ async function onCreated(objectStore: UserConcreteObjectStore) {
             <BreadcrumbHeading :items="breadcrumbItems" />
         </div>
 
-        <LoadingSpan v-if="!template" message="Loading storage location templates" />
+        <BAlert v-if="!template" variant="info" show>
+            <LoadingSpan :message="localize('Loading storage location options')" />
+        </BAlert>
         <CreateForm v-else :template="template" @created="onCreated"></CreateForm>
     </div>
 </template>
