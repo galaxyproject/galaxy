@@ -134,6 +134,7 @@ from sqlalchemy.sql import exists
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     Literal,
+    NotRequired,
     Protocol,
     TypeAlias,
     TypedDict,
@@ -178,6 +179,7 @@ from galaxy.schema.invocation import (
 )
 from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionTypeLiteral,
     DatasetState,
     DatasetValidatedState,
     InvocationsStateCounts,
@@ -264,7 +266,10 @@ CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
 
 
 class TransformAction(TypedDict):
-    action: str
+    action: DatasetSourceTransformActionTypeLiteral
+    datatype_ext: NotRequired[
+        str
+    ]  # if action == 'datatype_groom', this is the datatype ext that was used to groom the dataset.
 
 
 TRANSFORM_ACTIONS = List[TransformAction]
