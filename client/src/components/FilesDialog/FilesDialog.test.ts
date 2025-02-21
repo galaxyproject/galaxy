@@ -107,7 +107,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     );
 
     const testingPinia = createTestingPinia({ stubActions: false });
-    const wrapper = mount(FilesDialog, {
+    const wrapper = mount(FilesDialog as object, {
         localVue,
         propsData: { ...props, modalStatic: true },
         pinia: testingPinia,
