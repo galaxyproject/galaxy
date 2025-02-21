@@ -11,7 +11,7 @@ const { isOnlyPreference } = useStorageLocationConfiguration();
 interface Props {
     historyId: string;
     historyPreferredObjectStoreId?: string;
-    user: { preferred_object_store_id: string };
+    user: { preferred_object_store_id?: string | null };
 }
 
 const props = defineProps<Props>();
@@ -19,7 +19,7 @@ const props = defineProps<Props>();
 const preferredObjectStoreId = computed(() => {
     let id = props.historyPreferredObjectStoreId;
     if (!id) {
-        id = props.user.preferred_object_store_id;
+        id = props.user.preferred_object_store_id ?? undefined;
     }
     return id;
 });
