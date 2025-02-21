@@ -62,6 +62,7 @@ import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateI
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
+import { useUserStore } from "@/stores/userStore";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -535,8 +536,6 @@ export function getRouter(Galaxy) {
                                 });
                                 return;
                             }
-                            // const activityStore = useActivityStore("default");
-                            // activityStore.closeSideBar();
                             next();
                         },
                     },
