@@ -10,7 +10,7 @@ interface Item {
     name: string;
     model_class?: string;
     owner?: string;
-    username?: string;
+    username?: string | null;
     email_hash?: string;
     author_deleted?: boolean;
     tags?: string[];
