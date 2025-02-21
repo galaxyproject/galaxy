@@ -11,7 +11,7 @@ interface WorkflowImageProps {
 
 const props = withDefaults(defineProps<WorkflowImageProps>(), {
     size: "lg",
-    workflowVersion: null,
+    workflowVersion: undefined,
 });
 
 const src = computed(() => {
