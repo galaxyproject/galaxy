@@ -1892,13 +1892,6 @@ class NavigatesGalaxy(HasDriver):
         editable_text_input_element = edit.wait_for_visible()
         return editable_text_input_element
 
-    def history_panel_click_to_rename(self):
-        history_panel = self.components.history_panel
-        name = history_panel.name
-        edit = history_panel.name_edit_input
-        name.wait_for_and_click()
-        return edit.wait_for_visible()
-
     def history_panel_refresh_click(self):
         self.wait_for_and_click(self.navigation.history_panel.selectors.refresh_button)
 
