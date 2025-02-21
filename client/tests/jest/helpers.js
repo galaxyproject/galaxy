@@ -185,7 +185,7 @@ export function getLocalVue(instrumentLocalization = false) {
     const mockedDirective = {
         bind(el, binding) {
             el.setAttribute("data-mock-directive", binding.value || el.title);
-        }
+        },
     };
     localVue.use(PiniaVuePlugin);
     localVue.use(BootstrapVue);
