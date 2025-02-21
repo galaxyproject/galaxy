@@ -74,10 +74,13 @@ const queryFinished = computed(() => query.value && queryPending.value != true);
 
 const hasDataManagerSection = computed(() => props.workflow && props.dataManagers && props.dataManagers.length > 0);
 const dataManagerSection = computed(() => {
-    return {
+    const dynamicSection: ToolSectionType = {
+        model_class: "ToolSection",
+        id: "__data_managers",
         name: localize("Data Managers"),
-        elems: props.dataManagers,
+        elems: props.dataManagers as Tool[],
     };
+    return dynamicSection;
 });
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
