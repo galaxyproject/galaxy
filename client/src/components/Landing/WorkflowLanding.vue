@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 
-import { GalaxyApi } from "@/api";
 import { useActivityStore } from "@/stores/activityStore";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { useWorkflowLandingStore } from "@/stores/workflowLandingStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
@@ -20,63 +19,34 @@ const props = withDefaults(defineProps<Props>(), {
     public: false,
 });
 
-const workflowId = ref<string | null>(null);
-const errorMessage = ref<string | null>(null);
-const requestState = ref<Record<string, never> | null>(null);
-const instance = ref<boolean>(false);
+const store = useWorkflowLandingStore();
+const { claimWorkflow } = store;
+const { claimState } = storeToRefs(store);
 
 const activityStore = useActivityStore("default");
 
-onMounted(async() => {
-    let claim;
-    let claimError;
-    if (props.public) {
-        const { data, error } = await GalaxyApi().GET("/api/workflow_landings/{uuid}", {
-            params: {
-                path: { uuid: props.uuid },
-            },
-        });
-        claim = data;
-        claimError = error;
-    } else {
-        const { data, error } = await GalaxyApi().POST("/api/workflow_landings/{uuid}/claim", {
-            params: {
-                path: { uuid: props.uuid },
-            },
-            body: {
-                client_secret: props.secret,
-            },
-        });
-        claim = data;
-        claimError = error;
-    }
-    if (claim) {
-        workflowId.value = claim.workflow_id;
-        instance.value = claim.workflow_target_type === "workflow";
-        requestState.value = claim.request_state;
-    } else {
-        errorMessage.value = errorMessageAsString(claimError);
-    }
+// Start claim immediately
+claimWorkflow(props.uuid, props.public, props.secret).then(() => {
     activityStore.closeSideBar();
 });
 </script>
 
 <template>
     <div>
-        <div v-if="errorMessage">
+        <div v-if="claimState.errorMessage">
             <BAlert variant="danger" show>
-                {{ errorMessage }}
+                {{ claimState.errorMessage }}
             </BAlert>
         </div>
-        <div v-else-if="!workflowId">
+        <div v-else-if="!claimState.workflowId">
             <LoadingSpan message="Loading workflow parameters" />
         </div>
         <div v-else>
             <WorkflowRun
-                :workflow-id="workflowId"
+                :workflow-id="claimState.workflowId"
                 :prefer-simple-form="true"
-                :request-state="requestState"
-                :instance="instance" />
+                :request-state="claimState.requestState"
+                :instance="claimState.instance" />
         </div>
     </div>
 </template>
