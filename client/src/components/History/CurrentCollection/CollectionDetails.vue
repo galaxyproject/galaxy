@@ -26,10 +26,7 @@ const jobState = computed(() => {
         :writeable="writeable"
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
-        <template v-slot:name>
-            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
-            <h2 v-short="dsc.name || 'Collection'" class="h-md" data-description="collection name display" />
-
+        <template v-slot:description>
             <CollectionDescription
                 :job-state-summary="jobState"
                 :collection-type="dsc.collection_type"
