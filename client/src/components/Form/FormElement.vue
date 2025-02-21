@@ -15,7 +15,6 @@ import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormData from "./Elements/FormData/FormData.vue";
 import FormDataUri from "./Elements/FormData/FormDataUri.vue";
-import FormDataDialog from "./Elements/FormDataDialog.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import FormHidden from "./Elements/FormHidden.vue";
@@ -323,11 +322,6 @@ function onAlert(value: string | undefined) {
                 v-model="currentValue"
                 :options="attrs.options"
                 :multiple="attrs.multiple" />
-            <FormDataDialog
-                v-else-if="props.type === 'data_dialog'"
-                :id="id"
-                v-model="currentValue"
-                :multiple="attrs.multiple === 'true'" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />

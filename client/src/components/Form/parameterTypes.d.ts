@@ -26,5 +26,4 @@ export type FormParameterTypes =
     | "ftpfile"
     | "upload"
     | "rules"
-    | "data_dialog"
     | "tags";
