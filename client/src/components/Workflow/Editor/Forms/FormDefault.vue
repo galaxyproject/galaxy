@@ -30,7 +30,7 @@
                 :value="label"
                 title="Label"
                 help="Add a step label."
-                :error="uniqueErrorLabel"
+                :error="uniqueErrorLabel ?? undefined"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
