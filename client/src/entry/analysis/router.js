@@ -523,6 +523,22 @@ export function getRouter(Galaxy) {
                             public: route.query.public.toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
+                        beforeEnter: async (to, from, next) => {
+                            const userStore = useUserStore();
+                            await userStore.loadUser(false);
+                            if (userStore.isAnonymous) {
+                                next({
+                                    path: "/login/start",
+                                    query: {
+                                        redirect: `/workflow_landings/${to.params.uuid}?public=${to.query.public}&client_secret=${to.query.client_secret}`,
+                                    },
+                                });
+                                return;
+                            }
+                            // const activityStore = useActivityStore("default");
+                            // activityStore.closeSideBar();
+                            next();
+                        },
                     },
                     {
                         path: "user",
