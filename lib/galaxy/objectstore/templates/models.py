@@ -7,15 +7,6 @@ from typing import (
     Union,
 )
 
-from pydantic import (
-    Field,
-    RootModel,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
-
 from galaxy.objectstore.badges import (
     BadgeDict,
     StoredBadgeDict,
@@ -37,10 +28,18 @@ from galaxy.util.config_templates import (
     TemplateVariableValueType,
     UserDetailsDict,
 )
+from pydantic import (
+    Field,
+    RootModel,
+)
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 ObjectStoreTemplateVariableType = TemplateVariableType
 ObjectStoreTemplateVariableValueType = TemplateVariableValueType
-ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata"]
+ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata", "rucio"]
 
 
 class S3AuthTemplate(StrictModel):
@@ -281,7 +280,6 @@ class OnedataAuthTemplate(StrictModel):
 class OnedataAuth(StrictModel):
     access_token: str
 
-
 class OnedataConnectionTemplate(StrictModel):
     onezone_domain: Union[str, TemplateExpansion]
     disable_tls_certificate_validation: Union[bool, TemplateExpansion] = False
@@ -320,6 +318,40 @@ class OnedataObjectStoreConfiguration(StrictModel):
     badges: BadgeList = None
 
 
+class RucioObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["rucio"]
+    scope: str
+    upload_rse_name: str
+    upload_scheme: Optional[Any] = None
+    download_schemes: Optional[Any] = None
+    auth_host: str
+    host: str
+    auth_type: str
+    account: str
+    username: str
+    password: str
+    badges: BadgeList = None
+    register_only: bool = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class RucioObjectStoreConfiguration(StrictModel):
+    type: Literal["rucio"]
+    scope: str
+    upload_rse_name: str
+    upload_scheme: Optional[Any] = None
+    download_schemes: Optional[Any] = None
+    register_only: bool = False
+    auth_host: str
+    host: str
+    auth_type: str
+    account: str
+    username: str
+    password: str
+    badges: BadgeList = None
+
+
 ObjectStoreTemplateConfiguration = Annotated[
     Union[
         AwsS3ObjectStoreTemplateConfiguration,
@@ -328,6 +360,7 @@ ObjectStoreTemplateConfiguration = Annotated[
         DiskObjectStoreTemplateConfiguration,
         AzureObjectStoreTemplateConfiguration,
         OnedataObjectStoreTemplateConfiguration,
+        RucioObjectStoreTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -340,10 +373,10 @@ ObjectStoreConfiguration = Annotated[
         AzureObjectStoreConfiguration,
         GenericS3ObjectStoreConfiguration,
         OnedataObjectStoreConfiguration,
+        RucioObjectStoreConfiguration,
     ],
     Field(discriminator="type"),
 ]
-
 
 ObjectStoreTemplateVariable = TemplateVariable
 ObjectStoreTemplateSecret = TemplateSecret
@@ -394,12 +427,12 @@ class ObjectStoreTemplateSummaries(RootModel):
 
 
 def template_to_configuration(
-    template: ObjectStoreTemplate,
-    variables: Dict[str, ObjectStoreTemplateVariableValueType],
-    secrets: SecretsDict,
-    user_details: UserDetailsDict,
-    environment: EnvironmentDict,
-    implicit: Optional[ImplicitConfigurationParameters] = None,
+        template: ObjectStoreTemplate,
+        variables: Dict[str, ObjectStoreTemplateVariableValueType],
+        secrets: SecretsDict,
+        user_details: UserDetailsDict,
+        environment: EnvironmentDict,
+        implicit: Optional[ImplicitConfigurationParameters] = None,
 ) -> ObjectStoreConfiguration:
     configuration_template = template.configuration
     populate_default_variables(template.variables, variables)
@@ -415,6 +448,7 @@ TypesToConfigurationClasses: Dict[ObjectStoreTemplateType, Type[ObjectStoreConfi
     "azure_blob": AzureObjectStoreConfiguration,
     "disk": DiskObjectStoreConfiguration,
     "onedata": OnedataObjectStoreConfiguration,
+    "rucio": RucioObjectStoreConfiguration,
 }
 
 
