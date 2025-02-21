@@ -62,7 +62,7 @@ import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateI
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
-import { useUserStore } from "@/stores/userStore";
+import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -524,20 +524,7 @@ export function getRouter(Galaxy) {
                             public: route.query.public.toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
-                        beforeEnter: async (to, from, next) => {
-                            const userStore = useUserStore();
-                            await userStore.loadUser(false);
-                            if (userStore.isAnonymous) {
-                                next({
-                                    path: "/login/start",
-                                    query: {
-                                        redirect: `/workflow_landings/${to.params.uuid}?public=${to.query.public}&client_secret=${to.query.client_secret}`,
-                                    },
-                                });
-                                return;
-                            }
-                            next();
-                        },
+                        beforeEnter: requireAuth,
                     },
                     {
                         path: "user",
