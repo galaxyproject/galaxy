@@ -62,7 +62,7 @@ function getOptionType(type: string) {
 
         <div class="source-options-list-search">
             <Heading h2 size="sm">
-                Select ${{ title }} to create new sources. These options are configured by your Galaxy administrator.
+                Select {{ title }} to create new sources. These options are configured by your Galaxy administrator.
             </Heading>
 
             <BFormInput v-model="filterText" :placeholder="`Search ${title}`" />
