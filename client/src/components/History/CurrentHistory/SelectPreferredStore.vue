@@ -144,7 +144,7 @@ defineExpose({
         <SelectObjectStore
             :parent-error="error || undefined"
             :for-what="newDatasetsDescription"
-            :selected-object-store-id="preferredObjectStoreId"
+            :selected-object-store-id="currentSelectedStoreId"
             :default-option-title="defaultOptionTitle"
             :default-option-description="defaultOptionDescription"
             @onSubmit="selectionChanged" />

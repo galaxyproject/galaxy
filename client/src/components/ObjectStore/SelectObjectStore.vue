@@ -7,9 +7,8 @@ import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";
 
+import DescribeObjectStore from "./DescribeObjectStore.vue";
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
-import ObjectStoreSelectButtonDescribePopover from "./ObjectStoreSelectButtonDescribePopover.vue";
-import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface SelectObjectStoreProps {
@@ -50,7 +49,7 @@ is not stored in the place you want, contact Galaxy administrator for more infor
 
 function variant(objectStoreId?: string | null) {
     if (props.selectedObjectStoreId == objectStoreId) {
-        return "outline-primary";
+        return "info";
     } else {
         return "outline-info";
     }
@@ -69,6 +68,15 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
     const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
     emit("onSubmit", id, isPrivate);
 }
+
+const selectedObjectStore = computed(() => {
+    if (props.selectedObjectStoreId) {
+        const objectStore = store.objectStoresById[props.selectedObjectStoreId];
+        return objectStore ?? null;
+    } else {
+        return null;
+    }
+});
 </script>
 
 <template>
@@ -78,11 +86,11 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
             {{ error }}
         </b-alert>
 
-        <p v-if="isOnlyPreference" v-localize style="float: right">
+        <p v-if="isOnlyPreference" v-localize>
             {{ whyIsSelectionPreferredText }}
         </p>
 
-        <div>
+        <div class="object-store-selection-columns">
             <b-button-group vertical size="lg" style="width: 100%">
                 <b-button
                     id="no-preferred-object-store-button"
@@ -101,22 +109,17 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                     class="preferred-object-store-select-button"
                     @click="handleSubmit(objectStore)" />
             </b-button-group>
-        </div>
 
-        <ObjectStoreSelectButtonPopover target="no-preferred-object-store-button" :title="defaultOptionTitle">
-            <span v-localize>{{ defaultOptionDescription }}</span>
-        </ObjectStoreSelectButtonPopover>
-        <ObjectStoreSelectButtonDescribePopover
-            v-for="objectStore in selectableAndVisibleObjectStores"
-            :key="objectStore.object_store_id"
-            id-prefix="preferred"
-            :what="forWhat"
-            :object-store="objectStore">
-        </ObjectStoreSelectButtonDescribePopover>
+            <span v-if="!selectedObjectStoreId" v-localize> {{ defaultOptionDescription }} </span>
+            <DescribeObjectStore v-else-if="selectedObjectStore" :what="forWhat" :storage-info="selectedObjectStore" />
+        </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
 .object-store-selection-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 </style>
