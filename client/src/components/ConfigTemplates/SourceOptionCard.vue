@@ -10,15 +10,18 @@ import { markup } from "@/components/ObjectStore/configurationMarkdown";
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 
+type OptionType = {
+    icon: IconDefinition;
+    title: string;
+};
+
 interface Props {
     /** The source option to display */
     sourceOption: FileSourceTemplateSummary | ObjectStoreTemplateSummary;
     /** The route to navigate to when the user selects this option */
     selectRoute: string;
-    /** The icon to display for the source option type */
-    typeIcon?: IconDefinition;
-    /** The title to display for the source option type */
-    typeTitle?: string;
+    /** The type of the source option */
+    optionType: OptionType;
     /** Whether to display the card in a grid view */
     gridView?: boolean;
 }
@@ -42,9 +45,9 @@ function markdownToHTML(text: string) {
                             v-b-tooltip.hover.noninteractive
                             variant="outline-primary"
                             size="lg"
-                            :title="props.typeTitle"
+                            :title="props.optionType?.title"
                             class="inline-icon-button">
-                            <FontAwesomeIcon :icon="props.typeIcon" />
+                            <FontAwesomeIcon :icon="props.optionType?.icon" />
                         </BButton>
                     </Heading>
 
