@@ -1879,17 +1879,20 @@ class NavigatesGalaxy(HasDriver):
 
         self.send_escape(input_element)
 
-    @edit_details
     def history_panel_rename(self, new_name):
         editable_text_input_element = self.history_panel_name_input()
-        editable_text_input_element.clear()
+        # a simple .clear() doesn't work here since we perform a .blur because of that
+        self.driver.execute_script("arguments[0].value = '';", editable_text_input_element)
         editable_text_input_element.send_keys(new_name)
+        editable_text_input_element.send_keys(self.keys.ENTER)
         return editable_text_input_element
 
     def history_panel_name_input(self):
         history_panel = self.components.history_panel
-        edit = history_panel.name_edit_input
-        editable_text_input_element = edit.wait_for_visible()
+        edit_label = history_panel.history_name_edit_label
+        # then, edit_label once clicked, will be replaced by an input field
+        edit_label.wait_for_and_click()
+        editable_text_input_element = history_panel.history_name_edit_input.wait_for_visible()
         return editable_text_input_element
 
     def history_panel_refresh_click(self):
@@ -2362,7 +2365,7 @@ class NavigatesGalaxy(HasDriver):
 
     def open_history_editor(self, scope=".history-index"):
         panel = self.components.history_panel.editor.selector(scope=scope)
-        if panel.name_input.is_absent:
+        if panel.annotation_input.is_absent:
             toggle = panel.toggle
             toggle.wait_for_and_click()
             editor = panel.form
