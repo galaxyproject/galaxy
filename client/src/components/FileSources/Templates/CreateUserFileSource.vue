@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { BAlert, BButton, BFormInput } from "bootstrap-vue";
+import { BAlert, BFormInput } from "bootstrap-vue";
 import { faNetworkWired } from "font-awesome-6";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import {
-    FileSourcesValidFilters,
-    type FileSourceTypes,
-    type FileSourceTypesDetail,
-    templateTypes,
-} from "@/api/fileSources";
+import { FileSourcesValidFilters, type FileSourceTypes, templateTypes } from "@/api/fileSources";
 import { Toast } from "@/composables/toast";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
+import { useUserStore } from "@/stores/userStore";
 import Filtering from "@/utils/filtering";
 
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
-import SourceTemplateCard from "@/components/ConfigTemplates/SourceTemplateCard.vue";
+import ListHeader from "@/components/Common/ListHeader.vue";
+import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const breadcrumbItems = [
@@ -24,7 +21,8 @@ const breadcrumbItems = [
     { title: "Remote File Sources", to: "/file_source_instances/index" },
     { title: "Create New" },
 ];
-type AvailableTypes = { type: FileSourceTypes } & FileSourceTypesDetail[keyof FileSourceTypesDetail];
+
+const userStore = useUserStore();
 
 const router = useRouter();
 
@@ -32,25 +30,11 @@ const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.ensureTemplates();
 
 const filterText = ref("");
+
+const currentListView = computed(() => userStore.currentListViewPreferences.fileSourceOptions || "grid");
+
 const templates = computed(() => fileSourceTemplatesStore.latestTemplates);
 const templatesFilter = computed(() => new Filtering(FileSourcesValidFilters, undefined));
-const typesAvailable = computed(() => {
-    const availableTypes: AvailableTypes[] = [];
-
-    for (const [key, value] of Object.entries(templateTypes)) {
-        if (templates.value.some((t) => t.type === key)) {
-            availableTypes.push({ type: key as FileSourceTypes, icon: value.icon, message: value.message });
-        }
-    }
-
-    return availableTypes;
-});
-const filterActivated = computed(() => (t?: FileSourceTypes | "*") => {
-    return (
-        (t === "*" && !templatesFilter.value.getFilterValue(filterText.value, "type")) ||
-        (t && templatesFilter.value.getFilterValue(filterText.value, "type") === t)
-    );
-});
 const filteredTemplates = computed(() => {
     return templates.value.filter((tp) => {
         return (
@@ -61,17 +45,10 @@ const filteredTemplates = computed(() => {
     });
 });
 
-function onTypeFilter(t?: FileSourceTypes | "*") {
-    if (t === "*") {
-        filterText.value = templatesFilter.value.setFilterValue(
-            filterText.value,
-            "type",
-            templatesFilter.value.getFilterValue(filterText.value, "type")
-        );
-    } else {
-        filterText.value = templatesFilter.value.setFilterValue(filterText.value, "type", t);
-    }
+function getOptionType(opType: FileSourceTypes) {
+    return { title: templateTypes[opType].message, icon: templateTypes[opType].icon ?? faNetworkWired };
 }
+
 function handleOAuth2Redirect() {
     const { error } = router.currentRoute.query;
 
@@ -86,10 +63,6 @@ function handleOAuth2Redirect() {
 }
 
 handleOAuth2Redirect();
-
-function getTypeIcon(t: FileSourceTypes) {
-    return templateTypes[t].icon ?? faNetworkWired;
-}
 </script>
 
 <template>
@@ -100,74 +73,33 @@ function getTypeIcon(t: FileSourceTypes) {
 
         <div class="file-source-templates-search">
             <Heading h2 size="sm">
-                Select file source template to create new file sources with. These templates are configured by your
-                Galaxy administrator.
+                Select a file source option to create new file sources. These options are configured by your Galaxy
+                administrator.
             </Heading>
 
-            <BFormInput v-model="filterText" placeholder="search templates" />
+            <BFormInput v-model="filterText" placeholder="Search options" />
 
-            <div class="file-source-templates-type-filter">
-                Filter by type:
-                <BButton
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
-                    variant="outline-primary"
-                    title="Show all templates"
-                    :pressed="filterActivated('*')"
-                    @click="onTypeFilter('*')">
-                    All
-                </BButton>
-
-                <BButton
-                    v-for="availableType in typesAvailable"
-                    :key="`file-source-templates-type-${availableType.type}`"
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
-                    variant="outline-primary"
-                    :title="`Filter by file sources of type ${availableType.type}`"
-                    :pressed="filterActivated(availableType.type)"
-                    @click="onTypeFilter(availableType.type)">
-                    <FontAwesomeIcon :icon="availableType.icon" />
-                    <span class="file-source-templates-type-label">
-                        {{ availableType.type }}
-                    </span>
-                </BButton>
-            </div>
+            <ListHeader list-id="fileSourceOptions" show-view-toggle />
         </div>
 
         <BAlert v-if="fileSourceTemplatesStore.loading" variant="info" show>
-            <LoadingSpan message="Loading templates" />
+            <LoadingSpan message="Loading options" />
         </BAlert>
         <BAlert v-else-if="!filterText && filteredTemplates.length === 0" variant="info" show>
-            No templates found.
+            No options found.
         </BAlert>
         <BAlert v-else-if="filterText && filteredTemplates.length === 0" variant="info" show>
-            No templates found matching <span class="font-weight-bold">{{ filterText }}</span>
+            No options found matching <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
         <div v-else class="file-source-templates-cards-list">
-            <SourceTemplateCard
+            <SourceOptionCard
                 v-for="tp in filteredTemplates"
                 :key="tp.id"
-                :source-template="tp"
+                :source-option="tp"
+                :option-type="getOptionType(tp.type)"
+                :grid-view="currentListView === 'grid'"
                 :select-route="`/file_source_templates/${tp.id}/new`"
-                :template-types="templateTypes">
-                <template v-slot:badges>
-                    <div class="file-source-template-card-header-type">
-                        <BButton
-                            v-b-tooltip.hover.noninteractive
-                            variant="outline-primary"
-                            size="sm"
-                            :title="templateTypes[tp.type].message + ' (click to filter by this type)'"
-                            class="inline-icon-button"
-                            @click="onTypeFilter(tp.type)">
-                            <FontAwesomeIcon :icon="getTypeIcon(tp.type)" />
-                            <span class="file-source-templates-type-label">
-                                {{ tp.type }}
-                            </span>
-                        </BButton>
-                    </div>
-                </template>
-            </SourceTemplateCard>
+                :template-types="templateTypes" />
         </div>
     </div>
 </template>
@@ -179,14 +111,6 @@ function getTypeIcon(t: FileSourceTypes) {
 .file-source-templates {
     .file-source-templates-search {
         margin-bottom: 1rem;
-
-        .file-source-templates-type-filter {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
     }
 
     .file-source-templates-cards-list {
@@ -194,17 +118,6 @@ function getTypeIcon(t: FileSourceTypes) {
 
         display: flex;
         flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .file-source-templates-type-label {
-        text-transform: uppercase;
-    }
-
-    .file-source-template-card-header-type {
-        display: flex;
-        align-self: start;
-        justify-content: flex-end;
     }
 }
 </style>
