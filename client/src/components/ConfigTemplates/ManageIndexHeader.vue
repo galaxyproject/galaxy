@@ -23,9 +23,7 @@ const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user"
 
 <template>
     <div>
-        <div class="d-flex">
-            <BreadcrumbHeading :items="breadcrumbItems" />
-
+        <BreadcrumbHeading :items="breadcrumbItems">
             <div>
                 <BButton
                     :id="`create-button-${header.toLowerCase().replace(/ /g, '-')}`"
@@ -38,7 +36,7 @@ const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user"
                     {{ localize("Create") }}
                 </BButton>
             </div>
-        </div>
+        </BreadcrumbHeading>
 
         <BAlert v-if="message" show dismissible>
             {{ message || "" }}
