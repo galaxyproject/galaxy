@@ -6,7 +6,7 @@ import { BAlert, BButton, BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { GalaxyApi, type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed, isRegisteredUser } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { type JobDetails, type JobInputSummary } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
@@ -127,8 +127,9 @@ function onMissingJobId() {
 }
 
 const userEmail = computed<string | null>(() => {
-    if (currentUser && currentUser.value && "email" in currentUser.value) {
-        return currentUser.value.email;
+    const user = currentUser.value;
+    if (isRegisteredUser(user)) {
+        return user.email;
     } else {
         return null;
     }
