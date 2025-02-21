@@ -21,7 +21,7 @@ const jobState = computed(() => {
 
 <template>
     <DetailsLayout
-        :name="dsc.name"
+        :name="dsc.name ?? ''"
         :tags="dsc.tags"
         :writeable="writeable"
         :show-annotation="false"
@@ -33,7 +33,7 @@ const jobState = computed(() => {
             <CollectionDescription
                 :job-state-summary="jobState"
                 :collection-type="dsc.collection_type"
-                :element-count="dsc.element_count"
+                :element-count="dsc.element_count ?? undefined"
                 :elements-datatypes="dsc.elements_datatypes" />
         </template>
     </DetailsLayout>
