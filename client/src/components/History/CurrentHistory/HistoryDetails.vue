@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
 import type { HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { DetailsLayoutSummarized } from "../Layout/types";
 
 import HistoryIndicators from "../HistoryIndicators.vue";
-import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
-import TextSummary from "@/components/Common/TextSummary.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 interface Props {
@@ -20,15 +16,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     writeable: true,
     summarized: undefined,
-});
-
-const editedName = computed({
-    get: () => props.history.name,
-    set: (newName) => {
-        if (newName && newName !== props.history.name) {
-            onSave({ ...props.history, name: newName });
-        }
-    },
 });
 
 const historyStore = useHistoryStore();
@@ -47,25 +34,7 @@ function onSave(newDetails: HistorySummary) {
         :writeable="writeable"
         :summarized="summarized"
         :update-time="history.update_time"
-        :no-name-edit="!summarized"
         @save="onSave">
-        <template v-slot:name>
-            <ClickToEdit
-                v-if="!summarized"
-                v-model="editedName"
-                component="h3"
-                title="Unnamed history"
-                data-description="name display"
-                class="my-2" />
-            <TextSummary
-                v-else
-                :description="history.name"
-                data-description="name display"
-                class="my-2"
-                component="h3"
-                one-line-summary
-                no-expand />
-        </template>
         <template v-if="summarized" v-slot:update-time>
             <HistoryIndicators :history="history" detailed-time />
         </template>

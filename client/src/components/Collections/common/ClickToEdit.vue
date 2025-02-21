@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 interface Props {
@@ -51,13 +51,15 @@ function revertToOriginal() {
 </script>
 
 <template>
-    <div v-if="editable">
-        <input
+    <div v-if="editable" class="d-flex flex-gapx-1">
+        <BFormInput
             id="click-to-edit-input"
             ref="clickToEditInput"
             v-model="localValue"
+            class="w-100"
             tabindex="0"
             contenteditable
+            max-rows="4"
             @blur.prevent.stop="editable = false"
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="revertToOriginal"
