@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type HDCADetailed } from "@/api";
+import { type HDCASummary } from "@/api";
 import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 
 import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 interface Props {
-    dsc: HDCADetailed;
+    dsc: HDCASummary;
     writeable: boolean;
 }
 
