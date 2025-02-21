@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BModal, type BvModalEvent } from "bootstrap-vue";
 import { computed, type PropType, ref } from "vue";
 
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -67,6 +69,7 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
                     await makePrivate(props.history.id, permissionResponse);
                 } catch {
                     error.value = "Failed to update default permissions for history.";
+                    throw new Error();
                 }
             }
         }
@@ -76,18 +79,74 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
     const url = prependPath(`api/histories/${props.history.id}`);
     try {
         await axios.put(url, payload);
+        emit("updated", preferredObjectStoreId);
     } catch (e) {
         error.value = errorMessageAsString(e);
+        throw new Error();
     }
-    emit("updated", preferredObjectStoreId);
 }
+
+const { isOnlyPreference } = useStorageLocationConfiguration();
+const storageLocationTitle = computed(() => {
+    if (isOnlyPreference.value) {
+        return "History Preferred Storage Location";
+    } else {
+        return "History Storage Location";
+    }
+});
+
+const modalShown = ref(false);
+
+function showModal() {
+    modalShown.value = true;
+}
+
+const currentSelectedStoreId = ref<string | null>(props.preferredObjectStoreId);
+const currentSelectedStorePrivate = ref(false);
+
+function selectionChanged(preferredObjectStoreId: string | null, isPrivate: boolean) {
+    currentSelectedStoreId.value = preferredObjectStoreId;
+    currentSelectedStorePrivate.value = isPrivate;
+}
+
+async function modalOk(event: BvModalEvent) {
+    if (currentSelectedStoreId.value !== props.preferredObjectStoreId) {
+        event.preventDefault();
+
+        try {
+            await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
+            modalShown.value = false;
+        } catch (_e) {
+            // pass
+        }
+    }
+}
+
+function reset() {
+    currentSelectedStoreId.value = props.preferredObjectStoreId;
+    currentSelectedStorePrivate.value = false;
+}
+
+defineExpose({
+    showModal,
+});
 </script>
+
 <template>
-    <SelectObjectStore
-        :parent-error="error || undefined"
-        :for-what="newDatasetsDescription"
-        :selected-object-store-id="preferredObjectStoreId"
-        :default-option-title="defaultOptionTitle"
-        :default-option-description="defaultOptionDescription"
-        @onSubmit="handleSubmit" />
+    <BModal
+        v-model="modalShown"
+        :title="storageLocationTitle"
+        title-tag="h2"
+        title-class="h-sm"
+        @ok="modalOk"
+        @cancel="reset"
+        @close="reset">
+        <SelectObjectStore
+            :parent-error="error || undefined"
+            :for-what="newDatasetsDescription"
+            :selected-object-store-id="preferredObjectStoreId"
+            :default-option-title="defaultOptionTitle"
+            :default-option-description="defaultOptionDescription"
+            @onSubmit="selectionChanged" />
+    </BModal>
 </template>

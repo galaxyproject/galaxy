@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { HistorySummary } from "@/api";
-import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useSync } from "@/composables/sync";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import { useUserStore } from "@/stores/userStore";
@@ -23,7 +22,6 @@ useSync(() => props.history.preferred_object_store_id, preferredObjectStoreId);
 const objectStoreStore = useObjectStoreStore();
 objectStoreStore.fetchObjectStores();
 
-const modalShown = ref(false);
 const { currentUser } = storeToRefs(useUserStore());
 
 const userPreferredObjectStoreId = computed(() => {
@@ -40,30 +38,22 @@ function onUpdatePreferredObjectStoreId(id: string | null) {
     preferredObjectStoreId.value = id;
 }
 
-const { isOnlyPreference } = useStorageLocationConfiguration();
-const storageLocationTitle = computed(() => {
-    if (isOnlyPreference.value) {
-        return "History Preferred Storage Location";
-    } else {
-        return "History Storage Location";
-    }
-});
+const selectPreferredStore = ref<InstanceType<typeof SelectPreferredStore>>();
 </script>
 
 <template>
     <div class="storage-location-indicator">
-        <BButton class="ui-link" @click="modalShown = true">
+        <BButton class="ui-link" @click="selectPreferredStore?.showModal()">
             <FontAwesomeIcon :icon="faHdd" />
             {{ objectStoreStore.getObjectStoreNameById(preferredObjectStoreId) ?? "Default Storage" }}
         </BButton>
 
-        <BModal v-model="modalShown" :title="storageLocationTitle" ok-only title-tag="h2" title-class="h-sm">
-            <SelectPreferredStore
-                :user-preferred-object-store-id="userPreferredObjectStoreId"
-                :preferred-object-store-id="preferredObjectStoreId"
-                :history="history"
-                @updated="onUpdatePreferredObjectStoreId" />
-        </BModal>
+        <SelectPreferredStore
+            ref="selectPreferredStore"
+            :user-preferred-object-store-id="userPreferredObjectStoreId"
+            :preferred-object-store-id="preferredObjectStoreId"
+            :history="history"
+            @updated="onUpdatePreferredObjectStoreId" />
     </div>
 </template>
 

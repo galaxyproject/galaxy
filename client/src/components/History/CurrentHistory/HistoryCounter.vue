@@ -11,11 +11,8 @@ import { useRouter } from "vue-router/composables";
 
 import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
-import { useConfig } from "@/composables/config";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useUserStore } from "@/stores/userStore";
-
-import PreferredStorePopover from "./PreferredStorePopover.vue";
 
 library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
@@ -40,8 +37,7 @@ const props = withDefaults(
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
 const router = useRouter();
-const { config } = useConfig();
-const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { currentUser } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
     toRef(props, "history")
 );
@@ -49,8 +45,6 @@ const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHist
 const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
-const showPreferredObjectStoreModal = ref(false);
-const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 const canManageStorage = computed(
@@ -128,24 +122,6 @@ onMounted(() => {
         </BButton>
 
         <BButtonGroup v-if="currentUser">
-            <BButton
-                v-if="config && config.object_store_allows_id_selection && !isAnonymous"
-                :id="`history-storage-${history.id}`"
-                title="Manage Preferred History Storage"
-                variant="link"
-                size="sm"
-                class="rounded-0 text-decoration-none"
-                @click="showPreferredObjectStoreModal = true">
-                <FontAwesomeIcon :icon="faHdd" />
-            </BButton>
-
-            <PreferredStorePopover
-                v-if="config && config.object_store_allows_id_selection && !isAnonymous"
-                :history-id="history.id"
-                :history-preferred-object-store-id="historyPreferredObjectStoreId"
-                :user="currentUser">
-            </PreferredStorePopover>
-
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.hover
