@@ -251,7 +251,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "send_to_cloud",
     "__DATA_FETCH__",
     "directory_uri",
-    "export_remote",
     # Legacy tools bundled with Galaxy.
     "laj_1",
     "gff2bed1",
