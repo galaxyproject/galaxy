@@ -13,9 +13,9 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
-    defaultOptionTitle: String;
+    defaultOptionTitle: string;
     defaultOptionDescription: String;
-    forWhat: String;
+    forWhat: string;
     parentError?: String | null;
 }
 
