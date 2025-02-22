@@ -18,6 +18,7 @@ import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
 import type { Workflow } from "@/stores/workflowStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -118,6 +119,10 @@ const initialPosition = computed(() => ({
     y: -props.initialY * props.zoom,
 }));
 
+function activeStepFor(activeNodeId: number): Step {
+    return props.workflow.steps[activeNodeId] as Step;
+}
+
 /** Updates and loads the invocation graph */
 async function loadGraph() {
     loadingGraph.value = true;
@@ -203,7 +208,7 @@ function stepClicked(nodeId: number | null) {
                         <WorkflowInvocationStepHeader
                             v-if="activeNodeId !== null"
                             class="w-100"
-                            :workflow-step="props.workflow.steps[activeNodeId]"
+                            :workflow-step="activeStepFor(activeNodeId)"
                             :graph-step="steps[activeNodeId]"
                             :invocation-step="props.invocation.steps[activeNodeId]" />
                         <span v-else>No Step Selected</span>
