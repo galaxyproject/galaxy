@@ -43,7 +43,7 @@ const loadingMessage = "Loading storage location details";
 
 <template>
     <div>
-        <LoadingSpan v-if="loading" :message="loadingMessage | localize" />
+        <LoadingSpan v-if="loading" :message="loadingMessage" />
         <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
         </DescribeObjectStore>
         <b-alert v-else-if="error" show variant="danger">{{ error }}</b-alert>
