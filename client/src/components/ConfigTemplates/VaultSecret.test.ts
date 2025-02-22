@@ -7,7 +7,7 @@ const localVue = getLocalVue(true);
 
 describe("VaultSecret", () => {
     it("should render a form element", async () => {
-        const wrapper = shallowMount(VaultSecret, {
+        const wrapper = shallowMount(VaultSecret as object, {
             propsData: {
                 name: "secret name",
                 label: "Label Secret",

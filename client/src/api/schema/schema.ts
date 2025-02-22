@@ -8167,6 +8167,11 @@ export interface components {
              * @description The percentage indicating how full the store is.
              */
             percent_used: number | null;
+            /**
+             * Private
+             * @description Indicator of whether the objectstore is marked as private.
+             */
+            private: boolean;
             /** @description Information about quota sources around dataset storage. */
             quota: components["schemas"]["ConcreteObjectStoreQuotaSourceDetails"];
             /**

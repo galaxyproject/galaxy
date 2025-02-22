@@ -58,7 +58,10 @@ const validTargets = computed<ConcreteObjectStoreModel[]>(() => {
         return [];
     }
     const validTargets: ConcreteObjectStoreModel[] = objectStores.filter(
-        (objectStore) => objectStore.device == currentDevice && objectStore.object_store_id != currentObjectStoreId
+        (objectStore) =>
+            objectStore.device == currentDevice &&
+            objectStore.object_store_id &&
+            objectStore.object_store_id != currentObjectStoreId
     );
     return validTargets as ConcreteObjectStoreModel[];
 });

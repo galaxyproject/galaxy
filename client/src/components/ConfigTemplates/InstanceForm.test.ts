@@ -12,7 +12,7 @@ const SUBMIT_TITLE = "Submit the form!";
 
 describe("InstanceForm", () => {
     it("should render a loading message and not submit button if inputs is null", async () => {
-        const wrapper = shallowMount(InstanceForm, {
+        const wrapper = shallowMount(InstanceForm as object, {
             propsData: {
                 title: "MY FORM",
                 inputs: null,
@@ -28,7 +28,7 @@ describe("InstanceForm", () => {
     });
 
     it("should hide a loading message after loading", async () => {
-        const wrapper = shallowMount(InstanceForm, {
+        const wrapper = shallowMount(InstanceForm as object, {
             propsData: {
                 title: "MY FORM",
                 inputs: inputs,
