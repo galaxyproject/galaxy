@@ -2,7 +2,7 @@
     <div class="my-4">
         <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
         <div v-else>
-            <label class="form-label">Select a dataset:</label>
+            <label class="form-label font-weight-bold">Select a {{ type }}:</label>
             <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
         </div>
     </div>
@@ -20,9 +20,8 @@ import type { ApiResponse, OptionType } from "./types";
 const DELAY = 300;
 
 const props = defineProps<{
-    type: "datasets" | "workflows";
-    name?: string;
-    id?: string;
+    type: "dataset" | "workflow";
+    objectId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -30,12 +29,13 @@ const emit = defineEmits<{
 }>();
 
 const errorMessage = ref("");
+const objectName = ref("...");
 const options: Ref<Array<OptionType>> = ref([]);
 
 const currentValue = computed({
     get: () => ({
-        id: props.name,
-        name: props.name || props.id,
+        id: props.objectId,
+        name: objectName.value,
     }),
     set: (newValue: OptionType) => {
         emit("change", newValue);
@@ -59,14 +59,14 @@ const search = debounce(async (query: string = "") => {
 }, DELAY);
 
 async function doQuery(query: string = ""): Promise<ApiResponse> {
-    if (props.type === "workflows") {
-        return getWorkflows(query);
+    if (props.type === "workflow") {
+        return getWorkflow(query);
     } else {
-        return getDatasets(query);
+        return getDataset(query);
     }
 }
 
-async function getDatasets(query: string = ""): Promise<ApiResponse> {
+async function getDataset(query: string = ""): Promise<ApiResponse> {
     const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
             query: {
@@ -80,7 +80,7 @@ async function getDatasets(query: string = ""): Promise<ApiResponse> {
     return { data, error };
 }
 
-async function getWorkflows(query: string = ""): Promise<ApiResponse> {
+async function getWorkflow(query: string = ""): Promise<ApiResponse> {
     const { data, error } = await GalaxyApi().GET("/api/workflows");
     return { data, error };
 }

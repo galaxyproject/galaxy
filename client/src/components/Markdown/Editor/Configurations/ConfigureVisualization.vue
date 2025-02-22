@@ -1,11 +1,6 @@
 <template>
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
-    <ConfigureSelector
-        v-else
-        :id="contentObject.dataset_id"
-        :name="contentObject.dataset_name"
-        type="datasets"
-        @change="onChange($event)" />
+    <ConfigureSelector v-else :object-id="contentObject.dataset_id" type="dataset" @change="onChange($event)" />
 </template>
 
 <script setup lang="ts">
@@ -27,7 +22,7 @@ const contentObject = ref();
 const errorMessage = ref("");
 
 function onChange(newValue: OptionType) {
-    const newValues = { ...contentObject.value, dataset_id: newValue.id, dataset_name: newValue.name };
+    const newValues = { ...contentObject.value, dataset_id: newValue.id };
     emit("change", JSON.stringify(newValues, null, 4));
 }
 

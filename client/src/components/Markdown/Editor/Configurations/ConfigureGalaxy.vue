@@ -1,7 +1,11 @@
 <template>
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
-    <ConfigureSelector v-else-if="variant === 'workflow_id'" type="workflows" @change="onChange($event)" />
-    <ConfigureSelector v-else type="datasets" @change="onChange($event)" />
+    <ConfigureSelector
+        v-else-if="variant === 'workflow_id'"
+        :object-id="contentObject?.args.workflow_id"
+        type="workflow"
+        @change="onChange($event)" />
+    <ConfigureSelector v-else type="dataset" @change="onChange($event)" />
 </template>
 
 <script setup lang="ts">
