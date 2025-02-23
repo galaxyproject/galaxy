@@ -163,6 +163,7 @@ def to_cwl(value, hda_references, step):
             properties = {
                 "class": "File",
                 "location": "step_input://%d" % len(hda_references),
+                "format": value.extension,
             }
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name

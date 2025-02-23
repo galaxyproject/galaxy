@@ -169,9 +169,9 @@ def galactic_job_json(
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_tar(file_path: str) -> Dict[str, str]:
+    def upload_tar(file_path: str, file_type: str = "directory", name: str = "uploaded tar file") -> Dict[str, str]:
         file_path = abs_path_or_uri(file_path, test_data_directory)
-        target = DirectoryUploadTarget(file_path)
+        target = DirectoryUploadTarget(file_path, file_type=file_type, name=name)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
@@ -283,16 +283,17 @@ def galactic_job_json(
         file_path = value.get("location", None) or value.get("path", None)
         if file_path is None:
             return value
-
         if not os.path.isabs(file_path):
             file_path = os.path.join(test_data_directory, file_path)
+
+        file_type = value.get("filetype", None) or value.get("format", None) or "directory"
 
         tmp = tempfile.NamedTemporaryFile(delete=False)
         tf = tarfile.open(fileobj=tmp, mode="w:")
         tf.add(file_path, ".")
         tf.close()
 
-        return upload_tar(tmp.name)
+        return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
 
     def replacement_list(value) -> Dict[str, str]:
         collection_element_identifiers = []
@@ -427,8 +428,10 @@ class ObjectUploadTarget(UploadTarget):
 
 
 class DirectoryUploadTarget(UploadTarget):
-    def __init__(self, tar_path: str) -> None:
+    def __init__(self, tar_path: str, file_type: str = "directory", name: str = "uploaded directory") -> None:
         self.tar_path = tar_path
+        self.file_type = file_type
+        self.name = name
 
     def __str__(self) -> str:
         return f"DirectoryUploadTarget[tar_path={self.tar_path}]"

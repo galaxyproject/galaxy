@@ -16,6 +16,7 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 import yaml
@@ -86,7 +87,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
         job_dir: str = ".",
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         def upload_func_fetch(upload_target: UploadTarget) -> Dict[str, Any]:
-            def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> Dict[str, str]:
+            def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> Dict[str, Union[str, bool]]:
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
                 if not is_path or use_path_paste:
@@ -142,11 +143,18 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 if tags:
                     fetch_payload["targets"][0]["elements"][0]["tags"] = tags
             elif isinstance(upload_target, DirectoryUploadTarget):
-                fetch_payload = _fetch_payload(history_id, file_type="directory")
-                fetch_payload["targets"][0].pop("elements")
+                fetch_payload = _fetch_payload(history_id, file_type=upload_target.file_type)
+                element = fetch_payload["targets"][0]["elements"][0]
+                element["name"] = upload_target.name
                 tar_path = upload_target.tar_path
-                src = _attach_file(fetch_payload, tar_path)
-                fetch_payload["targets"][0]["elements_from"] = src
+                extra_files = _attach_file(fetch_payload, tar_path)
+                extra_files["fuzzy_root"] = False
+                extra_files["items_from"] = "archive"
+                # {"src": "pasted", "paste_content": ""} because
+                # we need some primary file even if we don't have one
+                element["src"] = "pasted"
+                element["paste_content"] = ""
+                element["extra_files"] = extra_files
             elif isinstance(upload_target, ObjectUploadTarget):
                 content = json.dumps(upload_target.object)
                 fetch_payload = _fetch_payload(history_id, file_type="expression.json")

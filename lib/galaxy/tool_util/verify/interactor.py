@@ -35,6 +35,7 @@ from typing_extensions import (
 )
 
 from galaxy import util
+from galaxy.tool_util.client.staging import StagingInterface
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
@@ -140,41 +141,23 @@ def stage_data_in_history(
     galaxy_interactor: "GalaxyInteractorApi",
     tool_id: str,
     all_test_data,
-    history=None,
+    history: Optional[str] = None,
     force_path_paste=False,
     maxseconds=DEFAULT_TOOL_TEST_WAIT,
     tool_version=None,
 ):
-    # Upload any needed files
-    upload_waits = []
-
     assert tool_id
 
-    if UPLOAD_ASYNC:
-        for test_data in all_test_data:
-            upload_waits.append(
-                galaxy_interactor.stage_data_async(
-                    test_data,
-                    history,
-                    tool_id,
-                    force_path_paste=force_path_paste,
-                    maxseconds=maxseconds,
-                    tool_version=tool_version,
-                )
-            )
-        for upload_wait in upload_waits:
-            upload_wait()
-    else:
-        for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(
-                test_data,
-                history,
-                tool_id,
-                force_path_paste=force_path_paste,
-                maxseconds=maxseconds,
-                tool_version=tool_version,
-            )
-            upload_wait()
+    staging_interface = InteractorStagingInterface(galaxy_interactor, maxseconds=maxseconds, upload_async=UPLOAD_ASYNC)
+    job = {}
+    for test_data in all_test_data:
+        test_dict = galaxy_interactor.remote_to_input(
+            test_data=test_data, tool_id=tool_id, force_path_paste=force_path_paste, tool_version=tool_version
+        )
+        job[test_data["fname"]] = test_dict
+    staging_interface.stage("tool", history_id=history, job=job, use_path_paste=force_path_paste)
+    galaxy_interactor.uploads = job
+    return
 
 
 class RunToolResponse(NamedTuple):
@@ -182,6 +165,31 @@ class RunToolResponse(NamedTuple):
     outputs: OutputsDict
     output_collections: Dict[str, Any]
     jobs: List[Dict[str, Any]]
+
+
+class InteractorStagingInterface(StagingInterface):
+
+    def __init__(self, galaxy_interactor: "GalaxyInteractorApi", maxseconds: Optional[int], upload_async: bool) -> None:
+        super().__init__()
+        self.galaxy_interactor = galaxy_interactor
+        self.maxseconds = maxseconds or DEFAULT_TOOL_TEST_WAIT
+        self.upload_async = upload_async
+
+    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.galaxy_interactor._post(api_path, payload, json=True)
+        assert response.status_code == 200, f"Staging failed: {response.text}"
+        return response.json()
+
+    def _handle_job(self, job_response: Dict[str, Any]):
+        if not self.upload_async:
+            return self.galaxy_interactor.wait_for_job(
+                job_response["id"], job_response["history_id"], maxseconds=self.maxseconds
+            )
+        return
+
+    @property
+    def use_fetch_api(self):
+        return True
 
 
 class GalaxyInteractorApi:
@@ -434,16 +442,23 @@ class GalaxyInteractorApi:
             return result
         raise Exception(result["err_msg"])
 
-    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
-        result = None
-        local_path = None
+    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None, path_only=False):
+        result: Optional[Union[str, bytes]] = None
+        local_path: Optional[str] = None
 
         if self.supports_test_data_download:
             version_fragment = f"&tool_version={tool_version}" if tool_version else ""
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
             if response.status_code == 200:
                 if mode == "file":
-                    result = response.content
+                    if path_only:
+                        pardir = tempfile.mkdtemp()
+                        path = os.path.join(pardir, os.path.basename(filename))
+                        with open(path, "wb") as out:
+                            out.write(response.content)
+                        return out.name
+                    else:
+                        return response.content
                 elif mode == "directory":
                     prefix = os.path.basename(filename)
                     path = tempfile.mkdtemp(prefix=prefix)
@@ -456,6 +471,8 @@ class GalaxyInteractorApi:
                         with tarfile.open(fileobj=fileobj) as tar_contents:
                             tar_contents.extractall(path=path)
                     result = path
+                    if path_only:
+                        return result
         else:
             # We can only use local data
             local_path = self.test_data_path(tool_id, filename, tool_version=tool_version)
@@ -465,6 +482,8 @@ class GalaxyInteractorApi:
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == "file":
+                if path_only:
+                    return local_path
                 with open(local_path, mode="rb") as f:
                     result = f.read()
             elif mode == "directory":
@@ -500,48 +519,29 @@ class GalaxyInteractorApi:
             output_id = output_data
         return output_id
 
-    def stage_data_async(
-        self,
-        test_data: Dict[str, Any],
-        history_id: str,
-        tool_id: str,
-        force_path_paste: bool = False,
-        maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-        tool_version: Optional[str] = None,
-    ) -> Callable[[], None]:
+    def remote_to_input(
+        self, test_data, tool_id: str, force_path_paste: bool = False, tool_version: Optional[str] = None
+    ):
         fname = test_data["fname"]
         tags = test_data.get("tags")
         tool_input = {
-            "file_type": test_data["ftype"],
+            "format": test_data["ftype"],
             "dbkey": test_data["dbkey"],
+            "class": test_data.get("class", "File"),
         }
         if tags:
             tool_input["tags"] = tags
 
-        metadata = test_data.get("metadata", {})
-        if not hasattr(metadata, "items"):
-            raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
-        for metadata_name, value in test_data.get("metadata", {}).items():
-            tool_input[f"files_metadata|{metadata_name}"] = value
+        # TODO: I don't know what that looks like, does it even do anything ?
+        # metadata = test_data.get("metadata", {})
+        # if not hasattr(metadata, "items"):
+        #     raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
+        # for metadata_name, value in test_data.get("metadata", {}).items():
+        #     tool_input[f"files_metadata|{metadata_name}"] = value
 
         composite_data = test_data["composite_data"]
-        files = {}
         if composite_data:
-            for i, file_name in enumerate(composite_data):
-                if force_path_paste:
-                    file_path = self.test_data_path(tool_id, file_name, tool_version=tool_version)
-                    tool_input.update({f"files_{i}|url_paste": f"file://{file_path}"})
-                else:
-                    file_content = self.test_data_download(
-                        tool_id, file_name, is_output=False, tool_version=tool_version
-                    )
-                    files[f"files_{i}|file_data"] = file_content
-                tool_input.update(
-                    {
-                        f"files_{i}|type": "upload_dataset",
-                    }
-                )
-            name = test_data["name"]
+            tool_input["composite_data"] = composite_data
         else:
             file_name = None
             file_name_exists = False
@@ -549,39 +549,26 @@ class GalaxyInteractorApi:
             if fname and force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 file_name_exists = os.path.exists(file_name)
-            tool_input["files_0|type"] = "upload_dataset"
             if not file_name_exists and location is not None:
                 name = location
-                tool_input["files_0|url_paste"] = location
+                tool_input["location"] = location
             else:
                 name = fname
                 if force_path_paste:
                     if file_name is None:
                         file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                    tool_input["files_0|url_paste"] = f"file://{file_name}"
+                    tool_input["location"] = f"file://{file_name}"
                 else:
-                    file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
-                    files["files_0|file_data"] = file_content
+                    mode = "file" if tool_input["class"].lower() == "file" else "directory"
+                    tool_input["path"] = path = self.test_data_download(
+                        tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
+                    )
+                    # Downloaded directories contain root directory
+                    if path and mode == "directory":
+                        tool_input["path"] = path if mode == "file" else os.path.join(path, fname)
             name = os.path.basename(name)
-            tool_input["files_0|NAME"] = name
-        submit_response_object = self.__submit_tool(
-            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
-        )
-        submit_response = ensure_tool_run_response_okay(submit_response_object, f"upload dataset {name}")
-        assert (
-            "outputs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting outputs in response."
-        outputs = submit_response["outputs"]
-        assert len(outputs) > 0, f"Invalid response from server [{submit_response}], expecting an output dataset."
-        dataset = outputs[0]
-        hid = dataset["id"]
-        self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
-        assert (
-            "jobs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting jobs in response."
-        jobs = submit_response["jobs"]
-        assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
-        return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
+            tool_input["name"] = name
+        return tool_input
 
     def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
         location: Optional[str] = test_data.get("location")
@@ -889,7 +876,7 @@ class GalaxyInteractorApi:
                 else:
                     break
 
-            assert response
+            assert response, f"Failed to fetch url '{url}'"
             response.raise_for_status()
             return response.content
 
@@ -1864,15 +1851,17 @@ class ToolTestDescription:
 
 def test_data_iter(required_files):
     for fname, extra in required_files:
-        data_dict = dict(
-            fname=fname,
-            metadata=extra.get("metadata", {}),
-            composite_data=extra.get("composite_data", []),
-            ftype=extra.get("ftype", DEFAULT_FTYPE),
-            dbkey=extra.get("dbkey", DEFAULT_DBKEY),
-            location=extra.get("location", None),
-            tags=extra.get("tags", []),
-        )
+        default_ftype = DEFAULT_FTYPE if extra.get("class", "File").lower() != "directory" else "directory"
+        data_dict = {
+            "fname": fname,
+            "class": extra.get("class", "File"),
+            "metadata": extra.get("metadata", {}),
+            "composite_data": extra.get("composite_data", []),
+            "ftype": extra.get("ftype", default_ftype),
+            "dbkey": extra.get("dbkey", DEFAULT_DBKEY),
+            "location": extra.get("location", None),
+            "tags": extra.get("tags", []),
+        }
         edit_attributes = extra.get("edit_attributes", [])
 
         # currently only renaming is supported

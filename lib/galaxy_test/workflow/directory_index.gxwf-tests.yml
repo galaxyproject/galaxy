@@ -6,6 +6,17 @@
       value: 1.fasta
       file_type: fasta
   outputs:
-    alignment:
+    output:
       class: File
-      file: bwa_mem2.sam
+      file: 1.fasta
+- doc: |
+    Test that uploading index works
+  job:
+    reference:
+      type: Directory
+      file_type: bwa_mem2_index
+      value: bwa_mem2_index
+  outputs:
+    output:
+      class: File
+      file: 1.fasta
