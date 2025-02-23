@@ -34,7 +34,11 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
-                <CellButton v-if="name !== 'markdown'" title="Attach Data" @click="$emit('configure')">
+                <CellButton
+                    v-if="name !== 'markdown'"
+                    title="Attach Data"
+                    :active="configure"
+                    @click="$emit('configure')">
                     <FontAwesomeIcon :icon="faPaperclip" />
                 </CellButton>
                 <CellButton title="Clone Cell" @click="$emit('clone')">

@@ -2,8 +2,9 @@
     <BButton
         v-b-tooltip.right
         class="border-0 m-1 px-1 py-0"
+        :class="{ active }"
         :title="title"
-        variant="outline-primary"
+        :variant="active ? 'outline-secondary' : 'outline-primary'"
         @click="onClick()"
         @mouseleave="onMouseLeave($event)">
         <slot />
@@ -13,9 +14,15 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 
-defineProps<{
-    title: string;
-}>();
+withDefaults(
+    defineProps<{
+        title: string;
+        active: boolean;
+    }>(),
+    {
+        active: false,
+    }
+);
 
 const emit = defineEmits<{
     (e: "click"): void;
