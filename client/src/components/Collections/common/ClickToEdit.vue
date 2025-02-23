@@ -66,6 +66,7 @@ function revertToOriginal() {
             @click.prevent.stop />
         <BButton class="p-0" style="border: none" variant="link" size="sm" @click.prevent.stop="editable = false">
             <FontAwesomeIcon :icon="faSave" />
+            <span class="sr-only">Save changes</span>
         </BButton>
     </div>
 
