@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFileImport, faGlobe, faShieldAlt, faUser, faUserEdit, faUsers } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBuilding,
+    faFileImport,
+    faGlobe,
+    faShieldAlt,
+    faUser,
+    faUserEdit,
+    faUsers,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -15,7 +23,12 @@ import { isUrl } from "@/utils/url";
 
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
+interface BadgeData {
+    url?: string;
+    icon?: IconDefinition;
+    title?: string;
+    class?: Record<string, boolean>;
+}
 
 interface Props {
     workflow: Workflow;
@@ -94,15 +107,25 @@ function onViewUserPublished() {
     emit("updateFilter", "user", `'${props.workflow.owner}'`);
 }
 
-function getCreatorUrl(creator: Creator) {
+function getCreatorBadge(creator: Creator): BadgeData {
+    let url: string | undefined;
+    let titleEnd = "Workflow Creator";
+
+    if (creator.url && isUrl(creator.url)) {
+        url = creator.url;
+    }
     const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
     if (creator.identifier && orcidRegex.test(creator.identifier)) {
-        return { orcid: creator.identifier };
+        url = creator.identifier;
+        titleEnd = "ORCID profile";
     }
-    if (creator.url && isUrl(creator.url)) {
-        return { url: creator.url };
-    }
-    return null;
+
+    return {
+        url,
+        icon: creator.class === "Organization" ? faBuilding : faUserEdit,
+        title: `${url ? "Click to view " : ""}${titleEnd}`,
+        class: { "cursor-pointer": !!url, "outline-badge": !!url },
+    };
 }
 
 function getStepText(steps: number) {
@@ -189,12 +212,12 @@ function getStepText(steps: number) {
                 :key="creator.name"
                 v-b-tooltip.noninteractive.hover
                 data-description="external creator badge"
-                class="outline-badge mx-1"
-                :class="{ 'cursor-pointer': getCreatorUrl(creator) }"
-                :title="getCreatorUrl(creator)?.orcid ? 'Click to view ORCID profile' : 'Workflow Author'"
-                :href="getCreatorUrl(creator)?.orcid || getCreatorUrl(creator)?.url"
+                class="mx-1"
+                :class="getCreatorBadge(creator)?.class"
+                :title="getCreatorBadge(creator)?.title"
+                :href="getCreatorBadge(creator)?.url"
                 target="_blank">
-                <FontAwesomeIcon :icon="faUserEdit" size="sm" fixed-width />
+                <FontAwesomeIcon :icon="getCreatorBadge(creator).icon" size="sm" fixed-width />
                 <span class="font-weight-bold"> {{ creator.name }} </span>
             </BBadge>
         </template>
