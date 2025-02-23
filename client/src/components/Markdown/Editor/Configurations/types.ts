@@ -1,7 +1,4 @@
-export interface ApiResponse {
-    data: Array<any> | undefined;
-    error?: { err_msg: string };
-}
+export type ApiResponse = Array<any> | undefined;
 
 export interface ContentType {
     dataset_id: string;

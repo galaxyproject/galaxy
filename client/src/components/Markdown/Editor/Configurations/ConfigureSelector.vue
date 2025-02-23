@@ -11,7 +11,7 @@ import { debounce } from "lodash";
 import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GalaxyApi } from "@/api";
+import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from "@/components/Markdown/services";
 
 import type { ApiResponse, OptionType } from "./types";
 
@@ -44,45 +44,33 @@ const objectTitle = computed(() => props.objectType.replace(/_/g, " ").replace(/
 
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
-        const { data, error } = await doQuery(query);
-        if (error) {
-            errorMessage.value = error.err_msg;
-        } else {
+        try {
+            const data = await doQuery(query);
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d) => ({ id: d.id, name: d.name }));
+                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id }));
             } else {
                 options.value = [];
             }
+        } catch (e) {
+            errorMessage.value = String(e);
         }
     }
 }, DELAY);
 
 async function doQuery(query: string = ""): Promise<ApiResponse> {
-    if (props.objectType === "workflow_id") {
-        return getWorkflow(query);
-    } else {
-        return getDataset(query);
+    switch (props.objectType) {
+        case "history_id":
+            return getHistories();
+        case "history_dataset_id":
+            return getDataset(query);
+        case "invocation_id":
+            return getInvocations();
+        case "job_id":
+            return getJobs();
+        case "workflow_id":
+            return getWorkflows();
     }
-}
-
-async function getDataset(query: string = ""): Promise<ApiResponse> {
-    const { data, error } = await GalaxyApi().GET("/api/datasets", {
-        params: {
-            query: {
-                q: ["name-contains"],
-                qv: [query],
-                offset: 0,
-                limit: 50,
-            },
-        },
-    });
-    return { data, error };
-}
-
-async function getWorkflow(query: string = ""): Promise<ApiResponse> {
-    const { data, error } = await GalaxyApi().GET("/api/workflows");
-    return { data, error };
 }
 
 watch(

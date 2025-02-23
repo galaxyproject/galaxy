@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -22,7 +22,11 @@ async function fetchInvocation(invocationId: string) {
     }
 }
 
-fetchInvocation(props.invocationId);
+watch(
+    () => props.invocationId,
+    () => fetchInvocation(props.invocationId),
+    { immediate: true }
+);
 </script>
 
 <template>

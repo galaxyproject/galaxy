@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 //@ts-ignore
 import { errorMessageAsString } from "utils/simple-error";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { fromCache } from "@/components/Markdown/cache";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -39,7 +39,11 @@ async function fetchName(historyId: string) {
     }
 }
 
-fetchName(props.historyId);
+watch(
+    () => props.historyId,
+    () => fetchName(props.historyId),
+    { immediate: true }
+);
 </script>
 
 <template>

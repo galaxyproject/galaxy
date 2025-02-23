@@ -17,7 +17,7 @@ import { BButton } from "bootstrap-vue";
 withDefaults(
     defineProps<{
         title: string;
-        active: boolean;
+        active?: boolean;
     }>(),
     {
         active: false,
