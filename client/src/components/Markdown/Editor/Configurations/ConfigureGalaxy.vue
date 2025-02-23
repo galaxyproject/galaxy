@@ -1,11 +1,13 @@
 <template>
-    <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
+    <b-alert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</b-alert>
     <ConfigureSelector
         v-else-if="requirement"
         :object-id="contentObject?.args[requirement]"
         :object-type="requirement"
         @change="onChange($event)" />
-    <b-alert v-else v-localize variant="info" show>No input requirements.</b-alert>
+    <b-alert v-else v-localize variant="info" show>
+        No inputs available for <b>`{{ contentObject?.name }}`</b>.
+    </b-alert>
 </template>
 
 <script setup lang="ts">

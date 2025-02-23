@@ -1,6 +1,10 @@
 <template>
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
-    <ConfigureSelector v-else :object-id="contentObject.dataset_id" type="dataset" @change="onChange($event)" />
+    <ConfigureSelector
+        v-else
+        :object-id="contentObject.dataset_id"
+        object-type="history_dataset_id"
+        @change="onChange($event)" />
 </template>
 
 <script setup lang="ts">

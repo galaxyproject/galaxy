@@ -1,10 +1,8 @@
 <template>
-    <div class="my-4">
-        <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
-        <div v-else>
-            <label class="form-label font-weight-bold">Select a {{ objectTitle }}:</label>
-            <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
-        </div>
+    <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
+    <div v-else>
+        <label class="form-label font-weight-bold">Select a {{ objectTitle }}:</label>
+        <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
     </div>
 </template>
 
