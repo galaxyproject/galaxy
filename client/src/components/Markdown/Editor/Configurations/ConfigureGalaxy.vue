@@ -1,11 +1,11 @@
 <template>
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
     <ConfigureSelector
-        v-else-if="variant === 'workflow_id'"
-        :object-id="contentObject?.args.workflow_id"
-        type="workflow"
+        v-else-if="requirement"
+        :object-id="contentObject?.args[requirement]"
+        :object-type="requirement"
         @change="onChange($event)" />
-    <ConfigureSelector v-else type="dataset" @change="onChange($event)" />
+    <b-alert v-else v-localize variant="info" show>No input requirements.</b-alert>
 </template>
 
 <script setup lang="ts">
@@ -13,6 +13,8 @@ import { computed, type Ref, ref, watch } from "vue";
 
 import type { OptionType } from "@/components/Markdown/Editor/Configurations/types";
 import { getArgs } from "@/components/Markdown/parse";
+
+import REQUIREMENTS from "./requirements";
 
 import ConfigureSelector from "./ConfigureSelector.vue";
 
@@ -24,30 +26,35 @@ const emit = defineEmits<{
     (e: "change", content: string): void;
 }>();
 
-interface ObjectType {
+interface contentType {
     args: Record<string, any>;
     name: string;
 }
 
-const contentObject: Ref<ObjectType | undefined> = ref();
+const contentObject: Ref<contentType | undefined> = ref();
 const errorMessage = ref("");
 
-const variant = computed(() => {
+const requirement = computed(() => {
     const name = contentObject.value?.name || "";
-    if (["workflow_display"].includes(name)) {
-        return "workflow_id";
-    } else {
-        return "history_dataset_id";
+    if (name) {
+        for (const [key, values] of Object.entries(REQUIREMENTS)) {
+            if (values.includes(name)) {
+                return key;
+            }
+        }
     }
+    return null;
 });
 
 function onChange(newValue: OptionType) {
-    const newValues = { ...contentObject.value?.args };
-    newValues[variant.value] = newValue.id;
-    const newContent = Object.entries(newValues)
-        .map(([key, value]) => `${key}=${value}`)
-        .join(" ");
-    emit("change", `${contentObject.value?.name}(${newContent})`);
+    if (requirement.value) {
+        const newValues = { ...contentObject.value?.args };
+        newValues[requirement.value] = newValue.id;
+        const newContent = Object.entries(newValues)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(" ");
+        emit("change", `${contentObject.value?.name}(${newContent})`);
+    }
 }
 
 function parseContent() {

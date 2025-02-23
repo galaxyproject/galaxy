@@ -2,7 +2,7 @@
     <div class="my-4">
         <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
         <div v-else>
-            <label class="form-label font-weight-bold">Select a {{ type }}:</label>
+            <label class="form-label font-weight-bold">Select a {{ objectTitle }}:</label>
             <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
         </div>
     </div>
@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { debounce } from "lodash";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
@@ -20,7 +20,7 @@ import type { ApiResponse, OptionType } from "./types";
 const DELAY = 300;
 
 const props = defineProps<{
-    type: "dataset" | "workflow";
+    objectType: string;
     objectId?: string;
 }>();
 
@@ -42,6 +42,8 @@ const currentValue = computed({
     },
 });
 
+const objectTitle = computed(() => props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         const { data, error } = await doQuery(query);
@@ -59,7 +61,7 @@ const search = debounce(async (query: string = "") => {
 }, DELAY);
 
 async function doQuery(query: string = ""): Promise<ApiResponse> {
-    if (props.type === "workflow") {
+    if (props.objectType === "workflow_id") {
         return getWorkflow(query);
     } else {
         return getDataset(query);
@@ -85,5 +87,9 @@ async function getWorkflow(query: string = ""): Promise<ApiResponse> {
     return { data, error };
 }
 
-search();
+watch(
+    () => props.objectType,
+    () => search(),
+    { immediate: true }
+);
 </script>

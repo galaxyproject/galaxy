@@ -77,7 +77,7 @@ export const cellTemplates: Array<TemplateCategory> = [
                 cell: {
                     name: "galaxy",
                     configure: true,
-                    content: "history_dataset_index()",
+                    content: "history_dataset_type()",
                 },
             },
             {

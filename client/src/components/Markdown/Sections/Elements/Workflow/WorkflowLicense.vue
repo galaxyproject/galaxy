@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -24,7 +24,11 @@ async function fetchLicense(workflowId: string) {
     }
 }
 
-fetchLicense(props.workflowId);
+watch(
+    () => props.workflowId,
+    () => fetchLicense(props.workflowId),
+    { immediate: true }
+);
 </script>
 
 <template>
