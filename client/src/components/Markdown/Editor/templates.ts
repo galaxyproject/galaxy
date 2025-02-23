@@ -215,6 +215,78 @@ export const cellTemplates: Array<TemplateCategory> = [
                     content: "workflow_license()",
                 },
             },
+            {
+                title: "Access",
+                description: "Link used to access this Galaxy",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_access_link()",
+                },
+            },
+            {
+                title: "Citation",
+                description: "Link describing how to cite this Galaxy instance",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_citation_link()",
+                },
+            },
+            {
+                title: "Help",
+                description: "Link describing how to cite this Galaxy instance",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_help_link()",
+                },
+            },
+            {
+                title: "Organization",
+                description: "Link describing how to cite this Galaxy instance",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_organization_link()",
+                },
+            },
+            {
+                title: "Resources",
+                description: "Link for more information about this Galaxy",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_resources_link()",
+                },
+            },
+            {
+                title: "Support",
+                description: "Link describing how to cite this Galaxy instance",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_support_link()",
+                },
+            },
+            {
+                title: "Terms and Conditions",
+                description: "Link describing terms and conditions for using this Galaxy instance",
+                cell: {
+                    name: "galaxy",
+                    content: "instance_terms_link()",
+                },
+            },
+            {
+                title: "Current Time",
+                description: "as text",
+                cell: {
+                    name: "galaxy",
+                    content: "generate_time()",
+                },
+            },
+            {
+                title: "Galaxy Version",
+                description: "as text",
+                cell: {
+                    name: "galaxy",
+                    content: "generate_galaxy_version()",
+                },
+            },
         ],
     },
     {
