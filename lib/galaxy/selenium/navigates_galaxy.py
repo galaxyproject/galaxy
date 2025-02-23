@@ -399,8 +399,6 @@ class NavigatesGalaxy(HasDriver):
         return self.history_panel_name_element().text
 
     def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: Optional[str] = None):
-        toggle = self.history_element("editor toggle")
-        toggle.wait_for_and_click()
         self.history_panel_rename(new_name)
 
     def history_panel_expand_collection(self, collection_hid: int) -> SmartComponent:
@@ -410,7 +408,7 @@ class NavigatesGalaxy(HasDriver):
         return collection_view
 
     def history_panel_collection_name_element(self):
-        title_element = self.history_element("collection name display").wait_for_present()
+        title_element = self.history_element("name display").wait_for_present()
         return title_element
 
     def make_accessible_and_publishable(self):
