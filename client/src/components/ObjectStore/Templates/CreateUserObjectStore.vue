@@ -6,7 +6,6 @@ import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore
 import { useUserStore } from "@/stores/userStore";
 
 import SourceOptionsList from "@/components/ConfigTemplates/SourceOptionsList.vue";
-import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 
 const breadcrumbItems = [
     { title: "User Preferences", to: "/user" },
@@ -27,15 +26,12 @@ const templates = computed(() => objectStoreTemplatesStore.latestTemplates);
     <SourceOptionsList
         title="storage location option"
         list-id="objectStoreOptions"
+        show-badges
         :grid-view="currentListView === 'grid'"
         route-path="object_store_templates"
         :breadcrumb-items="breadcrumbItems"
         :loading="objectStoreTemplatesStore.loading"
         :option-types="objectStoreTemplateTypes"
         :valid-filters="ObjectStoreValidFilters"
-        :templates="templates">
-        <template v-slot:card-badges="{ template }">
-            <ObjectStoreBadges :badges="template.badges" size="lg" />
-        </template>
-    </SourceOptionsList>
+        :templates="templates" />
 </template>

@@ -14,6 +14,7 @@ import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 
 interface SourceOptionType {
     message: string;
@@ -30,6 +31,7 @@ const props = defineProps<{
     optionTypes: Record<string, SourceOptionType>;
     validFilters: Record<string, ValidFilter<any>>;
     templates: FileSourceTemplateSummaries | ObjectStoreTemplateSummaries;
+    showBadges?: boolean;
 }>();
 
 const filterText = ref("");
@@ -87,8 +89,8 @@ function getOptionType(type: string) {
                 :option-type="getOptionType(tp.type)"
                 :grid-view="gridView"
                 :select-route="`/${routePath}/${tp.id}/new`">
-                <template v-slot:badges>
-                    <slot name="card-badges" :template="tp" />
+                <template v-if="showBadges && 'badges' in tp" v-slot:badges>
+                    <ObjectStoreBadges :badges="tp.badges" size="lg" />
                 </template>
             </SourceOptionCard>
         </div>
