@@ -423,16 +423,8 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def create_quota(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            group_page_offset = int(kwd.get("group_page_offset", 0))
-            group_page_limit = int(kwd.get("group_page_limit", 10))
-            group_search = kwd.get("group_search", "")
-            user_page_offset = int(kwd.get("user_page_offset", 0))
-            user_page_limit = int(kwd.get("user_page_limit", 10))
-            user_search = kwd.get("user_search", "")
-            group_data = self.group_list_grid(
-                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
-            )
-            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            user_data = self.user_list_grid(trans, **extract_kwd_prefix("user_", kwd))
+            group_data = self.group_list_grid(trans, **extract_kwd_prefix("group_", kwd))
             all_groups = [(group["name"], group["id"]) for group in group_data["rows"]]
             all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
@@ -460,11 +452,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     },
                 ],
                 "pagination": {
-                    "group_page_offset": group_page_offset,
-                    "group_page_limit": group_page_limit,
                     "total_groups": group_data["rows_total"],
-                    "user_page_offset": user_page_offset,
-                    "user_page_limit": user_page_limit,
                     "total_users": user_data["rows_total"],
                 },
             }
@@ -522,16 +510,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid quota id ({str(quota_id)}) received")
         quota = get_quota(trans, quota_id)
         if trans.request.method == "GET":
-            user_page_offset = int(kwd.get("user_page_offset", 0))
-            user_page_limit = int(kwd.get("user_page_limit", 10))
-            user_search = kwd.get("user_search", "")
-            group_page_offset = int(kwd.get("group_page_offset", 0))
-            group_page_limit = int(kwd.get("group_page_limit", 10))
-            group_search = kwd.get("group_search", "")
-            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
-            group_data = self.group_list_grid(
-                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
-            )
+            user_data = self.user_list_grid(trans, **extract_kwd_prefix("user_", kwd))
+            group_data = self.group_list_grid(trans, **extract_kwd_prefix("group_", kwd))
             in_users = []
             all_users = []
             in_groups = []
@@ -553,11 +533,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_users", "Users", all_users, in_users),
                 ],
                 "pagination": {
-                    "group_page_offset": group_page_offset,
-                    "group_page_limit": group_page_limit,
                     "total_groups": group_data["rows_total"],
-                    "user_page_offset": user_page_offset,
-                    "user_page_limit": user_page_limit,
                     "total_users": user_data["rows_total"],
                 },
             }
@@ -664,16 +640,8 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def create_role(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            group_page_offset = int(kwd.get("group_page_offset", 0))
-            group_page_limit = int(kwd.get("group_page_limit", 10))
-            group_search = kwd.get("group_search", "")
-            user_page_offset = int(kwd.get("user_page_offset", 0))
-            user_page_limit = int(kwd.get("user_page_limit", 10))
-            user_search = kwd.get("user_search", "")
-            group_data = self.group_list_grid(
-                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
-            )
-            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            user_data = self.user_list_grid(trans, **extract_kwd_prefix("user_", kwd))
+            group_data = self.group_list_grid(trans, **extract_kwd_prefix("group_", kwd))
             all_groups = [(group["name"], group["id"]) for group in group_data["rows"]]
             all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             return {
@@ -691,11 +659,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     },
                 ],
                 "pagination": {
-                    "group_page_offset": group_page_offset,
-                    "group_page_limit": group_page_limit,
                     "total_groups": group_data["rows_total"],
-                    "user_page_offset": user_page_offset,
-                    "user_page_limit": user_page_limit,
                     "total_users": user_data["rows_total"],
                 },
             }
@@ -798,16 +762,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid role id ({str(role_id)}) received")
         role = get_role(trans, role_id)
         if trans.request.method == "GET":
-            user_page_offset = int(kwd.get("user_page_offset", 0))
-            user_page_limit = int(kwd.get("user_page_limit", 10))
-            user_search = kwd.get("user_search", "")
-            group_page_offset = int(kwd.get("group_page_offset", 0))
-            group_page_limit = int(kwd.get("group_page_limit", 10))
-            group_search = kwd.get("group_search", "")
-            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
-            group_data = self.group_list_grid(
-                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
-            )
+            user_data = self.user_list_grid(trans, **extract_kwd_prefix("user_", kwd))
+            group_data = self.group_list_grid(trans, **extract_kwd_prefix("group_", kwd))
             in_users = []
             all_users = []
             in_groups = []
@@ -829,11 +785,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_users", "Users", all_users, in_users),
                 ],
                 "pagination": {
-                    "group_page_offset": group_page_offset,
-                    "group_page_limit": group_page_limit,
                     "total_groups": group_data["rows_total"],
-                    "user_page_offset": user_page_offset,
-                    "user_page_limit": user_page_limit,
                     "total_users": user_data["rows_total"],
                 },
             }
@@ -893,14 +845,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid group id ({str(group_id)}) received")
         group = get_group(trans, group_id)
         if trans.request.method == "GET":
-            user_page_offset = int(kwd.get("user_page_offset", 0))
-            user_page_limit = int(kwd.get("user_page_limit", 10))
-            user_search = kwd.get("user_search", "")
-            role_page_offset = int(kwd.get("role_page_offset", 0))
-            role_page_limit = int(kwd.get("role_page_limit", 10))
-            role_search = kwd.get("role_search", "")
-            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
-            role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
+            user_data = self.user_list_grid(trans, **extract_kwd_prefix("user_", kwd))
+            role_data = self.role_list_grid(trans, **extract_kwd_prefix("role_", kwd))
             in_users = []
             all_users = []
             in_roles = []
@@ -922,11 +868,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_users", "Users", all_users, in_users),
                 ],
                 "pagination": {
-                    "role_page_offset": role_page_offset,
-                    "role_page_limit": role_page_limit,
                     "total_roles": role_data["rows_total"],
-                    "user_page_offset": user_page_offset,
-                    "user_page_limit": user_page_limit,
                     "total_users": user_data["rows_total"],
                 },
             }
@@ -947,14 +889,8 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def create_group(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            user_page_offset = int(kwd.get("user_page_offset", 0))
-            user_page_limit = int(kwd.get("user_page_limit", 10))
-            user_search = kwd.get("user_search", "")
-            role_page_offset = int(kwd.get("role_page_offset", 0))
-            role_page_limit = int(kwd.get("role_page_limit", 10))
-            role_search = kwd.get("role_search", "")
-            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
-            role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
+            user_data = self.user_list_grid(trans, **extract_kwd_prefix("user_", kwd))
+            role_data = self.role_list_grid(trans, **extract_kwd_prefix("role_", kwd))
             all_roles = [(role["name"], role["id"]) for role in role_data["rows"]]
             all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             return {
@@ -971,11 +907,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     },
                 ],
                 "pagination": {
-                    "role_page_offset": role_page_offset,
-                    "role_page_limit": role_page_limit,
                     "total_roles": role_data["rows_total"],
-                    "user_page_offset": user_page_offset,
-                    "user_page_limit": user_page_limit,
                     "total_users": user_data["rows_total"],
                 },
             }
@@ -1076,16 +1008,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid user id ({str(user_id)}) received")
         user = get_user(trans, user_id)
         if trans.request.method == "GET":
-            role_page_offset = int(kwd.get("role_page_offset", 0))
-            role_page_limit = int(kwd.get("role_page_limit", 10))
-            role_search = kwd.get("role_search", "")
-            group_page_offset = int(kwd.get("group_page_offset", 0))
-            group_page_limit = int(kwd.get("group_page_limit", 10))
-            group_search = kwd.get("group_search", "")
-            role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
-            group_data = self.group_list_grid(
-                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
-            )
+            role_data = self.role_list_grid(trans, **extract_kwd_prefix("role_", kwd))
+            group_data = self.group_list_grid(trans, **extract_kwd_prefix("group_", kwd))
             in_roles = []
             all_roles = []
             in_groups = []
@@ -1112,11 +1036,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_groups", "Groups", all_groups, in_groups),
                 ],
                 "pagination": {
-                    "role_page_offset": role_page_offset,
-                    "role_page_limit": role_page_limit,
                     "total_roles": role_data["rows_total"],
-                    "group_page_offset": group_page_offset,
-                    "group_page_limit": group_page_limit,
                     "total_groups": group_data["rows_total"],
                 },
             }
@@ -1184,3 +1104,7 @@ def get_quota(trans, id):
     id = trans.security.decode_id(id)
     quota = trans.sa_session.query(trans.model.Quota).get(id)
     return quota
+
+
+def extract_kwd_prefix(prefix, kwd):
+    return {k[len(prefix) :]: v for k, v in kwd.items() if k.startswith(prefix)}
