@@ -141,7 +141,7 @@ def stage_data_in_history(
     galaxy_interactor: "GalaxyInteractorApi",
     tool_id: str,
     all_test_data,
-    history: Optional[str] = None,
+    history: str,
     force_path_paste=False,
     maxseconds=DEFAULT_TOOL_TEST_WAIT,
     tool_version=None,
