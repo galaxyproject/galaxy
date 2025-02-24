@@ -10,6 +10,7 @@ from datetime import (
     datetime,
 )
 from typing import (
+    Any,
     List,
     Optional,
     Union,
@@ -21,6 +22,7 @@ from fastapi import (
     Path,
     Query,
 )
+from pydantic import Field
 from typing_extensions import Annotated
 
 from galaxy import exceptions
@@ -47,15 +49,16 @@ from galaxy.schema.jobs import (
     JobOutputAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
-    ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
     DatasetSourceType,
     JobIndexSortByEnum,
     JobMetric,
+    JobMetricCollection,
     JobSummary,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
+from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.api import (
@@ -202,6 +205,57 @@ DatasetIdPathParam = Annotated[DecodedDatabaseIdField, Path(title="Dataset ID", 
 ReportErrorBody = Body(default=..., title="Report error", description="The values to report an Error")
 SearchJobBody = Body(default=..., title="Search job", description="The values to search an Job")
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
+
+
+class ShowFullJobResponse(EncodedJobDetails):
+    tool_stdout: Optional[str] = Field(
+        default=None,
+        title="Tool Standard Output",
+        description="The captured standard output of the tool executed by the job.",
+    )
+    tool_stderr: Optional[str] = Field(
+        default=None,
+        title="Tool Standard Error",
+        description="The captured standard error of the tool executed by the job.",
+    )
+    job_stdout: Optional[str] = Field(
+        default=None,
+        title="Job Standard Output",
+        description="The captured standard output of the job execution.",
+    )
+    job_stderr: Optional[str] = Field(
+        default=None,
+        title="Job Standard Error",
+        description="The captured standard error of the job execution.",
+    )
+    stdout: Optional[str] = Field(  # Legacy (tool_stdout + "\n" + job_stdout)
+        default=None,
+        title="Standard Output",
+        description="Combined tool and job standard output streams.",
+    )
+    stderr: Optional[str] = Field(  # Legacy (tool_stderr + "\n" + job_stderr)
+        default=None,
+        title="Standard Error",
+        description="Combined tool and job standard error streams.",
+    )
+    job_messages: Optional[List[AnyJobMessage]] = Field(
+        default=None,
+        title="Job Messages",
+        description="List with additional information and possible reasons for a failed job.",
+    )
+    dependencies: Optional[List[Any]] = Field(
+        default=None,
+        title="Job dependencies",
+        description="The dependencies of the job.",
+    )
+    job_metrics: Optional[JobMetricCollection] = Field(
+        default=None,
+        title="Job Metrics",
+        description=(
+            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
+            "Only administrators can see these metrics."
+        ),
+    )
 
 
 @router.cbv
