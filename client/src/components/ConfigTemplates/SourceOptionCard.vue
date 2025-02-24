@@ -64,6 +64,7 @@ function markdownToHTML(text: string) {
             </div>
 
             <BButton
+                :id="`select-button-${props.sourceOption.id}`"
                 v-b-tooltip.hover.noninteractive
                 variant="outline-primary"
                 class="source-option-card-select-button"
