@@ -389,7 +389,7 @@ class GalaxyInteractorApi:
 
     def get_history(self, history_name: str = "test_history") -> Optional[Dict[str, Any]]:
         # Return the most recent non-deleted history matching the provided name
-        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
+        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time", "show_own": "true"})
         response = self._get(f"histories?{filters}")
         try:
             return response.json()[-1]
