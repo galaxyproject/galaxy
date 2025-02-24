@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, withDefaults } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel } from "@/api";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";
@@ -12,11 +12,11 @@ import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface SelectObjectStoreProps {
-    selectedObjectStoreId?: string | null;
+    selectedObjectStoreId?: String | null;
     defaultOptionTitle: string;
     defaultOptionDescription: string;
     forWhat: string;
-    parentError?: string | null;
+    parentError?: String | null;
 }
 
 const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
@@ -71,7 +71,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
 
 const selectedObjectStore = computed(() => {
     if (props.selectedObjectStoreId) {
-        const objectStore = store.objectStoresById[props.selectedObjectStoreId];
+        const objectStore = store.objectStoresById[props.selectedObjectStoreId as string];
         return objectStore ?? null;
     } else {
         return null;
