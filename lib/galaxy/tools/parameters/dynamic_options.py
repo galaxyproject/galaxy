@@ -15,7 +15,10 @@ from typing import (
     cast,
     Dict,
     get_args,
+    List,
     Optional,
+    Sequence,
+    Set,
 )
 
 from typing_extensions import Literal
@@ -29,6 +32,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.tools.expressions import do_eval
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
     is_runtime_value,
     workflow_building_modes,
@@ -92,7 +96,7 @@ class StaticValueFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
         rval = []
         filter_value = self.value
         try:
@@ -128,7 +132,7 @@ class RegexpFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
         rval = []
         filter_value = self.value
         try:
@@ -184,7 +188,9 @@ class DataMetaFilter(Filter):
     def get_dependency_name(self):
         return self.ref_name
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+        options = list(options)
+
         def _add_meta(meta_value, m):
             if isinstance(m, list):
                 meta_value |= set(m)
@@ -224,7 +230,7 @@ class DataMetaFilter(Filter):
         # - for data sets: the meta data value
         # in both cases only meta data that is set (i.e. differs from the no_value)
         # is considered
-        meta_value = set()
+        meta_value: Set[Any] = set()
         for r in ref:
             if not r.metadata.element_is_set(self.key):
                 continue
@@ -236,7 +242,7 @@ class DataMetaFilter(Filter):
             return copy.deepcopy(options)
 
         if self.column is not None:
-            rval = []
+            rval: List[ParameterOption] = []
             for fields in options:
                 if compare_meta_value(fields[self.column], meta_value):
                     rval.append(fields)
@@ -246,7 +252,7 @@ class DataMetaFilter(Filter):
                 self.dynamic_option.columns = {"name": 0, "value": 1, "selected": 2}
                 self.dynamic_option.largest_index = 2
             for value in meta_value:
-                options.append((value, value, False))
+                options.append(ParameterOption(value, value, False))
             return options
 
 
@@ -286,7 +292,7 @@ class ParamValueFilter(Filter):
     def get_dependency_name(self):
         return self.ref_name
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
         ref = other_values.get(self.ref_name, None)
         if ref is None or is_runtime_value(ref):
             ref = []
@@ -336,7 +342,7 @@ class UniqueValueFilter(Filter):
     def get_dependency_name(self):
         return self.dynamic_option.dataset_ref_name
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
         rval = []
         seen = set()
         for fields in options:
@@ -365,12 +371,17 @@ class MultipleSplitterFilter(Filter):
         assert columns is not None, "Required 'column' attribute missing from filter"
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
         rval = []
         for fields in options:
             for column in self.columns:
-                for field in fields[column].split(self.separator):
-                    rval.append(fields[0:column] + [field] + fields[column + 1 :])
+                field = fields[column]
+                if isinstance(field, str):
+                    for split_field in field.split(self.separator):
+                        new_options = list(fields[0:column]) + [split_field] + list(fields[column + 1 :])
+                        # tested in filter_multiple_splitter.xml
+                        option = tuple(new_options)
+                        rval.append(option)
         return rval
 
 
@@ -826,6 +837,19 @@ class DynamicOptions:
             options = filter.filter_options(options, trans, other_values)
         return options
 
+    @staticmethod
+    def to_parameter_options(options):
+        rval: List[ParameterOption] = []
+        for option in options:
+            if isinstance(option, ParameterOption):
+                rval.append(option)
+            else:
+                if len(option) == 1:
+                    rval.append(ParameterOption(option[0], option[0]))
+                else:
+                    rval.append(ParameterOption(*option[:3]))
+        return rval
+
     def get_user_options(self, user: User):
         # stored metadata are key: value pairs, turn into flat lists of correct order
         fields = []
@@ -843,9 +867,19 @@ class DynamicOptions:
                 by_dbkey.update(table_entries)
             for data_table_entry in by_dbkey.values():
                 field_entry = []
+                if hda := data_table_entry.get("__hda__"):
+                    field_entry.append(hda)
+                missing_columns = False
                 for column_key in self.tool_data_table.columns.keys():
+                    if column_key not in data_table_entry:
+                        # currrent data table definition (as in self.tool_data_table)
+                        # may not match against the data manager bundle.
+                        # Breaking here fixes https://github.com/galaxyproject/galaxy/issues/18749.
+                        missing_columns = True
+                        break
                     field_entry.append(data_table_entry[column_key])
-                fields.append(field_entry)
+                if not missing_columns:
+                    fields.append(field_entry)
         return fields
 
     @staticmethod
@@ -857,7 +891,7 @@ class DynamicOptions:
             if path := value.get("path"):
                 # maybe a hack, should probably pass around dataset or src id combinations ?
                 value["path"] = os.path.join(hda.extra_files_path, path)
-                value["value"] = {"src": "hda", "id": hda.id}
+                value["__hda__"] = hda
         return table_entries
 
     def get_option_from_dataset(self, dataset):
@@ -894,15 +928,15 @@ class DynamicOptions:
                 rval.append(fields[field_index])
         return rval
 
-    def get_options(self, trans, other_values):
+    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
 
-        rval = []
+        rval: List[ParameterOption] = []
 
-        def to_triple(values):
+        def to_option(values):
             if len(values) == 2:
-                return [str(values[0]), str(values[1]), False]
+                return ParameterOption(str(values[0]), str(values[1]), False)
             else:
-                return [str(values[0]), str(values[1]), bool(values[2])]
+                return ParameterOption(str(values[0]), str(values[1]), bool(values[2]))
 
         if from_url_options := self.from_url_options:
             context = User.user_template_environment(trans.user)
@@ -940,7 +974,7 @@ class DynamicOptions:
                     data = []
 
             # We only support the very specific ["name", "value", "selected"] format for now.
-            rval = [to_triple(d) for d in data]
+            rval = [to_option(d) for d in data]
         if (
             self.file_fields is not None
             or self.tool_data_table is not None
@@ -949,11 +983,14 @@ class DynamicOptions:
         ):
             options = self.get_fields(trans, other_values)
             for fields in options:
-                rval.append((fields[self.columns["name"]], fields[self.columns["value"]], False))
+                name = fields[self.columns["name"]]
+                value = fields[self.columns["value"]]
+                hda = fields[-1] if isinstance(fields[-1], HistoryDatasetAssociation) else None
+                rval.append(ParameterOption(name, value, False, dataset=hda))
         else:
             for filter in self.filters:
                 rval = filter.filter_options(rval, trans, other_values)
-        return rval
+        return self.to_parameter_options(rval)
 
     def column_spec_to_index(self, column_spec):
         """

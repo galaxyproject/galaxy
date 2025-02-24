@@ -68,8 +68,10 @@ from sqlalchemy import (
     bindparam,
     Boolean,
     case,
+    Cast,
     Column,
     column,
+    ColumnElement,
     DateTime,
     delete,
     desc,
@@ -100,6 +102,7 @@ from sqlalchemy import (
     update,
     VARCHAR,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import (
     CompileError,
     OperationalError,
@@ -313,6 +316,19 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if not uuid:
         return uuid4()
     return UUID(str(uuid))
+
+
+def to_json(sa_session, column, keys: List[str]):
+    assert sa_session.bind
+    if sa_session.bind.dialect.name == "postgresql":
+        cast: Union[ColumnElement[Any], Cast[Any]] = func.cast(func.convert_from(column, "UTF8"), JSONB)
+        for key in keys:
+            cast = cast.__getitem__(key)
+        return cast.astext
+    else:
+        for key in keys:
+            column = func.json_extract(column, f"$.{key}")
+        return column
 
 
 class Base(DeclarativeBase, _HasTable):
@@ -898,8 +914,8 @@ class User(Base, Dictifiable, RepresentById):
                 Dataset.state == "ok",
                 # excludes data manager runs that actually populated tables.
                 # maybe track this formally by creating a different datatype for bundles ?
-                Dataset.total_size != Dataset.file_size,
                 HistoryDatasetAssociation._metadata.contains(data_table),
+                to_json(session, HistoryDatasetAssociation._metadata, ["is_bundle"]) == "true",
             )
             .order_by(HistoryDatasetAssociation.id)
         )
