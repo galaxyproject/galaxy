@@ -1,16 +1,11 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-    Set,
-)
+from typing import Set
 
 from sqlalchemy import (
     false,
     func,
     true,
 )
-from sqlalchemy.orm import Query
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -22,13 +17,7 @@ from galaxy.exceptions import (
     ActionInputError,
     RequestParameterInvalidException,
 )
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.quotas import QuotaManager
-from galaxy.model import (
-    Group,
-    Role,
-    User,
-)
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -434,19 +423,18 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def create_quota(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            user_page = int(kwd.get("user_page", 1))
-            user_page_limit = int(kwd.get("user_page_limit", 0))
-            group_page = int(kwd.get("group_page", 1))
-            group_page_limit = int(kwd.get("group_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                user_page=user_page,
-                user_page_limit=user_page_limit,
-                group_page=group_page,
-                group_page_limit=group_page_limit,
+            group_page_offset = int(kwd.get("group_page_offset", 0))
+            group_page_limit = int(kwd.get("group_page_limit", 10))
+            group_search = kwd.get("group_search", "")
+            user_page_offset = int(kwd.get("user_page_offset", 0))
+            user_page_limit = int(kwd.get("user_page_limit", 10))
+            user_search = kwd.get("user_search", "")
+            group_data = self.group_list_grid(
+                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
-            all_groups = [(group.name, trans.security.encode_id(group.id)) for group in paginated_data["groups"]]
-            all_users = [(user.email, trans.security.encode_id(user.id)) for user in paginated_data["users"]]
+            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            all_groups = [(group["name"], trans.security.encode_id(group["id"])) for group in group_data["rows"]]
+            all_users = [(user["email"], trans.security.encode_id(user["id"])) for user in user_data["rows"]]
             labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
             label_options = [("Default Quota", "__default__")]
             label_options.extend([(label, label) for label in labels])
@@ -472,12 +460,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     },
                 ],
                 "pagination": {
-                    "group_page": group_page,
+                    "group_page_offset": group_page_offset,
                     "group_page_limit": group_page_limit,
-                    "total_groups": paginated_data["total_groups"],
-                    "user_page": user_page,
+                    "total_groups": group_data["rows_total"],
+                    "user_page_offset": user_page_offset,
                     "user_page_limit": user_page_limit,
-                    "total_users": paginated_data["total_users"],
+                    "total_users": user_data["rows_total"],
                 },
             }
             if len(label_options) > 1:
@@ -534,31 +522,28 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid quota id ({str(quota_id)}) received")
         quota = get_quota(trans, quota_id)
         if trans.request.method == "GET":
-            user_page = int(kwd.get("user_page", 1))
-            user_page_limit = int(kwd.get("user_page_limit", 0))
-            group_page = int(kwd.get("group_page", 1))
-            group_page_limit = int(kwd.get("group_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                user_page=user_page,
-                user_page_limit=user_page_limit,
-                group_page=group_page,
-                group_page_limit=group_page_limit,
+            user_page_offset = int(kwd.get("user_page_offset", 0))
+            user_page_limit = int(kwd.get("user_page_limit", 10))
+            user_search = kwd.get("user_search", "")
+            group_page_offset = int(kwd.get("group_page_offset", 0))
+            group_page_limit = int(kwd.get("group_page_limit", 10))
+            group_search = kwd.get("group_search", "")
+            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            group_data = self.group_list_grid(
+                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
             in_users = []
             all_users = []
             in_groups = []
             all_groups = []
-            for user in paginated_data["users"]:
-                user_id = trans.security.encode_id(user.id)
-                if user in [x.user for x in quota.users]:
-                    in_users.append(user_id)
-                all_users.append((user.email, user_id))
-            for group in paginated_data["groups"]:
-                group_id = trans.security.encode_id(group.id)
-                if group in [x.group for x in quota.groups]:
-                    in_groups.append(group_id)
-                all_groups.append((group.name, group_id))
+            for user in user_data["rows"]:
+                if user["id"] in [u.id for u in quota.users]:
+                    in_users.append((user["email"], user["id"]))
+                all_users.append((user["email"], user["id"]))
+            for group in group_data["rows"]:
+                if group["id"] in [g.id for g in quota.groups]:
+                    in_groups.append((group["name"], group["id"]))
+                all_groups.append((group["name"], group["id"]))
             return {
                 "title": f"Quota '{quota.name}'",
                 "message": f"Quota '{quota.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
@@ -568,12 +553,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_users", "Users", all_users, in_users),
                 ],
                 "pagination": {
-                    "group_page": group_page,
+                    "group_page_offset": group_page_offset,
                     "group_page_limit": group_page_limit,
-                    "total_groups": paginated_data["total_groups"],
-                    "user_page": user_page,
+                    "total_groups": group_data["rows_total"],
+                    "user_page_offset": user_page_offset,
                     "user_page_limit": user_page_limit,
-                    "total_users": paginated_data["total_users"],
+                    "total_users": user_data["rows_total"],
                 },
             }
         else:
@@ -679,19 +664,18 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def create_role(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            user_page = int(kwd.get("user_page", 1))
-            user_page_limit = int(kwd.get("user_page_limit", 0))
-            group_page = int(kwd.get("group_page", 1))
-            group_page_limit = int(kwd.get("group_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                user_page=user_page,
-                user_page_limit=user_page_limit,
-                group_page=group_page,
-                group_page_limit=group_page_limit,
+            group_page_offset = int(kwd.get("group_page_offset", 0))
+            group_page_limit = int(kwd.get("group_page_limit", 10))
+            group_search = kwd.get("group_search", "")
+            user_page_offset = int(kwd.get("user_page_offset", 0))
+            user_page_limit = int(kwd.get("user_page_limit", 10))
+            user_search = kwd.get("user_search", "")
+            group_data = self.group_list_grid(
+                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
-            all_groups = [(group.name, trans.security.encode_id(group.id)) for group in paginated_data["groups"]]
-            all_users = [(user.email, trans.security.encode_id(user.id)) for user in paginated_data["users"]]
+            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            all_groups = [(group["name"], trans.security.encode_id(group["id"])) for group in group_data["rows"]]
+            all_users = [(user["email"], trans.security.encode_id(user["id"])) for user in user_data["rows"]]
             return {
                 "title": "Create Role",
                 "inputs": [
@@ -707,12 +691,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     },
                 ],
                 "pagination": {
-                    "group_page": group_page,
+                    "group_page_offset": group_page_offset,
                     "group_page_limit": group_page_limit,
-                    "total_groups": paginated_data["total_groups"],
-                    "user_page": user_page,
+                    "total_groups": group_data["rows_total"],
+                    "user_page_offset": user_page_offset,
                     "user_page_limit": user_page_limit,
-                    "total_users": paginated_data["total_users"],
+                    "total_users": user_data["rows_total"],
                 },
             }
         else:
@@ -814,31 +798,30 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid role id ({str(role_id)}) received")
         role = get_role(trans, role_id)
         if trans.request.method == "GET":
-            user_page = int(kwd.get("user_page", 1))
-            user_page_limit = int(kwd.get("user_page_limit", 0))
-            group_page = int(kwd.get("group_page", 1))
-            group_page_limit = int(kwd.get("group_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                user_page=user_page,
-                user_page_limit=user_page_limit,
-                group_page=group_page,
-                group_page_limit=group_page_limit,
+            user_page_offset = int(kwd.get("user_page_offset", 0))
+            user_page_limit = int(kwd.get("user_page_limit", 10))
+            user_search = kwd.get("user_search", "")
+            group_page_offset = int(kwd.get("group_page_offset", 0))
+            group_page_limit = int(kwd.get("group_page_limit", 10))
+            group_search = kwd.get("group_search", "")
+            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            group_data = self.group_list_grid(
+                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
             in_users = []
             all_users = []
             in_groups = []
             all_groups = []
-            for user in paginated_data["users"]:
-                user_id = trans.security.encode_id(user.id)
-                if user in [x.user for x in role.users]:
+            for user in user_data["rows"]:
+                user_id = trans.security.encode_id(user["id"])
+                if user["id"] in [u.id for u in role.users]:
                     in_users.append(user_id)
-                all_users.append((user.email, user_id))
-            for group in paginated_data["groups"]:
-                group_id = trans.security.encode_id(group.id)
-                if group in [x.group for x in role.groups]:
+                all_users.append((user["email"], user_id))
+            for group in group_data["rows"]:
+                group_id = trans.security.encode_id(group["id"])
+                if group["id"] in [g.id for g in role.groups]:
                     in_groups.append(group_id)
-                all_groups.append((group.name, group_id))
+                all_groups.append((group["name"], group_id))
             return {
                 "title": f"Role '{role.name}'",
                 "message": f"Role '{role.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
@@ -848,12 +831,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_users", "Users", all_users, in_users),
                 ],
                 "pagination": {
-                    "group_page": group_page,
+                    "group_page_offset": group_page_offset,
                     "group_page_limit": group_page_limit,
-                    "total_groups": paginated_data["total_groups"],
-                    "user_page": user_page,
+                    "total_groups": group_data["rows_total"],
+                    "user_page_offset": user_page_offset,
                     "user_page_limit": user_page_limit,
-                    "total_users": paginated_data["total_users"],
+                    "total_users": user_data["rows_total"],
                 },
             }
         else:
@@ -912,31 +895,28 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid group id ({str(group_id)}) received")
         group = get_group(trans, group_id)
         if trans.request.method == "GET":
-            user_page = int(kwd.get("user_page", 1))
-            user_page_limit = int(kwd.get("user_page_limit", 0))
-            role_page = int(kwd.get("role_page", 1))
-            role_page_limit = int(kwd.get("role_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                user_page=user_page,
-                user_page_limit=user_page_limit,
-                role_page=role_page,
-                role_page_limit=role_page_limit,
-            )
+            user_page_offset = int(kwd.get("user_page_offset", 0))
+            user_page_limit = int(kwd.get("user_page_limit", 10))
+            user_search = kwd.get("user_search", "")
+            role_page_offset = int(kwd.get("role_page_offset", 0))
+            role_page_limit = int(kwd.get("role_page_limit", 10))
+            role_search = kwd.get("role_search", "")
+            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
             in_users = []
             all_users = []
             in_roles = []
             all_roles = []
-            for user in paginated_data["users"]:
-                user_id = trans.security.encode_id(user.id)
-                if user in [x.user for x in group.users]:
+            for user in user_data["rows"]:
+                user_id = trans.security.encode_id(user["id"])
+                if user["id"] in [u.id for u in group.users]:
                     in_users.append(user_id)
-                all_users.append((user.email, user_id))
-            for role in paginated_data["roles"]:
-                role_id = trans.security.encode_id(role.id)
-                if role in [x.role for x in group.roles]:
+                all_users.append((user["email"], user_id))
+            for role in role_data["rows"]:
+                role_id = trans.security.encode_id(role["id"])
+                if role["id"] in [r.id for r in group.roles]:
                     in_roles.append(role_id)
-                all_roles.append((role.name, role_id))
+                all_roles.append((role["name"], role_id))
             return {
                 "title": f"Group '{group.name}'",
                 "message": f"Group '{group.name}' is currently associated with {len(in_users)} user(s) and {len(in_roles)} role(s).",
@@ -946,12 +926,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_users", "Users", all_users, in_users),
                 ],
                 "pagination": {
-                    "role_page": role_page,
+                    "role_page_offset": role_page_offset,
                     "role_page_limit": role_page_limit,
-                    "total_roles": paginated_data["total_roles"],
-                    "user_page": user_page,
+                    "total_roles": role_data["rows_total"],
+                    "user_page_offset": user_page_offset,
                     "user_page_limit": user_page_limit,
-                    "total_users": paginated_data["total_users"],
+                    "total_users": user_data["rows_total"],
                 },
             }
         else:
@@ -971,22 +951,18 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def create_group(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            user_page = int(kwd.get("user_page", 1))
-            user_page_limit = int(kwd.get("user_page_limit", 0))
-            role_page = int(kwd.get("role_page", 1))
-            role_page_limit = int(kwd.get("role_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                user_page=user_page,
-                user_page_limit=user_page_limit,
-                role_page=role_page,
-                role_page_limit=role_page_limit,
-            )
-            all_roles = [(role.name, trans.security.encode_id(role.id)) for role in paginated_data["roles"]]
-            all_users = [(user.email, trans.security.encode_id(user.id)) for user in paginated_data["users"]]
+            user_page_offset = int(kwd.get("user_page_offset", 0))
+            user_page_limit = int(kwd.get("user_page_limit", 10))
+            user_search = kwd.get("user_search", "")
+            role_page_offset = int(kwd.get("role_page_offset", 0))
+            role_page_limit = int(kwd.get("role_page_limit", 10))
+            role_search = kwd.get("role_search", "")
+            user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
+            role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
+            all_roles = [(role["name"], trans.security.encode_id(role["id"])) for role in role_data["rows"]]
+            all_users = [(user["email"], trans.security.encode_id(user["id"])) for user in user_data["rows"]]
             return {
                 "title": "Create Group",
-                "title_id": "create-group",
                 "inputs": [
                     {"name": "name", "label": "Name"},
                     build_select_input("in_roles", "Roles", all_roles, []),
@@ -999,12 +975,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     },
                 ],
                 "pagination": {
-                    "role_page": role_page,
+                    "role_page_offset": role_page_offset,
                     "role_page_limit": role_page_limit,
-                    "total_roles": paginated_data["total_roles"],
-                    "user_page": user_page,
+                    "total_roles": role_data["rows_total"],
+                    "user_page_offset": user_page_offset,
                     "user_page_limit": user_page_limit,
-                    "total_users": paginated_data["total_users"],
+                    "total_users": user_data["rows_total"],
                 },
             }
         else:
@@ -1104,36 +1080,35 @@ class AdminGalaxy(controller.JSAppLauncher):
             return self.message_exception(trans, f"Invalid user id ({str(user_id)}) received")
         user = get_user(trans, user_id)
         if trans.request.method == "GET":
-            role_page = int(kwd.get("role_page", 1))
-            role_page_limit = int(kwd.get("role_page_limit", 0))
-            group_page = int(kwd.get("group_page", 1))
-            group_page_limit = int(kwd.get("group_page_limit", 0))
-            paginated_data = paginate(
-                trans,
-                role_page=role_page,
-                role_page_limit=role_page_limit,
-                group_page=group_page,
-                group_page_limit=group_page_limit,
+            role_page_offset = int(kwd.get("role_page_offset", 0))
+            role_page_limit = int(kwd.get("role_page_limit", 10))
+            role_search = kwd.get("role_search", "")
+            group_page_offset = int(kwd.get("group_page_offset", 0))
+            group_page_limit = int(kwd.get("group_page_limit", 10))
+            group_search = kwd.get("group_search", "")
+            role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
+            group_data = self.group_list_grid(
+                trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
             in_roles = []
             all_roles = []
             in_groups = []
             all_groups = []
-            for role in paginated_data["roles"]:
-                role_id = trans.security.encode_id(role.id)
-                if role in [x.role for x in user.roles]:
+            for role in role_data["rows"]:
+                role_id = trans.security.encode_id(role["id"])
+                if role["id"] in [r.id for r in user.roles]:
                     in_roles.append(role_id)
-                if role.type != trans.app.model.Role.types.PRIVATE:
+                if role["type"] != trans.app.model.Role.types.PRIVATE:
                     # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
                     # not be listed in the roles form fields, except for the currently selected user's private
                     # role, which should always be in in_roles.  The check above is added as an additional
                     # precaution, since for a period of time we were including private roles in the form fields.
-                    all_roles.append((role.name, role_id))
-            for group in paginated_data["groups"]:
-                group_id = trans.security.encode_id(group.id)
-                if group in [x.group for x in user.groups]:
+                    all_roles.append((role["name"], role_id))
+            for group in group_data["rows"]:
+                group_id = trans.security.encode_id(group["id"])
+                if group["id"] in [g.id for g in user.groups]:
                     in_groups.append(group_id)
-                all_groups.append((group.name, group_id))
+                all_groups.append((group["name"], group_id))
             return {
                 "title": f"Roles and groups for '{user.email}'",
                 "message": f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).",
@@ -1143,12 +1118,12 @@ class AdminGalaxy(controller.JSAppLauncher):
                     build_select_input("in_groups", "Groups", all_groups, in_groups),
                 ],
                 "pagination": {
-                    "role_page": role_page,
+                    "role_page_offset": role_page_offset,
                     "role_page_limit": role_page_limit,
-                    "total_roles": paginated_data["total_roles"],
-                    "group_page": group_page,
+                    "total_roles": role_data["rows_total"],
+                    "group_page_offset": group_page_offset,
                     "group_page_limit": group_page_limit,
-                    "total_groups": paginated_data["total_groups"],
+                    "total_groups": group_data["rows_total"],
                 },
             }
         else:
@@ -1215,56 +1190,3 @@ def get_quota(trans, id):
     id = trans.security.decode_id(id)
     quota = trans.sa_session.query(trans.model.Quota).get(id)
     return quota
-
-
-def paginate_query(query: Query, page: int, limit: int) -> tuple[int, list[Any]]:
-    total = query.count()
-    limit = limit or total
-    offset = (page - 1) * limit
-    items = query.limit(limit).offset(offset).all()
-    return total, items
-
-
-def paginate(
-    trans: ProvidesUserContext,
-    user_page=None,
-    user_page_limit=None,
-    user_search_term=None,
-    group_page=None,
-    group_page_limit=None,
-    group_search_term=None,
-    role_page=None,
-    role_page_limit=None,
-    role_search_term=None,
-) -> Dict[str, Any]:
-    data = {
-        "total_users": 0,
-        "users": [],
-        "total_groups": 0,
-        "groups": [],
-        "total_roles": 0,
-        "roles": [],
-    }
-
-    if user_page:
-        user_query = trans.sa_session.query(User).filter(User.deleted == false())
-        if user_search_term:
-            user_query = user_query.filter(User.email.ilike(f"%{user_search_term}%"))
-        user_query = user_query.order_by(User.email)
-        data["total_users"], data["users"] = paginate_query(user_query, user_page, user_page_limit)
-
-    if group_page:
-        group_query = trans.sa_session.query(Group).filter(Group.deleted == false())
-        if group_search_term:
-            group_query = group_query.filter(Group.name.ilike(f"%{group_search_term}%"))
-        group_query = group_query.order_by(Group.name)
-        data["total_groups"], data["groups"] = paginate_query(group_query, group_page, group_page_limit)
-
-    if role_page:
-        role_query = trans.sa_session.query(Role).filter(Role.deleted == false())
-        if role_search_term:
-            role_query = role_query.filter(Role._name.ilike(f"%{role_search_term}%"))
-        role_query = role_query.order_by(Role._name)
-        data["total_roles"], data["roles"] = paginate_query(role_query, role_page, role_page_limit)
-
-    return data
