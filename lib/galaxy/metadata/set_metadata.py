@@ -20,8 +20,6 @@ import traceback
 from functools import partial
 from pathlib import Path
 from typing import (
-    Any,
-    Dict,
     List,
     Optional,
 )
@@ -63,6 +61,7 @@ from galaxy.objectstore import (
     ObjectStore,
 )
 from galaxy.tool_util.output_checker import (
+    AnyJobMessage,
     check_output,
     DETECTED_JOB_STATE,
 )
@@ -224,7 +223,7 @@ def set_metadata_portable(
 
     export_store = None
     final_job_state = Job.states.OK
-    job_messages: List[Dict[str, Any]] = []
+    job_messages: List[AnyJobMessage] = []
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]

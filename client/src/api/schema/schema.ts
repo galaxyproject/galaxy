@@ -8966,6 +8966,22 @@ export interface components {
              */
             src: components["schemas"]["DataItemSourceType"];
         };
+        /** ExitCodeJobMessage */
+        ExitCodeJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /** Exit Code */
+            exit_code: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "exit_code";
+        };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
             /**
@@ -14314,6 +14330,20 @@ export interface components {
              */
             source: components["schemas"]["DatasetSourceType"];
         };
+        /** MaxDiscoveredFilesJobMessage */
+        MaxDiscoveredFilesJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "max_discovered_files";
+        };
         /** MessageExceptionModel */
         MessageExceptionModel: {
             /** Err Code */
@@ -15632,6 +15662,24 @@ export interface components {
             /** Workflow */
             workflow: string;
         };
+        /** RegexJobMessage */
+        RegexJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /** Match */
+            match: string | null;
+            /** Stream */
+            stream: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "regex";
+        };
         /** ReloadFeedback */
         ReloadFeedback: {
             /** Failed */
@@ -16315,7 +16363,13 @@ export interface components {
              * Job Messages
              * @description List with additional information and possible reasons for a failed job.
              */
-            job_messages?: unknown[] | null;
+            job_messages?:
+                | (
+                      | components["schemas"]["ExitCodeJobMessage"]
+                      | components["schemas"]["RegexJobMessage"]
+                      | components["schemas"]["MaxDiscoveredFilesJobMessage"]
+                  )[]
+                | null;
             /**
              * Job Metrics
              * @description Collections of metrics provided by `JobInstrumenter` plugins on a particular job. Only administrators can see these metrics.
