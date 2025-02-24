@@ -27,6 +27,7 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat,
 )
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
@@ -171,7 +172,7 @@ class TestToolEvaluator(TestCase, UsesApp):
             return ["/old/path/human"]
 
         def get_options(trans, other_values):
-            return [["", "/old/path/human", ""]]
+            return [ParameterOption("", "/old/path/human", False)]
 
         parameter.options = Bunch(get_field_by_name_for_value=get_field_by_name_for_value, get_options=get_options)
         self.tool.set_params({"index_path": parameter})
