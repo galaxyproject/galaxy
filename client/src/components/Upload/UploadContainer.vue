@@ -21,6 +21,8 @@ import CompositeBox from "./CompositeBox";
 import DefaultBox from "./DefaultBox";
 import RulesInput from "./RulesInput";
 
+import RoCrateImport from "./ROCrate/RoCrateImport.vue";
+
 const props = defineProps({
     auto: {
         type: Object,
@@ -203,6 +205,9 @@ defineExpose({
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
                 v-on="$listeners" />
+        </BTab>
+        <BTab id="rocrate" title="RO-Crate Zip" button-id="tab-title-link-rocrate">
+            <RoCrateImport :has-callback="hasCallback" :history-id="currentHistoryId" v-on="$listeners" />
         </BTab>
         <DefaultBox
             v-if="showRegular || showCollection"
