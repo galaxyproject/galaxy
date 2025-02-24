@@ -93,9 +93,7 @@ class TestWorkflow(ApiTestCase):
         item_label = f"Output named {output_name}"
 
         def get_filename(name: str) -> str:
-            return tempfile.NamedTemporaryFile(
-                prefix=f"gx_workflow_framework_test_file_{output_name}", delete=False
-            ).name
+            return self.test_data_resolver.get_filename(name)
 
         def verify_dataset(dataset: dict, test_properties: OutputChecks):
             output_content = self.dataset_populator.get_history_dataset_content(
