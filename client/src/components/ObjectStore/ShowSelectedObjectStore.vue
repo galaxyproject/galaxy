@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 
 import { getObjectStoreDetails } from "@/api/objectStores";
+import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ConcreteObjectStoreModel } from "./types";
@@ -38,7 +39,7 @@ watch(
     }
 );
 fetch();
-const loadingMessage = "Loading storage location details";
+const loadingMessage = localize("Loading storage location details");
 </script>
 
 <template>
