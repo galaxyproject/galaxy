@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
 
 import { validateSingleZip } from "./rocrate.utils";
+
+const isDragging = ref(false);
 
 const emit = defineEmits<{
     (e: "dropError", errorMessage: string): void;
@@ -10,11 +13,10 @@ const emit = defineEmits<{
 }>();
 
 function onDrop(event: DragEvent) {
-    event.preventDefault();
+    isDragging.value = false;
 
     const files = event.dataTransfer?.files;
     if (!files || files.length === 0) {
-        console.log("No files dropped");
         return;
     }
 
@@ -33,8 +35,23 @@ function onDrop(event: DragEvent) {
     emit("dropSuccess", file!);
 }
 
-function reset(event: DragEvent) {
+function onDragEnter(event: DragEvent) {
     event.preventDefault();
+    isDragging.value = true;
+    resetError();
+}
+
+function onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    isDragging.value = false;
+}
+
+function onDragOver(event: DragEvent) {
+    event.preventDefault();
+    isDragging.value = true;
+}
+
+function resetError() {
     emit("dropError", "");
 }
 </script>
@@ -43,14 +60,35 @@ function reset(event: DragEvent) {
     <div
         role="button"
         tabindex="0"
-        class="drop-zone"
-        @dragenter.prevent="reset"
-        @dragover.prevent="reset"
-        @dragleave.prevent="reset"
+        class="drop-zone h-100"
+        @dragenter.prevent="onDragEnter"
+        @dragover.prevent="onDragOver"
+        @dragleave.prevent="onDragLeave"
         @drop.prevent="onDrop">
-        <div class="upload-helper">
+        <div class="helper" :class="{ highlight: isDragging }">
             <FontAwesomeIcon class="mr-1" :icon="faArchive" />
-            <span v-localize>Drop your RO-Crate Zip file here or paste URL below</span>
+            <span v-localize>Drop your RO-Crate Zip file here, choose a local file or paste a URL below</span>
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+
+.helper {
+    pointer-events: none;
+
+    font-size: x-large;
+    color: $border-color;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.highlight {
+    color: $brand-info;
+    opacity: 0.8;
+}
+</style>
