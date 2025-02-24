@@ -895,6 +895,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             return {
                 "title": "Create Group",
+                "title_id": "create-group",
                 "inputs": [
                     {"name": "name", "label": "Name"},
                     build_select_input("in_roles", "Roles", all_roles, []),
