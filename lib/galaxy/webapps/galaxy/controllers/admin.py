@@ -433,8 +433,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                 trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
             user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
-            all_groups = [(group["name"], trans.security.encode_id(group["id"])) for group in group_data["rows"]]
-            all_users = [(user["email"], trans.security.encode_id(user["id"])) for user in user_data["rows"]]
+            all_groups = [(group["name"], group["id"]) for group in group_data["rows"]]
+            all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
             label_options = [("Default Quota", "__default__")]
             label_options.extend([(label, label) for label in labels])
@@ -674,8 +674,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                 trans, limit=group_page_limit, offset=group_page_offset, search=group_search
             )
             user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
-            all_groups = [(group["name"], trans.security.encode_id(group["id"])) for group in group_data["rows"]]
-            all_users = [(user["email"], trans.security.encode_id(user["id"])) for user in user_data["rows"]]
+            all_groups = [(group["name"], group["id"]) for group in group_data["rows"]]
+            all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             return {
                 "title": "Create Role",
                 "inputs": [
@@ -813,15 +813,13 @@ class AdminGalaxy(controller.JSAppLauncher):
             in_groups = []
             all_groups = []
             for user in user_data["rows"]:
-                user_id = trans.security.encode_id(user["id"])
                 if user["id"] in [u.id for u in role.users]:
-                    in_users.append(user_id)
-                all_users.append((user["email"], user_id))
+                    in_users.append(user["id"])
+                all_users.append((user["email"], user["id"]))
             for group in group_data["rows"]:
-                group_id = trans.security.encode_id(group["id"])
                 if group["id"] in [g.id for g in role.groups]:
-                    in_groups.append(group_id)
-                all_groups.append((group["name"], group_id))
+                    in_groups.append(group["id"])
+                all_groups.append((group["name"], group["id"]))
             return {
                 "title": f"Role '{role.name}'",
                 "message": f"Role '{role.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
@@ -908,15 +906,13 @@ class AdminGalaxy(controller.JSAppLauncher):
             in_roles = []
             all_roles = []
             for user in user_data["rows"]:
-                user_id = trans.security.encode_id(user["id"])
                 if user["id"] in [u.id for u in group.users]:
-                    in_users.append(user_id)
-                all_users.append((user["email"], user_id))
+                    in_users.append(user["id"])
+                all_users.append((user["email"], user["id"]))
             for role in role_data["rows"]:
-                role_id = trans.security.encode_id(role["id"])
                 if role["id"] in [r.id for r in group.roles]:
-                    in_roles.append(role_id)
-                all_roles.append((role["name"], role_id))
+                    in_roles.append(role["id"])
+                all_roles.append((role["name"], role["id"]))
             return {
                 "title": f"Group '{group.name}'",
                 "message": f"Group '{group.name}' is currently associated with {len(in_users)} user(s) and {len(in_roles)} role(s).",
@@ -959,8 +955,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             role_search = kwd.get("role_search", "")
             user_data = self.user_list_grid(trans, limit=user_page_limit, offset=user_page_offset, search=user_search)
             role_data = self.role_list_grid(trans, limit=role_page_limit, offset=role_page_offset, search=role_search)
-            all_roles = [(role["name"], trans.security.encode_id(role["id"])) for role in role_data["rows"]]
-            all_users = [(user["email"], trans.security.encode_id(user["id"])) for user in user_data["rows"]]
+            all_roles = [(role["name"], role["id"]) for role in role_data["rows"]]
+            all_users = [(user["email"], user["id"]) for user in user_data["rows"]]
             return {
                 "title": "Create Group",
                 "inputs": [
@@ -1095,20 +1091,18 @@ class AdminGalaxy(controller.JSAppLauncher):
             in_groups = []
             all_groups = []
             for role in role_data["rows"]:
-                role_id = trans.security.encode_id(role["id"])
                 if role["id"] in [r.id for r in user.roles]:
-                    in_roles.append(role_id)
+                    in_roles.append(role["id"])
                 if role["type"] != trans.app.model.Role.types.PRIVATE:
                     # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
                     # not be listed in the roles form fields, except for the currently selected user's private
                     # role, which should always be in in_roles.  The check above is added as an additional
                     # precaution, since for a period of time we were including private roles in the form fields.
-                    all_roles.append((role["name"], role_id))
+                    all_roles.append((role["name"], role["id"]))
             for group in group_data["rows"]:
-                group_id = trans.security.encode_id(group["id"])
                 if group["id"] in [g.id for g in user.groups]:
-                    in_groups.append(group_id)
-                all_groups.append((group["name"], group_id))
+                    in_groups.append(group["id"])
+                all_groups.append((group["name"], group["id"]))
             return {
                 "title": f"Roles and groups for '{user.email}'",
                 "message": f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).",
