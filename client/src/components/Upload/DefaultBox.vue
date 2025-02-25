@@ -1,23 +1,24 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BAlert, BBadge, BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
 import Vue, { computed, ref } from "vue";
 
+import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import { defaultModel } from "./model.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
 import CollectionCreatorIndex from "../Collections/CollectionCreatorIndex.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSelectExtension from "./UploadSelectExtension.vue";
 
-library.add(faCopy, faEdit, faFolderOpen, faLaptop);
+const REFER_TO_HISTORY_MSG = "Refer to the history panel to view dataset state";
 
 const props = defineProps({
     chunkUploadSize: {
@@ -85,7 +86,6 @@ const props = defineProps({
 const emit = defineEmits(["dismiss", "progress", "uploaded"]);
 
 const collectionModalShow = ref(false);
-const collectionSelection = ref([]);
 const collectionType = ref("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
@@ -99,10 +99,20 @@ const uploadFile = ref(null);
 const uploadItems = ref({});
 const uploadSize = ref(0);
 const queue = ref(createUploadQueue());
+const selectedItemsForModal = ref([]);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
+const creatingPairedType = computed(
+    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value)
+);
 const enableBuild = computed(
-    () => !isRunning.value && counterAnnounce.value == 0 && counterSuccess.value > 0 && counterError.value == 0
+    () =>
+        !isRunning.value &&
+        counterAnnounce.value == 0 &&
+        counterSuccess.value > 0 &&
+        uploadedHistoryItemsReady.value &&
+        uploadedHistoryItemsOk.value.length > 0 &&
+        (!creatingPairedType.value || uploadedHistoryItemsOk.value.length % 2 === 0)
 );
 const enableReset = computed(() => !isRunning.value && counterNonRunning.value > 0);
 const enableStart = computed(() => !isRunning.value && counterAnnounce.value > 0);
@@ -113,6 +123,13 @@ const historyId = computed(() => props.historyId);
 const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
+
+const { uploadedHistoryItemsOk, uploadedHistoryItemsReady, historyItemsStateInfo } = monitorUploadedHistoryItems(
+    uploadValues,
+    historyId,
+    enableStart,
+    creatingPairedType
+);
 
 function createUploadQueue() {
     return new UploadQueue({
@@ -160,28 +177,13 @@ function eventAnnounce(index, file) {
     Vue.set(uploadItems.value, index, uploadModel);
 }
 
-/** Populates collection builder with uploaded files */
+/** Populates and opens collection builder with uploaded files, or emits uploads */
 async function eventBuild(openModal = false) {
-    try {
-        collectionSelection.value = [];
-        uploadValues.value.forEach((model) => {
-            const outputs = model.outputs;
-            if (outputs) {
-                Object.entries(outputs).forEach((output) => {
-                    const outputDetails = output[1];
-                    collectionSelection.value.push(outputDetails);
-                });
-            } else {
-                console.debug("Warning, upload response does not contain outputs.", model);
-            }
-        });
-        if (openModal) {
-            collectionModalShow.value = true;
-        } else {
-            emit("uploaded", collectionSelection.value);
-        }
-    } catch (err) {
-        console.error(err);
+    if (openModal) {
+        selectedItemsForModal.value = uploadedHistoryItemsOk.value;
+        collectionModalShow.value = true;
+    } else {
+        emit("uploaded", uploadedHistoryItemsOk.value);
     }
     counterRunning.value = 0;
     eventReset();
@@ -371,6 +373,12 @@ defineExpose({
 <template>
     <div class="upload-wrapper">
         <div class="upload-header">
+            <div v-if="props.emitUploaded && historyItemsStateInfo">
+                <BAlert show :variant="historyItemsStateInfo.variant">
+                    <LoadingSpan v-if="historyItemsStateInfo.spin" :message="historyItemsStateInfo.message" />
+                    <span v-else>{{ historyItemsStateInfo.message }}</span>
+                </BAlert>
+            </div>
             <div v-if="queueStopping" v-localize>Queue will pause after completing the current file...</div>
             <div v-else-if="counterAnnounce === 0">
                 <div v-if="hasBrowserSupport">&nbsp;</div>
@@ -387,7 +395,7 @@ defineExpose({
         </div>
         <UploadBox @add="addFiles">
             <div v-show="showHelper" class="upload-helper">
-                <FontAwesomeIcon class="mr-1" icon="fa-copy" />
+                <FontAwesomeIcon class="mr-1" :icon="faCopy" />
                 <span v-localize>Drop files here</span>
             </div>
             <div v-show="!showHelper">
@@ -459,7 +467,7 @@ defineExpose({
         <slot name="footer" />
         <div class="d-flex justify-content-end flex-wrap" :class="!disableFooter && 'upload-buttons'">
             <BButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile.click()">
-                <FontAwesomeIcon icon="fa-laptop" />
+                <FontAwesomeIcon :icon="faLaptop" />
                 <span v-localize>Choose local file</span>
             </BButton>
             <BButton
@@ -468,11 +476,11 @@ defineExpose({
                 :size="size"
                 :disabled="!enableSources"
                 @click="eventRemoteFiles">
-                <FontAwesomeIcon icon="fa-folder-open" />
+                <FontAwesomeIcon :icon="faFolderOpen" />
                 <span v-localize>Choose remote files</span>
             </BButton>
             <BButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
-                <FontAwesomeIcon icon="fa-edit" />
+                <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
@@ -492,6 +500,7 @@ defineExpose({
                 title="Build"
                 :variant="enableBuild ? 'primary' : null"
                 @click="() => eventBuild(true)">
+                <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
                 <span v-localize>Build</span>
             </BButton>
             <BButton
@@ -502,11 +511,21 @@ defineExpose({
                 title="Use Uploaded Files"
                 :variant="enableBuild ? 'primary' : null"
                 @click="() => eventBuild(false)">
+                <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
                 <slot name="emit-btn-txt">
                     <span v-localize>Use Uploaded</span>
                 </slot>
                 ({{ counterSuccess }})
             </BButton>
+            <BBadge
+                v-if="props.isCollection && historyItemsStateInfo?.icon"
+                v-b-tooltip.hover.noninteractive
+                role="button"
+                class="d-flex align-items-center"
+                :variant="historyItemsStateInfo.variant"
+                :title="historyItemsStateInfo.message">
+                <FontAwesomeIcon :icon="historyItemsStateInfo.icon" :spin="historyItemsStateInfo.spin" />
+            </BBadge>
             <BButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
             </BButton>
@@ -522,7 +541,7 @@ defineExpose({
             v-if="isCollection && historyId"
             :history-id="historyId"
             :collection-type="collectionType"
-            :selected-items="collectionSelection"
+            :selected-items="selectedItemsForModal"
             :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
