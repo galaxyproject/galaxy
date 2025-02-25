@@ -114,7 +114,7 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 function getZenodoSource() {
     const zenodoSources = getFileSourcesByType("zenodo");
     // Prioritize the one provided by the user in case there are multiple
-    return zenodoSources.find(isPrivateFileSource) ?? getFileSourceById("zenodo");
+    return zenodoSources.find((fs) => isPrivateFileSource(fs) && fs.writable) ?? getFileSourceById("zenodo");
 }
 
 async function loadHistory() {
