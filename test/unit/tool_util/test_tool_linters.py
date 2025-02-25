@@ -1376,13 +1376,23 @@ def test_inputs_data_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_boolean_param(lint_ctx):
+def test_inputs_boolean_param_duplicate_labels(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_DUPLICATE_LABELS)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_boolean_param_swapped_labels(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_SWAPPED_LABELS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
 
 
