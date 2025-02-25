@@ -28,11 +28,13 @@
             border-top-left-radius: inherit;
             border-top-right-radius: inherit;
 
-            .workflow-run-element-title {
+            &:deep(.form-element-header-badge) {
                 display: flex;
                 align-items: center;
                 font-weight: normal;
                 font-size: 100%;
+                padding-left: $spacer;
+                padding-right: $spacer;
 
                 &.populated {
                     background-color: map-get($galaxy-state-bg, "ok");
