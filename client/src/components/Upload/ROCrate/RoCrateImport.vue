@@ -2,7 +2,7 @@
 import { faArchive, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { validateSingleZip } from "./rocrate.utils";
 
@@ -23,7 +23,7 @@ const errorMessage = ref<string>();
 
 const showHelper = computed(() => !localZipFile.value);
 const canStart = computed(() => true);
-const canOpenUrl = computed(() => !!zipUrl.value);
+const canOpenUrl = computed(() => ensureValidUrl(zipUrl.value) !== undefined);
 
 function browseZipFile() {
     fileInputRef.value?.click();
@@ -61,6 +61,26 @@ function exploreZip(file: File) {
     console.log("Dropped file", file);
     localZipFile.value = file;
 }
+
+function ensureValidUrl(url?: string): string | undefined {
+    if (!url) {
+        return undefined;
+    }
+    try {
+        new URL(url);
+        return url;
+    } catch (e) {
+        errorMessage.value = "Invalid URL provided";
+        return undefined;
+    }
+}
+
+watch(canOpenUrl, (newValue, oldValue) => {
+    // Clear error message when URL becomes valid
+    if (oldValue === false && newValue === true) {
+        errorMessage.value = undefined;
+    }
+});
 </script>
 
 <template>
