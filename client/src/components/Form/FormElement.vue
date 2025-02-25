@@ -3,13 +3,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
 import { sanitize } from "dompurify";
-import { faCheck } from "font-awesome-6";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
-import { useUid } from "@/composables/utils/uid";
 import { linkify } from "@/utils/utils";
 
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
@@ -17,7 +14,6 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormData from "./Elements/FormData/FormData.vue";
-import FormDataExtensions from "./Elements/FormData/FormDataExtensions.vue";
 import FormDataUri from "./Elements/FormData/FormDataUri.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
@@ -31,6 +27,7 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
+import FormElementHeader from "./FormElementHeader.vue";
 import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
 
 const TYPE_TO_PLACEHOLDER: Record<string, string> = {
@@ -119,28 +116,6 @@ const unPopulatedError = computed(
         props.workflowRun && alerts.value?.length === 1 && alerts.value[0] === "Please provide a value for this option."
 );
 
-const populatedClass = computed<string>(() => {
-    if (hasAlert.value || (isEmpty.value && !isOptional.value)) {
-        return "unpopulated";
-    } else if (!isEmpty.value) {
-        return "populated";
-    }
-    return "";
-});
-
-const workflowRunFormTitleItems = computed(() => {
-    switch (true) {
-        case hasAlert.value:
-            return { icon: faExclamation, class: "text-danger", message: "Fix error(s) for this step" };
-        case isEmpty.value && !isOptional.value:
-            return { icon: faExclamation, message: "Provide a value for this step" };
-        case !isEmpty.value:
-            return { icon: faCheck, class: "text-success", message: "Step is populated" };
-        default:
-            return {};
-    }
-});
-
 const connected = ref(false);
 const collapsed = ref(false);
 
@@ -209,17 +184,6 @@ const helpText = computed(() => {
         return props.help;
     }
 });
-
-// Rendering formats for data and data_collection elements (if `props.workflowRun`)
-const formatsVisible = ref(false);
-const formatsButtonId = useUid("form-element-formats-");
-const renderFormats = computed(
-    () =>
-        props.type &&
-        ["data", "data_collection"].includes(props.type) &&
-        attrs.value.extensions?.length &&
-        attrs.value.extensions.indexOf("data") < 0
-);
 
 const currentValue = computed({
     get() {
@@ -337,30 +301,21 @@ function onAlert(value: string | undefined) {
                     - optional
                 </span>
             </div>
-            <div v-if="props.workflowRun" class="d-flex align-items-center flex-gapx-1">
-                <FormDataExtensions
-                    v-if="renderFormats"
-                    class="mr-1"
-                    popover
-                    minimal
-                    :extensions="attrs.extensions"
-                    :formats-button-id="formatsButtonId"
-                    :formats-visible.sync="formatsVisible" />
-                <BBadge
-                    v-if="workflowRunFormTitleItems.message && props.type !== 'boolean'"
-                    v-b-tooltip.hover.noninteractive
-                    class="flex-gapx-1 workflow-run-element-title"
-                    :class="populatedClass"
-                    :title="workflowRunFormTitleItems.message">
-                    <FontAwesomeIcon
-                        v-if="workflowRunFormTitleItems?.icon"
-                        :icon="workflowRunFormTitleItems.icon"
-                        :class="workflowRunFormTitleItems.class"
-                        fixed-width />
-                </BBadge>
-                <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
-                <slot name="workflow-run-form-title-items" />
-            </div>
+            <FormElementHeader
+                v-if="props.workflowRun"
+                :id="props.id"
+                :type="props.type"
+                :has-alert="hasAlert"
+                :is-empty="isEmpty"
+                :is-optional="isOptional"
+                :extensions="attrs.extensions">
+                <template v-slot:form-element>
+                    <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
+                </template>
+                <template v-slot:action-items>
+                    <slot name="workflow-run-form-title-items" />
+                </template>
+            </FormElementHeader>
         </div>
 
         <div v-if="rendersContent" :class="{ 'form-element-content px-3 py-1 mb-2': props.workflowRun }">
