@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<MarkdownDialogProps>(), {
     argumentName: undefined,
     argumentType: undefined,
     argumentPayload: undefined,
+    labels: undefined,
 });
 
 const emit = defineEmits<{
