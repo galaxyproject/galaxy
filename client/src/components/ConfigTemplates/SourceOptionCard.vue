@@ -4,7 +4,7 @@ import { BButton } from "bootstrap-vue";
 import { type IconDefinition } from "font-awesome-6";
 import { computed } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import { type UserConcreteObjectStoreModel } from "@/api";
 import { type FileSourceTemplateSummary } from "@/api/fileSources";
 import { type ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
@@ -12,7 +12,7 @@ import { markup } from "@/components/ObjectStore/configurationMarkdown";
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 
-type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | ConcreteObjectStoreModel;
+type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | UserConcreteObjectStoreModel;
 
 type OptionType = {
     icon: IconDefinition;
@@ -42,9 +42,15 @@ const emit = defineEmits<{
     (e: "select", sourceOption: SourceOption): void;
 }>();
 
-const uniqueId = computed(() =>
-    "id" in props.sourceOption ? props.sourceOption.id : Math.random().toString(36).substring(7)
-);
+const uniqueId = computed(() => {
+    if ("id" in props.sourceOption) {
+        return props.sourceOption.id;
+    } else if ("object_store_id" in props.sourceOption && props.sourceOption.object_store_id) {
+        return props.sourceOption.object_store_id;
+    } else {
+        return Math.random().toString(36).substring(7);
+    }
+});
 const buttonTitle = computed(() => {
     if (props.selectionMode) {
         return props.selected ? "Selected" : "Select as Default";
@@ -66,7 +72,11 @@ function markdownToHTML(text: string) {
 </script>
 
 <template>
-    <div :key="uniqueId" class="source-option-card" :class="{ 'grid-view': props.gridView }">
+    <div
+        :key="uniqueId"
+        :data-source-option-card-id="uniqueId"
+        class="source-option-card"
+        :class="{ 'grid-view': props.gridView }">
         <div class="source-option-card-content" :class="{ 'source-option-card-selected': props.selected }">
             <div>
                 <div class="source-option-card-header">
