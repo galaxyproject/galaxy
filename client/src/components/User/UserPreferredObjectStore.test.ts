@@ -1,14 +1,13 @@
 import "tests/jest/mockHelpPopovers";
 
+import { getLocalVue } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { ROOT_COMPONENT } from "@/utils/navigation";
-
-import { setupSelectableMock } from "../ObjectStore/mockServices";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
+import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 import UserPreferredObjectStore from "./UserPreferredObjectStore.vue";
 
@@ -18,8 +17,6 @@ const localVue = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
-const TEST_USER_ID = "myTestUserId";
-
 function mountComponent() {
     server.use(
         http.get("/api/configuration", ({ response }) => {
@@ -27,10 +24,8 @@ function mountComponent() {
         })
     );
 
-    const wrapper = mount(UserPreferredObjectStore, {
-        propsData: { userId: TEST_USER_ID },
+    const wrapper = mount(UserPreferredObjectStore as object, {
         localVue,
-        stubs: { "b-popover": true },
     });
     return wrapper;
 }
@@ -38,23 +33,35 @@ function mountComponent() {
 describe("UserPreferredObjectStore.vue", () => {
     it("contains a localized link", async () => {
         const wrapper = mountComponent();
-        expect(wrapper.vm.$refs["modal"].isHidden).toBeTruthy();
-        const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-        expect(el.text()).toBeLocalizationOf("Preferred Galaxy Storage");
+
+        expect(
+            wrapper.find(ROOT_COMPONENT.preferences.object_store_selection.modal.selector).attributes("aria-hidden")
+        ).toBeTruthy();
+
+        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+        (expect(el.text()) as any).toBeLocalizationOf("Preferred Galaxy Storage");
+
         await el.trigger("click");
-        expect(wrapper.vm.$refs["modal"].isHidden).toBeFalsy();
+
+        expect(
+            wrapper.find(ROOT_COMPONENT.preferences.object_store_selection.modal.selector).attributes("aria-hidden")
+        ).toBeFalsy();
     });
 
     it("updates object store to default on selection null", async () => {
         const wrapper = mountComponent();
-        const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+
         await el.trigger("click");
         await flushPromises();
-        const els = wrapper.findAll(ROOT_COMPONENT.preferences.object_store_selection.option_buttons.selector);
+
+        const els = wrapper.findAll(ROOT_COMPONENT.preferences.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
+
         const galaxyDefaultOption = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_button({ object_store_id: "__null__" }).selector
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector
         );
+
         expect(galaxyDefaultOption.exists()).toBeTruthy();
 
         server.use(
@@ -65,18 +72,22 @@ describe("UserPreferredObjectStore.vue", () => {
 
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
+
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
     });
 
     it("updates object store to default on actual selection", async () => {
         const wrapper = mountComponent();
-        const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+
         await el.trigger("click");
+
         const objectStore2Option = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_button({ object_store_id: "object_store_2" })
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "object_store_2" })
                 .selector
         );
+
         expect(objectStore2Option.exists()).toBeTruthy();
 
         server.use(
@@ -87,29 +98,47 @@ describe("UserPreferredObjectStore.vue", () => {
 
         await objectStore2Option.trigger("click");
         await flushPromises();
+
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
     });
 
-    it("displayed error is user update fails", async () => {
+    it("displayed error if user update fails", async () => {
         const wrapper = mountComponent();
-        const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
+
         await el.trigger("click");
+
         const galaxyDefaultOption = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_button({ object_store_id: "__null__" }).selector
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector
         );
+        const objectStoreOptionOption = wrapper.find(
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "object_store_1" })
+                .selector
+        );
+
         expect(galaxyDefaultOption.exists()).toBeTruthy();
+
+        expect(objectStoreOptionOption.exists()).toBeTruthy();
 
         server.use(
             http.put("/api/users/{user_id}", ({ response }) => {
-                return response("4XX").json({ err_msg: "problem with selection.." }, { status: 400 });
+                return response("4XX").json({ err_msg: "problem with selection..", err_code: 400 }, { status: 400 });
             })
         );
 
+        const objectStoreOptionButton = wrapper.find(
+            ROOT_COMPONENT.preferences.object_store_selection.option_card_select({ object_store_id: "object_store_1" })
+                .selector
+        );
+
+        await objectStoreOptionButton.trigger("click");
+
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
-        const errorEl = await wrapper.find(".object-store-selection-error");
+
+        const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeTruthy();
-        expect(wrapper.vm.error).toBe("problem with selection..");
+        expect(errorEl.text()).toContain("problem with selection..");
     });
 });
