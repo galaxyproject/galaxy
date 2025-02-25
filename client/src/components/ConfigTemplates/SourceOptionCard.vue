@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { IconDefinition } from "font-awesome-6";
 import { computed } from "vue";
 
-import type { ConcreteObjectStoreModel } from "@/api";
+import type { UserConcreteObjectStoreModel } from "@/api";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import type { CardAttributes } from "@/components/Common/GCard.types";
@@ -12,7 +12,7 @@ import { markup } from "@/components/ObjectStore/configurationMarkdown";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 
-type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | ConcreteObjectStoreModel;
+type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | UserConcreteObjectStoreModel;
 
 type OptionType = {
     icon: IconDefinition;
@@ -42,9 +42,15 @@ const emit = defineEmits<{
     (e: "select", sourceOption: SourceOption): void;
 }>();
 
-const uniqueId = computed(() =>
-    "id" in props.sourceOption ? props.sourceOption.id : Math.random().toString(36).substring(7)
-);
+const uniqueId = computed(() => {
+    if ("id" in props.sourceOption) {
+        return props.sourceOption.id;
+    } else if ("object_store_id" in props.sourceOption && props.sourceOption.object_store_id) {
+        return props.sourceOption.object_store_id;
+    } else {
+        return Math.random().toString(36).substring(7);
+    }
+});
 const buttonTitle = computed(() => {
     if (props.selectionMode) {
         return props.selected ? "Selected" : "Select as Default";
@@ -78,6 +84,7 @@ const primaryActions: CardAttributes[] = [
 <template>
     <GCard
         :id="uniqueId"
+        :data-source-option-card-id="uniqueId"
         :title="props.sourceOption.name ?? ''"
         :description="description"
         :primary-actions="primaryActions"
