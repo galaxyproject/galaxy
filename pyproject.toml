@@ -78,7 +78,7 @@ lagom = "*"
 Mako = "*"
 Markdown = "*"
 MarkupSafe = "*"
-Mercurial = "*"
+mercurial = ">=6.8.1"  # Python 3.12 support
 mrcfile = "*"
 msal = "*"
 nodeenv = "*"
