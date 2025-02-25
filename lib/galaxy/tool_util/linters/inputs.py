@@ -15,10 +15,6 @@ from Cheetah.Parser import ParseError
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
-from galaxy.tool_util.parser.util import (
-    _parse_name,
-    _prepare_argument,
-)
 from galaxy.util import string_as_bool
 from ._util import (
     get_code,
@@ -1661,7 +1657,7 @@ class InputsUsed(Linter):
         try:
             code, template_code, filter_code, label_code, action_code = get_code(tool_xml)
         except ParseError as pe:
-            lint_ctx.error(f"Invalid cheetah found{pe}", node=tool_xml.getroot())
+            lint_ctx.error(f"Invalid cheetah found{pe}", linter=cls.name(), node=tool_xml.getroot())
             return
 
         inputs = tool_xml.findall("./inputs//param")
@@ -1692,6 +1688,7 @@ class InputsUsed(Linter):
                     if not conf_inputs.attrib.get("data_style"):
                         lint_ctx.error(
                             f"Param input [{param_name}] not found in command or configfiles. Does the present inputs config miss the 'data_style' attribute?",
+                            linter=cls.name(),
                             node=param,
                         )
                 inputs_conf_name = conf_inputs.attrib.get("name", conf_inputs.attrib.get("filename", None))
@@ -1699,6 +1696,7 @@ class InputsUsed(Linter):
                     if not re.search(r"(^|[^\w])" + inputs_conf_name + r"([^\w]|$)", code):
                         lint_ctx.error(
                             f"Param input [{param_name}] only used inputs configfile {inputs_conf_name}, but this is not used in the command",
+                            linter=cls.name(),
                             node=param,
                         )
                 continue
@@ -1715,20 +1713,29 @@ class InputsUsed(Linter):
                 # TODO check that template is used??
                 if template:
                     lint_ctx.warn(
-                        f"Param input [{param_name}] {only}used in a template macro, use a macro token instead.", node=param
+                        f"Param input [{param_name}] {only}used in a template macro, use a macro token instead.",
+                        linter=cls.name(),
+                        node=param,
                     )
                 if action:
                     lint_ctx.warn(
                         f"Param input [{param_name}] {only}found in output actions, better use extended metadata.",
+                        linter=cls.name(),
                         node=param,
                     )
                 if label:
                     lint_ctx.warn(
-                        f"Param input [{param_name}] {only}found in a label attribute, this is discouraged.", node=param
+                        f"Param input [{param_name}] {only}found in a label attribute, this is discouraged.",
+                        linter=cls.name(),
+                        node=param,
                     )
                 continue
 
             if change_format:
-                lint_ctx.error(f"Param input [{param_name}] is only used in a change_format tag", node=param)
+                lint_ctx.error(
+                    f"Param input [{param_name}] is only used in a change_format tag", linter=cls.name(), node=param
+                )
             else:
-                lint_ctx.error(f"Param input [{param_name}] not found in command or configfiles.", node=param)
+                lint_ctx.error(
+                    f"Param input [{param_name}] not found in command or configfiles.", linter=cls.name(), node=param
+                )
