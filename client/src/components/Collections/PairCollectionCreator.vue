@@ -31,6 +31,7 @@ interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
 }
@@ -44,7 +45,7 @@ const emit = defineEmits<{
 
 const state = ref("build");
 const removeExtensions = ref(true);
-const initialSuggestedName = ref("");
+const initialSuggestedName = ref(props.suggestedName);
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
 const filterText = ref("");

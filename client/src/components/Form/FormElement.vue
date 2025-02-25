@@ -199,6 +199,22 @@ const currentValue = computed({
     },
 });
 
+/**
+ * Instead of just using `props.title`, we check `attrs.label` and `attrs.name`:
+ *
+ * If `attrs.label` is an integer, and `attrs.name = attrs.label - 1`, then we
+ * can infer the user didn't provide a title, and we had just set the title/label
+ * to the step index + 1.
+ */
+const userDefinedTitle = computed(() => {
+    const label = parseInt(attrs.value.label);
+    const name = parseInt(attrs.value.name);
+    if (isNaN(label) || isNaN(name) || name !== label - 1) {
+        return props.title;
+    }
+    return undefined;
+});
+
 const isHiddenType = computed(
     () =>
         ["hidden", "hidden_data", "baseurl"].includes(props.type ?? "") ||
@@ -401,6 +417,7 @@ function onAlert(value: string | undefined) {
                     :optional="attrs.optional"
                     :options="attrs.options"
                     :tag="attrs.tag"
+                    :user-defined-title="userDefinedTitle"
                     :type="props.type"
                     :collection-types="attrs.collection_types"
                     :workflow-run="props.workflowRun"

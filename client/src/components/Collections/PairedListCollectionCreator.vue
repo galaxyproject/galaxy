@@ -50,6 +50,7 @@ interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
 }
@@ -882,6 +883,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 collection-type="list:paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 :show-upload="!fromSelection"
+                :suggested-name="props.suggestedName"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="hideSourceItems = $event"
                 @clicked-create="clickedCreate"

@@ -27,6 +27,7 @@ const props = defineProps<{
     canBrowse?: boolean;
     extensions?: string[];
     collectionType?: CollectionType;
+    stepTitle?: string;
     workflowTab: string;
 }>();
 
@@ -118,6 +119,7 @@ function goToFirstWorkflowTab() {
                 show
                 not-modal
                 :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
+                :suggested-name="props.stepTitle"
                 @created-collection="collectionCreated"
                 @on-hide="goToFirstWorkflowTab" />
         </div>
