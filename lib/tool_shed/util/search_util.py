@@ -6,6 +6,8 @@ from sqlalchemy import (
     true,
 )
 
+from tool_shed.webapp import model
+
 log = logging.getLogger(__name__)
 
 
@@ -105,7 +107,7 @@ def search_repository_metadata(app, exact_matches_checked, tool_ids="", tool_nam
     match_tuples = []
     ok = True
     if tool_ids or tool_names or tool_versions:
-        for repository_metadata in get_metadata(sa_session, app.model.RepositoryMetadata, app.model.Repository):
+        for repository_metadata in get_metadata(sa_session, model.RepositoryMetadata, model.Repository):
             metadata = repository_metadata.metadata
             if metadata:
                 tools = metadata.get("tools", [])

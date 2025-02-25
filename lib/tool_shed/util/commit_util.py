@@ -100,7 +100,7 @@ def check_file_contents_for_email_alerts(app: "ToolShedApp"):
     """
     sa_session = app.model.session
     admin_users = app.config.get("admin_users", "").split(",")
-    for repository in get_repositories_with_alerts(sa_session, app.model.Repository):
+    for repository in get_repositories_with_alerts(sa_session, Repository):
         email_alerts = json.loads(repository.email_alerts)
         for user_email in email_alerts:
             if user_email in admin_users:

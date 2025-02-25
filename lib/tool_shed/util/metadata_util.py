@@ -13,11 +13,14 @@ from galaxy.tool_shed.util.hg_util import (
 )
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.hg_util import changeset2rev
+from tool_shed.webapp.model import (
+    Repository,
+    RepositoryMetadata,
+)
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp
-    from tool_shed.webapp.model import RepositoryMetadata
     from tool_shed.webapp.model.mapping import ToolShedModelMapping
 
 
@@ -39,9 +42,7 @@ def get_all_dependencies(app: "ToolShedApp", metadata_entry, processed_dependenc
         if dependency_link in processed_dependency_links:
             continue
         processed_dependency_links.append(dependency_link)
-        repository = app.model.session.get(
-            app.model.Repository, app.security.decode_id(dependency_dict["repository_id"])
-        )
+        repository = app.model.session.get(Repository, app.security.decode_id(dependency_dict["repository_id"]))
         assert repository
         dependency_dict["repository"] = repository.to_dict(value_mapper=value_mapper)
         if dependency_metadata.includes_tools:
@@ -121,10 +122,11 @@ def get_latest_downloadable_changeset_revision(app, repository):
     return INITIAL_CHANGELOG_HASH
 
 
-def get_latest_repository_metadata(app, decoded_repository_id, downloadable=False):
+def get_latest_repository_metadata(app: "ToolShedApp", decoded_repository_id, downloadable: bool = False):
     """Get last metadata defined for a specified repository from the database."""
     sa_session = app.model.session
-    repository = sa_session.get(app.model.Repository, decoded_repository_id)
+    repository = sa_session.get(Repository, decoded_repository_id)
+    assert repository
     if downloadable:
         changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
     else:
@@ -248,7 +250,7 @@ def get_repository_dependency_tups_from_repository_metadata(
 
 def get_repository_metadata_by_changeset_revision(
     app: "ToolShedApp", id: str, changeset_revision: str
-) -> Optional["RepositoryMetadata"]:
+) -> Optional[RepositoryMetadata]:
     """Get metadata for a specified repository change set from the database."""
     decoded_id = app.security.decode_id(id)
     return repository_metadata_by_changeset_revision(app.model, decoded_id, changeset_revision)
@@ -256,15 +258,13 @@ def get_repository_metadata_by_changeset_revision(
 
 def repository_metadata_by_changeset_revision(
     model_mapping: "ToolShedModelMapping", id: int, changeset_revision: str
-) -> Optional["RepositoryMetadata"]:
+) -> Optional[RepositoryMetadata]:
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
 
     sa_session = model_mapping.context
-    all_metadata_records = get_metadata_by_changeset(
-        sa_session, id, changeset_revision, model_mapping.RepositoryMetadata
-    )
+    all_metadata_records = get_metadata_by_changeset(sa_session, id, changeset_revision, RepositoryMetadata)
     if len(all_metadata_records) > 1:
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
@@ -277,10 +277,10 @@ def repository_metadata_by_changeset_revision(
     return None
 
 
-def get_repository_metadata_by_id(app, id):
+def get_repository_metadata_by_id(app: "ToolShedApp", id):
     """Get repository metadata from the database"""
     sa_session = app.model.session
-    return sa_session.get(app.model.RepositoryMetadata, app.security.decode_id(id))
+    return sa_session.get(RepositoryMetadata, app.security.decode_id(id))
 
 
 def get_repository_metadata_by_repository_id_changeset_revision(app, id, changeset_revision, metadata_only=False):

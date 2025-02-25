@@ -16,6 +16,7 @@ from tool_shed.util import (
 )
 from tool_shed.util.admin_util import Admin
 from tool_shed.util.web_util import escape
+from tool_shed.webapp.model import Category
 
 log = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ class AdminController(BaseUIController, Admin):
                 status = "error"
             else:
                 # Create the category
-                category = trans.app.model.Category(name=name, description=description)
+                category = Category(name=name, description=description)
                 trans.sa_session.add(category)
                 trans.sa_session.commit()
                 # Update the Tool Shed's repository registry.

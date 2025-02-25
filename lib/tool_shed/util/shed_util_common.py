@@ -29,6 +29,7 @@ from tool_shed.util import (
     hg_util,
     repository_util,
 )
+from tool_shed.webapp import model
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp
@@ -86,8 +87,8 @@ changes were made to the repository named "${repository_name}".
 def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
     stmt = (
         select(func.count())
-        .select_from(app.model.RepositoryCategoryAssociation)
-        .where(app.model.RepositoryCategoryAssociation.category_id == app.security.decode_id(category_id))
+        .select_from(model.RepositoryCategoryAssociation)
+        .where(model.RepositoryCategoryAssociation.category_id == app.security.decode_id(category_id))
     )
     count = app.model.session.scalar(stmt)
     assert count is not None
@@ -97,20 +98,20 @@ def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
 def get_categories(app: "ToolShedApp"):
     """Get all categories from the database."""
     sa_session = app.model.session
-    stmt = select(app.model.Category).where(app.model.Category.deleted == false()).order_by(app.model.Category.name)
+    stmt = select(model.Category).where(model.Category.deleted == false()).order_by(model.Category.name)
     return sa_session.scalars(stmt).all()
 
 
 def get_category(app: "ToolShedApp", id: str):
     """Get a category from the database."""
     sa_session = app.model.session
-    return sa_session.get(app.model.Category, app.security.decode_id(id))
+    return sa_session.get(model.Category, app.security.decode_id(id))
 
 
 def get_category_by_name(app: "ToolShedApp", name: str):
     """Get a category from the database via name."""
     sa_session = app.model.session
-    stmt = select(app.model.Category).filter_by(name=name).limit(1)
+    stmt = select(model.Category).filter_by(name=name).limit(1)
     return sa_session.scalars(stmt).first()
 
 
@@ -275,7 +276,7 @@ def handle_email_alerts(
             subject = f"Galaxy tool shed alert for new repository named {str(repository.name)}"
             subject = subject[:80]
             email_alerts = []
-            for user in get_users_with_repo_alert(sa_session, app.model.User):
+            for user in get_users_with_repo_alert(sa_session, model.User):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append(user.email)
