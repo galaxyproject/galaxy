@@ -252,7 +252,7 @@ if (props.argumentType == "workflow_id") {
             @onOk="onOk"
             @onCancel="onCancel" />
         <MarkdownVisualization
-            v-else-if="visualizationShow"
+            v-else-if="visualizationShow && currentHistoryId !== null"
             :argument-name="argumentName"
             :argument-payload="argumentPayload"
             :labels="effectiveLabels"
@@ -260,9 +260,14 @@ if (props.argumentType == "workflow_id") {
             :history="currentHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel" />
-        <DataDialog v-else-if="dataShow" :history="currentHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
+        <DataDialog
+            v-else-if="dataShow && currentHistoryId !== null"
+            :history="currentHistoryId"
+            format="id"
+            @onOk="onData"
+            @onCancel="onCancel" />
         <DatasetCollectionDialog
-            v-else-if="dataCollectionShow"
+            v-else-if="dataCollectionShow && currentHistoryId !== null"
             :history="currentHistoryId"
             format="id"
             @onOk="onDataCollection"
