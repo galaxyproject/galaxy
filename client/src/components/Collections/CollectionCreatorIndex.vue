@@ -31,6 +31,7 @@ interface Props {
     hideOnCreate?: boolean;
     filterText?: string;
     notModal?: boolean;
+    suggestedName?: string;
 }
 const props = defineProps<Props>();
 
@@ -296,6 +297,7 @@ function resetCreator() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
+            :suggested-name="props.suggestedName"
             @clicked-create="createListCollection"
             @on-cancel="hideCreator" />
         <PairedListCollectionCreator
@@ -305,6 +307,7 @@ function resetCreator() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
+            :suggested-name="props.suggestedName"
             @clicked-create="createListPairedCollection"
             @on-cancel="hideCreator" />
         <PairCollectionCreator
@@ -314,6 +317,7 @@ function resetCreator() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
+            :suggested-name="props.suggestedName"
             @clicked-create="createPairedCollection"
             @on-cancel="hideCreator" />
     </component>

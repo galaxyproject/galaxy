@@ -41,6 +41,7 @@ const props = withDefaults(
         collectionTypes?: Array<CollectionType>;
         flavor?: string;
         tag?: string;
+        userDefinedTitle?: string;
         workflowRun?: boolean;
     }>(),
     {
@@ -53,6 +54,7 @@ const props = withDefaults(
         collectionTypes: undefined,
         flavor: undefined,
         tag: undefined,
+        userDefinedTitle: undefined,
     }
 );
 
@@ -756,6 +758,7 @@ const noOptionsWarningMessage = computed(() => {
             :can-browse="canBrowse"
             :extensions="props.extensions"
             :collection-type="currentCollectionTypeTab"
+            :step-title="props.userDefinedTitle"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
             @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
