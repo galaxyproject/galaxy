@@ -54,13 +54,16 @@ const {
     ready: uploadReady,
 } = useUploadConfigurations(props.extensions);
 
-function addUploadedFiles(value: any[]) {
+function addUploadedFiles(value: any[], viewUploads = true) {
     emit("uploaded-data", value);
-    goToFirstWorkflowTab();
+    if (viewUploads) {
+        goToFirstWorkflowTab();
+    }
 }
 
 function collectionCreated(collection: any) {
-    addUploadedFiles([collection]);
+    addUploadedFiles([collection], false);
+    emit("focus");
 }
 
 function goToFirstWorkflowTab() {
