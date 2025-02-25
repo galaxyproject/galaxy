@@ -45,12 +45,14 @@ describe("usePopper", () => {
         createTestComponent();
         expect(createPopper).toHaveBeenCalledWith(referenceElement, popperElement, {
             placement: "bottom",
-            modifiers: [{
-                name: "offset",
-                options: {
-                    offset: [0, 5],
+            modifiers: [
+                {
+                    name: "offset",
+                    options: {
+                        offset: [0, 5],
+                    },
                 },
-            }],
+            ],
             strategy: "absolute",
         });
     });

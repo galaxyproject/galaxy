@@ -15,10 +15,8 @@ const args = { history_dataset_id: "someId" };
 
 function setUpDatatypesStore() {
     const pinia = createTestingPinia({ stubActions: false });
-
     const datatypesStore = useDatatypesMapperStore();
     datatypesStore.datatypesMapper = testDatatypesMapper;
-
     return pinia;
 }
 
@@ -27,9 +25,7 @@ describe("History Tabular Dataset Display", () => {
     let axiosMock;
 
     const tabular = { item_data: "29994\t-1.25\n37191\t-1.05\n36810\t2.08\n33320\t1.15" };
-    const tabularMetaData = { metadata_columns: 2, metadata_data_lines: 4 };
-    const tabularDatasets = { [args.history_dataset_id]: { ext: "tabular", name: "someName" } };
-
+    const tabularMetaData = { metadata_columns: 2, metadata_data_lines: 4, ext: "tabular", name: "someName" };
     const tabularTableDataCounts = tabularMetaData.metadata_columns * tabularMetaData.metadata_data_lines;
 
     beforeEach(async () => {
@@ -39,7 +35,7 @@ describe("History Tabular Dataset Display", () => {
 
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,
-            propsData: { datasets: tabularDatasets, args },
+            propsData: { datasetId: args.history_dataset_id },
             pinia: setUpDatatypesStore(),
         });
     });
@@ -60,16 +56,16 @@ describe("History Text Dataset Display", () => {
     let axiosMock;
 
     const text = { item_data: "some text" };
-    const textDatasets = { [args.history_dataset_id]: { ext: "txt", name: "someName" } };
+    const textMetaData = { ext: "txt", name: "someName" };
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-
+        axiosMock.onGet(`/api/datasets/${args.history_dataset_id}`).reply(200, textMetaData);
         axiosMock.onGet(`/api/datasets/${args.history_dataset_id}/get_content_as_text`).reply(200, text);
 
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,
-            propsData: { datasets: textDatasets, args },
+            propsData: { datasetId: args.history_dataset_id },
             pinia: setUpDatatypesStore(),
         });
     });

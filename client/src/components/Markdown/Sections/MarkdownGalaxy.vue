@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 
-import { getGalaxyInstance } from "@/app";
 import { fromCache } from "@/components/Markdown/cache";
 import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
@@ -42,7 +41,7 @@ const toggle = ref(false);
 const isCollapsible = computed(() => args.value?.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
-const version = computed(() => getGalaxyInstance().config.version_major);
+const version = computed(() => config.version_major);
 
 async function handleArgs() {
     try {

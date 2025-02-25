@@ -13,7 +13,9 @@ withPrefix.mockImplementation((url) => url);
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
-        config: {},
+        config: {
+            version_major: "test_version",
+        },
         isConfigLoaded: true,
     })),
 }));
@@ -37,57 +39,51 @@ async function mountComponent(propsData, apiMap = {}) {
     });
 }
 
-async function testCollapse(wrapper) {
-    const nolink = wrapper.find("a");
-    expect(nolink.exists()).toBe(false);
-    const collapse = "Click here to expand/collapse";
-    await wrapper.setProps({ args: { collapse } });
-    const link = wrapper.find("a");
-    expect(link.text()).toBe(collapse);
-    const container = wrapper.find(".collapse");
-    expect(container.attributes("style")).toBe("display: none;");
-    await link.trigger("click");
-    expect(container.attributes("style")).toBe("");
-}
-
 describe("MarkdownContainer", () => {
     it("Renders version", async () => {
         const version = "test_version";
         const wrapper = await mountComponent({
-            name: "generate_galaxy_version",
-            args: {},
-            version,
+            content: "generate_galaxy_version()",
         });
         const versionEl = wrapper.find(".galaxy-version");
         expect(versionEl.exists()).toBe(true);
         expect(versionEl.find("code").text()).toBe(version);
-        testCollapse(wrapper);
+
+        // test collapsing
+        const nolink = wrapper.find("a");
+        expect(nolink.exists()).toBe(false);
+        const collapse = "Click here to expand/collapse";
+        await wrapper.setProps({ content: `generate_galaxy_version(collapse="${collapse}")` });
+        const link = wrapper.find("a");
+        expect(link.text()).toBe(collapse);
+        const container = wrapper.find(".collapse");
+        expect(container.attributes("style")).toBe("display: none;");
+        await link.trigger("click");
+        expect(container.attributes("style")).toBe("");
     });
 
     it("Renders time stamp", async () => {
-        const time = "test_time";
+        const time = new Date();
+        jest.useFakeTimers().setSystemTime(time);
         const wrapper = await mountComponent({
-            name: "generate_time",
-            args: {},
-            time,
+            content: "generate_time()",
         });
         const version = wrapper.find(".galaxy-time");
         expect(version.exists()).toBe(true);
-        expect(version.find("code").text()).toBe(time);
-        testCollapse(wrapper);
+        expect(version.find("code").text()).toBe(time.toUTCString());
     });
 
     it("Renders history link", async () => {
         const wrapper = await mountComponent(
             {
-                name: "history_link",
-                args: { history_id: "test_history_id" },
-                histories: { test_history_id: { name: "history_name" } },
+                content: `history_link(history_id=test_history_id)`,
             },
             {
+                onGet: { "/api/histories/test_history_id": { name: "history_name" } },
                 onPost: { "/api/histories": {} },
             }
         );
+        await flushPromises();
         const link = wrapper.find("a");
         expect(link.text()).toBe("Click to Import History: history_name.");
         await link.trigger("click");
@@ -100,15 +96,18 @@ describe("MarkdownContainer", () => {
     });
 
     it("Renders history link (with failing import error message)", async () => {
-        const wrapper = await mountComponent({
-            name: "history_link",
-            args: { history_id: "test_history_id" },
-            histories: { test_history_id: { name: "history_name" } },
-        });
+        const wrapper = await mountComponent(
+            {
+                content: `history_link(history_id=test_history_id)`,
+            },
+            {
+                onGet: { "/api/histories/test_history_id": { name: "history_name" } },
+            }
+        );
         await wrapper.find("a").trigger("click");
         await flushPromises();
         const error = wrapper.find(".text-danger");
         const message = error.find("span");
-        expect(message.text()).toBe("Failed to Import History: history_name!");
+        expect(message.text()).toBe("Failed to handle History: history_name!");
     });
 });
