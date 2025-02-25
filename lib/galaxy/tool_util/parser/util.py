@@ -31,6 +31,12 @@ def is_dict(item):
     return isinstance(item, dict) or isinstance(item, OrderedDict)
 
 
+def _prepare_argument(argument):
+    if argument is None:
+        return ""
+    return argument.lstrip("-").replace("-", "_")
+
+
 def _parse_name(name, argument):
     """Determine name of an input source from name and argument
     returns the name or if absent the argument property
@@ -40,7 +46,7 @@ def _parse_name(name, argument):
     if name is None:
         if argument is None:
             raise ValueError("parameter must specify a 'name' or 'argument'.")
-        name = argument.lstrip("-").replace("-", "_")
+        name = _prepare_argument(argument)
     return name
 
 
