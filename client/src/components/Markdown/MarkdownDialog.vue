@@ -121,7 +121,7 @@ async function getHistories() {
     return data;
 }
 
-function onData(response: string) {
+function onData(response: unknown) {
     dataShow.value = false;
     emit("onInsert", `${props.argumentName}(history_dataset_id=${response})`);
 }
