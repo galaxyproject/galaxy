@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import type { ConcreteObjectStoreModel } from "@/api";
+import type { UserConcreteObjectStoreModel } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
@@ -42,19 +42,28 @@ const error = computed(() => {
     return props.parentError || loadErrorMessage.value;
 });
 
-async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel) {
+async function handleSubmit(preferredObjectStore: UserConcreteObjectStoreModel) {
     const id: string | null = (preferredObjectStore ? preferredObjectStore.object_store_id : null) as string | null;
     const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
     emit("onSubmit", id, isPrivate);
 }
 
-const defaultObjectStore: ConcreteObjectStoreModel = {
-    object_store_id: null,
+const defaultObjectStore: UserConcreteObjectStoreModel = {
+    object_store_id: "__null__",
     name: props.defaultOptionTitle,
     description: props.defaultOptionDescription,
     badges: [],
     private: false,
     quota: { enabled: true, source: null },
+    active: false,
+    hidden: false,
+    purged: false,
+    secrets: [],
+    template_id: "",
+    template_version: 0,
+    type: "disk",
+    uuid: "",
+    variables: null,
 };
 </script>
 
