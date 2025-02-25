@@ -52,6 +52,7 @@ from tool_shed.util import (
     tool_util,
 )
 from tool_shed.webapp import model
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed_client.schema import (
     CreateRepositoryRequest,
     LegacyInstallInfoTuple,
@@ -92,7 +93,7 @@ class RepositoriesController(BaseShedAPIController):
         owner = payload.get("owner", "")
         if not owner:
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
-        repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+        repository = get_repository_by_name_and_owner(self.app.model.context, name, owner)
         if repository is None:
             error_message = f"Cannot locate repository with name {name} and owner {owner},"
             log.debug(error_message)
@@ -331,7 +332,7 @@ class RepositoriesController(BaseShedAPIController):
         owner = payload.get("owner", "")
         if not owner:
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
-        repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+        repository = get_repository_by_name_and_owner(self.app.model.context, name, owner)
         if repository is None:
             error_message = f"Cannot locate repository with name {name} and owner {owner},"
             log.debug(error_message)

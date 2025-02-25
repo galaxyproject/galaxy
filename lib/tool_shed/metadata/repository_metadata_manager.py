@@ -39,6 +39,7 @@ from tool_shed.webapp.model import (
     RepositoryMetadata,
     User,
 )
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
 
@@ -551,7 +552,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
             if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
                 # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
-                required_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+                required_repository = get_repository_by_name_and_owner(self.app.model.context, name, owner)
                 repository_type_class = self.app.repository_types_registry.get_class_by_label(required_repository.type)
                 return isinstance(repository_type_class, TipOnly)
         return False

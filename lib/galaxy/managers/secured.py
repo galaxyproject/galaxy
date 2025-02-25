@@ -33,14 +33,14 @@ class AccessibleManagerMixin:
     def by_id(self, id: int): ...
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible(self, item, user: model.User, **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Return True if the item accessible to user.
         """
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_accessible(self, id: int, user: model.User, **kwargs: Any):
+    def get_accessible(self, id: int, user: Optional[model.User], **kwargs: Any):
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
@@ -50,7 +50,7 @@ class AccessibleManagerMixin:
         item = self.by_id(id)
         return self.error_unless_accessible(item, user, **kwargs)
 
-    def error_unless_accessible(self, item: "Query", user, **kwargs):
+    def error_unless_accessible(self, item: "Query", user: Optional[model.User], **kwargs):
         """
         Raise an error if the item is NOT accessible to user, otherwise return the item.
 

@@ -141,7 +141,6 @@ from typing_extensions import (
 
 import galaxy.exceptions
 import galaxy.model.metadata
-import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.files.templates import (
@@ -6127,6 +6126,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
     ):
+        from galaxy.model.tags import GalaxyTagHandler
+
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(
             name=self.name,
@@ -6144,7 +6145,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             history=target_history,
         )
 
-        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
+        tag_manager = GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags, flush=False)
         sa_session.add(hda)
@@ -6158,6 +6159,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         return hda
 
     def copy(self, parent_id=None, target_folder=None, flush=True):
+        from galaxy.model.tags import GalaxyTagHandler
+
         sa_session = object_session(self)
         ldda = LibraryDatasetDatasetAssociation(
             name=self.name,
@@ -6175,7 +6178,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             folder=target_folder,
         )
 
-        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
+        tag_manager = GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=ldda, tags_str=src_ldda_tags)
 

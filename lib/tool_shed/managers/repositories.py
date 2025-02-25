@@ -56,7 +56,6 @@ from tool_shed.util.repository_util import (
     create_repository as low_level_create_repository,
     get_repo_info_dict,
     get_repositories_by_category,
-    get_repository_by_name_and_owner,
     get_repository_in_tool_shed,
     validate_repository_name,
 )
@@ -69,6 +68,7 @@ from tool_shed.webapp.model import (
     Repository,
     RepositoryMetadata,
 )
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed.webapp.search.repo_search import RepoSearch
 from tool_shed_client.schema import (
     CreateRepositoryRequest,
@@ -147,7 +147,7 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[
     changeset_revision = request.changeset_revision
     hexlify_this = request.hexlify
     repository = get_repository_by_name_and_owner(
-        app, name, owner, eagerload_columns=[Repository.downloadable_revisions]
+        app.model.context, name, owner, eagerload_columns=[Repository.downloadable_revisions]
     )
     if repository and repository.downloadable_revisions:
         repository_metadata = get_repository_metadata_by_changeset_revision(
@@ -211,7 +211,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         owner = repository.user.username
         name = repository.name
         assert name
-        repository = _get_repository_by_name_and_owner(app.model.session().current, name, owner, app.model.User)
+        repository = _get_repository_by_name_and_owner(app.model.session, name, owner, app.model.User)
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue
@@ -289,7 +289,7 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
     if name and owner and changeset_revision:
         # Get the repository information.
         repository = get_repository_by_name_and_owner(
-            app, name, owner, eagerload_columns=[Repository.downloadable_revisions]
+            app.model.context, name, owner, eagerload_columns=[Repository.downloadable_revisions]
         )
         if repository is None:
             log.debug(f"Cannot locate repository {name} owned by {owner}")
@@ -360,7 +360,9 @@ def get_ordered_installable_revisions(
     eagerload_columns = [Repository.downloadable_revisions]
     if None not in [name, owner]:
         # Get the repository information.
-        repository = get_repository_by_name_and_owner(app, name, owner, eagerload_columns=eagerload_columns)
+        repository = get_repository_by_name_and_owner(
+            app.model.context, name, owner, eagerload_columns=eagerload_columns
+        )
         if repository is None:
             raise ObjectNotFound(f"No repository named {name} found with owner {owner}")
     elif tsr_id is not None:

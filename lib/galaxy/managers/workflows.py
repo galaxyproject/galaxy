@@ -10,10 +10,10 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
-import sqlalchemy
 import yaml
 from gxformat2 import (
     from_galaxy_native,
@@ -138,6 +138,9 @@ from galaxy.workflow.steps import (
 )
 from galaxy.workflow.trs_proxy import TrsProxy
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+
 log = logging.getLogger(__name__)
 
 
@@ -152,7 +155,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManagerMixin):
+class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], deletable.DeletableManagerMixin):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
@@ -168,7 +171,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
     def index_query(
         self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[sqlalchemy.engine.Result, Optional[int]]:
+    ) -> Tuple["ScalarResult[model.StoredWorkflow]", Optional[int]]:
         show_published = payload.show_published
         show_hidden = payload.show_hidden
         show_deleted = payload.show_deleted
@@ -289,7 +292,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
         result = trans.sa_session.scalars(stmt).unique()
-        return result, total_matches  # type:ignore[return-value]
+        return result, total_matches
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find

@@ -130,7 +130,6 @@ class MockContext:
         self.flushed = False
         self.model_objects = model_objects or defaultdict(dict)
         self.created_objects = []
-        self.current = self
 
     def expunge_all(self):
         self.expunged_all = True

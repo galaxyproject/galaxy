@@ -11,9 +11,9 @@ from galaxy.tool_shed.util.hg_util import (
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
 )
-from galaxy.tool_shed.util.repository_util import get_repository_by_name_and_owner
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.hg_util import changeset2rev
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def get_all_dependencies(app, metadata_entry, processed_dependency_links=None):
+def get_all_dependencies(app: "ToolShedApp", metadata_entry, processed_dependency_links=None):
     processed_dependency_links = processed_dependency_links or []
     encoder = app.security.encode_id
     value_mapper = {"repository_id": encoder, "id": encoder, "user_id": encoder}
@@ -42,6 +42,7 @@ def get_all_dependencies(app, metadata_entry, processed_dependency_links=None):
         repository = app.model.session.get(
             app.model.Repository, app.security.decode_id(dependency_dict["repository_id"])
         )
+        assert repository
         dependency_dict["repository"] = repository.to_dict(value_mapper=value_mapper)
         if dependency_metadata.includes_tools:
             dependency_dict["tools"] = dependency_metadata.metadata["tools"]
@@ -80,10 +81,10 @@ def get_current_repository_metadata_for_changeset_revision(app, repository, chan
     return None
 
 
-def get_dependencies_for_metadata_revision(app, metadata):
+def get_dependencies_for_metadata_revision(app: "ToolShedApp", metadata):
     dependencies = []
     for _shed, name, owner, changeset, _prior, _ in metadata["repository_dependencies"]:
-        required_repository = get_repository_by_name_and_owner(app, name, owner)
+        required_repository = get_repository_by_name_and_owner(app.model.context, name, owner)
         updated_changeset = get_next_downloadable_changeset_revision(app, required_repository, changeset)
         if updated_changeset is None:
             continue
@@ -208,7 +209,9 @@ def get_previous_metadata_changeset_revision(app, repository, before_changeset_r
             previous_changeset_revision = changeset_revision
 
 
-def get_repository_dependency_tups_from_repository_metadata(app, repository_metadata, deprecated_only=False):
+def get_repository_dependency_tups_from_repository_metadata(
+    app: "ToolShedApp", repository_metadata, deprecated_only=False
+):
     """
     Return a list of of tuples defining repository objects required by the received repository.  The returned
     list defines the entire repository dependency tree.  This method is called only from the Tool Shed.
@@ -227,7 +230,7 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
                         toolshed, name, owner, changeset_revision, pir, oicct = parse_repository_dependency_tuple(
                             repository_dependency_tup
                         )
-                        repository = get_repository_by_name_and_owner(app, name, owner)
+                        repository = get_repository_by_name_and_owner(app.model.context, name, owner)
                         if repository:
                             if deprecated_only:
                                 if repository.deprecated:
@@ -290,12 +293,12 @@ def get_repository_metadata_by_repository_id_changeset_revision(app, id, changes
     return get_repository_metadata_by_changeset_revision(app, id, changeset_revision)
 
 
-def get_updated_changeset_revisions(app, name, owner, changeset_revision):
+def get_updated_changeset_revisions(app: "ToolShedApp", name, owner, changeset_revision):
     """
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
     revision for the repository defined by the received name and owner.
     """
-    repository = get_repository_by_name_and_owner(app, name, owner)
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
     # Build the list of changeset revision hashes defining each available update up to, but excluding

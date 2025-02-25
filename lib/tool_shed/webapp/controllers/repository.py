@@ -61,6 +61,10 @@ from tool_shed.webapp.model import (
     RepositoryCategoryAssociation,
     RepositoryMetadata,
 )
+from tool_shed.webapp.model.db import (
+    get_repository_by_name,
+    get_repository_by_name_and_owner,
+)
 from tool_shed.webapp.util import ratings_util
 
 log = logging.getLogger(__name__)
@@ -136,7 +140,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
                     repository_name = kwd["id"]
-                    repository = repository_util.get_repository_by_name(trans.app, repository_name)
+                    repository = get_repository_by_name(trans.sa_session, repository_name)
                     kwd["id"] = trans.security.encode_id(repository.id)
                 except Exception:
                     pass
@@ -561,7 +565,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
                     name = kwd["id"]
-                    repository = repository_util.get_repository_by_name(trans.app, name)
+                    repository = get_repository_by_name(trans.sa_session, name)
                     kwd["id"] = trans.security.encode_id(repository.id)
                 except Exception:
                     pass
@@ -1034,7 +1038,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
             trans.app, trans.security.encode_id(repository.id), changeset_revision
         )
@@ -1132,7 +1136,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
         changeset_revision = kwd["changeset_revision"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         repo = repository.hg_repo
         if ctx := hg_util.get_changectx_for_changeset(repo, changeset_revision):
             return str(ctx.rev())
@@ -1154,7 +1158,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_name = kwd.get("name", None)
         repository_owner = kwd.get("owner", None)
         if repository_name is not None and repository_owner is not None:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
             if repository:
                 return metadata_util.get_latest_downloadable_changeset_revision(trans.app, repository)
         return hg_util.INITIAL_CHANGELOG_HASH
@@ -1169,7 +1173,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
         if repository_name is not None and repository_owner is not None and changeset_revision is not None:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
             return readmes(trans.app, repository, changeset_revision)
         return {}
 
@@ -1182,7 +1186,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         # get_repository_dependencies( self, app, changeset, toolshed_url )
         dependencies = repository.get_repository_dependencies(
             trans.app, changeset_revision, web.url_for("/", qualified=True)
@@ -1196,7 +1200,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Given a repository name and owner, return the encoded repository id."""
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         if repository:
             return trans.security.encode_id(repository.id)
         return ""
@@ -1251,7 +1255,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Given a repository name and owner, return the type."""
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         return str(repository.type)
 
     @web.json
@@ -1280,7 +1284,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     prior_installation_required,
                     only_if_compiling_contained_td,
                 ) = common_util.parse_repository_dependency_tuple(required_repository_tup)
-                repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+                repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
                 encoded_repository_ids.append(trans.security.encode_id(repository.id))
                 changeset_revisions.append(changeset_revision)
             if encoded_repository_ids and changeset_revisions:
@@ -1298,7 +1302,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         dependencies = repository.get_tool_dependencies(trans.app, changeset_revision)
         if len(dependencies) > 0:
             return encoding_util.tool_shed_encode(dependencies)
@@ -1312,7 +1316,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need
         # to enhance this process to retrieve older versions of the tool-dependencies.xml file from the repository
         # manafest.
@@ -1335,7 +1339,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         encoded_id = trans.app.security.encode_id(repository.id)
         repository_tip = repository.tip()
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
@@ -1352,7 +1356,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd["name"]
         owner = kwd["owner"]
         changeset_revision = kwd["changeset_revision"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         repo = repository.hg_repo
         tool_version_dicts = []
         for changeset in repo.changelog:
@@ -1374,7 +1378,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         Generate a dictionary that contains the information about a repository that is necessary for installing
         it into a local Galaxy instance.
         """
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         repository_id = trans.security.encode_id(repository.id)
         repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
@@ -1909,7 +1913,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         # Get the next installable changeset_revision beyond the received changeset_revision.
         next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(
             trans.app, repository, changeset_revision
@@ -2008,7 +2012,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         if name is not None and owner is not None:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
             from_tip = util.string_as_bool(from_tip)
             if from_tip:
                 changeset_revision = repository.tip()
@@ -2207,7 +2211,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_repository(self, trans, owner, name):
         """Support for sharable URL for a specified repository, e.g. http://example.org/view/owner/name."""
         try:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         except Exception:
             repository = None
         if repository:
@@ -2242,7 +2246,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_repository_revision(self, trans, owner, name, changeset_revision):
         """Support for sharable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
         try:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         except Exception:
             repository = None
         if repository:

@@ -278,7 +278,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id: int) -> model.User:
+    def by_id(self, user_id: int) -> Optional[model.User]:
         return self.app.model.session.get(self.model_class, user_id)
 
     # ---- filters
