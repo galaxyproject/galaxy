@@ -2,6 +2,8 @@
 import type { HDASummary } from "@/api";
 import localize from "@/utils/localization";
 
+import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
+
 interface Props {
     element?: HDASummary;
     hasActions?: boolean;
