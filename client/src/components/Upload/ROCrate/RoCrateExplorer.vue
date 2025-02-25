@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { type ROCrateZip } from "ro-crate-zip-explorer";
 
-const loadingPreview = ref(false);
+interface Props {
+    roCrateZip?: ROCrateZip;
+}
+
+defineProps<Props>();
 </script>
 
 <template>
-    <div class="rocrate-explorer">TODO: Implement RO-Crate Explorer</div>
+    <div v-if="roCrateZip" class="rocrate-explorer">
+        {{ roCrateZip.crate.context }}
+    </div>
+    <BAlert v-else variant="danger" show> No RO-Crate file or URL provided. </BAlert>
 </template>

@@ -3,7 +3,7 @@ import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import { validateSingleZip } from "./rocrate.utils";
+import { validateLocalZipFile } from "./rocrate.utils";
 
 const isDragging = ref(false);
 
@@ -26,7 +26,7 @@ function onDrop(event: DragEvent) {
     }
 
     const file = files[0];
-    const errorMessage = validateSingleZip(file);
+    const errorMessage = validateLocalZipFile(file);
     if (errorMessage) {
         emit("dropError", errorMessage);
         return;

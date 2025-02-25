@@ -2,12 +2,16 @@
 import { faArchive, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
+import { type ROCrateZip, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 import { computed, ref, watch } from "vue";
 
-import { validateSingleZip } from "./rocrate.utils";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { validateLocalZipFile } from "./rocrate.utils";
 
 import RoCrateExplorer from "./RoCrateExplorer.vue";
 import ZipDropZone from "./ZipDropZone.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     historyId: string;
@@ -20,8 +24,13 @@ const fileInputRef = ref<HTMLInputElement>();
 const localZipFile = ref<File>();
 const zipUrl = ref<string>();
 const errorMessage = ref<string>();
+const loadingPreview = ref(false);
 
-const showHelper = computed(() => !localZipFile.value);
+const rocrateZip = ref<ROCrateZip>();
+
+const explorer = ref<ROCrateZipExplorer>();
+
+const showHelper = computed(() => !loadingPreview.value && !rocrateZip.value);
 const canStart = computed(() => true);
 const canOpenUrl = computed(() => ensureValidUrl(zipUrl.value) !== undefined);
 
@@ -29,17 +38,14 @@ function browseZipFile() {
     fileInputRef.value?.click();
 }
 
-function onFileChange(event: Event) {
+async function onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
-    errorMessage.value = validateSingleZip(file);
-    if (!errorMessage.value) {
-        exploreZip(file!);
-    }
-}
 
-function openUrl() {
-    console.log("Open URL");
+    errorMessage.value = validateLocalZipFile(file);
+    if (!errorMessage.value) {
+        await exploreLocalZip(file!);
+    }
 }
 
 function start() {
@@ -47,19 +53,41 @@ function start() {
 }
 
 function reset() {
-    console.log("Reset");
-
     localZipFile.value = undefined;
     zipUrl.value = undefined;
+    errorMessage.value = undefined;
+    rocrateZip.value = undefined;
+    explorer.value = undefined;
 }
 
 function onDropError(message: string) {
     errorMessage.value = message;
 }
 
-function exploreZip(file: File) {
-    console.log("Dropped file", file);
+async function exploreLocalZip(file: File) {
     localZipFile.value = file;
+    return openZip(file);
+}
+
+async function exploreRemoteZip() {
+    if (!zipUrl.value) {
+        return;
+    }
+
+    return openZip(zipUrl.value);
+}
+
+async function openZip(zipSource: File | string) {
+    errorMessage.value = undefined;
+    loadingPreview.value = true;
+    explorer.value = new ROCrateZipExplorer(zipSource);
+    try {
+        rocrateZip.value = await explorer.value.open();
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+    } finally {
+        loadingPreview.value = false;
+    }
 }
 
 function ensureValidUrl(url?: string): string | undefined {
@@ -91,17 +119,18 @@ watch(canOpenUrl, (newValue, oldValue) => {
         </div>
 
         <div class="upload-box">
-            <ZipDropZone v-show="showHelper" @dropError="onDropError" @dropSuccess="exploreZip" />
-            <RoCrateExplorer v-show="!showHelper" />
-            <label style="display: none">
-                <input ref="fileInputRef" type="file" accept=".zip" @change="onFileChange" />
-            </label>
+            <ZipDropZone v-if="showHelper" @dropError="onDropError" @dropSuccess="exploreLocalZip" />
+            <div v-else>
+                <LoadingSpan v-if="loadingPreview" message="Loading RO-Crate..." />
+                <RoCrateExplorer v-else :ro-crate-zip="rocrateZip" />
+            </div>
         </div>
 
         <div class="upload-footer">
             <label v-localize class="upload-footer-title" for="rocrate-zip-url">RO-Crate Zip URL:</label>
             <input id="rocrate-zip-url" v-model="zipUrl" type="text" size="50" />
-            <BButton id="btn-open" title="Open Zip URL" size="sm" :disabled="!canOpenUrl" @click="openUrl">
+
+            <BButton id="btn-open" title="Open Zip URL" size="sm" :disabled="!canOpenUrl" @click="exploreRemoteZip">
                 <FontAwesomeIcon :icon="faArchive" />
                 <span v-localize>Open Zip URL</span>
             </BButton>
@@ -112,6 +141,11 @@ watch(canOpenUrl, (newValue, oldValue) => {
                 <FontAwesomeIcon :icon="faLaptop" />
                 <span v-localize>Choose local file</span>
             </BButton>
+
+            <label style="display: none">
+                <input ref="fileInputRef" type="file" accept=".zip" @change="onFileChange" />
+            </label>
+
             <BButton
                 id="btn-start"
                 :disabled="!canStart"
@@ -120,9 +154,11 @@ watch(canOpenUrl, (newValue, oldValue) => {
                 @click="start">
                 <span v-localize>Start</span>
             </BButton>
+
             <BButton id="btn-reset" title="Reset" @click="reset">
                 <span v-localize>Reset</span>
             </BButton>
+
             <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
                 <span v-if="hasCallback" v-localize>Close</span>
                 <span v-else v-localize>Cancel</span>
