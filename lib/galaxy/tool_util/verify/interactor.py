@@ -165,6 +165,7 @@ def stage_data_in_history(
         use_path_paste=force_path_paste,
         resolve_data=resolve_data,
     )
+    staging_interface.handle_jobs()
     galaxy_interactor.uploads = job
     return
 
@@ -183,6 +184,7 @@ class InteractorStagingInterface(StagingInterface):
         self.galaxy_interactor = galaxy_interactor
         self.maxseconds = maxseconds or DEFAULT_TOOL_TEST_WAIT
         self.upload_async = upload_async
+        self.job_responses: List[Dict[str, Any]] = []
 
     def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         response = self.galaxy_interactor._post(api_path, payload, json=True)
@@ -194,7 +196,13 @@ class InteractorStagingInterface(StagingInterface):
             return self.galaxy_interactor.wait_for_job(
                 job_response["id"], job_response["history_id"], maxseconds=self.maxseconds
             )
+        else:
+            self.job_responses.append(job_response)
         return
+
+    def handle_jobs(self):
+        for job_response in self.job_responses:
+            self.galaxy_interactor.wait_for_job(job_response["id"], job_response["history_id"], self.maxseconds)
 
     @property
     def use_fetch_api(self):
