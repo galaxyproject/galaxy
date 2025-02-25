@@ -70,30 +70,36 @@ export const useUserStore = defineStore("userStore", () => {
 
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
-            loadPromise = getCurrentUser()
-                .then(async (user) => {
-                    if (isRegisteredUser(user)) {
-                        currentUser.value = user;
-                        currentPreferences.value = processUserPreferences(user);
-                    } else if (isAnonymousUser(user)) {
-                        currentUser.value = user;
-                    } else if (user === null) {
-                        currentUser.value = null;
-                    }
+            loadPromise = new Promise<void>((resolve, reject) => {
+                (async () => {
+                    try {
+                        const user = await getCurrentUser();
 
-                    if (includeHistories) {
-                        const historyStore = useHistoryStore();
-                        // load first few histories for user to start pagination
-                        await historyStore.loadHistories();
+                        if (isRegisteredUser(user)) {
+                            currentUser.value = user;
+                            currentPreferences.value = processUserPreferences(user);
+                        } else if (isAnonymousUser(user)) {
+                            currentUser.value = user;
+                        } else if (user === null) {
+                            currentUser.value = null;
+                        }
+                        if (includeHistories) {
+                            const historyStore = useHistoryStore();
+                            await historyStore.loadHistories();
+                        }
+                        resolve(); // Resolve the promise after successful load
+                    } catch (e) {
+                        console.error("Failed to load user", e);
+                        reject(e); // Reject the promise on error
+                    } finally {
+                        //Don't clear the loadPromise, we still want multiple callers to await.
+                        //Instead we must clear it upon $reset
+                        // loadPromise = null;
                     }
-                })
-                .catch((e) => {
-                    console.error("Failed to load user", e);
-                })
-                .finally(() => {
-                    loadPromise = null;
-                });
+                })();
+            });
         }
+        return loadPromise; // Return the shared promise
     }
 
     async function setCurrentTheme(theme: string) {

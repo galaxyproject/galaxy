@@ -89,7 +89,7 @@ const emit = defineEmits<{
 }>();
 
 // activities from store
-const { activities } = storeToRefs(activityStore);
+const { activities, isSideBarOpen } = storeToRefs(activityStore);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -111,8 +111,6 @@ function isActiveRoute(activityTo?: string | null) {
 function isActiveSideBar(menuKey: string) {
     return activityStore.toggledSideBar === menuKey;
 }
-
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
