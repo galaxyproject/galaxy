@@ -184,6 +184,11 @@ const helpText = computed(() => {
         return props.help;
     }
 });
+const nonMdHelp = computed(() =>
+    Boolean(helpText.value) && props.helpFormat != "markdown" && (!props.workflowRun || helpText.value !== props.title)
+        ? sanitize(helpText.value!)
+        : ""
+);
 
 const currentValue = computed({
     get() {
@@ -419,11 +424,9 @@ function onAlert(value: string | undefined) {
             </div>
 
             <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
-            <span
-                v-if="Boolean(helpText) && helpFormat != 'markdown'"
-                class="ui-form-info form-text text-muted"
-                v-html="helpText" />
-            <span v-else-if="Boolean(helpText)" class="ui-form-info form-text text-muted">
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span v-if="nonMdHelp" class="ui-form-info form-text text-muted" v-html="nonMdHelp" />
+            <span v-else-if="Boolean(helpText) && helpFormat === 'markdown'" class="ui-form-info form-text text-muted">
                 <FormElementHelpMarkdown :content="helpText ?? ''" />
             </span>
         </div>
