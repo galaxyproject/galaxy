@@ -19,7 +19,7 @@ const repositoryName = props.selectedRepository?.label ?? "the selected reposito
 
 <template>
     <BAlert show variant="info">
-        If you haven't done it yet. You may need to setup your credentials for {{ repositoryName }}
+        If you haven't done it yet, you may need to setup your credentials for {{ repositoryName }}
 
         <span v-if="isPrivateFileSource && selectedRepository">
             in your
@@ -31,7 +31,7 @@ const repositoryName = props.selectedRepository?.label ?? "the selected reposito
             <span v-if="!isPrivateFileSource">
                 in your <RouterLink to="/user/information" target="_blank">preferences page</RouterLink>
             </span>
-            or in your <RouterLink to="/file_sources/index" target="_blank"> Remote File Sources </RouterLink> section
+            or in your <RouterLink to="/file_sources/index" target="_blank"> remote file sources </RouterLink> section
         </span>
         to be able to export. You can also define some default options for the export in those settings, like the public
         name you want to associate with your records.
