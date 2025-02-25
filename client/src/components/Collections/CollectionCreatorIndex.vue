@@ -7,9 +7,11 @@ import { computed, ref, watch } from "vue";
 import type { HDASummary, HistoryItemSummary, HistorySummary } from "@/api";
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
+import { stateIsTerminal } from "@/utils/utils";
 
 import type { CollectionType, DatasetPair } from "../History/adapters/buildCollectionModal";
 
@@ -143,6 +145,17 @@ const modalTitle = computed(() => {
     }
 });
 
+const historyItemsStore = useHistoryItemsStore();
+/** The created collection accessed from the history items store */
+const createdCollectionInHistory = computed(() => {
+    const historyItems = historyItemsStore.getHistoryItems(props.historyId, "");
+    return historyItems.find((item) => item.id === createdCollection.value?.id);
+});
+/** If the created collection has achieved a terminal state */
+const createdCollectionInReadyState = computed(
+    () => createdCollectionInHistory.value && stateIsTerminal(createdCollectionInHistory.value)
+);
+
 // Methods
 function createListCollection(elements: HDASummary[], name: string, hideSourceItems: boolean) {
     const returnedElems = elements.map((element) => ({
@@ -201,7 +214,6 @@ async function createHDCA(
             options,
         });
 
-        emit("created-collection", collection);
         createdCollection.value = collection;
 
         if (props.hideOnCreate) {
@@ -213,6 +225,15 @@ async function createHDCA(
         creatingCollection.value = false;
     }
 }
+
+watch(
+    () => createdCollectionInReadyState.value,
+    (stateReady) => {
+        if (stateReady) {
+            emit("created-collection", createdCollectionInHistory.value);
+        }
+    }
+);
 
 async function fetchHistoryDatasets() {
     const { error } = await collectionItemsStore.fetchDatasetsForFiltertext(
@@ -278,17 +299,26 @@ function resetCreator() {
             </BLink>
         </BAlert>
         <div v-else-if="createdCollection">
-            <BAlert variant="success" show>
-                <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
-                {{ localize("Collection created successfully.") }}
-                <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetCreator">
-                    <FontAwesomeIcon :icon="faUndo" fixed-width />
-                    {{ localize("Create another collection") }}
-                </BLink>
+            <BAlert v-if="!createdCollectionInReadyState" variant="info" show>
+                <LoadingSpan :message="localize('Waiting for collection to be ready')" />
             </BAlert>
+            <template v-else>
+                <BAlert variant="success" show>
+                    <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
+                    {{ localize("Collection created successfully.") }}
+                    {{ localize("It might still not be a valid input based on individual element properties.") }}
+                    {{ localize("Expand the collection to see its individual elements.") }}
+                    <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetCreator">
+                        <FontAwesomeIcon :icon="faUndo" fixed-width />
+                        {{ localize("Create another collection") }}
+                    </BLink>
+                </BAlert>
 
-            <!-- TODO: This is a bit shady, better if we confirm it is a collection type -->
-            <GenericItem :item-id="createdCollection.id" item-src="hdca" />
+                <GenericItem
+                    v-if="createdCollection.history_content_type === 'dataset_collection'"
+                    :item-id="createdCollection.id"
+                    item-src="hdca" />
+            </template>
         </div>
         <ListCollectionCreator
             v-else-if="props.collectionType === 'list'"
