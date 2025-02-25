@@ -1,0 +1,39 @@
+- id: zenodo
+  version: 0
+  name: Zenodo
+  description: |
+      Zenodo is an open-access repository for research data, software, publications, and other digital artifacts. It is developed
+      and maintained by CERN and funded by the European Commission as part of the OpenAIRE project. Zenodo provides a free
+      platform for researchers to share and preserve their work, ensuring long-term access and reproducibility.
+      Zenodo is widely used by researchers, institutions, and organizations to share scientific knowledge and comply
+      with open-access mandates from funding agencies.
+  variables:
+      writable:
+          label: Allow Galaxy to export data to Zenodo?
+          type: boolean
+          default: true
+          help: |
+              Set it to "Yes" if you want to export data from Galaxy to Zenodo, set it to "No" if you only need to import
+              data from Zenodo to Galaxy.
+      public_name:
+          label: Publication Name
+          type: string
+          help: |
+              The name of the person or organization that is creating the records in Zenodo. This will be used as the
+              "creator" field in the metadata of the records. You can always change this value later by editing the records in
+              Zenodo. If left blank, an anonymous user will be used as the creator.
+  secrets:
+      token:
+          label: Personal Access Token
+          help: |
+              The personal access token to use to connect to Zenodo. Go to your Account Settings and then go to Applications
+              here https://zenodo.org/account/settings/applications/. You can generate a new `Personal Access Token` if you don't have one yet.
+              This will allow Galaxy to display your draft records and upload files to them. If you enabled the option to export data
+                from Galaxy to Zenodo, make sure to enable the `deposit:write` scope when creating the token.
+
+  configuration:
+      type: zenodo
+      url: "https://zenodo.org/"
+      token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"
+      public_name: "{{ variables.public_name }}"

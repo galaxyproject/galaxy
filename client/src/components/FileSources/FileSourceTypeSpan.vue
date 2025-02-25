@@ -14,6 +14,7 @@ const MESSAGES = {
     googledrive: "This is a file source plugin that connects with the commercial Google Drive service.",
     elabftw: "This is a remote file source that connects with an eLabFTW instance.",
     inveniordm: "This is a remote file source that connects with an InvenioRDM instance.",
+    zenodo: "This is a remote file source that connects with https://zenodo.org/.",
 };
 
 interface Props {
