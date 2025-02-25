@@ -100,11 +100,14 @@ def _handle_pseudo_location(properties, pseudo_location):
         properties["location"] = properties["basename"]
 
 
-def abs_path_or_uri(path_or_uri: str, relative_to: str) -> str:
+def abs_path_or_uri(path_or_uri: str, relative_to: str, resolve_data: Optional[Callable[[str], Optional[str]]]) -> str:
     """Return the absolute path if this isn't a URI, otherwise keep the URI the same."""
     if "://" in path_or_uri:
         return path_or_uri
     abs_path_ = os.path.abspath(os.path.join(relative_to, path_or_uri))
+    if resolve_data and not os.path.exists(abs_path_):
+        if resolved_data := resolve_data(path_or_uri):
+            abs_path_ = resolved_data
     _ensure_file_exists(abs_path_)
     return abs_path_
 
@@ -136,6 +139,7 @@ def galactic_job_json(
     upload_func: Callable[["UploadTarget"], Dict[str, Any]],
     collection_create_func: Callable[[List[Dict[str, Any]], str], Dict[str, Any]],
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
+    resolve_data: Optional[Callable[[str], Optional[str]]] = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """Adapt a CWL job object to the Galaxy API.
 
@@ -159,7 +163,7 @@ def galactic_job_json(
         return {"src": "hda", "id": dataset_id}
 
     def upload_file(file_path: str, secondary_files: Optional[str], **kwargs) -> Dict[str, str]:
-        file_path = abs_path_or_uri(file_path, test_data_directory)
+        file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         target = FileUploadTarget(file_path, secondary_files, **kwargs)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
@@ -170,17 +174,17 @@ def galactic_job_json(
         return response_to_hda(target, upload_response)
 
     def upload_tar(file_path: str, file_type: str = "directory", name: str = "uploaded tar file") -> Dict[str, str]:
-        file_path = abs_path_or_uri(file_path, test_data_directory)
+        file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         target = DirectoryUploadTarget(file_path, file_type=file_type, name=name)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
     def upload_file_with_composite_data(file_path: Optional[str], composite_data, **kwargs) -> Dict[str, str]:
         if file_path is not None:
-            file_path = abs_path_or_uri(file_path, test_data_directory)
+            file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         composite_data_resolved = []
         for cd in composite_data:
-            composite_data_resolved.append(abs_path_or_uri(cd, test_data_directory))
+            composite_data_resolved.append(abs_path_or_uri(cd, test_data_directory, resolve_data=resolve_data))
         target = FileUploadTarget(file_path, composite_data=composite_data_resolved, **kwargs)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)

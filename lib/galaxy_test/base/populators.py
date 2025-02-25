@@ -3434,6 +3434,7 @@ def stage_inputs(
         job=job,
         use_path_paste=use_path_paste,
         to_posix_lines=to_posix_lines,
+        resolve_data=galaxy_interactor._find_in_test_data_directories,
         **kwds,
     )
 

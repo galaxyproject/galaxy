@@ -44,6 +44,7 @@ from galaxy.tool_util.parser.interface import (
     ToolSourceTestOutputs,
     XmlTestCollectionDefDict,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import (
@@ -145,6 +146,7 @@ def stage_data_in_history(
     force_path_paste=False,
     maxseconds=DEFAULT_TOOL_TEST_WAIT,
     tool_version=None,
+    test_data_resolver: Optional[TestDataResolver] = None,
 ):
     assert tool_id
 
@@ -155,7 +157,14 @@ def stage_data_in_history(
             test_data=test_data, tool_id=tool_id, force_path_paste=force_path_paste, tool_version=tool_version
         )
         job[test_data["fname"]] = test_dict
-    staging_interface.stage("tool", history_id=history, job=job, use_path_paste=force_path_paste)
+    resolve_data = test_data_resolver.get_filename if test_data_resolver else None
+    staging_interface.stage(
+        "tool",
+        history_id=history,
+        job=job,
+        use_path_paste=force_path_paste,
+        resolve_data=resolve_data,
+    )
     galaxy_interactor.uploads = job
     return
 
@@ -1312,6 +1321,7 @@ def verify_tool(
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
     _tool_test_dicts: Optional[List[ToolTestDescriptionDict]] = None,  # extension point only for tests
+    test_data_resolver: Optional[TestDataResolver] = None,
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1382,6 +1392,7 @@ def verify_tool(
                 force_path_paste=force_path_paste,
                 maxseconds=maxseconds,
                 tool_version=tool_version,
+                test_data_resolver=test_data_resolver,
             )
         except Exception as e:
             input_staging_exception = e

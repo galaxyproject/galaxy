@@ -11,6 +11,7 @@ import os
 from typing import (
     Any,
     BinaryIO,
+    Callable,
     Dict,
     List,
     Optional,
@@ -85,6 +86,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
         use_path_paste: bool = LOAD_TOOLS_FROM_PATH,
         to_posix_lines: bool = True,
         job_dir: str = ".",
+        resolve_data: Optional[Callable[[str], Optional[str]]] = None,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         def upload_func_fetch(upload_target: UploadTarget) -> Dict[str, Any]:
             def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> Dict[str, Union[str, bool]]:
@@ -271,6 +273,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
             upload,
             create_collection_func,
             tool_or_workflow,
+            resolve_data=resolve_data,
         )
 
     # extension point for planemo to override logging
