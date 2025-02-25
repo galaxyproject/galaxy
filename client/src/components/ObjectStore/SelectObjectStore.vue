@@ -1,20 +1,19 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import type { ConcreteObjectStoreModel } from "@/api";
-import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
-import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
-import ObjectStoreSelectButtonDescribePopover from "./ObjectStoreSelectButtonDescribePopover.vue";
-import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
+import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
     defaultOptionTitle: string;
-    defaultOptionDescription: String;
+    defaultOptionDescription: string;
     forWhat: string;
     parentError?: String | null;
 }
@@ -23,7 +22,6 @@ const props = defineProps<SelectObjectStoreProps>();
 
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
-const { isOnlyPreference } = useStorageLocationConfiguration();
 
 const selectableAndVisibleObjectStores = computed(() => {
     const allSelectableObjectStores = selectableObjectStores.value;
@@ -36,22 +34,6 @@ const selectableAndVisibleObjectStores = computed(() => {
     }
 });
 
-const loadingObjectStoreInfoMessage = ref("Loading Galaxy storage information");
-const whyIsSelectionPreferredText = ref(`
-Select a preferred Galaxy storage for new datasets. Depending on the job and workflow execution configuration of
-this Galaxy a different Galaxy storage may be ultimately used. After a dataset is created,
-click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the place you want, contact Galaxy administrator for more information.
-`);
-
-function variant(objectStoreId: string | null) {
-    if (props.selectedObjectStoreId == objectStoreId) {
-        return "outline-primary";
-    } else {
-        return "outline-info";
-    }
-}
-
 const emit = defineEmits<{
     (e: "onSubmit", id: string | null, isPrivate: boolean): void;
 }>();
@@ -60,57 +42,58 @@ const error = computed(() => {
     return props.parentError || loadErrorMessage.value;
 });
 
-async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | null) {
+async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel) {
     const id: string | null = (preferredObjectStore ? preferredObjectStore.object_store_id : null) as string | null;
     const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
     emit("onSubmit", id, isPrivate);
 }
+
+const defaultObjectStore: ConcreteObjectStoreModel = {
+    object_store_id: null,
+    name: props.defaultOptionTitle,
+    description: props.defaultOptionDescription,
+    badges: [],
+    private: false,
+    quota: { enabled: true, source: null },
+};
 </script>
 
 <template>
     <div>
-        <LoadingSpan v-if="isLoading" :message="loadingObjectStoreInfoMessage" />
+        <LoadingSpan v-if="isLoading" message="Loading Galaxy storage information" />
         <div v-else>
-            <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
+            <span v-localize>
+                Select a preferred Galaxy storage for new datasets. Depending on the job and workflow execution
+                configuration of this Galaxy a different Galaxy storage may be ultimately used. After a dataset is
+                created, click on the info icon in the history panel to view information about where it is stored. If it
+                is not stored in the place you want, contact Galaxy administrator for more information.
+            </span>
+
+            <BAlert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
-            </b-alert>
-            <b-row align-h="center">
-                <b-col cols="7">
-                    <b-button-group vertical size="lg" style="width: 100%">
-                        <b-button
-                            id="no-preferred-object-store-button"
-                            :variant="variant(null)"
-                            class="preferred-object-store-select-button"
-                            data-object-store-id="__null__"
-                            @click="handleSubmit(null)"
-                            ><i v-localize>{{ defaultOptionTitle }}</i></b-button
-                        >
-                        <ObjectStoreSelectButton
-                            v-for="objectStore in selectableAndVisibleObjectStores"
-                            :key="objectStore.object_store_id"
-                            id-prefix="preferred"
-                            :object-store="objectStore"
-                            :variant="variant(objectStore.object_store_id ?? null)"
-                            class="preferred-object-store-select-button"
-                            @click="handleSubmit(objectStore)" />
-                    </b-button-group>
-                </b-col>
-                <b-col v-if="isOnlyPreference" cols="5">
-                    <p v-localize style="float: right">
-                        {{ whyIsSelectionPreferredText }}
-                    </p>
-                </b-col>
-            </b-row>
-            <ObjectStoreSelectButtonPopover target="no-preferred-object-store-button" :title="defaultOptionTitle">
-                <span v-localize>{{ defaultOptionDescription }}</span>
-            </ObjectStoreSelectButtonPopover>
-            <ObjectStoreSelectButtonDescribePopover
-                v-for="objectStore in selectableAndVisibleObjectStores"
-                :key="objectStore.object_store_id"
-                id-prefix="preferred"
-                :what="forWhat"
-                :object-store="objectStore">
-            </ObjectStoreSelectButtonDescribePopover>
+            </BAlert>
+
+            <div class="d-flex flex-wrap">
+                <SourceOptionCard
+                    :source-option="defaultObjectStore"
+                    selection-mode
+                    :selected="props.selectedObjectStoreId == null"
+                    @select="handleSubmit(defaultObjectStore)" />
+
+                <SourceOptionCard
+                    v-for="objectStore in selectableAndVisibleObjectStores"
+                    :key="objectStore.object_store_id"
+                    :source-option="objectStore"
+                    show-badges
+                    selection-mode
+                    submit-button-title="Select this storage location as the preferred storage location"
+                    :selected="props.selectedObjectStoreId == objectStore.object_store_id"
+                    @select="handleSubmit(objectStore)">
+                    <template v-slot:badges>
+                        <ObjectStoreBadges :badges="objectStore.badges" size="lg" />
+                    </template>
+                </SourceOptionCard>
+            </div>
         </div>
     </div>
 </template>
