@@ -23,7 +23,6 @@ export const useWorkflowLandingStore = defineStore("workflowLanding", () => {
         let claim;
         let claimError;
 
-        console.debug("Claiming workflow");
         if (isPublic) {
             const { data, error } = await GalaxyApi().GET("/api/workflow_landings/{uuid}", {
                 params: {
@@ -46,7 +45,6 @@ export const useWorkflowLandingStore = defineStore("workflowLanding", () => {
         }
 
         if (claim) {
-            console.debug("CLaim!", claim);
             claimState.value = {
                 workflowId: claim.workflow_id,
                 instance: claim.workflow_target_type === "workflow",
@@ -54,7 +52,6 @@ export const useWorkflowLandingStore = defineStore("workflowLanding", () => {
                 errorMessage: null,
             };
         } else {
-            console.debug("Claim error", claimError);
             claimState.value = {
                 workflowId: null,
                 instance: false,
