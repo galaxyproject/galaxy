@@ -23,6 +23,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    showSubSetting: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const error = ref<string | null>(null);
@@ -142,6 +146,7 @@ defineExpose({
         @cancel="reset"
         @close="reset">
         <SelectObjectStore
+            :show-sub-setting="props.showSubSetting"
             :parent-error="error || undefined"
             :for-what="newDatasetsDescription"
             :selected-object-store-id="currentSelectedStoreId"

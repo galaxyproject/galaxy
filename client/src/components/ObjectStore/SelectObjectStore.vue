@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, withDefaults } from "vue";
+import { computed, defineAsyncComponent, ref, withDefaults } from "vue";
 
 import type { ConcreteObjectStoreModel } from "@/api";
+import { useConfig } from "@/composables/config";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import DescribeObjectStore from "./DescribeObjectStore.vue";
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const UserPreferredObjectStore = defineAsyncComponent(() => import("@/components/User/UserPreferredObjectStore.vue"));
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
@@ -17,11 +21,13 @@ interface SelectObjectStoreProps {
     defaultOptionDescription: string;
     forWhat: string;
     parentError?: String | null;
+    showSubSetting?: boolean;
 }
 
 const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
     selectedObjectStoreId: null,
     parentError: null,
+    showSubSetting: false,
 });
 
 const store = useObjectStoreStore();
@@ -77,6 +83,18 @@ const selectedObjectStore = computed(() => {
         return null;
     }
 });
+
+const { isConfigLoaded } = useConfig();
+const userStore = useUserStore();
+
+const currentUser = computed(() => {
+    const user = userStore.currentUser;
+    if (user && "id" in user) {
+        return user;
+    } else {
+        return null;
+    }
+});
 </script>
 
 <template>
@@ -98,7 +116,7 @@ const selectedObjectStore = computed(() => {
                     class="preferred-object-store-select-button"
                     data-object-store-id="__null__"
                     @click="handleSubmit(null)">
-                    <i>{{ localize(defaultOptionTitle) }}</i>
+                    {{ localize(defaultOptionTitle) }}
                 </b-button>
                 <ObjectStoreSelectButton
                     v-for="objectStore in selectableAndVisibleObjectStores"
@@ -110,7 +128,18 @@ const selectedObjectStore = computed(() => {
                     @click="handleSubmit(objectStore)" />
             </b-button-group>
 
-            <span v-if="!selectedObjectStoreId" v-localize> {{ defaultOptionDescription }} </span>
+            <div v-if="!selectedObjectStoreId">
+                <span v-localize>
+                    {{ defaultOptionDescription }}
+                </span>
+                <UserPreferredObjectStore
+                    v-if="props.showSubSetting && isConfigLoaded && currentUser"
+                    hide-icon
+                    class="mt-2"
+                    :preferred-object-store-id="currentUser.preferred_object_store_id ?? undefined"
+                    :user-id="currentUser?.id">
+                </UserPreferredObjectStore>
+            </div>
             <DescribeObjectStore v-else-if="selectedObjectStore" :what="forWhat" :storage-info="selectedObjectStore" />
         </div>
     </div>

@@ -22,7 +22,7 @@ useSync(() => props.history.preferred_object_store_id, preferredObjectStoreId);
 const objectStoreStore = useObjectStoreStore();
 objectStoreStore.fetchObjectStores();
 
-const { currentUser } = storeToRefs(useUserStore());
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 
 const userPreferredObjectStoreId = computed(() => {
     const user = currentUser.value;
@@ -39,17 +39,30 @@ function onUpdatePreferredObjectStoreId(id: string | null) {
 }
 
 const selectPreferredStore = ref<InstanceType<typeof SelectPreferredStore>>();
+
+const storageLocationButtonTitle = computed(() => {
+    if (!isAnonymous.value) {
+        return "View and select storage location";
+    } else {
+        return "Log in to view and select storage location";
+    }
+});
 </script>
 
 <template>
     <div class="storage-location-indicator">
-        <BButton class="ui-link" @click="selectPreferredStore?.showModal()">
+        <BButton
+            class="ui-link"
+            :title="storageLocationButtonTitle"
+            :disabled="isAnonymous"
+            @click="selectPreferredStore?.showModal()">
             <FontAwesomeIcon :icon="faHdd" />
             {{ objectStoreStore.getObjectStoreNameById(preferredObjectStoreId) ?? "Default Storage" }}
         </BButton>
 
         <SelectPreferredStore
             ref="selectPreferredStore"
+            show-sub-setting
             :user-preferred-object-store-id="userPreferredObjectStoreId"
             :preferred-object-store-id="preferredObjectStoreId"
             :history="history"
