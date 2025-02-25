@@ -4,6 +4,7 @@ import shutil
 from typing import (
     List,
     TYPE_CHECKING,
+    Union,
 )
 
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
@@ -16,14 +17,17 @@ from galaxy.util.tool_shed import xml_util
 
 if TYPE_CHECKING:
     from galaxy.model.tool_shed_install import ToolShedRepository
+    from galaxy.structured_app import BasicSharedApp
     from galaxy.util.path import StrPath
-    from tool_shed.structured_app import RequiredAppT
 
 log = logging.getLogger(__name__)
 
 
+RequiredAppT = Union["BasicSharedApp", InstallationTarget]
+
+
 class BaseShedToolDataTableManager:
-    def __init__(self, app: "RequiredAppT"):
+    def __init__(self, app: RequiredAppT):
         self.app = app
 
     def handle_sample_tool_data_table_conf_file(self, filename: "StrPath", persist: bool = False):
