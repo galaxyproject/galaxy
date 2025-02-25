@@ -43,8 +43,13 @@ const error = computed(() => {
 });
 
 async function handleSubmit(preferredObjectStore: UserConcreteObjectStoreModel) {
-    const id: string | null = (preferredObjectStore ? preferredObjectStore.object_store_id : null) as string | null;
+    let id = preferredObjectStore?.object_store_id ?? null;
     const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
+
+    if (id === "__null__") {
+        id = null;
+    }
+
     emit("onSubmit", id, isPrivate);
 }
 
