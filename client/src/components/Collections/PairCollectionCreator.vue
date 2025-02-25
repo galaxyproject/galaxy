@@ -260,15 +260,34 @@ function addUploadedFiles(files: HDASummary[]) {
     // Any added files are added to workingElements in _elementsSetUp
     // The user will have to manually select the files to add them to the pair
 
-    // Check for validity of uploads
+    let alreadyPopulated = false;
+
+    // Check for validity of uploads, and add them to the pair if space is available
     files.forEach((file) => {
-        const problem = _isElementInvalid(file);
-        if (problem) {
-            const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+        const element = workingElements.value.find((e) => e.id === file.id);
+        if (element) {
+            const problem = _isElementInvalid(element);
+            if (problem) {
+                const invalidMsg = `${element.hid}: ${element.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                invalidElements.value.push(invalidMsg);
+                Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+            } else if (!props.fromSelection) {
+                if (inListElements.value.forward === undefined) {
+                    inListElements.value.forward = element;
+                } else if (inListElements.value.reverse === undefined) {
+                    inListElements.value.reverse = element;
+                } else if (!alreadyPopulated) {
+                    alreadyPopulated = true;
+                }
+            }
         }
     });
+    if (alreadyPopulated && files.length > 0) {
+        Toast.info(
+            localize("Forward and reverse datasets already selected. Uploaded files are available for replacement."),
+            localize("Uploads Available for Replacement")
+        );
+    }
 }
 
 function clickedCreate(collectionName: string) {
