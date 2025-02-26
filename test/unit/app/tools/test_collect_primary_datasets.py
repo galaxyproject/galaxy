@@ -28,11 +28,11 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
 
-        self.app.model.Dataset.object_store = object_store
+        model.Dataset.object_store = object_store
 
     def tearDown(self):
-        if self.app.model.Dataset.object_store is self.app.object_store:
-            self.app.model.Dataset.object_store = None
+        if model.Dataset.object_store is self.app.object_store:
+            model.Dataset.object_store = None
 
     def test_empty_collect(self):
         assert len(self._collect()) == 0

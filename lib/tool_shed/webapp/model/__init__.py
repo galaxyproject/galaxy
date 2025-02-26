@@ -65,6 +65,8 @@ if TYPE_CHECKING:
     # Workaround for https://github.com/python/mypy/issues/14182
     from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
 
+    from tool_shed.structured_app import ToolShedApp
+
     class DeclarativeMeta(_DeclarativeMeta, type):
         pass
 
@@ -514,7 +516,7 @@ class Repository(Base, Dictifiable):
                 return downloadable_revision.metadata.get("tool_dependencies", {})
         return {}
 
-    def installable_revisions(self, app, sort_revisions=True):
+    def installable_revisions(self, app: "ToolShedApp", sort_revisions: bool = True):
         from tool_shed.util.metadata_util import get_metadata_revisions
 
         return get_metadata_revisions(app, self, sort_revisions=sort_revisions)

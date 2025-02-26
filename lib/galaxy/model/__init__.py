@@ -4239,7 +4239,7 @@ class Dataset(Base, StorableObject, Serializable):
         OK = "ok"
 
     permitted_actions = get_permitted_actions(filter="DATASET")
-    file_path = "/tmp/"
+    file_path: ClassVar[str] = "/tmp/"
     object_store: ClassVar[Optional["BaseObjectStore"]] = (
         None  # This get initialized in mapping.py (method init) by app.py
     )

@@ -67,6 +67,7 @@ from tool_shed.util.tool_util import generate_message_for_invalid_tools
 from tool_shed.webapp.model import (
     Repository,
     RepositoryMetadata,
+    User,
 )
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed.webapp.search.repo_search import RepoSearch
@@ -197,10 +198,10 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[
     return tool_shed_encode({}) if hexlify_this else json.dumps({})
 
 
-def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
+def guid_to_repository(app: ToolShedApp, tool_id: str) -> Repository:
     # tool_id = remove_protocol_and_user_from_clone_url(tool_id)
     shed, _, owner, name, rest = tool_id.split("/", 5)
-    return _get_repository_by_name_and_owner(app.model.context, name, owner, app.model.User)
+    return _get_repository_by_name_and_owner(app.model.context, name, owner)
 
 
 def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
@@ -211,7 +212,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         owner = repository.user.username
         name = repository.name
         assert name
-        repository = _get_repository_by_name_and_owner(app.model.session, name, owner, app.model.User)
+        repository = _get_repository_by_name_and_owner(app.model.session, name, owner)
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue
@@ -253,9 +254,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
 
 
 def index_repositories(app: ToolShedApp, name: Optional[str], owner: Optional[str], deleted: bool):
-    return list(
-        _get_repositories_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted, app.model.User)
-    )
+    return list(_get_repositories_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted))
 
 
 def can_manage_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
@@ -589,26 +588,26 @@ def ensure_can_manage(trans: ProvidesUserContext, repository: Repository, error_
         raise InsufficientPermissionsException(error_message)
 
 
-def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner: str, user_model):
+def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner: str):
     stmt = (
         select(Repository)
         .where(Repository.deprecated == false())
         .where(Repository.deleted == false())
         .where(Repository.name == name)
-        .where(user_model.username == owner)
-        .where(Repository.user_id == user_model.id)
+        .where(User.username == owner)
+        .where(Repository.user_id == User.id)
         .limit(1)
     )
     return session.scalars(stmt).first()
 
 
 def _get_repositories_by_name_and_owner_and_deleted(
-    session: scoped_session, name: Optional[str], owner: Optional[str], deleted: bool, user_model
+    session: scoped_session, name: Optional[str], owner: Optional[str], deleted: bool
 ):
     stmt = select(Repository).where(Repository.deprecated == false()).where(Repository.deleted == deleted)
     if owner is not None:
-        stmt = stmt.where(user_model.username == owner)
-        stmt = stmt.where(Repository.user_id == user_model.id)
+        stmt = stmt.where(User.username == owner)
+        stmt = stmt.where(Repository.user_id == User.id)
     if name is not None:
         stmt = stmt.where(Repository.name == name)
     stmt = stmt.order_by(Repository.name)

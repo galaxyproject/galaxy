@@ -504,7 +504,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = False
         else:
-            repository_metadata = self.app.model.RepositoryMetadata(
+            repository_metadata = RepositoryMetadata(
                 repository_id=self.repository.id,
                 changeset_revision=changeset_revision,
                 metadata=metadata_dict,
