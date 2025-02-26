@@ -3,7 +3,6 @@ import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
-import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -104,7 +103,6 @@ const storageLocationModalTitle = computed(() => {
     }
 });
 
-const root = computed(() => getAppRoot());
 const showPreferredObjectStoreModal = ref(false);
 const toolPreferredObjectStoreId = ref(props.preferredObjectStoreId);
 
@@ -113,7 +111,6 @@ function onShowObjectStoreSelect() {
 }
 
 function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
-    showPreferredObjectStoreModal.value = false;
     toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
@@ -157,13 +154,14 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                 <b-modal
                     v-model="showPreferredObjectStoreModal"
                     :title="storageLocationModalTitle"
+                    scrollable
+                    centered
                     modal-class="tool-preferred-object-store-modal"
                     title-tag="h3"
                     size="sm"
                     hide-footer>
                     <ToolSelectPreferredObjectStore
                         :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                        :root="root"
                         @updated="onUpdatePreferredObjectStoreId" />
                 </b-modal>
             </b-button-group>
