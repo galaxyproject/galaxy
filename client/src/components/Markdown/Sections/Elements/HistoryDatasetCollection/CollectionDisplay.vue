@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { copyCollection } from "@/components/Markdown/services";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -97,9 +97,11 @@ const getContent = async () => {
     }
 };
 
-onMounted(() => {
-    getContent();
-});
+watch(
+    () => props.collectionId,
+    () => getContent(),
+    { immediate: true }
+);
 </script>
 
 <style scoped>
