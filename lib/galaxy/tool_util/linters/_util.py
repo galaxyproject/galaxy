@@ -17,7 +17,11 @@ def get_code(tool_xml):
     code = "#encoding utf-8\n" + code
     code = Template.compile(source=code, compilerClass=Compiler, returnAClass=False)
     code = unicodify(code)
-    # print(code)
+
+    expression_nodes = tool_xml.findall(".//expression")
+    expression = ""
+    if len(expression_nodes) > 0:
+        expression = expression_nodes[0].text
 
     # template macros
     # note: not necessary (& possible) for macro tokens which are expanded
@@ -49,7 +53,7 @@ def get_code(tool_xml):
     for cn in tool_xml.findall("./outputs//action[@default]"):
         actioncode += cn.attrib["default"] + "\n"
 
-    return code, templatecode, filtercode, labelcode, actioncode
+    return code, expression, templatecode, filtercode, labelcode, actioncode
 
 
 def is_datasource(tool_xml):

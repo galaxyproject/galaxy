@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 class CommandMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        if tool_source.parse_tool_type() == "expression":
+            return
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return

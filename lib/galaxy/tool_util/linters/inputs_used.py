@@ -86,6 +86,29 @@ def _param_in_compiled_cheetah(param_name: str, code: str) -> bool:
     return False
 
 
+def _param_in_expression(param_name: str, expression: str) -> bool:
+    try:
+        syntax_tree = esprima.parseScript(expression, tolerant=True)
+    except Exception as e:
+        return False
+
+    def check_node(node):
+        if hasattr(node, "__dict__"):
+            if getattr(node, "type", None) == "Identifier" and getattr(node, "name", None) == param_name:
+                return True
+            for key, value in vars(node).items():
+                if isinstance(value, (list, esprima.nodes.Node)) and check_node(value):
+                    return True
+        elif isinstance(node, list):
+            for item in node:
+                if check_node(item):
+                    return True
+        return False
+
+    return check_node(syntax_tree.body)
+
+
+
 class InputsUsed(Linter):
     """
     check if the parameter is used somewhere, the following cases are considered:
@@ -127,6 +150,8 @@ class InputsUsed(Linter):
             if not is_valid_cheetah_placeholder(param_name):
                 continue
             if _param_in_compiled_cheetah(param, param_name, code):
+                continue
+            if _param_in_expression(param_name, expression):
                 continue
             if param_name in filter_code:
                 continue
