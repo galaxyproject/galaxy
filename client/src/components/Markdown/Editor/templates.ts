@@ -1,5 +1,3 @@
-import vegaBarChart from "./templates/vega-bar-chart.json";
-import vegaLineChart from "./templates/vega-line-chart.json";
 import type { TemplateCategory } from "./types";
 
 export const cellTemplates: Array<TemplateCategory> = [
@@ -285,27 +283,6 @@ export const cellTemplates: Array<TemplateCategory> = [
                 cell: {
                     name: "galaxy",
                     content: "generate_galaxy_version()",
-                },
-            },
-        ],
-    },
-    {
-        name: "Vega",
-        templates: [
-            {
-                title: "Bar Diagram",
-                description: "Basic bar diagram",
-                cell: {
-                    name: "vega",
-                    content: JSON.stringify(vegaBarChart, null, 4),
-                },
-            },
-            {
-                title: "Line Chart",
-                description: "Basic line chart",
-                cell: {
-                    name: "vega",
-                    content: JSON.stringify(vegaLineChart, null, 4),
                 },
             },
         ],

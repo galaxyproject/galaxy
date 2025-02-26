@@ -1,10 +1,13 @@
 <template>
     <b-alert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</b-alert>
-    <ConfigureSelector
+    <MarkdownDialog
         v-else-if="requirement"
-        :object-id="contentObject?.args[requirement]"
-        :object-type="requirement"
-        @change="onChange($event)" />
+        :argument-type="requirement"
+        :argument-name="contentObject?.name"
+        :argument-payload="contentObject?.args"
+        :useLabels="false"
+        @onInsert="$emit('change', $event)"
+        @onCancel="$emit('cancel')" />
     <b-alert v-else v-localize variant="info" show>
         No inputs available for <b>`{{ contentObject?.name }}`</b>.
     </b-alert>
@@ -13,18 +16,18 @@
 <script setup lang="ts">
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { OptionType } from "@/components/Markdown/Editor/Configurations/types";
 import { getArgs } from "@/components/Markdown/parse";
 
 import REQUIREMENTS from "./requirements";
 
-import ConfigureSelector from "./ConfigureSelector.vue";
+import MarkdownDialog from "@/components/Markdown/MarkdownDialog.vue";
 
 const props = defineProps<{
     content: string;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
+    (e: "cancel"): void;
     (e: "change", content: string): void;
 }>();
 
@@ -47,17 +50,6 @@ const requirement = computed(() => {
     }
     return null;
 });
-
-function onChange(newValue: OptionType) {
-    if (requirement.value) {
-        const newValues = { ...contentObject.value?.args };
-        newValues[requirement.value] = newValue.id;
-        const newContent = Object.entries(newValues)
-            .map(([key, value]) => `${key}=${value}`)
-            .join(" ");
-        emit("change", `${contentObject.value?.name}(${newContent})`);
-    }
-}
 
 function parseContent() {
     try {

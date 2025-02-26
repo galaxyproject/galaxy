@@ -19,16 +19,6 @@
             <div class="m-2 w-100">
                 <MarkdownDefault v-if="name === 'markdown'" :content="content" />
                 <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
-                <MarkdownVega v-else-if="name === 'vega'" :content="content" />
-                <MarkdownVisualization
-                    v-else-if="name === 'visualization'"
-                    :content="content"
-                    @change="$emit('change', $event)" />
-                <MarkdownVisualization
-                    v-else-if="name === 'vitessce'"
-                    attribute="dataset_content"
-                    name="vitessce"
-                    :content="content" />
                 <b-alert v-else variant="danger" show> This cell type `{{ name }}` is not available. </b-alert>
             </div>
         </div>
@@ -56,19 +46,13 @@
             </div>
             <div class="ml-2 w-100">
                 <hr class="solid m-0" />
-                <CellConfigure
-                    v-if="configure"
+                <ConfigureGalaxy
+                    v-if="name === 'galaxy' && configure"
                     :name="name"
                     :content="content"
                     @cancel="$emit('configure')"
-                    @change="$emit('change', $event)" />
-                <CellCode
-                    v-else
-                    :key="name"
-                    class="mt-1"
-                    :value="content"
-                    :mode="mode"
-                    @change="$emit('change', $event)" />
+                    @change="handleConfigure($event)" />
+                <CellCode :key="name" class="mt-1" :value="content" :mode="mode" @change="$emit('change', $event)" />
             </div>
         </div>
         <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
@@ -93,11 +77,9 @@ import { computed, ref } from "vue";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
-import MarkdownVega from "../Sections/MarkdownVega.vue";
-import MarkdownVisualization from "../Sections/MarkdownVisualization.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
-import CellConfigure from "./CellConfigure.vue";
+import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
@@ -110,7 +92,7 @@ const props = defineProps<{
     toggle?: boolean;
 }>();
 
-defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
+const emit = defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
 
 const confirmDelete = ref(false);
 const hover = ref(false);
@@ -124,6 +106,11 @@ const mode = computed(() => {
     }
     return "json";
 });
+
+function handleConfigure(newValue: string) {
+    emit("change", newValue);
+    emit("configure");
+}
 </script>
 
 <style lang="scss">
