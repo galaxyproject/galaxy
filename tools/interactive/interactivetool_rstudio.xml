@@ -1,6 +1,6 @@
-<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.3" profile="22.01">
+<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="24.2" profile="22.01">
     <requirements>
-        <container type="docker">quay.io/galaxy/docker-rstudio-notebook:23.1</container>
+        <container type="docker">quay.io/galaxy/docker-rstudio-notebook:24.2</container>
     </requirements>
     <entry_points>
         <entry_point name="RStudio" requires_domain="False" requires_path_in_header_named="X-RStudio-Root-Path">
@@ -26,7 +26,6 @@
 
         /init &
         sleep 5 &&
-
         chmod 777 /tmp -R &&
         tail --retry -f /var/log/rstudio/rstudio-server/rserver.log
 
