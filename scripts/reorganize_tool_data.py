@@ -84,7 +84,7 @@ class Color:
     BLINK = "\033[5m"
     REVERSE = "\033[7m"
     HIDDEN = "\033[8m"
-    
+
     # Foreground colors
     BLACK = "\033[30m"
     RED = "\033[31m"
@@ -94,7 +94,7 @@ class Color:
     MAGENTA = "\033[35m"
     CYAN = "\033[36m"
     WHITE = "\033[37m"
-    
+
     # Bright foreground colors
     BRIGHT_BLACK = "\033[90m"
     BRIGHT_RED = "\033[91m"
@@ -104,7 +104,7 @@ class Color:
     BRIGHT_MAGENTA = "\033[95m"
     BRIGHT_CYAN = "\033[96m"
     BRIGHT_WHITE = "\033[97m"
-    
+
     # Background colors
     BG_BLACK = "\033[40m"
     BG_RED = "\033[41m"
@@ -114,7 +114,7 @@ class Color:
     BG_MAGENTA = "\033[45m"
     BG_CYAN = "\033[46m"
     BG_WHITE = "\033[47m"
-    
+
     # Bright background colors
     BG_BRIGHT_BLACK = "\033[100m"
     BG_BRIGHT_RED = "\033[101m"
@@ -124,7 +124,7 @@ class Color:
     BG_BRIGHT_MAGENTA = "\033[105m"
     BG_BRIGHT_CYAN = "\033[106m"
     BG_BRIGHT_WHITE = "\033[107m"
-    
+
     @staticmethod
     def sprint(text, color, effect=None):
         effect = effect or ''
@@ -137,7 +137,7 @@ class Color:
 
 class LocFile:
     def __init__(self, path, table, comment_char):
-        self.file = open(path, "rt")
+        self.file = open(path)
         self.table = table
         self.comment_char = comment_char
 
@@ -180,7 +180,6 @@ class DataTable:
         fd, self.new_loc_file_path = tempfile.mkstemp(
             suffix=".reorganize_tool_data.loc",
             prefix=f"{self.name}.",
-            #dir=os.path.dirname(self.loc_file_path),
             text=True
         )
         self.new_loc_file = os.fdopen(fd, mode="wt")
@@ -239,7 +238,8 @@ class DataTable:
             if os.path.exists(path) and not os.path.islink(path):
                 Color.print(f"WARNING: Expected sequence link exists but is not a link: {path}", Color.RED)
                 return
-            assert os.path.islink(path), Color.sprint(f"Expected sequence link is not a link (or does not exist): {path}", Color.RED, effect=Color.BOLD)
+            assert os.path.islink(path), Color.sprint(
+                f"Expected sequence link is not a link (or does not exist): {path}", Color.RED, effect=Color.BOLD)
             seq_path = self._table_path(entry, table="all_fasta")
             link_target = os.path.relpath(seq_path, start=os.path.dirname(table_path))
             if commit:
@@ -261,9 +261,9 @@ class DataTable:
         source = self._source_path(entry)
         dest = self._dest_path(entry)
         assert os.path.lexists(source) and os.path.exists(source), Color.sprint(
-                f"ERROR: source path does not exist: {source}", Color.RED, effect=Color.BOLD)
+            f"ERROR: source path does not exist: {source}", Color.RED, effect=Color.BOLD)
         assert not os.path.exists(dest), Color.sprint(
-                f"ERROR: dest path exists: {dest}", Color.RED, effect=Color.BOLD)
+            f"ERROR: dest path exists: {dest}", Color.RED, effect=Color.BOLD)
         if self.move_data:
             dest_parent = os.path.dirname(dest)
             if not os.path.exists(dest_parent):
@@ -292,9 +292,17 @@ class DataTable:
                 else:
                     self._write_entry_to_loc(entry)
                     Color.print(f"Ok: {entry.path}", Color.GREEN)
-        except Exception as exc:
-            Color.print(f"ERROR: Encountered an exception while reorganizing data in {self.name} table: {self.loc_file_path}", Color.RED, effect=Color.BOLD)
-            Color.print(f"ERROR: Partial loc file rewrite can be found at: {self.new_loc_file_path}", Color.RED, effect=Color.BOLD)
+        except Exception:
+            Color.print(
+                f"ERROR: Encountered an exception while reorganizing data in {self.name} table: {self.loc_file_path}",
+                Color.RED,
+                effect=Color.BOLD
+            )
+            Color.print(
+                f"ERROR: Partial loc file rewrite can be found at: {self.new_loc_file_path}",
+                Color.RED,
+                effect=Color.BOLD
+            )
             self.new_loc_file.close()
             raise
         self.new_loc_file.close()
@@ -313,7 +321,11 @@ class DataTable:
 def parse_tdtc(tdtc, tool_data_path):
     tree = ElementTree.parse(tdtc)
     root = tree.getroot()
-    assert root.tag == "tables", f"Root telement should be <tables> (was: <{root.tag}>), is this a tool_data_table_conf.xml?: {tdtc}"
+    assert root.tag == "tables", Color.sprint(
+        f"ERROR: Root element should be <tables> (was: <{root.tag}>), is this a tool_data_table_conf.xml?: {tdtc}",
+        Color.RED,
+        effect=Color.BOLD
+    )
     for table in root.findall("table"):
         dt = DataTable.from_elem(table, tool_data_path=tool_data_path)
         if dt:
@@ -323,7 +335,12 @@ def parse_tdtc(tdtc, tool_data_path):
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool-data-path", required=True, type=pathlib.Path, help="Path to tool data dir")
-    parser.add_argument("--commit", default=False, action="store_true", help="Commit changes (otherwise, only print what would be done without making chnages)")
+    parser.add_argument(
+        "--commit",
+        default=False,
+        action="store_true",
+        help="Commit changes (otherwise, only print what would be done without making chnages)"
+    )
     parser.add_argument("tool_data_table_conf", nargs="+", type=pathlib.Path, help="Path to a tool_data_table_conf.xml")
     return parser.parse_args(argv)
 
