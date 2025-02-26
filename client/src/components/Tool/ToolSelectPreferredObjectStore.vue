@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref } from "vue";
-
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 interface ToolSelectProps {
@@ -11,7 +9,6 @@ const props = withDefaults(defineProps<ToolSelectProps>(), {
     toolPreferredObjectStoreId: null,
 });
 
-const selectedObjectStoreId = ref<String | null>(props.toolPreferredObjectStoreId);
 const newDatasetsDescription = "The default Galaxy storage for the outputs of this tool";
 const defaultOptionTitle = "Use Defaults";
 const defaultOptionDescription =
@@ -22,7 +19,6 @@ const emit = defineEmits<{
 }>();
 
 async function handleSubmit(preferredObjectStoreId: string | null) {
-    selectedObjectStoreId.value = preferredObjectStoreId;
     emit("updated", preferredObjectStoreId);
 }
 </script>
@@ -30,7 +26,7 @@ async function handleSubmit(preferredObjectStoreId: string | null) {
 <template>
     <SelectObjectStore
         :for-what="newDatasetsDescription"
-        :selected-object-store-id="selectedObjectStoreId"
+        :selected-object-store-id="props.toolPreferredObjectStoreId"
         :default-option-title="defaultOptionTitle"
         :default-option-description="defaultOptionDescription"
         @onSubmit="handleSubmit" />
