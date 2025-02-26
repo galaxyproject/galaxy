@@ -145,6 +145,7 @@ defineExpose({
         :title="storageLocationTitle"
         title-tag="h2"
         title-class="h-sm"
+        cancel-variant="outline-primary"
         @ok="modalOk"
         @cancel="reset"
         @close="reset">
