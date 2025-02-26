@@ -412,12 +412,8 @@ class BaseJobRunner:
             for dataset in (
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
-                if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    stmt = (
-                        select(self.app.model.JobToOutputDatasetAssociation)
-                        .filter_by(job=job, dataset=dataset)
-                        .limit(1)
-                    )
+                if isinstance(dataset, model.HistoryDatasetAssociation):
+                    stmt = select(model.JobToOutputDatasetAssociation).filter_by(job=job, dataset=dataset).limit(1)
                     joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:

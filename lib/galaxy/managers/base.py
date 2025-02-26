@@ -115,9 +115,9 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
     if check_accessible:
         if type(item) in (
-            trans.app.model.LibraryFolder,
-            trans.app.model.LibraryDatasetDatasetAssociation,
-            trans.app.model.LibraryDataset,
+            model.LibraryFolder,
+            model.LibraryDatasetDatasetAssociation,
+            model.LibraryDataset,
         ):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
                 raise exceptions.ItemAccessibilityException(

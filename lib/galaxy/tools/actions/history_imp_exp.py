@@ -8,6 +8,8 @@ from galaxy.job_execution.setup import create_working_directory_for_job
 from galaxy.model import (
     History,
     Job,
+    JobExportHistoryArchive,
+    JobImportHistoryArchive,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
@@ -62,7 +64,7 @@ class ImportHistoryToolAction(ToolAction):
         #
         incoming = incoming or {}
         trans.check_user_activation()
-        job = trans.app.model.Job()
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -91,7 +93,7 @@ class ImportHistoryToolAction(ToolAction):
         # Use abspath because mkdtemp() does not, contrary to the documentation,
         # always return an absolute path.
         archive_dir = os.path.abspath(tempfile.mkdtemp())
-        jiha = trans.app.model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
+        jiha = JobImportHistoryArchive(job=job, archive_dir=archive_dir)
         trans.sa_session.add(jiha)
 
         job_wrapper = JobImportHistoryArchiveWrapper(trans.app, job)
@@ -140,7 +142,7 @@ class ExportHistoryToolAction(ToolAction):
         incoming = incoming or {}
         history = None
         for name, value in incoming.items():
-            if isinstance(value, trans.app.model.History):
+            if isinstance(value, History):
                 history_param_name = name
                 history = value
                 del incoming[history_param_name]
@@ -152,7 +154,7 @@ class ExportHistoryToolAction(ToolAction):
         #
         # Create the job and output dataset objects
         #
-        job = trans.app.model.Job()
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -172,7 +174,7 @@ class ExportHistoryToolAction(ToolAction):
         if not exporting_to_uri:
             # see comment below about how this should be transitioned to occuring in a
             # job handler or detached MQ-driven thread
-            jeha = trans.app.model.JobExportHistoryArchive.create_for_history(
+            jeha = JobExportHistoryArchive.create_for_history(
                 history, job, trans.sa_session, trans.app.object_store, compressed
             )
             store_directory = jeha.temp_directory

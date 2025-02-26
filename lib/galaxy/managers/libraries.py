@@ -20,6 +20,7 @@ from galaxy import exceptions
 from galaxy.managers.folders import FolderManager
 from galaxy.model import (
     Library,
+    LibraryFolder,
     Role,
 )
 from galaxy.model.db.library import (
@@ -73,8 +74,8 @@ class LibraryManager:
         if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException("Only administrators can create libraries.")
         else:
-            library = trans.app.model.Library(name=name, description=description, synopsis=synopsis)
-            root_folder = trans.app.model.LibraryFolder(name=name, description="")
+            library = Library(name=name, description=description, synopsis=synopsis)
+            root_folder = LibraryFolder(name=name, description="")
             library.root_folder = root_folder
             trans.sa_session.add_all((library, root_folder))
             trans.sa_session.commit()

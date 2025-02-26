@@ -8,6 +8,7 @@ import logging
 import re
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -34,9 +35,13 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.model import (
+    Dataset,
     FormDefinition,
+    FormValues,
     HistoryDatasetAssociation,
+    Job,
     Role,
+    User,
     UserAddress,
     UserObjectstoreUsage,
     UserQuotaUsage,
@@ -476,16 +481,14 @@ class FastAPIUsers:
             )
         else:
             # Have everything needed; create new build.
-            build_dict = {"name": name}
+            build_dict: Dict[str, Any] = {"name": name}
             if len_type in ["text", "file"]:
                 # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation(
-                    extension="len", create_dataset=True, sa_session=trans.sa_session
-                )
+                new_len = HistoryDatasetAssociation(extension="len", create_dataset=True, sa_session=trans.sa_session)
                 trans.sa_session.add(new_len)
                 new_len.name = name
                 new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
+                new_len.state = Job.states.OK
                 new_len.info = "custom build .len file"
                 try:
                     trans.app.object_store.create(new_len.dataset)
@@ -552,7 +555,7 @@ class FastAPIUsers:
                 if (
                     chrom_count_dataset
                     and not chrom_count_dataset.deleted
-                    and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
+                    and chrom_count_dataset.state == HistoryDatasetAssociation.states.OK
                 ):
                     chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
                     dbkey["count"] = chrom_count
@@ -718,7 +721,7 @@ class FastAPIUsers:
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
-        user = trans.sa_session.query(trans.model.User).get(user_id)
+        user = trans.sa_session.query(User).get(user_id)
         if not user:
             raise exceptions.ObjectNotFound("User not found for given id.")
         if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
@@ -978,7 +981,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             for item in payload:
                 if item.startswith(prefix):
                     user_info_values[item[len(prefix) :]] = payload[item]
-            form_values = trans.model.FormValues(user_info_form, user_info_values)
+            form_values = FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
 
@@ -1088,7 +1091,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         roles = user.all_roles()
         inputs = []
-        for index, action in trans.app.model.Dataset.permitted_actions.items():
+        for index, action in Dataset.permitted_actions.items():
             inputs.append(
                 {
                     "type": "select",
@@ -1111,7 +1114,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         payload = payload or {}
         user = self._get_user(trans, id)
         permissions = {}
-        for index, action in trans.app.model.Dataset.permitted_actions.items():
+        for index, action in Dataset.permitted_actions.items():
             action_id = trans.app.security_agent.get_action(action.action).action
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)

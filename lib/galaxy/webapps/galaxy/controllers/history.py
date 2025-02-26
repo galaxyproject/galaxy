@@ -10,7 +10,10 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.model import Role
+from galaxy.model import (
+    Dataset,
+    Role,
+)
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -135,7 +138,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             inputs = []
             all_roles = trans.user.all_roles()
             current_actions = history.default_permissions
-            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+            for action_key, action in Dataset.permitted_actions.items():
                 in_roles = set()
                 for a in current_actions:
                     if a.action == action.action:
@@ -157,7 +160,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         else:
             self.history_manager.error_unless_mutable(history)
             permissions = {}
-            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+            for action_key, action in Dataset.permitted_actions.items():
                 in_roles = payload.get(action_key) or []
                 in_roles = [trans.sa_session.get(Role, trans.security.decode_id(x)) for x in in_roles]
                 permissions[trans.app.security_agent.get_action(action.action)] = in_roles

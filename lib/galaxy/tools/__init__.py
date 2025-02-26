@@ -421,9 +421,9 @@ class PersistentToolTagManager(AbstractToolTagManager):
 
     def reset_tags(self):
         log.info(
-            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(self.app.model.ToolTagAssociation.id))))})"
+            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(model.ToolTagAssociation.id))))})"
         )
-        self.sa_session.execute(delete(self.app.model.ToolTagAssociation))
+        self.sa_session.execute(delete(model.ToolTagAssociation))
         self.sa_session.commit()
 
     def handle_tags(self, tool_id, tool_definition_source):
@@ -433,13 +433,13 @@ class PersistentToolTagManager(AbstractToolTagManager):
             for tag_name in tag_names:
                 if tag_name == "":
                     continue
-                stmt = select(self.app.model.Tag).filter_by(name=tag_name).limit(1)
+                stmt = select(model.Tag).filter_by(name=tag_name).limit(1)
                 tag = self.sa_session.scalars(stmt).first()
                 if not tag:
-                    tag = self.app.model.Tag(name=tag_name)
+                    tag = model.Tag(name=tag_name)
                     self.sa_session.add(tag)
                     self.sa_session.commit()
-                    tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
+                    tta = model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
                     self.sa_session.add(tta)
                     self.sa_session.commit()
                 else:
@@ -447,7 +447,7 @@ class PersistentToolTagManager(AbstractToolTagManager):
                         if tagged_tool.tool_id == tool_id:
                             break
                     else:
-                        tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
+                        tta = model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
                         self.sa_session.add(tta)
                         self.sa_session.commit()
 
@@ -1928,8 +1928,8 @@ class Tool(UsesDictVisibleKeys):
 
     def completed_jobs(
         self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
-    ) -> Dict[int, Optional[model.Job]]:
-        completed_jobs: Dict[int, Optional[model.Job]] = {}
+    ) -> Dict[int, Optional[Job]]:
+        completed_jobs: Dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
             if use_cached_job:
                 tool_id = self.id
@@ -1973,7 +1973,7 @@ class Tool(UsesDictVisibleKeys):
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
-        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
+        completed_jobs: Dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,
             self,
@@ -2031,7 +2031,7 @@ class Tool(UsesDictVisibleKeys):
         execution_slice: ExecutionSlice,
         history: model.History,
         execution_cache: ToolExecutionCache,
-        completed_job: Optional[model.Job],
+        completed_job: Optional[Job],
         collection_info: Optional[MatchingCollections],
         job_callback: Optional[JobCallbackT],
         preferred_object_store_id: Optional[str],
@@ -2164,7 +2164,7 @@ class Tool(UsesDictVisibleKeys):
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
         dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = None,
-        completed_job: Optional[model.Job] = None,
+        completed_job: Optional[Job] = None,
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
@@ -2728,10 +2728,10 @@ class Tool(UsesDictVisibleKeys):
         def map_to_history(value):
             id = None
             source = None
-            if isinstance(value, self.app.model.HistoryDatasetAssociation):
+            if isinstance(value, model.HistoryDatasetAssociation):
                 id = value.dataset.id
                 source = hda_source_dict
-            elif isinstance(value, self.app.model.HistoryDatasetCollectionAssociation):
+            elif isinstance(value, model.HistoryDatasetCollectionAssociation):
                 id = value.collection.id
                 source = hdca_source_dict
             else:
@@ -3262,8 +3262,8 @@ class DataManagerTool(OutputParameterJSONTool):
 
     def get_default_history_by_trans(self, trans, create=False):
         def _create_data_manager_history(user):
-            history = trans.app.model.History(name="Data Manager History (automatically created)", user=user)
-            data_manager_association = trans.app.model.DataManagerHistoryAssociation(user=user, history=history)
+            history = model.History(name="Data Manager History (automatically created)", user=user)
+            data_manager_association = model.DataManagerHistoryAssociation(user=user, history=history)
             trans.sa_session.add_all((history, data_manager_association))
             trans.sa_session.commit()
             return history
