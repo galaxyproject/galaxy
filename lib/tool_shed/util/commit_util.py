@@ -137,12 +137,15 @@ def get_change_lines_in_file_for_tag(tag, change_dict):
 
 
 def handle_bz2(repository: "Repository", uploaded_file_name):
-    with tempfile.NamedTemporaryFile(
-        mode="wb",
-        prefix=f"repo_{repository.id}_upload_bunzip2_",
-        dir=os.path.dirname(uploaded_file_name),
-        delete=False,
-    ) as uncompressed, bz2.BZ2File(uploaded_file_name, "rb") as bzipped_file:
+    with (
+        tempfile.NamedTemporaryFile(
+            mode="wb",
+            prefix=f"repo_{repository.id}_upload_bunzip2_",
+            dir=os.path.dirname(uploaded_file_name),
+            delete=False,
+        ) as uncompressed,
+        bz2.BZ2File(uploaded_file_name, "rb") as bzipped_file,
+    ):
         while 1:
             try:
                 chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
@@ -242,9 +245,15 @@ def handle_directory_changes(
 
 
 def handle_gzip(repository, uploaded_file_name):
-    with tempfile.NamedTemporaryFile(
-        mode="wb", prefix=f"repo_{repository.id}_upload_gunzip_", dir=os.path.dirname(uploaded_file_name), delete=False
-    ) as uncompressed, gzip.GzipFile(uploaded_file_name, "rb") as gzipped_file:
+    with (
+        tempfile.NamedTemporaryFile(
+            mode="wb",
+            prefix=f"repo_{repository.id}_upload_gunzip_",
+            dir=os.path.dirname(uploaded_file_name),
+            delete=False,
+        ) as uncompressed,
+        gzip.GzipFile(uploaded_file_name, "rb") as gzipped_file,
+    ):
         while 1:
             try:
                 chunk = gzipped_file.read(basic_util.CHUNK_SIZE)
