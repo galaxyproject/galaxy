@@ -8,6 +8,7 @@
                     </div>
                     <div>
                         <b-form-radio-group
+                            v-if="!steps || steps.length === 0"
                             v-model="editor"
                             v-b-tooltip.hover.bottom
                             button-variant="outline-primary"
@@ -74,7 +75,7 @@ defineProps<{
 
 const showHelpModal = ref<boolean>(false);
 
-const editor = ref("cells");
+const editor = ref("text");
 const editorOptions = ref([
     { text: "Text", value: "text" },
     { text: "Cells", value: "cells" },
