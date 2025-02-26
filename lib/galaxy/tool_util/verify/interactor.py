@@ -547,6 +547,8 @@ class GalaxyInteractorApi:
             "class": test_data.get("class", "File"),
         }
         if tags:
+            if isinstance(tags, str):
+                tags = tags.split(",")
             tool_input["tags"] = tags
 
         metadata = test_data.get("metadata", {})
@@ -673,7 +675,8 @@ class GalaxyInteractorApi:
                 element["name"] = element_identifier
                 tags = element_def.get("attributes").get("tags")
                 if tags:
-                    element["tags"] = tags.split(",")
+                    if isinstance(tags, str):
+                        element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 
