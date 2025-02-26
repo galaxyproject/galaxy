@@ -5,7 +5,6 @@
 import argparse
 import os
 import pathlib
-import re
 import shutil
 import subprocess
 import sys
@@ -20,33 +19,61 @@ class PathType(Enum):
     FILE = 1
     # path column is path to a directory
     DIRECTORY = 2
+    # path column is path to a symlink to the seq in a directory
+    SEQ_LINK = 3
     # path column is path to a file prefix in a directory
-    DIRECTORY_PREFIX = 3
+    PREFIX = 4
+
 
 PATH_TEMPLATES = {
     "all_fasta": "{tool_data_path}/genomes/{dbkey}/seq/{value}.fa",
-    "__dbkeys__": "{tool_data_path}/genomes/{dbkey}/len/{value}.len",
+    # __dbkeys__ and twobit only have value, not dbkey, in this case we hope there are no variants
+    "twobit": "{tool_data_path}/genomes/{value}/seq/{value}.2bit",
+    "__dbkeys__": "{tool_data_path}/genomes/{value}/len/{value}.len",
     "fasta_indexes": "{tool_data_path}/genomes/{dbkey}/sam_fasta_index/v1/{value}/{value}.fa",
     "bowtie_indexes": "{tool_data_path}/genomes/{dbkey}/bowtie_index/v1/{value}/{value}.fa",
-    "bowtie2_indexes": "{tool_data_path}/genomes/{dbkey}/bowtie_index/v2/{value}/{value}.fa",
+    "bowtie2_indexes": "{tool_data_path}/genomes/{dbkey}/bowtie_index/v2/{value}/{value}",
+    "tophat2_indexes": "{tool_data_path}/genomes/{dbkey}/bowtie_index/v2/{value}/{value}",
     "bwa_mem_indexes": "{tool_data_path}/genomes/{dbkey}/bwa_mem_index/v1/{value}/{value}.fa",
     "bwa_mem2_indexes": "{tool_data_path}/genomes/{dbkey}/bwa_mem_index/v2/{value}/{value}.fa",
-    "hisat2_indexes": "{tool_data_path}/genomes/{dbkey}/hisat_index/v2/{value}/{value}.fa",
+    "hisat2_indexes": "{tool_data_path}/genomes/{dbkey}/hisat_index/v2/{value}/{value}",
     "rnastar_index2x_versioned": "{tool_data_path}/genomes/{dbkey}/rnastar_index/v{version}/{value}",
 
 }
 
 PATH_TYPES = {
     "all_fasta": PathType.FILE,
+    "twobit": PathType.FILE,
     "__dbkeys__": PathType.FILE,
-    "fasta_indexes": PathType.DIRECTORY_PREFIX,
-    "bowtie_indexes": PathType.DIRECTORY_PREFIX,
-    "bowtie2_indexes": PathType.DIRECTORY_PREFIX,
-    "bwa_mem_indexes": PathType.DIRECTORY_PREFIX,
-    "bwa_mem2_indexes": PathType.DIRECTORY_PREFIX,
-    "hisat2_indexes": PathType.DIRECTORY_PREFIX,
+    "fasta_indexes": PathType.SEQ_LINK,
+    "bowtie_indexes": PathType.SEQ_LINK,
+    "bowtie2_indexes": PathType.SEQ_LINK,
+    "tophat2_indexes": PathType.SEQ_LINK,
+    "bwa_mem_indexes": PathType.SEQ_LINK,
+    "bwa_mem2_indexes": PathType.SEQ_LINK,
+    "hisat2_indexes": PathType.SEQ_LINK,
     "rnastar_index2x_versioned": PathType.DIRECTORY,
 }
+
+LOC_ONLY = {
+    "tophat2_indexes",
+}
+
+PATH_COLUMNS = {
+    "__dbkeys__": "len_path",
+}
+
+SEQ_APPEND_EXTENSION = {
+    "bowtie2_indexes": ".fa",
+    "hisat2_indexes": ".fa",
+}
+
+
+class __dbkeys__(namedtuple("__dbkeys__", ["value", "name", "len_path"])):
+    @property
+    def path(self):
+        return self.len_path
+
 
 class Color:
     RESET = "\033[0m"
@@ -104,8 +131,8 @@ class Color:
         return f"{color}{effect}{text}{Color.RESET}"
 
     @staticmethod
-    def print(text, color, effect=None):
-        print(Color.sprint(text, color, effect=effect))
+    def print(text, color, effect=None, **kwargs):
+        print(Color.sprint(text, color, effect=effect), **kwargs)
 
 
 class LocFile:
@@ -113,14 +140,12 @@ class LocFile:
         self.file = open(path, "rt")
         self.table = table
         self.comment_char = comment_char
-        self.line_re = re.compile(f'^([^{comment_char}]*)')
 
     def __iter__(self):
         for line in self.file:
             line = line.strip()
-            match = re.match(self.line_re, line)
-            if match and match.group(0).strip():
-                yield self.table(*match.group(0).strip().split("\t"))
+            if not line.startswith(self.comment_char):
+                yield self.table(*line.split("\t"))
 
 
 class DataTable:
@@ -130,6 +155,12 @@ class DataTable:
         comment_char = elem.attrib.get("comment_char", "#")
         columns = [c.strip() for c in elem.find("columns").text.split(",")]
         loc_file_path = elem.find("file").attrib["path"].strip()
+        if name not in PATH_TEMPLATES:
+            Color.print(f"WARNING: no path template for table: {name}", Color.RED)
+            return None
+        if not os.path.exists(loc_file_path):
+            Color.print(f"WARNING: loc file for table {name} does not exist: {loc_file_path}", Color.RED)
+            return None
         return cls(name, columns, loc_file_path, comment_char, tool_data_path=tool_data_path)
 
     def __init__(self, name, columns, loc_file_path, comment_char, tool_data_path=None):
@@ -137,7 +168,10 @@ class DataTable:
         self.columns = columns
         self.loc_file_path = loc_file_path
         self.comment_char = comment_char
-        self.table = namedtuple(name, columns)
+        if name == "__dbkeys__":
+            self.table = __dbkeys__
+        else:
+            self.table = namedtuple(name, columns)
         self._tool_data_path = tool_data_path
         self.loc_file = LocFile(loc_file_path, self.table, comment_char)
         self._initialize_new_loc_file()
@@ -146,7 +180,7 @@ class DataTable:
         fd, self.new_loc_file_path = tempfile.mkstemp(
             suffix=".reorganize_tool_data.loc",
             prefix=f"{self.name}.",
-            dir=os.path.dirname(self.loc_file_path),
+            #dir=os.path.dirname(self.loc_file_path),
             text=True
         )
         self.new_loc_file = os.fdopen(fd, mode="wt")
@@ -160,15 +194,28 @@ class DataTable:
         assert self._tool_data_path is not None
         return self._tool_data_path
 
-    def _table_path(self, entry):
+    @property
+    def symlink_seq(self):
+        return self.path_type == PathType.SEQ_LINK
+
+    @property
+    def move_data(self):
+        return self.name not in LOC_ONLY
+
+    @property
+    def path_column(self):
+        return PATH_COLUMNS.get(self.name, "path")
+
+    def _table_path(self, entry, table=None):
+        table = table or self.name
         template_dict = {"tool_data_path": self.tool_data_path}
         template_dict.update(entry._asdict())
-        return PATH_TEMPLATES[self.name].format(**template_dict)
+        return PATH_TEMPLATES[table].format(**template_dict)
 
     def _source_path(self, entry):
         if self.path_type in (PathType.FILE, PathType.DIRECTORY):
             return entry.path
-        elif self.path_type == PathType.DIRECTORY_PREFIX:
+        elif self.path_type in (PathType.SEQ_LINK, PathType.PREFIX):
             return os.path.dirname(entry.path)
         else:
             raise NotImplementedError(self.path_type)
@@ -176,90 +223,92 @@ class DataTable:
     def _dest_path(self, entry):
         if self.path_type in (PathType.FILE, PathType.DIRECTORY):
             return self._table_path(entry)
-        elif self.path_type == PathType.DIRECTORY_PREFIX:
+        elif self.path_type in (PathType.SEQ_LINK, PathType.PREFIX):
             return os.path.dirname(self._table_path(entry))
         else:
             raise NotImplementedError(self.path_type)
 
-    def _map_links(self, entry):
-        # only considers links in the first level dir
-        source = self._source_path(entry)
-        dest = self._dest_path(entry)
-        link_map = []
-        if self.path_type == PathType.FILE:
-            if os.path.islink(source):
-                target = os.path.normpath(os.path.join(os.path.dirname(source), os.readlink(source)))
-                link_map.append((dest, os.path.relpath(target, start=os.path.dirname(dest))))
-        elif self.path_type in (PathType.DIRECTORY, PathType.DIRECTORY_PREFIX):
-            for dirent in os.scandir(source):
-                if dirent.is_symlink():
-                    target = os.path.normpath(os.path.join(source, os.readlink(dirent.path)))
-                    link_map.append((os.path.join(dest, dirent.name), os.path.relpath(target, start=dest)))
-        else:
-            raise NotImplementedError(self.path_type)
-        return link_map
+    def _symlink_seq(self, entry, commit=False):
+        if self.symlink_seq:
+            append = SEQ_APPEND_EXTENSION.get(self.name, "")
+            table_path = self._table_path(entry) + append
+            if commit:
+                path = table_path
+            else:
+                path = entry.path + append
+            if os.path.exists(path) and not os.path.islink(path):
+                Color.print(f"WARNING: Expected sequence link exists but is not a link: {path}", Color.RED)
+                return
+            assert os.path.islink(path), Color.sprint(f"Expected sequence link is not a link (or does not exist): {path}", Color.RED, effect=Color.BOLD)
+            seq_path = self._table_path(entry, table="all_fasta")
+            link_target = os.path.relpath(seq_path, start=os.path.dirname(table_path))
+            if commit:
+                os.unlink(table_path)
+                os.symlink(table_path, link_target)
+            Color.print(f"Remapped seq symlink: {table_path} -> {link_target}", Color.YELLOW)
 
     def _write_entry_to_loc(self, entry, path=None):
         if path:
             new_entry_dict = entry._asdict()
-            new_entry_dict.update({"path": path})
+            new_entry_dict.update({self.path_column: path})
             new_entry = self.table(**new_entry_dict)
         else:
             new_entry = entry
         new_entry_str = "\t".join(new_entry)
         self.new_loc_file.write(f"{new_entry_str}\n")
 
+    def _move_entry(self, entry, dest_path, commit=False):
+        source = self._source_path(entry)
+        dest = self._dest_path(entry)
+        assert os.path.lexists(source) and os.path.exists(source), Color.sprint(
+                f"ERROR: source path does not exist: {source}", Color.RED, effect=Color.BOLD)
+        assert not os.path.exists(dest), Color.sprint(
+                f"ERROR: dest path exists: {dest}", Color.RED, effect=Color.BOLD)
+        if self.move_data:
+            dest_parent = os.path.dirname(dest)
+            if not os.path.exists(dest_parent):
+                print(f"Creating destination parent directory: {dest_parent}")
+                if commit:
+                    os.makedirs(dest_parent)
+            Color.print("Moving data:", Color.YELLOW)
+            Color.print(f"  {source} ->", Color.YELLOW)
+            Color.print(f"  {dest}", Color.YELLOW)
+            if commit:
+                shutil.move(source, dest)
+            self._symlink_seq(entry, commit=commit)
+        self._write_entry_to_loc(entry, path=dest_path)
+        Color.print("Changed table entry:", Color.YELLOW)
+        Color.print(f"  {entry.path} ->", Color.YELLOW)
+        Color.print(f"  {dest_path}", Color.YELLOW)
+
     def reorganize(self, commit=False):
         changed = False
-        for entry in self.loc_file:
-            try:
+        try:
+            for entry in self.loc_file:
                 dest_path = self._table_path(entry)
                 if dest_path != entry.path:
-                    link_map = self._map_links(entry)
-                    source = self._source_path(entry)
-                    dest = self._dest_path(entry)
-                    assert os.path.lexists(source) and os.path.exists(source), Color.sprint(f"ERROR: source path does not exist: {source}", Color.RED, effect=Color.BOLD)
-                    assert not os.path.exists(dest), Color.sprint(f"ERROR: dest path exists: {dest}", Color.RED, effect=Color.BOLD)
-                    dest_parent = os.path.dirname(dest)
-                    if not os.path.exists(dest_parent):
-                        print(f"Creating destination parent directory: {dest_parent}")
-                        if commit:
-                            os.makedirs(dest_parent)
-                    if commit:
-                        shutil.move(source, dest)
-                    Color.print("Moved data:", Color.YELLOW)
-                    Color.print(f"  {source} ->", Color.YELLOW)
-                    Color.print(f"  {dest}", Color.YELLOW)
-                    self._write_entry_to_loc(entry, path=dest_path)
+                    self._move_entry(entry, dest_path, commit=commit)
                     changed = True
-                    Color.print("Changed table entry:", Color.YELLOW)
-                    Color.print(f"  {entry.path} ->", Color.YELLOW)
-                    Color.print(f"  {dest_path}", Color.YELLOW)
-                    for link_source, link_target in link_map:
-                        if commit:
-                            os.unlink(link_source)
-                            os.symlink(link_source, link_target)
-                            assert os.path.exists(link_source)
-                        Color.print(f"Remapped symlink: {link_source} -> {link_target}", Color.YELLOW)
                 else:
                     self._write_entry_to_loc(entry)
                     Color.print(f"Ok: {entry.path}", Color.GREEN)
-            except Exception as exc:
-                Color.print(f"ERROR: Encountered an exception while reorganizing data in {self.name} table: {self.loc_file_path}", Color.RED, effect=Color.BOLD)
-                Color.print(f"ERROR: Partial loc file rewrite can be found at: {self.new_loc_file_path}", Color.RED, effect=Color.BOLD)
-                self.new_loc_file.close()
-                raise
+        except Exception as exc:
+            Color.print(f"ERROR: Encountered an exception while reorganizing data in {self.name} table: {self.loc_file_path}", Color.RED, effect=Color.BOLD)
+            Color.print(f"ERROR: Partial loc file rewrite can be found at: {self.new_loc_file_path}", Color.RED, effect=Color.BOLD)
             self.new_loc_file.close()
-            if changed:
-                Color.print("Checking for loc file changes", Color.CYAN)
-                subprocess.call(["diff", "-u", self.loc_file_path, self.new_loc_file_path])
-                if commit:
-                    os.rename(self.new_loc_file_path, self.loc_file_path)
-                else:
-                    os.unlink(self.new_loc_file_path)
+            raise
+        self.new_loc_file.close()
+        if changed:
+            Color.print("Changes to .loc file:", Color.CYAN, flush=True)
+            subprocess.call(["diff", "-u", self.loc_file_path, self.new_loc_file_path])
+            if commit:
+                os.rename(self.new_loc_file_path, self.loc_file_path)
             else:
-                Color.print("No changes", Color.CYAN)
                 os.unlink(self.new_loc_file_path)
+        else:
+            Color.print("No changes", Color.CYAN)
+            os.unlink(self.new_loc_file_path)
+
 
 def parse_tdtc(tdtc, tool_data_path):
     tree = ElementTree.parse(tdtc)
@@ -267,9 +316,6 @@ def parse_tdtc(tdtc, tool_data_path):
     assert root.tag == "tables", f"Root telement should be <tables> (was: <{root.tag}>), is this a tool_data_table_conf.xml?: {tdtc}"
     for table in root.findall("table"):
         dt = DataTable.from_elem(table, tool_data_path=tool_data_path)
-        if dt.name not in PATH_TEMPLATES:
-            Color.print(f"WARNING: no path template for table, skipping: {dt.name}", Color.RED)
-            continue
         if dt:
             yield dt
 
