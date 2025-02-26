@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BSpinner } from "bootstrap-vue";
 import { type IconDefinition } from "font-awesome-6";
 import { computed } from "vue";
 
@@ -8,9 +8,11 @@ import { type UserConcreteObjectStoreModel } from "@/api";
 import { type FileSourceTemplateSummary } from "@/api/fileSources";
 import { type ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
+import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
+import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | UserConcreteObjectStoreModel;
 
@@ -65,6 +67,13 @@ const buttonTooltip = computed(() => {
 
     return props.submitButtonTooltip ?? "Select this option to create a new instance";
 });
+const quotaSourceLabel = computed(() => {
+    if ("quota" in props.sourceOption && props.sourceOption.quota.enabled) {
+        return props.sourceOption.quota.source;
+    }
+
+    return "";
+});
 
 function markdownToHTML(text: string) {
     return markup(text ?? "", true);
@@ -96,6 +105,15 @@ function markdownToHTML(text: string) {
 
                     <slot name="badges" class="source-option-card-header-type" />
                 </div>
+
+                <QuotaSourceUsageProvider
+                    v-if="'quota' in props.sourceOption && props.sourceOption.quota.enabled"
+                    ref="quotaUsageProvider"
+                    v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
+                    :quota-source-label="quotaSourceLabel">
+                    <BSpinner v-if="isLoadingUsage" />
+                    <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
+                </QuotaSourceUsageProvider>
 
                 <TextSummary
                     v-if="props.sourceOption.description"
