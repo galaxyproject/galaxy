@@ -106,7 +106,8 @@ def abs_path_or_uri(path_or_uri: str, relative_to: str, resolve_data: Optional[C
         return path_or_uri
     abs_path_ = os.path.abspath(os.path.join(relative_to, path_or_uri))
     if resolve_data and not os.path.exists(abs_path_):
-        if resolved_data := resolve_data(path_or_uri):
+        resolved_data = resolve_data(path_or_uri)
+        if resolved_data:
             abs_path_ = resolved_data
     _ensure_file_exists(abs_path_)
     return abs_path_
