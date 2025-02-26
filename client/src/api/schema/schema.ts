@@ -6749,6 +6749,8 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            /** Metadata */
+            metadata?: Record<string, never> | null;
             /** Name */
             name?: string | number | boolean | null;
             /**

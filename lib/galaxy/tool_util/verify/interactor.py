@@ -549,12 +549,10 @@ class GalaxyInteractorApi:
         if tags:
             tool_input["tags"] = tags
 
-        # TODO: I don't know what that looks like, does it even do anything ?
-        # metadata = test_data.get("metadata", {})
-        # if not hasattr(metadata, "items"):
-        #     raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
-        # for metadata_name, value in test_data.get("metadata", {}).items():
-        #     tool_input[f"files_metadata|{metadata_name}"] = value
+        metadata = test_data.get("metadata", {})
+        if not hasattr(metadata, "items"):
+            raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
+        tool_input["metadata"] = metadata
 
         composite_data = test_data["composite_data"]
         if composite_data:

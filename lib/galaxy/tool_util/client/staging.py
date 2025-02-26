@@ -122,6 +122,8 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     for i, composite_data in enumerate(upload_target.composite_data):
                         composite_item_src = _attach_file(fetch_payload, composite_data, index=i)
                         composite_items.append(composite_item_src)
+                    if "metadata" in upload_target.properties:
+                        fetch_payload["targets"][0]["elements"][0]["metadata"] = upload_target.properties["metadata"]
                     fetch_payload["targets"][0]["elements"][0]["src"] = "composite"
                     fetch_payload["targets"][0]["elements"][0]["composite"] = {
                         "items": composite_items,
