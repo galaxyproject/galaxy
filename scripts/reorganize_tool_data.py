@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
-#
-# Reorganize tool data to the layout described in https://github.com/galaxyproject/galaxy/discussions/19013
-#
+"""
+Reorganize tool data to the layout described in https://github.com/galaxyproject/galaxy/discussions/19013
+"""
+
+EPILOG = """
+WARNING: This script moves data and updates associated location files. Its authors make no guarantees as to its safety
+and correct functionality. Please test without --commit and verify the printed changes are as expected. Do not run this
+script as root.
+
+ENSURE YOUR DATA AND LOCATION FILES ARE BACKED UP PRIOR TO USE.
+"""
 import argparse
 import os
 import pathlib
@@ -137,6 +145,7 @@ class DataTable:
         self.columns = columns
         self.loc_file_path = loc_file_path
         self.comment_char = comment_char
+        self.moved = set()
         if name == "__dbkeys__":
             self.table = __dbkeys__
         else:
@@ -245,6 +254,7 @@ class DataTable:
             if commit:
                 shutil.move(source, dest)
             self._symlink_seq(entry, commit=commit)
+        self.moved.add(source)
         self._write_entry_to_loc(entry, path=dest_path)
         Color.print("Changed table entry:", Color.YELLOW)
         Color.print(f"  {entry.path} ->", Color.YELLOW)
@@ -286,6 +296,29 @@ class DataTable:
             Color.print("No changes", Color.CYAN)
             os.unlink(self.new_loc_file_path)
 
+    def prune_dirs(self, commit=False):
+        # because this uses os.rmdir() there is no danger of removing data here even if it were to operate outside the
+        # old tool-data tree root (which could happen if loc files contain entries in completely disparate trees), since
+        # only empty directories would be removed
+        Color.print("Pruning empty directories", Color.MAGENTA)
+        # this should either end with / or if it doesn't, then anything after the last / is a partial subdir name
+        old_root = os.path.dirname(os.path.commonprefix(list(self.moved)))
+        print(f"Prune root: {old_root}")
+        for path in self.moved:
+            d = os.path.dirname(path)
+            if not commit:
+                Color.print(f"Would prune directory (and empty parents): {d}", Color.YELLOW)
+                continue
+            while d not in (old_root, "/"):
+                try:
+                    os.rmdir(d)
+                    Color.print(f"Pruned empty directory: {d}", Color.YELLOW)
+                    d = os.path.dirname(d)
+                except FileNotFoundError:
+                    continue
+                except OSError:
+                    break
+
 
 def parse_tdtc(tdtc, tool_data_path):
     tree = ElementTree.parse(tdtc)
@@ -302,15 +335,26 @@ def parse_tdtc(tdtc, tool_data_path):
 
 
 def parse_arguments(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--tool-data-path", required=True, type=pathlib.Path, help="Path to tool data dir")
+    parser = argparse.ArgumentParser(description=__doc__, epilog=EPILOG)
+    parser.add_argument(
+        "--tool-data-path",
+        required=True,
+        type=pathlib.Path,
+        help="root path of target tool data dir (can be the same as your existing tool data dir)"
+    )
     parser.add_argument(
         "--commit",
         default=False,
         action="store_true",
-        help="Commit changes (otherwise, only print what would be done without making chnages)"
+        help="commit changes (otherwise, only print what would be done without making changes)"
     )
-    parser.add_argument("tool_data_table_conf", nargs="+", type=pathlib.Path, help="Path to a tool_data_table_conf.xml")
+    parser.add_argument(
+        "--prune-dirs",
+        default=False,
+        action="store_true",
+        help="prune empty parent directories left behind after reorganization"
+    )
+    parser.add_argument("tool_data_table_conf", nargs="+", type=pathlib.Path, help="path to a tool_data_table_conf.xml")
     return parser.parse_args(argv)
 
 
@@ -323,6 +367,8 @@ def main(argv=None):
         for dt in parse_tdtc(tdtc, args.tool_data_path):
             Color.print(f"Data Table: {dt.name}", Color.MAGENTA)
             dt.reorganize(commit=args.commit)
+            if args.prune_dirs:
+                dt.prune_dirs(commit=args.commit)
 
 
 if __name__ == "__main__":
