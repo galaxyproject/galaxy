@@ -99,7 +99,6 @@ const storageLocationModalTitle = computed(() => {
     }
 });
 
-const root = computed(() => getAppRoot());
 const showPreferredObjectStoreModal = ref(false);
 const toolPreferredObjectStoreId = ref(props.preferredObjectStoreId);
 
