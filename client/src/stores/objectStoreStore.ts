@@ -6,15 +6,16 @@ import { getSelectableObjectStores } from "@/api/objectStores";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 export const useObjectStoreStore = defineStore("objectStoreStore", () => {
-    const selectableObjectStores = ref<UserConcreteObjectStoreModel[]>();
+    const selectableObjectStores = ref<UserConcreteObjectStoreModel[] | null>(null);
     const loadErrorMessage = ref<string | null>(null);
-    const isLoading = ref(false);
-    const isLoaded = computed(() => selectableObjectStores.value);
+    const loading = ref(false);
 
     async function loadObjectStores() {
-        if (!isLoaded.value && !isLoading.value) {
-            isLoading.value = true;
+        if (!loading.value && selectableObjectStores.value === null) {
+            loading.value = true;
+
             try {
+                loadErrorMessage.value = null;
                 const data = await getSelectableObjectStores();
                 selectableObjectStores.value = data as UserConcreteObjectStoreModel[];
             } catch (err) {
@@ -22,14 +23,30 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
                 loadErrorMessage.value = errorMessage;
                 console.error("Error loading Galaxy object stores", err);
             } finally {
-                isLoading.value = false;
+                loading.value = false;
             }
         }
     }
 
-    function getObjectStoreNameById(objectStoreId: string): string | null {
-        const objectStore = selectableObjectStores.value?.find((store) => store.object_store_id === objectStoreId);
-        return objectStore?.name ?? null;
+    const objectStoresById = computed<Record<string, UserConcreteObjectStoreModel>>(() => {
+        const stores = selectableObjectStores.value;
+
+        if (stores) {
+            const storesWithId = stores.filter((store) => Boolean(store.object_store_id));
+
+            return Object.fromEntries(storesWithId.map((store) => [store.object_store_id, store]));
+        } else {
+            return {};
+        }
+    });
+
+    function getObjectStoreNameById(id?: string | null) {
+        if (id) {
+            const store = objectStoresById.value[id];
+            return store?.name ?? null;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -53,8 +70,7 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
     loadObjectStores();
 
     return {
-        isLoaded,
-        isLoading,
+        loading,
         loadErrorMessage,
         selectableObjectStores,
         getObjectStoreNameById,
