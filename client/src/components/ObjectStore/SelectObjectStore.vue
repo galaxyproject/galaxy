@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { UserConcreteObjectStoreModel } from "@/api";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
@@ -20,8 +21,10 @@ interface SelectObjectStoreProps {
 
 const props = defineProps<SelectObjectStoreProps>();
 
-const store = useObjectStoreStore();
-const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
+const { isOnlyPreference } = useStorageLocationConfiguration();
+
+const objectStoreStore = useObjectStoreStore();
+const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(objectStoreStore);
 
 const selectableAndVisibleObjectStores = computed(() => {
     const allSelectableObjectStores = selectableObjectStores.value;
@@ -76,7 +79,7 @@ const defaultObjectStore: UserConcreteObjectStoreModel = {
     <div>
         <LoadingSpan v-if="isLoading" message="Loading Galaxy storage information" />
         <div v-else>
-            <span v-localize>
+            <span v-if="isOnlyPreference" v-localize>
                 Select a preferred Galaxy storage for new datasets. Depending on the job and workflow execution
                 configuration of this Galaxy a different Galaxy storage may be ultimately used. After a dataset is
                 created, click on the info icon in the history panel to view information about where it is stored. If it
