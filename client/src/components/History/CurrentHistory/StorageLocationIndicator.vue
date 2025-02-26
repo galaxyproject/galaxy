@@ -49,6 +49,7 @@ const storageLocationButtonTitle = computed(() => {
 <template>
     <div class="storage-location-indicator">
         <BButton
+            v-b-tooltip.hover.noninteractive
             class="ui-link"
             :title="storageLocationButtonTitle"
             :disabled="isAnonymous"
