@@ -545,6 +545,8 @@ class GalaxyInteractorApi:
             "format": test_data["ftype"],
             "dbkey": test_data["dbkey"],
             "class": test_data.get("class", "File"),
+            # Match legacy test behavior
+            "decompress": util.string_as_bool(test_data.get("decompress", True)),
         }
         if tags:
             if isinstance(tags, str):
