@@ -3,25 +3,19 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
-import { BButton, BButtonGroup, BModal } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HistorySummaryExtended, type RegisteredUser, userOwnsHistory } from "@/api";
+import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
-import { useConfig } from "@/composables/config";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
-import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useUserStore } from "@/stores/userStore";
 
-import PreferredStorePopover from "./PreferredStorePopover.vue";
-import SelectPreferredStore from "./SelectPreferredStore.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-const { isOnlyPreference } = useStorageLocationConfiguration();
 
 library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
@@ -46,8 +40,7 @@ const props = withDefaults(
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
 const router = useRouter();
-const { config } = useConfig();
-const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { currentUser } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
     toRef(props, "history")
 );
@@ -55,7 +48,6 @@ const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHist
 const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
-const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref<string | null | undefined>();
 
 watchImmediate(
@@ -67,14 +59,6 @@ const niceHistorySize = computed(() => prettyBytes(historySize.value));
 const canManageStorage = computed(
     () => userOwnsHistory(currentUser.value, props.history) && !currentUser.value?.isAnonymous
 );
-
-const storageLocationTitle = computed(() => {
-    if (isOnlyPreference.value) {
-        return "History Preferred Storage";
-    } else {
-        return "History Storage";
-    }
-});
 
 function onDashboard() {
     router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
@@ -124,20 +108,6 @@ async function reloadContents() {
     }, 1000);
 }
 
-function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string | null) {
-    // ideally this would be pushed back to the history object somehow
-    // and tracked there... but for now this is only component using
-    // this information.
-    historyPreferredObjectStoreId.value = preferredObjectStoreId;
-}
-
-const registeredUser = computed<RegisteredUser>(() => {
-    if (isAnonymous.value) {
-        throw new Error("Invalid anonymous user object encountered");
-    }
-    return currentUser.value as RegisteredUser;
-});
-
 onMounted(() => {
     updateTime();
     // update every second
@@ -162,24 +132,6 @@ onMounted(() => {
         </GButton>
 
         <BButtonGroup v-if="currentUser">
-            <BButton
-                v-if="config && config.object_store_allows_id_selection && !isAnonymous"
-                :id="`history-storage-${history.id}`"
-                title="Manage Preferred History Storage"
-                variant="link"
-                size="sm"
-                class="rounded-0 text-decoration-none"
-                @click="showPreferredObjectStoreModal = true">
-                <FontAwesomeIcon :icon="faHdd" />
-            </BButton>
-
-            <PreferredStorePopover
-                v-if="config && config.object_store_allows_id_selection && !isAnonymous"
-                :history-id="history.id"
-                :history-preferred-object-store-id="historyPreferredObjectStoreId ?? undefined"
-                :user="registeredUser">
-            </PreferredStorePopover>
-
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.hover
@@ -232,20 +184,6 @@ onMounted(() => {
                     <FontAwesomeIcon :icon="faSync" :spin="reloadButtonLoading" />
                 </BButton>
             </BButtonGroup>
-
-            <BModal
-                v-model="showPreferredObjectStoreModal"
-                :title="storageLocationTitle"
-                modal-class="history-preferred-object-store-modal"
-                title-tag="h3"
-                size="sm"
-                hide-footer>
-                <SelectPreferredStore
-                    v-if="!isAnonymous"
-                    :user-preferred-object-store-id="registeredUser.preferred_object_store_id ?? undefined"
-                    :history="history"
-                    @updated="onUpdatePreferredObjectStoreId" />
-            </BModal>
         </BButtonGroup>
     </div>
 </template>
