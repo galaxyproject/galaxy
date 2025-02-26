@@ -108,7 +108,6 @@ function onShowObjectStoreSelect() {
 }
 
 function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
-    showPreferredObjectStoreModal.value = false;
     toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
@@ -165,7 +164,6 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                             hide-footer>
                             <ToolSelectPreferredObjectStore
                                 :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                                :root="root"
                                 @updated="onUpdatePreferredObjectStoreId" />
                         </b-modal>
                     </b-button-group>
