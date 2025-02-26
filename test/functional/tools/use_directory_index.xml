@@ -1,6 +1,6 @@
 <tool id="use_directory_index" name="Uses directory index" version="1.0" profile="24.2">
     <command><![CDATA[
-cp '$reference.extra_files_path'/1.fasta '$output'
+cp '$reference.extra_files_path/1.fasta' '$output'
     ]]></command>
     <inputs>
         <param name="reference" type="data" label="Select an index" format="bwa_mem2_index"/>
@@ -10,7 +10,7 @@ cp '$reference.extra_files_path'/1.fasta '$output'
     </outputs>
     <tests>
         <test>
-            <param name="reference" value="bwa_mem2_index" class="Directory"></param>
+            <param name="reference" value="bwa_mem2_index" class="Directory" ftype="bwa_mem2_index"></param>
             <output name="output" value="1.fasta" />
         </test>
     </tests>
