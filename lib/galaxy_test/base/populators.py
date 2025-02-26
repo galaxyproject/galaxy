@@ -1551,6 +1551,18 @@ class BaseDatasetPopulator(BasePopulator):
         download_contents_response.raise_for_status()
         return download_contents_response
 
+    def base64_url_for_string(self, content: str) -> str:
+        return self.base64_url_for_bytes(content.encode("utf-8"))
+
+    def base64_url_for_test_file(self, test_filename: str) -> str:
+        test_data_resolver = TestDataResolver()
+        file_contents = open(test_data_resolver.get_filename(test_filename), "rb").read()
+        return self.base64_url_for_bytes(file_contents)
+
+    def base64_url_for_bytes(self, content: bytes) -> str:
+        input_b64 = base64.b64encode(content).decode("utf-8")
+        return f"base64://{input_b64}"
+
     def history_length(self, history_id):
         contents_response = self._get(f"histories/{history_id}/contents")
         api_asserts.assert_status_code_is(contents_response, 200)
@@ -2339,12 +2351,12 @@ class BaseWorkflowPopulator(BasePopulator):
             if inputs_by == "step_uuid":
                 workflow_request["inputs_by"] = "step_uuid"
         elif inputs_by in ["url", "deferred_url"]:
-            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
-            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
+            input_b64_1 = self.dataset_populator.base64_url_for_string("1 2 3")
+            input_b64_2 = self.dataset_populator.base64_url_for_string("4 5 6")
             deferred = inputs_by == "deferred_url"
             inputs = {
-                "WorkflowInput1": {"src": "url", "url": f"base64://{input_b64_1}", "ext": "txt", "deferred": deferred},
-                "WorkflowInput2": {"src": "url", "url": f"base64://{input_b64_2}", "ext": "txt", "deferred": deferred},
+                "WorkflowInput1": {"src": "url", "url": input_b64_1, "ext": "txt", "deferred": deferred},
+                "WorkflowInput2": {"src": "url", "url": input_b64_2, "ext": "txt", "deferred": deferred},
             }
             workflow_request["inputs"] = json.dumps(inputs)
             workflow_request["inputs_by"] = "name"
