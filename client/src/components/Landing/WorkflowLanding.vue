@@ -45,7 +45,7 @@ claimWorkflow(props.uuid, props.public, props.secret).then(() => {
             <WorkflowRun
                 :workflow-id="claimState.workflowId"
                 :prefer-simple-form="true"
-                :request-state="claimState.requestState"
+                :request-state="claimState.requestState ?? undefined"
                 :instance="claimState.instance" />
         </div>
     </div>

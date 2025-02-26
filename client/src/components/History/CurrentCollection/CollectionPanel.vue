@@ -3,8 +3,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import type { CollectionEntry, DCESummary, HistorySummary, SubCollection } from "@/api";
-import { canMutateHistory, isCollectionElement, isHDCA } from "@/api";
+import {
+    canMutateHistory,
+    type CollectionEntry,
+    type DCESummary,
+    type HDCASummary,
+    type HistorySummary,
+    isCollectionElement,
+    isHDCA,
+    type SubCollection,
+} from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
@@ -44,9 +52,8 @@ const dsc = computed(() => {
     if (currentCollection === undefined) {
         throw new Error("No collection selected");
     }
-    return currentCollection;
+    return currentCollection as HDCASummary;
 });
-
 watch(
     () => [dsc.value, offset.value],
     () => {
@@ -71,7 +78,6 @@ const rootCollection = computed(() => {
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
-
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;

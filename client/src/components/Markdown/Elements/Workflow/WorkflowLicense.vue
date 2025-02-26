@@ -6,7 +6,7 @@ interface WorkflowLicenseProps {
 }
 
 const props = withDefaults(defineProps<WorkflowLicenseProps>(), {
-    licenseId: null,
+    licenseId: undefined,
 });
 </script>
 

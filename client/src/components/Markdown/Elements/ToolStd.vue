@@ -14,8 +14,8 @@ interface ToolStdProps {
 }
 
 const props = withDefaults(defineProps<ToolStdProps>(), {
-    jobId: null,
-    implicitCollectionJobsId: null,
+    jobId: undefined,
+    implicitCollectionJobsId: undefined,
 });
 
 const jobStore = useJobStore();

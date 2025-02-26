@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { type ConcreteObjectStoreModel } from "@/api";
+import { type ConcreteObjectStoreModel, type SelectableObjectStore } from "@/api";
 
 import ObjectStoreSelectButton from "@/components/ObjectStore/ObjectStoreSelectButton.vue";
 import ObjectStoreSelectButtonDescribePopover from "@/components/ObjectStore/ObjectStoreSelectButtonDescribePopover.vue";
 
 interface RelocateProps {
     fromObjectStore: ConcreteObjectStoreModel;
-    targetObjectStores: ConcreteObjectStoreModel[];
+    targetObjectStores: SelectableObjectStore[];
 }
 
 defineProps<RelocateProps>();
@@ -16,15 +16,8 @@ const emit = defineEmits<{
     (e: "closeModal"): void;
 }>();
 
-function relocate(objectStoreId: string | undefined | null) {
-    if (objectStoreId) {
-        // all the target object stores will have an object store id - they were
-        // generated thusly. But the type system doesn't know this. So this function
-        // wraps the emit.
-        emit("relocate", objectStoreId);
-    } else {
-        console.error("Serious logic problem, this branch should be unreachable.");
-    }
+function relocate(objectStoreId: string) {
+    emit("relocate", objectStoreId);
 }
 
 const fromWhat = "This dataset location is";

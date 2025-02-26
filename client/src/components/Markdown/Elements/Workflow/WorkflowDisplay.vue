@@ -19,7 +19,7 @@ interface WorkflowDisplayProps {
 }
 
 const props = withDefaults(defineProps<WorkflowDisplayProps>(), {
-    workflowVersion: null,
+    workflowVersion: undefined,
     embedded: false,
     expanded: false,
 });

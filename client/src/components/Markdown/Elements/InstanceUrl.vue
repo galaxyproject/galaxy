@@ -11,8 +11,8 @@ interface InstanceUrlProps {
 }
 
 const props = withDefaults(defineProps<InstanceUrlProps>(), {
-    href: null,
-    title: null,
+    href: undefined,
+    title: undefined,
 });
 
 const effectiveTitle = computed(() => {
