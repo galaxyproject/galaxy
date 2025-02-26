@@ -125,7 +125,6 @@ async function reloadContents() {
 }
 
 function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string | null) {
-    showPreferredObjectStoreModal.value = false;
     // ideally this would be pushed back to the history object somehow
     // and tracked there... but for now this is only component using
     // this information.
