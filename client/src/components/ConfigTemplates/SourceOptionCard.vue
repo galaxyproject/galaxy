@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BSpinner } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
 import { computed } from "vue";
 
@@ -8,9 +9,11 @@ import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import type { CardAttributes } from "@/components/Common/GCard.types";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
+import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
+import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | UserConcreteObjectStoreModel;
 
@@ -65,6 +68,13 @@ const buttonTooltip = computed(() => {
 
     return props.submitButtonTooltip ?? "Select this option to create a new instance";
 });
+const quotaSourceLabel = computed(() => {
+    if ("quota" in props.sourceOption && props.sourceOption.quota.enabled) {
+        return props.sourceOption.quota.source;
+    }
+
+    return "";
+});
 
 const description = markup(props.sourceOption.description ?? "", true) ?? undefined;
 
@@ -106,6 +116,16 @@ const primaryActions: CardAttributes[] = [
 
         <template v-slot:extra-actions>
             <slot name="badges" />
+        </template>
+
+        <template v-if="'quota' in props.sourceOption && props.sourceOption.quota.enabled" v-slot:description>
+            <QuotaSourceUsageProvider
+                ref="quotaUsageProvider"
+                v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
+                :quota-source-label="quotaSourceLabel">
+                <BSpinner v-if="isLoadingUsage" />
+                <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
+            </QuotaSourceUsageProvider>
         </template>
     </GCard>
 </template>
