@@ -231,6 +231,7 @@
   <tool file="expect_num_outputs.xml" />
   <tool file="text_repeat.xml" />
   <tool file="integer_default.xml" />
+  <tool file="float_default.xml" />
   <tool file="all_output_types.xml" />
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
