@@ -1,6 +1,7 @@
 import re
 from typing import TYPE_CHECKING
 
+import esprima
 from Cheetah.Parser import ParseError
 
 from galaxy.tool_util.lint import Linter

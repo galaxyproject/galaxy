@@ -12,7 +12,6 @@ from typing import (
 )
 
 from packaging.version import Version
-import esprima
 
 from galaxy.tool_util.lint import Linter
 from galaxy.util import string_as_bool
