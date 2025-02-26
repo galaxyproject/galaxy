@@ -7,7 +7,7 @@ import { computed, ref, watch } from "vue";
 
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { validateLocalZipFile } from "./rocrate.utils";
+import { extractROCrateSummary, type ROCrateFile, type ROCrateSummary, validateLocalZipFile } from "./rocrate.utils";
 
 import RoCrateExplorer from "./RoCrateExplorer.vue";
 import ZipDropZone from "./ZipDropZone.vue";
@@ -27,11 +27,13 @@ const errorMessage = ref<string>();
 const loadingPreview = ref(false);
 
 const rocrateZip = ref<ROCrateZip>();
+const rocrateSummary = ref<ROCrateSummary>();
+const selectedItems = ref<ROCrateFile[]>([]);
 
 const explorer = ref<ROCrateZipExplorer>();
 
 const showHelper = computed(() => !loadingPreview.value && !rocrateZip.value);
-const canStart = computed(() => true);
+const canStart = computed(() => selectedItems.value.length > 0);
 const canOpenUrl = computed(() => ensureValidUrl(zipUrl.value) !== undefined);
 
 function browseZipFile() {
@@ -49,10 +51,11 @@ async function onFileChange(event: Event) {
 }
 
 function start() {
-    console.log("Start");
+    console.log("Start", selectedItems.value);
 }
 
 function reset() {
+    selectedItems.value = [];
     localZipFile.value = undefined;
     zipUrl.value = undefined;
     errorMessage.value = undefined;
@@ -83,6 +86,7 @@ async function openZip(zipSource: File | string) {
     explorer.value = new ROCrateZipExplorer(zipSource);
     try {
         rocrateZip.value = await explorer.value.open();
+        rocrateSummary.value = await extractROCrateSummary(rocrateZip.value.crate);
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
     } finally {
@@ -101,6 +105,10 @@ function ensureValidUrl(url?: string): string | undefined {
         errorMessage.value = "Invalid URL provided";
         return undefined;
     }
+}
+
+function onSelectedItemsUpdate(value: ROCrateFile[]) {
+    selectedItems.value = value;
 }
 
 watch(canOpenUrl, (newValue, oldValue) => {
@@ -122,7 +130,11 @@ watch(canOpenUrl, (newValue, oldValue) => {
             <ZipDropZone v-if="showHelper" @dropError="onDropError" @dropSuccess="exploreLocalZip" />
             <div v-else>
                 <LoadingSpan v-if="loadingPreview" message="Loading RO-Crate..." />
-                <RoCrateExplorer v-else :ro-crate-zip="rocrateZip" />
+                <RoCrateExplorer
+                    v-else-if="rocrateSummary"
+                    :crate-summary="rocrateSummary"
+                    :selected-items="selectedItems"
+                    @update:selected-items="onSelectedItemsUpdate" />
             </div>
         </div>
 
