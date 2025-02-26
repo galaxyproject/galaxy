@@ -22,9 +22,8 @@ interface SelectObjectStoreProps {
 const props = defineProps<SelectObjectStoreProps>();
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
-
-const objectStoreStore = useObjectStoreStore();
-const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(objectStoreStore);
+const store = useObjectStoreStore();
+const { loading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
 
 const selectableAndVisibleObjectStores = computed(() => {
     const allSelectableObjectStores = selectableObjectStores.value;
@@ -77,7 +76,7 @@ const defaultObjectStore: UserConcreteObjectStoreModel = {
 
 <template>
     <div>
-        <LoadingSpan v-if="isLoading" message="Loading storage location information" />
+        <LoadingSpan v-if="loading" message="Loading storage location information" />
         <div v-else>
             <span v-if="isOnlyPreference" v-localize>
                 Select a preferred storage location for new datasets. Depending on the job and workflow execution
