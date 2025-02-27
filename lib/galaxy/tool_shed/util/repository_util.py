@@ -34,7 +34,7 @@ from galaxy.util.tool_shed.tool_shed_registry import Registry
 
 if TYPE_CHECKING:
     from galaxy.tool_shed.galaxy_install.client import InstallationTarget
-    from tool_shed.structured_app import RequiredAppT
+    from galaxy.tool_shed.tools.data_table_manager import RequiredAppT
 
 log = logging.getLogger(__name__)
 

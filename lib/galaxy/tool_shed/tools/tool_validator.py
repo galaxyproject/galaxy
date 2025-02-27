@@ -1,7 +1,9 @@
 import logging
-from typing import TYPE_CHECKING
 
-from galaxy.tool_shed.tools.data_table_manager import BaseShedToolDataTableManager
+from galaxy.tool_shed.tools.data_table_manager import (
+    BaseShedToolDataTableManager,
+    RequiredAppT,
+)
 from galaxy.tool_shed.util import (
     basic_util,
     hg_util,
@@ -14,14 +16,11 @@ from galaxy.tools import (
 )
 from galaxy.tools.parameters import dynamic_options
 
-if TYPE_CHECKING:
-    from tool_shed.structured_app import RequiredAppT
-
 log = logging.getLogger(__name__)
 
 
 class ToolValidator:
-    def __init__(self, app: "RequiredAppT"):
+    def __init__(self, app: RequiredAppT):
         self.app = app
         self.stdtm = BaseShedToolDataTableManager(self.app)
 
