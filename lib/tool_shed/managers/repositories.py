@@ -33,6 +33,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_shed.util import dependency_display
 from galaxy.util import listify
 from galaxy.util.tool_shed.encoding_util import tool_shed_encode
@@ -66,7 +67,9 @@ from tool_shed.util.shed_util_common import (
 )
 from tool_shed.util.tool_util import generate_message_for_invalid_tools
 from tool_shed.webapp.model import (
+    Category,
     Repository,
+    RepositoryCategoryAssociation,
     RepositoryMetadata,
     User,
 )
@@ -259,9 +262,10 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
 
 
 class IndexRequest(BaseModel):
-    name: Optional[str]
-    owner: Optional[str]
-    deleted: bool
+    name: Optional[str] = None
+    owner: Optional[str] = None
+    deleted: bool = False
+    category_id: Optional[str] = None
 
 
 class PaginatedIndexRequest(IndexRequest):
@@ -271,13 +275,12 @@ class PaginatedIndexRequest(IndexRequest):
 
 def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> Repository:
     session = app.model.context
-    return list(session.scalars(_get_repositories_by_name_and_owner_and_deleted(index_request)))
+    return list(session.scalars(_get_repositories_by_name_and_owner_and_deleted(app.security, index_request)))
 
 
 def index_repositories_paginated(app: ToolShedApp, index_request: PaginatedIndexRequest) -> PaginatedRepositoryIndexResults:
     session = app.model.context
-    print(index_request.owner)
-    stmt = _get_repositories_by_name_and_owner_and_deleted(index_request)
+    stmt = _get_repositories_by_name_and_owner_and_deleted(app.security, index_request)
     total_results = session.scalar(select(func.count()).select_from(stmt.subquery()))
     stmt = stmt.limit(index_request.page_size).offset((index_request.page - 1) * index_request.page_size)
     results = (to_model(app, r) for r in session.scalars(stmt).all())
@@ -635,7 +638,7 @@ def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner:
 
 
 def _get_repositories_by_name_and_owner_and_deleted(
-    index_request: IndexRequest
+    security: IdEncodingHelper, index_request: IndexRequest
 ):
     owner = index_request.owner
     name = index_request.name
@@ -646,5 +649,9 @@ def _get_repositories_by_name_and_owner_and_deleted(
         stmt = stmt.where(Repository.user_id == User.id)
     if name is not None:
         stmt = stmt.where(Repository.name == name)
+    if index_request.category_id is not None:
+        category_id = security.decode_id(index_request.category_id)
+        stmt = stmt.where(RepositoryCategoryAssociation.category_id == category_id)
+        stmt = stmt.where(RepositoryCategoryAssociation.repository_id == Repository.id)
     stmt = stmt.order_by(Repository.name)
     return stmt
