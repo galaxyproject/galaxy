@@ -35,6 +35,7 @@ from tool_shed.managers.repositories import (
     get_ordered_installable_revisions,
     get_repository_metadata_dict,
     get_repository_metadata_for_management,
+    IndexRequest,
     index_repositories,
     readmes,
     reset_metadata_on_repository,
@@ -133,7 +134,12 @@ class FastAPIRepositories:
         #    response = index_tool_ids(self.app, params.tool_ids)
         #    return response
         else:
-            repositories = index_repositories(self.app, name, owner, deleted or False)
+            index_request = IndexRequest(
+                owner=owner,
+                name=name,
+                deleted=deleted or False,
+            )
+            repositories = index_repositories(self.app, index_request)
             return [to_model(self.app, r) for r in repositories]
 
     @router.get(

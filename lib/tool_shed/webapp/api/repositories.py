@@ -36,6 +36,7 @@ from tool_shed.managers.repositories import (
     get_ordered_installable_revisions,
     get_repository_metadata_dict,
     get_value_mapper,
+    IndexRequest,
     index_repositories,
     index_tool_ids,
     reset_metadata_on_repository,
@@ -292,7 +293,12 @@ class RepositoriesController(BaseShedAPIController):
             response = index_tool_ids(self.app, tool_ids)
             return json.dumps(response)
         else:
-            repositories = index_repositories(self.app, name, owner, deleted)
+            index_request = IndexRequest(
+                owner=owner,
+                name=name,
+                deleted=deleted
+            )
+            repositories = index_repositories(self.app, index_request)
             repository_dicts = []
             for repository in repositories:
                 repository_dict = repository.to_dict(view="collection", value_mapper=self.__get_value_mapper(trans))

@@ -19,6 +19,7 @@ from typing import (
 from pydantic import BaseModel
 from sqlalchemy import (
     false,
+    func,
     select,
 )
 from sqlalchemy.orm import scoped_session
@@ -76,6 +77,7 @@ from tool_shed_client.schema import (
     DetailedRepository,
     ExtraRepoInfo,
     LegacyInstallInfoTuple,
+    PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
     RepositoryMetadataInstallInfoDict,
     ResetMetadataOnRepositoryResponse,
@@ -131,9 +133,12 @@ def search(trans: ProvidesUserContext, q: str, page: int = 1, page_size: int = 1
     )
 
     results = repo_search.search(trans, search_term, page, page_size, boosts)
-    results["hostname"] = web.url_for("/", qualified=True)
+    results["hostname"] = deprecated_hostname()
     return results
 
+
+def deprecated_hostname() -> str:
+    return web.url_for("/", qualified=True)
 
 class UpdatesRequest(BaseModel):
     name: Optional[str] = None
@@ -253,8 +258,36 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         return {}
 
 
-def index_repositories(app: ToolShedApp, name: Optional[str], owner: Optional[str], deleted: bool):
-    return list(_get_repositories_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted))
+class IndexRequest(BaseModel):
+    name: Optional[str]
+    owner: Optional[str]
+    deleted: bool
+
+
+class PaginatedIndexRequest(IndexRequest):
+    page: int
+    page_size: int
+
+
+def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> Repository:
+    session = app.model.context
+    return list(session.scalars(_get_repositories_by_name_and_owner_and_deleted(index_request)))
+
+
+def index_repositories_paginated(app: ToolShedApp, index_request: PaginatedIndexRequest) -> PaginatedRepositoryIndexResults:
+    session = app.model.context
+    print(index_request.owner)
+    stmt = _get_repositories_by_name_and_owner_and_deleted(index_request)
+    total_results = session.scalar(select(func.count()).select_from(stmt.subquery()))
+    stmt = stmt.limit(index_request.page_size).offset((index_request.page - 1) * index_request.page_size)
+    results = (to_model(app, r) for r in session.scalars(stmt).all())
+    return PaginatedRepositoryIndexResults(
+        total_results=total_results,
+        page=index_request.page,
+        page_size=index_request.page_size,
+        hits=list(results),
+        hostname=deprecated_hostname(),
+    )
 
 
 def can_manage_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
@@ -602,8 +635,11 @@ def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner:
 
 
 def _get_repositories_by_name_and_owner_and_deleted(
-    session: scoped_session, name: Optional[str], owner: Optional[str], deleted: bool
+    index_request: IndexRequest
 ):
+    owner = index_request.owner
+    name = index_request.name
+    deleted = index_request.deleted
     stmt = select(Repository).where(Repository.deprecated == false()).where(Repository.deleted == deleted)
     if owner is not None:
         stmt = stmt.where(User.username == owner)
@@ -611,4 +647,4 @@ def _get_repositories_by_name_and_owner_and_deleted(
     if name is not None:
         stmt = stmt.where(Repository.name == name)
     stmt = stmt.order_by(Repository.name)
-    return session.scalars(stmt)
+    return stmt
