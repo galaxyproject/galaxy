@@ -313,7 +313,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
 
     def to_dict(self):
         rval = super().to_dict()
-        rval["rucio"] = self.rucio_config
+        rval.update(self.rucio_config)
         rval["cache"] = self.cache_config
         rval["oidc_providers"] = self.oidc_providers
         rval["enable_cache_monitor"] = self.enable_cache_monitor

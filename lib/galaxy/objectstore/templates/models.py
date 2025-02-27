@@ -7,6 +7,15 @@ from typing import (
     Union,
 )
 
+from pydantic import (
+    Field,
+    RootModel,
+)
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
+
 from galaxy.objectstore.badges import (
     BadgeDict,
     StoredBadgeDict,
@@ -27,14 +36,6 @@ from galaxy.util.config_templates import (
     TemplateVariableType,
     TemplateVariableValueType,
     UserDetailsDict,
-)
-from pydantic import (
-    Field,
-    RootModel,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
 )
 
 ObjectStoreTemplateVariableType = TemplateVariableType
@@ -280,6 +281,7 @@ class OnedataAuthTemplate(StrictModel):
 class OnedataAuth(StrictModel):
     access_token: str
 
+
 class OnedataConnectionTemplate(StrictModel):
     onezone_domain: Union[str, TemplateExpansion]
     disable_tls_certificate_validation: Union[bool, TemplateExpansion] = False
@@ -327,11 +329,11 @@ class RucioObjectStoreTemplateConfiguration(StrictModel):
     auth_host: str
     host: str
     auth_type: str
-    account: str
-    username: str
-    password: str
+    account: Union[str, TemplateExpansion]
+    username: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
     badges: BadgeList = None
-    register_only: bool = False
+    register_only: Optional[bool] = False
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
@@ -342,7 +344,7 @@ class RucioObjectStoreConfiguration(StrictModel):
     upload_rse_name: str
     upload_scheme: Optional[Any] = None
     download_schemes: Optional[Any] = None
-    register_only: bool = False
+    register_only: Optional[bool] = False
     auth_host: str
     host: str
     auth_type: str
@@ -427,12 +429,12 @@ class ObjectStoreTemplateSummaries(RootModel):
 
 
 def template_to_configuration(
-        template: ObjectStoreTemplate,
-        variables: Dict[str, ObjectStoreTemplateVariableValueType],
-        secrets: SecretsDict,
-        user_details: UserDetailsDict,
-        environment: EnvironmentDict,
-        implicit: Optional[ImplicitConfigurationParameters] = None,
+    template: ObjectStoreTemplate,
+    variables: Dict[str, ObjectStoreTemplateVariableValueType],
+    secrets: SecretsDict,
+    user_details: UserDetailsDict,
+    environment: EnvironmentDict,
+    implicit: Optional[ImplicitConfigurationParameters] = None,
 ) -> ObjectStoreConfiguration:
     configuration_template = template.configuration
     populate_default_variables(template.variables, variables)
