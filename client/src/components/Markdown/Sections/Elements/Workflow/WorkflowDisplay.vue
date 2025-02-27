@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
@@ -44,22 +44,41 @@ const itemUrl = computed(() => {
     return withPrefix(`/api/workflows/${props.workflowId}/download?style=preview${extra}`);
 });
 
-onMounted(async () => {
-    axios
-        .get(itemUrl.value)
-        .then((response) => {
-            itemContent.value = response.data;
+watch(
+    () => props.workflowId,
+    () => {
+        loading.value = true;
+        if (props.workflowId) {
+            axios
+                .get(itemUrl.value)
+                .then((response) => {
+                    errorContent.value = null;
+                    itemContent.value = response.data;
+                    loading.value = false;
+                })
+                .catch((error) => {
+                    errorContent.value = error.response.data.err_msg;
+                    itemContent.value = null;
+                    loading.value = false;
+                });
+        } else {
+            errorContent.value = "Workflow id is missing.";
+            itemContent.value = null;
             loading.value = false;
-        })
-        .catch((error) => {
-            errorContent.value = error.response.data.err_msg;
-            loading.value = false;
-        });
-});
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
-    <b-card body-class="p-0" class="workflow-display">
+    <b-alert v-if="!isEmpty(errorContent)" variant="warning" show>
+        <ul v-if="typeof errorContent === 'object'" class="my-2">
+            <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">{{ errorKey }}: {{ errorValue }}</li>
+        </ul>
+        <div v-else>{{ errorContent }}</div>
+    </b-alert>
+    <b-card v-else body-class="p-0" class="workflow-display">
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button
@@ -94,15 +113,6 @@ onMounted(async () => {
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="!isEmpty(errorContent)" variant="danger" show>
-                    <b>Please fix the following error(s):</b>
-                    <ul v-if="typeof errorContent === 'object'" class="my-2">
-                        <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
-                            {{ errorKey }}: {{ errorValue }}
-                        </li>
-                    </ul>
-                    <div v-else>{{ errorContent }}</div>
-                </b-alert>
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
                         <span :id="`step-icon-${step.order_index}`">
