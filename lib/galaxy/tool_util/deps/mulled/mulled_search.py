@@ -148,8 +148,7 @@ class CondaSearch:
             elif header_found:
                 lines_fields.append(line.split())
         return [
-            {"package": line_fields[0], "version": line_fields[1], "build": line_fields[2]}
-            for line_fields in lines_fields
+            {"package": line_fields[0], "version": line_fields[1], "build": line_fields[2]} for line_fields in lines_fields
         ]
 
 
