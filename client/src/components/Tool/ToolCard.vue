@@ -156,6 +156,8 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                         </ToolTargetPreferredObjectStorePopover>
                         <b-modal
                             v-model="showPreferredObjectStoreModal"
+                            scrollable
+                            centered
                             :title="storageLocationModalTitle"
                             modal-class="tool-preferred-object-store-modal"
                             title-tag="h3"
