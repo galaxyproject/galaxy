@@ -14,6 +14,7 @@ import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
+import { stripExtension } from "./common/stripExtension";
 import { useExtensionFiltering } from "./common/useExtensionFilter";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -48,6 +49,15 @@ const workingElements = ref<HDASummary[]>([]);
 const selectedDatasetElements = ref<string[]>([]);
 const hideSourceItems = ref(props.defaultHideSourceItems || false);
 const atLeastOneElement = ref(true);
+const removeExtensions = ref(true);
+
+const initialElementsById = computed(() => {
+    const byId = {} as Record<string, HistoryItemSummary>;
+    for (const initialElement of props.initialElements) {
+        byId[initialElement.id] = initialElement;
+    }
+    return byId;
+});
 
 const atLeastOneDatasetIsSelected = computed(() => {
     return selectedDatasetElements.value.length > 0;
@@ -101,6 +111,16 @@ function _elementsSetUp() {
     // reverse the order of the elements to emulate what we have in the history panel
     workingElements.value.reverse();
 
+    if (removeExtensions.value) {
+        workingElements.value.forEach((el) => {
+            if (el.name) {
+                el.name = stripExtension(el.name);
+            }
+        });
+    } else {
+        //
+    }
+
     // for inListElements, reset their values (in order) to datasets from workingElements
     const inListElementsPrev = inListElements.value;
     inListElements.value = [];
@@ -150,6 +170,33 @@ function _validateElements() {
     });
 
     return workingElements.value;
+}
+
+function removeExtensionsToggle() {
+    const byId = initialElementsById.value;
+
+    removeExtensions.value = !removeExtensions.value;
+    if (removeExtensions.value) {
+        workingElements.value.forEach((el) => {
+            const oName = byId[el.id]?.name;
+            if (oName && el.name == oName) {
+                el.name = stripExtension(oName);
+            }
+        });
+    } else {
+        workingElements.value.forEach((el) => {
+            const originalName = byId[el.id]?.name;
+            console.log(originalName);
+            if (originalName) {
+                const strippedOriginalName = stripExtension(originalName);
+                if (strippedOriginalName && el.name == strippedOriginalName) {
+                    console.log("restoring... to" + originalName);
+                    el.name = originalName;
+                }
+            }
+        });
+    }
+    _mangleDuplicateNames();
 }
 
 /** describe what is wrong with a particular element if anything */
@@ -340,24 +387,6 @@ function renameElement(element: any, name: string) {
 function selectionAsHdaSummary(value: any): HDASummary {
     return value as HDASummary;
 }
-
-//TODO: issue #9497
-// const removeExtensions = ref(true);
-// removeExtensionsToggle: function () {
-//     this.removeExtensions = !this.removeExtensions;
-//     if (this.removeExtensions == true) {
-//         this.removeExtensionsFn();
-//     }
-// },
-// removeExtensionsFn: function () {
-//     workingElements.value.forEach((e) => {
-//         var lastDotIndex = e.lastIndexOf(".");
-//         if (lastDotIndex > 0) {
-//             var extension = e.slice(lastDotIndex, e.length);
-//             e = e.replace(extension, "");
-//         }
-//     });
-// },
 </script>
 
 <template>
@@ -407,6 +436,8 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 :oncancel="() => emit('on-cancel')"
                 :history-id="props.historyId"
                 :hide-source-items="hideSourceItems"
+                render-extensions-toggle
+                :extensions-toggle="removeExtensions"
                 :extensions="extensions"
                 collection-type="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
@@ -415,6 +446,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
+                @remove-extensions-toggle="removeExtensionsToggle"
                 @clicked-create="clickedCreate">
                 <template v-slot:help-content>
                     <p>
