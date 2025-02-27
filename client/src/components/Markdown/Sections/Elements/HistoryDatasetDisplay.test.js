@@ -11,8 +11,6 @@ import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 
 const localVue = getLocalVue();
 
-const args = { history_dataset_id: "someId" };
-
 function setUpDatatypesStore() {
     const pinia = createTestingPinia({ stubActions: false });
     const datatypesStore = useDatatypesMapperStore();
@@ -23,19 +21,19 @@ function setUpDatatypesStore() {
 describe("History Tabular Dataset Display", () => {
     let wrapper;
     let axiosMock;
-
+    const datasetId = "someId";
     const tabular = { item_data: "29994\t-1.25\n37191\t-1.05\n36810\t2.08\n33320\t1.15" };
-    const tabularMetaData = { metadata_columns: 2, metadata_data_lines: 4, ext: "tabular", name: "someName" };
+    const tabularMetaData = { metadata_columns: 2, metadata_data_lines: 4, file_ext: "tabular", name: "someName" };
     const tabularTableDataCounts = tabularMetaData.metadata_columns * tabularMetaData.metadata_data_lines;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/datasets/${args.history_dataset_id}`).reply(200, tabularMetaData);
-        axiosMock.onGet(`/api/datasets/${args.history_dataset_id}/get_content_as_text`).reply(200, tabular);
+        axiosMock.onGet(`/api/datasets/${datasetId}`).reply(200, tabularMetaData);
+        axiosMock.onGet(`/api/datasets/${datasetId}/get_content_as_text`).reply(200, tabular);
 
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,
-            propsData: { datasetId: args.history_dataset_id },
+            propsData: { datasetId },
             pinia: setUpDatatypesStore(),
         });
     });
@@ -54,18 +52,18 @@ describe("History Tabular Dataset Display", () => {
 describe("History Text Dataset Display", () => {
     let wrapper;
     let axiosMock;
-
+    const datasetId = "otherId";
     const text = { item_data: "some text" };
-    const textMetaData = { ext: "txt", name: "someName" };
+    const textMetaData = { file_ext: "txt", name: "someName" };
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/datasets/${args.history_dataset_id}`).reply(200, textMetaData);
-        axiosMock.onGet(`/api/datasets/${args.history_dataset_id}/get_content_as_text`).reply(200, text);
+        axiosMock.onGet(`/api/datasets/${datasetId}`).reply(200, textMetaData);
+        axiosMock.onGet(`/api/datasets/${datasetId}/get_content_as_text`).reply(200, text);
 
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,
-            propsData: { datasetId: args.history_dataset_id },
+            propsData: { datasetId },
             pinia: setUpDatatypesStore(),
         });
     });
