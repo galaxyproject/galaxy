@@ -1,8 +1,8 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ObjectStoreBadge from "./ObjectStoreBadge";
-import ObjectStoreBadges from "./ObjectStoreBadges";
+import ObjectStoreBadge from "./ObjectStoreBadge.vue";
+import ObjectStoreBadges from "./ObjectStoreBadges.vue";
 
 const localVue = getLocalVue(true);
 
@@ -16,7 +16,7 @@ describe("ObjectStoreBadges", () => {
     let wrapper;
 
     it("should render all badges in array", async () => {
-        wrapper = shallowMount(ObjectStoreBadges, {
+        wrapper = shallowMount(ObjectStoreBadges as object, {
             propsData: { badges: BADGES },
             localVue,
         });
@@ -24,11 +24,11 @@ describe("ObjectStoreBadges", () => {
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges.at(0).attributes("size")).toBe("3x");
+        expect(badges.at(0).attributes("size")).toBe("lg");
     });
 
     it("should pass along size attributes", async () => {
-        wrapper = shallowMount(ObjectStoreBadges, {
+        wrapper = shallowMount(ObjectStoreBadges as object, {
             propsData: { badges: BADGES, size: "2x" },
             localVue,
         });

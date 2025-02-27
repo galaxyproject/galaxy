@@ -10,9 +10,9 @@ import { PiniaVuePlugin } from "pinia";
 import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
+import VueRouter from "vue-router";
 
 import _short from "@/components/plugins/short";
-import VueRouter from "vue-router";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -183,7 +183,9 @@ export const wait = (n) => {
 export function getLocalVue(instrumentLocalization = false) {
     const localVue = createLocalVue();
     const mockedDirective = {
-        bind() {},
+        bind(el, binding) {
+            el.setAttribute("data-mock-directive", binding.value || el.title);
+        },
     };
     localVue.use(PiniaVuePlugin);
     localVue.use(BootstrapVue);

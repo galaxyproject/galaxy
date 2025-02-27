@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 
+import { type BreadcrumbItem } from "@/components/Common/index";
 import localize from "@/utils/localization";
 
 import Heading from "@/components/Common/Heading.vue";
-
-interface BreadcrumbItem {
-    title: string;
-    to?: string;
-    superText?: string;
-}
 
 interface Props {
     items: BreadcrumbItem[];

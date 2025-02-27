@@ -1,37 +1,45 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BRow } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
+import { BAlert, BButton } from "bootstrap-vue";
+import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
-library.add(faPlus);
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 interface Props {
-    message: String | null | undefined;
-    createButtonId: string;
+    header: string;
+    message?: string;
     createRoute: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
-const router = useRouter();
+const createUrl = props.createRoute;
+
+const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user" }, { title: props.header }]);
 </script>
 
 <template>
     <div>
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <div>
+                <BButton
+                    :id="`create-button-${header.toLowerCase().replace(/ /g, '-')}`"
+                    v-b-tooltip.hover.noninteractive
+                    title="Create new file source"
+                    size="sm"
+                    variant="outline-primary"
+                    :to="createUrl">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    {{ localize("Create") }}
+                </BButton>
+            </div>
+        </BreadcrumbHeading>
+
         <BAlert v-if="message" show dismissible>
             {{ message || "" }}
         </BAlert>
-        <BRow class="mb-3">
-            <BCol>
-                <BButton :id="createButtonId" class="m-1 float-right" @click="router.push(createRoute)">
-                    <FontAwesomeIcon icon="plus" />
-                    {{ localize("Create") }}
-                </BButton>
-            </BCol>
-        </BRow>
     </div>
 </template>
