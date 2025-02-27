@@ -123,6 +123,7 @@ class ItemGrabber:
         self.self_handler_tags = self_handler_tags
         self.max_grab = max_grab
         self.handler_tags = handler_tags
+        self._grab_conn_opts = {}
         self._grab_query = None
         self._supports_returning = self.app.application_stack.supports_returning()
 
