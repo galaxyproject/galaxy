@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 
-import { fromCache } from "@/components/Markdown/cache";
 import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
 
