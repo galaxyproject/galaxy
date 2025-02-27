@@ -1,117 +1,109 @@
 <template>
-    <UrlDataProvider v-slot="{ result: metaData, loading: metaLoading, error: metaError }" :url="metaUrl">
-        <b-card body-class="p-0">
-            <b-card-header v-if="!embedded">
-                <span class="float-right">
-                    <b-button
-                        v-b-tooltip.hover
-                        :href="downloadUrl"
-                        variant="link"
-                        size="sm"
-                        role="button"
-                        title="Download Dataset"
-                        type="button"
-                        class="py-0 px-1">
-                        <span class="fa fa-download" />
-                    </b-button>
-                    <b-button
-                        v-b-tooltip.hover
-                        :href="importUrl"
-                        role="button"
-                        variant="link"
-                        title="Import Dataset"
-                        type="button"
-                        class="py-0 px-1">
-                        <span class="fa fa-file-import" />
-                    </b-button>
-                    <b-button
-                        v-if="expanded"
-                        v-b-tooltip.hover
-                        href="#"
-                        role="button"
-                        variant="link"
-                        title="Collapse"
-                        type="button"
-                        class="py-0 px-1"
-                        @click="onExpand">
-                        <span class="fa fa-angle-double-up" />
-                    </b-button>
-                    <b-button
-                        v-else
-                        v-b-tooltip.hover
-                        href="#"
-                        role="button"
-                        variant="link"
-                        title="Expand"
-                        type="button"
-                        class="py-0 px-1"
-                        @click="onExpand">
-                        <span class="fa fa-angle-double-down" />
-                    </b-button>
-                </span>
-                <span>
-                    <span>Dataset:</span>
-                    <span class="font-weight-light">{{ metaData?.name }}</span>
-                </span>
-            </b-card-header>
-            <b-card-body>
-                <UrlDataProvider
-                    v-slot="{ result: itemContent, loading: datasetLoading, error }"
-                    :key="itemUrl"
-                    :url="itemUrl">
-                    <LoadingSpan v-if="datasetLoading" message="Loading Dataset" />
-                    <LoadingSpan v-else-if="datatypesMapperStore.loading" message="Loading Datatypes" />
-                    <div v-else-if="error">{{ error }}</div>
-                    <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
-                    <div v-else :class="contentClass(metaData?.ext)">
-                        <b-embed
-                            v-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['pdf', 'html'])"
-                            type="iframe"
-                            aspect="16by9"
-                            :src="displayUrl" />
-                        <HistoryDatasetAsImage
-                            v-else-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['galaxy.datatypes.images.Image'])"
-                            :dataset-id="datasetId" />
-                        <div v-else-if="itemContent.item_data">
-                            <div v-if="datatypesMapper.isSubTypeOfAny(metaData?.ext, ['tabular'])">
-                                <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-                                <div v-else-if="metaError">{{ metaError }}</div>
-                                <div v-else>
-                                    <b-table
-                                        id="tabular-dataset-table"
-                                        sticky-header
-                                        thead-tr-class="sticky-top"
-                                        striped
-                                        hover
-                                        :per-page="perPage"
-                                        :current-page="currentPage"
-                                        :fields="getFields(metaData)"
-                                        :items="getItems(itemContent.item_data, metaData)" />
-                                    <b-pagination
-                                        v-model="currentPage"
-                                        align="center"
-                                        :total-rows="getItems(itemContent.item_data, metaData).length"
-                                        :per-page="perPage"
-                                        aria-controls="tabular-dataset-table" />
-                                </div>
-                            </div>
-                            <pre v-else>
-                                <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
-                            </pre>
-                        </div>
-                        <div v-else>No content found.</div>
-                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+    <b-card body-class="p-0">
+        <b-card-header v-if="!embedded">
+            <span class="float-right">
+                <b-button
+                    v-b-tooltip.hover
+                    :href="downloadUrl"
+                    variant="link"
+                    size="sm"
+                    role="button"
+                    title="Download Dataset"
+                    type="button"
+                    class="py-0 px-1">
+                    <span class="fa fa-download" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    :href="importUrl"
+                    role="button"
+                    variant="link"
+                    title="Import Dataset"
+                    type="button"
+                    class="py-0 px-1">
+                    <span class="fa fa-file-import" />
+                </b-button>
+                <b-button
+                    v-if="expanded"
+                    v-b-tooltip.hover
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Collapse"
+                    type="button"
+                    class="py-0 px-1"
+                    @click="onExpand">
+                    <span class="fa fa-angle-double-up" />
+                </b-button>
+                <b-button
+                    v-else
+                    v-b-tooltip.hover
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Expand"
+                    type="button"
+                    class="py-0 px-1"
+                    @click="onExpand">
+                    <span class="fa fa-angle-double-down" />
+                </b-button>
+            </span>
+            <span>
+                <span>Dataset:</span>
+                <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
+            </span>
+        </b-card-header>
+        <b-card-body>
+            <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+            <div v-else-if="metaError">{{ metaError }}</div>
+            <LoadingSpan v-else-if="dataLoading" message="Loading Dataset" />
+            <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
+            <div v-else-if="dataError">{{ dataError }}</div>
+            <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
+            <div v-else :class="contentClass(metaType)">
+                <b-embed
+                    v-if="datatypesMapper.isSubTypeOfAny(metaType, ['pdf', 'html'])"
+                    type="iframe"
+                    aspect="16by9"
+                    :src="displayUrl" />
+                <HistoryDatasetAsImage
+                    v-else-if="datatypesMapper.isSubTypeOfAny(metaType, ['galaxy.datatypes.images.Image'])"
+                    :dataset-id="datasetId" />
+                <div v-else-if="dataContent.item_data">
+                    <div v-if="datatypesMapper.isSubTypeOfAny(metaType, ['tabular'])">
+                        <b-table
+                            id="tabular-dataset-table"
+                            sticky-header
+                            thead-tr-class="sticky-top"
+                            striped
+                            hover
+                            :per-page="perPage"
+                            :current-page="currentPage"
+                            :fields="getFields(metaContent)"
+                            :items="getItems(dataContent.item_data, metaContent)" />
+                        <b-pagination
+                            v-model="currentPage"
+                            align="center"
+                            :total-rows="getItems(dataContent.item_data, metaContent).length"
+                            :per-page="perPage"
+                            aria-controls="tabular-dataset-table" />
                     </div>
-                </UrlDataProvider>
-            </b-card-body>
-        </b-card>
-    </UrlDataProvider>
+                    <pre v-else>
+                        <code class="word-wrap-normal">{{ dataContent.item_data }}</code>
+                    </pre>
+                </div>
+                <div v-else>No content found.</div>
+                <b-link v-if="dataContent.truncated" :href="dataContent.item_url"> Show More... </b-link>
+            </div>
+        </b-card-body>
+    </b-card>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
 
-import { UrlDataProvider } from "@/components/providers/UrlDataProvider";
+import { fromCache } from "@/components/Markdown/cache";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
@@ -126,32 +118,64 @@ const props = defineProps<{
 
 // Reactive state
 const currentPage = ref(1);
+const dataContent = ref();
+const dataLoading = ref(true);
+const dataError = ref("");
+const metaContent = ref();
+const metaLoading = ref(true);
+const metaError = ref("");
 const expanded = ref(false);
 const perPage = ref(100);
 
 // Store
 const datatypesMapperStore = useDatatypesMapperStore();
-const { datatypesMapper } = datatypesMapperStore;
+const { datatypesMapper, loading: datatypesLoading } = storeToRefs(datatypesMapperStore);
+const { createMapper } = datatypesMapperStore;
 
 // Computed
+const dataResource = computed(() => `datasets/${props.datasetId}/get_content_as_text`);
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
 const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
 const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
-const itemUrl = computed(() => `/api/datasets/${props.datasetId}/get_content_as_text`);
-const metaUrl = computed(() => `/api/datasets/${props.datasetId}`);
+const metaResource = computed(() => `datasets/${props.datasetId}`);
+const metaType = computed(() => metaContent.value?.file_ext);
 
 // Methods
 const contentClass = (datasetType: string) => {
-    if (datatypesMapper?.isSubTypeOfAny(datasetType, ["tabular"])) {
+    if (datatypesMapper.value?.isSubTypeOfAny(datasetType, ["tabular"])) {
         return "";
     }
     return expanded.value ? "embedded-dataset-expanded" : "embedded-dataset";
 };
 
-const getFields = (metaData: any) => {
+const getData = async () => {
+    try {
+        dataLoading.value = true;
+        dataContent.value = await fromCache(dataResource.value);
+        dataLoading.value = false;
+    } catch (e) {
+        dataContent.value = null;
+        dataError.value = String(e);
+        dataLoading.value = false;
+    }
+};
+
+const getMeta = async () => {
+    try {
+        metaLoading.value = true;
+        metaContent.value = await fromCache(metaResource.value);
+        metaLoading.value = false;
+    } catch (e) {
+        metaContent.value = null;
+        metaError.value = String(e);
+        metaLoading.value = false;
+    }
+};
+
+const getFields = (metaContent: any) => {
     const fields = [];
-    const columnNames = metaData.metadata_column_names || [];
-    const columnCount = metaData.metadata_columns;
+    const columnNames = metaContent.metadata_column_names || [];
+    const columnCount = metaContent.metadata_columns;
     for (let i = 0; i < columnCount; i++) {
         fields.push({
             key: `${i}`,
@@ -193,6 +217,15 @@ const onExpand = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-    datatypesMapperStore.createMapper();
+    createMapper();
 });
+
+watch(
+    () => props.datasetId,
+    () => {
+        getMeta();
+        getData();
+    },
+    { immediate: true }
+);
 </script>

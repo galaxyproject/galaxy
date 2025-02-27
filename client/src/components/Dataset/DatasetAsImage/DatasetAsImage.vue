@@ -33,15 +33,15 @@ const isImage = computedAsync(async () => {
     const res = await fetch(imageUrl.value);
     const buff = await res.blob();
     return buff.type.startsWith("image/");
-}, null);
+}, true);
 </script>
 
 <template>
     <div>
         <div v-if="imageUrl" class="w-100 p-2">
             <b-card nobody body-class="p-1">
-                <b-img :src="imageUrl" fluid />
                 <span v-if="!isImage" class="text-danger">This dataset does not appear to be an image.</span>
+                <b-img v-else :src="imageUrl" fluid />
             </b-card>
         </div>
         <div v-else>
