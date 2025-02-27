@@ -54,6 +54,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a remote file source that connects with an InvenioRDM instance.",
     },
+    zenodo: {
+        icon: faNetworkWired,
+        message: "This is a remote file source that connects with the Zenodo instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {
