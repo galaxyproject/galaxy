@@ -1,11 +1,16 @@
 <template>
-    <div ref="chartContainer" :style="style"></div>
+    <div>
+        <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
+            {{ errorMessage }}
+        </b-alert>
+        <div ref="chartContainer" :style="style" />
+    </div>
 </template>
 
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
 import embed, { type VisualizationSpec } from "vega-embed";
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;
@@ -24,21 +29,26 @@ const style = computed(() => {
 });
 
 const chartContainer = ref<HTMLDivElement | null>(null);
+const errorMessage = ref<string>("");
+
 let vegaView: any;
 
 async function embedChart() {
-    if (vegaView) {
-        vegaView.finalize();
-    }
-    if (chartContainer.value !== null) {
-        const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
-        vegaView = result.view;
+    try {
+        if (vegaView) {
+            vegaView.finalize();
+        }
+        if (chartContainer.value !== null) {
+            const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
+            vegaView = result.view;
+        }
+        errorMessage.value = "";
+    } catch (e: any) {
+        errorMessage.value = String(e);
     }
 }
 
-onMounted(embedChart);
-
-watch(props, embedChart, { immediate: true, deep: true });
+watch(props, embedChart, { deep: true, immediate: true });
 useResizeObserver(chartContainer, () => {
     if (vegaView) {
         vegaView.resize();
