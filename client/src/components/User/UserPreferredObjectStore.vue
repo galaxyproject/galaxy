@@ -72,6 +72,7 @@ async function handleSubmit(preferred: string | null) {
             <BModal
                 id="modal-select-preferred-object-store"
                 ref="modal"
+                scrollable
                 centered
                 :title="title"
                 hide-footer

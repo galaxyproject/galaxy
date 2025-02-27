@@ -142,6 +142,8 @@ defineExpose({
 <template>
     <BModal
         v-model="modalShown"
+        scrollable
+        centered
         :title="storageLocationTitle"
         title-tag="h2"
         title-class="h-sm"
