@@ -48,7 +48,9 @@ class CWLVersionUnknown(Linter):
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version not in ["v1.0"]:
-            lint_ctx.warn(f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.", linter=cls.name())
+            lint_ctx.warn(
+                f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.", linter=cls.name()
+            )
 
 
 class CWLVersionGood(Linter):

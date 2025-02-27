@@ -159,7 +159,7 @@ class TestsAssertionValidation(Linter):
                     error_str = _cleanup_pydantic_error(e)
                     lint_ctx.warn(
                         f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]",
-                        linter=cls.name()
+                        linter=cls.name(),
                     )
 
 
