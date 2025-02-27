@@ -386,9 +386,7 @@ export default {
             "modify readme"
         );
         function setReadme(newReadme) {
-            console.log("IN SET README>.....");
             if (readme.value !== newReadme) {
-                console.log("setting with the readme handler...");
                 setReadmeHandler.set(readme.value, newReadme);
             }
         }
