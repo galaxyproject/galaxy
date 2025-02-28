@@ -6,9 +6,8 @@ import { fetchDatasetDetails } from "@/api/datasets";
 import { useKeyedCache } from "@/composables/keyedCache";
 
 export const useDatasetStore = defineStore("datasetStore", () => {
-    const { storedItems, getItemById, getItemLoadError, isLoadingItem, fetchItemById } = useKeyedCache<DatasetEntry>(
-        fetchDatasetDetails,
-    );
+    const { storedItems, getItemById, getItemLoadError, isLoadingItem, fetchItemById } =
+        useKeyedCache<DatasetEntry>(fetchDatasetDetails);
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
         const datasetList = historyContentsPayload.filter(
