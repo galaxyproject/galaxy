@@ -13,6 +13,7 @@ from os.path import (
 import yaml
 from dparse import parse
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.util import (
     asbool,
     etree,
@@ -41,6 +42,7 @@ class ConditionalDependencies:
             self.config = load_app_properties(config_file=self.config_file)
         else:
             self.config = config
+        self.config_object = GalaxyAppConfiguration(**self.config)
         self.parse_configs()
         self.get_conditional_requirements()
 
@@ -58,7 +60,7 @@ class ConditionalDependencies:
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
         else:
-            job_conf_path = self.config.get("job_config_file")
+            job_conf_path = self.config_object.job_config_file
             if not job_conf_path:
                 job_conf_path = join(dirname(self.config_file), "job_conf.yml")
                 if not exists(job_conf_path):
@@ -85,9 +87,7 @@ class ConditionalDependencies:
                 except OSError:
                     pass
 
-        object_store_conf_path = self.config.get(
-            "object_store_config_file", join(dirname(self.config_file), "object_store_conf.xml")
-        )
+        object_store_conf_path = self.config_object.object_store_config_file
         try:
             if ".xml" in object_store_conf_path:
                 for store in parse_xml(object_store_conf_path).iter("object_store"):
@@ -117,7 +117,7 @@ class ConditionalDependencies:
             pass
 
         # Parse auth conf
-        auth_conf_xml = self.config.get("auth_config_file", join(dirname(self.config_file), "auth_conf.xml"))
+        auth_conf_xml = self.config_object.auth_config_file
         try:
             for auth in parse_xml(auth_conf_xml).findall("authenticator"):
                 auth_type = auth.find("type")
@@ -128,9 +128,7 @@ class ConditionalDependencies:
 
         # Parse oidc_backends_config_file specifically for PKCE support.
         self.pkce_support = False
-        oidc_backend_conf_xml = self.config.get(
-            "oidc_backends_config_file", join(dirname(self.config_file), "oidc_backends_config.xml")
-        )
+        oidc_backend_conf_xml = self.config_object.oidc_backends_config_file
         try:
             for pkce_support_element in parse_xml(oidc_backend_conf_xml).iterfind("./provider/pkce_support"):
                 if pkce_support_element.text == "true":
@@ -140,7 +138,7 @@ class ConditionalDependencies:
             pass
 
         # Parse error report config
-        error_report_yml = self.config.get("error_report_file", join(dirname(self.config_file), "error_report.yml"))
+        error_report_yml = self.config_object.error_report_file
         try:
             with open(error_report_yml) as f:
                 error_reporters = yaml.safe_load(f)
@@ -149,9 +147,8 @@ class ConditionalDependencies:
             pass
 
         # Parse file sources config
-        file_sources_conf_yml = self.config.get(
-            "file_sources_config_file", join(dirname(self.config_file), "file_sources_conf.yml")
-        )
+        file_sources_conf_yml = self.config_object.file_sources_config_file
+
         if exists(file_sources_conf_yml):
             with open(file_sources_conf_yml) as f:
                 file_sources_conf = yaml.safe_load(f)
@@ -160,7 +157,7 @@ class ConditionalDependencies:
         self.file_sources = [c.get("type", None) for c in file_sources_conf]
 
         # Parse vault config
-        vault_conf_yml = self.config.get("vault_config_file", join(dirname(self.config_file), "vault_conf.yml"))
+        vault_conf_yml = self.config_object.vault_config_file
         if exists(vault_conf_yml):
             with open(vault_conf_yml) as f:
                 vault_conf = yaml.safe_load(f)
