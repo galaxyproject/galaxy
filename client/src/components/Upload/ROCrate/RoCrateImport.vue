@@ -77,7 +77,13 @@ async function exploreRemoteZip() {
         return;
     }
 
-    return openZip(zipUrl.value);
+    // TODO: this is obviously not the right way to get the full URL
+    // but getApiRoot() only returns "/" here.
+    const appRoot = window.location.origin;
+
+    const proxyUrl = `${appRoot}/api/proxy?url=${encodeURIComponent(zipUrl.value)}`;
+
+    return openZip(proxyUrl);
 }
 
 async function openZip(zipSource: File | string) {
