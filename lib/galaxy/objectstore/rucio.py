@@ -263,7 +263,7 @@ username = {self.config['username']}
                 os.replace(res[0]["dest_file_paths"][0], dest_path)
             except Exception as e:
                 if os.path.exists(dest_path):
-                    log.debug(f"File was already downloaded")
+                    log.debug("File was already downloaded")
                 else:
                     log.exception(f"Cannot download file: {str(e)}")
                     return False
