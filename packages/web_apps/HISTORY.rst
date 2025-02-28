@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-24.2.1.dev0
------------
+-------------------
+24.2.1 (2025-02-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix user preferences secret (without vault) lost on save by `@davelopez <https://github.com/davelopez>`_ in `#19610 <https://github.com/galaxyproject/galaxy/pull/19610>`_
+* Disable chatgxy wizard for anon users by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19628 <https://github.com/galaxyproject/galaxy/pull/19628>`_
 
 -------------------
 24.2.0 (2025-02-11)

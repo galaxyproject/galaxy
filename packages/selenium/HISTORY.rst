@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.2.1.dev0
------------
+-------------------
+24.2.1 (2025-02-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Set content-type to text/plain if dataset not safe by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19563 <https://github.com/galaxyproject/galaxy/pull/19563>`_
 
 -------------------
 24.2.0 (2025-02-11)

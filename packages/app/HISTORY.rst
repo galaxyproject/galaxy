@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
------------
-24.2.1.dev0
------------
+-------------------
+24.2.1 (2025-02-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Remove unused and broken methods by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19614 <https://github.com/galaxyproject/galaxy/pull/19614>`_
+* Raise ``RequestParameterInvalidException`` on invalid ``input_format`` parameter by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19631 <https://github.com/galaxyproject/galaxy/pull/19631>`_
+* Raise serializable exception on invalid workflow connection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19636 <https://github.com/galaxyproject/galaxy/pull/19636>`_
+* Raise ``MessageException`` when using data provider on incompatible data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19639 <https://github.com/galaxyproject/galaxy/pull/19639>`_
+* Apply exec options to connection by `@jdavcs <https://github.com/jdavcs>`_ in `#19651 <https://github.com/galaxyproject/galaxy/pull/19651>`_
+* Initialize dictionary used to set connection execution options by `@jdavcs <https://github.com/jdavcs>`_ in `#19653 <https://github.com/galaxyproject/galaxy/pull/19653>`_
+* Fix various bugs around tool data table bundles by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19659 <https://github.com/galaxyproject/galaxy/pull/19659>`_
 
 -------------------
 24.2.0 (2025-02-11)

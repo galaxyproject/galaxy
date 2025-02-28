@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
------------
-24.2.1.dev0
------------
+-------------------
+24.2.1 (2025-02-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Updated registration warning message by `@dannon <https://github.com/dannon>`_ in `#19598 <https://github.com/galaxyproject/galaxy/pull/19598>`_
+
+============
+Enhancements
+============
+
+* Add fastk_ktab_tar datatype required for fastk tool by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#19615 <https://github.com/galaxyproject/galaxy/pull/19615>`_
 
 -------------------
 24.2.0 (2025-02-11)
