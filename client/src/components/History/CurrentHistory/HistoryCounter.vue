@@ -10,7 +10,7 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HistorySummaryExtended, type RegisteredUser, userOwnsHistory } from "@/api";
+import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useUserStore } from "@/stores/userStore";

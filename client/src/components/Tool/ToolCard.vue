@@ -3,7 +3,6 @@ import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
-import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
