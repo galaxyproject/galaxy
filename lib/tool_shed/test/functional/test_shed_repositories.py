@@ -12,6 +12,7 @@ from tool_shed.test.base.populators import (
 )
 from tool_shed_client.schema import (
     RepositoryRevisionMetadata,
+    RepositoryPaginatedIndexRequest,
     UpdateRepositoryRequest,
 )
 from ..base.api import (
@@ -125,6 +126,33 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository
         assert repository.owner == repo.owner
         assert repository.name == repo.name
+
+    @skip_if_api_v1
+    def test_index_pagination(self):
+        populator = self.populator
+        category1 = populator.new_category(prefix="paginatecat1")
+        category2 = populator.new_category(prefix="paginatecat2")
+        populator.setup_column_maker_repo(prefix="repoforindexpagination1", category_id=category1.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination2", category_id=category1.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination3", category_id=category2.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination4", category_id=category2.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination5", category_id=category2.id)
+        request = RepositoryPaginatedIndexRequest(
+            page=1,
+            page_size=2,
+            category_id=category1.id,
+        )
+        response = populator.repository_index_paginated(request)
+        assert len(response.hits) == 2
+        assert response.total_results == 2
+        assert response.page == 1
+        assert response.page_size == 2
+
+        request.category_id = category2.id
+        response = populator.repository_index_paginated(request)
+        assert response.total_results == 3
+        assert response.page == 1
+        assert response.page_size == 2
 
     @skip_if_api_v1
     def test_allow_push(self):

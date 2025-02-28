@@ -259,6 +259,8 @@ RepositoryIndexOwnerQueryParam: Optional[str] = Query(None, title="Owner")
 
 RepositoryIndexNameQueryParam: Optional[str] = Query(None, title="Name")
 
+RepositoryIndexCategoryQueryParam: Optional[str] = Query(None, title="Category ID")
+
 RepositoryIndexToolIdsQueryParam: Optional[List[str]] = Query(
     None, title="Tool IDs", description="List of tool GUIDs to find the repository for"
 )

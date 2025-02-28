@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -37,6 +38,9 @@ from tool_shed.managers.repositories import (
     get_repository_metadata_for_management,
     IndexRequest,
     index_repositories,
+    index_repositories_paginated,
+    PaginatedIndexRequest,
+    PaginatedRepositoryIndexResults,
     readmes,
     reset_metadata_on_repository,
     search,
@@ -83,6 +87,7 @@ from . import (
     RepositoryIndexNameQueryParam,
     RepositoryIndexOwnerQueryParam,
     RepositoryIndexQueryParam,
+    RepositoryIndexCategoryQueryParam,
     RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     RequiredChangesetParam,
@@ -93,9 +98,12 @@ from . import (
     UsernameIdPathParam,
 )
 
+log = logging.getLogger(__name__)
+
+
 router = Router(tags=["repositories"])
 
-IndexResponse = Union[RepositorySearchResults, List[Repository]]
+IndexResponse = Union[RepositorySearchResults, List[Repository], PaginatedRepositoryIndexResults]
 
 
 @as_form
@@ -120,6 +128,7 @@ class FastAPIRepositories:
         deleted: Optional[bool] = RepositoryIndexDeletedQueryParam,
         owner: Optional[str] = RepositoryIndexOwnerQueryParam,
         name: Optional[str] = RepositoryIndexNameQueryParam,
+        category_id: Optional[str] = RepositoryIndexCategoryQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> IndexResponse:
         if q:
@@ -133,11 +142,24 @@ class FastAPIRepositories:
         # elif params.tool_ids:
         #    response = index_tool_ids(self.app, params.tool_ids)
         #    return response
+        elif page is not None:
+            assert page_size is not None
+            index_request = PaginatedIndexRequest(
+                owner=owner,
+                name=name,
+                deleted=deleted or False,
+                page=page,
+                page_size=page_size,
+                category_id=category_id,
+            )
+            repositories = index_repositories_paginated(self.app, index_request)
+            return repositories
         else:
             index_request = IndexRequest(
                 owner=owner,
                 name=name,
                 deleted=deleted or False,
+                category_id=category_id,
             )
             repositories = index_repositories(self.app, index_request)
             return [to_model(self.app, r) for r in repositories]
@@ -514,9 +536,6 @@ class FastAPIRepositories:
                 if os.path.exists(filename):
                     os.remove(filename)
         except Exception:
-            import logging
-
-            log = logging.getLogger(__name__)
             log.exception("Problem in here...")
             raise
 
