@@ -309,7 +309,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _set_config_base(self, config_kwargs):
         def _set_global_conf():
-            self.config_file = config_kwargs.get("__file__", None)
+            self.config_file = config_kwargs.get("__file__") or config_kwargs.get("config_file")
             self.global_conf = config_kwargs.get("global_conf")
             self.global_conf_parser = configparser.ConfigParser()
             if not self.config_file and self.global_conf and "__file__" in self.global_conf:
