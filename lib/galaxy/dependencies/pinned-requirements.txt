@@ -70,10 +70,6 @@ frozenlist==1.5.0
 fs==2.4.16
 fsspec==2025.2.0
 future==1.0.0
-graphene==3.4.3
-graphene-sqlalchemy==3.0.0rc2
-graphql-core==3.2.6
-graphql-relay==3.2.0
 gravity==1.0.7
 greenlet==3.1.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
 gunicorn==23.0.0
@@ -186,7 +182,6 @@ sqlitedict==2.1.0
 sqlparse==0.5.3
 starlette==0.45.3
 starlette-context==0.3.6
-starlette-graphene3==0.6.0
 supervisor==4.2.5
 svgwrite==1.4.3
 tenacity==9.0.0

@@ -41,9 +41,6 @@ dependencies = [
     "fissix ; python_version>='3.13'",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "graphene",
-    "graphene-sqlalchemy>=3.0.0rc1",  # need a beta release to be compat. with starlette plugin
-    "graphql-core",
     "gravity>=1.0.4",
     "gunicorn",
     "gxformat2",
@@ -99,7 +96,6 @@ dependencies = [
     "sqlparse",
     "starlette",
     "starlette-context",
-    "starlette-graphene3",
     "svgwrite",
     "tifffile",
     "tuswsgi",
