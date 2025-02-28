@@ -19,7 +19,7 @@ export const useDatasetStore = defineStore("datasetStore", () => {
         };
     });
 
-    const { storedItems, getItemById, isLoadingItem, fetchItemById } = useKeyedCache<DatasetEntry>(
+    const { storedItems, getItemById, getItemLoadError, isLoadingItem, fetchItemById } = useKeyedCache<DatasetEntry>(
         fetchDatasetDetails,
         shouldFetch
     );
@@ -36,6 +36,7 @@ export const useDatasetStore = defineStore("datasetStore", () => {
     return {
         storedDatasets: storedItems,
         getDataset: getItemById,
+        getDatasetError: getItemLoadError,
         isLoadingDataset: isLoadingItem,
         fetchDataset: fetchItemById,
         saveDatasets,
