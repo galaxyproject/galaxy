@@ -54,8 +54,8 @@
             </span>
         </b-card-header>
         <b-card-body>
-            <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-            <div v-else-if="metaError">{{ metaError }}</div>
+            <div v-if="metaError">{{ metaError }}</div>
+            <LoadingSpan v-else-if="!metaType" message="Loading Metadata" />
             <LoadingSpan v-else-if="dataLoading" message="Loading Dataset" />
             <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
             <div v-else-if="dataError">{{ dataError }}</div>
@@ -105,10 +105,20 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import { fromCache } from "@/components/Markdown/cache";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const { getDatasetError, getDataset } = useDatasetStore();
+
+interface Dataset {
+    name?: string;
+    info?: string;
+    peek?: string;
+    file_ext?: string;
+}
 
 // Props
 const props = defineProps<{
@@ -121,9 +131,6 @@ const currentPage = ref(1);
 const dataContent = ref();
 const dataLoading = ref(true);
 const dataError = ref("");
-const metaContent = ref();
-const metaLoading = ref(true);
-const metaError = ref("");
 const expanded = ref(false);
 const perPage = ref(100);
 
@@ -137,7 +144,9 @@ const dataResource = computed(() => `datasets/${props.datasetId}/get_content_as_
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
 const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
 const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
-const metaResource = computed(() => `datasets/${props.datasetId}`);
+
+const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
+const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.file_ext);
 
 // Methods
@@ -157,18 +166,6 @@ const getData = async () => {
         dataContent.value = null;
         dataError.value = String(e);
         dataLoading.value = false;
-    }
-};
-
-const getMeta = async () => {
-    try {
-        metaLoading.value = true;
-        metaContent.value = await fromCache(metaResource.value);
-        metaLoading.value = false;
-    } catch (e) {
-        metaContent.value = null;
-        metaError.value = String(e);
-        metaLoading.value = false;
     }
 };
 
@@ -223,7 +220,6 @@ onMounted(() => {
 watch(
     () => props.datasetId,
     () => {
-        getMeta();
         getData();
     },
     { immediate: true }
