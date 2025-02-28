@@ -10165,12 +10165,12 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     __tablename__ = "psa_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
-    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
-    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
-    issued: Mapped[Optional[int]]
-    lifetime: Mapped[Optional[int]]
-    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
+    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment, unused-ignore]  # needed for social-auth-core Mixin class attributes. unused-ignore needed for older social-auth-core on Python 3.8
+    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
+    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
+    issued: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
+    lifetime: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
+    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))  # type:ignore[assignment, unused-ignore]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10229,8 +10229,8 @@ class PSACode(Base, CodeMixin, RepresentById):
     __table_args__ = (UniqueConstraint("code", "email"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))
-    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
+    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))  # type:ignore[assignment, unused-ignore]
+    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10257,9 +10257,9 @@ class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = "psa_nonce"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
-    timestamp: Mapped[Optional[int]]
-    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))
+    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
+    timestamp: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
+    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))  # type:ignore[assignment, unused-ignore]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10295,10 +10295,10 @@ class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = "psa_partial"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
-    data: Mapped[Optional[str]] = mapped_column(TEXT)
-    next_step: Mapped[Optional[int]]
-    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
+    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
+    data: Mapped[Optional[str]] = mapped_column(TEXT)  # type:ignore[assignment, unused-ignore]
+    next_step: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
+    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10340,12 +10340,14 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
-    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
+    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
+    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
     extra_data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
-    user: Mapped[Optional["User"]] = relationship(back_populates="social_auth")
+    user: Mapped[Optional["User"]] = relationship(
+        back_populates="social_auth"
+    )  # type:ignore[assignment, unused-ignore]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
