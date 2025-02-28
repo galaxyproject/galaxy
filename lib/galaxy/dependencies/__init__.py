@@ -42,7 +42,7 @@ class ConditionalDependencies:
             self.config = load_app_properties(config_file=self.config_file)
         else:
             self.config = config
-        self.config_object = GalaxyAppConfiguration(config_file=self.config_file, **self.config)
+        self.config_object = GalaxyAppConfiguration(config_file=self.config_file, override_tempdir=False, **self.config)
         self.parse_configs()
         self.get_conditional_requirements()
 
