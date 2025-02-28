@@ -3,24 +3,26 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 //@ts-ignore
 import { errorMessageAsString } from "utils/simple-error";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
-import { fromCache } from "@/components/Markdown/cache";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useHistoryStore } from "@/stores/historyStore";
 
 interface Props {
     historyId: string;
 }
+
+const { getHistoryNameById } = useHistoryStore();
 
 const props = defineProps<Props>();
 
 const imported = ref(false);
 const error = ref<string | null>(null);
 
-const name = ref("");
+const name = computed(() => getHistoryNameById(props.historyId));
 const showLink = computed(() => !imported.value && !error.value);
 
-const onClick = async () => {
+const onImport = async () => {
     try {
         await axios.post(`${getAppRoot()}api/histories`, { history_id: props.historyId });
         imported.value = true;
@@ -28,27 +30,11 @@ const onClick = async () => {
         error.value = errorMessageAsString(e);
     }
 };
-
-async function fetchName(historyId: string) {
-    try {
-        const data = await fromCache(`histories/${historyId}`);
-        name.value = data?.name || "";
-    } catch (e) {
-        error.value = errorMessageAsString(e);
-        name.value = "";
-    }
-}
-
-watch(
-    () => props.historyId,
-    () => fetchName(props.historyId),
-    { immediate: true }
-);
 </script>
 
 <template>
     <div>
-        <b-link v-if="showLink" data-description="history import link" :data-history-id="historyId" @click="onClick">
+        <b-link v-if="showLink" data-description="history import link" :data-history-id="historyId" @click="onImport">
             Click to Import History: {{ name }}.
         </b-link>
         <div v-if="imported" class="text-success">
