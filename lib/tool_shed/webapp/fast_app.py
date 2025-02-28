@@ -18,9 +18,12 @@ from fastapi.responses import (
     RedirectResponse,
 )
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import (
+    _rate_limit_exceeded_handler,
+    Limiter,
+)
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from galaxy.webapps.base.api import (
     add_exception_handler,

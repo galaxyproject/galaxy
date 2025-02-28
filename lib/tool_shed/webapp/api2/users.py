@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import (
     List,
     Optional,
@@ -55,7 +56,8 @@ router = Router(tags=["users"])
 
 log = logging.getLogger(__name__)
 
-SENSITIVE_API_REQUEST_LIMIT = "10/minute"
+TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: Optional[str] = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
+SENSITIVE_API_REQUEST_LIMIT = TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT or "10/minute"
 
 
 class UiRegisterRequest(BaseModel):
