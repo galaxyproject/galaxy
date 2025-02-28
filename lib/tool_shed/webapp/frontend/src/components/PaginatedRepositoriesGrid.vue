@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
-import { QTableColumn } from "quasar"
+import { ref, computed, onMounted } from "vue"
+import { QTableColumn, type QTableProps } from "quasar"
 
-import { RepositoryGridItem, OnScroll } from "./RepositoriesGridInterface"
+import { type Query, RepositoryGridItem, type OnRequest, ROWS_PER_PAGE } from "./RepositoriesGridInterface"
 
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
@@ -10,30 +10,27 @@ import RepositoryExplore from "@/components/RepositoryExplore.vue"
 interface RepositoriesGridProps {
     title?: string
     loading?: boolean
-    onScroll?: OnScroll | null
-    rows: Array<RepositoryGridItem>
+    onRequest?: OnRequest
     noDataLabel?: string
     debug?: boolean
     allowSearch?: boolean
-}
-
-interface ScrollDetails {
-    to: number
-    from: number
-    index: number
-    direction: "increase" | "decrease"
 }
 
 const compProps = withDefaults(defineProps<RepositoriesGridProps>(), {
     title: "Repositories",
     loading: false,
     debug: false,
-    onScroll: null as OnScroll | null,
+    onRequest: undefined as OnRequest | undefined,
     noDataLabel: "No repositories found",
     allowSearch: false,
+    rowsNumber: undefined,
 })
 
-const pagination = { rowsPerPage: 0 }
+const pagination = ref({
+    page: 1,
+    rowsNumber: undefined as number | undefined,
+    rowsPerPage: ROWS_PER_PAGE,
+})
 
 const INDEX_COLUMN: QTableColumn = {
     name: "index",
@@ -59,50 +56,66 @@ const columns = computed(() => {
 
 const tableLoading = ref(false)
 
-async function onVirtualScroll(details: ScrollDetails) {
-    const { to, direction } = details
-    if (direction == "decrease") {
-        return
-    }
-    const effectiveTo = to + 1
-    if (tableLoading.value !== true && effectiveTo >= compProps.rows.length) {
-        if (compProps.onScroll) {
-            await compProps.onScroll()
-            tableLoading.value = false
-        }
-    }
-}
-
 const search = ref("")
+
+const rows = ref<RepositoryGridItem[]>([])
 
 // Adapt the rows with doubleIndex so
 const adaptedRows = computed(() =>
-    compProps.rows.map((r) => {
+    rows.value.map((r: RepositoryGridItem) => {
         // create this effective name so we are filtering on this when searching...
         const effectiveName = r.owner + " " + r.name
         return { doubleIndex: r.index * 2, effectiveName: effectiveName, ...r }
     })
 )
+
+const onRequest: QTableProps["onRequest"] = async ({ pagination: queryPagination }) => {
+    tableLoading.value = true
+    const query: Query = {
+        page: queryPagination.page,
+        rowsPerPage: queryPagination.rowsPerPage,
+    }
+    if (compProps.allowSearch && search.value) {
+        query.filter = search.value
+    }
+    if (compProps.onRequest) {
+        const results = await compProps.onRequest(query)
+        rows.value.splice(0, rows.value.length, ...results.items)
+        pagination.value.rowsNumber = results.rowsNumber
+        pagination.value.page = queryPagination.page
+        tableLoading.value = false
+    }
+}
+
+const table = ref()
+
+function makeRequest() {
+    if (table.value) {
+        table.value.requestServerInteraction()
+    }
+}
+
+defineExpose({ makeRequest })
+
+onMounted(() => {
+    makeRequest()
+})
 </script>
 <template>
     <div class="q-pa-md">
+        <!-- eslint-disable vue/no-v-model-argument -->
         <q-table
-            v-if="loading || rows.length > 0"
-            style="height: 85vh"
+            ref="table"
+            v-model:pagination="pagination"
             :rows="adaptedRows"
             :columns="columns"
             :loading="tableLoading"
             :filter="search"
             row-key="newIndex"
-            virtual-scroll
-            :virtual-scroll-item-size="48"
-            :virtual-scroll-sticky-size-start="48"
-            :pagination="pagination"
-            :rows-per-page-options="[0]"
+            :rows-per-page-options="[ROWS_PER_PAGE]"
             :no-data-label="noDataLabel"
-            @virtual-scroll="onVirtualScroll"
             hide-header
-            hide-bottom
+            @request="onRequest"
         >
             <template #top>
                 <div class="row col-12">
@@ -127,7 +140,7 @@ const adaptedRows = computed(() =>
                     style="border-color: rgba(0, 0, 0, 0) !important"
                     :props="props"
                     :key="`e_${props.row.index}`"
-                    class="q-virtual-scroll--with-prev disable-hover-hack"
+                    class="disable-hover-hack"
                 >
                     <q-td colspan="100%">
                         <span class="text-weight-regular q-ml-md text-grey">
@@ -137,12 +150,6 @@ const adaptedRows = computed(() =>
                 </q-tr>
             </template>
         </q-table>
-        <q-banner rounded class="bg-warning text-white" v-else>
-            <!-- the no-data-label doesn't seem to be working,
-                 probably because we're overriding the whole body
-            -->
-            <div class="text-h4">{{ noDataLabel }}</div>
-        </q-banner>
     </div>
 </template>
 

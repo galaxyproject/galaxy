@@ -17,12 +17,6 @@ const documents = {
         types.RecentlyCreatedRepositoriesDocument,
     "\n    query recentRepositoryUpdates {\n        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryUpdateItem\n                }\n            }\n        }\n    }\n":
         types.RecentRepositoryUpdatesDocument,
-    "\n    query repositoriesByOwner($username: String, $cursor: String) {\n        relayRepositoriesForOwner(username: $username, sort: UPDATE_TIME_DESC, first: 10, after: $cursor) {\n            edges {\n                cursor\n                node {\n                    ...RepositoryListItemFragment\n                }\n            }\n            pageInfo {\n                endCursor\n                hasNextPage\n            }\n        }\n    }\n":
-        types.RepositoriesByOwnerDocument,
-    "\n    query repositoriesByCategory($categoryId: String, $cursor: String) {\n        relayRepositoriesForCategory(encodedId: $categoryId, sort: NAME_ASC, first: 10, after: $cursor) {\n            edges {\n                cursor\n                node {\n                    ...RepositoryListItemFragment\n                }\n            }\n            pageInfo {\n                endCursor\n                hasNextPage\n            }\n        }\n    }\n":
-        types.RepositoriesByCategoryDocument,
-    "\n    fragment RepositoryListItemFragment on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        description\n        type\n        updateTime\n        homepageUrl\n        remoteRepositoryUrl\n    }\n":
-        types.RepositoryListItemFragmentFragmentDoc,
     "\n    fragment RepositoryUpdateItem on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        updateTime\n    }\n":
         types.RepositoryUpdateItemFragmentDoc,
     "\n    fragment RepositoryCreationItem on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        createTime\n    }\n":
@@ -55,24 +49,6 @@ export function graphql(
 export function graphql(
     source: "\n    query recentRepositoryUpdates {\n        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryUpdateItem\n                }\n            }\n        }\n    }\n"
 ): (typeof documents)["\n    query recentRepositoryUpdates {\n        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryUpdateItem\n                }\n            }\n        }\n    }\n"]
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-    source: "\n    query repositoriesByOwner($username: String, $cursor: String) {\n        relayRepositoriesForOwner(username: $username, sort: UPDATE_TIME_DESC, first: 10, after: $cursor) {\n            edges {\n                cursor\n                node {\n                    ...RepositoryListItemFragment\n                }\n            }\n            pageInfo {\n                endCursor\n                hasNextPage\n            }\n        }\n    }\n"
-): (typeof documents)["\n    query repositoriesByOwner($username: String, $cursor: String) {\n        relayRepositoriesForOwner(username: $username, sort: UPDATE_TIME_DESC, first: 10, after: $cursor) {\n            edges {\n                cursor\n                node {\n                    ...RepositoryListItemFragment\n                }\n            }\n            pageInfo {\n                endCursor\n                hasNextPage\n            }\n        }\n    }\n"]
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-    source: "\n    query repositoriesByCategory($categoryId: String, $cursor: String) {\n        relayRepositoriesForCategory(encodedId: $categoryId, sort: NAME_ASC, first: 10, after: $cursor) {\n            edges {\n                cursor\n                node {\n                    ...RepositoryListItemFragment\n                }\n            }\n            pageInfo {\n                endCursor\n                hasNextPage\n            }\n        }\n    }\n"
-): (typeof documents)["\n    query repositoriesByCategory($categoryId: String, $cursor: String) {\n        relayRepositoriesForCategory(encodedId: $categoryId, sort: NAME_ASC, first: 10, after: $cursor) {\n            edges {\n                cursor\n                node {\n                    ...RepositoryListItemFragment\n                }\n            }\n            pageInfo {\n                endCursor\n                hasNextPage\n            }\n        }\n    }\n"]
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-    source: "\n    fragment RepositoryListItemFragment on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        description\n        type\n        updateTime\n        homepageUrl\n        remoteRepositoryUrl\n    }\n"
-): (typeof documents)["\n    fragment RepositoryListItemFragment on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        description\n        type\n        updateTime\n        homepageUrl\n        remoteRepositoryUrl\n    }\n"]
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -27,9 +27,14 @@ export type BooleanFilter = {
     notIn?: InputMaybe<Array<InputMaybe<Scalars["Boolean"]>>>
 }
 
-export type DefaultDateTimeScalarFilter = {
+/** Concrete Filter Class which specifies a type for all the abstract filter methods defined in the super classes */
+export type DateTimeFilter = {
     eq?: InputMaybe<Scalars["DateTime"]>
+    gt?: InputMaybe<Scalars["DateTime"]>
+    gte?: InputMaybe<Scalars["DateTime"]>
     in?: InputMaybe<Array<InputMaybe<Scalars["DateTime"]>>>
+    lt?: InputMaybe<Scalars["DateTime"]>
+    lte?: InputMaybe<Scalars["DateTime"]>
     nEq?: InputMaybe<Scalars["DateTime"]>
     notIn?: InputMaybe<Array<InputMaybe<Scalars["DateTime"]>>>
 }
@@ -167,13 +172,13 @@ export type RelayCategoryEdge = {
 
 export type RelayCategoryFilter = {
     and?: InputMaybe<Array<InputMaybe<RelayCategoryFilter>>>
-    createTime?: InputMaybe<DefaultDateTimeScalarFilter>
+    createTime?: InputMaybe<DateTimeFilter>
     deleted?: InputMaybe<BooleanFilter>
     description?: InputMaybe<StringFilter>
     id?: InputMaybe<IdFilter>
     name?: InputMaybe<StringFilter>
     or?: InputMaybe<Array<InputMaybe<RelayCategoryFilter>>>
-    updateTime?: InputMaybe<DefaultDateTimeScalarFilter>
+    updateTime?: InputMaybe<DateTimeFilter>
 }
 
 /** An enumeration. */
@@ -227,7 +232,7 @@ export type RelayRepositoryEdge = {
 
 export type RelayRepositoryFilter = {
     and?: InputMaybe<Array<InputMaybe<RelayRepositoryFilter>>>
-    createTime?: InputMaybe<DefaultDateTimeScalarFilter>
+    createTime?: InputMaybe<DateTimeFilter>
     description?: InputMaybe<StringFilter>
     homepageUrl?: InputMaybe<StringFilter>
     id?: InputMaybe<IdFilter>
@@ -236,7 +241,7 @@ export type RelayRepositoryFilter = {
     or?: InputMaybe<Array<InputMaybe<RelayRepositoryFilter>>>
     remoteRepositoryUrl?: InputMaybe<StringFilter>
     type?: InputMaybe<StringFilter>
-    updateTime?: InputMaybe<DefaultDateTimeScalarFilter>
+    updateTime?: InputMaybe<DateTimeFilter>
 }
 
 export type RelayRepositoryMetadata = Node & {
@@ -436,62 +441,6 @@ export type RecentRepositoryUpdatesQuery = {
     } | null
 }
 
-export type RepositoriesByOwnerQueryVariables = Exact<{
-    username?: InputMaybe<Scalars["String"]>
-    cursor?: InputMaybe<Scalars["String"]>
-}>
-
-export type RepositoriesByOwnerQuery = {
-    __typename?: "Query"
-    relayRepositoriesForOwner?: {
-        __typename?: "RelayRepositoryConnection"
-        edges: Array<{
-            __typename?: "RelayRepositoryEdge"
-            cursor: string
-            node?:
-                | ({ __typename?: "RelayRepository" } & {
-                      " $fragmentRefs"?: { RepositoryListItemFragmentFragment: RepositoryListItemFragmentFragment }
-                  })
-                | null
-        } | null>
-        pageInfo: { __typename?: "PageInfo"; endCursor?: string | null; hasNextPage: boolean }
-    } | null
-}
-
-export type RepositoriesByCategoryQueryVariables = Exact<{
-    categoryId?: InputMaybe<Scalars["String"]>
-    cursor?: InputMaybe<Scalars["String"]>
-}>
-
-export type RepositoriesByCategoryQuery = {
-    __typename?: "Query"
-    relayRepositoriesForCategory?: {
-        __typename?: "RelayRepositoryConnection"
-        edges: Array<{
-            __typename?: "RelayRepositoryEdge"
-            cursor: string
-            node?:
-                | ({ __typename?: "RelayRepository" } & {
-                      " $fragmentRefs"?: { RepositoryListItemFragmentFragment: RepositoryListItemFragmentFragment }
-                  })
-                | null
-        } | null>
-        pageInfo: { __typename?: "PageInfo"; endCursor?: string | null; hasNextPage: boolean }
-    } | null
-}
-
-export type RepositoryListItemFragmentFragment = {
-    __typename?: "RelayRepository"
-    encodedId: string
-    name: string
-    description?: string | null
-    type?: string | null
-    updateTime?: any | null
-    homepageUrl?: string | null
-    remoteRepositoryUrl?: string | null
-    user: { __typename?: "SimpleUser"; username: string }
-} & { " $fragmentName"?: "RepositoryListItemFragmentFragment" }
-
 export type RepositoryUpdateItemFragment = {
     __typename?: "RelayRepository"
     encodedId: string
@@ -508,36 +457,6 @@ export type RepositoryCreationItemFragment = {
     user: { __typename?: "SimpleUser"; username: string }
 } & { " $fragmentName"?: "RepositoryCreationItemFragment" }
 
-export const RepositoryListItemFragmentFragmentDoc = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "FragmentDefinition",
-            name: { kind: "Name", value: "RepositoryListItemFragment" },
-            typeCondition: { kind: "NamedType", name: { kind: "Name", value: "RelayRepository" } },
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    { kind: "Field", name: { kind: "Name", value: "encodedId" } },
-                    { kind: "Field", name: { kind: "Name", value: "name" } },
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "user" },
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [{ kind: "Field", name: { kind: "Name", value: "username" } }],
-                        },
-                    },
-                    { kind: "Field", name: { kind: "Name", value: "description" } },
-                    { kind: "Field", name: { kind: "Name", value: "type" } },
-                    { kind: "Field", name: { kind: "Name", value: "updateTime" } },
-                    { kind: "Field", name: { kind: "Name", value: "homepageUrl" } },
-                    { kind: "Field", name: { kind: "Name", value: "remoteRepositoryUrl" } },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<RepositoryListItemFragmentFragment, unknown>
 export const RepositoryUpdateItemFragmentDoc = {
     kind: "Document",
     definitions: [
@@ -708,189 +627,3 @@ export const RecentRepositoryUpdatesDocument = {
         ...RepositoryUpdateItemFragmentDoc.definitions,
     ],
 } as unknown as DocumentNode<RecentRepositoryUpdatesQuery, RecentRepositoryUpdatesQueryVariables>
-export const RepositoriesByOwnerDocument = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "OperationDefinition",
-            operation: "query",
-            name: { kind: "Name", value: "repositoriesByOwner" },
-            variableDefinitions: [
-                {
-                    kind: "VariableDefinition",
-                    variable: { kind: "Variable", name: { kind: "Name", value: "username" } },
-                    type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-                },
-                {
-                    kind: "VariableDefinition",
-                    variable: { kind: "Variable", name: { kind: "Name", value: "cursor" } },
-                    type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-                },
-            ],
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "relayRepositoriesForOwner" },
-                        arguments: [
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "username" },
-                                value: { kind: "Variable", name: { kind: "Name", value: "username" } },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "sort" },
-                                value: { kind: "EnumValue", value: "UPDATE_TIME_DESC" },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "first" },
-                                value: { kind: "IntValue", value: "10" },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "after" },
-                                value: { kind: "Variable", name: { kind: "Name", value: "cursor" } },
-                            },
-                        ],
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [
-                                {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "edges" },
-                                    selectionSet: {
-                                        kind: "SelectionSet",
-                                        selections: [
-                                            { kind: "Field", name: { kind: "Name", value: "cursor" } },
-                                            {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "node" },
-                                                selectionSet: {
-                                                    kind: "SelectionSet",
-                                                    selections: [
-                                                        {
-                                                            kind: "FragmentSpread",
-                                                            name: { kind: "Name", value: "RepositoryListItemFragment" },
-                                                        },
-                                                    ],
-                                                },
-                                            },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "pageInfo" },
-                                    selectionSet: {
-                                        kind: "SelectionSet",
-                                        selections: [
-                                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
-                                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
-                                        ],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-        ...RepositoryListItemFragmentFragmentDoc.definitions,
-    ],
-} as unknown as DocumentNode<RepositoriesByOwnerQuery, RepositoriesByOwnerQueryVariables>
-export const RepositoriesByCategoryDocument = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "OperationDefinition",
-            operation: "query",
-            name: { kind: "Name", value: "repositoriesByCategory" },
-            variableDefinitions: [
-                {
-                    kind: "VariableDefinition",
-                    variable: { kind: "Variable", name: { kind: "Name", value: "categoryId" } },
-                    type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-                },
-                {
-                    kind: "VariableDefinition",
-                    variable: { kind: "Variable", name: { kind: "Name", value: "cursor" } },
-                    type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-                },
-            ],
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "relayRepositoriesForCategory" },
-                        arguments: [
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "encodedId" },
-                                value: { kind: "Variable", name: { kind: "Name", value: "categoryId" } },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "sort" },
-                                value: { kind: "EnumValue", value: "NAME_ASC" },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "first" },
-                                value: { kind: "IntValue", value: "10" },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "after" },
-                                value: { kind: "Variable", name: { kind: "Name", value: "cursor" } },
-                            },
-                        ],
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [
-                                {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "edges" },
-                                    selectionSet: {
-                                        kind: "SelectionSet",
-                                        selections: [
-                                            { kind: "Field", name: { kind: "Name", value: "cursor" } },
-                                            {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "node" },
-                                                selectionSet: {
-                                                    kind: "SelectionSet",
-                                                    selections: [
-                                                        {
-                                                            kind: "FragmentSpread",
-                                                            name: { kind: "Name", value: "RepositoryListItemFragment" },
-                                                        },
-                                                    ],
-                                                },
-                                            },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "pageInfo" },
-                                    selectionSet: {
-                                        kind: "SelectionSet",
-                                        selections: [
-                                            { kind: "Field", name: { kind: "Name", value: "endCursor" } },
-                                            { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
-                                        ],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-        ...RepositoryListItemFragmentFragmentDoc.definitions,
-    ],
-} as unknown as DocumentNode<RepositoriesByCategoryQuery, RepositoriesByCategoryQueryVariables>

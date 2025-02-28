@@ -1874,6 +1874,19 @@ export interface components {
              */
             url: string
         }
+        /** PaginatedRepositoryIndexResults */
+        PaginatedRepositoryIndexResults: {
+            /** Hits */
+            hits: components["schemas"]["Repository"][]
+            /** Hostname */
+            hostname: string
+            /** Page */
+            page: number
+            /** Page Size */
+            page_size: number
+            /** Total Results */
+            total_results: number
+        }
         /** ParsedTool */
         ParsedTool: {
             /** Citations */
@@ -3375,12 +3388,16 @@ export interface operations {
     repositories__index: {
         parameters: {
             query?: {
+                /** @description This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter. */
                 q?: string | null
+                /** @description This will perform a quick search using database operators. This should not be used with the 'q' parameter. */
+                filter?: string | null
                 page?: number | null
                 page_size?: number | null
                 deleted?: boolean | null
                 owner?: string | null
                 name?: string | null
+                category_id?: string | null
             }
             header?: never
             path?: never
@@ -3397,6 +3414,7 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["RepositorySearchResults"]
                         | components["schemas"]["Repository"][]
+                        | components["schemas"]["PaginatedRepositoryIndexResults"]
                 }
             }
             /** @description Request Error */

@@ -1,5 +1,4 @@
-import { useFragment } from "@/gql/fragment-masking"
-import { RepositoryListItemFragment } from "@/gqlFragements"
+import { type Repository, type PaginatedRepositoryIndexResults } from "@/api"
 
 export interface RepositoryGridItem {
     id: string
@@ -12,25 +11,41 @@ export interface RepositoryGridItem {
     remote_repository_url: string | null | undefined
 }
 
-export type OnScroll = () => Promise<void>
+export function emptyQueryResults(): QueryResults {
+    return { items: [], rowsNumber: 0 }
+}
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export function nodeToRow(node: any, index: number): RepositoryGridItem {
-    /* Adapt CQL results to RepositoryGridItem interface consumed by the
-       component. */
-    if (node == null) {
-        throw Error("Problem with server response")
-    }
+export interface Query {
+    page: number
+    rowsPerPage: number
+    filter?: string
+}
 
-    const fragment = useFragment(RepositoryListItemFragment, node)
+export interface QueryResults {
+    items: RepositoryGridItem[]
+    rowsNumber: number
+}
+
+function adaptIndexItem(repository: Repository, index: number): RepositoryGridItem {
     return {
-        id: fragment.encodedId,
         index: index,
-        name: fragment.name as string, // TODO: fix schema.py so this is nonnull
-        owner: fragment.user.username,
-        description: fragment.description || null,
-        homepage_url: fragment.homepageUrl || null,
-        remote_repository_url: fragment.remoteRepositoryUrl || null,
-        update_time: fragment.updateTime,
+        id: repository.id,
+        name: repository.name,
+        owner: repository.owner,
+        description: repository.description,
+        update_time: repository.update_time,
+        homepage_url: repository.homepage_url,
+        remote_repository_url: repository.remote_repository_url,
     }
 }
+
+export function adaptPaginatedIndexResponse(apiResults: PaginatedRepositoryIndexResults): QueryResults {
+    const items = apiResults.hits.map(adaptIndexItem)
+    const rowsNumber = apiResults.total_results
+    return { items, rowsNumber }
+}
+
+// simplify communication between components by setting this as only value across app
+export const ROWS_PER_PAGE = 20
+
+export type OnRequest = (query: Query) => Promise<QueryResults> // for paginating grid
