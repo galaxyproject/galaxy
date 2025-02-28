@@ -3398,6 +3398,10 @@ export interface operations {
                 owner?: string | null
                 name?: string | null
                 category_id?: string | null
+                /** @description Direction of sort. This defaults to False and causes an ascending sort on the field specified by sort_on. This field is ignored if 'q' is specified an whoosh search is used. */
+                sort_desc?: boolean | null
+                /** @description Sort by the this repository field - direction is controlled by sort_desc that defaults to False and causes an ascending sort on this field. This field is ignored if 'q' is specified an whoosh search is used. */
+                sort_by?: ("name" | "create_time") | null
             }
             header?: never
             path?: never

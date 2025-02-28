@@ -28,3 +28,18 @@ export async function paginatedIndex(params: IndexParameters): Promise<Paginated
         throw Error("Problem searching for repositories")
     }
 }
+
+export async function recentlyCreatedRepositories(): Promise<PaginatedRepositoryIndexResults> {
+    const params: IndexParameters = {
+        sort_by: "create_time",
+        sort_desc: true,
+        page_size: 10,
+        page: 1,
+    }
+    const { data } = await ToolShedApi().GET("/api/repositories", { params: { query: params } })
+    if (data) {
+        return data as PaginatedRepositoryIndexResults
+    } else {
+        throw Error("Problem searching for repositories")
+    }
+}
