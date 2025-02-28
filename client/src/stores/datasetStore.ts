@@ -1,26 +1,13 @@
 import { defineStore } from "pinia";
-import { computed, set } from "vue";
+import { set } from "vue";
 
-import { type DatasetEntry, type HistoryContentItemBase, isInaccessible } from "@/api";
+import { type DatasetEntry, type HistoryContentItemBase } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { useKeyedCache } from "@/composables/keyedCache";
 
 export const useDatasetStore = defineStore("datasetStore", () => {
-    const shouldFetch = computed(() => {
-        return (dataset?: DatasetEntry) => {
-            if (!dataset) {
-                return true;
-            }
-            if (isInaccessible(dataset)) {
-                return false;
-            }
-            return false;
-        };
-    });
-
     const { storedItems, getItemById, getItemLoadError, isLoadingItem, fetchItemById } = useKeyedCache<DatasetEntry>(
         fetchDatasetDetails,
-        shouldFetch
     );
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
