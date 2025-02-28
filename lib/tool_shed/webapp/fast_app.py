@@ -18,6 +18,9 @@ from fastapi.responses import (
     RedirectResponse,
 )
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from starlette_graphene3 import (
     GraphQLApp,
     make_graphiql_handler,
@@ -163,10 +166,15 @@ LEGACY_ROUTES = {
 }
 
 
+limiter = Limiter(key_func=get_remote_address)
+
+
 def initialize_fast_app(gx_webapp, tool_shed_app):
     app = get_fastapi_instance()
     add_exception_handler(app)
     add_request_id_middleware(app)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
     from .config import SHED_API_VERSION
 
     def mount_static(directory: Path):
