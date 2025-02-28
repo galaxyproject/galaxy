@@ -67,8 +67,8 @@ const currentHistoryId = computed(() => historyStore.currentHistoryId);
 
 const itemContent = ref<any>(null);
 const loading = ref(true);
-const messageText = ref<string | null>(null);
-const messageVariant = ref<string | null>(null);
+const messageText = ref<string>("");
+const messageVariant = ref<string>("");
 
 const itemName = computed(() => itemContent.value?.name || "");
 const itemUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.collectionId}`);
