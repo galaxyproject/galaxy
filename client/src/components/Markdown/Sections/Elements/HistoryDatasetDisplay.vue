@@ -115,8 +115,6 @@ const { getDatasetError, getDataset } = useDatasetStore();
 
 interface Dataset {
     name?: string;
-    info?: string;
-    peek?: string;
     file_ext?: string;
 }
 

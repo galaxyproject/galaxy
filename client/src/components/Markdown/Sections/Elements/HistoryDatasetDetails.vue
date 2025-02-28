@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 
@@ -27,27 +27,19 @@ const props = defineProps<{
     name: string;
 }>();
 
-const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
-
-const attributeValue = ref<string>();
-
-const dataset = computed(() => getDataset(props.datasetId) as Dataset);
-const error = computed(() => getDatasetError(props.datasetId));
-
-async function fetchAttribute() {
+const attributeValue = computed(() => {
     if (dataset.value) {
         const attributeName = ATTRIBUTES[props.name] || "";
         if (attributeName) {
-            attributeValue.value = dataset.value[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
+            return dataset.value[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
         }
     }
-}
+    return "";
+});
 
-watch(
-    () => dataset.value,
-    () => fetchAttribute(),
-    { immediate: true }
-);
+const dataset = computed(() => getDataset(props.datasetId) as Dataset);
+const error = computed(() => getDatasetError(props.datasetId));
+const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 </script>
 
 <template>
