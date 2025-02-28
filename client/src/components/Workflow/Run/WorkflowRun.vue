@@ -5,7 +5,8 @@ import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory } from "@/api";
-import { copyWorkflow } from "@/components/Workflow/workflows.services";
+import { copyWorkflow, getWorkflowInfo } from "@/components/Workflow/workflows.services";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -52,13 +53,14 @@ const submissionError = ref("");
 const workflowError = ref("");
 const workflowName = ref("");
 const workflowModel: any = ref(null);
+const owner = ref<string>();
 
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
 const editorLink = computed(
     () => `/workflows/edit?id=${props.workflowId}${props.version ? `&version=${props.version}` : ""}`
 );
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
-const isOwner = computed(() => userStore.matchesCurrentUsername(workflowModel.value.runData.owner));
+const isOwner = computed(() => userStore.matchesCurrentUsername(owner.value));
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
 const canRunOnHistory = computed(() => {
     if (!currentHistoryId.value) {
@@ -67,6 +69,16 @@ const canRunOnHistory = computed(() => {
     const history = historyStore.getHistoryById(currentHistoryId.value);
     return (history && canMutateHistory(history)) ?? false;
 });
+
+if (props.instance) {
+    const { workflow } = useWorkflowInstance(props.workflowId);
+    watch(workflow, () => {
+        if (workflow.value) {
+            workflowName.value = workflow.value?.name;
+            owner.value = workflow.value?.owner;
+        }
+    });
+}
 
 function handleInvocations(incomingInvocations: any) {
     invocations.value = incomingInvocations;
@@ -116,14 +128,31 @@ async function loadRun() {
         hasStepVersionChanges.value = incomingModel.hasStepVersionChanges;
         workflowName.value = incomingModel.name;
         workflowModel.value = incomingModel;
+        owner.value = incomingModel.runData.owner;
         loading.value = false;
     } catch (e) {
-        workflowError.value = errorMessageAsString(e);
+        const errMessage = errorMessageAsString(e);
+        if (errMessage === "Workflow step has upgrade messages") {
+            hasUpgradeMessages.value = true;
+            if (!props.instance) {
+                try {
+                    const storedWorkflow = await getWorkflowInfo(props.workflowId);
+                    owner.value = storedWorkflow.owner;
+                    workflowName.value = storedWorkflow.name;
+                } catch {
+                    // just show original error
+                    workflowError.value = errMessage;
+                }
+            }
+        } else {
+            workflowError.value = errMessage;
+        }
+        loading.value = false;
     }
 }
 
 async function onImport() {
-    const response = await copyWorkflow(props.workflowId, workflowModel.value.runData.owner, props.version);
+    const response = await copyWorkflow(props.workflowId, owner.value, props.version);
     router.push(`/workflows/edit?id=${response.id}`);
 }
 
