@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import axios from "axios";
 import { ref, watch } from "vue";
 
-import { getAppRoot } from "@/onload/loadConfig";
+import { GalaxyApi } from "@/api";
 
 import License from "@/components/License/License.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowLicenseProps {
     workflowId: string;
@@ -12,16 +12,25 @@ interface WorkflowLicenseProps {
 
 const props = defineProps<WorkflowLicenseProps>();
 
+const errorMessage = ref("");
 const licenseId = ref("");
+const loading = ref(true);
 
 async function fetchLicense(workflowId: string) {
-    try {
-        const response = await axios.get(`${getAppRoot()}api/workflows/${workflowId}`);
-        licenseId.value = response.data?.license || "";
-    } catch (error) {
-        console.error("Error fetching workflow license:", error);
+    loading.value = true;
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
+        params: {
+            path: { workflow_id: workflowId },
+        },
+    });
+    if (error) {
+        errorMessage.value = `Failed to retrieve content. ${error.err_msg}`;
         licenseId.value = "";
+    } else {
+        errorMessage.value = "";
+        licenseId.value = data?.license || "";
     }
+    loading.value = false;
 }
 
 watch(
@@ -32,10 +41,8 @@ watch(
 </script>
 
 <template>
-    <span>
-        <License v-if="licenseId" :license-id="licenseId" />
-        <p v-else>
-            <i>Workflow does not define a license.</i>
-        </p>
-    </span>
+    <LoadingSpan v-if="loading" />
+    <BAlert v-else-if="errorMessage" show variant="warning">{{ errorMessage }}</BAlert>
+    <License v-else-if="licenseId" :license-id="licenseId" />
+    <i v-else>Workflow does not define a license.</i>
 </template>

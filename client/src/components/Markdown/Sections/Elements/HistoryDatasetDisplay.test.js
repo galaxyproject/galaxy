@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
+// import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -93,4 +93,4 @@ describe("History Text Dataset Display", () => {
         expect(wrapper.find('.btn[title="Collapse"]').exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset-expanded").exists()).toBe(true);
     });
-});*/
+});
