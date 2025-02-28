@@ -14,8 +14,7 @@ export const useDatasetStore = defineStore("datasetStore", () => {
             if (isInaccessible(dataset)) {
                 return false;
             }
-            const isNotDetailed = !("peek" in dataset);
-            return isNotDetailed;
+            return false;
         };
     });
 
