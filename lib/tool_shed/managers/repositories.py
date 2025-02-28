@@ -84,6 +84,8 @@ from tool_shed_client.schema import (
     PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
     RepositoryMetadataInstallInfoDict,
+    ResetMetadataOnRepositoriesRequest,
+    ResetMetadataOnRepositoriesResponse,
     ResetMetadataOnRepositoryResponse,
 )
 from .categories import get_value_mapper as category_value_mapper
@@ -497,6 +499,82 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time
     return ResetMetadataOnRepositoryResponse(**results)
+
+
+def reset_metadata_on_repositories(
+    trans: ProvidesRepositoriesContext, request: ResetMetadataOnRepositoriesRequest
+) -> ResetMetadataOnRepositoriesResponse:
+
+    def handle_repository(trans, repository, results):
+        log.debug(f"Resetting metadata on repository {repository.name}")
+        try:
+            rmm = repository_metadata_manager.RepositoryMetadataManager(
+                trans,
+                resetting_all_metadata_on_repository=True,
+                updating_installed_repository=False,
+                repository=repository,
+                persist=False,
+            )
+            rmm.reset_all_metadata_on_repository_in_tool_shed()
+            rmm_invalid_file_tups = rmm.get_invalid_file_tups()
+            if rmm_invalid_file_tups:
+                message = generate_message_for_invalid_tools(
+                    trans.app, rmm_invalid_file_tups, repository, None, as_html=False
+                )
+                results["unsuccessful_count"] += 1
+            else:
+                message = (
+                    f"Successfully reset metadata on repository {repository.name} owned by {repository.user.username}"
+                )
+                results["successful_count"] += 1
+        except Exception as e:
+            message = (
+                f"Error resetting metadata on repository {repository.name} owned by {repository.user.username}: {e}"
+            )
+            results["unsuccessful_count"] += 1
+        status = f"{repository.name} : {message}"
+        results["repository_status"].append(status)
+        return results
+
+    start_time = strftime("%Y-%m-%d %H:%M:%S")
+    results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
+    handled_repository_ids: List[str] = []
+    encoded_ids_to_skip = request.encoded_ids_to_skip or []
+    if trans.user_is_admin:
+        my_writable = request.my_writable
+    else:
+        my_writable = True
+    rmm = repository_metadata_manager.RepositoryMetadataManager(
+        trans,
+        resetting_all_metadata_on_repository=True,
+        updating_installed_repository=False,
+        persist=False,
+    )
+    # First reset metadata on all repositories of type repository_dependency_definition.
+    for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
+        encoded_id = trans.security.encode_id(repository.id)
+        if encoded_id in encoded_ids_to_skip:
+            log.debug(
+                "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                repository.id,
+                encoded_ids_to_skip,
+            )
+        elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+            results = handle_repository(trans, repository, results)
+    # Now reset metadata on all remaining repositories.
+    for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
+        encoded_id = trans.security.encode_id(repository.id)
+        if encoded_id in encoded_ids_to_skip:
+            log.debug(
+                "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                repository.id,
+                encoded_ids_to_skip,
+            )
+        elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+            results = handle_repository(trans, repository, results)
+    stop_time = strftime("%Y-%m-%d %H:%M:%S")
+    results["stop_time"] = stop_time
+    return ResetMetadataOnRepositoriesResponse(**results)
 
 
 def create_repository(trans: ProvidesUserContext, request: CreateRepositoryRequest) -> Repository:

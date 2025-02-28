@@ -37,11 +37,12 @@ from tool_shed.managers.repositories import (
     get_ordered_installable_revisions,
     get_repository_metadata_dict,
     get_repository_metadata_for_management,
-    IndexRequest,
     index_repositories,
     index_repositories_paginated,
+    IndexRequest,
     PaginatedIndexRequest,
     readmes,
+    reset_metadata_on_repositories,
     reset_metadata_on_repository,
     search,
     to_detailed_model,
@@ -68,6 +69,8 @@ from tool_shed_client.schema import (
     RepositorySearchResults,
     RepositoryUpdate,
     RepositoryUpdateRequest,
+    ResetMetadataOnRepositoriesRequest,
+    ResetMetadataOnRepositoriesResponse,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
     UpdateRepositoryRequest,
@@ -85,12 +88,12 @@ from . import (
     OptionalRepositoryNameParam,
     OptionalRepositoryOwnerParam,
     RepositoryIdPathParam,
+    RepositoryIndexCategoryQueryParam,
     RepositoryIndexDeletedQueryParam,
+    RepositoryIndexFilterParam,
     RepositoryIndexNameQueryParam,
     RepositoryIndexOwnerQueryParam,
     RepositoryIndexQueryParam,
-    RepositoryIndexFilterParam,
-    RepositoryIndexCategoryQueryParam,
     RepositoryIndexSortByParam,
     RepositoryIndexSortDescParam,
     RepositorySearchPageQueryParam,
@@ -298,6 +301,20 @@ class FastAPIRepositories:
         encoded_repository_id: str = RepositoryIdPathParam,
     ) -> ResetMetadataOnRepositoryResponse:
         return reset_metadata_on_repository(trans, encoded_repository_id)
+
+    @router.post(
+        "/api/repositories/reset_metadata_on_repositories",
+        description="reset metadata on all of your repositories",
+        operation_id="repositories__reset_all",
+    )
+    def reset_metadata_on_repositories(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        request: ResetMetadataOnRepositoriesRequest = depend_on_either_json_or_form_data(
+            ResetMetadataOnRepositoriesRequest
+        ),
+    ) -> ResetMetadataOnRepositoriesResponse:
+        return reset_metadata_on_repositories(trans, request)
 
     @router.get(
         "/api/repositories/updates",

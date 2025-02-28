@@ -254,6 +254,26 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/repositories/reset_metadata_on_repositories": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
+        /**
+         * Reset Metadata On Repositories
+         * @description reset metadata on all of your repositories
+         */
+        post: operations["repositories__reset_all"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/repositories/reset_metadata_on_repository": {
         parameters: {
             query?: never
@@ -2290,6 +2310,15 @@ export interface components {
         RepositoryUpdate:
             | components["schemas"]["ValidRepostiroyUpdateMessage"]
             | components["schemas"]["FailedRepositoryUpdateMessage"]
+        /** ResetMetadataOnRepositoriesResponse */
+        ResetMetadataOnRepositoriesResponse: {
+            /** Repository Status */
+            repository_status: string[]
+            /** Start Time */
+            start_time: string
+            /** Stop Time */
+            stop_time: string
+        }
         /** ResetMetadataOnRepositoryResponse */
         ResetMetadataOnRepositoryResponse: {
             /** Repository Status */
@@ -3593,6 +3622,44 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["InstallInfo"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__reset_all: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["ResetMetadataOnRepositoriesResponse"]
                 }
             }
             /** @description Request Error */

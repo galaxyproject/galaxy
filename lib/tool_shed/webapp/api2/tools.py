@@ -34,9 +34,9 @@ from tool_shed_client.schema.trs_service_info import Service
 from . import (
     depends,
     DependsOnTrans,
-    ToolSearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     Router,
+    ToolSearchPageQueryParam,
     ToolsIndexQueryParam,
 )
 

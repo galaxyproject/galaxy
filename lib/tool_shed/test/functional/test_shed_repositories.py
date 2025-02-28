@@ -12,8 +12,8 @@ from tool_shed.test.base.populators import (
 )
 from tool_shed_client.schema import (
     RepositoryIndexRequest,
-    RepositoryRevisionMetadata,
     RepositoryPaginatedIndexRequest,
+    RepositoryRevisionMetadata,
     UpdateRepositoryRequest,
 )
 from ..base.api import (
@@ -333,16 +333,25 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator.assert_has_n_installable_revisions(repository, 3)
 
     @skip_if_api_v2
-    def test_reset_all(self):
+    def test_reset_all_v1(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
         populator.assert_has_n_installable_revisions(repository, 3)
-        # reseting one at a time or resetting everything via the web controllers works...
-        # reseting all at once via the API does not work - it breaks the repository
+        # resetting one at a time or resetting everything via the web controllers works...
+        # resetting all at once via the API does not work - it breaks the repository
         response = self.api_interactor.post(
             "repositories/reset_metadata_on_repositories",
             data={"payload": "can not be empty because bug in controller"},
         )
+        api_asserts.assert_status_code_is_ok(response)
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+    @skip_if_api_v1
+    def test_reset_all_v2(self):
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
+        populator.assert_has_n_installable_revisions(repository, 3)
+        response = self.api_interactor.post("repositories/reset_metadata_on_repositories", json={})
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
 
