@@ -268,12 +268,17 @@ class ToolSearchResults(BaseModel):
         return matching_hit
 
 
+IndexSortByType = Literal["name", "create_time"]
+
+
 class RepositoryIndexRequest(BaseModel):
     filter: Optional[str] = None
     owner: Optional[str] = None
     name: Optional[str] = None
     deleted: str = "false"
     category_id: Optional[str] = None
+    sort_by: Optional[IndexSortByType] = "name"
+    sort_desc: Optional[bool] = False
 
 
 class RepositoryPaginatedIndexRequest(RepositoryIndexRequest):

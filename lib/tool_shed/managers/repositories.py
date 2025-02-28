@@ -79,6 +79,7 @@ from tool_shed_client.schema import (
     CreateRepositoryRequest,
     DetailedRepository,
     ExtraRepoInfo,
+    IndexSortByType,
     LegacyInstallInfoTuple,
     PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
@@ -268,6 +269,8 @@ class IndexRequest(BaseModel):
     deleted: bool = False
     filter: Optional[str] = None
     category_id: Optional[str] = None
+    sort_by: IndexSortByType = "name"
+    sort_desc: bool = False
 
 
 class PaginatedIndexRequest(IndexRequest):
@@ -666,5 +669,14 @@ def _get_repositories_by_name_and_owner_and_deleted(security: IdEncodingHelper, 
         category_id = security.decode_id(index_request.category_id)
         stmt = stmt.where(RepositoryCategoryAssociation.category_id == category_id)
         stmt = stmt.where(RepositoryCategoryAssociation.repository_id == Repository.id)
-    stmt = stmt.order_by(Repository.name)
+    sort_by_str = index_request.sort_by
+    sort_desc = index_request.sort_desc
+    sort_by: Any
+    if sort_by_str == "name":
+        sort_by = Repository.name
+    elif sort_by_str == "create_time":
+        sort_by = Repository.create_time
+    if sort_desc:
+        sort_by = sort_by.desc()
+    stmt = stmt.order_by(sort_by)
     return stmt

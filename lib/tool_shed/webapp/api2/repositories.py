@@ -58,6 +58,7 @@ from tool_shed_client.schema import (
     CreateRepositoryRequest,
     DetailedRepository,
     from_legacy_install_info,
+    IndexSortByType,
     InstallInfo,
     PaginatedRepositoryIndexResults,
     Repository,
@@ -90,6 +91,8 @@ from . import (
     RepositoryIndexQueryParam,
     RepositoryIndexFilterParam,
     RepositoryIndexCategoryQueryParam,
+    RepositoryIndexSortByParam,
+    RepositoryIndexSortDescParam,
     RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     RequiredChangesetParam,
@@ -132,6 +135,8 @@ class FastAPIRepositories:
         owner: Optional[str] = RepositoryIndexOwnerQueryParam,
         name: Optional[str] = RepositoryIndexNameQueryParam,
         category_id: Optional[str] = RepositoryIndexCategoryQueryParam,
+        sort_desc: Optional[bool] = RepositoryIndexSortDescParam,
+        sort_by: Optional[IndexSortByType] = RepositoryIndexSortByParam,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> IndexResponse:
 
@@ -161,6 +166,8 @@ class FastAPIRepositories:
                 deleted=deleted or False,
                 filter=filter,
                 category_id=category_id,
+                sort_by=sort_by,
+                sort_desc=sort_desc,
             )
             paginated_repositories = index_repositories_paginated(self.app, paginated_index_request)
             return paginated_repositories
@@ -171,6 +178,8 @@ class FastAPIRepositories:
                 deleted=deleted or False,
                 filter=filter,
                 category_id=category_id,
+                sort_by=sort_by,
+                sort_desc=sort_desc,
             )
             repositories = index_repositories(self.app, index_request)
             return [to_model(self.app, r) for r in repositories]

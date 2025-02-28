@@ -11,6 +11,7 @@ from tool_shed.test.base.populators import (
     repo_tars,
 )
 from tool_shed_client.schema import (
+    RepositoryIndexRequest,
     RepositoryRevisionMetadata,
     RepositoryPaginatedIndexRequest,
     UpdateRepositoryRequest,
@@ -157,6 +158,29 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         request.filter = "repoforindexpagination4"
         response = populator.repository_index_paginated(request)
         assert response.total_results == 1
+
+    @skip_if_api_v1
+    def test_index_sorting(self):
+        populator = self.populator
+        category1 = populator.new_category(prefix="paginatecat1")
+        populator.setup_column_maker_repo(prefix="repoforsort_z", category_id=category1.id)
+        populator.setup_column_maker_repo(prefix="repoforsort_a", category_id=category1.id)
+
+        response = populator.repository_index(RepositoryIndexRequest())
+        order_of_these = [r.name for r in response.root if r.name.startswith("repoforsort")]
+        assert "_a" in order_of_these[0]
+        assert "_z" in order_of_these[1]
+
+        response = populator.repository_index(RepositoryIndexRequest(sort_desc=True))
+        order_of_these = [r.name for r in response.root if r.name.startswith("repoforsort")]
+        assert "_z" in order_of_these[0]
+        assert "_a" in order_of_these[1]
+
+        # test recently created query
+        response = populator.repository_index(RepositoryIndexRequest(sort_desc=True, sort_by="create_time"))
+        order_of_these = [r.name for r in response.root if r.name.startswith("repoforsort")]
+        assert "_a" in order_of_these[0]
+        assert "_z" in order_of_these[1]
 
     @skip_if_api_v1
     def test_allow_push(self):

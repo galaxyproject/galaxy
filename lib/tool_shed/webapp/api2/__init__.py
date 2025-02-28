@@ -51,6 +51,7 @@ from tool_shed.webapp.model import (
     GalaxySession,
     User,
 )
+from tool_shed_client.schema import IndexSortByType
 
 log = logging.getLogger(__name__)
 
@@ -245,9 +246,28 @@ RepositoryIndexFilterParam: Optional[str] = Query(
     description="This will perform a quick search using database operators. This should not be used with the 'q' parameter.",
 )
 
+RepositoryIndexSortByParam: IndexSortByType = Query(
+    default="name",
+    title="Sort by",
+    description="Sort by the this repository field - direction is controlled by sort_desc that defaults to False and causes an ascending sort on this field. This field is ignored if 'q' is specified an whoosh search is used.",
+)
+
+RepositoryIndexSortDescParam: bool = Query(
+    default=False,
+    title="Sort Descending",
+    description="Direction of sort. This defaults to False and causes an ascending sort on the field specified by sort_on. This field is ignored if 'q' is specified an whoosh search is used.",
+)
+
+
 ToolsIndexQueryParam: str = Query(
     default=...,
     title="Search Query",
+)
+
+ToolSearchPageQueryParam: int = Query(
+    default=1,
+    title="Page",
+    description="",
 )
 
 RepositorySearchPageQueryParam: Optional[int] = Query(
