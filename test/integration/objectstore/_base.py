@@ -38,7 +38,7 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
     upload_rse_name: ${rucio_rse}
     upload_scheme: file
     register_only: false
-    download_schemes: 
+    download_schemes:
     scope: galaxy
     host: http://${host}:${port}
     account: ${rucio_account}
