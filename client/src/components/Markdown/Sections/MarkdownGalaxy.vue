@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 import { useConfig } from "@/composables/config";
+import { fromCache } from "@/components/Markdown/cache";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -47,6 +48,28 @@ async function handleArgs() {
         error.value = "";
         attributes.value = getArgs(props.content);
         const attributesArgs = { ...attributes.value.args };
+
+        if (attributesArgs.invocation_id) {
+            const invocation = await fromCache(`invocations/${attributesArgs.invocation_id}`);
+            if (invocation) {
+                attributesArgs.invocation = invocation;
+                if (attributesArgs.input && invocation.inputs) {
+                    const inputValues = Object.values(invocation.inputs);
+                    const input = inputValues.find((i) => i.label === attributesArgs.input);
+                    attributesArgs.history_target_id = input?.id;
+                } else if (attributesArgs.output && invocation.outputs) {
+                    const targetId = invocation.outputs[attributesArgs.output]?.id || "";
+                    attributesArgs.history_target_id = targetId;
+                } else if (attributesArgs.step && invocation.steps) {
+                    const step = invocation.steps.find((s) => s.workflow_step_label === attributesArgs.step);
+                    attributesArgs.job_id = step?.job_id;
+                    attributesArgs.implicit_collection_jobs_id = step?.implicit_collection_jobs_id;
+                }
+            } else {
+                error.value = "Failed to retrieve invocation.";
+            }
+        }
+
         args.value = attributesArgs;
     } catch (e) {
         error.value = "The directive provided below is invalid. Please review it for errors.";
