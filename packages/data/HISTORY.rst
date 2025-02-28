@@ -10,6 +10,19 @@ History
 
 
 -------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Set content-type to text/plain if dataset not safe by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19563 <https://github.com/galaxyproject/galaxy/pull/19563>`_
+* Fail request explicitly when sqlite provider used on non-sqlite file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19630 <https://github.com/galaxyproject/galaxy/pull/19630>`_
+* Fix various bugs around tool data table bundles by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19659 <https://github.com/galaxyproject/galaxy/pull/19659>`_
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 
