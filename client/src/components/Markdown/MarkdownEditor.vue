@@ -37,14 +37,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onUnmounted, ref } from "vue";
-
-import { resetCache } from "@/components/Markdown/cache";
+import { ref } from "vue";
 
 import TextEditor from "./Editor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
-
-resetCache();
 
 library.add(faQuestion);
 
@@ -60,8 +56,4 @@ const showHelpModal = ref<boolean>(false);
 function onHelp() {
     showHelpModal.value = true;
 }
-
-onUnmounted(() => {
-    resetCache();
-});
 </script>

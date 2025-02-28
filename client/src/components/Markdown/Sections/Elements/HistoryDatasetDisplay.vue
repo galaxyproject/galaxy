@@ -114,6 +114,10 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Dataset {
     name?: string;
     file_ext?: string;
+    metadata_column_names?: Array<string>;
+    metadata_columns?: number;
+    metadata_delimiter?: string;
+    metadata_comment_lines?: number;
 }
 
 // Props
@@ -159,10 +163,10 @@ const contentClass = (datasetType: string) => {
     return expanded.value ? "embedded-dataset-expanded" : "embedded-dataset";
 };
 
-const getFields = (metaContent: any) => {
+const getFields = (metaContent: Dataset) => {
     const fields = [];
     const columnNames = metaContent.metadata_column_names || [];
-    const columnCount = metaContent.metadata_columns;
+    const columnCount = metaContent.metadata_columns || 0;
     for (let i = 0; i < columnCount; i++) {
         fields.push({
             key: `${i}`,
@@ -173,7 +177,7 @@ const getFields = (metaContent: any) => {
     return fields;
 };
 
-const getItems = (textData: string, metaData: any) => {
+const getItems = (textData: string, metaData: Dataset) => {
     const tableData: any[] = [];
     const delimiter = metaData.metadata_delimiter || "\t";
     const comments = metaData.metadata_comment_lines || 0;
