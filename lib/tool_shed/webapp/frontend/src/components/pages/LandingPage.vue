@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import RecentlyUpdatedRepositories from "@/components/RecentlyUpdatedRepositories.vue"
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
 import PageContainer from "@/components/PageContainer.vue"
 import { notify } from "@/util"
@@ -18,7 +17,6 @@ if (props.message != null) {
     <page-container>
         <div class="row justify-left">Welcome to the Galaxy Tool Shed.</div>
         <div class="row justify-center">
-            <recently-updated-repositories class="col-4" />
             <recently-created-repositories class="col-4" />
         </div>
     </page-container>

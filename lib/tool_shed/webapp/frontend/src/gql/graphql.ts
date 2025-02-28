@@ -424,31 +424,6 @@ export type RecentlyCreatedRepositoriesQuery = {
     } | null
 }
 
-export type RecentRepositoryUpdatesQueryVariables = Exact<{ [key: string]: never }>
-
-export type RecentRepositoryUpdatesQuery = {
-    __typename?: "Query"
-    relayRepositories?: {
-        __typename?: "RelayRepositoryConnection"
-        edges: Array<{
-            __typename?: "RelayRepositoryEdge"
-            node?:
-                | ({ __typename?: "RelayRepository" } & {
-                      " $fragmentRefs"?: { RepositoryUpdateItemFragment: RepositoryUpdateItemFragment }
-                  })
-                | null
-        } | null>
-    } | null
-}
-
-export type RepositoryUpdateItemFragment = {
-    __typename?: "RelayRepository"
-    encodedId: string
-    name: string
-    updateTime?: any | null
-    user: { __typename?: "SimpleUser"; username: string }
-} & { " $fragmentName"?: "RepositoryUpdateItemFragment" }
-
 export type RepositoryCreationItemFragment = {
     __typename?: "RelayRepository"
     encodedId: string
@@ -457,32 +432,6 @@ export type RepositoryCreationItemFragment = {
     user: { __typename?: "SimpleUser"; username: string }
 } & { " $fragmentName"?: "RepositoryCreationItemFragment" }
 
-export const RepositoryUpdateItemFragmentDoc = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "FragmentDefinition",
-            name: { kind: "Name", value: "RepositoryUpdateItem" },
-            typeCondition: { kind: "NamedType", name: { kind: "Name", value: "RelayRepository" } },
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    { kind: "Field", name: { kind: "Name", value: "encodedId" } },
-                    { kind: "Field", name: { kind: "Name", value: "name" } },
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "user" },
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [{ kind: "Field", name: { kind: "Name", value: "username" } }],
-                        },
-                    },
-                    { kind: "Field", name: { kind: "Name", value: "updateTime" } },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<RepositoryUpdateItemFragment, unknown>
 export const RepositoryCreationItemFragmentDoc = {
     kind: "Document",
     definitions: [
@@ -568,62 +517,3 @@ export const RecentlyCreatedRepositoriesDocument = {
         ...RepositoryCreationItemFragmentDoc.definitions,
     ],
 } as unknown as DocumentNode<RecentlyCreatedRepositoriesQuery, RecentlyCreatedRepositoriesQueryVariables>
-export const RecentRepositoryUpdatesDocument = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "OperationDefinition",
-            operation: "query",
-            name: { kind: "Name", value: "recentRepositoryUpdates" },
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "relayRepositories" },
-                        arguments: [
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "first" },
-                                value: { kind: "IntValue", value: "10" },
-                            },
-                            {
-                                kind: "Argument",
-                                name: { kind: "Name", value: "sort" },
-                                value: { kind: "EnumValue", value: "UPDATE_TIME_DESC" },
-                            },
-                        ],
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [
-                                {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "edges" },
-                                    selectionSet: {
-                                        kind: "SelectionSet",
-                                        selections: [
-                                            {
-                                                kind: "Field",
-                                                name: { kind: "Name", value: "node" },
-                                                selectionSet: {
-                                                    kind: "SelectionSet",
-                                                    selections: [
-                                                        {
-                                                            kind: "FragmentSpread",
-                                                            name: { kind: "Name", value: "RepositoryUpdateItem" },
-                                                        },
-                                                    ],
-                                                },
-                                            },
-                                        ],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-        ...RepositoryUpdateItemFragmentDoc.definitions,
-    ],
-} as unknown as DocumentNode<RecentRepositoryUpdatesQuery, RecentRepositoryUpdatesQueryVariables>

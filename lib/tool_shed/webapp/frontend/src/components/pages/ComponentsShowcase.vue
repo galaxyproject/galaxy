@@ -5,7 +5,6 @@ import ErrorBanner from "@/components/ErrorBanner.vue"
 import ComponentShowcase from "@/components/ComponentShowcase.vue"
 import ComponentShowcaseExample from "@/components/ComponentShowcaseExample.vue"
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
-import RecentlyUpdatedRepositories from "@/components/RecentlyUpdatedRepositories.vue"
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
 </script>
@@ -48,12 +47,6 @@ import RepositoryActions from "@/components/RepositoryActions.vue"
         <component-showcase title="RecentlyCreatedRepositories">
             <component-showcase-example title="defaults">
                 <recently-created-repositories />
-            </component-showcase-example>
-        </component-showcase>
-
-        <component-showcase title="RecentlyUpdatedRepositories">
-            <component-showcase-example title="defaults">
-                <recently-updated-repositories />
             </component-showcase-example>
         </component-showcase>
     </page-container>

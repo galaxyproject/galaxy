@@ -15,10 +15,6 @@ import { TypedDocumentNode as DocumentNode } from "@graphql-typed-document-node/
 const documents = {
     "\n    query recentlyCreatedRepositories {\n        relayRepositories(first: 10, sort: CREATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryCreationItem\n                }\n            }\n        }\n    }\n":
         types.RecentlyCreatedRepositoriesDocument,
-    "\n    query recentRepositoryUpdates {\n        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryUpdateItem\n                }\n            }\n        }\n    }\n":
-        types.RecentRepositoryUpdatesDocument,
-    "\n    fragment RepositoryUpdateItem on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        updateTime\n    }\n":
-        types.RepositoryUpdateItemFragmentDoc,
     "\n    fragment RepositoryCreationItem on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        createTime\n    }\n":
         types.RepositoryCreationItemFragmentDoc,
 }
@@ -43,18 +39,6 @@ export function graphql(source: string): unknown
 export function graphql(
     source: "\n    query recentlyCreatedRepositories {\n        relayRepositories(first: 10, sort: CREATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryCreationItem\n                }\n            }\n        }\n    }\n"
 ): (typeof documents)["\n    query recentlyCreatedRepositories {\n        relayRepositories(first: 10, sort: CREATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryCreationItem\n                }\n            }\n        }\n    }\n"]
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-    source: "\n    query recentRepositoryUpdates {\n        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryUpdateItem\n                }\n            }\n        }\n    }\n"
-): (typeof documents)["\n    query recentRepositoryUpdates {\n        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {\n            edges {\n                node {\n                    ...RepositoryUpdateItem\n                }\n            }\n        }\n    }\n"]
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-    source: "\n    fragment RepositoryUpdateItem on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        updateTime\n    }\n"
-): (typeof documents)["\n    fragment RepositoryUpdateItem on RelayRepository {\n        encodedId\n        name\n        user {\n            username\n        }\n        updateTime\n    }\n"]
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
