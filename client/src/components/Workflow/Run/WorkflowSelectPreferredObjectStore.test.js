@@ -29,11 +29,11 @@ describe("WorkflowSelectPreferredObjectStore.vue", () => {
     it("updates object store to default on selection null", async () => {
         const wrapper = mountComponent();
         await flushPromises();
-        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
+        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
 
         const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_button({ object_store_id: "__null__" }).selector
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "__null__" }).selector
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
         await galaxyDefaultOption.trigger("click");
