@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -10,8 +9,6 @@ import MarkdownDefault from "./Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StsDownloadButton from "@/components/StsDownloadButton.vue";
-
-library.add(faDownload, faEdit);
 
 // Props
 interface MarkdownConfig {
@@ -102,7 +99,7 @@ onMounted(() => {
                     title="Edit Markdown"
                     @click="$emit('onEdit')">
                     Edit
-                    <FontAwesomeIcon icon="edit" />
+                    <FontAwesomeIcon :icon="faEdit" />
                 </b-button>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
