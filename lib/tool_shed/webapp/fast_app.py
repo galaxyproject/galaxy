@@ -152,6 +152,7 @@ FRONT_END_ROUTES = [
     "/_component_showcase",
     "/user/api_key",
     "/user/change_password",
+    "/user/change_password_success",
     "/view/{username}",
     "/view/{username}/{repository_name}",
     "/view/{username}/{repository_name}/{changeset_revision}",

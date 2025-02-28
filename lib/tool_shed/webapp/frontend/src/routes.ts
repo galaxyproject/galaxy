@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
         component: LoginPage,
     },
     {
+        path: "/user/change_password_success",
+        component: LandingPage,
+        props: { message: "Password successfully changed!" },
+    },
+    {
         path: "/registration_success",
         component: RegistrationSuccess,
     },
