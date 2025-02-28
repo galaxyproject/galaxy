@@ -269,9 +269,16 @@ class ToolSearchResults(BaseModel):
 
 
 class RepositoryIndexRequest(BaseModel):
+    filter: Optional[str] = None
     owner: Optional[str] = None
     name: Optional[str] = None
     deleted: str = "false"
+    category_id: Optional[str] = None
+
+
+class RepositoryPaginatedIndexRequest(RepositoryIndexRequest):
+    page: int = 1
+    page_size: int = 10
 
 
 class RepositoriesByCategory(BaseModel):
@@ -319,6 +326,15 @@ class RepositorySearchResults(BaseModel):
     page_size: str
     hostname: str
     hits: List[RepositorySearchHit]
+
+
+# align with the search version of this to some degree but fix some things also
+class PaginatedRepositoryIndexResults(BaseModel):
+    total_results: int
+    page: int
+    page_size: int
+    hostname: str
+    hits: List[Repository]
 
 
 class GetInstallInfoRequest(BaseModel):

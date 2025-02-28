@@ -23,6 +23,7 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 from galaxy.exceptions import (
     ActionInputError,
     InsufficientPermissionsException,
+    RequestParameterInvalidException,
 )
 from galaxy.webapps.galaxy.api import as_form
 from tool_shed.context import SessionRequestContext
@@ -40,7 +41,6 @@ from tool_shed.managers.repositories import (
     index_repositories,
     index_repositories_paginated,
     PaginatedIndexRequest,
-    PaginatedRepositoryIndexResults,
     readmes,
     reset_metadata_on_repository,
     search,
@@ -59,6 +59,7 @@ from tool_shed_client.schema import (
     DetailedRepository,
     from_legacy_install_info,
     InstallInfo,
+    PaginatedRepositoryIndexResults,
     Repository,
     RepositoryMetadata,
     RepositoryPermissions,
@@ -87,6 +88,7 @@ from . import (
     RepositoryIndexNameQueryParam,
     RepositoryIndexOwnerQueryParam,
     RepositoryIndexQueryParam,
+    RepositoryIndexFilterParam,
     RepositoryIndexCategoryQueryParam,
     RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
@@ -123,6 +125,7 @@ class FastAPIRepositories:
     def index(
         self,
         q: Optional[str] = RepositoryIndexQueryParam,
+        filter: Optional[str] = RepositoryIndexFilterParam,
         page: Optional[int] = RepositorySearchPageQueryParam,
         page_size: Optional[int] = RepositorySearchPageSizeQueryParam,
         deleted: Optional[bool] = RepositoryIndexDeletedQueryParam,
@@ -131,6 +134,12 @@ class FastAPIRepositories:
         category_id: Optional[str] = RepositoryIndexCategoryQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> IndexResponse:
+
+        if q and filter:
+            raise RequestParameterInvalidException(
+                "Cannot specify both the 'q' and 'filter' parameter at the same time."
+            )
+
         if q:
             assert page is not None
             assert page_size is not None
@@ -142,23 +151,25 @@ class FastAPIRepositories:
         # elif params.tool_ids:
         #    response = index_tool_ids(self.app, params.tool_ids)
         #    return response
-        elif page is not None:
+        elif page:
             assert page_size is not None
-            index_request = PaginatedIndexRequest(
+            paginated_index_request = PaginatedIndexRequest(
+                page=page,
+                page_size=page_size,
                 owner=owner,
                 name=name,
                 deleted=deleted or False,
-                page=page,
-                page_size=page_size,
+                filter=filter,
                 category_id=category_id,
             )
-            repositories = index_repositories_paginated(self.app, index_request)
-            return repositories
+            paginated_repositories = index_repositories_paginated(self.app, paginated_index_request)
+            return paginated_repositories
         else:
             index_request = IndexRequest(
                 owner=owner,
                 name=name,
                 deleted=deleted or False,
+                filter=filter,
                 category_id=category_id,
             )
             repositories = index_repositories(self.app, index_request)

@@ -326,8 +326,12 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(root=repository_response.json())
 
-    def repository_index_paginated(self, request: Optional[RepositoryPaginatedIndexRequest]) -> PaginatedRepositoryIndexResults:
-        repository_response = self._api_interactor.get("repositories", params=(request.model_dump() if request else { "page": 1 }))
+    def repository_index_paginated(
+        self, request: Optional[RepositoryPaginatedIndexRequest]
+    ) -> PaginatedRepositoryIndexResults:
+        repository_response = self._api_interactor.get(
+            "repositories", params=(request.model_dump() if request else {"page": 1})
+        )
         api_asserts.assert_status_code_is_ok(repository_response)
         return PaginatedRepositoryIndexResults(**repository_response.json())
 

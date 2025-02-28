@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import (
     false,
     func,
+    or_,
     select,
 )
 from sqlalchemy.orm import scoped_session
@@ -67,7 +68,6 @@ from tool_shed.util.shed_util_common import (
 )
 from tool_shed.util.tool_util import generate_message_for_invalid_tools
 from tool_shed.webapp.model import (
-    Category,
     Repository,
     RepositoryCategoryAssociation,
     RepositoryMetadata,
@@ -142,6 +142,7 @@ def search(trans: ProvidesUserContext, q: str, page: int = 1, page_size: int = 1
 
 def deprecated_hostname() -> str:
     return web.url_for("/", qualified=True)
+
 
 class UpdatesRequest(BaseModel):
     name: Optional[str] = None
@@ -265,6 +266,7 @@ class IndexRequest(BaseModel):
     name: Optional[str] = None
     owner: Optional[str] = None
     deleted: bool = False
+    filter: Optional[str] = None
     category_id: Optional[str] = None
 
 
@@ -273,12 +275,14 @@ class PaginatedIndexRequest(IndexRequest):
     page_size: int
 
 
-def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> Repository:
+def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> List[Repository]:
     session = app.model.context
     return list(session.scalars(_get_repositories_by_name_and_owner_and_deleted(app.security, index_request)))
 
 
-def index_repositories_paginated(app: ToolShedApp, index_request: PaginatedIndexRequest) -> PaginatedRepositoryIndexResults:
+def index_repositories_paginated(
+    app: ToolShedApp, index_request: PaginatedIndexRequest
+) -> PaginatedRepositoryIndexResults:
     session = app.model.context
     stmt = _get_repositories_by_name_and_owner_and_deleted(app.security, index_request)
     total_results = session.scalar(select(func.count()).select_from(stmt.subquery()))
@@ -637,18 +641,27 @@ def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner:
     return session.scalars(stmt).first()
 
 
-def _get_repositories_by_name_and_owner_and_deleted(
-    security: IdEncodingHelper, index_request: IndexRequest
-):
+def _get_repositories_by_name_and_owner_and_deleted(security: IdEncodingHelper, index_request: IndexRequest):
     owner = index_request.owner
     name = index_request.name
     deleted = index_request.deleted
+    filter = index_request.filter
     stmt = select(Repository).where(Repository.deprecated == false()).where(Repository.deleted == deleted)
+    if owner is not None or filter:
+        stmt = stmt.join(Repository.user)
     if owner is not None:
         stmt = stmt.where(User.username == owner)
-        stmt = stmt.where(Repository.user_id == User.id)
     if name is not None:
         stmt = stmt.where(Repository.name == name)
+    if filter:
+        filter_ilike_str = f"%{filter}%"
+        stmt = stmt.where(
+            or_(
+                User.username.ilike(filter_ilike_str),
+                Repository.name.ilike(filter_ilike_str),
+                Repository.description.ilike(filter_ilike_str),
+            )
+        )
     if index_request.category_id is not None:
         category_id = security.decode_id(index_request.category_id)
         stmt = stmt.where(RepositoryCategoryAssociation.category_id == category_id)

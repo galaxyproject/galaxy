@@ -293,11 +293,7 @@ class RepositoriesController(BaseShedAPIController):
             response = index_tool_ids(self.app, tool_ids)
             return json.dumps(response)
         else:
-            index_request = IndexRequest(
-                owner=owner,
-                name=name,
-                deleted=deleted
-            )
+            index_request = IndexRequest(owner=owner, name=name, deleted=deleted)
             repositories = index_repositories(self.app, index_request)
             repository_dicts = []
             for repository in repositories:

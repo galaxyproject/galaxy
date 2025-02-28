@@ -154,6 +154,10 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert response.page == 1
         assert response.page_size == 2
 
+        request.filter = "repoforindexpagination4"
+        response = populator.repository_index_paginated(request)
+        assert response.total_results == 1
+
     @skip_if_api_v1
     def test_allow_push(self):
         populator = self.populator

@@ -236,6 +236,13 @@ CommitMessage: str = Query(
 RepositoryIndexQueryParam: Optional[str] = Query(
     default=None,
     title="Search Query",
+    description="This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter.",
+)
+
+RepositoryIndexFilterParam: Optional[str] = Query(
+    default=None,
+    title="Filter Text",
+    description="This will perform a quick search using database operators. This should not be used with the 'q' parameter.",
 )
 
 ToolsIndexQueryParam: str = Query(
@@ -243,9 +250,10 @@ ToolsIndexQueryParam: str = Query(
     title="Search Query",
 )
 
-RepositorySearchPageQueryParam: int = Query(
-    default=1,
+RepositorySearchPageQueryParam: Optional[int] = Query(
+    default=None,
     title="Page",
+    description="",
 )
 
 RepositorySearchPageSizeQueryParam: int = Query(
