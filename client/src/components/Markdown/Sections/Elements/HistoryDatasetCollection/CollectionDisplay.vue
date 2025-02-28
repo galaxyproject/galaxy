@@ -44,9 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import axios from "axios";
 import { computed, ref, watch } from "vue";
 
+import { GalaxyApi } from "@/api";
 import { copyCollection } from "@/components/Markdown/services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -71,7 +71,6 @@ const messageText = ref<string>("");
 const messageVariant = ref<string>("");
 
 const itemName = computed(() => itemContent.value?.name || "");
-const itemUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.collectionId}`);
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.collectionId}/download`);
 
 const onCopyCollection = async (currentHistoryId: string) => {
@@ -86,15 +85,19 @@ const onCopyCollection = async (currentHistoryId: string) => {
 };
 
 const getContent = async () => {
-    try {
-        const response = await axios.get(itemUrl.value);
-        itemContent.value = response.data;
-    } catch (e) {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+        params: {
+            path: { id: props.collectionId },
+        },
+    });
+    if (error) {
         messageVariant.value = "danger";
-        messageText.value = `Failed to retrieve content. ${e}`;
-    } finally {
-        loading.value = false;
+        messageText.value = `Failed to retrieve content. ${error}`;
+    } else {
+        messageText.value = "";
     }
+    itemContent.value = data;
+    loading.value = false;
 };
 
 watch(
