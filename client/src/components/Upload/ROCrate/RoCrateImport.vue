@@ -30,8 +30,6 @@ const rocrateZip = ref<ROCrateZip>();
 const rocrateSummary = ref<ROCrateSummary>();
 const selectedItems = ref<ROCrateFile[]>([]);
 
-const explorer = ref<ROCrateZipExplorer>();
-
 const showHelper = computed(() => !loadingPreview.value && !rocrateZip.value);
 const canStart = computed(() => selectedItems.value.length > 0);
 const canOpenUrl = computed(() => ensureValidUrl(zipUrl.value) !== undefined);
@@ -60,7 +58,6 @@ function reset() {
     zipUrl.value = undefined;
     errorMessage.value = undefined;
     rocrateZip.value = undefined;
-    explorer.value = undefined;
 }
 
 function onDropError(message: string) {
@@ -89,9 +86,9 @@ async function exploreRemoteZip() {
 async function openZip(zipSource: File | string) {
     errorMessage.value = undefined;
     loadingPreview.value = true;
-    explorer.value = new ROCrateZipExplorer(zipSource);
+    const explorer = new ROCrateZipExplorer(zipSource);
     try {
-        rocrateZip.value = await explorer.value.open();
+        rocrateZip.value = await explorer.open();
         rocrateSummary.value = await extractROCrateSummary(rocrateZip.value.crate);
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
