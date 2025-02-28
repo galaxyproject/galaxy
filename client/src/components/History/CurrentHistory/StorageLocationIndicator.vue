@@ -36,7 +36,8 @@ function onUpdatePreferredObjectStoreId(id: string | null) {
     preferredObjectStoreId.value = id;
 }
 
-const selectPreferredStore = ref<InstanceType<typeof SelectPreferredStore>>();
+const showSelectPreferredStore = ref(false);
+
 const storageLocationButtonTitle = computed(() => {
     if (!isAnonymous.value) {
         return "View and select storage location";
@@ -44,6 +45,10 @@ const storageLocationButtonTitle = computed(() => {
         return "Log in to view and select storage location";
     }
 });
+
+function toggleSelectPreferredStore() {
+    showSelectPreferredStore.value = !showSelectPreferredStore.value;
+}
 </script>
 
 <template>
@@ -53,17 +58,18 @@ const storageLocationButtonTitle = computed(() => {
             class="ui-link"
             :title="storageLocationButtonTitle"
             :disabled="isAnonymous"
-            @click="selectPreferredStore?.showModal()">
+            @click="toggleSelectPreferredStore">
             <FontAwesomeIcon :icon="faHdd" />
             {{ objectStoreStore.getObjectStoreNameById(preferredObjectStoreId) ?? "Default Storage" }}
         </BButton>
 
         <SelectPreferredStore
-            ref="selectPreferredStore"
+            :show-modal.sync="showSelectPreferredStore"
             show-sub-setting
             :user-preferred-object-store-id="userPreferredObjectStoreId"
             :preferred-object-store-id="preferredObjectStoreId"
             :history="history"
+            @close="toggleSelectPreferredStore"
             @updated="onUpdatePreferredObjectStoreId" />
     </div>
 </template>
