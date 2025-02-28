@@ -4,6 +4,7 @@ import { BModal, type BvModalEvent } from "bootstrap-vue";
 import { computed, type PropType, ref } from "vue";
 
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -27,7 +28,13 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    showModal: {
+        type: Boolean,
+        default: false,
+    },
 });
+
+const { confirm } = useConfirmDialog();
 
 const error = ref<string | null>(null);
 
@@ -56,6 +63,7 @@ const defaultOptionDescription = computed(() => {
 });
 
 const emit = defineEmits<{
+    (e: "close"): void;
     (e: "updated", id: string | null): void;
 }>();
 
@@ -66,11 +74,16 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
         const historyPrivate = await isHistoryPrivate(permissionResponse);
 
         if (!historyPrivate) {
-            if (
-                confirm(
-                    "Your history is set to create sharable datasets, but the target storage is private. Change the history configuration so new datasets are private by default?"
-                )
-            ) {
+            const confirmed = await confirm(
+                "Your history is set to create sharable datasets, but the target storage location is private. Change the history configuration so new datasets are private by default?",
+                {
+                    okTitle: "Private new datasets",
+                    cancelTitle: "Keep datasets public",
+                    cancelVariant: "outline-primary",
+                }
+            );
+
+            if (confirmed) {
                 try {
                     await makePrivate(props.history.id, permissionResponse);
                 } catch {
@@ -83,7 +96,6 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
 
     const payload = { preferred_object_store_id: preferredObjectStoreId };
     const url = prependPath(`api/histories/${props.history.id}`);
-
     try {
         await axios.put(url, payload);
         emit("updated", preferredObjectStoreId);
@@ -103,12 +115,6 @@ const storageLocationTitle = computed(() => {
     }
 });
 
-const modalShown = ref(false);
-
-function showModal() {
-    modalShown.value = true;
-}
-
 const currentSelectedStoreId = ref<string | null>(props.preferredObjectStoreId);
 const currentSelectedStorePrivate = ref(false);
 
@@ -119,29 +125,30 @@ function selectionChanged(preferredObjectStoreId: string | null, isPrivate: bool
 
 async function modalOk(event: BvModalEvent) {
     if (currentSelectedStoreId.value !== props.preferredObjectStoreId) {
-        event.preventDefault();
+        event?.preventDefault();
+
         try {
             await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
-            modalShown.value = false;
+            reset();
         } catch (_e) {
             // pass
         }
+    } else {
+        reset();
     }
 }
 
 function reset() {
     currentSelectedStoreId.value = props.preferredObjectStoreId;
     currentSelectedStorePrivate.value = false;
+    error.value = null;
+    emit("close");
 }
-
-defineExpose({
-    showModal,
-});
 </script>
 
 <template>
     <BModal
-        v-model="modalShown"
+        :visible="props.showModal"
         scrollable
         centered
         :title="storageLocationTitle"
