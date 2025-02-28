@@ -57,8 +57,8 @@
             <div v-if="metaError">{{ metaError }}</div>
             <LoadingSpan v-else-if="!metaType" message="Loading Metadata" />
             <LoadingSpan v-else-if="dataLoading" message="Loading Dataset" />
-            <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
             <div v-else-if="dataError">{{ dataError }}</div>
+            <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
             <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
             <div v-else :class="contentClass(metaType)">
                 <b-embed
@@ -69,7 +69,7 @@
                 <HistoryDatasetAsImage
                     v-else-if="datatypesMapper.isSubTypeOfAny(metaType, ['galaxy.datatypes.images.Image'])"
                     :dataset-id="datasetId" />
-                <div v-else-if="dataContent.item_data">
+                <div v-else-if="dataContent?.item_data">
                     <div v-if="datatypesMapper.isSubTypeOfAny(metaType, ['tabular'])">
                         <b-table
                             id="tabular-dataset-table"
@@ -93,7 +93,7 @@
                     </pre>
                 </div>
                 <div v-else>No content found.</div>
-                <b-link v-if="dataContent.truncated" :href="dataContent.item_url"> Show More... </b-link>
+                <b-link v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </b-link>
             </div>
         </b-card-body>
     </b-card>
@@ -101,17 +101,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 
-import { fromCache } from "@/components/Markdown/cache";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-const { getDatasetError, getDataset } = useDatasetStore();
 
 interface Dataset {
     name?: string;
@@ -126,23 +124,29 @@ const props = defineProps<{
 
 // Reactive state
 const currentPage = ref(1);
-const dataContent = ref();
-const dataLoading = ref(true);
-const dataError = ref("");
 const expanded = ref(false);
 const perPage = ref(100);
 
 // Store
+const { getDatasetError, getDataset } = useDatasetStore();
+const {
+    getItemById: getContentById,
+    getItemLoadError: getContentLoadError,
+    isLoadingItem: isLoadingContent,
+} = useDatasetTextContentStore();
+
+// Dataset Mapper Store
 const datatypesMapperStore = useDatatypesMapperStore();
 const { datatypesMapper, loading: datatypesLoading } = storeToRefs(datatypesMapperStore);
 const { createMapper } = datatypesMapperStore;
 
 // Computed
-const dataResource = computed(() => `datasets/${props.datasetId}/get_content_as_text`);
+const dataContent = computed(() => getContentById(props.datasetId));
+const dataError = computed(() => getContentLoadError(props.datasetId));
+const dataLoading = computed(() => isLoadingContent(props.datasetId));
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
 const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
 const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
-
 const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.file_ext);
@@ -153,18 +157,6 @@ const contentClass = (datasetType: string) => {
         return "";
     }
     return expanded.value ? "embedded-dataset-expanded" : "embedded-dataset";
-};
-
-const getData = async () => {
-    try {
-        dataLoading.value = true;
-        dataContent.value = await fromCache(dataResource.value);
-        dataLoading.value = false;
-    } catch (e) {
-        dataContent.value = null;
-        dataError.value = String(e);
-        dataLoading.value = false;
-    }
 };
 
 const getFields = (metaContent: any) => {
@@ -214,12 +206,4 @@ const onExpand = () => {
 onMounted(() => {
     createMapper();
 });
-
-watch(
-    () => props.datasetId,
-    () => {
-        getData();
-    },
-    { immediate: true }
-);
 </script>

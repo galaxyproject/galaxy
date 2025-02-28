@@ -6,6 +6,11 @@ import { type components, type GalaxyApiPaths } from "@/api/schema";
 export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
+ * Contains a dataset's text content and details
+ */
+export type DatasetTextContentDetails = components["schemas"]["DatasetTextContentDetails"];
+
+/**
  * Contains minimal information about a History.
  */
 export type HistorySummary = components["schemas"]["HistorySummary"];
