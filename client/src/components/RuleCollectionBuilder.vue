@@ -592,6 +592,7 @@ import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { errorMessageAsString } from "@/utils/simple-error";
 import { startWatchingHistory } from "@/watch/watchHistory";
 
 import TooltipOnHover from "components/TooltipOnHover.vue";
@@ -1374,7 +1375,7 @@ export default {
             this.state = "error";
             if (error.response) {
                 console.log(error.response);
-                this.errorMessage = error.response.data.err_msg;
+                this.errorMessage = errorMessageAsString(error);
             } else {
                 console.log(error);
                 this.errorMessage = "Unknown error encountered: " + error;
