@@ -4,11 +4,11 @@ import { FilesDialog } from "components/FilesDialog";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import { startWatchingHistory } from "@/watch/watchHistory";
 import Vue from "vue";
 
 import { uploadPayload } from "@/utils/upload-payload.js";
 import { uploadSubmit } from "@/utils/upload-submit.js";
+import { startWatchingHistory } from "@/watch/watchHistory";
 
 import DataDialog from "components/DataDialog/DataDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
@@ -98,7 +98,7 @@ export function create(options) {
     getHistory().then((history_id) => {
         uploadSubmit({
             success: (response) => {
-                refreshContentsWrapper();
+                startWatchingHistory();
                 if (options.success) {
                     options.success(response);
                 }
@@ -109,12 +109,4 @@ export function create(options) {
             },
         });
     });
-}
-
-export function refreshContentsWrapper() {
-    const Galaxy = getGalaxyInstance();
-    // Legacy Panel Interface. no-op if using new history
-    Galaxy?.currHistoryPanel?.refreshContents();
-    // Will not do anything in legacy interface
-    startWatchingHistory();
 }
