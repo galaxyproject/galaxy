@@ -45,7 +45,4 @@ export function adaptPaginatedIndexResponse(apiResults: PaginatedRepositoryIndex
     return { items, rowsNumber }
 }
 
-// simplify communication between components by setting this as only value across app
-export const ROWS_PER_PAGE = 20
-
 export type OnRequest = (query: Query) => Promise<QueryResults> // for paginating grid

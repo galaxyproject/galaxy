@@ -1,8 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
+import { useRoute } from "vue-router"
 import { QTableColumn, type QTableProps } from "quasar"
 
-import { type Query, RepositoryGridItem, type OnRequest, ROWS_PER_PAGE } from "./RepositoriesGridInterface"
+import { type Query, RepositoryGridItem, type OnRequest } from "./RepositoriesGridInterface"
+
+const route = useRoute()
+
+const DEFAULT_ROWS_PER_PAGE = 25
+
+const rowsPerPage = computed(() => {
+    console.log(route.query)
+    const rowsPerPageQuery = route.query.rows_per_page
+    if (typeof rowsPerPageQuery == "string") {
+        return Number.parseInt(rowsPerPageQuery)
+    }
+    return DEFAULT_ROWS_PER_PAGE
+})
 
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
@@ -29,7 +43,7 @@ const compProps = withDefaults(defineProps<RepositoriesGridProps>(), {
 const pagination = ref({
     page: 1,
     rowsNumber: undefined as number | undefined,
-    rowsPerPage: ROWS_PER_PAGE,
+    rowsPerPage: rowsPerPage,
 })
 
 const INDEX_COLUMN: QTableColumn = {
@@ -112,7 +126,7 @@ onMounted(() => {
             :loading="tableLoading"
             :filter="search"
             row-key="newIndex"
-            :rows-per-page-options="[ROWS_PER_PAGE]"
+            :rows-per-page-options="[rowsPerPage]"
             :no-data-label="noDataLabel"
             hide-header
             @request="onRequest"
