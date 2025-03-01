@@ -40,35 +40,20 @@ const query = ref("");
 const showAdvanced = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
 
-initializeToolPanel();
-async function initializeToolPanel() {
-    try {
-        await toolStore.fetchPanelViews();
-        await initializeTools();
-    } catch (error) {
-        console.error(error);
-        errorMessage.value = errorMessageAsString(error);
-    } finally {
-        arePanelsFetched.value = true;
-    }
-}
-
-watch(
-    () => currentPanelView.value,
-    () => {
-        query.value = "";
-    }
-);
-
-// if currentPanelView ever becomes null || "", load tools
-watch(
-    () => currentPanelView.value,
-    async (newVal) => {
-        if ((!newVal || !panel.value[newVal]) && arePanelsFetched.value) {
-            await initializeTools();
+const showFavorites = computed({
+    get() {
+        return query.value.includes("#favorites");
+    },
+    set(value) {
+        if (value) {
+            if (!query.value.includes("#favorites")) {
+                query.value = `#favorites ${query.value}`.trim();
+            }
+        } else {
+            query.value = query.value.replace("#favorites", "").trim();
         }
-    }
-);
+    },
+});
 
 const toolPanelHeader = computed(() => {
     if (showAdvanced.value) {
@@ -101,20 +86,17 @@ const viewIcon = computed(() => {
     }
 });
 
-const showFavorites = computed({
-    get() {
-        return query.value.includes("#favorites");
-    },
-    set(value) {
-        if (value) {
-            if (!query.value.includes("#favorites")) {
-                query.value = `#favorites ${query.value}`.trim();
-            }
-        } else {
-            query.value = query.value.replace("#favorites", "").trim();
-        }
-    },
-});
+async function initializeToolPanel() {
+    try {
+        await toolStore.fetchPanelViews();
+        await initializeTools();
+    } catch (error) {
+        console.error(error);
+        errorMessage.value = errorMessageAsString(error);
+    } finally {
+        arePanelsFetched.value = true;
+    }
+}
 
 async function initializeTools() {
     try {
@@ -155,6 +137,19 @@ watch(
         showFavorites.value = newQuery.includes("#favorites");
     }
 );
+
+// if currentPanelView ever becomes null || "", load tools
+watch(
+    () => currentPanelView.value,
+    async (newVal) => {
+        query.value = "";
+        if ((!newVal || !panel.value[newVal]) && arePanelsFetched.value) {
+            await initializeTools();
+        }
+    }
+);
+
+initializeToolPanel();
 </script>
 
 <template>
