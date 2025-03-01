@@ -5,8 +5,6 @@ import { type HDADetailed, type HistoryContentItemBase, isInaccessible } from "@
 import { fetchDatasetDetails } from "@/api/datasets";
 import { useKeyedCache } from "@/composables/keyedCache";
 
-const NON_TERMINAL_STATES = ["new", "queued", "running", "setting_metadata", "waiting"];
-
 export const useDatasetStore = defineStore("datasetStore", () => {
     const shouldFetch = computed(() => {
         return (dataset?: HDADetailed) => {
@@ -16,7 +14,8 @@ export const useDatasetStore = defineStore("datasetStore", () => {
             if (isInaccessible(dataset)) {
                 return false;
             }
-            return NON_TERMINAL_STATES.includes(dataset.state);
+            const isNotDetailed = !("peek" in dataset);
+            return isNotDetailed;
         };
     });
 
