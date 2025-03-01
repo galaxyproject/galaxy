@@ -4,7 +4,7 @@ import { FilesDialog } from "components/FilesDialog";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import { startWatchingHistory } from "store/historyStore/model/watchHistory";
+import { startWatchingHistory } from "@/watcher/watchHistory";
 import Vue from "vue";
 
 import { uploadPayload } from "@/utils/upload-payload.js";
