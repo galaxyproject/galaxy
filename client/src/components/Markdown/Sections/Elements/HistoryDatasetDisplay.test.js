@@ -24,7 +24,13 @@ describe("History Tabular Dataset Display", () => {
     let wrapper;
     const datasetId = "someId";
     const tabular = { item_data: "29994\t-1.25\n37191\t-1.05\n36810\t2.08\n33320\t1.15" };
-    const tabularMetaData = { metadata_columns: 2, metadata_data_lines: 4, extension: "tabular", name: "someName" };
+    const tabularMetaData = {
+        metadata_columns: 2,
+        metadata_data_lines: 4,
+        extension: "tabular",
+        name: "someName",
+        state: "ok",
+    };
     const tabularTableDataCounts = tabularMetaData.metadata_columns * tabularMetaData.metadata_data_lines;
 
     async function mountTarget() {
@@ -52,7 +58,7 @@ describe("History Text Dataset Display", () => {
     let wrapper;
     const datasetId = "otherId";
     const text = { item_data: "some text" };
-    const textMetaData = { extension: "txt", name: "someName" };
+    const textMetaData = { extension: "txt", name: "someName", state: "ok" };
 
     async function mountTarget() {
         server.resetHandlers();
