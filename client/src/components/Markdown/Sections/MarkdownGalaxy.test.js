@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -5,7 +6,11 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { withPrefix } from "utils/redirect";
 
+import { useServerMock } from "@/api/client/__mocks__";
+
 import MountTarget from "./MarkdownGalaxy.vue";
+
+const { server, http } = useServerMock();
 
 // mock routes
 jest.mock("utils/redirect");
@@ -23,15 +28,37 @@ jest.mock("@/composables/config", () => ({
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);
 
-async function mountComponent(propsData, apiMap = {}) {
+function mapAxios(apiMap = {}) {
     axiosMock.reset();
     for (const [method, apiDetails] of Object.entries(apiMap)) {
         for (const [path, response] of Object.entries(apiDetails)) {
             axiosMock[method](path).reply(200, response);
         }
     }
+}
+
+async function mountComponent(propsData, apiMap = {}) {
+    mapAxios(apiMap);
     return mount(MountTarget, {
         localVue,
+        propsData,
+        stubs: {
+            FontAwesomeIcon: true,
+        },
+    });
+}
+
+function mountComponentWithServer(propsData = {}, apiMap = {}) {
+    mapAxios(apiMap);
+    const pinia = createTestingPinia({ stubActions: false });
+    server.use(
+        http.get("/api/histories/test_history_id", ({ response }) =>
+            response(200).json({ id: "test_history_id", name: "history_name" })
+        )
+    );
+    return mount(MountTarget, {
+        localVue,
+        pinia,
         propsData,
         stubs: {
             FontAwesomeIcon: true,
@@ -74,18 +101,18 @@ describe("MarkdownContainer", () => {
     });
 
     it("Renders history link", async () => {
-        const wrapper = await mountComponent(
+        const wrapper = mountComponentWithServer(
             {
-                content: `history_link(history_id=test_history_id)`,
+                content: "history_link(history_id=test_history_id)",
             },
             {
-                onGet: { "/api/histories/test_history_id": { name: "history_name" } },
                 onPost: { "/api/histories": {} },
             }
         );
+        expect(wrapper.find("a").text()).toBe("Click to Import History: ...");
         await flushPromises();
         const link = wrapper.find("a");
-        expect(link.text()).toBe("Click to Import History: history_name.");
+        expect(link.text()).toBe("Click to Import History: history_name");
         await link.trigger("click");
         const postedData = JSON.parse(axiosMock.history.post[0].data);
         expect(postedData.history_id).toBe("test_history_id");
@@ -96,14 +123,9 @@ describe("MarkdownContainer", () => {
     });
 
     it("Renders history link (with failing import error message)", async () => {
-        const wrapper = await mountComponent(
-            {
-                content: `history_link(history_id=test_history_id)`,
-            },
-            {
-                onGet: { "/api/histories/test_history_id": { name: "history_name" } },
-            }
-        );
+        const wrapper = mountComponentWithServer({
+            content: "history_link(history_id=test_history_id)",
+        });
         await wrapper.find("a").trigger("click");
         await flushPromises();
         const error = wrapper.find(".text-danger");

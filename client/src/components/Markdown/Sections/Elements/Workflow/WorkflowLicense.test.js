@@ -12,7 +12,7 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 describe("Workflow License", () => {
-    async function mountTarget() {
+    function mountTarget() {
         const pinia = createTestingPinia({ stubActions: false });
         server.use(
             http.get("/api/workflows/{workflow_id}", ({ response }) =>
@@ -36,7 +36,7 @@ describe("Workflow License", () => {
     }
 
     it("should render name and link", async () => {
-        const wrapper = await mountTarget();
+        const wrapper = mountTarget();
         expect(wrapper.find("[title='loading']").exists()).toBeTruthy();
         await flushPromises();
         expect(wrapper.text()).toBe("MIT License");

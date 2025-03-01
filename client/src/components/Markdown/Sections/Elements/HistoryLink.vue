@@ -35,7 +35,7 @@ const onImport = async () => {
 <template>
     <div>
         <b-link v-if="showLink" data-description="history import link" :data-history-id="historyId" @click="onImport">
-            Click to Import History: {{ name }}.
+            Click to Import History: {{ name }}
         </b-link>
         <div v-if="imported" class="text-success">
             <FontAwesomeIcon icon="check" class="mr-1" />
