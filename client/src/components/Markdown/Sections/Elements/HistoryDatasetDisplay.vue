@@ -24,7 +24,7 @@
                     <span class="fa fa-file-import" />
                 </b-button>
                 <b-button
-                    v-if="expanded"
+                    v-if="expandable && expanded"
                     v-b-tooltip.hover
                     href="#"
                     role="button"
@@ -36,7 +36,7 @@
                     <span class="fa fa-angle-double-up" />
                 </b-button>
                 <b-button
-                    v-else
+                    v-else-if="expandable"
                     v-b-tooltip.hover
                     href="#"
                     role="button"
@@ -60,7 +60,7 @@
             <div v-else-if="dataError">{{ dataError }}</div>
             <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
             <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
-            <div v-else :class="contentClass(metaType)">
+            <div v-else>
                 <b-embed
                     v-if="datatypesMapper.isSubTypeOfAny(metaType, ['pdf', 'html'])"
                     type="iframe"
@@ -88,7 +88,7 @@
                             :per-page="perPage"
                             aria-controls="tabular-dataset-table" />
                     </div>
-                    <pre v-else>
+                    <pre v-else :class="{ 'embedded-dataset': !expanded, 'embedded-dataset-expanded': expanded }">
                         <code class="word-wrap-normal">{{ dataContent.item_data }}</code>
                     </pre>
                 </div>
@@ -113,7 +113,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Dataset {
     name?: string;
-    file_ext?: string;
+    extension?: string;
     metadata_column_names?: Array<string>;
     metadata_columns?: number;
     metadata_delimiter?: string;
@@ -145,6 +145,16 @@ const { datatypesMapper, loading: datatypesLoading } = storeToRefs(datatypesMapp
 const { createMapper } = datatypesMapperStore;
 
 // Computed
+const expandable = computed(
+    () =>
+        metaType.value &&
+        !datatypesMapper.value?.isSubTypeOfAny(metaType.value, [
+            "tabular",
+            "galaxy.datatypes.images.Image",
+            "pdf",
+            "html",
+        ])
+);
 const dataContent = computed(() => getContentById(props.datasetId));
 const dataError = computed(() => getContentLoadError(props.datasetId));
 const dataLoading = computed(() => isLoadingContent(props.datasetId));
@@ -153,15 +163,7 @@ const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/di
 const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
 const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
-const metaType = computed(() => metaContent.value?.file_ext);
-
-// Methods
-const contentClass = (datasetType: string) => {
-    if (datatypesMapper.value?.isSubTypeOfAny(datasetType, ["tabular"])) {
-        return "";
-    }
-    return expanded.value ? "embedded-dataset-expanded" : "embedded-dataset";
-};
+const metaType = computed(() => metaContent.value?.extension);
 
 const getFields = (metaContent: Dataset) => {
     const fields = [];
@@ -211,3 +213,12 @@ onMounted(() => {
     createMapper();
 });
 </script>
+
+<style>
+.embedded-dataset {
+    height: 10rem;
+}
+.embedded-dataset-expanded {
+    height: 30rem;
+}
+</style>
