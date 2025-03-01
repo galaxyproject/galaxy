@@ -9,7 +9,7 @@ import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { useActiveElement } from "@/composables/useActiveElement";
-import { startWatchingHistory } from "@/watcher/watchHistory";
+import { startWatchingHistory } from "@/watch/watchHistory";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";

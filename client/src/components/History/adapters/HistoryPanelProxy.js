@@ -4,7 +4,7 @@
  */
 import Backbone from "backbone";
 import { createDatasetCollection } from "components/History/model/queries";
-import { startWatchingHistory } from "watcher/watchHistory";
+import { startWatchingHistory } from "watch/watchHistory";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 
