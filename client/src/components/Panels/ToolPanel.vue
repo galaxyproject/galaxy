@@ -32,7 +32,7 @@ const emit = defineEmits<{
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const { currentPanel, currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, panelViews } =
+const { currentPanel, currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, panels } =
     storeToRefs(toolStore);
 
 const errorMessage = ref("");
@@ -46,10 +46,10 @@ const panelIcon = computed(() => {
         return "search";
     } else if (
         currentPanelView.value !== "default" &&
-        panelViews.value &&
-        typeof panelViews.value[currentPanelView.value]?.view_type === "string"
+        panels.value &&
+        typeof panels.value[currentPanelView.value]?.view_type === "string"
     ) {
-        const viewType = panelViews.value[currentPanelView.value]?.view_type;
+        const viewType = panels.value[currentPanelView.value]?.view_type;
         return viewType ? types_to_icons[viewType] : null;
     } else {
         return null;
@@ -76,12 +76,8 @@ const toolPanelHeader = computed(() => {
         return localize("Advanced Tool Search");
     } else if (loading.value && panelName.value) {
         return localize(panelName.value);
-    } else if (
-        currentPanelView.value !== "default" &&
-        panelViews.value &&
-        panelViews.value[currentPanelView.value]?.name
-    ) {
-        return localize(panelViews.value[currentPanelView.value]?.name);
+    } else if (currentPanelView.value !== "default" && panels.value && panels.value[currentPanelView.value]?.name) {
+        return localize(panels.value[currentPanelView.value]?.name);
     } else {
         return localize("Tools");
     }
@@ -89,7 +85,7 @@ const toolPanelHeader = computed(() => {
 
 async function initializeToolPanel() {
     try {
-        await toolStore.fetchPanelViews();
+        await toolStore.fetchPanels();
         await initializeTools();
     } catch (error) {
         console.error(`ToolPanel::initializeToolPanel - ${error}`);
@@ -102,7 +98,7 @@ async function initializeToolPanel() {
 async function initializeTools() {
     try {
         await toolStore.fetchTools();
-        await toolStore.initCurrentPanelView(defaultPanelView.value);
+        await toolStore.initCurrentPanel(defaultPanelView.value);
     } catch (error: any) {
         console.error(`ToolPanel::initializeTools - ${error}`);
         errorMessage.value = errorMessageAsString(error);
@@ -111,8 +107,8 @@ async function initializeTools() {
 }
 
 async function updatePanelView(panelView: string) {
-    panelName.value = panelViews.value[panelView]?.name || "";
-    await toolStore.setCurrentPanelView(panelView);
+    panelName.value = panels.value[panelView]?.name || "";
+    await toolStore.setCurrentPanel(panelView);
     panelName.value = "";
 }
 
@@ -158,8 +154,8 @@ initializeToolPanel();
         <div unselectable="on">
             <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
-                    v-if="panelViews && Object.keys(panelViews).length > 1"
-                    :panel-views="panelViews"
+                    v-if="panels && Object.keys(panels).length > 1"
+                    :panel-views="panels"
                     :current-panel-view="currentPanelView"
                     :show-advanced.sync="showAdvanced"
                     :store-loading="loading"
