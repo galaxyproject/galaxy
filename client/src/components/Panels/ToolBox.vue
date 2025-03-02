@@ -30,7 +30,6 @@ const emit = defineEmits<{
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    panelView: { type: String, required: true },
     showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
     dataManagers: { type: Array, default: null },
@@ -196,7 +195,7 @@ function onToggle() {
         <div class="unified-panel-controls">
             <ToolSearch
                 :enable-advanced="!props.workflow"
-                :current-panel-view="props.panelView || ''"
+                :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
                 :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"

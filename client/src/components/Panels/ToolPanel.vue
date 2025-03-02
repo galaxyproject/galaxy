@@ -194,7 +194,6 @@ initializeToolPanel();
             v-if="isPanelPopulated"
             :workflow="props.workflow"
             :panel-query.sync="query"
-            :panel-view="currentPanelView"
             :show-advanced.sync="showAdvanced"
             :data-managers="dataManagers"
             :module-sections="moduleSections"
