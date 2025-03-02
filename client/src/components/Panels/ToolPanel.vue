@@ -6,7 +6,7 @@ import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { types_to_icons } from "./utilities";
 
@@ -32,8 +32,7 @@ const emit = defineEmits<{
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const { currentPanel, currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, panels } =
-    storeToRefs(toolStore);
+const { currentPanel, currentPanelView, isPanelPopulated, loading, panel, panels } = storeToRefs(toolStore);
 
 const errorMessage = ref("");
 const panelName = ref("");
@@ -83,32 +82,22 @@ const toolPanelHeader = computed(() => {
     }
 });
 
-async function initializeToolPanel() {
+async function initializePanel() {
     try {
         await toolStore.fetchPanels();
-        await initializeTools();
+        await toolStore.fetchTools();
+        await toolStore.initializePanel();
     } catch (error) {
-        console.error(`ToolPanel::initializeToolPanel - ${error}`);
+        console.error(`ToolPanel::initializePanel - ${error}`);
         errorMessage.value = errorMessageAsString(error);
     } finally {
         panelsFetched.value = true;
     }
 }
 
-async function initializeTools() {
-    try {
-        await toolStore.fetchTools();
-        await toolStore.initCurrentPanel(defaultPanelView.value);
-    } catch (error: any) {
-        console.error(`ToolPanel::initializeTools - ${error}`);
-        errorMessage.value = errorMessageAsString(error);
-        rethrowSimple(error);
-    }
-}
-
 async function updatePanelView(panelView: string) {
     panelName.value = panels.value[panelView]?.name || "";
-    await toolStore.setCurrentPanel(panelView);
+    await toolStore.setPanel(panelView);
     panelName.value = "";
 }
 
@@ -141,12 +130,12 @@ watch(
     async (newVal) => {
         query.value = "";
         if ((!newVal || !panel.value[newVal]) && panelsFetched.value) {
-            await initializeTools();
+            await initializePanel();
         }
     }
 );
 
-initializeToolPanel();
+initializePanel();
 </script>
 
 <template>
