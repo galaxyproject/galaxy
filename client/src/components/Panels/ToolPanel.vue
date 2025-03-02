@@ -103,7 +103,7 @@ async function initializeTools() {
         await toolStore.fetchTools();
         await toolStore.initCurrentPanelView(defaultPanelView.value);
     } catch (error: any) {
-        console.error("ToolPanel - Intialize error:", error);
+        console.error(`ToolPanel::initializeTools - ${error}`);
         errorMessage.value = errorMessageAsString(error);
         rethrowSimple(error);
     }

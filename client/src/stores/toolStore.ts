@@ -219,7 +219,6 @@ export const useToolStore = defineStore("toolStore", () => {
                 loading.value = false;
             } catch (e) {
                 loading.value = false;
-
                 if (currentPanelView.value !== siteDefaultPanelView) {
                     // If the stored panelView failed to load, try the default panel for this site.
                     await setCurrentPanelView(siteDefaultPanelView);
