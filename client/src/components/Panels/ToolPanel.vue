@@ -199,7 +199,6 @@ initializeToolPanel();
             :data-managers="dataManagers"
             :module-sections="moduleSections"
             :use-search-worker="useSearchWorker"
-            @updatePanelView="updatePanelView"
             @onInsertTool="onInsertTool"
             @onInsertModule="onInsertModule"
             @onInsertWorkflow="onInsertWorkflow"
