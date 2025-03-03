@@ -149,7 +149,7 @@ class FastAPIRepositories:
             )
 
         if q:
-            assert page is not None
+            page = page or 1
             assert page_size is not None
             search_results = search(trans, q, page, page_size)
             return RepositorySearchResults(**search_results)
