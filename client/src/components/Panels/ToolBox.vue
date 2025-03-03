@@ -66,7 +66,7 @@ const query = computed({
     },
 });
 
-const { currentPanel, currentPanelView } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
@@ -99,7 +99,7 @@ const localSectionsById = computed(() => {
     const validToolIdsInCurrentView = Object.keys(localToolsById.value);
 
     // Looking within each `ToolSection`, and filtering on child elements
-    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentPanel.value);
+    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentToolSections.value);
 
     // Looking at each item in the panel now (not within each child)
     return getValidPanelItems(

@@ -32,7 +32,8 @@ const emit = defineEmits<{
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const { currentPanel, currentPanelView, isPanelPopulated, loading, panel, panels } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections, isPanelPopulated, loading, panels, toolSections } =
+    storeToRefs(toolStore);
 
 const errorMessage = ref("");
 const panelName = ref("");
@@ -129,7 +130,7 @@ watch(
     () => currentPanelView.value,
     async (newVal) => {
         query.value = "";
-        if ((!newVal || !panel.value[newVal]) && panelsFetched.value) {
+        if ((!newVal || !toolSections.value[newVal]) && panelsFetched.value) {
             await initializePanel();
         }
     }
@@ -202,7 +203,7 @@ initializePanel();
             </b-badge>
         </div>
     </div>
-    <b-alert v-else-if="currentPanel" class="m-2" variant="info" show>
+    <b-alert v-else-if="currentToolSections" class="m-2" variant="info" show>
         <LoadingSpan message="Loading Toolbox" />
     </b-alert>
 </template>
