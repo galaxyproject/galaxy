@@ -18,6 +18,7 @@ import { copyWorkflow } from "./workflows.services";
 
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 interface Props {
@@ -36,7 +37,7 @@ const emit = defineEmits<{
     (e: "on-execute"): void;
 }>();
 
-const { workflow, error } = useWorkflowInstance(props.workflowId);
+const { workflow, loading, error } = useWorkflowInstance(props.workflowId);
 
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const owned = computed(() => {
@@ -163,6 +164,9 @@ const workflowImportTitle = computed(() => {
                 Successfully invoked workflow
                 <b>{{ getWorkflowName() }}</b>
             </div>
+            <BAlert v-else-if="loading" variant="info" show>
+                <LoadingSpan message="Loading workflow details" />
+            </BAlert>
         </div>
     </div>
 </template>
