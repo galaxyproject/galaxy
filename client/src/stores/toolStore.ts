@@ -144,9 +144,11 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function fetchToolSections(panelView: string) {
         try {
-            loading.value = true;
-            const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-            saveToolSections(panelView, data);
+            if (!toolSections.value[panelView]) {
+                loading.value = true;
+                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+                saveToolSections(panelView, data);
+            }
         } catch (e) {
             rethrowSimple(e);
         } finally {
@@ -229,9 +231,7 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setPanel(panelView: string) {
         try {
-            if (!toolSections.value[panelView]) {
-                await fetchToolSections(panelView);
-            }
+            await fetchToolSections(panelView);
             currentPanelView.value = panelView;
         } catch (e) {
             rethrowSimple(e);
