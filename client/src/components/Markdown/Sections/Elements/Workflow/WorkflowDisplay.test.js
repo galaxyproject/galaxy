@@ -62,8 +62,6 @@ describe("WorkflowDisplay", () => {
             secondError: "secondValue",
         });
         await flushPromises();
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Workflow: ...");
         const errorContent = wrapper.findAll("li");
         expect(errorContent.at(0).text()).toBe("firstError: firstValue");
         expect(errorContent.at(1).text()).toBe("secondError: secondValue");

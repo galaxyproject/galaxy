@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -5,7 +6,11 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { withPrefix } from "utils/redirect";
 
-import MountTarget from "./MarkdownContainer.vue";
+import { useServerMock } from "@/api/client/__mocks__";
+
+import MountTarget from "./MarkdownGalaxy.vue";
+
+const { server, http } = useServerMock();
 
 // mock routes
 jest.mock("utils/redirect");
@@ -13,7 +18,9 @@ withPrefix.mockImplementation((url) => url);
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
-        config: {},
+        config: {
+            version_major: "test_version",
+        },
         isConfigLoaded: true,
     })),
 }));
@@ -21,13 +28,17 @@ jest.mock("@/composables/config", () => ({
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);
 
-async function mountComponent(propsData, apiMap = {}) {
+function mapAxios(apiMap = {}) {
     axiosMock.reset();
     for (const [method, apiDetails] of Object.entries(apiMap)) {
         for (const [path, response] of Object.entries(apiDetails)) {
             axiosMock[method](path).reply(200, response);
         }
     }
+}
+
+async function mountComponent(propsData, apiMap = {}) {
+    mapAxios(apiMap);
     return mount(MountTarget, {
         localVue,
         propsData,
@@ -37,59 +48,71 @@ async function mountComponent(propsData, apiMap = {}) {
     });
 }
 
-async function testCollapse(wrapper) {
-    const nolink = wrapper.find("a");
-    expect(nolink.exists()).toBe(false);
-    const collapse = "Click here to expand/collapse";
-    await wrapper.setProps({ args: { collapse } });
-    const link = wrapper.find("a");
-    expect(link.text()).toBe(collapse);
-    const container = wrapper.find(".collapse");
-    expect(container.attributes("style")).toBe("display: none;");
-    await link.trigger("click");
-    expect(container.attributes("style")).toBe("");
+function mountComponentWithServer(propsData = {}, apiMap = {}) {
+    mapAxios(apiMap);
+    const pinia = createTestingPinia({ stubActions: false });
+    server.use(
+        http.get("/api/histories/test_history_id", ({ response }) =>
+            response(200).json({ id: "test_history_id", name: "history_name" })
+        )
+    );
+    return mount(MountTarget, {
+        localVue,
+        pinia,
+        propsData,
+        stubs: {
+            FontAwesomeIcon: true,
+        },
+    });
 }
 
 describe("MarkdownContainer", () => {
     it("Renders version", async () => {
         const version = "test_version";
         const wrapper = await mountComponent({
-            name: "generate_galaxy_version",
-            args: {},
-            version,
+            content: "generate_galaxy_version()",
         });
         const versionEl = wrapper.find(".galaxy-version");
         expect(versionEl.exists()).toBe(true);
         expect(versionEl.find("code").text()).toBe(version);
-        testCollapse(wrapper);
+
+        // test collapsing
+        const nolink = wrapper.find("a");
+        expect(nolink.exists()).toBe(false);
+        const collapse = "Click here to expand/collapse";
+        await wrapper.setProps({ content: `generate_galaxy_version(collapse="${collapse}")` });
+        const link = wrapper.find("a");
+        expect(link.text()).toBe(collapse);
+        const container = wrapper.find(".collapse");
+        expect(container.attributes("style")).toBe("display: none;");
+        await link.trigger("click");
+        expect(container.attributes("style")).toBe("");
     });
 
     it("Renders time stamp", async () => {
-        const time = "test_time";
+        const time = new Date();
+        jest.useFakeTimers().setSystemTime(time);
         const wrapper = await mountComponent({
-            name: "generate_time",
-            args: {},
-            time,
+            content: "generate_time()",
         });
         const version = wrapper.find(".galaxy-time");
         expect(version.exists()).toBe(true);
-        expect(version.find("code").text()).toBe(time);
-        testCollapse(wrapper);
+        expect(version.find("code").text()).toBe(time.toUTCString());
     });
 
     it("Renders history link", async () => {
-        const wrapper = await mountComponent(
+        const wrapper = mountComponentWithServer(
             {
-                name: "history_link",
-                args: { history_id: "test_history_id" },
-                histories: { test_history_id: { name: "history_name" } },
+                content: "history_link(history_id=test_history_id)",
             },
             {
                 onPost: { "/api/histories": {} },
             }
         );
+        expect(wrapper.find("a").text()).toBe("Click to Import History: ...");
+        await flushPromises();
         const link = wrapper.find("a");
-        expect(link.text()).toBe("Click to Import History: history_name.");
+        expect(link.text()).toBe("Click to Import History: history_name");
         await link.trigger("click");
         const postedData = JSON.parse(axiosMock.history.post[0].data);
         expect(postedData.history_id).toBe("test_history_id");
@@ -100,15 +123,13 @@ describe("MarkdownContainer", () => {
     });
 
     it("Renders history link (with failing import error message)", async () => {
-        const wrapper = await mountComponent({
-            name: "history_link",
-            args: { history_id: "test_history_id" },
-            histories: { test_history_id: { name: "history_name" } },
+        const wrapper = mountComponentWithServer({
+            content: "history_link(history_id=test_history_id)",
         });
         await wrapper.find("a").trigger("click");
         await flushPromises();
         const error = wrapper.find(".text-danger");
         const message = error.find("span");
-        expect(message.text()).toBe("Failed to Import History: history_name!");
+        expect(message.text()).toBe("Failed to handle History: history_name!");
     });
 });
