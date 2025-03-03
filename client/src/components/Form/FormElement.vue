@@ -166,6 +166,9 @@ const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_
 const showField = computed(
     () => !collapsed.value && !props.disabled && (!props.workflowRun || props.type !== "boolean")
 );
+const formDataField = computed(() =>
+    props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
+);
 const isUriDataField = computed(() => {
     const dataField = props.type == "data";
     if (dataField && props.value && "src" in props.value) {
@@ -407,7 +410,7 @@ function onAlert(value: string | undefined) {
                     :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData
-                    v-else-if="['data', 'data_collection'].includes(props.type ?? '')"
+                    v-else-if="formDataField"
                     :id="id"
                     v-model="currentValue"
                     :loading="loading"
@@ -418,7 +421,7 @@ function onAlert(value: string | undefined) {
                     :options="attrs.options"
                     :tag="attrs.tag"
                     :user-defined-title="userDefinedTitle"
-                    :type="props.type"
+                    :type="formDataField"
                     :collection-types="attrs.collection_types"
                     :workflow-run="props.workflowRun"
                     @alert="onAlert"
