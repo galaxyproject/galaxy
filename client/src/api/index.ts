@@ -317,3 +317,6 @@ export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectReq
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
+export type UnprivilegedToolResponse = components["schemas"]["UnprivilegedToolResponse"];
+export type UserToolSource = components["schemas"]["UserToolSource-Input"];
+export type DynamicUnprivilegedToolCreatePayload = components["schemas"]["DynamicUnprivilegedToolCreatePayload"];

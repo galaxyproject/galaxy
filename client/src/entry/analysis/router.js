@@ -82,6 +82,7 @@ import ManageObjectStoreIndex from "@/components/ObjectStore/Instances/ManageInd
 import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/UpgradeInstance.vue";
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
+import CustomToolEditor from "@/components/Tool/CustomToolEditor.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -453,6 +454,17 @@ export function getRouter(Galaxy) {
                             redirect: "/pages/list",
                             active_tab: "user",
                         }),
+                    },
+                    {
+                        path: "/tools/editor",
+                        component: CustomToolEditor,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "/tools/editor/:toolUuid",
+                        component: CustomToolEditor,
+                        redirect: redirectAnon(),
+                        props: true,
                     },
                     {
                         path: "pages/sharing",

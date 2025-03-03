@@ -996,7 +996,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
                 f.write(wf_dict["yaml_content"])
 
-    def _workflow_to_dict_run(self, trans, stored, workflow, history=None):
+    def _workflow_to_dict_run(self, trans: ProvidesUserContext, stored, workflow, history=None):
         """
         Builds workflow dictionary used by run workflow form
         """
@@ -1039,9 +1039,17 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model = None
             if step.type == "tool":
                 incoming: Dict[str, Any] = {}
-                tool = trans.app.toolbox.get_tool(
-                    step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid
-                )
+                tool = None
+                if trans.user and step.tool_uuid:
+                    tool = trans.app.toolbox.get_unprivileged_tool(trans.user, step.tool_uuid)
+                if not tool:
+                    tool = trans.app.toolbox.get_tool(
+                        step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid
+                    )
+                if not tool:
+                    raise exceptions.MessageException(
+                        f"Following custom tool missing or inaccessible: '{step.tool_id}/{step.tool_uuid}'"
+                    )
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(
                     trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY, history=history
@@ -2017,8 +2025,14 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             if step.type == "tool":
                 if step.tool_id:
-                    if {"tool_id": step.tool_id, "tool_version": step.tool_version} not in tools:
-                        tools.append({"tool_id": step.tool_id, "tool_version": step.tool_version})
+                    if {
+                        "tool_id": step.tool_id,
+                        "tool_version": step.tool_version,
+                        "tool_uuid": step.tool_uuid,
+                    } not in tools:
+                        tools.append(
+                            {"tool_id": step.tool_id, "tool_version": step.tool_version, "tool_uuid": step.tool_uuid}
+                        )
             elif step.type == "subworkflow":
                 tools.extend(self.get_all_tools(step.subworkflow))
         return tools
