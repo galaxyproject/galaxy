@@ -4,9 +4,9 @@
  */
 import Backbone from "backbone";
 import { createDatasetCollection } from "components/History/model/queries";
-import { startWatchingHistory } from "store/historyStore/model/watchHistory";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
+import { startWatchingHistory } from "watch/watchHistory";
 
 import { buildRuleCollectionModal } from "./buildCollectionModal";
 
@@ -34,17 +34,15 @@ export class HistoryPanelProxy {
         this.model.set("name", currentHistory.name);
     }
 
-    refreshContents() {
-        // to be removed after disabling legacy history, present to provide uniform interface
-        // with History Panel Backbone View.
-    }
     loadCurrentHistory() {
         this.historyStore.loadCurrentHistory();
     }
+
     switchToHistory(historyId) {
         this.model.id = historyId;
         this.historyStore.setCurrentHistory(historyId);
     }
+
     async buildCollectionFromRules(selection, historyId = null, fromRulesInput = false) {
         let selectionContent = null;
         historyId = historyId || this.model.id;

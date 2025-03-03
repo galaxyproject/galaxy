@@ -66,7 +66,6 @@
             icon="fa-palette"
             title="Pick a Color Theme"
             description="Click here to change the user interface color theme."
-            badge="New!"
             @click="toggleTheme = !toggleTheme">
             <b-collapse v-model="toggleTheme">
                 <ThemeSelector />
