@@ -10,6 +10,7 @@ type IndexParameters = ToolShedApiPaths["/api/repositories"]["get"]["parameters"
 
 export type RepositorySearchResults = components["schemas"]["RepositorySearchResults"]
 export type PaginatedRepositoryIndexResults = components["schemas"]["PaginatedRepositoryIndexResults"]
+export type ParsedTool = components["schemas"]["ParsedTool"]
 
 export async function repositorySearch(params: IndexParameters): Promise<RepositorySearchResults> {
     const { data } = await ToolShedApi().GET("/api/repositories", { params: { query: params } })
@@ -42,4 +43,14 @@ export async function recentlyCreatedRepositories(): Promise<PaginatedRepository
     } else {
         throw Error("Problem searching for repositories")
     }
+}
+
+export async function getParsedTool(trsToolId: string, version: string): Promise<ParsedTool> {
+    const { data } = await ToolShedApi().GET("/api/tools/{tool_id}/versions/{tool_version}", {
+        params: { path: { tool_id: trsToolId, tool_version: version } },
+    })
+    if (!data) {
+        throw Error("Failed to fetch tool details")
+    }
+    return data
 }

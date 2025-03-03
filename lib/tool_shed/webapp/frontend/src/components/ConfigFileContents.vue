@@ -2,6 +2,7 @@
 import { copyAndNotify, notify } from "@/util"
 
 import { exportFile } from "quasar"
+import PreformattedContent from "@/components/PreformattedContent.vue"
 
 interface ConfigFileContentsProps {
     name: string
@@ -30,7 +31,7 @@ const props = defineProps<ConfigFileContentsProps>()
                 <q-btn size="sm" flat dense icon="content_copy" @click="copyContents" />
                 <q-btn size="sm" flat dense icon="download" @click="downloadContents" />
             </div>
-            <pre style="border-left: 1px solid gray; padding-left: 10px">{{ contents }}</pre>
+            <preformatted-content :contents="contents" />
         </q-card-section>
     </q-card>
 </template>

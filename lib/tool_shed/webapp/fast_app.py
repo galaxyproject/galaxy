@@ -139,6 +139,7 @@ FRONT_END_ROUTES = [
     "/repositories_by_owner/{username}",
     "/repositories/{repository_id}",
     "/repositories_search",
+    "/tools/{trs_tool_id}/versions/{version}",
     "/_component_showcase",
     "/user/api_key",
     "/user/change_password",
