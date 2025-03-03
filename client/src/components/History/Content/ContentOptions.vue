@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BDropdown } from "bootstrap-vue";
+import { BButton, BDropdown } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 
 import { prependPath } from "@/utils/redirect";
@@ -76,8 +76,9 @@ function onDisplay($event: MouseEvent) {
 <template>
     <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
-        <b-button
+        <BButton
             v-if="isCollection && canShowCollectionDetails"
+            v-b-tooltip.hover
             class="collection-job-details-btn px-1"
             title="Show Details"
             size="sm"
@@ -85,10 +86,11 @@ function onDisplay($event: MouseEvent) {
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="emit('showCollectionInfo')">
             <icon icon="info-circle" />
-        </b-button>
+        </BButton>
         <!-- Common for all content items -->
-        <b-button
+        <BButton
             v-if="isDataset"
+            v-b-tooltip.hover
             :disabled="displayDisabled"
             :title="displayButtonTitle"
             tabindex="0"
@@ -98,9 +100,10 @@ function onDisplay($event: MouseEvent) {
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem"
+            v-b-tooltip.hover
             :disabled="editDisabled"
             :title="editButtonTitle"
             tabindex="0"
@@ -110,9 +113,10 @@ function onDisplay($event: MouseEvent) {
             :href="editUrl"
             @click.prevent.stop="emit('edit')">
             <icon icon="pen" />
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem && !isDeleted"
+            v-b-tooltip.hover
             :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
             title="Delete"
@@ -133,9 +137,10 @@ function onDisplay($event: MouseEvent) {
                     Collection and elements
                 </b-dropdown-item>
             </BDropdown>
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem && isDeleted"
+            v-b-tooltip.hover
             tabindex="0"
             class="undelete-btn px-1"
             title="Undelete"
@@ -143,9 +148,10 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             @click.stop="emit('undelete')">
             <icon icon="trash-restore" />
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem && !isVisible"
+            v-b-tooltip.hover
             tabindex="0"
             class="unhide-btn px-1"
             title="Unhide"
@@ -153,7 +159,7 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             @click.stop="emit('unhide')">
             <icon icon="eye-slash" />
-        </b-button>
+        </BButton>
     </span>
 </template>
 
