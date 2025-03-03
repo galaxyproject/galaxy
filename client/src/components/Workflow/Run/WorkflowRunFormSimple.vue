@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BCard, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { allowCachedJobs } from "@/components/Tool/utilities";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
+import { useMarkdown } from "@/composables/markdown";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
@@ -58,10 +59,12 @@ const splitObjectStore = ref(false);
 const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
-// TODO: Once we add readme/help to the right side of the form, we can default the unified `showRightPanel`
-//       (panel that toggles between readme/help or graph) to `true` if the readme/help exists, and if no
-//       readme/help exists, it will be `false`.
-const showGraph = ref(!showPanels.value);
+const showRightPanel = ref<"help" | "graph" | null>(!showPanels.value && props.model.runData.help ? "help" : null);
+
+const showGraph = computed(() => showRightPanel.value === "graph");
+const showHelp = computed(() => showRightPanel.value === "help");
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 
 watch(
     () => showGraph.value,
@@ -201,9 +204,9 @@ async function onExecute() {
 </script>
 
 <template>
-    <div :class="{ 'd-flex flex-column h-100': showGraph }">
-        <div v-if="!showGraph" class="ui-form-header-underlay sticky-top" />
-        <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showGraph }">
+    <div :class="{ 'd-flex flex-column h-100': showRightPanel }">
+        <div v-if="!showRightPanel" class="ui-form-header-underlay sticky-top" />
+        <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showRightPanel }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history
@@ -216,15 +219,27 @@ async function onExecute() {
                 :run-waiting="waitingForRequest"
                 @on-execute="onExecute">
                 <template v-slot:workflow-title-actions>
-                    <BButton
-                        v-b-tooltip.hover.noninteractive.html
-                        size="sm"
-                        :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
-                        variant="link"
-                        :pressed="showGraph"
-                        @click="showGraph = !showGraph">
-                        <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                    </BButton>
+                    <BButtonGroup>
+                        <BButton
+                            v-b-tooltip.hover.noninteractive.html
+                            size="sm"
+                            :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                            variant="link"
+                            :pressed="showGraph"
+                            @click="showRightPanel = showGraph ? null : 'graph'">
+                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                        </BButton>
+                        <BButton
+                            v-if="model.runData.help"
+                            v-b-tooltip.hover.noninteractive.html
+                            size="sm"
+                            :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
+                            variant="link"
+                            :pressed="showHelp"
+                            @click="showRightPanel = showHelp ? null : 'help'">
+                            <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+                        </BButton>
+                    </BButtonGroup>
                     <BDropdown
                         v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
@@ -274,10 +289,10 @@ async function onExecute() {
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">
                 <div
-                    :class="showGraph ? 'w-50 flex-grow-1' : 'w-100'"
+                    :class="showRightPanel ? 'w-50 flex-grow-1' : 'w-100'"
                     :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
-                    <div v-if="showGraph" class="ui-form-header-underlay sticky-top" />
-                    <Heading v-if="showGraph" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
+                    <div v-if="showRightPanel" class="ui-form-header-underlay sticky-top" />
+                    <Heading v-if="showRightPanel" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
                     <FormDisplay
                         :inputs="formInputs"
                         :allow-empty-value-on-required-input="true"
@@ -288,15 +303,23 @@ async function onExecute() {
                         @onValidation="onValidation"
                         @update:active-node-id="($event) => (activeNodeId = $event)" />
                 </div>
-                <div v-if="showGraph" class="h-100 w-50 d-flex flex-shrink-0">
+                <div v-if="showRightPanel" class="h-100 w-50 d-flex flex-shrink-0">
                     <WorkflowRunGraph
-                        v-if="isConfigLoaded"
+                        v-if="isConfigLoaded && showGraph"
                         :workflow-id="model.workflowId"
                         :step-validation="stepValidation || undefined"
                         :stored-id="model.runData.workflow_id"
                         :version="model.runData.version"
                         :inputs="formData"
                         :form-inputs="formInputs" />
+                    <div v-else-if="showHelp" class="d-flex flex-column">
+                        <Heading class="sticky-top" h2 separator bold size="sm"> Help </Heading>
+                        <BCard class="mx-1 flex-grow-1 overflow-auto">
+                            <!-- eslint-disable-next-line vue/no-v-html -->
+                            <p class="container" v-html="renderMarkdown(model.runData.help)" />
+                            <div class="py-2 text-center">- End of help -</div>
+                        </BCard>
+                    </div>
                 </div>
             </div>
         </div>
