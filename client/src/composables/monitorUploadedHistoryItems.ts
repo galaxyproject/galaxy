@@ -2,6 +2,7 @@ import { faExclamation, faSpinner, type IconDefinition } from "@fortawesome/free
 import { computed, type Ref } from "vue";
 
 import { type HDASummary, type HistoryItemSummary, isHDA } from "@/api";
+import type { UploadItem } from "@/components/Upload/model";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { stateIsTerminal } from "@/utils/utils";
 
@@ -17,7 +18,7 @@ const REFER_TO_HISTORY_MSG = "Refer to the history panel to view dataset state."
  *                             or `list:paired` collection JUST from these uploads
  */
 export function monitorUploadedHistoryItems(
-    uploadValues: Ref<{ outputs: unknown }[]>,
+    uploadValues: Ref<UploadItem[]>,
     historyId: Ref<string>,
     enableStart: Ref<boolean>,
     creatingPairedType: Ref<boolean>

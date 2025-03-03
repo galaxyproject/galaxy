@@ -176,7 +176,7 @@ watch(
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>
                 </template>
                 <DefaultBox
-                    v-if="uploadReady"
+                    v-if="uploadReady && configOptions"
                     :effective-extensions="effectiveExtensions"
                     v-bind="configOptions"
                     :has-callback="false"
