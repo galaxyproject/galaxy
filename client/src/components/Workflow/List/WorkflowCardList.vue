@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { BModal } from "bootstrap-vue";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type { Workflow } from "@/components/Workflow/workflows.services";
 
 import type { SelectedWorkflow } from "./types";
@@ -40,6 +41,10 @@ const emit = defineEmits<{
     (e: "insertWorkflowSteps", id: string, stepCount: number): void;
 }>();
 
+/** `props.workflows` typed as `StoredWorkflowDetailed[]` because that is the type expected by `WorkflowCard` */
+const detailedWorkflows = computed(() => props.workflows as unknown as StoredWorkflowDetailed[]);
+// TODO: Ideally, components like `WorkflowCard` should accept a less specific type, like `Workflow` instead of `StoredWorkflowDetailed`
+
 const modalOptions = reactive({
     rename: {
         id: "",
@@ -70,19 +75,19 @@ function onPreview(id: string) {
 }
 
 // TODO: clean-up types, as soon as better Workflow type is available
-function onInsert(workflow: Workflow) {
-    emit("insertWorkflow", workflow.latest_workflow_id as any, workflow.name as any);
+function onInsert(workflow: StoredWorkflowDetailed) {
+    emit("insertWorkflow", (workflow as any).latest_workflow_id, workflow.name);
 }
 
-function onInsertSteps(workflow: Workflow) {
-    emit("insertWorkflowSteps", workflow.id as any, workflow.number_of_steps as any);
+function onInsertSteps(workflow: StoredWorkflowDetailed) {
+    emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
 }
 </script>
 
 <template>
     <div class="workflow-card-list" :class="{ grid: props.gridView }">
         <WorkflowCard
-            v-for="workflow in props.workflows"
+            v-for="workflow in detailedWorkflows"
             :key="workflow.id"
             :workflow="workflow"
             :selectable="!publishedView && !editorView"

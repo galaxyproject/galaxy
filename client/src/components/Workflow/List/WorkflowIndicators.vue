@@ -14,10 +14,9 @@ import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { Creator } from "@/api/workflows";
+import type { Creator, StoredWorkflowDetailed } from "@/api/workflows";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-import type { Workflow } from "@/stores/workflowStore";
 import { copy } from "@/utils/clipboard";
 import { isUrl } from "@/utils/url";
 
@@ -31,7 +30,7 @@ interface BadgeData {
 }
 
 interface Props {
-    workflow: Workflow;
+    workflow: StoredWorkflowDetailed;
     publishedView: boolean;
     noEditTime?: boolean;
     filterable?: boolean;
