@@ -91,12 +91,18 @@
                     :versions="versions"
                     :license="license"
                     :creator="creator"
+                    :logo-url="logoUrl"
+                    :readme="readme"
+                    :help="help"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"
                     @creator="onCreator"
                     @update:nameCurrent="setName"
-                    @update:annotationCurrent="setAnnotation" />
+                    @update:annotationCurrent="setAnnotation"
+                    @update:logoUrlCurrent="setLogoUrl"
+                    @update:readmeCurrent="setReadme"
+                    @update:helpCurrent="setHelp" />
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -363,12 +369,51 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify annotation"
+            "modify short description"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
             if (annotation.value !== newAnnotation) {
                 setAnnotationHandler.set(annotation.value, newAnnotation);
+            }
+        }
+
+        const readme = ref(null);
+        const setReadmeHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (readme.value = value),
+            showAttributes,
+            "modify readme"
+        );
+        function setReadme(newReadme) {
+            if (readme.value !== newReadme) {
+                setReadmeHandler.set(readme.value, newReadme);
+            }
+        }
+
+        const help = ref(null);
+        const setHelpHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (help.value = value),
+            showAttributes,
+            "modify help"
+        );
+        function setHelp(newHelp) {
+            if (help.value !== newHelp) {
+                setHelpHandler.set(help.value, newHelp);
+            }
+        }
+
+        const logoUrl = ref(null);
+        const setLogoUrlHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (logoUrl.value = value),
+            showAttributes,
+            "modify logo url"
+        );
+        function setLogoUrl(newLogoUrl) {
+            if (logoUrl.value !== newLogoUrl) {
+                setLogoUrlHandler.set(logoUrl.value, newLogoUrl);
             }
         }
 
@@ -496,6 +541,12 @@ export default {
             setCreator,
             annotation,
             setAnnotation,
+            readme,
+            setReadme,
+            help,
+            setHelp,
+            logoUrl,
+            setLogoUrl,
             tags,
             setTags,
             rightPanelElement,
@@ -578,6 +629,21 @@ export default {
         },
         name(newName, oldName) {
             if (newName != oldName) {
+                this.hasChanges = true;
+            }
+        },
+        readme(newReadme, oldReadme) {
+            if (newReadme != oldReadme) {
+                this.hasChanges = true;
+            }
+        },
+        help(newHelp, oldHelp) {
+            if (newHelp != oldHelp) {
+                this.hasChanges = true;
+            }
+        },
+        logoUrl(newLogoUrl, oldLogoUrl) {
+            if (newLogoUrl != oldLogoUrl) {
                 this.hasChanges = true;
             }
         },
@@ -975,6 +1041,15 @@ export default {
             }
             if (data.annotation !== undefined) {
                 this.annotation = data.annotation;
+            }
+            if (data.readme !== undefined) {
+                this.readme = data.readme;
+            }
+            if (data.help !== undefined) {
+                this.help = data.help;
+            }
+            if (data.logo_url !== undefined) {
+                this.logoUrl = data.logo_url;
             }
             if (data.version !== undefined) {
                 this.version = data.version;
