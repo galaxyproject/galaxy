@@ -1092,6 +1092,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return {
             "id": trans.app.security.encode_id(stored.id),
             "workflow_id": trans.app.security.encode_id(workflow.id),
+            "help": workflow.help,
             "history_id": trans.app.security.encode_id(history.id) if history else None,
             "name": stored.name,
             "owner": stored.user.username,
