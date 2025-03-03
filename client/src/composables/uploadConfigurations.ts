@@ -7,7 +7,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import { useConfig } from "./config";
 
-type ExtensionDetails = {
+export type ExtensionDetails = {
     id: string;
     text: string;
     description: string | null;
@@ -16,23 +16,36 @@ type ExtensionDetails = {
     upload_warning?: string | null;
 };
 
+export type DbKey = {
+    id: string;
+    text: string;
+};
+
+export type UploadConfigurations = {
+    chunkUploadSize: number;
+    fileSourcesConfigured: boolean;
+    ftpUploadSite?: string;
+    defaultDbKey: string;
+    defaultExtension: string;
+};
+
 export function useUploadConfigurations(extensions: string[] | undefined) {
     const { config, isConfigLoaded } = useConfig();
 
     extensions = extensions?.filter((ext) => ext !== "data");
 
-    const configOptions = computed(() =>
+    const configOptions = computed<UploadConfigurations | null>(() =>
         isConfigLoaded.value
             ? {
-                  chunkUploadSize: config.value.chunk_upload_size,
-                  fileSourcesConfigured: config.value.file_sources_configured,
-                  ftpUploadSite: config.value.ftp_upload_site,
-                  defaultDbKey: config.value.default_genome || "",
+                  chunkUploadSize: config.value.chunk_upload_size as number,
+                  fileSourcesConfigured: config.value.file_sources_configured as boolean,
+                  ftpUploadSite: (config.value.ftp_upload_site as string) || undefined,
+                  defaultDbKey: (config.value.default_genome as string) || "",
                   defaultExtension: extensions?.length
-                      ? extensions[0]
-                      : config.value.default_extension || DEFAULT_EXTENSION,
+                      ? extensions[0]!
+                      : (config.value.default_extension as string) || DEFAULT_EXTENSION,
               }
-            : {}
+            : null
     );
 
     // Load the list of extensions
@@ -65,7 +78,7 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
         }
     });
 
-    const listDbKeys = ref<{ id: string; text: string }[]>([]);
+    const listDbKeys = ref<DbKey[]>([]);
     const dbKeysSet = ref(false);
     async function loadDbKeys() {
         listDbKeys.value = await getUploadDbKeys(config.value?.default_genome || "");

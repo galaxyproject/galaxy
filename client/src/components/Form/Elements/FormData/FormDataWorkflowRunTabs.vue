@@ -96,7 +96,7 @@ function goToFirstWorkflowTab() {
                 <h4 class="m-0">Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}</h4>
             </div>
             <DefaultBox
-                v-if="currentHistoryId && uploadReady"
+                v-if="currentHistoryId && uploadReady && configOptions"
                 :effective-extensions="effectiveExtensions"
                 v-bind="configOptions"
                 :has-callback="false"
