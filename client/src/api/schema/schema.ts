@@ -8093,7 +8093,7 @@ export interface components {
              * Transform
              * @description The transformations applied to the dataset source.
              */
-            transform?: unknown[] | null;
+            transform?: components["schemas"]["DatasetSourceTransform"][] | null;
         };
         /** DatasetSourceId */
         DatasetSourceId: {
@@ -8108,6 +8108,24 @@ export interface components {
              */
             src: components["schemas"]["DatasetSourceType"];
         };
+        /** DatasetSourceTransform */
+        DatasetSourceTransform: {
+            /**
+             * Action
+             * @description Action that was applied to dataset source content to transform it into the dataset
+             */
+            action: components["schemas"]["DatasetSourceTransformActionType"];
+            /**
+             * Datatype Extension
+             * @description If action is 'datatype_groom', this is the datatype that was used to find and run the grooming code as part of the transform action.
+             */
+            datatype_ext?: string | null;
+        };
+        /**
+         * DatasetSourceTransformActionType
+         * @enum {string}
+         */
+        DatasetSourceTransformActionType: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
         /**
          * DatasetSourceType
          * @enum {string}

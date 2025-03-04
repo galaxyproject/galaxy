@@ -122,6 +122,17 @@ class DatasetCollectionPopulatedState(str, Enum):
     FAILED = "failed"  # some problem populating state, won't be populated
 
 
+# we use TypedDicts in the model layer and I don't know how to type with that enum
+# in the dict - it doesn't have the enum value magic that pydantic has.
+DatasetSourceTransformActionTypeLiteral = Literal["to_posix_lines", "spaces_to_tabs", "datatype_groom"]
+
+
+class DatasetSourceTransformActionType(str, Enum):
+    TO_POSIX_LINES = "to_posix_lines"
+    SPACES_TO_TABLES = "spaces_to_tabs"
+    DATATYPE_GROOM = "datatype_groom"
+
+
 # Generic and common Field annotations that can be reused across models
 
 RelativeUrlField = Annotated[
@@ -742,6 +753,29 @@ class DatasetHash(Model):
     )
 
 
+HdaLddaField = Field(
+    DatasetSourceType.hda,
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+)
+
+DatasetSourceTransformActionField: DatasetSourceTransformActionType = Field(
+    ...,
+    title="Action",
+    description="Action that was applied to dataset source content to transform it into the dataset",
+)
+DatasetSourceTransformActionDatatypeExtField: Optional[str] = Field(
+    None,
+    title="Datatype Extension",
+    description="If action is 'datatype_groom', this is the datatype that was used to find and run the grooming code as part of the transform action.",
+)
+
+
+class DatasetSourceTransform(Model):
+    action: DatasetSourceTransformActionType = DatasetSourceTransformActionField
+    datatype_ext: Optional[str] = DatasetSourceTransformActionDatatypeExtField
+
+
 class DatasetSource(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
@@ -753,7 +787,7 @@ class DatasetSource(Model):
         Optional[str], Field(None, title="Extra Files Path", description="The path to the extra files.")
     ]
     transform: Annotated[
-        Optional[List[Any]],  # TODO: type this
+        Optional[List[DatasetSourceTransform]],
         Field(
             None,
             title="Transform",
