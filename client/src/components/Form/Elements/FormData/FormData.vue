@@ -200,7 +200,13 @@ const formattedOptions = computed(() => {
         // Populate keep-options from cache
         Object.entries(keepOptions).forEach(([key, option]) => {
             if (option.value && getSourceType(option.value) === currentSource.value) {
-                result.unshift(option);
+                // check if option (with same id) is already in result, if yes replace it with keepOption
+                const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
+                if (existingOptionIndex >= 0) {
+                    result[existingOptionIndex] = option;
+                } else {
+                    result.unshift(option);
+                }
             }
         });
         // Sort entries by hid
