@@ -16454,6 +16454,11 @@ export interface components {
              */
             email_hash: string | null;
             /**
+             * Help
+             * @description The detailed help text for how to use the workflow and debug problems with it.
+             */
+            help: string | null;
+            /**
              * Hidden
              * @description TODO
              */
@@ -16512,6 +16517,11 @@ export interface components {
              * @description Whether this workflow is currently publicly available to all users.
              */
             published: boolean;
+            /**
+             * Readme
+             * @description The detailed markdown readme of the workflow.
+             */
+            readme: string | null;
             /**
              * Show in Tool Panel
              * @description Whether to display this workflow in the Tools Panel.
