@@ -271,7 +271,7 @@ async function onExecute() {
 
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
 
-        <div class="overflow-auto">
+        <div class="overflow-auto h-100">
             <div class="d-flex h-100">
                 <div
                     :class="showGraph ? 'w-50 flex-grow-1' : 'w-100'"
@@ -292,7 +292,7 @@ async function onExecute() {
                     <WorkflowRunGraph
                         v-if="isConfigLoaded"
                         :workflow-id="model.workflowId"
-                        :step-validation="stepValidation"
+                        :step-validation="stepValidation || undefined"
                         :stored-id="model.runData.workflow_id"
                         :version="model.runData.version"
                         :inputs="formData"
