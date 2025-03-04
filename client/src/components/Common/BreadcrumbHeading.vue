@@ -15,7 +15,7 @@ const props = defineProps<Props>();
 
 <template>
     <div class="breadcrumb-heading">
-        <Heading h1 separator inline size="xl" class="breadcrumb-heading-header">
+        <Heading h1 separator inline size="md" class="breadcrumb-heading-header">
             <template v-for="(item, index) in props.items">
                 <RouterLink
                     v-if="item.to"
