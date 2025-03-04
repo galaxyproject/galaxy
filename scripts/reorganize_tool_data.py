@@ -289,7 +289,9 @@ class DataTable:
             Color.print("Changes to .loc file:", Color.CYAN, flush=True)
             subprocess.call(["diff", "-u", self.loc_file_path, self.new_loc_file_path])
             if commit:
-                os.rename(self.new_loc_file_path, self.loc_file_path)
+                dest_stat = os.stat(self.loc_file_path)
+                shutil.move(self.new_loc_file_path, self.loc_file_path)
+                os.chmod(self.loc_file_path, dest_stat.st_mode)
             else:
                 os.unlink(self.new_loc_file_path)
         else:
