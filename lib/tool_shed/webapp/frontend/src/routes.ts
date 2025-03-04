@@ -82,7 +82,11 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: "/tools/:trsToolId/versions/:version",
         component: ToolVersionPage,
-        props: true,
+        props: (route) => ({
+            trsToolId: route.params.trsToolId,
+            version: route.params.version,
+            fromChangesetRevision: route.query.from_changeset_revision,
+        }),
     },
     {
         path: "/repositories_by_category/:categoryId",
