@@ -40,6 +40,10 @@ const citations = computed(() => {
     const citationEls = tool.value?.citations ?? []
     return citationEls
 })
+
+const xrefs = computed(() => {
+    return tool.value?.xrefs ?? []
+})
 </script>
 
 <template>
@@ -71,18 +75,13 @@ const citations = computed(() => {
                             <q-item-label v-else><i>no license specified</i></q-item-label>
                         </q-item-section>
                     </q-item>
-                    <q-item v-for="xref in tool?.xrefs || []" :key="xref.value">
+                    <q-item>
                         <q-item-section>
-                            <q-item-label overline>REFERENCE {{ xref.reftype }}</q-item-label>
-                            <q-item-label v-if="xref.reftype == 'bio.tools'">
-                                <bio-tools-link :id="xref.value" />
+                            <q-item-label overline>PROFILE</q-item-label>
+                            <q-item-label v-if="tool?.profile">
+                                {{ tool.profile }}
                             </q-item-label>
-                            <q-item-label v-else-if="xref.reftype == 'bioconductor'">
-                                <bioconductor-link :id="xref.value" />
-                            </q-item-label>
-                            <q-item-label v-else>
-                                {{ xref.value }}
-                            </q-item-label>
+                            <q-item-label v-else><i>no profile specified - default of 16.01 assumed</i></q-item-label>
                         </q-item-section>
                     </q-item>
                     <q-item v-for="edamOperation in tool?.edam_operations" :key="edamOperation">
@@ -98,6 +97,26 @@ const citations = computed(() => {
                             <q-item-label overline>EDAM TOPIC</q-item-label>
                             <q-item-label>
                                 <edam-link :term="edamTopic" />
+                            </q-item-label>
+                        </q-item-section>
+                    </q-item>
+                </q-list>
+            </q-card-section>
+            <q-separator />
+            <q-card-section v-if="xrefs.length > 0">
+                <div class="text-h5 q-mr-lg">References</div>
+                <q-list bordered separator>
+                    <q-item v-for="xref in xrefs" :key="xref.value">
+                        <q-item-section>
+                            <q-item-label overline>REFERENCE {{ xref.reftype }}</q-item-label>
+                            <q-item-label v-if="xref.reftype == 'bio.tools'">
+                                <bio-tools-link :id="xref.value" />
+                            </q-item-label>
+                            <q-item-label v-else-if="xref.reftype == 'bioconductor'">
+                                <bioconductor-link :id="xref.value" />
+                            </q-item-label>
+                            <q-item-label v-else>
+                                {{ xref.value }}
                             </q-item-label>
                         </q-item-section>
                     </q-item>
