@@ -7,7 +7,6 @@ import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
@@ -25,6 +24,7 @@ import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { config, isConfigLoaded } = useConfig();
 const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
@@ -36,13 +36,20 @@ const props = defineProps({
     },
 });
 
-const args = ref();
+const attributes = ref({});
 const error = ref("");
 const toggle = ref(false);
 
-const attributes = computed(() => getArgs(props.content));
+const args = computed(() => {
+    if (invocation.value) {
+        return parseInvocation(invocation.value, attributes.value.args);
+    } else {
+        return { ...attributes.value.args };
+    }
+});
+
 const invocation = computed(() => invocationId.value && getInvocationById(invocationId.value));
-const invocationId = computed(() => attributes.value.args.invocation_id);
+const invocationId = computed(() => attributes.value.args?.invocation_id);
 const invocationLoading = computed(() => isLoadingInvocation(invocationId.value));
 const invocationLoadError = computed(() => getInvocationLoadError(invocationId.value));
 const isCollapsible = computed(() => args.value?.collapse !== undefined);
@@ -50,38 +57,32 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const version = computed(() => config.version_major);
 
-async function handleArgs() {
+function handleAttributes() {
     try {
         error.value = "";
-        if (invocation.value) {
-            args.value = parseInvocation(invocation.value, attributes.value.args);
-        } else {
-            args.value = { ...attributes.value.args };
-        }
+        attributes.value = getArgs(props.content);
     } catch (e) {
         error.value = "The directive provided below is invalid. Please review it for errors.";
-        args.value = {};
+        attributes.value = {};
     }
 }
 
 watch(
-    () => [props.content, invocation.value],
-    () => {
-        handleArgs();
-    },
+    () => props.content,
+    () => handleAttributes(),
     { immediate: true }
 );
 </script>
 
 <template>
-    <BAlert v-if="invocationLoadError" v-localize variant="danger" show>
+    <BAlert v-if="error" v-localize variant="danger" show>
+        {{ error }}
+    </BAlert>
+    <BAlert v-else-if="invocationLoadError" v-localize variant="danger" show>
         {{ invocationLoadError }}
     </BAlert>
     <LoadingSpan v-else-if="invocationLoading" />
     <div v-else>
-        <BAlert v-if="error" v-localize variant="danger" show>
-            {{ error }}
-        </BAlert>
         <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
         </BLink>
