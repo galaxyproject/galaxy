@@ -1,10 +1,13 @@
 <script setup>
+import { BAlert, BCollapse, BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { fromCache } from "@/components/Markdown/cache";
 import { getArgs } from "@/components/Markdown/parse";
+import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
 import { useConfig } from "@/composables/config";
+import { useInvocationStore } from "@/stores/invocationStore";
 
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
@@ -24,6 +27,7 @@ import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 
 const { config, isConfigLoaded } = useConfig();
+const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
 
 const props = defineProps({
     content: {
@@ -33,11 +37,14 @@ const props = defineProps({
 });
 
 const args = ref();
-const attributes = ref();
 const error = ref("");
-const loaded = ref(false);
 const toggle = ref(false);
 
+const attributes = computed(() => getArgs(props.content));
+const invocation = computed(() => invocationId.value && getInvocationById(invocationId.value));
+const invocationId = computed(() => attributes.value.args.invocation_id);
+const invocationLoading = computed(() => isLoadingInvocation(invocationId.value));
+const invocationLoadError = computed(() => getInvocationLoadError(invocationId.value));
 const isCollapsible = computed(() => args.value?.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
@@ -46,40 +53,19 @@ const version = computed(() => config.version_major);
 async function handleArgs() {
     try {
         error.value = "";
-        attributes.value = getArgs(props.content);
-        const attributesArgs = { ...attributes.value.args };
-
-        if (attributesArgs.invocation_id) {
-            const invocation = await fromCache(`invocations/${attributesArgs.invocation_id}`);
-            if (invocation) {
-                attributesArgs.invocation = invocation;
-                if (attributesArgs.input && invocation.inputs) {
-                    const inputValues = Object.values(invocation.inputs);
-                    const input = inputValues.find((i) => i.label === attributesArgs.input);
-                    attributesArgs.history_target_id = input?.id;
-                } else if (attributesArgs.output && invocation.outputs) {
-                    const targetId = invocation.outputs[attributesArgs.output]?.id || "";
-                    attributesArgs.history_target_id = targetId;
-                } else if (attributesArgs.step && invocation.steps) {
-                    const step = invocation.steps.find((s) => s.workflow_step_label === attributesArgs.step);
-                    attributesArgs.job_id = step?.job_id;
-                    attributesArgs.implicit_collection_jobs_id = step?.implicit_collection_jobs_id;
-                }
-            } else {
-                error.value = "Failed to retrieve invocation.";
-            }
+        if (invocation.value) {
+            args.value = parseInvocation(invocation.value, attributes.value.args);
+        } else {
+            args.value = { ...attributes.value.args };
         }
-
-        args.value = attributesArgs;
     } catch (e) {
         error.value = "The directive provided below is invalid. Please review it for errors.";
-        attributes.value = {};
+        args.value = {};
     }
-    loaded.value = true;
 }
 
 watch(
-    () => props.content,
+    () => [props.content, invocation.value],
     () => {
         handleArgs();
     },
@@ -88,14 +74,18 @@ watch(
 </script>
 
 <template>
-    <div v-if="loaded">
-        <b-alert v-if="error" variant="danger" show>
+    <BAlert v-if="invocationLoadError" v-localize variant="danger" show>
+        {{ invocationLoadError }}
+    </BAlert>
+    <LoadingSpan v-else-if="invocationLoading" />
+    <div v-else>
+        <BAlert v-if="error" v-localize variant="danger" show>
             {{ error }}
-        </b-alert>
-        <b-link v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
+        </BAlert>
+        <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
-        </b-link>
-        <b-collapse :visible="isVisible">
+        </BLink>
+        <BCollapse :visible="isVisible">
             <div v-if="name == 'generate_galaxy_version'" class="galaxy-version">
                 <pre><code>{{ version }}</code></pre>
             </div>
@@ -203,6 +193,6 @@ watch(
                 :size="args.size || 'lg'"
                 :workflow-version="args.workflow_checkpoint || undefined" />
             <WorkflowLicense v-else-if="name == 'workflow_license'" :workflow-id="args.workflow_id" />
-        </b-collapse>
+        </BCollapse>
     </div>
 </template>
