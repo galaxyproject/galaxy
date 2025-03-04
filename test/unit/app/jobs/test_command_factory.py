@@ -9,7 +9,6 @@ from typing import (
 
 from galaxy.jobs.command_factory import (
     build_command,
-    PREPARE_DIRS,
     SETUP_GALAXY_FOR_METADATA,
 )
 from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
@@ -188,7 +187,7 @@ class TestCommandFactory(TestCase):
         return build_command(**kwds)
 
     def _surround_command(self, command, post_command=""):
-        command = f'''{PREPARE_DIRS};{self.TEE_LOG}{command} {self.CAPTURE_AND_REDIRECT}{post_command}; sh -c "exit $return_code"'''
+        command = f'''cd working;{self.TEE_LOG}{command} {self.CAPTURE_AND_REDIRECT}{post_command}; sh -c "exit $return_code"'''
         return command.replace("galaxy_1.ec", os.path.join(self.job_wrapper.working_directory, "galaxy_1.ec"), 1)
 
 
