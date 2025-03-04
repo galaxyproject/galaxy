@@ -73,7 +73,7 @@ const citations = computed(() => {
                     </q-item>
                     <q-item v-for="xref in tool?.xrefs || []" :key="xref.value">
                         <q-item-section>
-                            <q-item-label overline>XREF {{ xref.reftype }}</q-item-label>
+                            <q-item-label overline>REFERENCE {{ xref.reftype }}</q-item-label>
                             <q-item-label v-if="xref.reftype == 'bio.tools'">
                                 <bio-tools-link :id="xref.value" />
                             </q-item-label>
