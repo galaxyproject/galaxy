@@ -30,7 +30,7 @@ interface DataToolParameterInput extends BaseDataToolParameterInput {}
 interface DataCollectionToolParameterInput extends BaseDataToolParameterInput {}
 export type DataInput = DataToolParameterInput | DataCollectionToolParameterInput | boolean | string | null;
 
-interface WorkflowRunStep extends Step {
+interface WorkflowRunStep extends Readonly<Step> {
     headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;
     nodeText?: string | boolean;
@@ -80,7 +80,7 @@ export function useWorkflowRunGraph(
         }
     }
 
-    const workflowSteps = computed<Record<string, Step>>(() => loadedWorkflow.value?.steps);
+    const workflowSteps = computed<Record<string, Readonly<Step>>>(() => loadedWorkflow.value?.steps);
 
     const steps = computed<{ [index: string]: WorkflowRunStep }>(() => {
         if (!workflowSteps.value || !formInputs.value || !inputs.value) {
@@ -88,7 +88,7 @@ export function useWorkflowRunGraph(
         }
 
         return Object.keys(workflowSteps.value).reduce((acc: { [index: string]: WorkflowRunStep }, k: string) => {
-            const step = workflowSteps.value[k];
+            const step = { ...workflowSteps.value[k] } as WorkflowRunStep;
             const key = parseInt(k);
             if (step) {
                 if (isWorkflowInput(step.type) && !checkAndSetStepDescriptionForValidation(step)) {
@@ -150,7 +150,7 @@ export function useWorkflowRunGraph(
      * @param populated Whether the input is populated, undefined for optional inputs
      * @param optional Whether the input is optional
      */
-    function setStepDescription(step: Step, text: string | boolean, populated: boolean, optional?: boolean) {
+    function setStepDescription(step: WorkflowRunStep, text: string | boolean, populated: boolean, optional?: boolean) {
         // color variant for `paused` state works best for unpopulated inputs,
         // "" for optional inputs and `ok` for populated inputs
         const headerClass = optional ? "" : populated ? "ok" : "paused";
@@ -163,7 +163,7 @@ export function useWorkflowRunGraph(
         set(step, "headerIcon", headerIcon);
     }
 
-    function checkAndSetStepDescriptionForValidation(step: Step): boolean {
+    function checkAndSetStepDescriptionForValidation(step: WorkflowRunStep): boolean {
         if (stepValidation.value && stepValidation.value.length == 2) {
             const [stepId, message] = stepValidation.value;
 
