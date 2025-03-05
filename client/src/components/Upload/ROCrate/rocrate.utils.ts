@@ -10,6 +10,19 @@ export function validateLocalZipFile(file?: File | null): string {
     return "";
 }
 
+const KNOWN_IGNORED_FILES = [
+    "collections_attrs.txt",
+    "datasets_attrs.txt",
+    "datasets_attrs.txt.provenance",
+    "export_attrs.txt",
+    "implicit_collection_jobs_attrs.txt",
+    "implicit_dataset_conversions.txt",
+    "invocation_attrs.txt",
+    "jobs_attrs.txt",
+    "libraries_attrs.txt",
+    "library_folders_attrs.txt",
+];
+
 interface Conforms {
     id: string;
     name: string;
@@ -40,18 +53,32 @@ export interface ROCrateSummary {
     conformsTo: Conforms[];
     license: string;
     workflows: ROCrateFile[];
-    datasets: ROCrateFile[];
+    files: ROCrateFile[];
     creators: Person[] | Organization[];
 }
 
-function isOfType(item: unknown, type: string): boolean {
-    if (typeof item === "object" && item !== null && "@type" in item) {
-        if (Array.isArray(item["@type"])) {
-            return item["@type"].includes(type);
-        }
-        return item["@type"] === type;
+function isOfType(item: GraphItem, type: string): boolean {
+    if (Array.isArray(item["@type"])) {
+        return item["@type"].includes(type);
     }
-    return false;
+    return item["@type"] === type;
+}
+
+function shouldBeIgnored(item: GraphItem): boolean {
+    return KNOWN_IGNORED_FILES.some((ignoredFile) => item["@id"].includes(ignoredFile));
+}
+
+function isWorkflow(item: GraphItem): boolean {
+    return isOfType(item, "ComputationalWorkflow") && item["@id"].endsWith(".gxwf.yml");
+}
+
+function isFile(item: GraphItem): boolean {
+    return (
+        isOfType(item, "File") &&
+        !shouldBeIgnored(item) &&
+        !isOfType(item, "ComputationalWorkflow") &&
+        !item["@id"].startsWith("workflows/")
+    );
 }
 
 interface GraphItem {
@@ -95,8 +122,10 @@ export async function extractROCrateSummary(crate: HasGraph): Promise<ROCrateSum
 
     const license = String(root.license);
 
+    // TODO: Handle main entity
+
     const workflows = crate["@graph"]
-        .filter((item) => isOfType(item, "ComputationalWorkflow"))
+        .filter((item) => isWorkflow(item))
         .map((workflow) => ({
             id: workflow["@id"],
             name: String(workflow.name),
@@ -104,14 +133,16 @@ export async function extractROCrateSummary(crate: HasGraph): Promise<ROCrateSum
             path: workflow["@id"],
         }));
 
-    const datasets = crate["@graph"]
-        .filter((item) => isOfType(item, "File"))
+    const files = crate["@graph"]
+        .filter((item) => isFile(item))
         .map((dataset) => ({
             id: dataset["@id"],
             name: String(dataset.name),
             type: String(dataset.encodingFormat),
             path: dataset["@id"],
         }));
+
+    // TODO: Handle collections?
 
     const creators = crate["@graph"]
         .filter((item) => isOfType(item, "Person") || isOfType(item, "Organization"))
@@ -135,7 +166,7 @@ export async function extractROCrateSummary(crate: HasGraph): Promise<ROCrateSum
         conformsTo,
         license,
         workflows,
-        datasets,
+        files,
         creators,
     };
 }

@@ -63,12 +63,12 @@ function toggleSelection(item: ROCrateFile) {
             </ul>
         </div>
 
-        <div v-if="props.crateSummary.datasets.length > 0">
-            <strong>Datasets</strong>
+        <div v-if="props.crateSummary.files.length > 0">
+            <strong>Files</strong>
             <ul>
-                <li v-for="dataset in props.crateSummary.datasets" :key="dataset.id">
+                <li v-for="dataset in props.crateSummary.files" :key="dataset.id">
                     <input type="checkbox" :value="dataset" @change="toggleSelection(dataset)" />
-                    {{ dataset.name }} (Type: {{ dataset.type }})
+                    {{ dataset.name }} <span class="text-muted">({{ dataset.type }})</span>
                 </li>
             </ul>
         </div>
