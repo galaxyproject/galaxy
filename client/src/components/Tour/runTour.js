@@ -21,7 +21,7 @@ function getElement(selector) {
         try {
             return document.querySelector(selector);
         } catch (error) {
-            throw Error(`Tour - Invalid selector. ${selector}`);
+            throw Error(`Invalid selector. ${selector}`);
         }
     }
 }
@@ -39,8 +39,7 @@ function waitForElement(selector, resolve, reject, tries) {
                 waitForElement(selector, resolve, reject, tries - 1);
             }, delay);
         } else {
-            console.error("Tour - Element not found.", selector);
-            reject();
+            throw Error("Element not found.", selector);
         }
     } else {
         resolve();
@@ -55,7 +54,7 @@ function doClick(targets) {
             if (el) {
                 el.click();
             } else {
-                console.error("Tour - Click target not found.", selector);
+                throw Error("Click target not found.", selector);
             }
         });
     }
@@ -70,7 +69,7 @@ function doInsert(selector, value) {
             const event = new Event("input");
             el.dispatchEvent(event);
         } else {
-            console.error("Tour - Insert target not found.", selector);
+            throw Error("Insert target not found.", selector);
         }
     }
 }

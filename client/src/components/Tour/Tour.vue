@@ -2,29 +2,36 @@
     <div class="d-flex flex-column">
         <div v-if="historiesLoading">computing tour requirements...</div>
         <b-modal
+            v-else-if="errorMessage"
+            id="tour-failed"
+            v-model="showModal"
+            title="Tour Failed"
+            title-class="h3"
+            ok-only>
+            {{ errorMessage }}
+        </b-modal>
+        <b-modal
             v-else-if="loginRequired(currentUser)"
             id="tour-requirement-unment"
-            v-model="showRequirementDialog"
+            v-model="showModal"
             title="Requires Login"
             title-class="h3"
-            static
             ok-only>
             You must log in to Galaxy to use this tour.
         </b-modal>
         <b-modal
             v-else-if="adminRequired(currentUser)"
             id="tour-requirement-unment"
-            v-model="showRequirementDialog"
+            v-model="showModal"
             title="Requires Admin"
             title-class="h3"
-            static
             ok-only>
             You must be an admin user to use this tour.
         </b-modal>
         <b-modal
             v-else-if="newHistoryRequired(currentHistory)"
             id="tour-requirement-unment"
-            v-model="showRequirementDialog"
+            v-model="showModal"
             title="Requires New History"
             title-class="h3"
             ok-title="Create New History"
@@ -71,8 +78,9 @@ export default {
     data() {
         return {
             currentIndex: -1,
+            errorMessage: "",
             isPlaying: false,
-            showRequirementDialog: true,
+            showModal: true,
         };
     },
     computed: {
@@ -130,28 +138,32 @@ export default {
             }
         },
         async next() {
-            // do post-actions
-            if (this.currentStep && this.currentStep.onNext) {
-                await this.currentStep.onNext();
-            }
-            // do pre-actions
-            const nextIndex = this.currentIndex + 1;
-            if (nextIndex < this.numberOfSteps && this.currentIndex !== -1) {
-                const nextStep = this.steps[nextIndex];
-                if (nextStep.onBefore) {
-                    await nextStep.onBefore();
-                    // automatically continues to next step if enabled, unless its the last one
-                    if (this.isPlaying && nextIndex !== this.numberOfSteps - 1) {
-                        setTimeout(() => {
-                            if (this.isPlaying) {
-                                this.next();
-                            }
-                        }, playDelay);
+            try {
+                // do post-actions
+                if (this.currentStep && this.currentStep.onNext) {
+                    await this.currentStep.onNext();
+                }
+                // do pre-actions
+                const nextIndex = this.currentIndex + 1;
+                if (nextIndex < this.numberOfSteps && this.currentIndex !== -1) {
+                    const nextStep = this.steps[nextIndex];
+                    if (nextStep.onBefore) {
+                        await nextStep.onBefore();
+                        // automatically continues to next step if enabled, unless its the last one
+                        if (this.isPlaying && nextIndex !== this.numberOfSteps - 1) {
+                            setTimeout(() => {
+                                if (this.isPlaying) {
+                                    this.next();
+                                }
+                            }, playDelay);
+                        }
                     }
                 }
+                // go to next step
+                this.currentIndex = nextIndex;
+            } catch (e) {
+                this.errorMessage = String(e);
             }
-            // go to next step
-            this.currentIndex = nextIndex;
         },
         end() {
             this.currentIndex = -1;
