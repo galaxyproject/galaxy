@@ -270,6 +270,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                             :key="tool.id"
                             :tool="tool"
                             :trs-tool-id="trsToolId(tool)"
+                            :changeset-revision="currentMetadata.changeset_revision"
                         ></repository-tool>
                     </q-list>
 

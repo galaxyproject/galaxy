@@ -3,6 +3,7 @@ import type { RepositoryTool } from "@/schema"
 
 interface RepositoryToolProps {
     tool: RepositoryTool
+    changesetRevision: string
     trsToolId?: string
 }
 
@@ -16,7 +17,7 @@ defineProps<RepositoryToolProps>()
                 <router-link
                     v-if="trsToolId"
                     class="text-primary text-bold text-body1"
-                    :to="`/tools/${trsToolId}/versions/${tool.version}`"
+                    :to="`/tools/${trsToolId}/versions/${tool.version}?from_changeset_revision=${changesetRevision}`"
                 >
                     {{ tool.name }}
                 </router-link>

@@ -1907,69 +1907,6 @@ export interface components {
             /** Total Results */
             total_results: number
         }
-        /** ParsedTool */
-        ParsedTool: {
-            /** Citations */
-            citations: components["schemas"]["Citation"][]
-            /** Description */
-            description: string | null
-            /** Edam Operations */
-            edam_operations: string[]
-            /** Edam Topics */
-            edam_topics: string[]
-            help: components["schemas"]["HelpContent"] | null
-            /** Id */
-            id: string
-            /** Inputs */
-            inputs: (
-                | components["schemas"]["CwlIntegerParameterModel"]
-                | components["schemas"]["CwlFloatParameterModel"]
-                | components["schemas"]["CwlStringParameterModel"]
-                | components["schemas"]["CwlBooleanParameterModel"]
-                | components["schemas"]["CwlNullParameterModel"]
-                | components["schemas"]["CwlFileParameterModel"]
-                | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel"]
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel"]
-                | components["schemas"]["RepeatParameterModel"]
-                | components["schemas"]["SectionParameterModel"]
-            )[]
-            /** License */
-            license: string | null
-            /** Name */
-            name: string
-            /** Outputs */
-            outputs: (
-                | components["schemas"]["ToolOutputDataset"]
-                | components["schemas"]["ToolOutputCollection"]
-                | components["schemas"]["ToolOutputText"]
-                | components["schemas"]["ToolOutputInteger"]
-                | components["schemas"]["ToolOutputFloat"]
-                | components["schemas"]["ToolOutputBoolean"]
-            )[]
-            /** Profile */
-            profile: string | null
-            /** Version */
-            version: string | null
-            /** Xrefs */
-            xrefs: components["schemas"]["XrefDict"][]
-        }
         /**
          * RegexParameterValidatorModel
          * @description Check if a regular expression **matches** the value, i.e. appears
@@ -2530,6 +2467,70 @@ export interface components {
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
              */
             version: string
+        }
+        /** ShedParsedTool */
+        ShedParsedTool: {
+            /** Citations */
+            citations: components["schemas"]["Citation"][]
+            /** Description */
+            description: string | null
+            /** Edam Operations */
+            edam_operations: string[]
+            /** Edam Topics */
+            edam_topics: string[]
+            help: components["schemas"]["HelpContent"] | null
+            /** Id */
+            id: string
+            /** Inputs */
+            inputs: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
+            /** License */
+            license: string | null
+            /** Name */
+            name: string
+            /** Outputs */
+            outputs: (
+                | components["schemas"]["ToolOutputDataset"]
+                | components["schemas"]["ToolOutputCollection"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[]
+            /** Profile */
+            profile: string | null
+            repository_revision?: components["schemas"]["RepositoryRevisionMetadata"] | null
+            /** Version */
+            version: string | null
+            /** Xrefs */
+            xrefs: components["schemas"]["XrefDict"][]
         }
         /** TextParameterModel */
         TextParameterModel: {
@@ -4453,7 +4454,7 @@ export interface operations {
                     [name: string]: unknown
                 }
                 content: {
-                    "application/json": components["schemas"]["ParsedTool"]
+                    "application/json": components["schemas"]["ShedParsedTool"]
                 }
             }
             /** @description Request Error */

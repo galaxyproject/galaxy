@@ -11,6 +11,7 @@ import LicenseLink from "@/components/LicenseLink.vue"
 interface Props {
     trsToolId: string
     version: string
+    fromChangesetRevision?: string
 }
 
 const props = defineProps<Props>()
@@ -44,10 +45,46 @@ const citations = computed(() => {
 const xrefs = computed(() => {
     return tool.value?.xrefs ?? []
 })
+
+const repositoryRevision = computed(() => {
+    return tool.value?.repository_revision
+})
+
+const repository = computed(() => {
+    return repositoryRevision.value?.repository
+})
+
+const repositoryLink = computed(() => {
+    const repoValue = repository.value
+    const revisionValue = repositoryRevision.value
+    if (repoValue && revisionValue) {
+        return `/view/${repoValue.owner}/${repoValue.name}/${revisionValue.changeset_revision}`
+    } else {
+        return undefined
+    }
+})
+
+const linkedFromOlderRevision = computed(() => {
+    if (!repositoryRevision.value) {
+        return false
+    }
+    if (!props.fromChangesetRevision) {
+        return false
+    }
+    return repositoryRevision.value.changeset_revision != props.fromChangesetRevision
+})
 </script>
 
 <template>
     <q-page class="q-ma-lg">
+        <div class="q-mb-md q-gutter-sm" v-if="linkedFromOlderRevision">
+            <q-banner inline-actions rounded class="bg-warning text-white">
+                <strong
+                    >Warning: Showing tool information from a newer repository revision (the latest repository revision
+                    containing this tool version).</strong
+                >
+            </q-banner>
+        </div>
         <loading-div v-if="loading" message="Loading tool information" />
         <q-card v-else>
             <q-card-section class="bg-primary text-white col-grow">
@@ -60,6 +97,17 @@ const xrefs = computed(() => {
             <q-separator />
             <q-card-section>
                 <q-list bordered separator>
+                    <q-item v-if="repository && repositoryRevision && repositoryLink">
+                        <q-item-section>
+                            <q-item-label overline>Repository</q-item-label>
+                            <q-item-label
+                                ><router-link :to="repositoryLink"
+                                    >{{ repository.owner }} / {{ repository.name }} (@
+                                    {{ repositoryRevision.changeset_revision }})</router-link
+                                ></q-item-label
+                            >
+                        </q-item-section>
+                    </q-item>
                     <q-item>
                         <q-item-section>
                             <q-item-label overline>TRS ID</q-item-label>

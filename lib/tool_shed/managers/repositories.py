@@ -84,6 +84,7 @@ from tool_shed_client.schema import (
     PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
     RepositoryMetadataInstallInfoDict,
+    RepositoryRevisionMetadata,
     ResetMetadataOnRepositoriesRequest,
     ResetMetadataOnRepositoriesResponse,
     ResetMetadataOnRepositoryResponse,
@@ -428,23 +429,35 @@ def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, dow
         metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
         if metadata is None:
             continue
-        metadata_dict = metadata.to_dict(
-            value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
-        )
-        metadata_dict["repository"] = repository.to_dict(
-            value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
-        )
-        if metadata.has_repository_dependencies and recursive:
-            metadata_dict["repository_dependencies"] = get_all_dependencies(
-                app, metadata, processed_dependency_links=[]
-            )
-        else:
-            metadata_dict["repository_dependencies"] = []
-        if metadata.includes_tools:
-            metadata_dict["tools"] = metadata.metadata["tools"]
-        metadata_dict["invalid_tools"] = metadata.metadata.get("invalid_tools", [])
+        metadata_dict = get_repository_revision_metadata_dict(app, repository, metadata, recursive=recursive)
         all_metadata[f"{int(changeset)}:{changehash}"] = metadata_dict
     return all_metadata
+
+
+def get_repository_revision_metadata_dict(
+    app: ToolShedApp, repository: Repository, metadata: RepositoryMetadata, recursive: bool = False
+):
+    metadata_dict = metadata.to_dict(
+        value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
+    )
+    metadata_dict["repository"] = repository.to_dict(
+        value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
+    )
+    if metadata.has_repository_dependencies and recursive:
+        metadata_dict["repository_dependencies"] = get_all_dependencies(app, metadata, processed_dependency_links=[])
+    else:
+        metadata_dict["repository_dependencies"] = []
+    if metadata.includes_tools:
+        metadata_dict["tools"] = metadata.metadata["tools"]
+    metadata_dict["invalid_tools"] = metadata.metadata.get("invalid_tools", [])
+    return metadata_dict
+
+
+def get_repository_revision_metadata_model(
+    app: ToolShedApp, repository: Repository, metadata: RepositoryMetadata, recursive: bool = False
+) -> RepositoryRevisionMetadata:
+    as_dict = get_repository_revision_metadata_dict(app, repository, metadata, recursive=recursive)
+    return RepositoryRevisionMetadata(**as_dict)
 
 
 def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -> dict:

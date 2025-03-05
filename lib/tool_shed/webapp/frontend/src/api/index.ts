@@ -10,7 +10,7 @@ type IndexParameters = ToolShedApiPaths["/api/repositories"]["get"]["parameters"
 
 export type RepositorySearchResults = components["schemas"]["RepositorySearchResults"]
 export type PaginatedRepositoryIndexResults = components["schemas"]["PaginatedRepositoryIndexResults"]
-export type ParsedTool = components["schemas"]["ParsedTool"]
+export type ParsedTool = components["schemas"]["ShedParsedTool"]
 
 export async function repositorySearch(params: IndexParameters): Promise<RepositorySearchResults> {
     const { data } = await ToolShedApi().GET("/api/repositories", { params: { query: params } })
