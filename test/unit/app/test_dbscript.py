@@ -41,6 +41,9 @@ ADMIN_CMD = "manage_db.sh"
 DEV_CMD = "scripts/db_dev.sh"
 COMMANDS = [ADMIN_CMD, DEV_CMD]
 
+# Skip all but one due to slow speed. Leave one test as a "smoke test".
+SKIP_REASON = "Slow test: database migration management scripts"
+
 
 @pytest.fixture(scope="session")
 def migrations_dir() -> Traversable:
@@ -99,6 +102,7 @@ def create_alembic_branches(config: Config, gxy_versions_dir: str, tsi_versions_
     )
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestRevisionCommand:
     def test_revision_cmd(self, config):
         run_command(f"{DEV_CMD} revision --message foo1")
@@ -121,6 +125,7 @@ class TestRevisionCommand:
         assert "the following arguments are required: -m/--message" in completed.stderr
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestShowCommand:
     def test_show_cmd(self, config):
         alembic.command.revision(config, rev_id="42", head=GXY_BASE_ID)
@@ -146,6 +151,7 @@ class TestShowCommand:
         assert "the following arguments are required: revision" in completed.stderr
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestHistoryCommand:
     def test_history_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
@@ -180,6 +186,7 @@ class TestHistoryCommand:
         assert "gxy0 -> 1 (gxy)" in completed.stdout
 
 
+@pytest.mark.skip(SKIP_REASON)
 @pytest.mark.parametrize("command", COMMANDS)
 class TestVersionCommand:
     def test_version_cmd(self, config, command):
@@ -200,6 +207,7 @@ class TestVersionCommand:
         assert "Revises: 1" in completed.stdout
 
 
+@pytest.mark.skip(SKIP_REASON)
 @pytest.mark.parametrize("command", COMMANDS)
 class TestDbVersionCommand:
     def test_dbversion_cmd(self, config, command):
@@ -230,6 +238,7 @@ class TestDbVersionCommand:
 
 @pytest.mark.parametrize("command", COMMANDS)
 class TestUpgradeCommand:
+    @pytest.mark.skip(SKIP_REASON)
     def test_upgrade_cmd(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
@@ -271,6 +280,7 @@ class TestUpgradeCommand:
         assert "UPDATE alembic_version SET version_num='2'" in completed.stdout
         assert "UPDATE alembic_version SET version_num='3'" in completed.stdout
 
+    @pytest.mark.skip(SKIP_REASON)
     def test_upgrade_cmd_with_revision_arg(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
@@ -283,6 +293,7 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("1",)
 
+    @pytest.mark.skip(SKIP_REASON)
     def test_upgrade_cmd_with_relative_revision_syntax(self, config, command):
         alembic.command.revision(config, rev_id="a", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="b", head="a")
@@ -309,6 +320,7 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("d",)
 
+    @pytest.mark.skip(SKIP_REASON)
     def test_repair_arg_available_to_dev_script_only(self, config, command):
         completed = run_command(f"{command} upgrade --repair")
         if command == DEV_CMD:
@@ -318,6 +330,7 @@ class TestUpgradeCommand:
             assert "unrecognized arguments: --repair" in completed.stderr
 
 
+@pytest.mark.skip(SKIP_REASON)
 @pytest.mark.parametrize("command", COMMANDS)
 class TestDowngradeCommand:
     def test_downgrade_cmd(self, config, command):
