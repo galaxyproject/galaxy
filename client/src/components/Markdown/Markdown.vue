@@ -120,7 +120,7 @@ onMounted(() => {
                     </div>
                 </b-alert>
             </div>
-            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
+            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component">
                 <MarkdownDefault v-if="obj.name === 'markdown'" :content="obj.content" />
                 <MarkdownGalaxy v-else-if="obj.name === 'galaxy'" :content="obj.content" />
             </div>
