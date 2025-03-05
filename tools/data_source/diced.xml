@@ -15,6 +15,7 @@
     <request_param_translation>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
         <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="data_type" remote_name="type" missing="tabular" />
     </request_param_translation>
     <uihints minwidth="800"/>
     <outputs>
