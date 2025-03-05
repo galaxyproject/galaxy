@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { BAlert, BImg } from "bootstrap-vue";
 import { computedAsync } from "@vueuse/core";
+import { BAlert, BImg } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
@@ -23,7 +23,6 @@ const imageUrl = computed(() => {
     if (props.path === undefined || props.path === "undefined") {
         return `${getAppRoot()}dataset/display?dataset_id=${props.historyDatasetId}`;
     }
-
     return pathDestination.value?.fileLink;
 });
 
@@ -44,5 +43,5 @@ const isImage = computedAsync(async () => {
         </BAlert>
         <BImg v-else :src="imageUrl" fluid />
     </div>
-    <BAlert v-else variant="warning" show> Image not found: {{ imageUrl }}.</BAlert>
+    <BAlert v-else variant="warning" show>Image not found: {{ imageUrl }}.</BAlert>
 </template>
