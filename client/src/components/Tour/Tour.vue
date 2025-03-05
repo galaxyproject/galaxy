@@ -5,31 +5,31 @@
             v-else-if="loginRequired(currentUser)"
             id="tour-requirement-unment"
             v-model="showRequirementDialog"
+            title="Requires Login"
+            title-class="h3"
             static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
+            ok-only>
+            You must log in to Galaxy to use this tour.
         </b-modal>
         <b-modal
             v-else-if="adminRequired(currentUser)"
             id="tour-requirement-unment"
             v-model="showRequirementDialog"
+            title="Requires Admin"
+            title-class="h3"
             static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
+            ok-only>
+            You must be an admin user to use this tour.
         </b-modal>
         <b-modal
             v-else-if="newHistoryRequired(currentHistory)"
             id="tour-requirement-unment"
             v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger">
-                This tour is designed to run on a new history, please create a new history before running it.
-                <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
-            </b-alert>
+            title="Requires New History"
+            title-class="h3"
+            ok-title="Create New History"
+            @ok="createNewHistory()">
+            This tour is designed to run on a new history, please create a new history before running it.
         </b-modal>
         <TourStep
             v-else-if="currentStep"
@@ -140,8 +140,8 @@ export default {
                 const nextStep = this.steps[nextIndex];
                 if (nextStep.onBefore) {
                     await nextStep.onBefore();
-                    // automatically continues to next step if enabled
-                    if (this.isPlaying) {
+                    // automatically continues to next step if enabled, unless its the last one
+                    if (this.isPlaying && nextIndex !== this.numberOfSteps - 1) {
                         setTimeout(() => {
                             if (this.isPlaying) {
                                 this.next();

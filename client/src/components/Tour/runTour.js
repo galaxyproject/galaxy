@@ -98,7 +98,7 @@ export async function runTour(tourId, tourData = null) {
             element: step.element,
             title: step.title,
             content: step.content,
-            onBefore: () => {
+            onBefore: async () => {
                 return new Promise((resolve, reject) => {
                     // wait for element before continuing tour
                     waitForElement(step.element, resolve, reject, attempts);
