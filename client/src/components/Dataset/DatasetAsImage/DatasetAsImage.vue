@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert, BImg } from "bootstrap-vue";
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 
@@ -37,15 +38,11 @@ const isImage = computedAsync(async () => {
 </script>
 
 <template>
-    <div>
-        <div v-if="imageUrl" class="w-100 p-2">
-            <b-card nobody body-class="p-1">
-                <span v-if="!isImage" class="text-danger">This dataset does not appear to be an image.</span>
-                <b-img v-else :src="imageUrl" fluid />
-            </b-card>
-        </div>
-        <div v-else>
-            <b>Image is not found</b>
-        </div>
+    <div v-if="imageUrl" class="w-100">
+        <BAlert v-if="!isImage" variant="warning" show>
+            This dataset does not appear to be an image: {{ imageUrl }}.
+        </BAlert>
+        <BImg v-else :src="imageUrl" fluid />
     </div>
+    <BAlert v-else variant="warning" show> Image not found: {{ imageUrl }}.</BAlert>
 </template>
