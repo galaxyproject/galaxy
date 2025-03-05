@@ -1,6 +1,6 @@
 <template>
     <div class="d-flex flex-column">
-        <div v-if="historiesLoading">computing tour requirements...</div>
+        <div v-if="historiesLoading">Evaluating requirements...</div>
         <b-modal
             v-else-if="errorMessage"
             id="tour-failed"
@@ -39,7 +39,7 @@
             This tour is designed to run on a new history, please create a new history before running it.
         </b-modal>
         <TourStep
-            v-else-if="currentStep"
+            v-else-if="currentHistory && currentStep && currentUser"
             :key="currentIndex"
             :step="currentStep"
             :is-playing="isPlaying"
@@ -92,11 +92,11 @@ export default {
         numberOfSteps() {
             return this.steps.length;
         },
+        isFirst() {
+            return this.currentIndex === 0;
+        },
         isLast() {
             return this.currentIndex === this.steps.length - 1;
-        },
-        hasBegun() {
-            return this.currentIndex >= 1;
         },
     },
     beforeDestroy() {
@@ -118,21 +118,22 @@ export default {
             }
         },
         loginRequired(user) {
-            return !this.hasBegun && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
+            return this.isFirst && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
         },
         adminRequired(user) {
-            return !this.hasBegun && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
+            return this.isFirst && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
         },
         newHistoryRequired(history) {
-            if (this.hasBegun) {
-                return false;
-            }
-            const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
-            if (!hasNewHistoryRequirement) {
-                return false;
-            } else if (history && history.size != 0) {
-                // TODO: better estimate for whether the history is new.
-                return true;
+            if (this.isFirst) {
+                const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
+                if (!hasNewHistoryRequirement) {
+                    return false;
+                } else if (history && history.size != 0) {
+                    // TODO: better estimate for whether the history is new.
+                    return true;
+                } else {
+                    return false;
+                }
             } else {
                 return false;
             }
