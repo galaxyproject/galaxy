@@ -34,9 +34,9 @@ from tool_shed_client.schema.trs_service_info import Service
 from . import (
     depends,
     DependsOnTrans,
-    RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     Router,
+    ToolSearchPageQueryParam,
     ToolsIndexQueryParam,
 )
 
@@ -73,7 +73,7 @@ class FastAPITools:
     def index(
         self,
         q: str = ToolsIndexQueryParam,
-        page: int = RepositorySearchPageQueryParam,
+        page: int = ToolSearchPageQueryParam,
         page_size: int = RepositorySearchPageSizeQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
     ):

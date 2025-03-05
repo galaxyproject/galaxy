@@ -38,6 +38,7 @@ from tool_shed.managers.repositories import (
     get_value_mapper,
     index_repositories,
     index_tool_ids,
+    IndexRequest,
     reset_metadata_on_repository,
     search,
     to_element_dict,
@@ -292,7 +293,8 @@ class RepositoriesController(BaseShedAPIController):
             response = index_tool_ids(self.app, tool_ids)
             return json.dumps(response)
         else:
-            repositories = index_repositories(self.app, name, owner, deleted)
+            index_request = IndexRequest(owner=owner, name=name, deleted=deleted)
+            repositories = index_repositories(self.app, index_request)
             repository_dicts = []
             for repository in repositories:
                 repository_dict = repository.to_dict(view="collection", value_mapper=self.__get_value_mapper(trans))
@@ -350,7 +352,7 @@ class RepositoriesController(BaseShedAPIController):
     @web.legacy_expose_api
     def reset_metadata_on_repositories(self, trans, payload, **kwd):
         """
-        PUT /api/repositories/reset_metadata_on_repositories
+        POST /api/repositories/reset_metadata_on_repositories
 
         Resets all metadata on all repositories in the Tool Shed in an "orderly fashion".  Since there are currently only two
         repository types (tool_dependecy_definition and unrestricted), the order in which metadata is reset is repositories of

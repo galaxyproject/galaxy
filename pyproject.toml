@@ -41,9 +41,6 @@ dependencies = [
     "fissix ; python_version>='3.13'",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "graphene",
-    "graphene-sqlalchemy>=3.0.0rc1",  # need a beta release to be compat. with starlette plugin
-    "graphql-core",
     "gravity>=1.0.4",
     "gunicorn",
     "gxformat2",
@@ -91,6 +88,7 @@ dependencies = [
     "Routes",
     "s3fs>=2023.1.0",
     "schema-salad>=8.7.20240905150001",  # Python 3.13 support
+    "slowapi",
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
     "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
@@ -98,7 +96,6 @@ dependencies = [
     "sqlparse",
     "starlette",
     "starlette-context",
-    "starlette-graphene3",
     "svgwrite",
     "tifffile",
     "tuswsgi",

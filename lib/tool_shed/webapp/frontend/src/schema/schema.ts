@@ -254,6 +254,26 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/repositories/reset_metadata_on_repositories": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
+        /**
+         * Reset Metadata On Repositories
+         * @description reset metadata on all of your repositories
+         */
+        post: operations["repositories__reset_all"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/repositories/reset_metadata_on_repository": {
         parameters: {
             query?: never
@@ -1874,6 +1894,19 @@ export interface components {
              */
             url: string
         }
+        /** PaginatedRepositoryIndexResults */
+        PaginatedRepositoryIndexResults: {
+            /** Hits */
+            hits: components["schemas"]["Repository"][]
+            /** Hostname */
+            hostname: string
+            /** Page */
+            page: number
+            /** Page Size */
+            page_size: number
+            /** Total Results */
+            total_results: number
+        }
         /** ParsedTool */
         ParsedTool: {
             /** Citations */
@@ -2277,6 +2310,15 @@ export interface components {
         RepositoryUpdate:
             | components["schemas"]["ValidRepostiroyUpdateMessage"]
             | components["schemas"]["FailedRepositoryUpdateMessage"]
+        /** ResetMetadataOnRepositoriesResponse */
+        ResetMetadataOnRepositoriesResponse: {
+            /** Repository Status */
+            repository_status: string[]
+            /** Start Time */
+            start_time: string
+            /** Stop Time */
+            stop_time: string
+        }
         /** ResetMetadataOnRepositoryResponse */
         ResetMetadataOnRepositoryResponse: {
             /** Repository Status */
@@ -3375,12 +3417,20 @@ export interface operations {
     repositories__index: {
         parameters: {
             query?: {
+                /** @description This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter. */
                 q?: string | null
+                /** @description This will perform a quick search using database operators. This should not be used with the 'q' parameter. */
+                filter?: string | null
                 page?: number | null
                 page_size?: number | null
                 deleted?: boolean | null
                 owner?: string | null
                 name?: string | null
+                category_id?: string | null
+                /** @description Direction of sort. This defaults to False and causes an ascending sort on the field specified by sort_on. This field is ignored if 'q' is specified an whoosh search is used. */
+                sort_desc?: boolean | null
+                /** @description Sort by the this repository field - direction is controlled by sort_desc that defaults to False and causes an ascending sort on this field. This field is ignored if 'q' is specified an whoosh search is used. */
+                sort_by?: ("name" | "create_time") | null
             }
             header?: never
             path?: never
@@ -3397,6 +3447,7 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["RepositorySearchResults"]
                         | components["schemas"]["Repository"][]
+                        | components["schemas"]["PaginatedRepositoryIndexResults"]
                 }
             }
             /** @description Request Error */
@@ -3571,6 +3622,44 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["InstallInfo"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__reset_all: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["ResetMetadataOnRepositoriesResponse"]
                 }
             }
             /** @description Request Error */

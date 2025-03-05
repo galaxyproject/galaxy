@@ -115,9 +115,12 @@ class RemoteToolShedPopulator(ToolShedPopulator):
 
     def populator_for_user(self, username):
         if username not in self._populators_by_username:
-            user = self.users_by_username[username]
-            assert user
             mock_email = f"{username}@galaxyproject.org"
+            if username not in self.users_by_username:
+                user = self.new_user_if_needed({"username": username, "email": mock_email})
+            else:
+                user = self.users_by_username[username]
+            assert user
             password = "testpass"
             api_key = self._admin_api_interactor.create_api_key(mock_email, password)
             user_interactor = ShedApiInteractor(self._admin_api_interactor.url, api_key)
@@ -178,7 +181,9 @@ def mirror_main_categories(populator: RemoteToolShedPopulator):
 def mirror_main_users(populator: RemoteToolShedPopulator):
     main_users = get_main_users()
     for user in main_users:
-        assert isinstance(user, dict)
+        if not isinstance(user, dict):
+            print(f"Invalid user: {user} - skipping future bootstrapping may be broken in unknown ways")
+            continue
         populator.new_user_if_needed(user)
 
 
