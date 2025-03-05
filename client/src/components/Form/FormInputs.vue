@@ -162,16 +162,6 @@ export default {
             default: false,
         },
     },
-    watch: {
-        activeNodeId() {
-            // if (this.activeNodeId !== null) {
-            //     const formInput = this.$el.querySelector(".bordered-input");
-            //     formInput?.scrollIntoView({ behavior: "smooth" });
-            // }
-            // TODO: Uncomment the above code to make this work
-            //       Doesn't quite scroll well, will need to improve that
-        },
-    },
     methods: {
         getPrefix(name, index) {
             if (this.prefix) {
