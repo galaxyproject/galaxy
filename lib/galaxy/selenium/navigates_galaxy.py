@@ -2262,7 +2262,7 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def _tour_wait_for_and_click_element(self, selector):
         element = self.tour_wait_for_clickable_element(selector)
-        element.click()
+        self.driver.execute_script("arguments[0].click();", element)
 
     @retry_during_transitions
     def wait_for_and_click_selector(self, selector):
