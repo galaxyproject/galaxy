@@ -2011,7 +2011,7 @@ class WorkflowContentsManager(UsesAnnotations):
             dry_run=refactor_request.dry_run,
         )
 
-        module_injector = WorkflowModuleInjector(trans)
+        module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections=True)
         refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
         action_executions = refactor_executor.refactor(refactor_request)
         refactored_workflow, errors = self.update_workflow_from_raw_description(
