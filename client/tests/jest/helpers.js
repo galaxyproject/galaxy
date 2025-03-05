@@ -292,10 +292,22 @@ export function suppressDebugConsole() {
 }
 
 export function suppressBootstrapVueWarnings() {
+    const originalWarn = console.warn;
     jest.spyOn(console, "warn").mockImplementation(
         jest.fn((msg) => {
             if (msg.indexOf("BootstrapVue warn") < 0) {
-                console.warn(msg);
+                originalWarn(msg);
+            }
+        })
+    );
+}
+
+export function suppressErrorForCustomIcons() {
+    const originalError = console.error;
+    jest.spyOn(console, "error").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("Could not find one or more icon(s)") < 0) {
+                originalError(msg);
             }
         })
     );
