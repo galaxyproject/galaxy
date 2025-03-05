@@ -12,7 +12,7 @@
         </b-modal>
         <b-modal
             v-else-if="loginRequired(currentUser)"
-            id="tour-requirement-unment"
+            id="tour-requirement"
             v-model="showModal"
             title="Requires Login"
             title-class="h3"
@@ -21,7 +21,7 @@
         </b-modal>
         <b-modal
             v-else-if="adminRequired(currentUser)"
-            id="tour-requirement-unment"
+            id="tour-requirement"
             v-model="showModal"
             title="Requires Admin"
             title-class="h3"
@@ -30,7 +30,7 @@
         </b-modal>
         <b-modal
             v-else-if="newHistoryRequired(currentHistory)"
-            id="tour-requirement-unment"
+            id="tour-requirement"
             v-model="showModal"
             title="Requires New History"
             title-class="h3"
