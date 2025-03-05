@@ -56,11 +56,13 @@ from galaxy.exceptions import (
 )
 from galaxy.model import (
     Dataset,
+    Event,
     GalaxySession,
     History,
     HistoryDatasetAssociation,
     Role,
     User,
+    UserAction,
 )
 from galaxy.model.base import ModelMapping
 from galaxy.model.tags import GalaxyTagHandlerSession
@@ -107,7 +109,7 @@ class ProvidesAppContext:
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=str(dumps(params)))
+            action = UserAction(action=action, context=context, params=str(dumps(params)))
             try:
                 if user:
                     action.user = user
@@ -128,7 +130,7 @@ class ProvidesAppContext:
         Logging events is a config setting - if False, do not log.
         """
         if self.app.config.log_events:
-            event = self.app.model.Event()
+            event = Event()
             event.tool_id = tool_id
             try:
                 event.message = message % kwargs

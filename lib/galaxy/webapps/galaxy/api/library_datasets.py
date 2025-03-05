@@ -26,6 +26,7 @@ from galaxy.managers import (
     library_datasets,
     roles,
 )
+from galaxy.model import DatasetPermissions
 from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -259,7 +260,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         elif action == "make_private":
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
-                dp = trans.app.model.DatasetPermissions(
+                dp = DatasetPermissions(
                     trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)

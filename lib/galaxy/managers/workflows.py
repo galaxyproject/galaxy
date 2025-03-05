@@ -339,9 +339,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         # To properly serialize them we do need a StoredWorkflow, so we create and attach one here.
         # We hide the new StoredWorkflow to avoid cluttering the default workflow view.
         if workflow and workflow.stored_workflow is None and self.check_security(trans, has_workflow=workflow):
-            stored_workflow = trans.app.model.StoredWorkflow(
-                user=trans.user, name=workflow.name, workflow=workflow, hidden=True
-            )
+            stored_workflow = StoredWorkflow(user=trans.user, name=workflow.name, workflow=workflow, hidden=True)
             trans.sa_session.add(stored_workflow)
             trans.sa_session.commit()
             return stored_workflow

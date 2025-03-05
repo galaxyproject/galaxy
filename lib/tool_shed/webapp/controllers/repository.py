@@ -60,6 +60,7 @@ from tool_shed.webapp.model import (
     Repository,
     RepositoryCategoryAssociation,
     RepositoryMetadata,
+    User,
 )
 from tool_shed.webapp.model.db import (
     get_repository_by_name,
@@ -1682,7 +1683,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     user_ids = util.listify(allow_push)
                     usernames = []
                     for user_id in user_ids:
-                        user = trans.sa_session.get(trans.model.User, trans.security.decode_id(user_id))
+                        user = trans.sa_session.get(User, trans.security.decode_id(user_id))
                         usernames.append(user.username)
                     usernames = ",".join(usernames)
                 repository.set_allow_push(usernames, remove_auth=remove_auth)
@@ -1711,7 +1712,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             current_allow_push_list = []
         options = []
-        for user in trans.sa_session.scalars(select(trans.model.User)):
+        for user in trans.sa_session.scalars(select(User)):
             if user.username not in current_allow_push_list:
                 options.append(user)
         for obj in options:
@@ -2194,7 +2195,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_owner(self, trans, owner):
         """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
-            user = get_user_by_username(trans.model.session, owner, trans.model.User)
+            user = get_user_by_username(trans.model.session, owner, User)
         except Exception:
             user = None
         if user:
@@ -2222,7 +2223,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             # If the owner is valid, then show all of their repositories.
             try:
-                user = get_user_by_username(trans.model.session, owner, trans.model.User)
+                user = get_user_by_username(trans.model.session, owner, User)
             except Exception:
                 user = None
             if user:

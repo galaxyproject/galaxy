@@ -1508,6 +1508,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
     tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
 
+    dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     tool_request: Mapped[Optional["ToolRequest"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
@@ -1801,7 +1802,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
-    def add_output_dataset(self, name, dataset):
+    def add_output_dataset(self, name: str, dataset: "DatasetInstance"):
         joda = JobToOutputDatasetAssociation(name, dataset)
         if dataset.dataset.job is None:
             # Only set job if dataset doesn't already have associated job.
@@ -5517,7 +5518,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         roles = roles or []
         for role in roles:
-            dp = trans.model.DatasetPermissions(
+            dp = DatasetPermissions(
                 trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role
             )
             trans.sa_session.add(dp)

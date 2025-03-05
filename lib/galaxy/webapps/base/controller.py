@@ -17,7 +17,6 @@ from webob.exc import (
 
 from galaxy import (
     exceptions,
-    model,
     security,
     util,
     web,
@@ -39,11 +38,14 @@ from galaxy.managers.sharable import (
     SlugBuilder,
 )
 from galaxy.model import (
+    Dataset,
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    LibraryDatasetPermissions,
+    StoredWorkflow,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import BasicSharedApp
@@ -590,7 +592,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
             if action not in library_dataset_actions:
                 for role in dataset_permissions_roles:
-                    ldps = trans.model.LibraryDatasetPermissions(action, library_dataset, role)
+                    ldps = LibraryDatasetPermissions(action, library_dataset, role)
                     ldps = [ldps] if not isinstance(ldps, list) else ldps
                     for ldp in ldps:
                         trans.sa_session.add(ldp)
@@ -798,7 +800,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                 error("You are not allowed to access this dataset")
 
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+            if check_state and data.state == Dataset.states.UPLOAD:
                 return trans.show_error_message(
                     "Please wait until this dataset finishes uploading " + "before attempting to view it."
                 )
@@ -882,7 +884,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
         workflow = stored_workflow.latest_workflow
@@ -893,10 +895,10 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored: model.StoredWorkflow):
+    def _import_shared_workflow(self, trans, stored: StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
-        imported_stored = model.StoredWorkflow()
+        imported_stored = StoredWorkflow()
         imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored

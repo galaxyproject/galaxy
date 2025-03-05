@@ -16,7 +16,11 @@ from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
 )
-from galaxy.model import LibraryFolder
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    Library,
+    LibraryFolder,
+)
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -353,7 +357,7 @@ class LibraryActions:
         return [dataset_collection]
 
     def _check_access(self, trans, is_admin, item, current_user_roles):
-        if isinstance(item, trans.model.HistoryDatasetAssociation):
+        if isinstance(item, HistoryDatasetAssociation):
             # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
             if not item:
                 message = f"Invalid history dataset ({escape(str(item))}) specified."
@@ -372,7 +376,7 @@ class LibraryActions:
             elif not (
                 is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, item, trans.user)
             ):
-                if isinstance(item, trans.model.Library):
+                if isinstance(item, Library):
                     item_type = "data library"
                 elif isinstance(item, LibraryFolder):
                     item_type = "folder"

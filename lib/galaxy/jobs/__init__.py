@@ -2345,7 +2345,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
         if dataset_files_path is None:
-            dataset_files_path = self.app.model.Dataset.file_path
+            dataset_files_path = Dataset.file_path
         if config_root is None:
             config_root = self.app.config.root
         if config_file is None:
