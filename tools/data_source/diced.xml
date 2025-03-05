@@ -4,9 +4,9 @@
     the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
     initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
 -->
-<tool name="DICED Database" id="DICED_table_direct1" tool_type="data_source" version="1.0.0">
+<tool name="DICED Database" id="DICED_table_direct1" tool_type="data_source" version="1.0.0" profile="20.09">
     <description>DICED is a web interface for access to proteolytic peptides</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <command> python '$__tool_directory__/data_source.py'  '$output' $__app__.config.output_size_limit</command>
     <inputs action="https://diced.lerner.ccf.org" check_values="false" method="post">
         <display>go to DICED database $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
@@ -15,16 +15,10 @@
     <request_param_translation>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
         <request_param galaxy_name="URL" remote_name="URL" missing="" />
-        <request_param galaxy_name="acc" remote_name="acc" missing="" />
-        <request_param galaxy_name="type" remote_name="type" missing="" />
-        <request_param galaxy_name="organism" remote_name="org" missing="unknown species" />
-        <request_param galaxy_name="table" remote_name="hgta_table" missing="unknown table" />
-        <request_param galaxy_name="description" remote_name="hgta_regionType" missing="no description" />
-        
     </request_param_translation>
     <uihints minwidth="800"/>
     <outputs>
         <data name="output" format="tabular" label="${tool.name}"/>
     </outputs>
+    <options sanitize="False" refresh="True"/>
 </tool>
-
