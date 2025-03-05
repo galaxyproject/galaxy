@@ -3201,14 +3201,14 @@ export interface paths {
         /**
          * Update a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_dataset_id} instead.
          */
         put: operations["update_api_libraries__library_id__contents__id__put"];
         post?: never;
         /**
          * Delete a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_dataset_id} instead.
          */
         delete: operations["delete_api_libraries__library_id__contents__id__delete"];
         options?: never;
@@ -21992,6 +21992,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The encoded database identifier of the form. */
                 id: string;
             };
             cookie?: never;
@@ -22035,6 +22036,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The encoded database identifier of the form. */
                 id: string;
             };
             cookie?: never;
@@ -22431,6 +22433,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22474,6 +22477,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22521,6 +22525,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22564,6 +22569,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22789,6 +22795,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -28117,6 +28124,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
             cookie?: never;
@@ -28962,6 +28970,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
             };
             cookie?: never;
@@ -29005,6 +29014,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
             };
             cookie?: never;
@@ -29056,6 +29066,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
                 id: string;
             };
@@ -29104,7 +29115,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
+                /** @description The encoded ID of the library dataset. */
                 id: string;
             };
             cookie?: never;
@@ -29148,7 +29161,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
+                /** @description The encoded ID of the library dataset. */
                 id: string;
             };
             cookie?: never;
@@ -31752,6 +31767,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31795,6 +31811,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31838,6 +31855,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31881,6 +31899,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
