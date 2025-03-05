@@ -1497,7 +1497,7 @@ class Tool(UsesDictVisibleKeys):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
-        self.outputs, self.output_collections = tool_source.parse_outputs(self)
+        self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
 
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio(self, tool_source: ToolSource):

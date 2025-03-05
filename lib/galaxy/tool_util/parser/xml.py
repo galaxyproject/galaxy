@@ -31,6 +31,7 @@ from galaxy.util import (
     ElementTree,
     string_as_bool,
     string_as_bool_or_none,
+    unicodify,
     XML,
     xml_text,
     xml_to_string,
@@ -62,7 +63,10 @@ from .interface import (
     XmlTestCollectionDefDict,
     XrefDict,
 )
-from .output_actions import ToolOutputActionGroup
+from .output_actions import (
+    ToolOutputActionApp,
+    ToolOutputActionGroup,
+)
 from .output_collection_def import dataset_collector_descriptions_from_elem
 from .output_objects import (
     ChangeFormatModel,
@@ -438,25 +442,25 @@ class XmlToolSource(ToolSource):
 
         return provided_metadata_file
 
-    def parse_outputs(self, tool=None):
+    def parse_outputs(self, app: Optional[ToolOutputActionApp] = None):
         out_elem = self.root.find("outputs")
-        outputs = {}
-        output_collections = {}
+        outputs: Dict[str, ToolOutput] = {}
+        output_collections: Dict[str, ToolOutputCollection] = {}
         if out_elem is None:
             return outputs, output_collections
 
-        data_dict = {}
+        data_dict: Dict[str, ToolOutput] = {}
 
         def _parse(data_elem, **kwds):
-            output_def = self._parse_output(data_elem, tool, **kwds)
+            output_def = self._parse_output(data_elem, app, **kwds)
             data_dict[output_def.name] = output_def
             return output_def
 
         for _ in out_elem.findall("data"):
             _parse(_)
 
-        def _parse_expression(output_elem, **kwds):
-            output_def = self._parse_expression_output(output_elem, tool, **kwds)
+        def _parse_expression(output_elem, app: Optional[ToolOutputActionApp] = None, **kwds):
+            output_def = self._parse_expression_output(output_elem, app, **kwds)
             output_def.filters = output_elem.findall("filter")
             data_dict[output_def.name] = output_def
             return output_def
@@ -527,11 +531,11 @@ class XmlToolSource(ToolSource):
                 if output_type == "data":
                     _parse(out_child)
                 elif output_type == "collection":
-                    out_child.attrib["type"] = out_child.get("collection_type")
-                    out_child.attrib["type_source"] = out_child.get("collection_type_source")
+                    out_child.attrib["type"] = unicodify(out_child.get("collection_type"))
+                    out_child.attrib["type_source"] = unicodify(out_child.get("collection_type_source"))
                     _parse_collection(out_child)
                 else:
-                    _parse_expression(out_child)
+                    _parse_expression(out_child, app)
             else:
                 log.warning(f"Unknown output tag encountered [{out_child.tag}]")
 
@@ -542,7 +546,7 @@ class XmlToolSource(ToolSource):
     def _parse_output(
         self,
         data_elem,
-        tool,
+        app: Optional[ToolOutputActionApp] = None,
         default_format="data",
         default_format_source=None,
         default_metadata_source="",
@@ -565,26 +569,26 @@ class XmlToolSource(ToolSource):
         output.label = xml_text(data_elem, "label", None)
         output.count = int(data_elem.get("count", 1))
         output.filters = data_elem.findall("filter")
-        output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
-        if output.from_work_dir and Version(str(getattr(tool, "profile", 0))) < Version("21.09"):
+        profile_version = Version(self.parse_profile())
+        if output.from_work_dir and profile_version < Version("21.09"):
             # We started quoting from_work_dir outputs in 21.09.
             # Prior to quoting, trailing spaces had no effect.
             # This ensures that old tools continue to work.
             output.from_work_dir = output.from_work_dir.strip()
         output.hidden = string_as_bool(data_elem.get("hidden", ""))
-        if tool is not None:
+        if app is not None:
             # poor design here driven entirely by pragmatism in refactoring, ToolOutputActionGroup
             # belongs in galaxy-tool because it uses app heavily. Breaking the output objects
             # into app-aware things and dumb models would be a large project but superior design
             # and decomposition.
-            output.actions = ToolOutputActionGroup(output, data_elem.find("actions"))
+            output.actions = ToolOutputActionGroup(app, data_elem.find("actions"))
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(
             data_elem, legacy=self.legacy_defaults
         )
         return output
 
-    def _parse_expression_output(self, output_elem, tool, **kwds):
+    def _parse_expression_output(self, output_elem, app: Optional[ToolOutputActionApp] = None, **kwds):
         output_type = output_elem.get("type")
         from_expression = output_elem.get("from")
         output = ToolExpressionOutput(
@@ -596,8 +600,8 @@ class XmlToolSource(ToolSource):
         output.label = xml_text(output_elem, "label", None)
 
         output.hidden = string_as_bool(output_elem.get("hidden", ""))
-        output.actions = ToolOutputActionGroup(output, output_elem.find("actions"))
-        output.dataset_collector_descriptions = []
+        if app is not None:
+            output.actions = ToolOutputActionGroup(app, output_elem.find("actions"))
         return output
 
     def parse_stdio(self):
