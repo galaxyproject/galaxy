@@ -379,6 +379,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
+    edam_title: '[title="Apply analytical methods to existing data of a specific type."]'
     tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
@@ -389,6 +390,7 @@ tool_panel:
     views_button: '.tool-panel-dropdown'
     views_menu_item: '[data-panel-id="${panel_id}"]'
     panel_labels: '.tool-panel-label'
+
 
 multi_history_panel:
   selectors:
