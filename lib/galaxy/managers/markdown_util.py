@@ -106,86 +106,86 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         collection_manager = trans.app.dataset_collection_manager
 
         def _remap(container, line):
-            line, object_id, encoded_id = self._encode_line(trans, line)
+            line, object_type, object_id, encoded_id = self._encode_line(trans, line)
             rval = None
             if container == "history_link":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_id":
                     history = history_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_history_link(line, history)
             elif container == "history_dataset_display":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_link":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_index":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_embedded":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_embedded(line, hda)
             elif container == "history_dataset_as_image":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_as_image(line, hda)
             elif container == "history_dataset_as_table":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_as_table(line, hda)
             elif container == "history_dataset_peek":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_peek(line, hda)
             elif container == "history_dataset_info":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_info(line, hda)
             elif container == "history_dataset_type":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_type(line, hda)
             elif container == "history_dataset_name":
-                if object_id is not None:
+                if object_id is not None and object_type == "history_dataset_id":
                     hda = hda_manager.get_accessible(object_id, trans.user)
                     rval = self.handle_dataset_name(line, hda)
             elif container == "workflow_display":
-                if encoded_id is not None:
+                if encoded_id is not None and object_type == "workflow_id":
                     stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                     workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
                     workflow_version = None if not workflow_version_str else int(workflow_version_str)
                     rval = self.handle_workflow_display(line, stored_workflow, workflow_version)
             elif container == "workflow_image":
-                if encoded_id is not None:
+                if encoded_id is not None and object_type == "workflow_id":
                     stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                     workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
                     workflow_version = None if not workflow_version_str else int(workflow_version_str)
                     rval = self.handle_workflow_image(line, stored_workflow, workflow_version)
             elif container == "workflow_license":
-                if encoded_id is not None:
+                if encoded_id is not None and object_type == "workflow_id":
                     stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                     rval = self.handle_workflow_license(line, stored_workflow)
             elif container == "history_dataset_collection_display":
-                if encoded_id is not None:
+                if encoded_id is not None and object_type == "history_dataset_collection_id":
                     hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
                     rval = self.handle_dataset_collection_display(line, hdca)
             elif container == "tool_stdout":
-                if object_id is not None:
+                if object_id is not None and object_type == "job_id":
                     job = job_manager.get_accessible_job(trans, object_id)
                     rval = self.handle_tool_stdout(line, job)
             elif container == "tool_stderr":
-                if object_id is not None:
+                if object_id is not None and object_type == "job_id":
                     job = job_manager.get_accessible_job(trans, object_id)
                     rval = self.handle_tool_stderr(line, job)
             elif container == "job_parameters":
-                if object_id is not None:
+                if object_id is not None and object_type == "job_id":
                     job = job_manager.get_accessible_job(trans, object_id)
                     rval = self.handle_job_parameters(line, job)
             elif container == "job_metrics":
-                if object_id is not None:
+                if object_id is not None and object_type == "job_id":
                     job = job_manager.get_accessible_job(trans, object_id)
                     rval = self.handle_job_metrics(line, job)
             elif container == "generate_galaxy_version":
@@ -216,19 +216,19 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 url = trans.app.config.organization_url
                 rval = self.handle_instance_organization_link(line, title, url)
             elif container == "invocation_inputs":
-                if object_id is not None:
+                if object_id is not None and object_type == "invocation_id":
                     invocation = workflow_manager.get_invocation(
                         trans, object_id, check_ownership=False, check_accessible=True
                     )
                     rval = self.handle_invocation_inputs(line, invocation)
             elif container == "invocation_outputs":
-                if object_id is not None:
+                if object_id is not None and object_type == "invocation_id":
                     invocation = workflow_manager.get_invocation(
                         trans, object_id, check_ownership=False, check_accessible=True
                     )
                     rval = self.handle_invocation_outputs(line, invocation)
             elif container == "invocation_time":
-                if object_id is not None:
+                if object_id is not None and object_type == "invocation_id":
                     invocation = workflow_manager.get_invocation(
                         trans, object_id, check_ownership=False, check_accessible=True
                     )
@@ -253,13 +253,15 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         return export_markdown
 
     def _encode_line(self, trans, line):
+        object_type = None
         object_id = None
         encoded_id = None
         if id_match := re.search(UNENCODED_ID_PATTERN, line):
+            object_type = id_match.group(1)
             object_id = int(id_match.group(2))
             encoded_id = trans.security.encode_id(object_id)
-            line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
-        return line, object_id, encoded_id
+            line = line.replace(id_match.group(), f"{object_type}={encoded_id}")
+        return line, object_type, object_id, encoded_id
 
     @abc.abstractmethod
     def handle_history_link(self, line, history):
