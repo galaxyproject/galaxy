@@ -18,7 +18,7 @@ openai
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
-fs.dropboxfs>=1.0  # type: dropbox
+fs.dropboxfs>=1.0.3  # type: dropbox
 fs.sshfs  # type: ssh
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
