@@ -30,7 +30,9 @@ function getElement(selector) {
 function waitForElement(selector, resolve, reject, tries) {
     if (selector) {
         const el = getElement(selector);
-        if (el) {
+        const rect = el?.getBoundingClientRect();
+        const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
+        if (el && isVisible) {
             resolve();
         } else if (tries > 0) {
             setTimeout(() => {
