@@ -56,7 +56,7 @@ export async function updateWorkflow(id: string, changes: object): Promise<Workf
     return data;
 }
 
-export async function copyWorkflow(id: string, currentOwner: string, version?: string): Promise<Workflow> {
+export async function copyWorkflow(id: string, currentOwner?: string, version?: string): Promise<Workflow> {
     let path = `/api/workflows/${id}/download`;
     if (version) {
         path += `?version=${version}`;

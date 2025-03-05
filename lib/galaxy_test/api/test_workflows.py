@@ -1039,6 +1039,43 @@ steps:
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
         refactor_response.raise_for_status()
 
+    def test_refactor_subworkflow_tool_state_upgrade(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs: {}
+      steps:
+        multiple_versions_changes:
+          tool_id: multiple_versions_changes
+          tool_version: "0.2"
+          state:
+            cond:
+              bool_to_select: false
+""",
+            fill_defaults=False,
+        )
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        assert refactor_response.status_code == 200, refactor_response.text
+        refactor_result = refactor_response.json()
+        upgrade_result = refactor_result["action_executions"][0]
+        assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
+        message_one, message_two, message_three = upgrade_result["messages"]
+        assert message_one["input_name"] == "inttest"
+        assert message_one["message"] == "No value found for 'inttest'. Using default: '1'."
+        assert message_two["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_two["input_name"] == "floattest"
+        assert message_three["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
+        assert message_three["input_name"] == "cond|bool_to_select"
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)
