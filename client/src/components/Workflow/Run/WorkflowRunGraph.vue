@@ -30,7 +30,7 @@ const { activeNodeId } = storeToRefs(useWorkflowStateStore(props.workflowId));
 const datatypesMapperStore = useDatatypesMapperStore();
 const { datatypesMapper, loading: datatypesMapperLoading } = storeToRefs(datatypesMapperStore);
 
-const { steps, loading, loadWorkflowRunGraph } = useWorkflowRunGraph(
+const { steps, loading, loadWorkflowOntoGraph } = useWorkflowRunGraph(
     props.workflowId,
     props.version,
     toRef(props, "inputs"),
@@ -39,7 +39,7 @@ const { steps, loading, loadWorkflowRunGraph } = useWorkflowRunGraph(
 );
 
 try {
-    loadWorkflowRunGraph();
+    loadWorkflowOntoGraph();
 } catch (error) {
     errorMessage.value = errorMessageAsString(error);
 }

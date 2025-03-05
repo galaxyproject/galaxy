@@ -1,5 +1,5 @@
-import { faCheckCircle, faExclamationCircle, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
-import { computed, type Ref, ref, set } from "vue";
+import { faCheckCircle, faExclamationCircle, faSpinner, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { computed, type Ref, ref } from "vue";
 
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
@@ -30,11 +30,14 @@ interface DataToolParameterInput extends BaseDataToolParameterInput {}
 interface DataCollectionToolParameterInput extends BaseDataToolParameterInput {}
 export type DataInput = DataToolParameterInput | DataCollectionToolParameterInput | boolean | string | null;
 
-interface WorkflowRunStep extends Readonly<Step> {
+interface WorkflowRunStepInfo {
     headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;
+    headerIconSpin?: boolean;
     nodeText?: string | boolean;
 }
+
+interface WorkflowRunStep extends Readonly<Step>, WorkflowRunStepInfo {}
 
 /** Composable that creates a readonly workflow run graph and loads it onto a workflow editor canvas for display.
  * This graph updates as the user changes the inputs of the workflow.
@@ -56,7 +59,7 @@ export function useWorkflowRunGraph(
 
     const loading = ref(true);
 
-    async function loadWorkflowRunGraph() {
+    async function loadWorkflowOntoGraph() {
         loading.value = true;
 
         try {
@@ -80,109 +83,130 @@ export function useWorkflowRunGraph(
         }
     }
 
+    /** The steps of the original workflow */
     const workflowSteps = computed<Record<string, Readonly<Step>>>(() => loadedWorkflow.value?.steps);
 
-    const steps = computed<{ [index: string]: WorkflowRunStep }>(() => {
+    const steps = computed<Record<string, WorkflowRunStep>>(() => {
         if (!workflowSteps.value || !formInputs.value || !inputs.value) {
             return {};
         }
 
-        return Object.keys(workflowSteps.value).reduce((acc: { [index: string]: WorkflowRunStep }, k: string) => {
-            const step = { ...workflowSteps.value[k] } as WorkflowRunStep;
-            const key = parseInt(k);
+        const result: Record<string, WorkflowRunStep> = {};
+        for (const stepId in workflowSteps.value) {
+            const step = workflowSteps.value[stepId];
             if (step) {
-                if (isWorkflowInput(step.type) && !checkAndSetStepDescriptionForValidation(step)) {
-                    let dataInput = inputs.value[step.id.toString()];
+                let stepInfo: WorkflowRunStepInfo | null = null;
+                const validation = getWorkflowRunStepValidation(step);
+                if (validation) {
+                    stepInfo = validation;
+                } else if (isWorkflowInput(step.type)) {
+                    const dataInput = inputs.value[step.id.toString()];
                     const formInput = formInputs.value.find((input) => parseInt(input.name) === step.id);
-                    const optional = formInput?.optional as boolean;
-                    const modelClass = formInput?.model_class as keyof typeof STEP_DESCRIPTIONS;
-
-                    if (modelClass === "BooleanToolParameter") {
-                        setStepDescription(step, dataInput as boolean, true);
-                    } else if (modelClass === "DataToolParameter" || modelClass === "DataCollectionToolParameter") {
-                        dataInput = dataInput as DataToolParameterInput | DataCollectionToolParameterInput;
-                        const inputVals = dataInput?.values;
-                        const options = formInput?.options;
-
-                        if (inputVals?.length === 1 && inputVals[0]) {
-                            const { id, src } = inputVals[0];
-                            const item = options[src].find((option: any) => option.id === id);
-
-                            if (item && item.hid && item.name) {
-                                setStepDescription(step, `${item.hid}: <b>${item.name}</b>`, true);
-                            }
-                        } else if (inputVals?.length) {
-                            setStepDescription(step, `${inputVals.length} inputs provided`, true);
-                        } else {
-                            setStepDescription(step, STEP_DESCRIPTIONS[modelClass], false, optional);
-                        }
-                    } else if (Object.keys(STEP_DESCRIPTIONS).includes(modelClass)) {
-                        if (!dataInput || dataInput.toString().trim() === "") {
-                            setStepDescription(step, STEP_DESCRIPTIONS[modelClass], false, optional);
-                        } else {
-                            let text: string;
-                            switch (modelClass) {
-                                case "ColorToolParameter":
-                                    text = dataInput as string;
-                                    break;
-                                case "DirectoryUriToolParameter":
-                                    text = `Directory: <b>${dataInput}</b>`;
-                                    break;
-                                default:
-                                    text = `<b>${dataInput}</b>`;
-                            }
-                            setStepDescription(step, text, true);
-                        }
-                    } else {
-                        set(step, "nodeText", "This is an input");
-                    }
+                    stepInfo = getWorkflowRunStepInfo(formInput, dataInput);
                 }
-
-                acc[key] = step;
+                if (stepInfo) {
+                    result[stepId] = { ...step, ...stepInfo };
+                }
             }
-            return acc;
-        }, {});
+        }
+        return result;
     });
 
-    /** Annotate the step for the workflow graph with the current input value or prompt
-     * @param step The step to annotate
+    /** Return step desciptions for the workflow graph given the current input field and user value
+     * @param formInput The form input field
+     * @param dataInput The user input value
+     */
+    function getWorkflowRunStepInfo(formInput: any, dataInput?: DataInput): WorkflowRunStepInfo {
+        const optional = formInput?.optional as boolean;
+        const modelClass = formInput?.model_class as keyof typeof STEP_DESCRIPTIONS;
+
+        if (modelClass === "BooleanToolParameter") {
+            return getStepDescription(dataInput as boolean, true);
+        } else if (modelClass === "DataToolParameter" || modelClass === "DataCollectionToolParameter") {
+            dataInput = dataInput as DataToolParameterInput | DataCollectionToolParameterInput;
+            const inputVals = dataInput?.values;
+            const options = formInput?.options;
+
+            if (inputVals?.length === 1 && inputVals[0]) {
+                const { id, src } = inputVals[0];
+                const item = options[src].find((option: any) => option.id === id);
+
+                if (item && item.hid && item.name) {
+                    return getStepDescription(`${item.hid}: <b>${item.name}</b>`, true);
+                } else {
+                    return getStepDescription("Input value processing", true, optional, true);
+                }
+            } else if (inputVals?.length) {
+                return getStepDescription(`${inputVals.length} inputs provided`, true);
+            } else {
+                return getStepDescription(STEP_DESCRIPTIONS[modelClass], false, optional);
+            }
+        } else if (Object.keys(STEP_DESCRIPTIONS).includes(modelClass)) {
+            if (!dataInput || dataInput.toString().trim() === "") {
+                return getStepDescription(STEP_DESCRIPTIONS[modelClass], false, optional);
+            } else {
+                let text: string;
+                switch (modelClass) {
+                    case "ColorToolParameter":
+                        text = dataInput as string;
+                        break;
+                    case "DirectoryUriToolParameter":
+                        text = `Directory: <b>${dataInput}</b>`;
+                        break;
+                    default:
+                        text = `<b>${dataInput}</b>`;
+                }
+                return getStepDescription(text, true);
+            }
+        } else {
+            return getStepDescription("This is an input", true);
+        }
+    }
+
+    /** Return step desciptions for the workflow graph given the current input value or prompt
      * @param text The text to display
      * @param populated Whether the input is populated, undefined for optional inputs
      * @param optional Whether the input is optional
+     * @param spin Whether the icon should spin
      */
-    function setStepDescription(step: WorkflowRunStep, text: string | boolean, populated: boolean, optional?: boolean) {
+    function getStepDescription(
+        text: string | boolean,
+        populated: boolean,
+        optional?: boolean,
+        spin?: boolean
+    ): WorkflowRunStepInfo {
         // color variant for `paused` state works best for unpopulated inputs,
         // "" for optional inputs and `ok` for populated inputs
-        const headerClass = optional ? "" : populated ? "ok" : "paused";
-        const headerIcon = populated ? faCheckCircle : faExclamationCircle;
+        const headerClass = optional ? "" : !spin && populated ? "ok" : "paused";
+        const headerIcon = spin ? faSpinner : populated ? faCheckCircle : faExclamationCircle;
 
         text = typeof text === "boolean" ? text : !optional ? text : `${text} (optional)`;
 
-        set(step, "nodeText", text);
-        set(step, "headerClass", getHeaderClass(headerClass));
-        set(step, "headerIcon", headerIcon);
+        return {
+            nodeText: text,
+            headerClass: getHeaderClass(headerClass),
+            headerIcon,
+            headerIconSpin: spin,
+        };
     }
 
-    function checkAndSetStepDescriptionForValidation(step: WorkflowRunStep): boolean {
+    function getWorkflowRunStepValidation(step: Step): WorkflowRunStepInfo | null {
         if (stepValidation.value && stepValidation.value.length == 2) {
             const [stepId, message] = stepValidation.value;
 
             if (stepId === step.id.toString()) {
                 const text = message.length < 20 ? message : "Fix error(s) for this step";
-                setStepDescription(step, text, false);
-                return true;
+                return getStepDescription(text, false);
             }
         }
-        return false;
+        return null;
     }
 
     return {
         /** The steps of the workflow run graph */
         steps,
-        /** Fetches the original workflow structure (once) and syncs the step
-         * descriptions given the current user inputs.
-         */
-        loadWorkflowRunGraph,
+        /** Fetches the original workflow structure and loads it onto the graph */
+        loadWorkflowOntoGraph,
         loading,
     };
 }
