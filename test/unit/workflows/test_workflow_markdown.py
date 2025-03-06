@@ -1,6 +1,9 @@
 from galaxy import model
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
-from galaxy.managers.markdown_util import (populate_invocation_markdown, resolve_invocations)
+from galaxy.managers.markdown_util import (
+    populate_invocation_markdown,
+    resolve_invocations,
+)
 from .test_workflow_progress import TEST_WORKFLOW_YAML
 from .workflow_support import (
     MockTrans,

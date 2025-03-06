@@ -948,14 +948,17 @@ def resolve_invocation_markdown(trans, workflow_markdown):
         invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
         if invocation_id_match:
             invocation_id = invocation_id_match.group(1)
-            return workflow_manager.get_invocation(trans, invocation_id, check_ownership=False, check_accessible=True)
+            invocation = workflow_manager.get_invocation(
+                trans, invocation_id, check_ownership=False, check_accessible=True
+            )
+            return invocation
         else:
             return None
 
     def _section_remap(container, line):
         invocation = get_invocation(trans, line)
         if not invocation:
-            return (line, False)
+            return line, False
 
         section_markdown = ""
         if container == "invocation_outputs":
@@ -999,7 +1002,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
     def _remap(container, line):
         invocation = get_invocation(trans, line)
         if not invocation:
-            return (line, False)
+            return line, False
 
         if container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
@@ -1060,14 +1063,14 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 else:
                     ref_object_type = "history_dataset_collection"
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
-        return (line, False)
+        return line, False
 
     workflow_markdown = _remap_galaxy_markdown_calls(
         _section_remap,
         workflow_markdown,
     )
-    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
-    return galaxy_markdown
+    workflow_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    return workflow_markdown
 
 
 def _remap_galaxy_markdown_containers(func, markdown):
