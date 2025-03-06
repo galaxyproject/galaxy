@@ -2,8 +2,8 @@
     <!-- tool errors out with identified OOM error if less than 10MB are allocated. -->
     <command detect_errors="exit_code" oom_exit_code="42"><![CDATA[
 echo 'Hello' > '$out_file1' &&
-: \${GX_TARGET_EXIT_CODE:-0} &&
-exit \${GX_TARGET_EXIT_CODE}
+: \${GX_TARGET_EXIT_CODE:-1} &&
+exit \${GX_TARGET_EXIT_CODE:-1}
     ]]></command>
     <inputs>
         <param name="input" type="integer" label="Dummy" value="6" />
