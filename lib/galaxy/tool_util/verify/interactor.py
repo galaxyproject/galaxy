@@ -138,6 +138,12 @@ ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
 ToolTestDictsT = List[ToolTestDict]
 
 
+class PathOrLocation(NamedTuple):
+    name: str
+    path: Optional[str]
+    location: Optional[str]
+
+
 def stage_data_in_history(
     galaxy_interactor: "GalaxyInteractorApi",
     tool_id: str,
@@ -560,34 +566,63 @@ class GalaxyInteractorApi:
 
         composite_data = test_data["composite_data"]
         if composite_data:
-            tool_input["composite_data"] = composite_data
+            tool_input["composite_data"] = [
+                self._get_path_or_location(
+                    fname=fname_,
+                    test_data={},
+                    tool_id=tool_id,
+                    tool_version=tool_version,
+                    force_path_paste=force_path_paste,
+                ).path
+                for fname_ in composite_data
+            ]
         else:
-            file_name = None
-            file_name_exists = False
-            location = self._ensure_valid_location_in(test_data)
-            if fname and force_path_paste:
-                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                file_name_exists = os.path.exists(file_name)
-            if not file_name_exists and location is not None:
-                name = location
-                tool_input["location"] = location
-            else:
-                name = fname
-                if force_path_paste:
-                    if file_name is None:
-                        file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                    tool_input["location"] = f"file://{file_name}"
-                else:
-                    mode = "file" if tool_input["class"].lower() == "file" else "directory"
-                    tool_input["path"] = path = self.test_data_download(
-                        tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
-                    )
-                    # Downloaded directories contain root directory
-                    if path and mode == "directory":
-                        tool_input["path"] = path if mode == "file" else os.path.join(path, fname)
-            name = os.path.basename(name)
-            tool_input["name"] = name
+            assert fname, "File path is required and cannot be empty string"
+            path_or_location = self._get_path_or_location(
+                fname,
+                test_data,
+                tool_id,
+                tool_version=tool_version,
+                mode="file" if tool_input["class"].lower() == "file" else "directory",
+            )
+            if path_or_location.path:
+                tool_input["path"] = path_or_location.path
+            if path_or_location.location:
+                tool_input["location"] = path_or_location.location
+            tool_input["name"] = os.path.basename(path_or_location.name)
         return tool_input
+
+    def _get_path_or_location(
+        self,
+        fname: str,
+        test_data: Dict[str, Any],
+        tool_id: str,
+        tool_version: Optional[str] = None,
+        force_path_paste: bool = False,
+        mode: Literal["file", "directory"] = "file",
+    ) -> PathOrLocation:
+        file_name = None
+        file_name_exists = False
+        location = self._ensure_valid_location_in(test_data)
+        if fname and force_path_paste:
+            file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+            file_name_exists = os.path.exists(file_name)
+        if not file_name_exists and location is not None:
+            return PathOrLocation(name=location, location=location, path=None)
+        else:
+            if force_path_paste:
+                if file_name is None:
+                    file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                return PathOrLocation(name=fname, location=f"file://{file_name}", path=None)
+            else:
+                path = self.test_data_download(
+                    tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
+                )
+                assert isinstance(path, str)
+                # Downloaded directories contain root directory
+                if path and mode == "directory":
+                    path = os.path.join(path, fname)
+                return PathOrLocation(name=fname, location=None, path=path)
 
     def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
         location: Optional[str] = test_data.get("location")

@@ -533,7 +533,9 @@ def _add_uploaded_dataset(
     required_files: RequiredFilesT,
 ) -> Optional[str]:
     if value is None:
-        assert input_parameter.parse_optional(), f"{name} is not optional. You must provide a valid filename."
+        assert (
+            input_parameter.parse_optional() or "composite_data" in extra
+        ), f"{name} is not optional. You must provide a valid filename."
         return value
     return require_file(name, value, extra, required_files)
 
