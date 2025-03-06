@@ -38,7 +38,7 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi-slim>=0.111.0",
-    "fissix ; python_version>='3.13'",
+    "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
     "gravity>=1.0.4",
