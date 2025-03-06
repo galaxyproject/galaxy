@@ -946,64 +946,71 @@ def resolve_invocations(trans, workflow_markdown):
     invocation = None
 
     def _section_remap(container, line):
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
+        if not invocation_id_match:
+            return (line, False)
+
         section_markdown = ""
         if container == "invocation_outputs":
             for output_assoc in invocation.output_associations:
-                if not output_assoc.workflow_output.label:
-                    continue
-
-                if output_assoc.history_content_type == "dataset":
-                    section_markdown += f"""#### Output Dataset: {output_assoc.workflow_output.label}
-```galaxy
-history_dataset_display(output="{output_assoc.workflow_output.label}")
-```
-"""
-                else:
-                    section_markdown += f"""#### Output Dataset Collection: {output_assoc.workflow_output.label}
-```galaxy
-history_dataset_collection_display(output="{output_assoc.workflow_output.label}")
-```
-"""
+                if output_assoc.workflow_output.label:
+                    if output_assoc.history_content_type == "dataset":
+                        section_markdown += (
+                            f"#### Output Dataset: {output_assoc.workflow_output.label}\n"
+                            "```galaxy\n"
+                            f'history_dataset_display(output="{output_assoc.workflow_output.label}")\n'
+                            "```\n"
+                        )
+                    else:
+                        section_markdown += (
+                            f"#### Output Dataset Collection: {output_assoc.workflow_output.label}\n"
+                            "```galaxy\n"
+                            f'history_dataset_collection_display(output="{output_assoc.workflow_output.label}")\n'
+                            "```\n"
+                        )
         elif container == "invocation_inputs":
             for input_assoc in invocation.input_associations:
-                if not input_assoc.workflow_step.label:
-                    continue
-
-                if input_assoc.history_content_type == "dataset":
-                    section_markdown += f"""#### Input Dataset: {input_assoc.workflow_step.label}
-```galaxy
-history_dataset_display(input="{input_assoc.workflow_step.label}")
-```
-"""
-                else:
-                    section_markdown += f"""#### Input Dataset Collection: {input_assoc.workflow_step.label}
-```galaxy
-history_dataset_collection_display(input={input_assoc.workflow_step.label})
-```
-"""
+                if input_assoc.workflow_step.label:
+                    if input_assoc.history_content_type == "dataset":
+                        section_markdown += (
+                            f"#### Input Dataset: {input_assoc.workflow_step.label}\n"
+                            "```galaxy\n"
+                            f'history_dataset_display(input="{input_assoc.workflow_step.label}")\n'
+                            "```\n"
+                        )
+                    else:
+                        section_markdown += (
+                            f"#### Input Dataset Collection: {input_assoc.workflow_step.label}\n"
+                            "```galaxy\n"
+                            f"history_dataset_collection_display(input={input_assoc.workflow_step.label})\n"
+                            "```\n"
+                        )
         else:
             return line, False
         return section_markdown, True
 
     def _remap(container, line):
-        for workflow_instance_directive in ["workflow_display", "workflow_image"]:
-            if container == workflow_instance_directive:
-                stored_workflow_id = invocation.workflow.stored_workflow.id
-                workflow_version = invocation.workflow.version
-                return (
-                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
-                    False,
-                )
-        if container == "workflow_license":
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
+        if not invocation_id_match:
+            return (line, False)
+
+        if container == "invocation_time":
+            return (f"invocation_time(invocation_id={invocation.id})\n", False)
+        elif container == "history_link":
+            return (f"history_link(history_id={invocation.history.id})\n", False)
+        elif container == "workflow_license":
             stored_workflow_id = invocation.workflow.stored_workflow.id
             return (
                 f"workflow_license(workflow_id={stored_workflow_id})\n",
                 False,
             )
-        if container == "history_link":
-            return (f"history_link(history_id={invocation.history.id})\n", False)
-        if container == "invocation_time":
-            return (f"invocation_time(invocation_id={invocation.id})\n", False)
+        elif container in ["workflow_display", "workflow_image"]:
+            stored_workflow_id = invocation.workflow.stored_workflow.id
+            workflow_version = invocation.workflow.version
+            return (
+                f"{workflow_instance_directive}(workflow_id={stored_workflow_id}, workflow_checkpoint={workflow_version})\n",
+                False,
+            )
 
         ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
