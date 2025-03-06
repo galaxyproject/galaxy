@@ -932,6 +932,134 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
     return galaxy_markdown
 
 
+def resolve_invocation_markdown(trans, invocation, workflow_markdown):
+    """Resolve invocation objects to convert markdown to 'internal' representation.
+
+    Replace references to abstract workflow parts with actual galaxy object IDs corresponding
+    to the actual executed workflow. For instance:
+
+        convert output=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+        convert input=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+        convert step=name -to- job_id=<id>
+
+    Also expand/convert workflow invocation specific container sections into actual Galaxy
+    markdown - these containers include: invocation_inputs, invocation_outputs, invocation_workflow.
+    Hopefully this list will be expanded to include invocation_qc.
+    """
+    # TODO: convert step outputs?
+    # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+
+    def _section_remap(container, line):
+        section_markdown = ""
+        if container == "invocation_outputs":
+            for output_assoc in invocation.output_associations:
+                if not output_assoc.workflow_output.label:
+                    continue
+
+                if output_assoc.history_content_type == "dataset":
+                    section_markdown += f"""#### Output Dataset: {output_assoc.workflow_output.label}
+```galaxy
+history_dataset_display(output="{output_assoc.workflow_output.label}")
+```
+"""
+                else:
+                    section_markdown += f"""#### Output Dataset Collection: {output_assoc.workflow_output.label}
+```galaxy
+history_dataset_collection_display(output="{output_assoc.workflow_output.label}")
+```
+"""
+        elif container == "invocation_inputs":
+            for input_assoc in invocation.input_associations:
+                if not input_assoc.workflow_step.label:
+                    continue
+
+                if input_assoc.history_content_type == "dataset":
+                    section_markdown += f"""#### Input Dataset: {input_assoc.workflow_step.label}
+```galaxy
+history_dataset_display(input="{input_assoc.workflow_step.label}")
+```
+"""
+                else:
+                    section_markdown += f"""#### Input Dataset Collection: {input_assoc.workflow_step.label}
+```galaxy
+history_dataset_collection_display(input={input_assoc.workflow_step.label})
+```
+"""
+        else:
+            return line, False
+        return section_markdown, True
+
+    def _remap(container, line):
+        for workflow_instance_directive in ["workflow_display", "workflow_image"]:
+            if container == workflow_instance_directive:
+                stored_workflow_id = invocation.workflow.stored_workflow.id
+                workflow_version = invocation.workflow.version
+                return (
+                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
+                    False,
+                )
+        if container == "workflow_license":
+            stored_workflow_id = invocation.workflow.stored_workflow.id
+            return (
+                f"workflow_license(workflow_id={stored_workflow_id})\n",
+                False,
+            )
+        if container == "history_link":
+            return (f"history_link(history_id={invocation.history.id})\n", False)
+        if container == "invocation_time":
+            return (f"invocation_time(invocation_id={invocation.id})\n", False)
+
+        ref_object_type = None
+        output_match = re.search(OUTPUT_LABEL_PATTERN, line)
+        input_match = re.search(INPUT_LABEL_PATTERN, line)
+        step_match = re.search(STEP_LABEL_PATTERN, line)
+
+        def find_non_empty_group(match):
+            for group in match.groups():
+                if group:
+                    return group
+
+        target_match: Optional[Match]
+        ref_object: Optional[Any]
+        if output_match:
+            target_match = output_match
+            name = find_non_empty_group(target_match)
+            ref_object = invocation.get_output_object(name)
+        elif input_match:
+            target_match = input_match
+            name = find_non_empty_group(target_match)
+            ref_object = invocation.get_input_object(name)
+        elif step_match:
+            target_match = step_match
+            name = find_non_empty_group(target_match)
+            invocation_step = invocation.step_invocation_for_label(name)
+            if invocation_step and invocation_step.job:
+                ref_object_type = "job"
+                ref_object = invocation_step.job
+            elif invocation_step and invocation_step.implicit_collection_jobs:
+                ref_object_type = "implicit_collection_jobs"
+                ref_object = invocation_step.implicit_collection_jobs
+        else:
+            target_match = None
+            ref_object = None
+        if ref_object:
+            assert target_match  # tell type system, this is set when ref_object is set
+            if ref_object_type is None:
+                if ref_object.history_content_type == "dataset":
+                    ref_object_type = "history_dataset"
+                else:
+                    ref_object_type = "history_dataset_collection"
+            line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
+        return (line, False)
+
+    workflow_markdown = _remap_galaxy_markdown_calls(
+        _section_remap,
+        workflow_markdown,
+    )
+    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    return galaxy_markdown
+
+
 def _remap_galaxy_markdown_containers(func, markdown):
     new_markdown = markdown
 
@@ -998,5 +1126,6 @@ __all__ = (
     "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
+    "resolve_invocation_markdown",
     "to_basic_markdown",
 )
