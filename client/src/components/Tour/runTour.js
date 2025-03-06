@@ -21,7 +21,7 @@ function getElement(selector) {
         try {
             return document.querySelector(selector);
         } catch (error) {
-            throw Error(`Tour - Invalid selector. ${selector}`);
+            throw Error(`Invalid selector. ${selector}`);
         }
     }
 }
@@ -30,15 +30,16 @@ function getElement(selector) {
 function waitForElement(selector, resolve, reject, tries) {
     if (selector) {
         const el = getElement(selector);
-        if (el) {
+        const rect = el?.getBoundingClientRect();
+        const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
+        if (el && isVisible) {
             resolve();
         } else if (tries > 0) {
             setTimeout(() => {
                 waitForElement(selector, resolve, reject, tries - 1);
             }, delay);
         } else {
-            console.error("Tour - Element not found.", selector);
-            reject();
+            throw Error("Element not found.", selector);
         }
     } else {
         resolve();
@@ -53,7 +54,7 @@ function doClick(targets) {
             if (el) {
                 el.click();
             } else {
-                console.error("Tour - Click target not found.", selector);
+                throw Error("Click target not found.", selector);
             }
         });
     }
@@ -68,7 +69,7 @@ function doInsert(selector, value) {
             const event = new Event("input");
             el.dispatchEvent(event);
         } else {
-            console.error("Tour - Insert target not found.", selector);
+            throw Error("Insert target not found.", selector);
         }
     }
 }
@@ -98,7 +99,7 @@ export async function runTour(tourId, tourData = null) {
             element: step.element,
             title: step.title,
             content: step.content,
-            onBefore: () => {
+            onBefore: async () => {
                 return new Promise((resolve, reject) => {
                     // wait for element before continuing tour
                     waitForElement(step.element, resolve, reject, attempts);

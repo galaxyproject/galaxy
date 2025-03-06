@@ -89,3 +89,6 @@ steps:
     - component: history_panel.item(hid=2,state=ok).display_button
       intro: "View the second dataset in a window as well."
       postclick: true
+
+    - title: "Enjoy your Galaxy Window Manager"
+      intro: "Thanks for taking this tour! Happy research with Galaxy!"
