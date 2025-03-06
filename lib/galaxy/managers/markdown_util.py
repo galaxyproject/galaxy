@@ -794,7 +794,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export."""
     directive_handler = ToBasicMarkdownDirectiveHandler(trans)
-    resolved_invocations_markdown = resolve_invocations(trans, internal_galaxy_markdown)
+    resolved_invocations_markdown = resolve_invocation_markdown(trans, internal_galaxy_markdown)
     plain_markdown = directive_handler.walk(trans, resolved_invocations_markdown)
     return plain_markdown
 
@@ -928,7 +928,7 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
     return galaxy_markdown
 
 
-def resolve_invocations(trans, workflow_markdown):
+def resolve_invocation_markdown(trans, workflow_markdown):
     """Resolve invocation objects to convert markdown to 'internal' representation.
 
     Replace references to abstract workflow parts with actual galaxy object IDs corresponding
@@ -948,8 +948,7 @@ def resolve_invocations(trans, workflow_markdown):
         invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
         if invocation_id_match:
             invocation_id = invocation_id_match.group(1)
-            decoded_id = trans.security.decode_id(invocation_id)
-            return workflow_manager.get_invocation(trans, decoded_id, check_ownership=False, check_accessible=True)
+            return workflow_manager.get_invocation(trans, invocation_id, check_ownership=False, check_accessible=True)
         else:
             return None
 
