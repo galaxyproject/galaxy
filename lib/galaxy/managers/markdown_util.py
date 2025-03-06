@@ -68,6 +68,7 @@ log = logging.getLogger(__name__)
 ARG_VAL_CAPTURED_REGEX = r"""(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')"""
 OUTPUT_LABEL_PATTERN = re.compile(rf"output=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 INPUT_LABEL_PATTERN = re.compile(rf"input=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+INVOCATION_ID_PATTERN = re.compile(rf"invocation_id=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 
@@ -897,35 +898,28 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
     """
 
     def _remap(container, line):
-        for workflow_instance_directive in ["workflow_display", "workflow_image"]:
-            if container == workflow_instance_directive:
-                stored_workflow_id = invocation.workflow.stored_workflow.id
-                workflow_version = invocation.workflow.version
-                return (
-                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id}, workflow_checkpoint={workflow_version})\n",
-                    False,
-                )
-        if container == "workflow_license":
-            stored_workflow_id = invocation.workflow.stored_workflow.id
-            return (
-                f"workflow_license(workflow_id={stored_workflow_id})\n",
-                False,
-            )
-        if container == "history_link":
-            return (f"history_link(history_id={invocation.history.id})\n", False)
-        if container == "invocation_inputs":
-            return (f"invocation_inputs(invocation_id={invocation.id})\n", False)
-        if container == "invocation_outputs":
-            return (f"invocation_outputs(invocation_id={invocation.id})\n", False)
-        if container == "invocation_time":
-            return (f"invocation_time(invocation_id={invocation.id})\n", False)
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
+        if not invocation_id_match:
+            for instance_directive in [
+                "history_link",
+                "invocation_inputs",
+                "invocation_outputs",
+                "invocation_time",
+                "workflow_display",
+                "workflow_image",
+                "workflow_license",
+            ]:
+                if container == instance_directive:
+                    return (
+                        f"{instance_directive}(invocation_id={invocation.id})\n",
+                        False,
+                    )
 
-        output_match = re.search(OUTPUT_LABEL_PATTERN, line)
-        input_match = re.search(INPUT_LABEL_PATTERN, line)
-        step_match = re.search(STEP_LABEL_PATTERN, line)
-        target_match = input_match or output_match or step_match
-        if target_match:
-            line = line.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
+            output_match = re.search(OUTPUT_LABEL_PATTERN, line)
+            input_match = re.search(INPUT_LABEL_PATTERN, line)
+            step_match = re.search(STEP_LABEL_PATTERN, line)
+            if input_match or output_match or step_match:
+                line = line.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
 
         return (line, False)
 
@@ -950,6 +944,7 @@ def resolve_invocations(trans, workflow_markdown):
     # TODO: convert step outputs?
     # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
     invocation = None
+
     def _section_remap(container, line):
         section_markdown = ""
         if container == "invocation_outputs":

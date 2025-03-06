@@ -8,8 +8,8 @@ from abc import (
 from galaxy.managers import workflows
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
-    ready_galaxy_markdown_for_export,
     populate_invocation_markdown,
+    ready_galaxy_markdown_for_export,
 )
 from galaxy.model import WorkflowInvocation
 from galaxy.schema import PdfDocumentType
