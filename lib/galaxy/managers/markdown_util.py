@@ -792,7 +792,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export."""
     directive_handler = ToBasicMarkdownDirectiveHandler(trans)
-    plain_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
+    resolved_invocations_markdown = resolve_invocations(trans, internal_galaxy_markdown)
+    plain_markdown = directive_handler.walk(trans, resolved_invocations_markdown)
     return plain_markdown
 
 
@@ -932,7 +933,7 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
     return galaxy_markdown
 
 
-def resolve_invocation_markdown(trans, invocation, workflow_markdown):
+def resolve_invocations(trans, workflow_markdown):
     """Resolve invocation objects to convert markdown to 'internal' representation.
 
     Replace references to abstract workflow parts with actual galaxy object IDs corresponding
@@ -948,7 +949,7 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
     """
     # TODO: convert step outputs?
     # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
-
+    invocation = None
     def _section_remap(container, line):
         section_markdown = ""
         if container == "invocation_outputs":
@@ -1126,6 +1127,5 @@ __all__ = (
     "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
-    "resolve_invocation_markdown",
     "to_basic_markdown",
 )
