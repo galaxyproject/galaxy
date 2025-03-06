@@ -872,7 +872,7 @@ def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: 
     return to_pdf_raw(branded_markdown, css_paths=css_paths)
 
 
-def resolve_invocation_markdown(trans, invocation, workflow_markdown):
+def populate_invocation_markdown(trans, invocation, workflow_markdown):
     """
     Resolve invocation objects to convert markdown to 'internal' representation.
 
@@ -995,8 +995,8 @@ def _validate(*args, **kwds):
 
 __all__ = (
     "internal_galaxy_markdown_to_pdf",
+    "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
-    "resolve_invocation_markdown",
     "to_basic_markdown",
 )
