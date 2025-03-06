@@ -12,7 +12,11 @@ from packaging.version import Version
 from galaxy.util.tree_dict import TreeDict
 from . import unicodify
 
-if sys.version_info >= (3, 13):
+try:
+    from lib2to3.refactor import RefactoringTool
+except ImportError:
+    # Either Python 3.13 or Debian(<=12)/Ubuntu(<=24.10) without the
+    # python3-lib2to3 package
     import fissix
     from fissix import (
         fixes as fissix_fixes,
@@ -25,7 +29,7 @@ if sys.version_info >= (3, 13):
     sys.modules["lib2to3.pgen2"] = fissix_pgen2
     sys.modules["lib2to3.refactor"] = fissix_refactor
 
-from lib2to3.refactor import RefactoringTool
+    from lib2to3.refactor import RefactoringTool
 
 from past.translation import myfixes
 

@@ -65,7 +65,7 @@ email-validator==2.2.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 fastapi-slim==0.115.10
 filelock==3.17.0
-fissix==24.4.24 ; python_full_version >= '3.13'
+fissix==24.4.24
 frozenlist==1.5.0
 fs==2.4.16
 fsspec==2025.2.0
