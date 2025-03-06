@@ -1,7 +1,8 @@
 import { parseInvocation } from "./parseInvocation";
 
 const INVOCATION = {
-    id: "invoction_id",
+    id: "invoction_id_1",
+    history_id: "history_id_1",
     inputs: [
         {
             label: "input_1",
@@ -35,11 +36,32 @@ const INVOCATION = {
             job_id: "job_id_2",
         },
     ],
+    workflow_id: "workflow_id_1",
 };
 
 describe("parseInvocation.ts", () => {
     describe("parseInvocation", () => {
         it("populate args with invocation details", () => {
+            expect(
+                parseInvocation(INVOCATION, {
+                    name: "history_link",
+                }).history_id
+            ).toBe("history_id_1");
+            expect(
+                parseInvocation(INVOCATION, {
+                    name: "workflow_display",
+                }).workflow_id
+            ).toBe("workflow_id_1");
+            expect(
+                parseInvocation(INVOCATION, {
+                    name: "workflow_image",
+                }).workflow_id
+            ).toBe("workflow_id_1");
+            expect(
+                parseInvocation(INVOCATION, {
+                    name: "workflow_license",
+                }).workflow_id
+            ).toBe("workflow_id_1");
             expect(
                 parseInvocation(INVOCATION, {
                     input: "input_3",
@@ -65,7 +87,7 @@ describe("parseInvocation.ts", () => {
                     step: "workflow_step_2",
                 }).implicit_collection_jobs_id
             ).toBe("implicit_id_2");
-            expect(parseInvocation(INVOCATION, {}).invocation.id).toBe("invoction_id");
+            expect(parseInvocation(INVOCATION, {}).invocation.id).toBe("invoction_id_1");
         });
     });
 });

@@ -1,23 +1,32 @@
 interface Invocation {
-    inputs?: Record<string, { label?: string; id?: string }>;
-    outputs?: Record<string, { id?: string }>;
-    steps?: { workflow_step_label?: string; job_id?: string; implicit_collection_jobs_id?: string }[];
+    history_id: string;
+    inputs: Record<string, { label?: string; id?: string }>;
+    outputs: Record<string, { id?: string }>;
+    steps: { workflow_step_label?: string; job_id?: string; implicit_collection_jobs_id?: string }[];
+    workflow_id: string;
 }
 
 interface ParsedAttributes {
-    invocation: Invocation;
+    history_id?: string;
     history_target_id?: string;
-    implicit_collection_jobs_id?: string;
     input?: string;
+    invocation: Invocation;
+    implicit_collection_jobs_id?: string;
     job_id?: string;
+    name: string;
     output?: string;
     step?: string;
+    workflow_id?: string;
 }
 
 export function parseInvocation(invocation: Invocation, attributes: ParsedAttributes): ParsedAttributes {
     const result: ParsedAttributes = { ...attributes };
     result.invocation = invocation;
-    if (result.input && invocation.inputs) {
+    if (result.name === "history_link") {
+        result.history_id = invocation.history_id;
+    } else if (["workflow_display", "workflow_image", "workflow_license"].includes(result.name)) {
+        result.workflow_id = invocation.workflow_id;
+    } else if (result.input && invocation.inputs) {
         const inputs = Object.values(invocation.inputs);
         const input = inputs.find((i) => i.label && i.label === result?.input);
         if (input) {
