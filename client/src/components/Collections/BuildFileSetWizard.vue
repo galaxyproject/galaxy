@@ -3,6 +3,8 @@ import { BCardGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { attemptCreate, type CollectionCreatorComponent } from "@/components/Collections/common/useCollectionCreator";
+import { rawToTable } from "@/components/Collections/tables";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useToolRouting } from "@/composables/route";
 
@@ -18,6 +20,7 @@ import SourceFromDatasetAsTable from "./wizard/SourceFromDatasetAsTable.vue";
 import SourceFromPastedData from "./wizard/SourceFromPastedData.vue";
 import SourceFromRemoteFiles from "./wizard/SourceFromRemoteFiles.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
+import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 
 const isBusy = ref<boolean>(false);
 const { pasteData, tabularDatasetContents, uris, setRemoteFilesFolder, onFtp, setDatasetContents, setPasteTable } =
@@ -26,10 +29,12 @@ const { pasteData, tabularDatasetContents, uris, setRemoteFilesFolder, onFtp, se
 interface Props {
     fileSourcesConfigured: boolean;
     ftpUploadSite?: string;
+    mode: "uploadModal" | "standalone";
 }
 
 const props = defineProps<Props>();
 
+const ruleState = ref(false);
 const creatingWhat = ref<RulesCreatingWhat>("datasets");
 const creatingWhatTitle = computed(() => {
     return creatingWhat.value == "datasets" ? "Datasets" : "Collections";
@@ -37,6 +42,7 @@ const creatingWhatTitle = computed(() => {
 const sourceInstructions = computed(() => {
     return `${creatingWhatTitle.value} can be created from a set or files, URIs, or existing datasets.`;
 });
+const collectionCreator = ref<CollectionCreatorComponent | undefined>();
 
 const sourceFrom = ref<RulesSourceFrom>("remote_files");
 
@@ -65,7 +71,7 @@ const wizard = useWizard({
     },
     "paste-data": {
         label: "Paste data",
-        instructions: "Paste data containing URIs and optional extra metadata.",
+        instructions: "Paste data (or drop file) containing URIs and optional extra metadata.",
         isValid: () => sourceFrom.value === "pasted_table" && pasteData.value.length > 0,
         isSkippable: () => sourceFrom.value !== "pasted_table",
     },
@@ -74,6 +80,13 @@ const wizard = useWizard({
         instructions: "Select tabular dataset to load URIs and metadata from.",
         isValid: () => sourceFrom.value === "dataset_as_table" && tabularDatasetContents.value.length > 0,
         isSkippable: () => sourceFrom.value !== "dataset_as_table",
+    },
+    "rule-builder": {
+        label: "Specify Rules",
+        instructions: "Use this form to describe rules for importing",
+        isValid: () => ruleState.value,
+        isSkippable: () => props.mode == "uploadModal",
+        width: "100%",
     },
 });
 
@@ -85,7 +98,7 @@ const importButtonLabel = computed(() => {
     }
 });
 
-const emit = defineEmits(["dismiss"]);
+const emit = defineEmits(["dismiss", "created"]);
 type SelectionType = "raw" | "remote_files";
 type ElementsType = RemoteFile[] | string[][];
 
@@ -101,8 +114,7 @@ interface Entry {
     selectionType: SelectionType;
 }
 
-function launchRuleBuilder() {
-    const Galaxy = getGalaxyInstance();
+const ruleBuilderModalEntryProps = computed(() => {
     let elements: ElementsType | undefined = undefined;
     let selectionType: SelectionType = "raw";
     if (sourceFrom.value == "remote_files") {
@@ -119,12 +131,31 @@ function launchRuleBuilder() {
         selectionType: selectionType,
         elements: elements,
     };
+    return entry;
+});
+
+const ruleBuilderElements = computed(() => {
+    const builderProps = ruleBuilderModalEntryProps.value;
+    let elements;
+    if (builderProps.elements) {
+        elements = builderProps.elements;
+    } else {
+        elements = rawToTable(builderProps.content || "");
+    }
+    return elements;
+});
+
+function launchRuleBuilder() {
+    const Galaxy = getGalaxyInstance();
+    const entry = ruleBuilderModalEntryProps.value;
     Galaxy.currHistoryPanel.buildCollectionFromRules(entry, null, true);
 }
 
 function submit() {
     if (sourceFrom.value == "collection") {
         routeToTool("__APPLY_RULES__");
+    } else if (props.mode == "standalone") {
+        attemptCreate(collectionCreator);
     } else {
         launchRuleBuilder();
     }
@@ -137,6 +168,15 @@ function setCreatingWhat(what: RulesCreatingWhat) {
 
 function setSourceForm(newValue: RulesSourceFrom) {
     sourceFrom.value = newValue;
+}
+
+function onRuleState(newRuleState: boolean) {
+    ruleState.value = newRuleState;
+}
+
+function onRuleCreate() {
+    // axios response data for job currently sent, not really used but wanted to document what is available.
+    emit("created");
 }
 </script>
 
@@ -164,6 +204,17 @@ function setSourceForm(newValue: RulesSourceFrom) {
         </div>
         <div v-else-if="wizard.isCurrent('select-dataset')">
             <SelectDataset @onChange="setDatasetContents" />
+        </div>
+        <div v-else-if="wizard.isCurrent('rule-builder')" style="width: 100%">
+            <RuleCollectionBuilder
+                ref="collectionCreator"
+                grid-implementation="ag"
+                :import-type="creatingWhat"
+                :elements-type="ruleBuilderModalEntryProps.selectionType"
+                :initial-elements="ruleBuilderElements"
+                mode="wizard"
+                @onCreate="onRuleCreate"
+                @validInput="onRuleState" />
         </div>
     </GenericWizard>
 </template>
