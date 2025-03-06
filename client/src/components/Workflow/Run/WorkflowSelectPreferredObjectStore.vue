@@ -15,7 +15,7 @@ const emit = defineEmits<{
     (e: "updated", id: string | null): void;
 }>();
 
-const selectedObjectStoreId = ref<String | null>(props.invocationPreferredObjectStoreId);
+const selectedObjectStoreId = ref<string | null>(props.invocationPreferredObjectStoreId as string);
 const newDatasetsDescription = "The default storage location for the outputs of this workflow invocation";
 const defaultOptionTitle = "Use Defaults";
 const defaultOptionDescription =
