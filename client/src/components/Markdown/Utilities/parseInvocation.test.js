@@ -1,7 +1,7 @@
 import { parseInvocation } from "./parseInvocation";
 
 const INVOCATION = {
-    id: "invoction_id_1",
+    id: "invocation_id_1",
     history_id: "history_id_1",
     inputs: [
         {
@@ -36,58 +36,49 @@ const INVOCATION = {
             job_id: "job_id_2",
         },
     ],
-    workflow_id: "workflow_id_1",
 };
+
+const STORED_WORKFLOW_ID = "workflow_id_1";
 
 describe("parseInvocation.ts", () => {
     describe("parseInvocation", () => {
         it("populate args with invocation details", () => {
+            expect(parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "history_link", {}).history_id).toBe("history_id_1");
+            expect(parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "workflow_display", {}).workflow_id).toBe(
+                "workflow_id_1"
+            );
+            expect(parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "workflow_image", {}).workflow_id).toBe(
+                "workflow_id_1"
+            );
+            expect(parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "workflow_license", {}).workflow_id).toBe(
+                "workflow_id_1"
+            );
             expect(
-                parseInvocation(INVOCATION, {
-                    name: "history_link",
-                }).history_id
-            ).toBe("history_id_1");
-            expect(
-                parseInvocation(INVOCATION, {
-                    name: "workflow_display",
-                }).workflow_id
-            ).toBe("workflow_id_1");
-            expect(
-                parseInvocation(INVOCATION, {
-                    name: "workflow_image",
-                }).workflow_id
-            ).toBe("workflow_id_1");
-            expect(
-                parseInvocation(INVOCATION, {
-                    name: "workflow_license",
-                }).workflow_id
-            ).toBe("workflow_id_1");
-            expect(
-                parseInvocation(INVOCATION, {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
                     input: "input_3",
                 }).history_target_id
             ).toBe("input_id_3");
             expect(
-                parseInvocation(INVOCATION, {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
                     output: "unavailable_output",
                 }).history_target_id
             ).toBeUndefined();
             expect(
-                parseInvocation(INVOCATION, {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
                     output: "output_2",
                 }).history_target_id
             ).toBe("output_id_2");
             expect(
-                parseInvocation(INVOCATION, {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
                     step: "workflow_step_1",
                 }).job_id
             ).toBe("job_id_1");
             expect(
-                parseInvocation(INVOCATION, {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
                     step: "workflow_step_2",
                 }).implicit_collection_jobs_id
             ).toBe("implicit_id_2");
-            expect(parseInvocation(INVOCATION, {}).invocation.id).toBe("invoction_id_1");
+            expect(parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {}).invocation.id).toBe("invocation_id_1");
         });
     });
 });

@@ -6,6 +6,7 @@ import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -28,6 +29,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { config, isConfigLoaded } = useConfig();
 const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
+const { fetchWorkflowForInstanceIdCached, getStoredWorkflowIdByInstanceId } = useWorkflowStore();
 
 const props = defineProps({
     content: {
@@ -41,8 +43,8 @@ const error = ref("");
 const toggle = ref(false);
 
 const args = computed(() => {
-    if (invocation.value) {
-        return parseInvocation(invocation.value, name.value, attributes.value.args);
+    if (invocation.value && workflowId.value) {
+        return parseInvocation(invocation.value, workflowId.value, name.value, attributes.value.args);
     } else {
         return { ...attributes.value.args };
     }
@@ -53,9 +55,17 @@ const invocationId = computed(() => attributes.value.args?.invocation_id);
 const invocationLoading = computed(() => isLoadingInvocation(invocationId.value));
 const invocationLoadError = computed(() => getInvocationLoadError(invocationId.value));
 const isCollapsible = computed(() => args.value?.collapse !== undefined);
+const isLoading = computed(() => invocationLoading.value || (invocationId.value && !workflowId.value));
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const version = computed(() => config.version_major);
+const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
+
+async function fetchWorkflow() {
+    if (invocation.value?.workflow_id) {
+        await fetchWorkflowForInstanceIdCached(invocation.value.workflow_id);
+    }
+}
 
 function handleAttributes() {
     try {
@@ -72,6 +82,12 @@ watch(
     () => handleAttributes(),
     { immediate: true }
 );
+
+watch(
+    () => invocation.value,
+    () => fetchWorkflow(),
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -81,7 +97,7 @@ watch(
     <BAlert v-else-if="invocationLoadError" v-localize variant="danger" show>
         {{ invocationLoadError }}
     </BAlert>
-    <LoadingSpan v-else-if="invocationLoading" />
+    <LoadingSpan v-else-if="isLoading" />
     <div v-else>
         <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
