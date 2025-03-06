@@ -27,7 +27,7 @@ class DynamicArguments:
 DYNAMIC_ARGUMENTS = DynamicArguments()
 SHARED_ARGUMENTS: List[str] = ["collapse"]
 VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
-    "history_link": ["history_id"],
+    "history_link": ["history_id", "invocation_id"],
     "history_dataset_display": ["invocation_id", "input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["invocation_id", "input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["invocation_id", "input", "output", "history_dataset_id", "path"],
@@ -49,9 +49,9 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_dataset_name": ["invocation_id", "input", "output", "history_dataset_id"],
     "history_dataset_type": ["invocation_id", "input", "output", "history_dataset_id"],
     "history_dataset_collection_display": ["invocation_id", "input", "output", "history_dataset_collection_id"],
-    "workflow_display": ["workflow_id", "workflow_checkpoint"],
-    "workflow_license": ["workflow_id"],
-    "workflow_image": ["workflow_id", "size", "workflow_checkpoint"],
+    "workflow_display": ["invocation_id", "workflow_id", "workflow_checkpoint"],
+    "workflow_license": ["invocation_id", "workflow_id"],
+    "workflow_image": ["invocation_id", "workflow_id", "size", "workflow_checkpoint"],
     "job_metrics": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
     "job_parameters": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
     "tool_stderr": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
