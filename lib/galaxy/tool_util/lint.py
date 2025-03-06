@@ -373,7 +373,7 @@ def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter
 
     for module in linter_modules:
         module_name = module.__name__.split(".")[-1]
-        lint_tool_types = getattr(module, "lint_tool_types", ["default", "manage_data"])
+        lint_tool_types = getattr(module, "lint_tool_types", ["default", "manage_data", "expression"])
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
             continue
 
