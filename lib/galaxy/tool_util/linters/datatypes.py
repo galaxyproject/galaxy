@@ -78,6 +78,14 @@ class ValidDatatypes(Linter):
         for attrib in ["format", "ftype", "ext"]:
             for elem in tool_xml.findall(f".//*[@{attrib}]"):
                 formats = elem.get(attrib, "").split(",")
+                if "auto" in formats:
+                    if elem.tag == "param":
+                        lint_ctx.error(
+                            f"Format [auto] can not be used for tool or tool test inputs",
+                            linter=cls.name(),
+                            node=elem,
+                        )
+                    continue
                 for format in formats:
                     if format not in datatypes:
                         lint_ctx.error(
