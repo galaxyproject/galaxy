@@ -17,7 +17,7 @@ workflow_display()
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow\n" in galaxy_markdown
-    assert "```galaxy\nworkflow_display(workflow_id=342, workflow_checkpoint=0)\n```\n" in galaxy_markdown
+    assert "```galaxy\nworkflow_display(invocation_id=44)\n```\n" in galaxy_markdown
 
 
 def test_inputs_section_expansion():
