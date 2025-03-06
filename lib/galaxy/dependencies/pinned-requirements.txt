@@ -84,7 +84,7 @@ importlib-resources==6.5.2 ; python_full_version < '3.12'
 isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@3d989181058d2765a93cb0e7ca85d6955e0eb6ef
 isal==1.7.1
 isodate==0.7.2 ; python_full_version < '3.11'
-jinja2==3.1.5
+jinja2==3.1.6
 jmespath==1.0.1
 jsonref==1.1.0
 jsonschema==4.23.0
