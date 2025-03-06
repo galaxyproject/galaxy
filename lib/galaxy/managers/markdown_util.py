@@ -22,6 +22,7 @@ import tempfile
 from typing import (
     Any,
     Dict,
+    Match,
     List,
     Optional,
 )
@@ -1015,7 +1016,7 @@ def resolve_invocations(trans, workflow_markdown):
             stored_workflow_id = invocation.workflow.stored_workflow.id
             workflow_version = invocation.workflow.version
             return (
-                f"{workflow_instance_directive}(workflow_id={stored_workflow_id}, workflow_checkpoint={workflow_version})\n",
+                f"{container}(workflow_id={stored_workflow_id}, workflow_checkpoint={workflow_version})\n",
                 False,
             )
 
