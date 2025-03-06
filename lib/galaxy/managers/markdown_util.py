@@ -939,15 +939,22 @@ def resolve_invocations(trans, workflow_markdown):
 
     Also expand/convert workflow invocation specific container sections into actual Galaxy
     markdown - these containers include: invocation_inputs, invocation_outputs, invocation_workflow.
-    Hopefully this list will be expanded to include invocation_qc.
+    Hopefully this list will be expanded to include invocation_qc and step_output.
     """
-    # TODO: convert step outputs?
-    # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
-    invocation = None
+
+    def get_invocation(trans, line):
+        workflow_manager = trans.app.workflow_manager
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
+        if invocation_id_match:
+            invocation_id = invocation_id_match.group(1)
+            decoded_id = trans.security.decode_id(invocation_id)
+            return workflow_manager.get_invocation(trans, decoded_id, check_ownership=False, check_accessible=True)
+        else:
+            return None
 
     def _section_remap(container, line):
-        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
-        if not invocation_id_match:
+        invocation = get_invocation(trans, line)
+        if not invocation:
             return (line, False)
 
         section_markdown = ""
@@ -990,8 +997,8 @@ def resolve_invocations(trans, workflow_markdown):
         return section_markdown, True
 
     def _remap(container, line):
-        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
-        if not invocation_id_match:
+        invocation = get_invocation(trans, line)
+        if not invocation:
             return (line, False)
 
         if container == "invocation_time":
