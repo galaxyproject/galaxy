@@ -41,6 +41,7 @@ const props = defineProps({
 const attributes = ref({});
 const error = ref("");
 const toggle = ref(false);
+const workflowLoading = ref(false);
 
 const args = computed(() => {
     if (invocation.value && workflowId.value) {
@@ -55,7 +56,7 @@ const invocationId = computed(() => attributes.value.args?.invocation_id);
 const invocationLoading = computed(() => isLoadingInvocation(invocationId.value));
 const invocationLoadError = computed(() => getInvocationLoadError(invocationId.value));
 const isCollapsible = computed(() => args.value?.collapse !== undefined);
-const isLoading = computed(() => invocationLoading.value || (invocationId.value && !workflowId.value));
+const isLoading = computed(() => invocationLoading.value || workflowLoading.value);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const version = computed(() => config.version_major);
@@ -63,7 +64,14 @@ const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInsta
 
 async function fetchWorkflow() {
     if (invocation.value?.workflow_id) {
-        await fetchWorkflowForInstanceIdCached(invocation.value.workflow_id);
+        try {
+            workflowLoading.value = true;
+            await fetchWorkflowForInstanceIdCached(invocation.value.workflow_id);
+        } catch (e) {
+            error.value = String(e);
+        } finally {
+            workflowLoading.value = false;
+        }
     }
 }
 
