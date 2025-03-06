@@ -19,12 +19,12 @@ interface ParsedAttributes {
     workflow_id?: string;
 }
 
-export function parseInvocation(invocation: Invocation, attributes: ParsedAttributes): ParsedAttributes {
+export function parseInvocation(invocation: Invocation, name: string, attributes: ParsedAttributes): ParsedAttributes {
     const result: ParsedAttributes = { ...attributes };
     result.invocation = invocation;
-    if (result.name === "history_link") {
+    if (name === "history_link") {
         result.history_id = invocation.history_id;
-    } else if (["workflow_display", "workflow_image", "workflow_license"].includes(result.name)) {
+    } else if (["workflow_display", "workflow_image", "workflow_license"].includes(name)) {
         result.workflow_id = invocation.workflow_id;
     } else if (result.input && invocation.inputs) {
         const inputs = Object.values(invocation.inputs);

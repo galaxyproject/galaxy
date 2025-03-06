@@ -42,7 +42,7 @@ const toggle = ref(false);
 
 const args = computed(() => {
     if (invocation.value) {
-        return parseInvocation(invocation.value, attributes.value.args);
+        return parseInvocation(invocation.value, name.value, attributes.value.args);
     } else {
         return { ...attributes.value.args };
     }
