@@ -58,6 +58,13 @@ COLLECTION_TYPE_SOURCE_EXPECTATIONS = [
 BIGWIG_TO_WIG_EXPECTATIONS = [
     (["inputs", "chrom"], "chr21"),
 ]
+RECORD_TWO_FILES_EXPECTATIONS = [
+    (["inputs", "f1", "model_class"], "TestCollectionDef"),
+    (["inputs", "f1", "collection_type"], "record"),
+    (["inputs", "f1", "fields", 0, "type"], "File"),
+    (["inputs", "f1", "fields", 0, "name"], "parent"),
+    (["inputs", "f1", "fields", 1, "type"], "File"),
+]
 
 
 class TestTestParsing(TestCase):
@@ -117,6 +124,12 @@ class TestTestParsing(TestCase):
         test_dicts = self._parse_tests()
         test_0 = test_dicts[0].to_dict()
         assert test_0["error"] is True
+
+    def test_field_collection_inputs(self):
+        self._init_tool_for_path(functional_test_tool_path("collection_record_test_two_files.xml"))
+        test_dicts = self._parse_tests()
+        test_0 = test_dicts[0].to_dict()
+        self._verify_each(test_0, RECORD_TWO_FILES_EXPECTATIONS)
 
     def test_bigwigtowig_converter(self):
         # defines
