@@ -9,6 +9,8 @@ import { defineComponent } from "vue";
 
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 
+import { showHid } from "./useCollectionCreator";
+
 type StoreType = ReturnType<typeof usePairingDatasetTargetsStore>;
 
 library.add(faLink, faUndo, faUnlink);
@@ -20,6 +22,7 @@ export default defineComponent({
     data() {
         return {
             params: {} as ICellRendererParams,
+            showHid: showHid,
         };
     },
     computed: {
@@ -89,8 +92,16 @@ export default defineComponent({
             <FontAwesomeIcon size="2x" icon="fa-undo" class="paired-action-icon" @click="onSwap" />
             <FontAwesomeIcon size="2x" icon="fa-unlink" class="paired-action-icon" @click="onUnpair" />
             <div class="text-container">
-                <span><span class="direction">FORWARD</span> {{ params.value.forward.name }}</span>
-                <span><span class="direction">REVERSE</span> {{ params.value.reverse.name }}</span>
+                <span>
+                    <span class="direction">FORWARD</span>
+                    <span v-if="showHid" class="dataset-hid">{{ params.value.forward.hid }}: </span>
+                    <span class="dataset-name">{{ params.value.forward.name }}</span>
+                </span>
+                <span>
+                    <span class="direction">REVERSE</span>
+                    <span v-if="showHid" class="dataset-hid">{{ params.value.reverse.hid }}: </span>
+                    <span class="dataset-name">{{ params.value.reverse.name }}</span>
+                </span>
             </div>
         </div>
         <div v-else class="paired-datasets-cell">
@@ -113,7 +124,10 @@ export default defineComponent({
             </div>
             <div class="text-container">
                 <div><span class="direction">UNPAIRED</span></div>
-                <div>{{ params.value.unpaired.name }}</div>
+                <div>
+                    <span v-if="showHid" class="dataset-hid">{{ params.value.unpaired.hid }}: </span>
+                    <span class="dataset-name">{{ params.value.unpaired.name }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -138,6 +152,10 @@ export default defineComponent({
 .paired-datasets-cell .direction {
     font-weight: normal;
     color: gray;
+}
+
+.paired-datasets-cell .dataset-hid {
+    font-weight: normal;
 }
 
 .paired-datasets-cell .icon-wrapper {

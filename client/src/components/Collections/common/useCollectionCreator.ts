@@ -48,6 +48,8 @@ export async function attemptCreate(creator: CollectionCreatorComponent | Ref<Co
     }
 }
 
+export const showHid = true;
+
 export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?: EmitsName) {
     const removeExtensions = ref(true);
     const hideSourceItems = ref(props.defaultHideSourceItems || false);
@@ -123,5 +125,6 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
         validInput,
         onCollectionCreate,
         showButtonsForModal,
+        showHid,
     };
 }
