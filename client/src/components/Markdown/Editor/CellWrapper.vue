@@ -1,0 +1,122 @@
+<template>
+    <div @mouseenter="hover = true" @mouseleave="hover = false">
+        <div class="d-flex">
+            <div
+                class="cell-guide d-flex flex-column justify-content-between cursor-pointer"
+                :class="{ 'cell-hover': hover }"
+                @click="$emit('toggle')">
+                <div class="text-center text-primary">
+                    <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
+                    <div v-else class="small font-weight-bold">unknown</div>
+                </div>
+                <CellButton v-if="toggle" title="Collapse">
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
+                </CellButton>
+                <CellButton v-else title="Expand">
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" />
+                </CellButton>
+            </div>
+            <div class="m-2 w-100">
+                <MarkdownDefault v-if="name === 'markdown'" :content="content" />
+                <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
+                <b-alert v-else variant="danger" show> This cell type `{{ name }}` is not available. </b-alert>
+            </div>
+        </div>
+        <div v-if="toggle" class="d-flex">
+            <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
+                <CellButton
+                    v-if="name !== 'markdown'"
+                    title="Attach Data"
+                    :active="configure"
+                    @click="$emit('configure')">
+                    <FontAwesomeIcon :icon="faPaperclip" />
+                </CellButton>
+                <CellButton title="Clone Cell" @click="$emit('clone')">
+                    <FontAwesomeIcon :icon="faClone" />
+                </CellButton>
+                <CellButton title="Delete Cell" @click="confirmDelete = true">
+                    <FontAwesomeIcon :icon="faTrash" />
+                </CellButton>
+                <CellButton title="Move Up" :disabled="cellIndex < 1" @click="$emit('move', 'up')">
+                    <FontAwesomeIcon :icon="faArrowUp" />
+                </CellButton>
+                <CellButton title="Move Down" :disabled="cellTotal - cellIndex < 2" @click="$emit('move', 'down')">
+                    <FontAwesomeIcon :icon="faArrowDown" />
+                </CellButton>
+            </div>
+            <div class="ml-2 w-100">
+                <hr class="solid m-0" />
+                <ConfigureGalaxy
+                    v-if="name === 'galaxy' && configure"
+                    :name="name"
+                    :content="content"
+                    @cancel="$emit('configure')"
+                    @change="handleConfigure($event)" />
+                <CellCode :key="name" class="mt-1" :value="content" :mode="mode" @change="$emit('change', $event)" />
+            </div>
+        </div>
+        <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
+            <p v-localize>Are you sure you want to delete this cell?</p>
+        </BModal>
+    </div>
+</template>
+
+<script setup lang="ts">
+import {
+    faAngleDoubleDown,
+    faAngleDoubleUp,
+    faArrowDown,
+    faArrowUp,
+    faClone,
+    faPaperclip,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BModal } from "bootstrap-vue";
+import { computed, ref } from "vue";
+
+import MarkdownDefault from "../Sections/MarkdownDefault.vue";
+import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
+import CellButton from "./CellButton.vue";
+import CellCode from "./CellCode.vue";
+import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
+
+const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
+
+const props = defineProps<{
+    cellIndex: number;
+    cellTotal: number;
+    configure?: boolean;
+    content: string;
+    name: string;
+    toggle?: boolean;
+}>();
+
+const emit = defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
+
+const confirmDelete = ref(false);
+const hover = ref(false);
+
+const mode = computed(() => {
+    switch (props.name) {
+        case "galaxy":
+            return "python";
+        case "markdown":
+            return "markdown";
+    }
+    return "json";
+});
+
+function handleConfigure(newValue: string) {
+    emit("change", newValue);
+    emit("configure");
+}
+</script>
+
+<style lang="scss">
+@import "theme/blue.scss";
+
+.cell-hover {
+    background-color: $gray-100;
+}
+</style>

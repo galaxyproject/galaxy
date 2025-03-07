@@ -17,3 +17,36 @@ export async function copyCollection(hdcaId, historyId) {
         rethrowSimple(e);
     }
 }
+
+
+export async function getInvocations() {
+    const { data, error } = await GalaxyApi().GET("/api/invocations");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function getJobs() {
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function getWorkflows() {
+    const { data, error } = await GalaxyApi().GET("/api/workflows");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function getHistories() {
+    const { data, error } = await GalaxyApi().GET("/api/histories/published");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
