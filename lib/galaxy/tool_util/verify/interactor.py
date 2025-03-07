@@ -8,6 +8,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import traceback
 import urllib.parse
 import zipfile
 from json import dumps
@@ -1425,7 +1426,7 @@ def verify_tool(
     job_stdio = None
     job_output_exceptions = None
     tool_execution_exception: Optional[Exception] = None
-    input_staging_exception = None
+    input_staging_exc_info = None
     expected_failure_occurred = False
     begin_time = time.time()
     try:
@@ -1440,8 +1441,8 @@ def verify_tool(
                 tool_version=tool_version,
                 test_data_resolver=test_data_resolver,
             )
-        except Exception as e:
-            input_staging_exception = e
+        except Exception:
+            input_staging_exc_info = sys.exc_info()
             raise
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
@@ -1491,8 +1492,10 @@ def verify_tool(
                         status = "skip"
                     else:
                         status = "error"
-            if input_staging_exception:
-                job_data["execution_problem"] = f"Input staging problem: {util.unicodify(input_staging_exception)}"
+            if input_staging_exc_info:
+                job_data["execution_problem"] = (
+                    f"Input staging problem: {''.join(traceback.format_exception(*input_staging_exc_info))}"
+                )
                 status = "error"
             job_data["status"] = status
             register_job_data(job_data)
