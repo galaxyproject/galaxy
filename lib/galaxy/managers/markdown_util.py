@@ -69,7 +69,7 @@ log = logging.getLogger(__name__)
 ARG_VAL_CAPTURED_REGEX = r"""(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')"""
 OUTPUT_LABEL_PATTERN = re.compile(rf"output=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 INPUT_LABEL_PATTERN = re.compile(rf"input=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
-INVOCATION_ID_PATTERN = re.compile(rf"invocation_id=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+INVOCATION_ID_PATTERN = re.compile(rf"invocation_id=\s*({ARG_VAL_CAPTURED_REGEX})\s*(?:,\s*)?")
 STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 
@@ -1023,6 +1023,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
             )
 
         ref_object_type = None
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)
         step_match = re.search(STEP_LABEL_PATTERN, line)
@@ -1063,6 +1064,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 else:
                     ref_object_type = "history_dataset_collection"
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
+            line = line.replace(invocation_id_match.group(), "")
         return line, False
 
     workflow_markdown = _remap_galaxy_markdown_calls(

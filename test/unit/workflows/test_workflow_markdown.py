@@ -1,8 +1,10 @@
+from unittest import mock
+
 from galaxy import model
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.markdown_util import (
     populate_invocation_markdown,
-    resolve_invocations,
+    resolve_invocation_markdown,
 )
 from .test_workflow_progress import TEST_WORKFLOW_YAML
 from .workflow_support import (
@@ -21,6 +23,8 @@ workflow_display()
     galaxy_markdown = populate_markdown(workflow_markdown)
     assert "## Workflow\n" in galaxy_markdown
     assert "```galaxy\nworkflow_display(invocation_id=44)\n```\n" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
+    assert "```galaxy\nworkflow_display(workflow_id=342, workflow_checkpoint=0)\n```" in galaxy_markdown
 
 
 def test_inputs_section_expansion():
@@ -32,7 +36,10 @@ invocation_inputs()
 """
     galaxy_markdown = populate_markdown(workflow_markdown)
     assert "## Workflow Inputs" in galaxy_markdown
-    assert "```galaxy\ninvocation_inputs(invocation_id=44)\n" in galaxy_markdown
+    assert "```galaxy\ninvocation_inputs(invocation_id=44)\n```" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
+    assert "Input Dataset: input1" in galaxy_markdown
+    assert '```galaxy\nhistory_dataset_display(input="input1")\n```' in galaxy_markdown
     assert len(galaxy_markdown.split("```")) == 3
 
 
@@ -46,6 +53,10 @@ invocation_outputs()
     galaxy_markdown = populate_markdown(workflow_markdown)
     assert "## Workflow Outputs" in galaxy_markdown
     assert "```galaxy\ninvocation_outputs(invocation_id=44)" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
+    assert "Output Dataset: output_label" in galaxy_markdown
+    assert '```galaxy\nhistory_dataset_display(output="output_label")\n```' in galaxy_markdown
+    assert len(galaxy_markdown.split("```")) == 5
 
 
 def test_input_reference_mapping():
@@ -58,6 +69,8 @@ history_dataset_peek(input=input1)
 """
     galaxy_markdown = populate_markdown(workflow_markdown)
     assert "```galaxy\nhistory_dataset_peek(invocation_id=44, input=input1)\n```" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
+    assert "```galaxy\nhistory_dataset_peek(history_dataset_id=567)\n```" in galaxy_markdown
 
 
 def test_invocation_time():
@@ -69,6 +82,8 @@ invocation_time()
 ```
 """
     galaxy_markdown = populate_markdown(workflow_markdown)
+    assert "```galaxy\ninvocation_time(invocation_id=44)\n```" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
     assert "```galaxy\ninvocation_time(invocation_id=44)\n```" in galaxy_markdown
 
 
@@ -82,6 +97,8 @@ history_dataset_as_image(output=output_label)
 """
     galaxy_markdown = populate_markdown(workflow_markdown)
     assert "```galaxy\nhistory_dataset_as_image(invocation_id=44, output=output_label)\n```" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
+    assert "```galaxy\nhistory_dataset_as_image(history_dataset_id=563)\n```" in galaxy_markdown
 
 
 def test_basic_output_reference_mapping():
@@ -92,8 +109,10 @@ And outputs...
 history_dataset_as_image(output=output_label)
 ```
 """
-    galaxy_markdown = resolve_markdown(populate_markdown(workflow_markdown))
+    galaxy_markdown = populate_markdown(workflow_markdown)
     assert "```galaxy\nhistory_dataset_as_image(invocation_id=44, output=output_label)\n```" in galaxy_markdown
+    galaxy_markdown = resolve_markdown(galaxy_markdown)
+    assert "```galaxy\nhistory_dataset_as_image(history_dataset_id=563)\n```" in galaxy_markdown
 
 
 def populate_markdown(workflow_markdown):
@@ -110,7 +129,10 @@ def resolve_markdown(workflow_markdown):
     # and with sections expanded.
     trans = MockTrans()
     validate_galaxy_markdown(workflow_markdown)
-    galaxy_markdown = resolve_invocation_markdown(trans, example_invocation(trans), galaxy_markdown)
+    trans.app.workflow_manager = mock.MagicMock()
+    invocation = example_invocation(trans)
+    trans.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
+    galaxy_markdown = resolve_invocation_markdown(trans, workflow_markdown)
     return galaxy_markdown
 
 
