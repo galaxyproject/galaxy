@@ -97,6 +97,7 @@ const {
     onCollectionCreate,
     showElementExtension,
     showButtonsForModal,
+    showHid,
 } = useCollectionCreator(props, emit);
 
 // ----------------------------------------------------------------------- process raw list
@@ -654,6 +655,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                 :element="element"
                                 has-actions
                                 :selected="getSelectedDatasetElements.includes(element.id)"
+                                :show-hid="showHid"
                                 @element-is-selected="elementSelected"
                                 @element-is-discarded="elementDiscarded"
                                 @onRename="(name) => (element.name = name)" />

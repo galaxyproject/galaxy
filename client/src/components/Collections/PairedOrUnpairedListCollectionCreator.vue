@@ -86,6 +86,7 @@ const {
     onUpdateCollectionName,
     onCollectionCreate,
     showButtonsForModal,
+    showHid,
 } = useCollectionCreator(props, emit);
 
 const style = computed(() => {
@@ -141,9 +142,11 @@ const columnDefs = computed(() => {
             editable: false,
             rowDrag: true,
             valueFormatter: (p) => {
-                console.log("in valueFormatter...");
-                console.log(p.value.unpaired);
-                return p.value.unpaired.name;
+                if (showHid) {
+                    return `${p.value.unpaired.hid}: ${p.value.unpaired.name}`;
+                } else {
+                    return p.value.unpaired.name;
+                }
             },
         };
     }
@@ -712,6 +715,7 @@ export default {
                 :forward-filter="currentForwardFilter"
                 :reverse-filter="currentReverseFilter"
                 :mode="mode"
+                :show-hid="showHid"
                 @on-apply="applyFilters"
                 @on-cancel="showAutoPairing = false" />
         </div>

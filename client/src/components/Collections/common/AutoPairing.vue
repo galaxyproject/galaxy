@@ -16,6 +16,7 @@ interface Props {
     reverseFilter?: string;
     removeExtensions: boolean;
     mode: "wizard" | "modal";
+    showHid: boolean;
 }
 
 const emit = defineEmits<{
@@ -79,7 +80,9 @@ function onApply() {
                 <li v-for="(pair, index) of currentSummary?.pairs" :key="`paired_${index}`">
                     <span v-if="index > 0">,</span>
                     <span class="pair-name">{{ pair.name }}</span> (<span class="direction">FORWARD</span
+                    ><span v-if="showHid" class="dataset-hid">{{ pair.forward.hid }}: </span
                     ><span class="dataset-name">{{ pair.forward.name }}</span> | <span class="direction">REVERSE</span
+                    ><span v-if="showHid" class="dataset-hid">{{ pair.reverse.hid }}: </span
                     ><span class="dataset-name">{{ pair.reverse.name }}</span
                     >)
                 </li>
@@ -99,6 +102,7 @@ function onApply() {
                 <ol class="summary-list">
                     <li v-for="(unpairedDataset, index) of currentSummary?.unpaired" :key="`unpaired_${index}`">
                         <span v-if="index > 0">,</span>
+                        <span v-if="showHid" class="dataset-hid">{{ unpairedDataset.hid }}: </span>
                         <span class="unpaired-dataset-name dataset-name">{{ unpairedDataset.name }}</span>
                     </li>
                 </ol>

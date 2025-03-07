@@ -18,6 +18,7 @@ import {
     type CollectionCreatorComponent,
     type SupportedPairedOrPairedBuilderCollectionTypes,
 } from "./common/useCollectionCreator";
+import { showHid } from "./common/useCollectionCreator";
 import { type WhichListBuilder } from "./ListWizard/types";
 import { autoPairWithCommonFilters } from "./pairing";
 
@@ -247,6 +248,7 @@ function onRuleState(newRuleState: boolean) {
                     :reverse-filter="currentReverseFilter"
                     :collection-type="pairedListType"
                     :remove-extensions="true"
+                    :show-hid="showHid"
                     mode="wizard"
                     @on-update="onFilters" />
             </div>
