@@ -149,6 +149,7 @@
                             id="workflow-save-button"
                             class="py-1 px-2"
                             variant="link"
+                            :disabled="!hasChanges"
                             :title="saveWorkflowTitle"
                             @click="saveOrCreate">
                             <FontAwesomeIcon :icon="faSave" />
