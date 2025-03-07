@@ -150,10 +150,10 @@ export default {
                 this.dismissCountDown = this.dismissSecs;
             }
         },
+        /** To only allow numbers and decimal points as input for this number field */
         isNumberOrDecimal(event) {
-            // NOTE: Should we check for `fieldType` here?
-            const charCode = event.charCode;
-            if ((charCode >= 48 && charCode <= 57) || charCode === 46) {
+            const key = event.key;
+            if ((key >= "0" && key <= "9") || key === ".") {
                 return true;
             }
             event.preventDefault();
