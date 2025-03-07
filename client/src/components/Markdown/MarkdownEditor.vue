@@ -8,14 +8,14 @@
                     </div>
                     <div>
                         <b-form-radio-group
-                             v-if="!steps || steps.length === 0"
-                             v-model="editor"
-                             v-b-tooltip.hover.bottom
-                             button-variant="outline-primary"
-                             buttons
-                             size="sm"
-                             title="Editor"
-                             :options="editorOptions" />
+                            v-if="!steps || steps.length === 0"
+                            v-model="editor"
+                            v-b-tooltip.hover.bottom
+                            button-variant="outline-primary"
+                            buttons
+                            size="sm"
+                            title="Editor"
+                            :options="editorOptions" />
                         <slot name="buttons" />
                         <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
                             <FontAwesomeIcon icon="question" />
@@ -32,12 +32,12 @@
                     :mode="mode"
                     @update="$emit('update', $event)" />
                 <CellEditor
-                     v-else
-                     :title="title"
-                     :markdown-text="markdownText"
-                     :steps="steps"
-                     :mode="mode"
-                     @update="$emit('update', $event)" />
+                    v-else
+                    :title="title"
+                    :markdown-text="markdownText"
+                    :steps="steps"
+                    :mode="mode"
+                    @update="$emit('update', $event)" />
             </div>
         </div>
         <b-modal v-model="showHelpModal" hide-footer>
@@ -73,8 +73,8 @@ const showHelpModal = ref<boolean>(false);
 
 const editor = ref("text");
 const editorOptions = ref([
-     { text: "Text", value: "text" },
-     { text: "Cells", value: "cells" },
+    { text: "Text", value: "text" },
+    { text: "Cells", value: "cells" },
 ]);
 
 function onHelp() {
