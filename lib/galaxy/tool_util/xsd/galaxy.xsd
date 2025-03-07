@@ -1637,11 +1637,22 @@ non-optional composite inputs must be specified as part of the ``param``.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:complexType name="TestCollectionField" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+JSON that describes the fields of a collection. Only use if ``collection_type`` is ``record`` or
+some extension of that.
+
+]]></xs:documentation>
+    </xs:annotation>
+  </xs:complexType>
   <xs:complexType name="TestCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en">Definition of a collection for test input.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="fields" type="TestCollectionField" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="element" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="type" type="CollectionType" use="required">
@@ -8315,7 +8326,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired)([:](list|paired))*"/>
+      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:](list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="CollectionTypeList">
@@ -8323,7 +8334,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:,](list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="InputsConfigfileDatastyleType">
