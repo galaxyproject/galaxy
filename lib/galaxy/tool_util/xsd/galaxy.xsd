@@ -747,7 +747,7 @@ Read more about configuring Galaxy to run Docker jobs
   </xs:simpleType>
   <xs:complexType name="Help">
     <xs:annotation gxdocs:best_practices="help-tag">
-      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
 
 tag | details
 --- | -------
@@ -7708,23 +7708,23 @@ for a list of supported formats.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Tool files may declare one
 citations element. Each citations element can contain one or more citation tag
-elements - each of which specifies tool citation information using either a DOI
+elements - each of which specifies tool reference information using either a DOI
 or a BibTeX entry.
 
-These citations will appear at the bottom of the tool form in a formatted way
+These references will appear at the bottom of the tool form in a formatted way,
 but the user will have to option to select RAW BibTeX for copying and pasting as
 well. Likewise, the history menu includes an option allowing users to aggregate
-all such citations across an analysis in a list of citations.
+all such references across an analysis in a list of references.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
 https://doi.org/ and cached.
 
 ```xml
 <citations>
-   <!-- Example of annotating a citation using a DOI. -->
+   <!-- Example of annotating a reference using a DOI. -->
    <citation type="doi">10.1093/bioinformatics/btq281</citation>
 
-   <!-- Example of annotating a citation using a BibTex entry. -->
+   <!-- Example of annotating a reference using a BibTex entry. -->
    <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
    author = {Seung-jean Kim and Kwangmoo Koh and Michael Lustig and Stephen Boyd and Dimitry Gorinevsky},
    title = {An interior-point method for large-scale l1-regularized logistic regression},
@@ -7744,10 +7744,6 @@ following commits adding this to the
 [phenotype association tools](https://bitbucket.org/galaxy/galaxy-central/commits/39c983151fe328ff5d415f6da81ce5b21a7e18a4),
 [MAF suite](https://bitbucket.org/galaxy/galaxy-central/commits/60f63d6d4cb7b73286f3c747e8acaa475e4b6fa8),
 and [MACS2 suite](https://github.com/jmchilton/galaxytools/commit/184971dea73e236f11e82b77adb5cab615b8391b).
-
-This feature was added to the August 2014 release of Galaxy, tools annotated
-with citations will work in older releases of Galaxy but no citation information
-will be available to the end user.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -7757,14 +7753,14 @@ will be available to the end user.
   <xs:complexType name="Citation">
     <xs:annotation>
       <xs:documentation xml:lang="en">Each citations element can contain one or
-more ``citation`` tag elements - each of which specifies tool citation
+more ``citation`` tag elements - each of which specifies tool reference
 information using either a DOI or a BibTeX entry.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="CitationType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of citation - currently ``doi``
+            <xs:documentation xml:lang="en">Type of reference - currently ``doi``
 and ``bibtex`` are the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7773,7 +7769,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
   </xs:complexType>
   <xs:simpleType name="CitationType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of citation represented.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of reference represented.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bibtex"/>
@@ -8177,15 +8173,14 @@ A tool can have any number of EDAM operation references.
     <xs:annotation gxdocs:best_practices="tool-cross-references-bio-tools">
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
-A tool can refer multiple reference IDs.
+A tool can link to multiple external catalog IDs.
 
 ```xml
    <!-- Example: this tool is dada2 -->
    <xrefs>
-       <xref type="bio.tools">dada2</xref>
-       <xref type="bioconductor">dada2</xref>
+       <xref type="bio.tools">dada2</xref> <!-- https://bio.tools/dada2 -->
+       <xref type="bioconductor">dada2</xref> <!-- https://bioconductor.org/packages/dada2 -->
    </xrefs>
-   <!-- https://bio.tools/dada2 -->
 ```
 
 ]]></xs:documentation>
@@ -8197,14 +8192,14 @@ A tool can refer multiple reference IDs.
   </xs:complexType>
   <xs:complexType name="xref">
     <xs:annotation>
-      <xs:documentation xml:lang="en">The ``xref`` element specifies reference
-information according to a catalog.</xs:documentation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies a link to
+an external catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="singleLineString">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
+            <xs:documentation xml:lang="en">Type of catalog - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -8213,7 +8208,7 @@ the only supported options.</xs:documentation>
   </xs:complexType>
   <xs:simpleType name="xrefType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of Reference.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of catalog.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
