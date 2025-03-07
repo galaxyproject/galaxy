@@ -365,7 +365,7 @@ class FastAPIHistories:
 
     @router.get(
         "/api/histories/{history_id}/citations",
-        summary="Return all the citations for the tools used to produce the datasets in the history.",
+        summary="Return all the references for the tools used to produce the datasets in the history.",
     )
     def citations(
         self,

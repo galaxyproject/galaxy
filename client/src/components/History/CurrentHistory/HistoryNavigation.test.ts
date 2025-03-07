@@ -14,7 +14,7 @@ const expectedOptions = [
     "Resume Paused Jobs",
     "Copy this History",
     "Delete this History",
-    "Export Tool Citations",
+    "Export Tool References",
     "Export History to File",
     "Archive History",
     "Extract Workflow",
@@ -28,7 +28,7 @@ const expectedOptions = [
 const anonymousOptions = [
     "Resume Paused Jobs",
     "Delete this History",
-    "Export Tool Citations",
+    "Export Tool References",
     "Export History to File",
 ];
 
