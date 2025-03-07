@@ -2,6 +2,8 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
+import { GalaxyApi } from "@/api";
+
 export async function copyCollection(hdcaId, historyId) {
     const url = `${getAppRoot()}api/histories/${historyId}/contents/dataset_collections`;
     const payload = {
@@ -17,7 +19,6 @@ export async function copyCollection(hdcaId, historyId) {
         rethrowSimple(e);
     }
 }
-
 
 export async function getInvocations() {
     const { data, error } = await GalaxyApi().GET("/api/invocations");
