@@ -23,8 +23,9 @@ import { isUrl } from "@/utils/url";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface BadgeData {
+    name: string;
     url?: string;
-    icon?: IconDefinition;
+    icon: IconDefinition;
     title?: string;
     class?: Record<string, boolean>;
 }
@@ -84,6 +85,35 @@ const sourceTitle = computed(() => {
     }
 });
 
+const creatorBadges = computed<BadgeData[] | undefined>(() => {
+    return props.workflow.creator
+        ?.map((creator: Creator) => {
+            if (!creator.name) {
+                return;
+            }
+            let url: string | undefined;
+            let titleEnd = "Workflow Creator";
+
+            if (creator.url && isUrl(creator.url)) {
+                url = creator.url;
+            }
+            const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
+            if (creator.identifier && orcidRegex.test(creator.identifier)) {
+                url = creator.identifier;
+                titleEnd = "ORCID profile";
+            }
+
+            return {
+                name: creator.name,
+                url,
+                icon: creator.class === "Organization" ? faBuilding : faUserEdit,
+                title: `${url ? "Click to view " : ""}${titleEnd}`,
+                class: { "cursor-pointer": !!url, "outline-badge": !!url },
+            };
+        })
+        .filter((b) => !!b);
+});
+
 const { success } = useToast();
 
 function onCopyLink() {
@@ -104,27 +134,6 @@ function onViewMySharedByUser() {
 function onViewUserPublished() {
     router.push(`/workflows/list_published?owner=${props.workflow.owner}`);
     emit("updateFilter", "user", `'${props.workflow.owner}'`);
-}
-
-function getCreatorBadge(creator: Creator): BadgeData {
-    let url: string | undefined;
-    let titleEnd = "Workflow Creator";
-
-    if (creator.url && isUrl(creator.url)) {
-        url = creator.url;
-    }
-    const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
-    if (creator.identifier && orcidRegex.test(creator.identifier)) {
-        url = creator.identifier;
-        titleEnd = "ORCID profile";
-    }
-
-    return {
-        url,
-        icon: creator.class === "Organization" ? faBuilding : faUserEdit,
-        title: `${url ? "Click to view " : ""}${titleEnd}`,
-        class: { "cursor-pointer": !!url, "outline-badge": !!url },
-    };
 }
 
 function getStepText(steps: number) {
@@ -205,18 +214,18 @@ function getStepText(steps: number) {
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>
 
-        <template v-if="props.workflow.creator?.length">
+        <template v-if="creatorBadges?.length">
             <BBadge
-                v-for="creator in props.workflow.creator"
+                v-for="creator in creatorBadges"
                 :key="creator.name"
                 v-b-tooltip.noninteractive.hover
                 data-description="external creator badge"
                 class="mx-1"
-                :class="getCreatorBadge(creator)?.class"
-                :title="getCreatorBadge(creator)?.title"
-                :href="getCreatorBadge(creator)?.url"
+                :class="creator.class"
+                :title="creator.title"
+                :href="creator.url"
                 target="_blank">
-                <FontAwesomeIcon :icon="getCreatorBadge(creator).icon" size="sm" fixed-width />
+                <FontAwesomeIcon :icon="creator.icon" size="sm" fixed-width />
                 <span class="font-weight-bold"> {{ creator.name }} </span>
             </BBadge>
         </template>
