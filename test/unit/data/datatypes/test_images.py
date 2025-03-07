@@ -51,7 +51,6 @@ def __assert_empty_metadata(metadata):
     for key in (
         "axes",
         "dtype",
-        "num_unique_values",
         "width",
         "height",
         "channels",
@@ -68,8 +67,6 @@ test_tiff_axes_zcyx = __create_test(Tiff, "im6_uint8.tif", "axes", "ZCYX")
 test_tiff_dtype_uint8 = __create_test(Tiff, "im6_uint8.tif", "dtype", "uint8")
 test_tiff_dtype_uint16 = __create_test(Tiff, "im8_uint16.tif", "dtype", "uint16")
 test_tiff_dtype_float64 = __create_test(Tiff, "im4_float.tif", "dtype", "float64")
-test_tiff_num_unique_values_2 = __create_test(Tiff, "im3_b.tif", "num_unique_values", 2)
-test_tiff_num_unique_values_618 = __create_test(Tiff, "im4_float.tif", "num_unique_values", 618)
 test_tiff_width_16 = __create_test(Tiff, "im7_uint8.tif", "width", 16)  # axes: ZYX
 test_tiff_width_32 = __create_test(Tiff, "im3_b.tif", "width", 32)  # axes: YXS
 test_tiff_height_8 = __create_test(Tiff, "im7_uint8.tif", "height", 8)  # axes: ZYX
@@ -99,15 +96,11 @@ def test_tiff_unsupported_compression(metadata):
     assert metadata.depth == 0
     assert metadata.frames == 0
 
-    # The other fields should be missing
-    assert getattr(metadata, "num_unique_values", None) is None
-
 
 @__test(Tiff, "im9_multipage.tif")
 def test_tiff_multipage(metadata):
     assert metadata.axes == ["YXS", "YX"]
     assert metadata.dtype == ["uint8", "uint16"]
-    assert metadata.num_unique_values == [2, 255]
     assert metadata.width == [32, 256]
     assert metadata.height == [32, 256]
     assert metadata.channels == [3, 0]
@@ -120,8 +113,6 @@ def test_tiff_multipage(metadata):
 test_png_axes_yx = __create_test(Image, "im1_uint8.png", "axes", "YX")
 test_png_axes_yxc = __create_test(Image, "im3_a.png", "axes", "YXC")
 test_png_dtype_uint8 = __create_test(Image, "im1_uint8.png", "dtype", "uint8")
-test_png_num_unique_values_1 = __create_test(Image, "im2_a.png", "num_unique_values", 1)
-test_png_num_unique_values_2 = __create_test(Image, "im2_b.png", "num_unique_values", 2)
 test_png_width_32 = __create_test(Image, "im2_b.png", "width", 32)
 test_png_height_32 = __create_test(Image, "im2_b.png", "height", 32)
 test_png_channels_0 = __create_test(Image, "im1_uint8.png", "channels", 0)

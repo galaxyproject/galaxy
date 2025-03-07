@@ -80,14 +80,6 @@ class Image(data.Data):
     )
 
     MetadataElement(
-        name="num_unique_values",
-        desc="Number of unique values in the image data (e.g., should be 2 for binary images)",
-        readonly=True,
-        visible=True,
-        optional=True,
-    )
-
-    MetadataElement(
         name="width",
         desc="Width of the image (in pixels)",
         readonly=True,
@@ -167,7 +159,6 @@ class Image(data.Data):
                     dataset.metadata.height = im.size[0]
                     dataset.metadata.depth = 0
                     dataset.metadata.frames = getattr(im, "n_frames", 0)
-                    dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
 
                     # Peek into a small 2x2 section of the image data
                     im_peek_arr = np.array(im.crop((0, 0, min((2, im.size[1])), min((2, im.size[0])))))
@@ -242,7 +233,6 @@ class Tiff(Image):
                         "channels",
                         "depth",
                         "frames",
-                        "num_unique_values",
                     ]
                 }
                 for page in tif.series:
@@ -257,13 +247,6 @@ class Tiff(Image):
                     metadata["channels"].append(Tiff._get_axis_size(page.shape, axes, "C"))
                     metadata["depth"].append(Tiff._get_axis_size(page.shape, axes, "Z"))
                     metadata["frames"].append(Tiff._get_axis_size(page.shape, axes, "T"))
-
-                    # Determine the metadata values that require reading the image data
-                    try:
-                        im_arr = page.asarray()
-                        metadata["num_unique_values"].append(len(np.unique(im_arr)))
-                    except ValueError:  # Occurs if the compression of the TIFF file is unsupported
-                        pass
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
