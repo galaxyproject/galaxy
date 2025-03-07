@@ -957,7 +957,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
 
     def _section_remap(container, line):
         invocation = get_invocation(trans, line)
-        if not invocation:
+        if invocation is None:
             return line, False
 
         section_markdown = ""
@@ -1001,7 +1001,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
 
     def _remap(container, line):
         invocation = get_invocation(trans, line)
-        if not invocation:
+        if invocation is None:
             return line, False
 
         if container == "invocation_time":
@@ -1064,7 +1064,8 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 else:
                     ref_object_type = "history_dataset_collection"
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
-            line = line.replace(invocation_id_match.group(), "")
+            if invocation_id_match is not None:
+                line = line.replace(invocation_id_match.group(), "")
         return line, False
 
     workflow_markdown = _remap_galaxy_markdown_calls(
