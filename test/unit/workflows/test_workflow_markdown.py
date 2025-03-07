@@ -101,20 +101,6 @@ history_dataset_as_image(output=output_label)
     assert "```galaxy\nhistory_dataset_as_image(history_dataset_id=563)\n```" in galaxy_markdown
 
 
-def test_basic_output_reference_mapping():
-    workflow_markdown = """
-And outputs...
-
-```galaxy
-history_dataset_as_image(output=output_label)
-```
-"""
-    galaxy_markdown = populate_markdown(workflow_markdown)
-    assert "```galaxy\nhistory_dataset_as_image(invocation_id=44, output=output_label)\n```" in galaxy_markdown
-    galaxy_markdown = resolve_markdown(galaxy_markdown)
-    assert "```galaxy\nhistory_dataset_as_image(history_dataset_id=563)\n```" in galaxy_markdown
-
-
 def populate_markdown(workflow_markdown):
     # Convert workflow markdown to internal Galaxy markdown with object id references
     # and with sections expanded.
