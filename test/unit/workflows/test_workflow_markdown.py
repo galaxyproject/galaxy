@@ -110,8 +110,8 @@ def populate_markdown(workflow_markdown):
 
 
 def resolve_markdown(workflow_markdown):
-    # Convert workflow markdown to internal Galaxy markdown with object id references
-    # and with sections expanded.
+    # Convert internal Galaxy markdown with invocation ids and labels
+    # to object id references and expanded sections.
     trans = MockTrans()
     validate_galaxy_markdown(workflow_markdown)
     trans.app.workflow_manager = mock.MagicMock()
