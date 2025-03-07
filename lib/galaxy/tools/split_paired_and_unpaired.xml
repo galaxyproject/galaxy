@@ -1,0 +1,132 @@
+<tool id="__SPLIT_PAIRED_AND_UNPAIRED__"
+      name="Split Paired and Unpaired"
+      version="1.0.0"
+      tool_type="split_paired_and_unpaired">
+  <description></description>
+  <type class="SplitPairedAndUnpairedTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_2409</edam_operation>
+  </edam_operations>
+  <inputs>
+    <param name="input" type="data_collection" label="Input Collection" collection_type="list:paired,list,list:paired_or_unpaired" />
+  </inputs>
+  <outputs>
+    <collection name="output_unpaired" format_source="input" type="list" label="${on_string} (unpaired)" >
+    </collection>
+    <collection name="output_paired" format_source="input" type="list:paired" label="${on_string} (paired)" >
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input">
+        <collection type="list">
+          <element name="el1" value="simple_line.txt" />
+          <element name="el2" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output_collection name="output_unpaired" type="list" count="2">
+        <element name="el1" ftype="txt">
+          <assert_contents>
+            <has_line line="This is a line of text." />
+          </assert_contents>
+        </element>
+        <element name="el2" ftype="txt">
+          <assert_contents>
+            <has_line line="This is a different line of text." />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="output_paired" type="list:paired" count="0">
+      </output_collection>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="list:paired">
+          <element name="el1">
+            <collection type="paired">
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output_collection name="output_unpaired" type="list" count="0">
+      </output_collection>
+      <output_collection name="output_paired" type="list:paired" count="1">
+        <element name="el1">
+          <element name="forward">
+            <assert_contents>
+              <has_line line="This is a line of text." />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_line line="This is a different line of text." />
+            </assert_contents>
+          </element>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="list:paired_or_unpaired">
+          <element name="el1">
+            <collection type="paired">
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
+          <element name="el2" value="simple_line.txt">
+          </element>
+          <element name="el3" value="simple_line_alternative.txt">
+          </element>
+        </collection>
+      </param>
+      <output_collection name="output_unpaired" type="list" count="2">
+        <element name="el2" ftype="txt">
+          <assert_contents>
+            <has_line line="This is a line of text." />
+          </assert_contents>
+        </element>
+        <element name="el3" ftype="txt">
+          <assert_contents>
+            <has_line line="This is a different line of text." />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="output_paired" type="list:paired" count="1">
+        <element name="el1">
+          <element name="forward">
+            <assert_contents>
+              <has_line line="This is a line of text." />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_line line="This is a different line of text." />
+            </assert_contents>
+          </element>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+  <help><![CDATA[
+
+========
+Synopsis
+========
+
+
+===========
+Description
+===========
+
+
+.. class:: infomark
+
+This tool will create new history datasets for your collection but your quota usage will not increase.
+
+  ]]></help>
+</tool>
