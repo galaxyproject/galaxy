@@ -102,8 +102,7 @@ history_dataset_as_image(output=output_label)
 
 
 def populate_markdown(workflow_markdown):
-    # Convert workflow markdown to internal Galaxy markdown with object id references
-    # and with sections expanded.
+    # Add invocation ids to internal Galaxy markdown
     trans = MockTrans()
     validate_galaxy_markdown(workflow_markdown)
     galaxy_markdown = populate_invocation_markdown(trans, example_invocation(trans), workflow_markdown)
