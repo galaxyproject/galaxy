@@ -85,14 +85,6 @@ class Image(data.Data):
     )
 
     MetadataElement(
-        name="num_unique_values",
-        desc="Number of unique values in the image data (e.g., should be 2 for binary images)",
-        readonly=True,
-        visible=True,
-        optional=True,
-    )
-
-    MetadataElement(
         name="width",
         desc="Width of the image (in pixels)",
         readonly=True,
@@ -271,7 +263,6 @@ class Tiff(Image):
                         "channels",
                         "depth",
                         "frames",
-                        "num_unique_values",
                     ]
                 }
 
@@ -288,9 +279,6 @@ class Tiff(Image):
                     metadata["channels"].append(Tiff._get_axis_size(series.shape, axes, "C"))
                     metadata["depth"].append(Tiff._get_axis_size(series.shape, axes, "Z"))
                     metadata["frames"].append(Tiff._get_axis_size(series.shape, axes, "T"))
-
-                    # Determine the metadata values that require reading the image data
-                    metadata["num_unique_values"].append(Tiff._get_num_unique_values(series))
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
