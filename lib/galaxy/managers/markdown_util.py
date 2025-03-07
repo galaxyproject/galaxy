@@ -955,13 +955,13 @@ def resolve_invocation_markdown(trans, workflow_markdown):
         else:
             return None
 
-    def _section_remap(container, line):
+    def _remap(container, line):
         invocation = get_invocation(trans, line)
         if invocation is None:
             return line, False
 
-        section_markdown = ""
         if container == "invocation_outputs":
+            section_markdown = ""
             for output_assoc in invocation.output_associations:
                 if output_assoc.workflow_output.label:
                     if output_assoc.history_content_type == "dataset":
@@ -978,7 +978,9 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                             f'history_dataset_collection_display(output="{output_assoc.workflow_output.label}")\n'
                             "```\n"
                         )
+            return section_markdown, True
         elif container == "invocation_inputs":
+            section_markdown = ""
             for input_assoc in invocation.input_associations:
                 if input_assoc.workflow_step.label:
                     if input_assoc.history_content_type == "dataset":
@@ -995,16 +997,8 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                             f"history_dataset_collection_display(input={input_assoc.workflow_step.label})\n"
                             "```\n"
                         )
-        else:
-            return line, False
-        return section_markdown, True
-
-    def _remap(container, line):
-        invocation = get_invocation(trans, line)
-        if invocation is None:
-            return line, False
-
-        if container == "invocation_time":
+            return section_markdown, True
+        elif container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
         elif container == "history_link":
             return (f"history_link(history_id={invocation.history.id})\n", False)
@@ -1068,10 +1062,6 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 line = line.replace(invocation_id_match.group(), "")
         return line, False
 
-    workflow_markdown = _remap_galaxy_markdown_calls(
-        _section_remap,
-        workflow_markdown,
-    )
     workflow_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
     return workflow_markdown
 
