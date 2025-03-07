@@ -87,6 +87,7 @@ export async function createDatasetCollection(history: HistorySummary, inputs = 
         copy_elements: true,
         name: "list",
         element_identifiers: [],
+        fields: "auto",
         hide_source_items: true,
         history_id: history.id,
     };

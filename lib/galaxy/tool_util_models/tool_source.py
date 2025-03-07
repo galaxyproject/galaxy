@@ -44,6 +44,18 @@ class DrillDownOptionsDict(TypedDict):
     selected: bool
 
 
+# For fields... just implementing a subset of CWL for Galaxy flavors of these objects
+# so far.
+CwlType = Literal["File", "null", "boolean", "int", "float", "string"]
+FieldType = Union[CwlType, List[CwlType]]
+
+
+class FieldDict(TypedDict):
+    name: str
+    type: FieldType
+    format: NotRequired[Optional[str]]
+
+
 JsonTestDatasetDefDict = TypedDict(
     "JsonTestDatasetDefDict",
     {
@@ -81,7 +93,7 @@ BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
     "BaseJsonTestCollectionDefCollectionElementDict",
     {
         "class": Literal["Collection"],
-        "collection_type": str,
+        "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
     },
 )
@@ -91,7 +103,7 @@ JsonTestCollectionDefCollectionElementDict = TypedDict(
     {
         "identifier": str,
         "class": Literal["Collection"],
-        "collection_type": str,
+        "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
     },
 )
@@ -100,7 +112,7 @@ JsonTestCollectionDefDict = TypedDict(
     "JsonTestCollectionDefDict",
     {
         "class": Literal["Collection"],
-        "collection_type": str,
+        "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
         "name": NotRequired[Optional[str]],
     },
