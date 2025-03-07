@@ -28,9 +28,11 @@ Please see the ``Makefile`` itself for details and other options. There is also 
 ... rebuild the Galaxy configuration schema?
 -------------------------------------------
 
-Galaxy configurations have a schema that is used to validate configuration files. This schema is
-defined in ``lib/galaxy/config/schemas/config_schema.yml``. If you make changes to the schema, to rebuild
-all sample YAML and RST files run
+Galaxy configurations have a schema that is used to validate configuration
+files. This schema is defined in
+``lib/galaxy/config/schemas/config_schema.yml``. If you make changes to the
+schema, to rebuild all sample YAML and RST files, source Galaxy's virtual
+environment and run the following command from Galaxy's root directory:
 
 .. code-block:: bash
 
