@@ -1,5 +1,6 @@
 from galaxy.model import Role
 from galaxy.model.db.role import (
+    get_displayable_roles,
     get_npns_roles,
     get_private_user_role,
     get_roles_by_ids,
@@ -139,3 +140,22 @@ def test_get_valid_roles_exposed(session, make_user_and_role, make_user, make_ro
     search_query = "admin role%"
     roles = _get_valid_roles_exposed(session, search_query, is_admin, limit, page, page_limit)
     assert len(roles) == 0
+
+
+def test_get_displayable_roles(session, make_role, make_user_and_role):
+    # make users with private roles
+    user1, private_role1 = make_user_and_role(email="user1@example.com")
+    user2, private_role2 = make_user_and_role(email="user2@example.com")
+    # make 2 non-private roles, one is deleted, so it should not be returned
+    admin_role1 = make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
+    make_role(type="admin", description="Description of admin-role1", deleted=True)
+
+    user_is_admin, security_agent = True, None
+    roles = get_displayable_roles(session, user1, user_is_admin, security_agent)
+    assert len(roles) == 3
+    assert roles[0].id == private_role1.id
+    assert roles[1].id == private_role2.id
+    assert roles[2].id == admin_role1.id
+    assert roles[0].name == "private role"
+    assert roles[1].name == "private role"
+    assert roles[2].name == "admin-role-1"
