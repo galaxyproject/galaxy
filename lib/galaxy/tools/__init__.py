@@ -3760,7 +3760,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
             collection = has_collection.collection
 
         collection_type = collection.collection_type
-        assert collection_type in ["list", "paired"]
+        assert collection_type in ["list", "paired", "record"]
         how = incoming["which"]["which_dataset"]
         if how == "first":
             extracted_element = collection.first_dataset_element
