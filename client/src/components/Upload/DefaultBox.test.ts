@@ -1,13 +1,19 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import mountTarget from "./DefaultBox.vue";
+import DefaultBox from "./DefaultBox.vue";
 
 const localVue = getLocalVue();
 
+type IntersectionObserverType = {
+    new (callback: IntersectionObserverCallback, options?: IntersectionObserverInit): IntersectionObserver;
+    prototype: IntersectionObserver;
+};
+
 function getWrapper() {
-    return mount(mountTarget, {
+    return mount(DefaultBox as object, {
         propsData: {
             chunkUploadSize: 100,
             defaultDbKey: "?",
@@ -23,11 +29,12 @@ function getWrapper() {
         stubs: {
             FontAwesomeIcon: true,
         },
+        pinia: createTestingPinia(),
     });
 }
 
 describe("Default", () => {
-    let UnpatchedIntersectionObserver;
+    let UnpatchedIntersectionObserver: IntersectionObserverType;
 
     beforeEach(() => {
         UnpatchedIntersectionObserver = global.IntersectionObserver;
@@ -36,15 +43,14 @@ describe("Default", () => {
         // [Vue warn]: Error in directive b-visible unbind hook: "TypeError: this.observer.disconnect is not a function"
         // I don't think there is a problem with the usage so I think this a bug in bootstrap vue, it can be worked around
         // with the following code - but just suppressing the warning is probably better?
-        const observerMock = jest.fn(function IntersectionObserver(callback) {
+        const observerMock = jest.fn(function IntersectionObserver(callback: IntersectionObserverCallback) {
             this.observe = jest.fn();
             this.disconnect = jest.fn();
-            // Optionally add a trigger() method to manually trigger a change
-            this.trigger = (mockedMutationsList) => {
+            this.trigger = (mockedMutationsList: IntersectionObserverEntry[]) => {
                 callback(mockedMutationsList, this);
             };
         });
-        global.IntersectionObserver = observerMock;
+        global.IntersectionObserver = observerMock as unknown as IntersectionObserverType;
     });
 
     afterEach(() => {
@@ -53,9 +59,9 @@ describe("Default", () => {
 
     it("rendering", async () => {
         const wrapper = getWrapper();
-        expect(wrapper.vm.counterAnnounce).toBe(0);
-        expect(wrapper.vm.showHelper).toBe(true);
-        expect(wrapper.vm.listExtensions[0].id).toBe("ab1");
+        expect((wrapper.vm as any).counterAnnounce).toBe(0);
+        expect((wrapper.vm as any).showHelper).toBe(true);
+        expect((wrapper.vm as any).listExtensions[0].id).toBe("ab1");
         expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
         expect(wrapper.find("#btn-start").classes()).toEqual(expect.arrayContaining(["disabled"]));
         expect(wrapper.find("#btn-stop").classes()).toEqual(expect.arrayContaining(["disabled"]));
@@ -64,12 +70,12 @@ describe("Default", () => {
 
     it("resets properly", async () => {
         const wrapper = getWrapper();
-        expect(wrapper.vm.showHelper).toBe(true);
+        expect((wrapper.vm as any).showHelper).toBe(true);
         await wrapper.find("#btn-new").trigger("click");
-        expect(wrapper.vm.showHelper).toBe(false);
-        expect(wrapper.vm.counterAnnounce).toBe(1);
+        expect((wrapper.vm as any).showHelper).toBe(false);
+        expect((wrapper.vm as any).counterAnnounce).toBe(1);
         await wrapper.find("#btn-reset").trigger("click");
-        expect(wrapper.vm.showHelper).toBe(true);
+        expect((wrapper.vm as any).showHelper).toBe(true);
         await flushPromises();
     });
 

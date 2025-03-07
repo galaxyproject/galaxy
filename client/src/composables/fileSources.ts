@@ -2,7 +2,7 @@ import { onMounted, readonly, ref } from "vue";
 
 import { type BrowsableFilesSourcePlugin, type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useFileSourcesStore } from "@/stores/fileSourcesStore";
-import { USER_FILE_PREFIX } from "@/utils/upload-payload";
+import { USER_FILE_PREFIX } from "@/utils/url";
 
 /**
  * Composable for accessing and working with file sources.

@@ -2,26 +2,14 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-// import type { StoredWorkflowDetailed } from "@/api/workflows"; // TODO: use this instead of locally defined type
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getAppRoot } from "@/onload/loadConfig";
-import { type Steps } from "@/stores/workflowStepStore";
 
-export interface Workflow {
-    name: string;
-    id: string;
-    steps: Steps;
-    step_count?: number;
-    latest_id?: string;
-    version: number;
-    deleted?: boolean;
-    owner?: string;
-    annotation?: string;
-    tags?: string[];
-    update_time?: string;
-}
+// TODO: Define a less specific `Workflow` type here, and unify with the one in `workflows.services.ts`,
+//       instead of using `StoredWorkflowDetailed` directly.
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
-    const workflowsByInstanceId = ref<{ [index: string]: Workflow }>({});
+    const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
 
     const getStoredWorkflowByInstanceId = computed(() => (workflowId: string) => {
         return workflowsByInstanceId.value[workflowId];
@@ -65,7 +53,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
 
             const { data } = await promise;
 
-            set(workflowsByInstanceId.value, workflowId, data as Workflow);
+            set(workflowsByInstanceId.value, workflowId, data as StoredWorkflowDetailed);
         }
 
         workflowDetailPromises.delete(workflowId);
