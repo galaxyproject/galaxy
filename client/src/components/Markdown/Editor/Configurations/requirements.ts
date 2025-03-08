@@ -13,7 +13,7 @@ export default {
         "history_dataset_peek",
     ],
     history_id: ["history_link"],
-    invocation_id: ["invocation_time"],
+    invocation_id: ["invocation_inputs", "invocation_outputs", "invocation_time"],
     job_id: ["job_metrics", "job_parameters", "tool_stderr", "tool_stdout"],
     workflow_id: ["workflow_display", "workflow_image", "workflow_license"],
 };
