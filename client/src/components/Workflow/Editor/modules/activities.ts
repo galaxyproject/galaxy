@@ -98,7 +98,17 @@ export const workflowEditorActivities = [
         optional: true,
     },
     {
-        description: "Save this workflow with a different name and annotation",
+        description: "Save this workflow.",
+        icon: faSave,
+        id: "save-workflow",
+        title: "Save",
+        tooltip: "Save current changes",
+        visible: true,
+        click: true,
+        optional: true,
+    },
+    {
+        description: "Save this workflow with a different name and annotation.",
         icon: farSave,
         id: "save-workflow-as",
         title: "Save as",
