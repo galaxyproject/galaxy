@@ -1612,7 +1612,10 @@ class Anndata(H5):
                 obs = get_index_value(tmp)
                 # Determine cell labels
                 if obs is not None:
-                    dataset.metadata.obs_names = [n.decode() for n in obs]
+                    # This is super expensive because the number of observations is unbounded.
+                    # https://github.com/galaxyproject/tools-iuc/blob/8341270dd36185ebf59d15282bc79f1215e936a4/tools/anndata/import.xml#L53
+                    # seems to be the only tool to consume this in the IUC. drop and make tool compute this?
+                    dataset.metadata.obs_names = [util.unicodify(n) for n in obs]
                 else:
                     log.warning("Could not determine observation index for %s", self)
 
