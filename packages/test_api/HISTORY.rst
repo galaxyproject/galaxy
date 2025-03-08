@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Allow tool state changes in refactor actions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19730 <https://github.com/galaxyproject/galaxy/pull/19730>`_
+
+-------------------
 24.2.1 (2025-02-28)
 -------------------
 
