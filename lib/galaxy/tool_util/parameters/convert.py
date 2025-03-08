@@ -11,11 +11,7 @@ from typing import (
     Union,
 )
 
-from galaxy.tool_util.parser.interface import (
-    JsonTestCollectionDefDict,
-    JsonTestDatasetDefDict,
-)
-from .models import (
+from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
     ConditionalWhen,
@@ -36,6 +32,10 @@ from .models import (
     SelectParameterModel,
     ToolParameterBundle,
     ToolParameterT,
+)
+from galaxy.tool_util_models.tool_source import (
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
 )
 from .state import (
     JobInternalToolState,
