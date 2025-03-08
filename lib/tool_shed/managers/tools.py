@@ -21,10 +21,7 @@ from galaxy.tool_shed.util.hg_util import (
     clone_repository,
     get_changectx_for_changeset,
 )
-from galaxy.tool_util.models import (
-    parse_tool_custom,
-    ParsedTool,
-)
+from galaxy.tool_util.model_factory import parse_tool_custom
 from galaxy.tool_util.parser import (
     get_tool_source,
     ToolSource,
@@ -38,20 +35,11 @@ from tool_shed.context import (
 from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.webapp.model import RepositoryMetadata
 from tool_shed.webapp.search.tool_search import ToolSearch
-from tool_shed_client.schema import RepositoryRevisionMetadata
+from tool_shed_client.schema import ShedParsedTool
 from .repositories import get_repository_revision_metadata_model
 from .trs import trs_tool_id_to_repository_metadata
 
 STOCK_TOOL_SOURCES: Optional[Dict[str, Dict[str, ToolSource]]] = None
-
-
-class ShedParsedTool(ParsedTool):
-    repository_revision: Optional[RepositoryRevisionMetadata] = None
-
-
-def parse_tool(tool_source: ToolSource) -> ShedParsedTool:
-    parsed_tool = parse_tool_custom(tool_source, ShedParsedTool)
-    return parsed_tool
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
@@ -131,7 +119,7 @@ def parsed_tool_model_for(
     tool_source, repository_metadata = tool_source_for(
         trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url
     )
-    parsed_tool = parse_tool(tool_source)
+    parsed_tool = parse_tool_custom(tool_source, ShedParsedTool)
     if repository_metadata:
         revision_model = get_repository_revision_metadata_model(
             trans.app, repository_metadata.repository, repository_metadata, recursive=False

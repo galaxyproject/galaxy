@@ -8,7 +8,6 @@ code where actual tool objects aren't created.
 from typing import (
     List,
     Optional,
-    Sequence,
     Union,
 )
 
@@ -20,8 +19,6 @@ from typing_extensions import (
     Annotated,
     Literal,
 )
-
-from .interface import ToolSource
 
 
 class ToolOutputBaseModel(BaseModel):
@@ -104,13 +101,3 @@ ToolOutputT = Union[
     ToolOutputDataset, ToolOutputCollection, ToolOutputText, ToolOutputInteger, ToolOutputFloat, ToolOutputBoolean
 ]
 ToolOutput = Annotated[ToolOutputT, Field(discriminator="type")]
-
-
-def from_tool_source(tool_source: ToolSource) -> Sequence[ToolOutput]:
-    tool_outputs, tool_output_collections = tool_source.parse_outputs(None)
-    outputs = []
-    for tool_output in tool_outputs.values():
-        outputs.append(tool_output.to_model())
-    # for tool_output_collection in tool_output_collections.values():
-    #    outputs.append(tool_output_collection.to_model())
-    return outputs
