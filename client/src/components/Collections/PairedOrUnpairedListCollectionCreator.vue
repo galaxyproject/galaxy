@@ -87,7 +87,10 @@ const {
     onCollectionCreate,
     showButtonsForModal,
     showHid,
+    showElementExtension,
 } = useCollectionCreator(props, emit);
+
+pairingTargetsStore.setShowElementExtension(showElementExtension);
 
 const style = computed(() => {
     return { width: props.width || "100%", height: props.height || "500px" };
@@ -716,6 +719,7 @@ export default {
                 :reverse-filter="currentReverseFilter"
                 :mode="mode"
                 :show-hid="showHid"
+                :extensions="extensions"
                 @on-apply="applyFilters"
                 @on-cancel="showAutoPairing = false" />
         </div>

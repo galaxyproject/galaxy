@@ -44,6 +44,14 @@ export default defineComponent({
         dropOver() {
             return this.pairingTargetsStore().dropTargetId == this.params.value.unpaired?.id;
         },
+        showElementExtension() {
+            const unpaired = this.params?.value.unpaired;
+            const showElementExtension = this.pairingTargetsStore().getShowElementExtension();
+            if (!unpaired || !showElementExtension) {
+                return false;
+            }
+            return showElementExtension(unpaired);
+        },
     },
     methods: {
         pairingTargetsStore(): StoreType {
@@ -127,6 +135,10 @@ export default defineComponent({
                 <div>
                     <span v-if="showHid" class="dataset-hid">{{ params.value.unpaired.hid }}: </span>
                     <span class="dataset-name">{{ params.value.unpaired.name }}</span>
+                    <span v-if="showElementExtension" class="dataset-extension-wrapper">
+                        (<span class="dataset-extension">{{ params.value.unpaired.extension }}</span
+                        >)
+                    </span>
                 </div>
             </div>
         </div>
@@ -156,6 +168,11 @@ export default defineComponent({
 
 .paired-datasets-cell .dataset-hid {
     font-weight: normal;
+}
+
+.paired-datasets-cell .dataset-extension-wrapper {
+    font-weight: normal;
+    font-style: italic;
 }
 
 .paired-datasets-cell .icon-wrapper {
