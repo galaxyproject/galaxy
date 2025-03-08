@@ -1,5 +1,8 @@
+import pytest
+
 from galaxy.model import Role
 from galaxy.model.db.role import (
+    get_displayable_roles,
     get_npns_roles,
     get_private_user_role,
     get_roles_by_ids,
@@ -139,3 +142,37 @@ def test_get_valid_roles_exposed(session, make_user_and_role, make_user, make_ro
     search_query = "admin role%"
     roles = _get_valid_roles_exposed(session, search_query, is_admin, limit, page, page_limit)
     assert len(roles) == 0
+
+
+def test_get_displayable_roles__description(session, make_role, make_user_and_role):
+    # make users with private roles
+    user1, private_role1 = make_user_and_role(email="user1@example.com")
+    user2, private_role2 = make_user_and_role(email="user2@example.com")
+    user3, private_role3 = make_user_and_role(email="user3@example.com")
+    # make a non-private role
+    admin_role1 = make_role(type="admin", description="Description of admin-role1")
+
+    roles = get_displayable_roles(session, user1, True, None)
+
+    # verify correct roles retrieved
+    assert len(roles) == 4
+    assert roles[0].id == private_role1.id
+    assert roles[1].id == private_role2.id
+    assert roles[2].id == private_role3.id
+    assert roles[3].id == admin_role1.id
+
+    # verify displayed names
+    assert roles[0].description == "Private role for user1@example.com"
+    assert roles[1].description == "Private role for user2@example.com"
+    assert roles[2].description == "Private role for user3@example.com"
+    assert roles[3].description == "Description of admin-role1"
+
+
+def test_get_displayable_roles_error(session, make_role, make_user_and_role):
+    # make users with private roles
+    user1, private_role1 = make_user_and_role(email="user1@example.com")
+    # make a private role not associated with a user
+    make_role(type=Role.types.PRIVATE, name=Role.default_name(Role.types.PRIVATE))
+
+    with pytest.raises(AssertionError):
+        get_displayable_roles(session, user1, True, None)
