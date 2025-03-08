@@ -5,7 +5,6 @@ import lxml.etree as ET
 import pytest
 from pydantic import ValidationError
 
-from galaxy.tool_util.verify.assertion_models import assertion_list
 from galaxy.tool_util.verify.codegen import galaxy_xsd_path
 from galaxy.tool_util.verify.parse import assertion_xml_els_to_models
 from galaxy.util.commands import shell

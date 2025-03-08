@@ -33,7 +33,7 @@ from pydantic import (
     StrictInt,
     StrictStr,
     Tag,
-    ValidationError,
+    TypeAdapter,
 )
 from typing_extensions import (
     Annotated,
@@ -41,21 +41,6 @@ from typing_extensions import (
     Protocol,
 )
 
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.tool_util.parser.interface import (
-    DrillDownOptionsDict,
-    JsonTestCollectionDefDict,
-    JsonTestDatasetDefDict,
-)
-from galaxy.tool_util.parser.parameter_validators import (
-    EmptyFieldParameterValidatorModel,
-    ExpressionParameterValidatorModel,
-    InRangeParameterValidatorModel,
-    LengthParameterValidatorModel,
-    NoOptionsParameterValidatorModel,
-    RegexParameterValidatorModel,
-    StaticValidatorModel,
-)
 from ._types import (
     cast_as_type,
     expand_annotation,
@@ -64,6 +49,20 @@ from ._types import (
     optional,
     optional_if_needed,
     union_type,
+)
+from .parameter_validators import (
+    EmptyFieldParameterValidatorModel,
+    ExpressionParameterValidatorModel,
+    InRangeParameterValidatorModel,
+    LengthParameterValidatorModel,
+    NoOptionsParameterValidatorModel,
+    RegexParameterValidatorModel,
+    StaticValidatorModel,
+)
+from .tool_source import (
+    DrillDownOptionsDict,
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
 )
 
 # TODO:
@@ -329,6 +328,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 DataSrcT = Literal["hda", "ldda"]
 MultiDataSrcT = Literal["hda", "ldda", "hdca"]
+# @jmchilton you meant CollectionSrcT - fix that at some point please.
 CollectionStrT = Literal["hdca"]
 
 TestCaseDataSrcT = Literal["File"]
@@ -525,6 +525,80 @@ class DataCollectionRequest(StrictModel):
 class DataCollectionRequestInternal(StrictModel):
     src: CollectionStrT
     id: StrictInt
+
+
+CollectionAdapterSrcT = Literal["CollectionAdapter"]
+
+
+class AdaptedDataCollectionRequestBase(StrictModel):
+    src: CollectionAdapterSrcT
+
+
+class AdaptedDataCollectionPromoteDatasetToCollectionRequest(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetToCollection"]
+    collection_type: Literal["list", "paired_or_unpaired"]
+    adapting: DataRequestHda
+
+
+# calling this name and element_identifier to align with fetch API, etc...
+class AdapterElementRequest(DataRequestHda):
+    name: str  # element_identifier
+
+
+class AdaptedDataCollectionPromoteDatasetsToCollectionRequest(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetsToCollection"]
+    # could allow list in here without changing much else I think but I'm trying to keep these tight in scope
+    collection_type: Literal["paired", "paired_or_unpaired"]
+    adapting: List[AdapterElementRequest]
+
+
+AdaptedDataCollectionRequest = Annotated[
+    Union[
+        AdaptedDataCollectionPromoteDatasetToCollectionRequest, AdaptedDataCollectionPromoteDatasetsToCollectionRequest
+    ],
+    Field(discriminator="adapter_type"),
+]
+AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)  # type:ignore[var-annotated]
+
+
+class DatasetCollectionElementReference(StrictModel):
+    src: Literal["dce"]
+    id: StrictInt
+
+
+class AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteCollectionElementToCollection"]
+    adapting: DatasetCollectionElementReference
+
+
+class AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetToCollection"]
+    collection_type: Literal["list", "paired_or_unpaired"]
+    adapting: DataRequestInternalHda
+
+
+class AdapterElementRequestInternal(DataRequestInternalHda):
+    name: str  # element_identifier
+
+
+class AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetsToCollection"]
+    # could allow list in here without changing much else I think but I'm trying to keep these tight in scope
+    collection_type: Literal["paired", "paired_or_unpaired"]
+    adapting: List[AdapterElementRequestInternal]
+
+
+AdaptedDataCollectionRequestInternal = Annotated[
+    Union[
+        AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal,
+        AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal,
+        AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal,
+    ],
+    Field(discriminator="adapter_type"),
+]
+AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(
+    AdaptedDataCollectionRequestInternal
+)  # type:ignore[var-annotated]
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -1533,38 +1607,3 @@ def create_field_model(
 
 def _is_landing_request(state_representation: StateRepresentationT):
     return state_representation in ["landing_request", "landing_request_internal"]
-
-
-def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dict[str, Any]) -> None:
-    try:
-        pydantic_model(**parameter_state)
-    except ValidationError as e:
-        # TODO: Improve this or maybe add a handler for this in the FastAPI exception
-        # handler.
-        raise RequestParameterInvalidException(str(e))
-
-
-class ValidationFunctionT(Protocol):
-
-    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: Optional[str] = None) -> None: ...
-
-
-def validate_model_type_factory(state_representation: StateRepresentationT) -> ValidationFunctionT:
-
-    def validate_request(tool: ToolParameterBundle, request: Dict[str, Any], name: Optional[str] = None) -> None:
-        name = name or DEFAULT_MODEL_NAME
-        pydantic_model = create_field_model(tool.parameters, name=name, state_representation=state_representation)
-        validate_against_model(pydantic_model, request)
-
-    return validate_request
-
-
-validate_request = validate_model_type_factory("request")
-validate_internal_request = validate_model_type_factory("request_internal")
-validate_internal_request_dereferenced = validate_model_type_factory("request_internal_dereferenced")
-validate_landing_request = validate_model_type_factory("landing_request")
-validate_internal_landing_request = validate_model_type_factory("landing_request_internal")
-validate_internal_job = validate_model_type_factory("job_internal")
-validate_test_case = validate_model_type_factory("test_case_xml")
-validate_workflow_step = validate_model_type_factory("workflow_step")
-validate_workflow_step_linked = validate_model_type_factory("workflow_step_linked")
