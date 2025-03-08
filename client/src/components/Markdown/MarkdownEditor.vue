@@ -57,7 +57,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import CellEditor from "./Editor/CellEditor.vue";
-import TextEditor from "./Editor/TextEditor.vue";
+import TextEditor from "./TextEditor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 library.add(faQuestion);
