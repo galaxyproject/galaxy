@@ -5,6 +5,7 @@ import { computed, ref } from "vue";
 import type { HistoryItemSummary } from "@/api";
 import localize from "@/utils/localization";
 
+import { useExtensionFiltering } from "./useExtensionFilter";
 import { usePairingSummary } from "./usePairingSummary";
 
 import PairingFilterInputGroup from "./PairingFilterInputGroup.vue";
@@ -15,6 +16,7 @@ interface Props {
     forwardFilter?: string;
     reverseFilter?: string;
     removeExtensions: boolean;
+    extensions?: string[];
     mode: "wizard" | "modal";
     showHid: boolean;
 }
@@ -30,6 +32,8 @@ const props = defineProps<Props>();
 const currentForwardFilter = ref(props.forwardFilter || "");
 const currentReverseFilter = ref(props.reverseFilter || "");
 const { currentSummary, summaryText, autoPair } = usePairingSummary<HistoryItemSummary>(props);
+
+const { showElementExtension } = useExtensionFiltering(props);
 
 function summarize() {
     autoPair(props.elements, currentForwardFilter.value, currentReverseFilter.value, props.removeExtensions);
@@ -104,6 +108,13 @@ function onApply() {
                         <span v-if="index > 0">,</span>
                         <span v-if="showHid" class="dataset-hid">{{ unpairedDataset.hid }}: </span>
                         <span class="unpaired-dataset-name dataset-name">{{ unpairedDataset.name }}</span>
+                        <span
+                            v-if="'extension' in unpairedDataset && showElementExtension(unpairedDataset)"
+                            class="dataset-extension-wrapper"
+                            >(
+                            <span class="dataset-extension">{{ unpairedDataset.extension }}</span>
+                            )</span
+                        >
                     </li>
                 </ol>
             </span>
@@ -169,5 +180,9 @@ function onApply() {
 .unpaired-dataset-name {
     font-weight: bold;
     font-size: 0.9rem;
+}
+
+.dataset-extension-wrapper {
+    font-style: italic;
 }
 </style>

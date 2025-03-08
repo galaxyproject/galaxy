@@ -10,6 +10,8 @@ interface ElementHasExtension {
     extension: string | null | undefined;
 }
 
+export type ShowElementExtensionFunction = (element: ElementHasExtension) => boolean;
+
 export function useExtensionFiltering(props: PropsWithOptionalExtensions) {
     const extensions = toRef(props, "extensions");
     // variables for datatype mapping and then filtering
@@ -35,7 +37,7 @@ export function useExtensionFiltering(props: PropsWithOptionalExtensions) {
      *     so users can see that those elements were still included as they can be interpreted as the subtype.
      */
     function showElementExtension(element: ElementHasExtension) {
-        return (
+        return !!(
             !props.extensions?.length ||
             (filterExtensions.value &&
                 element.extension &&
