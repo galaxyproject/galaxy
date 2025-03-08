@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
------------
-24.2.2.dev0
------------
+-------------------
+24.2.2 (2025-03-08)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix recording transform action name. by `@jmchilton <https://github.com/jmchilton>`_ in `#19672 <https://github.com/galaxyproject/galaxy/pull/19672>`_
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+=============
+Other changes
+=============
+
+* Backport #19620 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19725 <https://github.com/galaxyproject/galaxy/pull/19725>`_
 
 -------------------
 24.2.1 (2025-02-28)
