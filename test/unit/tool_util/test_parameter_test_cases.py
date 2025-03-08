@@ -10,7 +10,7 @@ from typing import (
 
 import pytest
 
-from galaxy.tool_util.models import parse_tool
+from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parameters import (
     DataCollectionRequest,
     DataRequestHda,
@@ -25,13 +25,15 @@ from galaxy.tool_util.parameters.case import (
 )
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.interface import (
-    JsonTestCollectionDefDict,
-    JsonTestDatasetDefDict,
     ToolSource,
     ToolSourceTest,
 )
 from galaxy.tool_util.unittest_utils import functional_test_tool_directory
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
+from galaxy.tool_util_models.tool_source import (
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
+)
 from .util import dict_verify_each
 
 # legacy tools allows specifying parameter and repeat parameters without
