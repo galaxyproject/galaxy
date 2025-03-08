@@ -1,8 +1,12 @@
 <script setup>
+import { BAlert, BCollapse, BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
+import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
 import { useConfig } from "@/composables/config";
+import { useInvocationStore } from "@/stores/invocationStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -21,8 +25,11 @@ import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { config, isConfigLoaded } = useConfig();
+const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
+const { fetchWorkflowForInstanceIdCached, getStoredWorkflowIdByInstanceId } = useWorkflowStore();
 
 const props = defineProps({
     content: {
@@ -31,48 +38,79 @@ const props = defineProps({
     },
 });
 
-const args = ref();
-const attributes = ref();
+const attributes = ref({});
 const error = ref("");
-const loaded = ref(false);
 const toggle = ref(false);
+const workflowLoading = ref(false);
 
+const args = computed(() => {
+    if (invocation.value && workflowId.value) {
+        return parseInvocation(invocation.value, workflowId.value, name.value, attributes.value.args);
+    } else {
+        return { ...attributes.value.args };
+    }
+});
+
+const invocation = computed(() => invocationId.value && getInvocationById(invocationId.value));
+const invocationId = computed(() => attributes.value.args?.invocation_id);
+const invocationLoading = computed(() => isLoadingInvocation(invocationId.value));
+const invocationLoadError = computed(() => getInvocationLoadError(invocationId.value));
 const isCollapsible = computed(() => args.value?.collapse !== undefined);
+const isLoading = computed(() => invocationLoading.value || workflowLoading.value);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const version = computed(() => config.version_major);
+const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
 
-async function handleArgs() {
+async function fetchWorkflow() {
+    if (invocation.value?.workflow_id) {
+        try {
+            workflowLoading.value = true;
+            await fetchWorkflowForInstanceIdCached(invocation.value.workflow_id);
+        } catch (e) {
+            error.value = String(e);
+        } finally {
+            workflowLoading.value = false;
+        }
+    }
+}
+
+function handleAttributes() {
     try {
         error.value = "";
         attributes.value = getArgs(props.content);
-        const attributesArgs = { ...attributes.value.args };
-        args.value = attributesArgs;
     } catch (e) {
         error.value = "The directive provided below is invalid. Please review it for errors.";
         attributes.value = {};
     }
-    loaded.value = true;
 }
 
 watch(
     () => props.content,
-    () => {
-        handleArgs();
-    },
+    () => handleAttributes(),
+    { immediate: true }
+);
+
+watch(
+    () => invocation.value,
+    () => fetchWorkflow(),
     { immediate: true }
 );
 </script>
 
 <template>
-    <div v-if="loaded">
-        <b-alert v-if="error" variant="danger" show>
-            {{ error }}
-        </b-alert>
-        <b-link v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
+    <BAlert v-if="error" v-localize variant="danger" show>
+        {{ error }}
+    </BAlert>
+    <BAlert v-else-if="invocationLoadError" v-localize variant="danger" show>
+        {{ invocationLoadError }}
+    </BAlert>
+    <LoadingSpan v-else-if="isLoading" />
+    <div v-else>
+        <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
-        </b-link>
-        <b-collapse :visible="isVisible">
+        </BLink>
+        <BCollapse :visible="isVisible">
             <div v-if="name == 'generate_galaxy_version'" class="galaxy-version">
                 <pre><code>{{ version }}</code></pre>
             </div>
@@ -180,6 +218,6 @@ watch(
                 :size="args.size || 'lg'"
                 :workflow-version="args.workflow_checkpoint || undefined" />
             <WorkflowLicense v-else-if="name == 'workflow_license'" :workflow-id="args.workflow_id" />
-        </b-collapse>
+        </BCollapse>
     </div>
 </template>

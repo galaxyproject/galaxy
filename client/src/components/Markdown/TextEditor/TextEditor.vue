@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex h-100 w-100">
         <FlexPanel side="left">
-            <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
+            <TextToolBox :steps="steps" @insert="insertMarkdown" />
         </FlexPanel>
         <textarea
             id="workflow-report-editor"
@@ -16,7 +16,7 @@
 import { debounce } from "lodash";
 import { defineEmits, defineProps, nextTick, ref, watch } from "vue";
 
-import MarkdownToolBox from "@/components/Markdown/MarkdownToolBox.vue";
+import TextToolBox from "./TextToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 const props = defineProps<{

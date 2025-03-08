@@ -339,7 +339,7 @@ steps:
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
         self.get(f"workflows/invocations/report?id={invocation_0['id']}")
-        self.wait_for_selector_visible(".markdown-components")
+        self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_custom_1")
 
     @selenium_test
