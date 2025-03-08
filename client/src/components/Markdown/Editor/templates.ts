@@ -198,6 +198,24 @@ export const cellTemplates: Array<TemplateCategory> = [
                 },
             },
             {
+                title: "Inputs of a Workflow",
+                description: "Inovcation inputs of a Workflow run",
+                cell: {
+                    name: "galaxy",
+                    configure: true,
+                    content: "invocation_inputs()",
+                },
+            },
+            {
+                title: "Outputs of a Workflow",
+                description: "Inovcation outputs of a Workflow run",
+                cell: {
+                    name: "galaxy",
+                    configure: true,
+                    content: "invocation_outputs()",
+                },
+            },
+            {
                 title: "Workflow (as image)",
                 description: "A static image of a Workflow",
                 cell: {
