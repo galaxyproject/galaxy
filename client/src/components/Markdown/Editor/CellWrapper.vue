@@ -16,7 +16,7 @@
                     <FontAwesomeIcon :icon="faAngleDoubleDown" />
                 </CellButton>
             </div>
-            <SectionWrapper class="m-2 w-100" :name="name" :content="content" />
+            <SectionWrapper class="m-2 w-100" :name="name" :content="content" @change="$emit('change', $event)" />
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
