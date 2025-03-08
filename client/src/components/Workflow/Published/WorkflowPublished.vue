@@ -7,13 +7,13 @@ import { type AxiosError } from "axios";
 import { BAlert, BButton, BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
-import { type WorkflowSummary } from "@/api/workflows";
+import { type StoredWorkflowDetailed, type WorkflowSummary } from "@/api/workflows";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull, getWorkflowInfo } from "@/components/Workflow/workflows.services";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
-import type { Workflow } from "@/stores/workflowStore";
+import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 import { withPrefix } from "@/utils/redirect";
 
@@ -60,7 +60,7 @@ const { stateStore } = provideScopedWorkflowStores(props.id);
 const loading = ref(true);
 const errorMessage = ref("");
 const workflowInfo = ref<WorkflowSummary>();
-const workflow = ref<Workflow | null>(null);
+const workflow = ref<StoredWorkflowDetailed | null>(null);
 
 const hasError = computed(() => !!errorMessage.value);
 
@@ -90,6 +90,9 @@ const editButtonTitle = computed(() => {
         }
     }
 });
+
+/** Workflow steps force typed as `Steps` from the `workflowStepStore` */
+const workflowSteps = computed(() => (workflow.value?.steps as unknown as Steps) ?? []);
 
 function logInTitle(title: string) {
     if (userStore.isAnonymous) {
@@ -233,7 +236,7 @@ onMounted(async () => {
                     <WorkflowGraph
                         v-if="workflow && datatypesMapper"
                         ref="workflowGraph"
-                        :steps="workflow.steps"
+                        :steps="workflowSteps"
                         :datatypes-mapper="datatypesMapper"
                         :initial-position="initialPosition"
                         :show-minimap="props.showMinimap"

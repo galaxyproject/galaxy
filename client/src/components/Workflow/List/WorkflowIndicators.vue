@@ -1,24 +1,37 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFileImport, faGlobe, faShieldAlt, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBuilding,
+    faFileImport,
+    faGlobe,
+    faShieldAlt,
+    faUser,
+    faUserEdit,
+    faUsers,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import type { Creator, StoredWorkflowDetailed } from "@/api/workflows";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
+import { isUrl } from "@/utils/url";
 
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
-
-// TODO: replace me with a proper definition
-type Workflow = any;
+interface BadgeData {
+    name: string;
+    url?: string;
+    icon: IconDefinition;
+    title?: string;
+    class?: Record<string, boolean>;
+}
 
 interface Props {
-    workflow: Workflow;
+    workflow: StoredWorkflowDetailed;
     publishedView: boolean;
     noEditTime?: boolean;
     filterable?: boolean;
@@ -64,22 +77,51 @@ const sourceType = computed(() => {
 
 const sourceTitle = computed(() => {
     if (sourceType.value.includes("trs")) {
-        return `Imported from TRS ID (version: ${props.workflow.source_metadata.trs_version_id}). Click to copy ID`;
+        return `Imported from TRS ID (version: ${props.workflow.source_metadata?.trs_version_id}). Click to copy ID`;
     } else if (sourceType.value == "url") {
-        return `Imported from ${props.workflow.source_metadata.url}. Click to copy link`;
+        return `Imported from ${props.workflow.source_metadata?.url}. Click to copy link`;
     } else {
-        return `Imported from ${props.workflow.source_type}`;
+        return `Imported from ${(props.workflow as any).source_type}`;
     }
+});
+
+const creatorBadges = computed<BadgeData[] | undefined>(() => {
+    return props.workflow.creator
+        ?.map((creator: Creator) => {
+            if (!creator.name) {
+                return;
+            }
+            let url: string | undefined;
+            let titleEnd = "Workflow Creator";
+
+            if (creator.url && isUrl(creator.url)) {
+                url = creator.url;
+            }
+            const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
+            if (creator.identifier && orcidRegex.test(creator.identifier)) {
+                url = creator.identifier;
+                titleEnd = "ORCID profile";
+            }
+
+            return {
+                name: creator.name,
+                url,
+                icon: creator.class === "Organization" ? faBuilding : faUserEdit,
+                title: `${url ? "Click to view " : ""}${titleEnd}`,
+                class: { "cursor-pointer": !!url, "outline-badge": !!url },
+            };
+        })
+        .filter((b) => !!b);
 });
 
 const { success } = useToast();
 
 function onCopyLink() {
     if (sourceType.value == "url") {
-        copy(props.workflow.source_metadata.url);
+        copy(props.workflow.source_metadata?.url);
         success("URL copied");
     } else if (sourceType.value.includes("trs")) {
-        copy(props.workflow.source_metadata.trs_tool_id);
+        copy(props.workflow.source_metadata?.trs_tool_id);
         success("TRS ID copied");
     }
 }
@@ -171,6 +213,22 @@ function getStepText(steps: number) {
             <FontAwesomeIcon :icon="faUser" size="sm" fixed-width />
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>
+
+        <template v-if="creatorBadges?.length">
+            <BBadge
+                v-for="creator in creatorBadges"
+                :key="creator.name"
+                v-b-tooltip.noninteractive.hover
+                data-description="external creator badge"
+                class="mx-1"
+                :class="creator.class"
+                :title="creator.title"
+                :href="creator.url"
+                target="_blank">
+                <FontAwesomeIcon :icon="creator.icon" size="sm" fixed-width />
+                <span class="font-weight-bold"> {{ creator.name }} </span>
+            </BBadge>
+        </template>
     </div>
 </template>
 

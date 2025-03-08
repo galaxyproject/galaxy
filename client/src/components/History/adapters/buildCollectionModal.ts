@@ -21,6 +21,12 @@ export type DatasetPair = {
     name: string;
 };
 
+export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
+    list: "list",
+    "list:paired": "list of pairs",
+    paired: "dataset pair",
+};
+
 // stand-in for buildCollection from history-view-edit.js
 export async function buildRuleCollectionModal(
     selectedContent: HistoryItemSummary[],
