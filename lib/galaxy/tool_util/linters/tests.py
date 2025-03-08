@@ -158,7 +158,8 @@ class TestsAssertionValidation(Linter):
                 except Exception as e:
                     error_str = _cleanup_pydantic_error(e)
                     lint_ctx.warn(
-                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]"
+                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]",
+                        linter=cls.name(),
                     )
 
 

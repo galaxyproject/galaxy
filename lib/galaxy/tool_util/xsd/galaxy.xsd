@@ -1580,6 +1580,13 @@ attribute name is not included, the functional test framework will attempt to
 determine the data type for the input dataset using the data type sniffers.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="class" type="Class">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This attribute name should be included
+only with parameter of ``type`` ``data`` for the tool. If this attribute name is not included the test framework will
+assume that the dataset is a file. Set this to ``Directory`` to interpret and upload the value as a directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="dbkey" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Specifies a ``dbkey`` value for the
@@ -4359,7 +4366,7 @@ Here is an example command section that handles the above sample input:
       ## Here, the input is a deferred dataset which source URI has the protocol 'https', 'http' or 's3'.
       echo '$input' > '$output' ## The ouput will be the source URI of the input.
   #else:
-      ## Here, the input is a regular dataset or a materialized dataset in case of a 
+      ## Here, the input is a regular dataset or a materialized dataset in case of a
       ## deferred dataset which source URI has a protocol different than 'https', 'http' or 's3'.
       cp '$input' '$output' ## The output will be a copy of the input content.
 </command>
@@ -8090,7 +8097,7 @@ favour of a ``has_size`` assertion.</xs:documentation>
       </xs:simpleType>
     </xs:union>
   </xs:simpleType>
-  
+
   <xs:simpleType name="Format">
     <xs:restriction base="xs:string">
       <xs:pattern value="[0-9a-z._-]+"/>
@@ -8101,7 +8108,14 @@ favour of a ``has_size`` assertion.</xs:documentation>
       <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
     </xs:restriction>
   </xs:simpleType>
-  
+
+  <xs:simpleType name="Class">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="File"/>
+      <xs:enumeration value="Directory"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:complexType name="EdamTopics">
     <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[

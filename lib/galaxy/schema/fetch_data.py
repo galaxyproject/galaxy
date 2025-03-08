@@ -1,6 +1,8 @@
 import json
 from enum import Enum
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -181,6 +183,7 @@ class PathDataElement(BaseDataElement):
 class CompositeDataElement(BaseDataElement):
     src: Literal["composite"]
     composite: "CompositeItems"
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class CompositeItems(FetchBaseModel):

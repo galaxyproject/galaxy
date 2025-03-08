@@ -2126,8 +2126,10 @@ VALID_DATATYPES = """
         <param name="adata" type="data" format="txt"/>
         <param name="bdata" type="data" format="invalid,fasta,custom"/>
         <param name="fdata" type="data" format="fasta.gz"/>
+        <param name="auto_input" type="data" format="auto"/>
     </inputs>
     <outputs>
+        <data name="autoformat" format="auto"/>
         <data name="name" format="another_invalid">
             <change_format>
                 <when input="input_text" value="foo" format="just_another_invalid"/>
@@ -2142,6 +2144,7 @@ VALID_DATATYPES = """
         <test>
             <param name="adata" ftype="txt"/>
             <param name="bdata" ftype="invalid"/>
+            <param name="auto_test_input" ftype="auto"/>
         </test>
     </tests>
 </tool>
@@ -2179,7 +2182,8 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 6
+    assert "Format [auto] can not be used for tool or tool test inputs" in lint_ctx.error_messages  # 2x
+    assert len(lint_ctx.error_messages) == 8
 
 
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">

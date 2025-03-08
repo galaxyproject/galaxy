@@ -149,7 +149,7 @@
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
-  <tool file="validation_image.xml"/>
+  <tool file="validation_image.xml" />
   <tool file="validation_zip.xml" />
   <tool file="validation_tar.xml" />
   <tool file="validation_tar_gz.xml" />
@@ -272,6 +272,8 @@
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
+  <tool file="create_directory_index.xml" />
+  <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />
 

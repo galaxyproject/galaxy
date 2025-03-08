@@ -135,15 +135,6 @@
                         <span class="editor-title" :title="name"
                             >{{ name }}
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
-                            <b-button
-                                v-if="hasChanges"
-                                id="workflow-save-button"
-                                class="py-1 px-2"
-                                variant="link"
-                                :title="saveWorkflowTitle"
-                                @click="saveOrCreate">
-                                <FontAwesomeIcon :icon="faSave" />
-                            </b-button>
                         </span>
                     </span>
 
@@ -159,6 +150,15 @@
                             :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
                             @click="undoRedoStore.redo()">
                             <FontAwesomeIcon icon="fa-arrow-right" />
+                        </b-button>
+                        <b-button
+                            id="workflow-save-button"
+                            class="py-1 px-2"
+                            variant="link"
+                            :disabled="!hasChanges"
+                            :title="saveWorkflowTitle"
+                            @click="saveOrCreate">
+                            <FontAwesomeIcon :icon="faSave" />
                         </b-button>
                     </b-button-group>
                 </div>
