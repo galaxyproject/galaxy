@@ -3,12 +3,24 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
 from typing_extensions import TypedDict
 
+from galaxy.tool_util_models.tool_outputs import (
+    ToolOutputBoolean as ToolOutputBooleanModel,
+    ToolOutputCollection as ToolOutputCollectionModel,
+    ToolOutputCollectionStructure as ToolOutputCollectionStructureModel,
+    ToolOutputDataset as ToolOutputDataModel,
+    ToolOutputFloat as ToolOutputFloatModel,
+    ToolOutputInteger as ToolOutputIntegerModel,
+    ToolOutputT as ToolOutputModel,
+    ToolOutputText as ToolOutputTextModel,
+)
 from galaxy.util import Element
 from galaxy.util.dictifiable import Dictifiable
 from .output_actions import (
@@ -19,16 +31,9 @@ from .output_collection_def import (
     dataset_collector_descriptions_from_output_dict,
     DatasetCollectionDescription,
 )
-from .output_models import (
-    ToolOutputBoolean as ToolOutputBooleanModel,
-    ToolOutputCollection as ToolOutputCollectionModel,
-    ToolOutputCollectionStructure as ToolOutputCollectionStructureModel,
-    ToolOutputDataset as ToolOutputDataModel,
-    ToolOutputFloat as ToolOutputFloatModel,
-    ToolOutputInteger as ToolOutputIntegerModel,
-    ToolOutputT as ToolOutputModel,
-    ToolOutputText as ToolOutputTextModel,
-)
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.parser import ToolSource
 
 
 class ChangeFormatModel(TypedDict):
@@ -508,3 +513,13 @@ class ToolOutputCollectionPart:
     def split_output_name(name):
         assert ToolOutputCollectionPart.is_named_collection_part_name(name)
         return name.split("|__part__|")
+
+
+def from_tool_source(tool_source: "ToolSource") -> Sequence[ToolOutputModel]:
+    tool_outputs, tool_output_collections = tool_source.parse_outputs(None)
+    outputs = []
+    for tool_output in tool_outputs.values():
+        outputs.append(tool_output.to_model())
+    # for tool_output_collection in tool_output_collections.values():
+    #    outputs.append(tool_output_collection.to_model())
+    return outputs
