@@ -16,8 +16,8 @@
 import { debounce } from "lodash";
 import { defineEmits, defineProps, nextTick, ref, watch } from "vue";
 
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import TextToolBox from "./TextToolBox.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 const props = defineProps<{
     markdownText: string;
