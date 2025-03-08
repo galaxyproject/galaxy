@@ -1695,6 +1695,14 @@ class NavigatesGalaxy(HasDriver):
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
+    def swap_to_tool_panel(self, panel_id: str) -> None:
+        tool_panel = self.components.tool_panel
+        tool_panel.views_button.wait_for_and_click()
+        tool_panel.views_menu_item(panel_id=panel_id).wait_for_and_click()
+
+    def swap_to_tool_panel_edam_operations(self) -> None:
+        self.swap_to_tool_panel("ontology:edam_operations")
+
     def tool_open(self, tool_id, outer=False):
         self.open_toolbox()
 
