@@ -34,7 +34,7 @@ def dereference_to_model(sa_session, user, history, data_request_uri: DataReques
     hda.dataset.sources = [dataset_source]
     transform: List[TransformAction] = []
     if data_request_uri.space_to_tab:
-        transform.append({"action": "space_to_tab"})
+        transform.append({"action": "spaces_to_tabs"})
     elif data_request_uri.to_posix_lines:
         transform.append({"action": "to_posix_lines"})
     if len(transform) > 0:
