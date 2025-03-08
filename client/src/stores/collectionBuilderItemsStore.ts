@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref, set } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistoryItemSummary } from "@/api";
+import type { ShowElementExtensionFunction } from "@/components/Collections/common/useExtensionFilter";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { filtersToQueryValues } from "@/components/History/model/queries";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -98,8 +99,15 @@ export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets"
         dropTargetId: null as string | null,
         // If a link has been clicked, it will marked here
         unpairedTarget: null as string | null,
+        showElementExtension: null as ShowElementExtensionFunction | null,
     }),
     actions: {
+        setShowElementExtension(func: ShowElementExtensionFunction) {
+            this.showElementExtension = func;
+        },
+        getShowElementExtension() {
+            return this.showElementExtension;
+        },
         // Start dragging a node by its ID
         startDrag(nodeId: string) {
             this.draggedNodeId = nodeId;
