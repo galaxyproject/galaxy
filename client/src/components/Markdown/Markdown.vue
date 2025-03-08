@@ -5,9 +5,8 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import { parseMarkdown } from "./parse";
 
-import MarkdownDefault from "./Sections/MarkdownDefault.vue";
-import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 import StsDownloadButton from "@/components/StsDownloadButton.vue";
 
 // Props
@@ -79,7 +78,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="markdown-wrapper">
+    <div class="markdown-wrapper px-4">
         <LoadingSpan v-if="loading" />
         <div v-else>
             <div>
@@ -120,9 +119,8 @@ onMounted(() => {
                     </div>
                 </b-alert>
             </div>
-            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component">
-                <MarkdownDefault v-if="obj.name === 'markdown'" :content="obj.content" />
-                <MarkdownGalaxy v-else-if="obj.name === 'galaxy'" :content="obj.content" />
+            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component py-2">
+                <SectionWrapper :name="obj.name" :content="obj.content" />
             </div>
         </div>
     </div>

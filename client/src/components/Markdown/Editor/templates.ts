@@ -1,7 +1,6 @@
-import type { TemplateCategory } from "./types";
-
 import vegaBarChart from "./Templates/vega-bar-chart.json";
 import vegaLineChart from "./Templates/vega-line-chart.json";
+import type { TemplateCategory } from "./types";
 
 export const cellTemplates: Array<TemplateCategory> = [
     {
