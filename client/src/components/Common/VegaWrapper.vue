@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
 import embed, { type VisualizationSpec } from "vega-embed";
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;
@@ -48,12 +48,15 @@ async function embedChart() {
     }
 }
 
-watch(props, embedChart, { deep: true, immediate: true });
+watch(props, embedChart, { deep: true });
+
 useResizeObserver(chartContainer, () => {
     if (vegaView) {
         vegaView.resize();
     }
 });
+
+onMounted(() => embedChart());
 
 // Cleanup the chart when the component is unmounted
 onBeforeUnmount(() => {
