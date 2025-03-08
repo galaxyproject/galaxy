@@ -9,10 +9,8 @@ from typing import (
 )
 
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
-from galaxy.tool_util.parser import (
-    ToolSource,
-    XrefDict,
-)
+from galaxy.tool_util.parser import ToolSource
+from galaxy.tool_util_models.tool_source import XrefDict
 from galaxy.util.resources import resource_string
 
 
