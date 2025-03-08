@@ -27,6 +27,7 @@ jest.mock("@/composables/config", () => ({
 
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);
+const pinia = createTestingPinia({ stubActions: false });
 
 function mapAxios(apiMap = {}) {
     axiosMock.reset();
@@ -37,20 +38,8 @@ function mapAxios(apiMap = {}) {
     }
 }
 
-async function mountComponent(propsData, apiMap = {}) {
+function mountComponent(propsData = {}, apiMap = {}) {
     mapAxios(apiMap);
-    return mount(MountTarget, {
-        localVue,
-        propsData,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-    });
-}
-
-function mountComponentWithServer(propsData = {}, apiMap = {}) {
-    mapAxios(apiMap);
-    const pinia = createTestingPinia({ stubActions: false });
     server.use(
         http.get("/api/histories/test_history_id", ({ response }) =>
             response(200).json({ id: "test_history_id", name: "history_name" })
@@ -101,7 +90,7 @@ describe("MarkdownContainer", () => {
     });
 
     it("Renders history link", async () => {
-        const wrapper = mountComponentWithServer(
+        const wrapper = mountComponent(
             {
                 content: "history_link(history_id=test_history_id)",
             },
@@ -123,7 +112,7 @@ describe("MarkdownContainer", () => {
     });
 
     it("Renders history link (with failing import error message)", async () => {
-        const wrapper = mountComponentWithServer({
+        const wrapper = mountComponent({
             content: "history_link(history_id=test_history_id)",
         });
         await wrapper.find("a").trigger("click");

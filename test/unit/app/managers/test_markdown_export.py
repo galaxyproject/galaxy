@@ -278,7 +278,7 @@ invocation_time(invocation_id=1)
 ```
 """
         invocation = self._new_invocation()
-        self.app.workflow_manager.get_invocation.side_effect = [invocation]
+        self.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
         result = self._to_basic(example)
         expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S")
         assert f"\n    {expectedtime}" in result
