@@ -31,6 +31,7 @@ interface Props {
     selectedCollections: CollectionEntry[];
     showControls?: boolean;
     filterable?: boolean;
+    multiView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -134,7 +135,7 @@ watch(
         {{ errorMessageAsString(error) }}
     </Alert>
     <ExpandedItems v-else v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
-        <section class="dataset-collection-panel w-100 d-flex flex-column">
+        <section class="dataset-collection-panel w-100 d-flex flex-column" :class="{ 'compact-panel': multiView }">
             <section>
                 <CollectionNavigation
                     :history-name="history.name"
@@ -183,3 +184,9 @@ watch(
         </section>
     </ExpandedItems>
 </template>
+
+<style scoped>
+.compact-panel {
+    max-width: 15rem;
+}
+</style>
