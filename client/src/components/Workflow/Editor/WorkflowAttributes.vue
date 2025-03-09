@@ -32,13 +32,16 @@
             id="workflow-annotation-area"
             class="mt-2"
             :class="{ 'bg-secondary': showAnnotationHightlight, 'highlight-attribute': showAnnotationHightlight }">
-            <b>Annotation</b>
+            <b>Short Description</b>
             <meta itemprop="description" :content="annotationCurrent" />
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
-            <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
+            <div class="form-text text-muted">
+                This short description will be visible when this workflow is viewed and should be limited to a sentence
+                or two.
+            </div>
             <b-popover
                 custom-class="best-practice-popover"
                 target="workflow-annotation"
@@ -47,7 +50,7 @@
                 :show.sync="showAnnotationHightlight"
                 triggers="manual"
                 title="Best Practice"
-                :content="bestPracticeWarningAnnotation">
+                :content="annotationBestPracticeMessage">
             </b-popover>
         </div>
         <div
@@ -91,16 +94,55 @@
                 Apply tags to make it easy to search for and find items with the same tag.
             </div>
         </div>
+        <div class="mt-2">
+            <b
+                >Readme
+                <FontAwesomeIcon :icon="faEye" @click="showReadmePreview = true" />
+            </b>
+            <b-textarea
+                id="workflow-readme"
+                v-model="readmeCurrent"
+                @keyup="$emit('update:readmeCurrent', readmeCurrent)" />
+            <div class="form-text text-muted">
+                A detailed description of what the workflow does. It is best to include descriptions of what kinds of
+                data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
+            </div>
+        </div>
+        <div class="mt-2">
+            <b>Help</b>
+            <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
+            <div class="form-text text-muted">
+                A detailed description of how to use the workflow and debug problems with it. Researchers running this
+                workflow will see this text. Markdown is enabled.
+            </div>
+        </div>
+        <div class="mt-2">
+            <b>Logo URL</b>
+            <b-input
+                id="workflow-logo-url"
+                v-model="logoUrlCurrent"
+                @keyup="$emit('update:logoUrlCurrent', logoUrlCurrent)" />
+            <div class="form-text text-muted">
+                An logo image used when generating publication artifacts for your workflow. This is completely optional.
+            </div>
+        </div>
+        <BModal v-model="showReadmePreview" hide-header centered ok-only>
+            <ToolHelpMarkdown :content="readmePreviewMarkdown" />
+        </BModal>
     </ActivityPanel>
 </template>
 
 <script>
+import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BModal } from "bootstrap-vue";
 import { format, parseISO } from "date-fns";
 
 import { Services } from "@/components/Workflow/services";
 
 import {
     bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
 } from "./modules/linting";
@@ -110,16 +152,20 @@ import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
 const bestPracticeHighlightTime = 10000;
 
 export default {
     name: "WorkflowAttributes",
     components: {
+        FontAwesomeIcon,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
         ActivityPanel,
+        BModal,
+        ToolHelpMarkdown,
     },
     props: {
         id: {
@@ -150,6 +196,18 @@ export default {
             type: Array,
             default: null,
         },
+        logoUrl: {
+            type: String,
+            default: null,
+        },
+        readme: {
+            type: String,
+            default: null,
+        },
+        help: {
+            type: String,
+            default: null,
+        },
         version: {
             type: Number,
             default: null,
@@ -165,7 +223,6 @@ export default {
     },
     data() {
         return {
-            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
             message: null,
@@ -173,9 +230,14 @@ export default {
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
+            logoUrlCurrent: this.logoUrl,
+            readmeCurrent: this.readme,
+            helpCurrent: this.help,
             showAnnotationHightlight: false,
             showLicenseHightlight: false,
             showCreatorHightlight: false,
+            showReadmePreview: false,
+            faEye,
         };
     },
     computed: {
@@ -190,6 +252,19 @@ export default {
         },
         hasParameters() {
             return this.parameters && this.parameters.parameters.length > 0;
+        },
+        readmePreviewMarkdown() {
+            let content = "";
+            if (this.nameCurrent) {
+                content += `# ${this.nameCurrent}\n\n`;
+            }
+            if (this.logoUrlCurrent) {
+                content += `![${this.nameCurrent || "workflow"} logo](${this.logoUrlCurrent})\n\n`;
+            }
+            if (this.readmeCurrent) {
+                content += this.readmeCurrent;
+            }
+            return content;
         },
         versionOptions() {
             const versions = [];
@@ -212,6 +287,13 @@ export default {
             }
             return versions;
         },
+        annotationBestPracticeMessage() {
+            if (this.annotationCurrent) {
+                return bestPracticeWarningAnnotationLength;
+            } else {
+                return bestPracticeWarningAnnotation;
+            }
+        },
     },
     watch: {
         version() {
@@ -230,10 +312,20 @@ export default {
             this.creatorCurrent = creator;
         },
         annotation() {
+            this.showAnnotationHightlight = false;
             this.annotationCurrent = this.annotation;
         },
         name() {
             this.nameCurrent = this.name;
+        },
+        readme() {
+            this.readmeCurrent = this.readme;
+        },
+        help() {
+            this.helpCurrent = this.help;
+        },
+        logoUrl() {
+            this.logoUrlCurrent = this.logoUrl;
         },
         highlight: {
             immediate: true,
@@ -245,6 +337,7 @@ export default {
                     this.showAnnotationHightlight = true;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showAnnotationHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -252,6 +345,7 @@ export default {
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = true;
                     this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showCreatorHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -259,8 +353,17 @@ export default {
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = true;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showLicenseHightlight = false;
+                    }, bestPracticeHighlightTime);
+                } else if (newHighlight == "readme") {
+                    this.showAnnotationHighlight = false;
+                    this.showCreatorHightlight = false;
+                    this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = true;
+                    setTimeout(() => {
+                        this.showReadmeHightlight = false;
                     }, bestPracticeHighlightTime);
                 }
             },

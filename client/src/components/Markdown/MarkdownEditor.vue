@@ -1,119 +1,59 @@
 <template>
-    <div id="columns" class="d-flex">
-        <FlexPanel side="left">
-            <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
-        </FlexPanel>
-        <div id="center" class="overflow-auto w-100">
-            <div class="markdown-editor h-100">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <div class="panel-header-buttons">
-                            <slot name="buttons" />
-                            <b-button
-                                v-b-tooltip.hover.bottom
-                                title="Help"
-                                variant="link"
-                                role="button"
-                                @click="onHelp">
-                                <FontAwesomeIcon icon="question" />
-                            </b-button>
-                        </div>
-                        <div class="my-1">
-                            {{ title }}
-                        </div>
+    <div id="columns">
+        <div id="center" class="d-flex flex-column h-100 w-100">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <div class="my-1">
+                        {{ title }}
+                    </div>
+                    <div>
+                        <slot name="buttons" />
+                        <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                            <FontAwesomeIcon icon="question" />
+                        </b-button>
                     </div>
                 </div>
-                <div class="unified-panel-body d-flex">
-                    <textarea
-                        id="workflow-report-editor"
-                        ref="text-area"
-                        v-model="content"
-                        class="markdown-textarea"
-                        @input="onUpdate" />
-                </div>
+            </div>
+            <div class="unified-panel-body">
+                <TextEditor
+                    :title="title"
+                    :markdown-text="markdownText"
+                    :steps="steps"
+                    :mode="mode"
+                    @update="$emit('update', $event)" />
             </div>
         </div>
-        <MarkdownHelpModal ref="help" :mode="mode" />
+        <b-modal v-model="showHelpModal" hide-footer>
+            <template v-slot:modal-title>
+                <h2 v-if="mode === 'page'" class="mb-0">Markdown Help for Pages</h2>
+                <h2 v-else class="mb-0">Markdown Help for Invocation Reports</h2>
+            </template>
+            <MarkdownHelp :mode="mode" />
+        </b-modal>
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import FlexPanel from "components/Panels/FlexPanel";
-import _ from "underscore";
-import Vue from "vue";
+import { ref } from "vue";
 
-import MarkdownHelpModal from "./MarkdownHelpModal";
-import MarkdownToolBox from "./MarkdownToolBox";
-
-Vue.use(BootstrapVue);
+import TextEditor from "./Editor/TextEditor.vue";
+import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 library.add(faQuestion);
 
-const FENCE = "```";
+defineProps<{
+    markdownText: string;
+    steps?: Record<string, any>;
+    title: string;
+    mode: "report" | "page";
+}>();
 
-export default {
-    components: {
-        FlexPanel,
-        FontAwesomeIcon,
-        MarkdownHelpModal,
-        MarkdownToolBox,
-    },
-    props: {
-        markdownText: {
-            type: String,
-            default: null,
-        },
-        steps: {
-            type: Object,
-            default: null,
-        },
-        title: {
-            type: String,
-            default: null,
-        },
-        mode: {
-            type: String,
-            default: "report",
-        },
-    },
-    data() {
-        return {
-            content: this.markdownText,
-        };
-    },
-    watch: {
-        markdownText() {
-            const textArea = this.$refs["text-area"];
-            const textCursor = textArea.selectionEnd;
-            this.content = this.markdownText;
-            Vue.nextTick(() => {
-                textArea.selectionEnd = textCursor;
-                textArea.focus();
-            });
-        },
-    },
-    methods: {
-        insertMarkdown(markdown) {
-            markdown = markdown.replace(")(", ", ");
-            markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
-            const textArea = this.$refs["text-area"];
-            textArea.focus();
-            const cursorPosition = textArea.selectionStart;
-            let newContent = this.content.substr(0, cursorPosition);
-            newContent += `\r\n${markdown.trim()}\r\n`;
-            newContent += this.content.substr(cursorPosition);
-            this.$emit("update", newContent);
-        },
-        onUpdate: _.debounce(function (e) {
-            this.$emit("update", this.content);
-        }, 300),
-        onHelp() {
-            this.$refs.help.showMarkdownHelp();
-        },
-    },
-};
+const showHelpModal = ref<boolean>(false);
+
+function onHelp() {
+    showHelpModal.value = true;
+}
 </script>

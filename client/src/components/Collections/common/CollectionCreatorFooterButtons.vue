@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { BButton } from "bootstrap-vue";
+
 import localize from "@/utils/localization";
 
 interface Props {

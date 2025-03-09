@@ -395,6 +395,7 @@ function unexpandedClick(event: Event) {
                 <span class="align-self-start btn-group">
                     <BButton
                         v-if="item.sub_items?.length && !isSubItem"
+                        v-b-tooltip.hover
                         title="Show converted items"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"

@@ -10,6 +10,39 @@ History
 
 
 -------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* add missing linter name argument to linter report function calls by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19707 <https://github.com/galaxyproject/galaxy/pull/19707>`_
+* Assertion linter fixes by `@jmchilton <https://github.com/jmchilton>`_ in `#19715 <https://github.com/galaxyproject/galaxy/pull/19715>`_
+* Fix dataypes linter: allow auto for output tags by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19757 <https://github.com/galaxyproject/galaxy/pull/19757>`_
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix mulled tests by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19626 <https://github.com/galaxyproject/galaxy/pull/19626>`_
+* xsd: fix format by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19683 <https://github.com/galaxyproject/galaxy/pull/19683>`_
+* Fix validation of required floats specified as empty strings in tool XML. by `@jmchilton <https://github.com/jmchilton>`_ in `#19701 <https://github.com/galaxyproject/galaxy/pull/19701>`_
+* Fix container building by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19714 <https://github.com/galaxyproject/galaxy/pull/19714>`_
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

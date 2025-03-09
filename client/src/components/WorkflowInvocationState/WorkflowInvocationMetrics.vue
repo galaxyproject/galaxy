@@ -12,7 +12,7 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 import LoadingSpan from "../LoadingSpan.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-const VegaWrapper = () => import("./VegaWrapper.vue");
+const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
 
 interface Props {
     invocationId: string;

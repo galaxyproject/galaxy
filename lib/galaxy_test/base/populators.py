@@ -483,6 +483,45 @@ class BaseDatasetPopulator(BasePopulator):
             history_id, content=open(test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
         )
 
+    def new_directory_dataset(
+        self, test_data_resolver: TestDataResolver, history_id: str, directory: str, format: str = "directory"
+    ):
+        directory_path = test_data_resolver.get_filename(directory)
+        assert os.path.isdir(directory_path)
+
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tf = tarfile.open(fileobj=tmp, mode="w:")
+        tf.add(directory_path, ".")
+        tf.close()
+
+        with open(tmp.name, "rb") as tar_f:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "pasted",
+                            "paste_content": "",
+                            "ext": format,
+                            "extra_files": {
+                                "items_from": "archive",
+                                "src": "files",
+                                # Prevent Galaxy from checking for a single file in
+                                # a directory and re-interpreting the archive
+                                "fuzzy_root": False,
+                            },
+                        }
+                    ],
+                }
+            ]
+            payload = {"history_id": history_id, "targets": targets, "__files": {"files_0|file_data": tar_f}}
+            fetch_response = self.fetch(payload)
+        assert fetch_response.status_code == 200, fetch_response.content
+        outputs = fetch_response.json()["outputs"]
+        assert len(outputs) == 1
+        return outputs[0]
+
     def fetch(
         self,
         payload: dict,
@@ -1551,6 +1590,18 @@ class BaseDatasetPopulator(BasePopulator):
         download_contents_response.raise_for_status()
         return download_contents_response
 
+    def base64_url_for_string(self, content: str) -> str:
+        return self.base64_url_for_bytes(content.encode("utf-8"))
+
+    def base64_url_for_test_file(self, test_filename: str) -> str:
+        test_data_resolver = TestDataResolver()
+        file_contents = open(test_data_resolver.get_filename(test_filename), "rb").read()
+        return self.base64_url_for_bytes(file_contents)
+
+    def base64_url_for_bytes(self, content: bytes) -> str:
+        input_b64 = base64.b64encode(content).decode("utf-8")
+        return f"base64://{input_b64}"
+
     def history_length(self, history_id):
         contents_response = self._get(f"histories/{history_id}/contents")
         api_asserts.assert_status_code_is(contents_response, 200)
@@ -2339,12 +2390,12 @@ class BaseWorkflowPopulator(BasePopulator):
             if inputs_by == "step_uuid":
                 workflow_request["inputs_by"] = "step_uuid"
         elif inputs_by in ["url", "deferred_url"]:
-            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
-            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
+            input_b64_1 = self.dataset_populator.base64_url_for_string("1 2 3")
+            input_b64_2 = self.dataset_populator.base64_url_for_string("4 5 6")
             deferred = inputs_by == "deferred_url"
             inputs = {
-                "WorkflowInput1": {"src": "url", "url": f"base64://{input_b64_1}", "ext": "txt", "deferred": deferred},
-                "WorkflowInput2": {"src": "url", "url": f"base64://{input_b64_2}", "ext": "txt", "deferred": deferred},
+                "WorkflowInput1": {"src": "url", "url": input_b64_1, "ext": "txt", "deferred": deferred},
+                "WorkflowInput2": {"src": "url", "url": input_b64_2, "ext": "txt", "deferred": deferred},
             }
             workflow_request["inputs"] = json.dumps(inputs)
             workflow_request["inputs_by"] = "name"
@@ -3280,8 +3331,9 @@ def load_data_dict(
 ) -> LoadDataDictResponseT:
     """Load a dictionary as inputs to a workflow (test data focused)."""
 
+    test_data_resolver = TestDataResolver()
+
     def open_test_data(test_dict, mode="rb"):
-        test_data_resolver = TestDataResolver()
         filename = test_data_resolver.get_filename(test_dict.pop("value"))
         return open(filename, mode)
 
@@ -3363,6 +3415,12 @@ def load_data_dict(
                 hda = dataset_populator.new_dataset(history_id, wait=True, **new_dataset_kwds)
                 label_map[key] = dataset_populator.ds_entry(hda)
                 has_uploads = True
+            elif input_type == "Directory":
+                hda = dataset_populator.new_directory_dataset(
+                    test_data_resolver, history_id, directory=value["value"], format=value.get("file_type", "directory")
+                )
+                label_map[key] = dataset_populator.ds_entry(hda)
+                has_uploads = True
             elif input_type == "raw":
                 label_map[key] = value["value"]
                 inputs[key] = value["value"]
@@ -3395,6 +3453,7 @@ def stage_inputs(
         job=job,
         use_path_paste=use_path_paste,
         to_posix_lines=to_posix_lines,
+        resolve_data=galaxy_interactor._find_in_test_data_directories,
         **kwds,
     )
 

@@ -39,7 +39,12 @@ const {
 } = useTaskMonitor();
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-const { hasWritable: hasWritableRDMFileSources, getFileSourceById } = useFileSources({ include: ["rdm"] });
+const {
+    hasWritable: hasWritableRDMFileSources,
+    getFileSourceById,
+    getFileSourcesByType,
+    isPrivateFileSource,
+} = useFileSources({ include: ["rdm"] });
 
 const {
     isPreparing: isPreparingDownload,
@@ -91,7 +96,7 @@ const isFatalError = ref(false);
 const errorMessage = ref<string>();
 const actionMessage = ref<string>();
 const actionMessageVariant = ref<ColorVariant>();
-const zenodoSource = computed(() => getFileSourceById("zenodo"));
+const zenodoSource = computed(() => getZenodoSource());
 
 onMounted(async () => {
     if (await loadHistory()) {
@@ -105,6 +110,12 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
         updateExports();
     }
 });
+
+function getZenodoSource() {
+    const zenodoSources = getFileSourcesByType("zenodo");
+    // Prioritize the one provided by the user in case there are multiple
+    return zenodoSources.find((fs) => isPrivateFileSource(fs) && fs.writable) ?? getFileSourceById("zenodo");
+}
 
 async function loadHistory() {
     isLoadingHistory.value = true;
@@ -289,7 +300,7 @@ function updateExportParams(newParams: ExportParams) {
                     <BTab
                         v-if="zenodoSource"
                         id="zenodo-file-source-tab"
-                        title="to ZENODO"
+                        :title="`to ${zenodoSource.label}`"
                         title-link-class="tab-export-to-zenodo-repo">
                         <div class="zenodo-info">
                             <img
@@ -307,7 +318,10 @@ function updateExportParams(newParams: ExportParams) {
                             </p>
                         </div>
 
-                        <RDMCredentialsInfo what="history export archive" selected-repository="ZENODO" />
+                        <RDMCredentialsInfo
+                            what="history export archive"
+                            :selected-repository="zenodoSource"
+                            :is-private-file-source="isPrivateFileSource(zenodoSource)" />
                         <ExportToRDMRepositoryForm
                             what="history"
                             :default-filename="defaultFileName"

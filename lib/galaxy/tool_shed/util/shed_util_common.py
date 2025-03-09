@@ -1,5 +1,9 @@
 import logging
 import re
+from typing import (
+    Dict,
+    List,
+)
 
 from galaxy import util
 from galaxy.tool_shed.util import repository_util
@@ -72,7 +76,9 @@ def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
     return ctx_rev
 
 
-def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, processed_tsr_ids):
+def get_next_prior_import_or_install_required_dict_entry(
+    prior_required_dict: Dict[str, List[str]], processed_tsr_ids: List[str]
+):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy
     when a repository and its dependencies are being installed.  The order in which the prior_required_dict

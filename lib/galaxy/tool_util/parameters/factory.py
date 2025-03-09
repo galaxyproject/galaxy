@@ -138,6 +138,9 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 float_value = float(value)
             elif optional:
                 float_value = None
+            elif value == "" or value is None:
+                # See note above for matching integer handling.
+                float_value = None
             else:
                 raise ParameterDefinitionError()
             static_validator_models = static_validators(input_source.parse_validators())

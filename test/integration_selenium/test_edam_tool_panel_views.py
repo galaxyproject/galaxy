@@ -13,7 +13,6 @@ class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
         tool_panel = self.components.tool_panel
         tool_panel.views_button.wait_for_and_click()
         tool_panel.views_menu_item(panel_id="ontology:edam_operations").wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self._assert_displaying_edam_operations()
 
         # reload page and ensure the edam operations are still being displayed.
@@ -36,6 +35,7 @@ class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
     def _assert_displaying_edam_operations(self):
         tool_panel = self.components.tool_panel
         tool_panel.toolbox.wait_for_visible()
+        tool_panel.edam_title.wait_for_visible()
         labels = tool_panel.panel_labels.all()
         assert len(labels) > 0
         label0 = labels[0]

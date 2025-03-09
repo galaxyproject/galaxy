@@ -10,6 +10,23 @@ History
 
 
 -------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix RDM token access for user-defined file sources by `@davelopez <https://github.com/davelopez>`_ in `#19768 <https://github.com/galaxyproject/galaxy/pull/19768>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

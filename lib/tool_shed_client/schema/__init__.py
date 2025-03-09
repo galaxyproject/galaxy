@@ -227,6 +227,26 @@ class ResetMetadataOnRepositoryResponse(BaseModel):
     stop_time: str
 
 
+# Ugh - use with care - param descriptions scraped from older version of the API.
+class ResetMetadataOnRepositoriesRequest(BaseModel):
+    my_writable: bool = Field(
+        False,
+        description="""if the API key is associated with an admin user in the Tool Shed, setting this param value
+to True will restrict resetting metadata to only repositories that are writable by the user
+in addition to those repositories of type tool_dependency_definition.  This param is ignored
+if the current user is not an admin user, in which case this same restriction is automatic.""",
+    )
+    encoded_ids_to_skip: Optional[List[str]] = Field(
+        None, description="a list of encoded repository ids for repositories that should not be processed"
+    )
+
+
+class ResetMetadataOnRepositoriesResponse(BaseModel):
+    repository_status: List[str]
+    start_time: str
+    stop_time: str
+
+
 class ToolSearchRequest(BaseModel):
     q: str
     page: Optional[int] = None
@@ -268,10 +288,22 @@ class ToolSearchResults(BaseModel):
         return matching_hit
 
 
+IndexSortByType = Literal["name", "create_time"]
+
+
 class RepositoryIndexRequest(BaseModel):
+    filter: Optional[str] = None
     owner: Optional[str] = None
     name: Optional[str] = None
     deleted: str = "false"
+    category_id: Optional[str] = None
+    sort_by: Optional[IndexSortByType] = "name"
+    sort_desc: Optional[bool] = False
+
+
+class RepositoryPaginatedIndexRequest(RepositoryIndexRequest):
+    page: int = 1
+    page_size: int = 10
 
 
 class RepositoriesByCategory(BaseModel):
@@ -319,6 +351,15 @@ class RepositorySearchResults(BaseModel):
     page_size: str
     hostname: str
     hits: List[RepositorySearchHit]
+
+
+# align with the search version of this to some degree but fix some things also
+class PaginatedRepositoryIndexResults(BaseModel):
+    total_results: int
+    page: int
+    page_size: int
+    hostname: str
+    hits: List[Repository]
 
 
 class GetInstallInfoRequest(BaseModel):

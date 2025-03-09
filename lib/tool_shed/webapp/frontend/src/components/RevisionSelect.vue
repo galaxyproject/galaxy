@@ -27,6 +27,13 @@ const options = computed(() => {
     return opts
 })
 
+const isLatest = computed(() => {
+    const currentValue = props.modelValue
+    const optionsArray = options.value
+    const lastOption = optionsArray[optionsArray.length - 1]
+    return lastOption && currentValue == lastOption.value
+})
+
 const emit = defineEmits<{ (event: string, newValue: string): void }>()
 const selection = useModelWrapper(props, emit, "modelValue")
 </script>
@@ -43,6 +50,7 @@ const selection = useModelWrapper(props, emit, "modelValue")
             :options="options"
             map-options
             emit-value
+            class="q-mr-sm"
             style="width: 250px"
         >
             <template #no-option>
@@ -51,6 +59,8 @@ const selection = useModelWrapper(props, emit, "modelValue")
                 </q-item>
             </template>
         </q-select>
+        <q-badge v-if="isLatest" color="positive"> newest revision </q-badge>
+        <q-badge color="warning" v-else> newer revision(s) available </q-badge>
         <slot></slot>
     </span>
 </template>

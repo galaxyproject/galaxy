@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Set,
     Type,
+    TypeVar,
 )
 
 from slugify import slugify
@@ -54,10 +55,12 @@ from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
 
 log = logging.getLogger(__name__)
+# Only model classes that have `users_shared_with` field
+U = TypeVar("U", model.History, model.Page, model.StoredWorkflow, model.Visualization)
 
 
 class SharableModelManager(
-    base.ModelManager,
+    base.ModelManager[U],
     secured.OwnableManagerMixin,
     secured.AccessibleManagerMixin,
     annotatable.AnnotatableManagerMixin,

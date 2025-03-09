@@ -491,10 +491,10 @@ class OIDCAuthnzBase(IdentityProvider):
         if "@" in username:
             username = username.split("@")[0]  # username created from username portion of email
         username = util.ready_name_for_url(username).lower()
-        if trans.sa_session.query(trans.app.model.User).filter_by(username=username).first():
+        if trans.sa_session.query(User).filter_by(username=username).first():
             # if username already exists in database, append integer and iterate until unique username found
             count = 0
-            while trans.sa_session.query(trans.app.model.User).filter_by(username=(f"{username}{count}")).first():
+            while trans.sa_session.query(User).filter_by(username=(f"{username}{count}")).first():
                 count += 1
             return f"{username}{count}"
         else:

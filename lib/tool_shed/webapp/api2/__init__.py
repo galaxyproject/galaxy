@@ -51,6 +51,7 @@ from tool_shed.webapp.model import (
     GalaxySession,
     User,
 )
+from tool_shed_client.schema import IndexSortByType
 
 log = logging.getLogger(__name__)
 
@@ -236,16 +237,43 @@ CommitMessage: str = Query(
 RepositoryIndexQueryParam: Optional[str] = Query(
     default=None,
     title="Search Query",
+    description="This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter.",
 )
+
+RepositoryIndexFilterParam: Optional[str] = Query(
+    default=None,
+    title="Filter Text",
+    description="This will perform a quick search using database operators. This should not be used with the 'q' parameter.",
+)
+
+RepositoryIndexSortByParam: IndexSortByType = Query(
+    default="name",
+    title="Sort by",
+    description="Sort by the this repository field - direction is controlled by sort_desc that defaults to False and causes an ascending sort on this field. This field is ignored if 'q' is specified an whoosh search is used.",
+)
+
+RepositoryIndexSortDescParam: bool = Query(
+    default=False,
+    title="Sort Descending",
+    description="Direction of sort. This defaults to False and causes an ascending sort on the field specified by sort_on. This field is ignored if 'q' is specified an whoosh search is used.",
+)
+
 
 ToolsIndexQueryParam: str = Query(
     default=...,
     title="Search Query",
 )
 
-RepositorySearchPageQueryParam: int = Query(
+ToolSearchPageQueryParam: int = Query(
     default=1,
     title="Page",
+    description="",
+)
+
+RepositorySearchPageQueryParam: Optional[int] = Query(
+    default=None,
+    title="Page",
+    description="",
 )
 
 RepositorySearchPageSizeQueryParam: int = Query(
@@ -258,6 +286,8 @@ RepositoryIndexDeletedQueryParam: Optional[bool] = Query(False, title="Deleted?"
 RepositoryIndexOwnerQueryParam: Optional[str] = Query(None, title="Owner")
 
 RepositoryIndexNameQueryParam: Optional[str] = Query(None, title="Name")
+
+RepositoryIndexCategoryQueryParam: Optional[str] = Query(None, title="Category ID")
 
 RepositoryIndexToolIdsQueryParam: Optional[List[str]] = Query(
     None, title="Tool IDs", description="List of tool GUIDs to find the repository for"

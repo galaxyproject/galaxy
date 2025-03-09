@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type HDCADetailed } from "@/api";
+import { type HDCASummary } from "@/api";
 import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 
 import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 interface Props {
-    dsc: HDCADetailed;
+    dsc: HDCASummary;
     writeable: boolean;
 }
 
@@ -21,7 +21,7 @@ const jobState = computed(() => {
 
 <template>
     <DetailsLayout
-        :name="dsc.name"
+        :name="dsc.name ?? ''"
         :tags="dsc.tags"
         :writeable="writeable"
         :show-annotation="false"
@@ -33,7 +33,7 @@ const jobState = computed(() => {
             <CollectionDescription
                 :job-state-summary="jobState"
                 :collection-type="dsc.collection_type"
-                :element-count="dsc.element_count"
+                :element-count="dsc.element_count ?? undefined"
                 :elements-datatypes="dsc.elements_datatypes" />
         </template>
     </DetailsLayout>

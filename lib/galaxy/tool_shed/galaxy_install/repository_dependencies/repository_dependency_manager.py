@@ -481,9 +481,8 @@ class RepositoryDependencyInstallManager:
                         )
                     encoded_required_repository_str = encoding_util.encoding_sep2.join(encoded_required_repository_tups)
                     encoded_required_repository_str = encoding_util.tool_shed_encode(encoded_required_repository_str)
-                    if repository_util.is_tool_shed_client(self.app):
-                        # Handle secure / insecure Tool Shed URL protocol changes and port changes.
-                        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
+                    # Handle secure / insecure Tool Shed URL protocol changes and port changes.
+                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
                     pathspec = ["repository", "get_required_repo_info_dict"]
                     url = build_url(tool_shed_url, pathspec=pathspec)
                     # Fix for handling 307 redirect not being handled nicely by urlopen() when the Request() has data provided

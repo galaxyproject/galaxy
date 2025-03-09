@@ -1,8 +1,29 @@
 import axios from "axios";
 
-import { type components, GalaxyApi, type GalaxyApiPaths, type HDADetailed } from "@/api";
+import {
+    type components,
+    type DatasetTextContentDetails,
+    GalaxyApi,
+    type GalaxyApiPaths,
+    type HDADetailed,
+} from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
+
+export async function fetchDatasetTextContentDetails(params: { id: string }): Promise<DatasetTextContentDetails> {
+    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
+        params: {
+            path: {
+                dataset_id: params.id,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
 
 export async function fetchDatasetDetails(params: { id: string }): Promise<HDADetailed> {
     const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {

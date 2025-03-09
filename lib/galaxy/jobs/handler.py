@@ -120,6 +120,7 @@ class ItemGrabber:
         self.self_handler_tags = self_handler_tags
         self.max_grab = max_grab
         self.handler_tags = handler_tags
+        self._grab_conn_opts = {}
         self._grab_query = None
         self._supports_returning = self.app.application_stack.supports_returning()
 
@@ -190,6 +191,7 @@ class ItemGrabber:
             self.setup_query()
 
         with self.app.model.engine.connect() as conn:
+            conn.execution_options(**self._grab_conn_opts)
             with conn.begin() as trans:
                 try:
                     proxy = conn.execute(self._grab_query)

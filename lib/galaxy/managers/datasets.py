@@ -32,6 +32,7 @@ from galaxy.model import (
     Dataset,
     DatasetHash,
     DatasetInstance,
+    DatasetPermissions,
     HistoryDatasetAssociation,
 )
 from galaxy.schema.tasks import (
@@ -584,7 +585,7 @@ class DatasetAssociationManager(
         elif action == "make_private":
             if not self.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = self.app.security_agent.get_private_user_role(trans.user)
-                dp = self.app.model.DatasetPermissions(
+                dp = DatasetPermissions(
                     self.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)

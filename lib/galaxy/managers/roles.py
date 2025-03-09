@@ -128,7 +128,7 @@ class RoleManager(base.ModelManager[model.Role]):
             raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
         # Delete UserRoleAssociations
         for ura in role.users:
-            user = sa_session.get(trans.app.model.User, ura.user_id)
+            user = sa_session.get(model.User, ura.user_id)
             assert user
             # Delete DefaultUserPermissions for associated users
             for dup in user.default_permissions:

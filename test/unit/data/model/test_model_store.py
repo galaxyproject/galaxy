@@ -23,6 +23,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.store import SessionlessContext
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -922,6 +923,7 @@ def test_sessionless_import_edit_datasets():
     import_model_store.perform_import()
     # Not using app.sa_session but a session mock that has a query/find pattern emulating usage
     # of real sa_session.
+    assert isinstance(import_model_store.sa_session, SessionlessContext)
     d1 = import_model_store.sa_session.query(model.HistoryDatasetAssociation).find(h.datasets[0].id)
     d2 = import_model_store.sa_session.query(model.HistoryDatasetAssociation).find(h.datasets[1].id)
     assert d1 is not None
@@ -1289,7 +1291,7 @@ def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
     app = TestApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
-    app.model.Dataset.object_store = app.object_store
+    model.Dataset.object_store = app.object_store
 
     return app
 

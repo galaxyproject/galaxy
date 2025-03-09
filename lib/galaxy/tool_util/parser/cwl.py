@@ -16,7 +16,10 @@ from .interface import (
     PagesSource,
     ToolSource,
 )
-from .output_actions import ToolOutputActionGroup
+from .output_actions import (
+    ToolOutputActionApp,
+    ToolOutputActionGroup,
+)
 from .output_objects import ToolOutput
 from .stdio import (
     StdioErrorLevel,
@@ -29,7 +32,6 @@ if TYPE_CHECKING:
         OutputInstance,
         ToolProxy,
     )
-    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -133,18 +135,18 @@ class CwlToolSource(ToolSource):
         page_source = CwlPageSource(self.tool_proxy)
         return PagesSource([page_source])
 
-    def parse_outputs(self, tool):
+    def parse_outputs(self, app: Optional[ToolOutputActionApp]):
         output_instances = self.tool_proxy.output_instances()
         outputs = {}
         output_defs = []
         for output_instance in output_instances:
-            output_defs.append(self._parse_output(tool, output_instance))
+            output_defs.append(self._parse_output(app, output_instance))
         # TODO: parse outputs collections
         for output_def in output_defs:
             outputs[output_def.name] = output_def
         return outputs, {}
 
-    def _parse_output(self, tool: Optional["Tool"], output_instance: "OutputInstance"):
+    def _parse_output(self, app: Optional[ToolOutputActionApp], output_instance: "OutputInstance"):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
         output = ToolOutput(name)
@@ -159,10 +161,10 @@ class CwlToolSource(ToolSource):
         output.label = None
         output.count = None
         output.filters = []
-        output.tool = tool
         output.hidden = False
         output.dataset_collector_descriptions = []
-        output.actions = ToolOutputActionGroup(output, None)
+        if app is not None:
+            output.actions = ToolOutputActionGroup(app, None)
         return output
 
     def parse_requirements_and_containers(self):

@@ -40,8 +40,8 @@ watch(props, () => {
             class="make-page-object-accessible"
             :disabled="accessible"
             @change="
-                (event) => {
-                    makeAccessible(event);
+                () => {
+                    makeAccessible();
                 }
             ">
         </BFormCheckbox>

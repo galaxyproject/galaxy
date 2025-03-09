@@ -1,5 +1,6 @@
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tools.parameters.dynamic_options import DynamicOptions
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.work.context import WorkRequestContext
@@ -60,4 +61,4 @@ def test_dynamic_option_cache():
             "start_index": 0,
         },
     )
-    assert from_url_option.get_options(trans, {}) == [["chr2L", "23513712", False]]
+    assert from_url_option.get_options(trans, {}) == [ParameterOption("chr2L", "23513712", False)]

@@ -76,6 +76,7 @@ class BasicSharedApp(Container):
     auth_manager: AuthManager
     security_agent: Any
     quota_agent: QuotaAgent
+    tool_data_tables: "ToolDataTableManager"
 
     @property
     def toolbox(self) -> "ToolBox":
@@ -112,7 +113,6 @@ class MinimalManagerApp(MinimalApp):
     genome_builds: GenomeBuilds
     geographical_server_location_name: str
     dataset_collection_manager: "DatasetCollectionManager"
-    tool_data_tables: "ToolDataTableManager"
     history_manager: "HistoryManager"
     hda_manager: "HDAManager"
     workflow_manager: "WorkflowsManager"

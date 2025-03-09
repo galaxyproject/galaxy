@@ -14,7 +14,7 @@ const props = withDefaults(
         datatypes: DatatypesMapperModel["datatypes"];
     }>(),
     {
-        value: null,
+        value: undefined,
     }
 );
 

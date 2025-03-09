@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 from galaxy.model import (
+    DataManagerJobAssociation,
     History,
     Job,
 )
@@ -63,10 +64,7 @@ class DataManagerToolAction(DefaultToolAction):
             flush_job=flush_job,
             skip=skip,
         )
-        if isinstance(rval, tuple) and len(rval) >= 2 and isinstance(rval[0], trans.app.model.Job):
-            assoc = trans.app.model.DataManagerJobAssociation(job=rval[0], data_manager_id=tool.data_manager_id)
-            trans.sa_session.add(assoc)
-            trans.sa_session.commit()
-        else:
-            log.error(f"Got bad return value from DefaultToolAction.execute(): {rval}")
+        assoc = DataManagerJobAssociation(job=rval[0], data_manager_id=tool.data_manager_id)
+        trans.sa_session.add(assoc)
+        trans.sa_session.commit()
         return rval

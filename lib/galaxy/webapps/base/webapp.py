@@ -39,6 +39,7 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
+from galaxy.model import History
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -931,9 +932,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # current session and return it.
         user = self.galaxy_session.user
         if user:
-            stmt = select(self.app.model.History).filter_by(
-                user=user, name=self.app.model.History.default_name, deleted=False
-            )
+            stmt = select(History).filter_by(user=user, name=History.default_name, deleted=False)
             unnamed_histories = self.sa_session.scalars(stmt)
             for history in unnamed_histories:
                 if history.empty:
@@ -957,12 +956,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not user:
             return None
         try:
-            stmt = (
-                select(self.app.model.History)
-                .filter_by(user=user, deleted=False)
-                .order_by(self.app.model.History.update_time.desc())
-                .limit(1)
-            )
+            stmt = select(History).filter_by(user=user, deleted=False).order_by(History.update_time.desc()).limit(1)
             recent_history = self.sa_session.scalars(stmt).first()
         except NoResultFound:
             return None
@@ -975,7 +969,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         its associated user (if set).
         """
         # Create new history
-        history = self.app.model.History()
+        history = History()
         if name:
             history.name = name
         # Associate with session

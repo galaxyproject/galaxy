@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import CreateForm from "@/components/FileSources/Instances/CreateForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -25,6 +26,13 @@ fileSourceTemplatesStore.fetchTemplates();
 const { goToIndex } = useInstanceRouting();
 
 const props = defineProps<Props>();
+
+const breadcrumbItems = computed(() => [
+    { title: "User Preferences", to: "/user" },
+    { title: "Remote File Sources", to: "/file_source_instances/index" },
+    { title: "Create New", to: "/file_source_instances/create" },
+    { title: template.value?.name || "Option" },
+]);
 
 const loading = ref(false);
 const errorMessage = ref("");
@@ -80,6 +88,10 @@ watch(
 
 <template>
     <div>
+        <div class="d-flex">
+            <BreadcrumbHeading :items="breadcrumbItems" />
+        </div>
+
         <BAlert v-if="loading" show variant="info">
             <LoadingSpan v-if="!template" message="Loading file source templates" />
             <LoadingSpan v-else-if="requiresOAuth2AuthorizeRedirect && !errorMessage" :message="redirectMessage" />

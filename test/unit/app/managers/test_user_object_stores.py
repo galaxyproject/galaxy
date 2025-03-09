@@ -504,7 +504,10 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         self.manager = manager
 
     def _assert_modify_throws_exception(
-        self, user_object_store: UserConcreteObjectStoreModel, modify: ModifyInstancePayload, exception_type: Type
+        self,
+        user_object_store: UserConcreteObjectStoreModel,
+        modify: ModifyInstancePayload,
+        exception_type: Type[Exception],
     ):
         exception_thrown = False
         try:

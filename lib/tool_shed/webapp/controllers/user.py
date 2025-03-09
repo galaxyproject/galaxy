@@ -17,6 +17,7 @@ from galaxy.security.validate_user_input import (
 from galaxy.web import url_for
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
+from tool_shed.webapp import model
 from tool_shed.webapp.framework.decorators import require_login
 
 log = logging.getLogger(__name__)
@@ -247,12 +248,12 @@ class User(BaseUser):
                     "Please check your email account for more instructions.  "
                     "If you do not receive an email shortly, please contact an administrator."
                 )
-                reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User)
+                reset_user = get_user_by_email(trans.sa_session, email, model.User)
                 if not reset_user:
                     # Perform a case-insensitive check only if the user wasn't found
-                    reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User, False)
+                    reset_user = get_user_by_email(trans.sa_session, email, model.User, False)
                 if reset_user:
-                    prt = trans.app.model.PasswordResetToken(reset_user)
+                    prt = model.PasswordResetToken(reset_user)
                     trans.sa_session.add(prt)
                     trans.sa_session.commit()
                     host = trans.request.host.split(":")[0]
@@ -281,7 +282,7 @@ class User(BaseUser):
         params = util.Params(kwd)
         user_id = params.get("id", None)
         if user_id:
-            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
+            user = trans.sa_session.get(model.User, trans.security.decode_id(user_id))
         else:
             user = trans.user
         if not user:
@@ -326,7 +327,7 @@ class User(BaseUser):
         status = params.get("status", "done")
         user_id = params.get("user_id", None)
         if user_id and is_admin:
-            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
+            user = trans.sa_session.get(model.User, trans.security.decode_id(user_id))
         else:
             user = trans.user
         if user and params.get("change_username_button", False):
@@ -360,7 +361,7 @@ class User(BaseUser):
         status = params.get("status", "done")
         user_id = params.get("user_id", None)
         if user_id and is_admin:
-            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
+            user = trans.sa_session.get(model.User, trans.security.decode_id(user_id))
         elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
             message = "Invalid user id"
             status = "error"
@@ -404,37 +405,6 @@ class User(BaseUser):
                     trans.sa_session.add(user)
                     trans.sa_session.commit()
                 message = "The login information has been updated with the changes."
-        elif user and params.get("edit_user_info_button", False):
-            # Edit user information - webapp MUST BE 'galaxy'
-            user_type_fd_id = params.get("user_type_fd_id", "none")
-            if user_type_fd_id not in ["none"]:
-                user_type_form_definition = trans.sa_session.get(
-                    trans.app.model.FormDefinition, trans.security.decode_id(user_type_fd_id)
-                )
-            elif user.values:
-                user_type_form_definition = user.values.form_definition
-            else:
-                # User was created before any of the user_info forms were created
-                user_type_form_definition = None
-            if user_type_form_definition:
-                values = self.get_form_values(trans, user, user_type_form_definition, **kwd)
-            else:
-                values = {}
-            flush_needed = False
-            if user.values:
-                # Editing the user info of an existing user with existing user info
-                user.values.content = values
-                trans.sa_session.add(user.values)
-                flush_needed = True
-            elif values:
-                form_values = trans.model.FormValues(user_type_form_definition, values)
-                trans.sa_session.add(form_values)
-                user.values = form_values
-                flush_needed = True
-            if flush_needed:
-                trans.sa_session.add(user)
-                trans.sa_session.commit()
-            message = "The user information has been updated with the changes."
         if user and trans.webapp.name == "galaxy" and is_admin:
             kwd["user_id"] = trans.security.encode_id(user.id)
         kwd["id"] = user_id
