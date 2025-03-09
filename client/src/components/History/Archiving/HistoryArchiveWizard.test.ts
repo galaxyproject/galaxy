@@ -45,7 +45,7 @@ async function mountComponentWithHistory(history?: HistorySummary) {
     // this is a work-around
     jest.spyOn(historyStore, "getHistoryById").mockImplementation((_history_id: string) => history as HistorySummary);
 
-    const wrapper = shallowMount(HistoryArchiveWizard, {
+    const wrapper = shallowMount(HistoryArchiveWizard as object, {
         propsData: { historyId: TEST_HISTORY_ID },
         localVue,
         pinia,

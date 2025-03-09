@@ -22,7 +22,7 @@ const TEST_DATA = [
 ];
 
 function mountBarChartWrapper(props: BarChartProps) {
-    return mount(BarChart, {
+    return mount(BarChart as object, {
         propsData: props,
     });
 }

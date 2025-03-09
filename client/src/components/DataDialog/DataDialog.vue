@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "onCancel"): void;
-    (e: "onOk", results: Array<Record>): void;
+    (e: "onOk", results: unknown): void;
     (e: "onUpload"): void;
 }>();
 

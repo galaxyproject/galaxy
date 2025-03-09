@@ -1645,6 +1645,9 @@ class ShedTwillTestCase(ShedApiTestCase):
             # Changeset revision should never be provided unless repository name also is.
             assert repository_name is not None, "Changeset revision is present, but repository name is not - aborting."
             url += f"/{changeset_revision}"
+        if self.is_v2:
+            # I think pagination broke this legacy test - so I added this
+            url += "?rows_per_page=250"
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         if self.is_v2:

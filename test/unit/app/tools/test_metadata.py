@@ -204,7 +204,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self.metadata_compute_strategy = metadata_compute_strategy
 
         exec_dir = None
-        dataset_files_path = self.app.model.Dataset.file_path
+        dataset_files_path = model.Dataset.file_path
         config_root = self.app.config.root
         config_file = None
         datatypes_config = os.path.join(self.job_working_directory, "metadata", "registry.xml")

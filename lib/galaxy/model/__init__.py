@@ -68,8 +68,10 @@ from sqlalchemy import (
     bindparam,
     Boolean,
     case,
+    Cast,
     Column,
     column,
+    ColumnElement,
     DateTime,
     delete,
     desc,
@@ -100,6 +102,7 @@ from sqlalchemy import (
     update,
     VARCHAR,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import (
     CompileError,
     OperationalError,
@@ -124,6 +127,7 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
     relationship,
+    validates,
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
@@ -131,6 +135,7 @@ from sqlalchemy.sql import exists
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     Literal,
+    NotRequired,
     Protocol,
     TypeAlias,
     TypedDict,
@@ -138,7 +143,6 @@ from typing_extensions import (
 
 import galaxy.exceptions
 import galaxy.model.metadata
-import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.files.templates import (
@@ -175,6 +179,7 @@ from galaxy.schema.invocation import (
 )
 from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionTypeLiteral,
     DatasetState,
     DatasetValidatedState,
     InvocationsStateCounts,
@@ -235,6 +240,8 @@ log = logging.getLogger(__name__)
 
 _datatypes_registry = None
 
+MAX_WORKFLOW_README_SIZE = 20000
+MAX_WORKFLOW_HELP_SIZE = 40000
 STR_TO_STR_DICT = Dict[str, str]
 
 
@@ -261,7 +268,10 @@ CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
 
 
 class TransformAction(TypedDict):
-    action: str
+    action: DatasetSourceTransformActionTypeLiteral
+    datatype_ext: NotRequired[
+        str
+    ]  # if action == 'datatype_groom', this is the datatype ext that was used to groom the dataset.
 
 
 TRANSFORM_ACTIONS = List[TransformAction]
@@ -313,6 +323,19 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if not uuid:
         return uuid4()
     return UUID(str(uuid))
+
+
+def to_json(sa_session, column, keys: List[str]):
+    assert sa_session.bind
+    if sa_session.bind.dialect.name == "postgresql":
+        cast: Union[ColumnElement[Any], Cast[Any]] = func.cast(func.convert_from(column, "UTF8"), JSONB)
+        for key in keys:
+            cast = cast.__getitem__(key)
+        return cast.astext
+    else:
+        for key in keys:
+            column = func.json_extract(column, f"$.{key}")
+        return column
 
 
 class Base(DeclarativeBase, _HasTable):
@@ -898,8 +921,8 @@ class User(Base, Dictifiable, RepresentById):
                 Dataset.state == "ok",
                 # excludes data manager runs that actually populated tables.
                 # maybe track this formally by creating a different datatype for bundles ?
-                Dataset.total_size != Dataset.file_size,
                 HistoryDatasetAssociation._metadata.contains(data_table),
+                to_json(session, HistoryDatasetAssociation._metadata, ["is_bundle"]) == "true",
             )
             .order_by(HistoryDatasetAssociation.id)
         )
@@ -1485,6 +1508,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
     tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
 
+    dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     tool_request: Mapped[Optional["ToolRequest"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
@@ -1778,7 +1802,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
-    def add_output_dataset(self, name, dataset):
+    def add_output_dataset(self, name: str, dataset: "DatasetInstance"):
         joda = JobToOutputDatasetAssociation(name, dataset)
         if dataset.dataset.job is None:
             # Only set job if dataset doesn't already have associated job.
@@ -4224,7 +4248,7 @@ class Dataset(Base, StorableObject, Serializable):
         OK = "ok"
 
     permitted_actions = get_permitted_actions(filter="DATASET")
-    file_path = "/tmp/"
+    file_path: ClassVar[str] = "/tmp/"
     object_store: ClassVar[Optional["BaseObjectStore"]] = (
         None  # This get initialized in mapping.py (method init) by app.py
     )
@@ -5494,7 +5518,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         roles = roles or []
         for role in roles:
-            dp = trans.model.DatasetPermissions(
+            dp = DatasetPermissions(
                 trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role
             )
             trans.sa_session.add(dp)
@@ -6111,6 +6135,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
     ):
+        from galaxy.model.tags import GalaxyTagHandler
+
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(
             name=self.name,
@@ -6128,7 +6154,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             history=target_history,
         )
 
-        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
+        tag_manager = GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags, flush=False)
         sa_session.add(hda)
@@ -6142,6 +6168,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         return hda
 
     def copy(self, parent_id=None, target_folder=None, flush=True):
+        from galaxy.model.tags import GalaxyTagHandler
+
         sa_session = object_session(self)
         ldda = LibraryDatasetDatasetAssociation(
             name=self.name,
@@ -6159,7 +6187,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             folder=target_folder,
         )
 
-        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
+        tag_manager = GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=ldda, tags_str=src_ldda_tags)
 
@@ -7880,6 +7908,9 @@ class Workflow(Base, Dictifiable, RepresentById):
     creator_metadata: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONType)
     license: Mapped[Optional[str]] = mapped_column(TEXT)
     source_metadata: Mapped[Optional[Dict[str, str]]] = mapped_column(JSONType)
+    readme: Mapped[Optional[str]] = mapped_column(Text)
+    logo_url: Mapped[Optional[str]] = mapped_column(Text)
+    help: Mapped[Optional[str]] = mapped_column(Text)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
 
     steps: Mapped[List["WorkflowStep"]] = relationship(
@@ -7916,6 +7947,26 @@ class Workflow(Base, Dictifiable, RepresentById):
     def __init__(self, uuid=None):
         self.user = None
         self.uuid = get_uuid(uuid)
+
+    @validates("readme")
+    def validates_readme(self, key, readme):
+        if readme is None:
+            return None
+        size = len(readme)
+        if size > MAX_WORKFLOW_README_SIZE:
+            raise ValueError(
+                f"Workflow readme too large ({size}), maximum allowed length ({MAX_WORKFLOW_README_SIZE})."
+            )
+        return readme
+
+    @validates("help")
+    def validates_help(self, key, help):
+        if help is None:
+            return None
+        size = len(help)
+        if size > MAX_WORKFLOW_HELP_SIZE:
+            raise ValueError(f"Workflow help too large ({size}), maximum allowed length ({MAX_WORKFLOW_HELP_SIZE}).")
+        return help
 
     def has_outputs_defined(self):
         """
@@ -10084,12 +10135,12 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     __tablename__ = "psa_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment, unused-ignore]  # needed for social-auth-core Mixin class attributes. unused-ignore needed for older social-auth-core on Python 3.8
-    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
-    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
-    issued: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
-    lifetime: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
-    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))  # type:ignore[assignment, unused-ignore]
+    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]  # needed for social-auth-core Mixin class attributes
+    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
+    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
+    issued: Mapped[Optional[int]]  # type:ignore[assignment]
+    lifetime: Mapped[Optional[int]]  # type:ignore[assignment]
+    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))  # type:ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10146,8 +10197,8 @@ class PSACode(Base, CodeMixin, RepresentById):
     __table_args__ = (UniqueConstraint("code", "email"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))  # type:ignore[assignment, unused-ignore]
-    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
+    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))  # type:ignore[assignment]
+    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10173,9 +10224,9 @@ class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = "psa_nonce"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
-    timestamp: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
-    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))  # type:ignore[assignment, unused-ignore]
+    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
+    timestamp: Mapped[Optional[int]]  # type:ignore[assignment]
+    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))  # type:ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10209,10 +10260,10 @@ class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = "psa_partial"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
-    data: Mapped[Optional[str]] = mapped_column(TEXT)  # type:ignore[assignment, unused-ignore]
-    next_step: Mapped[Optional[int]]  # type:ignore[assignment, unused-ignore]
-    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
+    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
+    data: Mapped[Optional[str]] = mapped_column(TEXT)  # type:ignore[assignment]
+    next_step: Mapped[Optional[int]]  # type:ignore[assignment]
+    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10252,8 +10303,8 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment, unused-ignore]
-    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment, unused-ignore]
+    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
+    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
     extra_data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))

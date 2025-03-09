@@ -45,7 +45,7 @@ describe("Index", () => {
             value: null,
             writable: true,
         });
-        wrapper = shallowMount(Index, {
+        wrapper = shallowMount(Index as object, {
             propsData: {
                 workflowId: "workflow_id",
                 initialVersion: 1,

@@ -2670,6 +2670,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat_list")
     def test_run_deferred_nested_list_input(self, history_id: str):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
+        url_2 = self.dataset_populator.base64_url_for_test_file("1.bed")
         elements = [
             {
                 "name": "outer",
@@ -2677,7 +2679,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "url": url_1,
                         "info": "my cool bed 4",
                         "deferred": True,
                         "ext": "bed",
@@ -2685,7 +2687,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "url": url_2,
                         "info": "my cool bed 1",
                         "deferred": True,
                         "ext": "bed",
@@ -2728,6 +2730,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("collection_paired_structured_like")
     def test_deferred_map_over_nested_collections(self, history_id):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
+        url_2 = self.dataset_populator.base64_url_for_test_file("1.bed")
         elements = [
             {
                 "name": "outer1",
@@ -2735,7 +2739,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "url": url_1,
                         "info": "my cool bed 4",
                         "deferred": True,
                         "ext": "bed",
@@ -2743,28 +2747,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
-                        "info": "my cool bed 1",
-                        "deferred": True,
-                        "ext": "bed",
-                    },
-                ],
-            },
-            {
-                "name": "outer2",
-                "elements": [
-                    {
-                        "src": "url",
-                        "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
-                        "info": "my cool bed 4",
-                        "deferred": True,
-                        "ext": "bed",
-                    },
-                    {
-                        "src": "url",
-                        "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "url": url_2,
                         "info": "my cool bed 1",
                         "deferred": True,
                         "ext": "bed",
@@ -2794,13 +2777,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        assert len(jobs) == 2
+        assert len(jobs) == 1
         self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
         assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
         assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
         outer_elements = implicit_collection["elements"]
-        assert len(outer_elements) == 2
+        assert len(outer_elements) == 1
         element0 = outer_elements[0]
         pair1 = element0["object"]
         hda = pair1["elements"][0]["object"]

@@ -91,24 +91,24 @@ preferences:
 object_store_instances:
   index:
     selectors:
-      create_button: '#object-store-create'
+      create_button: '#create-button-storage-locations'
       _: '#user-object-stores-index'
 
   create:
     selectors:
-      select: '.object-store-template-select-button[data-template-id="${template_id}"]'
+      select: '#select-button-${template_id}'
       _: '#create-object-store-landing'
       submit: '#submit'
 
 file_source_instances:
   index:
     selectors:
-      create_button: '#file-source-create'
+      create_button: '#create-button-remote-file-sources'
       _: '#user-file-sources-index'
 
   create:
     selectors:
-      select: '.file-source-template-select-button[data-template-id="${template_id}"]'
+      select: '#select-button-${template_id}'
       _: '#create-file-source-landing'
       submit: '#submit'
 
@@ -379,6 +379,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
+    edam_title: '[title="Apply analytical methods to existing data of a specific type."]'
     tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
@@ -389,6 +390,7 @@ tool_panel:
     views_button: '.tool-panel-dropdown'
     views_menu_item: '[data-panel-id="${panel_id}"]'
     panel_labels: '.tool-panel-label'
+
 
 multi_history_panel:
   selectors:

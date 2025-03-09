@@ -377,7 +377,7 @@ class FastAPIJobs:
     )
     def console_output(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         stdout_position: int,
         stdout_length: int,
         stderr_position: int,

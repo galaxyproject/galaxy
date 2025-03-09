@@ -10,6 +10,42 @@ History
 
 
 -------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix recording transform action name. by `@jmchilton <https://github.com/jmchilton>`_ in `#19672 <https://github.com/galaxyproject/galaxy/pull/19672>`_
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+=============
+Other changes
+=============
+
+* Backport #19620 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19725 <https://github.com/galaxyproject/galaxy/pull/19725>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Set content-type to text/plain if dataset not safe by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19563 <https://github.com/galaxyproject/galaxy/pull/19563>`_
+* Fail request explicitly when sqlite provider used on non-sqlite file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19630 <https://github.com/galaxyproject/galaxy/pull/19630>`_
+* Fix various bugs around tool data table bundles by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19659 <https://github.com/galaxyproject/galaxy/pull/19659>`_
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

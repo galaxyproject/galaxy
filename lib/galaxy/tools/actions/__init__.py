@@ -70,6 +70,7 @@ from galaxy.util.template import fill_template
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
     from galaxy.tool_util.parser.output_objects import ToolOutput
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -549,7 +550,7 @@ class DefaultToolAction(ToolAction):
                             dataset = output_dataset.dataset.dataset
                             break
 
-                data = app.model.HistoryDatasetAssociation(
+                data = HistoryDatasetAssociation(
                     extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False
                 )
                 if create_datasets:
@@ -751,7 +752,7 @@ class DefaultToolAction(ToolAction):
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
             redirect_url += f"&GALAXY_URL={GALAXY_URL}"
             # Job should not be queued, so set state to ok
-            job.set_state(app.model.Job.states.OK)
+            job.set_state(Job.states.OK)
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
             trans.sa_session.commit()
@@ -888,15 +889,17 @@ class DefaultToolAction(ToolAction):
 
         return on_text_for_names(input_names)
 
-    def _new_job_for_session(self, trans, tool, history) -> Tuple[model.Job, Optional[model.GalaxySession]]:
-        job = trans.app.model.Job()
+    def _new_job_for_session(
+        self, trans, tool: "Tool", history: Optional[History]
+    ) -> Tuple[Job, Optional[model.GalaxySession]]:
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         galaxy_session = None
 
         if hasattr(trans, "get_galaxy_session"):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
-            if isinstance(galaxy_session, trans.model.GalaxySession):
+            if isinstance(galaxy_session, model.GalaxySession):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
@@ -909,7 +912,8 @@ class DefaultToolAction(ToolAction):
             job.tool_version = tool.version
         except AttributeError:
             job.tool_version = "1.0.0"
-        job.dynamic_tool = tool.dynamic_tool
+        if tool.dynamic_tool:
+            job.dynamic_tool_id = model.cached_id(tool.dynamic_tool)
         return job, galaxy_session
 
     def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
@@ -953,7 +957,9 @@ class DefaultToolAction(ToolAction):
             job.add_parameter(name, value)
         self._record_input_datasets(trans, job, inp_data)
 
-    def _record_outputs(self, job, out_data, output_collections):
+    def _record_outputs(
+        self, job: Job, out_data: Dict[str, "DatasetInstance"], output_collections: "OutputCollections"
+    ):
         out_collections = output_collections.out_collections
         out_collection_instances = output_collections.out_collection_instances
         for name, dataset in out_data.items():

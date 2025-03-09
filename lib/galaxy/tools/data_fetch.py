@@ -159,21 +159,28 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
         registry = upload_config.registry
         datatype = registry.get_datatype_by_extension(requested_ext)
         composite = item.pop("composite", None)
+        validated_metadata = {}
         if datatype and datatype.composite_type:
             composite_type = datatype.composite_type
             assert composite_type == "auto_primary_file", "basic composite uploads not yet implemented"
+            provided_metadata = item.get("metadata")
+            if provided_metadata:
+                for key, value in provided_metadata.items():
+                    metadata_element = datatype.metadata_spec.get(key)
+                    if metadata_element and metadata_element.set_in_upload:
+                        validated_metadata[key] = value
 
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
-            metadata = {
+            metadata = item.get("metadata") or {
                 composite_file.substitute_name_with_metadata: datatype.metadata_spec[
                     composite_file.substitute_name_with_metadata
                 ].default
                 for composite_file in datatype.composite_files.values()
                 if composite_file.substitute_name_with_metadata
             }
-            name = item.get("name") or "Composite Dataset"
+            name = metadata.get("base_name") or item.get("name") or "Composite Dataset"
             metadata["base_name"] = name
             dataset = Bunch(
                 name=name,
@@ -196,6 +203,8 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 "hashes": [],
                 "extra_files": extra_files_path,
             }
+            if validated_metadata:
+                rval["metadata"] = validated_metadata
             _copy_and_validate_simple_attributes(item, rval)
             composite_items = composite.get("elements", [])
             keys = list(writable_files.keys())

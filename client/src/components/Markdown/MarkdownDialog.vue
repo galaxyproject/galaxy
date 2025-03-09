@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<MarkdownDialogProps>(), {
     argumentName: undefined,
     argumentType: undefined,
     argumentPayload: undefined,
+    labels: undefined,
 });
 
 const emit = defineEmits<{
@@ -120,7 +121,7 @@ async function getHistories() {
     return data;
 }
 
-function onData(response: string) {
+function onData(response: unknown) {
     dataShow.value = false;
     emit("onInsert", `${props.argumentName}(history_dataset_id=${response})`);
 }
@@ -252,7 +253,7 @@ if (props.argumentType == "workflow_id") {
             @onOk="onOk"
             @onCancel="onCancel" />
         <MarkdownVisualization
-            v-else-if="visualizationShow"
+            v-else-if="visualizationShow && currentHistoryId !== null"
             :argument-name="argumentName"
             :argument-payload="argumentPayload"
             :labels="effectiveLabels"
@@ -260,9 +261,14 @@ if (props.argumentType == "workflow_id") {
             :history="currentHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel" />
-        <DataDialog v-else-if="dataShow" :history="currentHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
+        <DataDialog
+            v-else-if="dataShow && currentHistoryId !== null"
+            :history="currentHistoryId"
+            format="id"
+            @onOk="onData"
+            @onCancel="onCancel" />
         <DatasetCollectionDialog
-            v-else-if="dataCollectionShow"
+            v-else-if="dataCollectionShow && currentHistoryId !== null"
             :history="currentHistoryId"
             format="id"
             @onOk="onDataCollection"

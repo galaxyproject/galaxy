@@ -28,6 +28,7 @@ from .interface import (
     ToolSourceTests,
     XrefDict,
 )
+from .output_actions import ToolOutputActionApp
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
     ToolOutput,
@@ -136,16 +137,16 @@ class YamlToolSource(ToolSource):
         else:
             return None
 
-    def parse_outputs(self, tool):
+    def parse_outputs(self, app: Optional[ToolOutputActionApp]):
         outputs = self.root_dict.get("outputs", {})
         output_defs = []
         output_collection_defs = []
         for name, output_dict in outputs.items():
             output_type = output_dict.get("type", "data")
             if output_type == "data":
-                output_defs.append(self._parse_output(tool, name, output_dict))
+                output_defs.append(self._parse_output(app, name, output_dict))
             elif output_type == "collection":
-                output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
+                output_collection_defs.append(self._parse_output_collection(app, name, output_dict))
             else:
                 message = f"Unknown output_type [{output_type}] encountered."
                 raise Exception(message)
@@ -158,8 +159,8 @@ class YamlToolSource(ToolSource):
 
         return outputs, output_collections
 
-    def _parse_output(self, tool, name, output_dict):
-        output = ToolOutput.from_dict(name, output_dict, tool=tool)
+    def _parse_output(self, app, name, output_dict):
+        output = ToolOutput.from_dict(name, output_dict, app=app)
         return output
 
     def _parse_output_collection(self, tool, name, output_dict):

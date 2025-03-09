@@ -6,6 +6,10 @@ import logging
 from urllib.parse import urlencode
 
 from galaxy import web
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
@@ -52,7 +56,7 @@ class ASync(BaseUIController):
             #
             # we have an incoming data_id
             #
-            data = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(data_id)
+            data = trans.sa_session.query(HistoryDatasetAssociation).get(data_id)
 
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
@@ -118,7 +122,7 @@ class ASync(BaseUIController):
                 if TOOL_OUTPUT_TYPE is None:
                     raise Exception("Error: ToolOutput object not found")
 
-                original_history = trans.sa_session.query(trans.app.model.History).get(data.history_id)
+                original_history = trans.sa_session.query(History).get(data.history_id)
                 job, *_ = tool.execute(trans, incoming=params, history=original_history)
                 trans.app.job_manager.enqueue(job, tool=tool)
             else:
@@ -182,9 +186,7 @@ class ASync(BaseUIController):
             # data.state = jobs.JOB_OK
             # history.datasets.add_dataset( data )
 
-            data = trans.app.model.HistoryDatasetAssociation(
-                create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE
-            )
+            data = HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE)
             trans.app.security_agent.set_all_dataset_permissions(
                 data.dataset, trans.app.security_agent.history_get_default_permissions(trans.history)
             )

@@ -10,6 +10,40 @@ History
 
 
 -------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix conditional dependency path resolution by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19723 <https://github.com/galaxyproject/galaxy/pull/19723>`_
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Updated registration warning message by `@dannon <https://github.com/dannon>`_ in `#19598 <https://github.com/galaxyproject/galaxy/pull/19598>`_
+
+============
+Enhancements
+============
+
+* Add fastk_ktab_tar datatype required for fastk tool by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#19615 <https://github.com/galaxyproject/galaxy/pull/19615>`_
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

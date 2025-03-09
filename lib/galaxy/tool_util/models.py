@@ -9,6 +9,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
 )
 
@@ -62,6 +64,13 @@ class ParsedTool(BaseModel):
 
 
 def parse_tool(tool_source: ToolSource) -> ParsedTool:
+    return parse_tool_custom(tool_source, ParsedTool)
+
+
+P = TypeVar("P", bound=ParsedTool)
+
+
+def parse_tool_custom(tool_source: ToolSource, model_type: Type[P]) -> P:
     id = tool_source.parse_id()
     version = tool_source.parse_version()
     name = tool_source.parse_name()
@@ -76,7 +85,7 @@ def parse_tool(tool_source: ToolSource) -> ParsedTool:
     xrefs = tool_source.parse_xrefs()
     help = tool_source.parse_help()
 
-    return ParsedTool(
+    return model_type(
         id=id,
         version=version,
         name=name,

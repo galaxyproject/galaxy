@@ -3201,14 +3201,14 @@ export interface paths {
         /**
          * Update a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_dataset_id} instead.
          */
         put: operations["update_api_libraries__library_id__contents__id__put"];
         post?: never;
         /**
          * Delete a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_dataset_id} instead.
          */
         delete: operations["delete_api_libraries__library_id__contents__id__delete"];
         options?: never;
@@ -6763,6 +6763,8 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            /** Metadata */
+            metadata?: Record<string, never> | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -8093,7 +8095,7 @@ export interface components {
              * Transform
              * @description The transformations applied to the dataset source.
              */
-            transform?: unknown[] | null;
+            transform?: components["schemas"]["DatasetSourceTransform"][] | null;
         };
         /** DatasetSourceId */
         DatasetSourceId: {
@@ -8108,6 +8110,24 @@ export interface components {
              */
             src: components["schemas"]["DatasetSourceType"];
         };
+        /** DatasetSourceTransform */
+        DatasetSourceTransform: {
+            /**
+             * Action
+             * @description Action that was applied to dataset source content to transform it into the dataset
+             */
+            action: components["schemas"]["DatasetSourceTransformActionType"];
+            /**
+             * Datatype Extension
+             * @description If action is 'datatype_groom', this is the datatype that was used to find and run the grooming code as part of the transform action.
+             */
+            datatype_ext?: string | null;
+        };
+        /**
+         * DatasetSourceTransformActionType
+         * @enum {string}
+         */
+        DatasetSourceTransformActionType: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
         /**
          * DatasetSourceType
          * @enum {string}
@@ -9269,7 +9289,8 @@ export interface components {
                 | "dropbox"
                 | "googledrive"
                 | "elabftw"
-                | "inveniordm";
+                | "inveniordm"
+                | "zenodo";
             /** Variables */
             variables?:
                 | (
@@ -17624,7 +17645,8 @@ export interface components {
                 | "dropbox"
                 | "googledrive"
                 | "elabftw"
-                | "inveniordm";
+                | "inveniordm"
+                | "zenodo";
             /** Uri Root */
             uri_root: string;
             /**
@@ -21972,6 +21994,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The encoded database identifier of the form. */
                 id: string;
             };
             cookie?: never;
@@ -22015,6 +22038,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The encoded database identifier of the form. */
                 id: string;
             };
             cookie?: never;
@@ -22411,6 +22435,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22454,6 +22479,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22501,6 +22527,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22544,6 +22571,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22769,6 +22797,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -28097,6 +28126,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
             cookie?: never;
@@ -28942,6 +28972,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
             };
             cookie?: never;
@@ -28985,6 +29016,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
             };
             cookie?: never;
@@ -29036,6 +29068,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
                 id: string;
             };
@@ -29084,7 +29117,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
+                /** @description The encoded ID of the library dataset. */
                 id: string;
             };
             cookie?: never;
@@ -29128,7 +29163,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
+                /** @description The encoded ID of the library dataset. */
                 id: string;
             };
             cookie?: never;
@@ -31732,6 +31769,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31775,6 +31813,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31818,6 +31857,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31861,6 +31901,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;

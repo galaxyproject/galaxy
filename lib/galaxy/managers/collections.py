@@ -685,7 +685,7 @@ class DatasetCollectionManager:
 
     def get_dataset_collection(self, trans, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
-        collection = trans.sa_session.get(trans.app.model.DatasetCollection, collection_id)
+        collection = trans.sa_session.get(model.DatasetCollection, collection_id)
         return collection
 
     def apply_rules(self, hdca, rule_set, handle_dataset):
@@ -792,7 +792,7 @@ class DatasetCollectionManager:
         self, trans: ProvidesHistoryContext, id, check_ownership=False, check_accessible=True
     ) -> model.HistoryDatasetCollectionAssociation:
         instance_id = trans.app.security.decode_id(id) if isinstance(id, str) else id
-        collection_instance = trans.sa_session.get(trans.app.model.HistoryDatasetCollectionAssociation, instance_id)
+        collection_instance = trans.sa_session.get(model.HistoryDatasetCollectionAssociation, instance_id)
         if not collection_instance:
             raise RequestParameterInvalidException("History dataset collection association not found")
         # TODO: that sure looks like a bug, we can't check ownership using the history of the object we're checking ownership for ...
@@ -813,7 +813,7 @@ class DatasetCollectionManager:
                 "Functionality (getting library dataset collection with ownership check) unimplemented."
             )
         instance_id = int(trans.security.decode_id(id))
-        collection_instance = trans.sa_session.get(trans.app.model.LibraryDatasetCollectionAssociation, instance_id)
+        collection_instance = trans.sa_session.get(model.LibraryDatasetCollectionAssociation, instance_id)
         if not collection_instance:
             raise RequestParameterInvalidException("Library dataset collection association not found")
         if check_accessible:

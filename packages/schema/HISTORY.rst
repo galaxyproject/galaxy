@@ -10,6 +10,23 @@ History
 
 
 -------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

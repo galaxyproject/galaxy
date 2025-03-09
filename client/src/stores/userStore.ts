@@ -79,7 +79,6 @@ export const useUserStore = defineStore("userStore", () => {
         if (!loadPromise) {
             loadPromise = new Promise<void>((resolve, reject) => {
                 (async () => {
-                    console.debug("Loading once");
                     try {
                         const user = await getCurrentUser();
 

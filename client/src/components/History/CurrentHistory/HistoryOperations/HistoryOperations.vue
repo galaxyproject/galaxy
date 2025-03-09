@@ -36,6 +36,7 @@ function onUpdateOperationStatus(updateTime: number) {
         <nav v-if="editable" class="content-operations d-flex justify-content-between bg-secondary">
             <BButtonGroup>
                 <BButton
+                    v-b-tooltip.hover
                     title="Select Items"
                     class="show-history-content-selectors-btn rounded-0"
                     size="sm"
@@ -47,6 +48,7 @@ function onUpdateOperationStatus(updateTime: number) {
                 </BButton>
 
                 <BButton
+                    v-b-tooltip.hover
                     title="Collapse Items"
                     class="rounded-0"
                     size="sm"
@@ -69,6 +71,7 @@ function onUpdateOperationStatus(updateTime: number) {
         </nav>
         <nav v-else-if="isMultiViewItem" class="content-operations bg-secondary">
             <BButton
+                v-b-tooltip.hover
                 title="Collapse Items"
                 class="rounded-0"
                 size="sm"
