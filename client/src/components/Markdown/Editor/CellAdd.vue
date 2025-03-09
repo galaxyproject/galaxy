@@ -6,15 +6,15 @@
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
             <div class="cell-add-categories overflow-auto">
-                <div v-if="filteredTemplates.length > 0">
-                    <div v-for="(category, categoryIndex) of filteredTemplates" :key="categoryIndex">
+                <div v-if="Object.keys(filteredTemplates).length > 0">
+                    <div v-for="(templates, categoryName) of filteredTemplates" :key="categoryName">
                         <hr class="solid m-0" />
                         <span class="d-flex justify-content-between">
-                            <small class="my-1 mx-3 text-info">{{ category.name }}</small>
+                            <small class="my-1 mx-3 text-info">{{ categoryName }}</small>
                         </span>
-                        <div v-if="category.templates.length > 0" class="cell-add-options popper-close">
+                        <div v-if="templates.length > 0" class="cell-add-options popper-close">
                             <CellOption
-                                v-for="(option, optionIndex) of category.templates"
+                                v-for="(option, optionIndex) of templates"
                                 :key="optionIndex"
                                 :title="option.title"
                                 :description="option.description"
@@ -35,7 +35,7 @@ import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import cellTemplates from "./templates.yml";
-import type { CellType, TemplateCategory } from "./types";
+import type { CellType, TemplateEntry } from "./types";
 
 import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
@@ -50,20 +50,17 @@ const buttonRef = ref();
 const query = ref("");
 
 const filteredTemplates = computed(() => {
-    const filteredCategories: Array<TemplateCategory> = [];
-    const typedCellTemplates = cellTemplates as TemplateCategory[];
-    typedCellTemplates.forEach((category) => {
-        const matchedTemplates = category.templates.filter(
+    const filteredCategories: Record<string, TemplateEntry[]> = {};
+    const typedCellTemplates = cellTemplates as Record<string, TemplateEntry[]>;
+    Object.entries(typedCellTemplates).forEach(([categoryName, templates]) => {
+        const matchedTemplates = templates.filter(
             (template) =>
-                category.name.toLowerCase().includes(query.value.toLowerCase()) ||
+                categoryName.toLowerCase().includes(query.value.toLowerCase()) ||
                 template.title.toLowerCase().includes(query.value.toLowerCase()) ||
                 template.description.toLowerCase().includes(query.value.toLowerCase())
         );
         if (matchedTemplates.length > 0) {
-            filteredCategories.push({
-                name: category.name,
-                templates: matchedTemplates,
-            });
+            filteredCategories[categoryName] = matchedTemplates;
         }
     });
     return filteredCategories;

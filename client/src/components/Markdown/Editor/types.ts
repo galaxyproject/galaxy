@@ -5,11 +5,6 @@ export interface CellType {
     toggle?: boolean;
 }
 
-export interface TemplateCategory {
-    name: string;
-    templates: Array<TemplateEntry>;
-}
-
 export interface TemplateEntry {
     title: string;
     description: string;
