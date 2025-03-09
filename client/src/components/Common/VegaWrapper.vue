@@ -3,14 +3,14 @@
         <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
         </b-alert>
-        <div ref="chartContainer" :style="style" />
+        <div ref="chartContainer" :class="fillWidth && 'w-100'" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
 import embed, { type VisualizationSpec } from "vega-embed";
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;
@@ -19,13 +19,6 @@ export interface VisSpec {
 
 const props = withDefaults(defineProps<VisSpec>(), {
     fillWidth: true,
-});
-
-const style = computed(() => {
-    if (props.fillWidth) {
-        return { width: "100%" };
-    }
-    return {};
 });
 
 const chartContainer = ref<HTMLDivElement | null>(null);

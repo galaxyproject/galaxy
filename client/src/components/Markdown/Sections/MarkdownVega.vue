@@ -33,8 +33,10 @@ watch(
 </script>
 
 <template>
-    <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
-        {{ errorMessage }}
-    </b-alert>
-    <VegaWrapper v-else :spec="spec" />
+    <div>
+        <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
+            {{ errorMessage }}
+        </b-alert>
+        <VegaWrapper :spec="spec" />
+    </div>
 </template>
