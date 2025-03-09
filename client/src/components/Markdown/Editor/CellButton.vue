@@ -5,7 +5,7 @@
         :class="{ active }"
         :title="title"
         :variant="active ? 'outline-secondary' : 'outline-primary'"
-        @click="onClick()"
+        @click="$emit('click')"
         @mouseleave="onMouseLeave($event)">
         <slot />
     </BButton>
@@ -16,24 +16,20 @@ import { BButton } from "bootstrap-vue";
 
 withDefaults(
     defineProps<{
-        title: string;
         active?: boolean;
+        title: string;
     }>(),
     {
         active: false,
     }
 );
 
-const emit = defineEmits<{
+defineEmits<{
     (e: "click"): void;
 }>();
 
 function onMouseLeave(event: Event) {
     const target = event.target as HTMLElement;
     target.blur();
-}
-
-function onClick() {
-    emit("click");
 }
 </script>
