@@ -22,7 +22,7 @@
                         </div>
                     </div>
                 </div>
-                <b-alert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </b-alert>
+                <BAlert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </BAlert>
             </div>
         </Popper>
     </div>
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { cellTemplates } from "./templates";

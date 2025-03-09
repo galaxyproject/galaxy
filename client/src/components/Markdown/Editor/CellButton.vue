@@ -12,7 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
+import { BButton, VBTooltipPlugin } from "bootstrap-vue";
+import Vue from "vue";
+
+Vue.use(VBTooltipPlugin);
 
 withDefaults(
     defineProps<{
