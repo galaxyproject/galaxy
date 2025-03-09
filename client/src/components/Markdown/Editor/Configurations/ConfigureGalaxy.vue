@@ -18,7 +18,7 @@ import { computed, type Ref, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 
-import REQUIREMENTS from "./requirements";
+import REQUIREMENTS from "./requirements.yml";
 
 import MarkdownDialog from "@/components/Markdown/MarkdownDialog.vue";
 
@@ -43,7 +43,7 @@ const requirement = computed(() => {
     const name = contentObject.value?.name || "";
     if (name) {
         for (const [key, values] of Object.entries(REQUIREMENTS)) {
-            if (values.includes(name)) {
+            if (Array.isArray(values) && values.includes(name)) {
                 return key;
             }
         }
