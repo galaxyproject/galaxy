@@ -44,5 +44,5 @@ const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 
 <template>
     <BAlert v-if="error" show variant="warning">{{ error }}</BAlert>
-    <pre v-else><code :class="getClass">{{ attributeValue }}</code></pre>
+    <pre v-else :class="getClass" class="m-0" v-html="attributeValue" />
 </template>
