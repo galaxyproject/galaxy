@@ -5,7 +5,7 @@ import Target from "./CellButton.vue";
 
 const localVue = getLocalVue();
 
-async function mountTarget(props = {}) {
+function mountTarget(props = {}) {
     return mount(Target, {
         localVue,
         propsData: props,
@@ -17,7 +17,7 @@ async function mountTarget(props = {}) {
 
 describe("CellButton.vue", () => {
     it("should render button", async () => {
-        const wrapper = await mountTarget({
+        const wrapper = mountTarget({
             title: "button-title",
         });
         expect(wrapper.find(".button_content").exists()).toBeTruthy();
