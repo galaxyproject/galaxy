@@ -59,7 +59,6 @@ const isCollapsible = computed(() => args.value?.collapse !== undefined);
 const isLoading = computed(() => invocationLoading.value || workflowLoading.value);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
-const version = computed(() => config.version_major);
 const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
 
 async function fetchWorkflow() {
@@ -112,7 +111,7 @@ watch(
         </BLink>
         <BCollapse :visible="isVisible">
             <div v-if="name == 'generate_galaxy_version'" class="galaxy-version">
-                <pre><code>{{ version }}</code></pre>
+                <pre><code>Galaxy Version {{ config.version_major }}</code></pre>
             </div>
             <div v-else-if="name == 'generate_time'" class="galaxy-time">
                 <pre><code>{{ new Date().toUTCString() }}</code></pre>
