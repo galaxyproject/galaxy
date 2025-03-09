@@ -1,0 +1,113 @@
+- name: "Markdown"
+  templates:
+    - title: "Heading 1"
+      description: "Main headline"
+      cell:
+        name: "markdown"
+        content: "# Heading 1"
+    - title: "Heading 2"
+      description: "Section headline"
+      cell:
+        name: "markdown"
+        content: "## Heading 2"
+    - title: "Heading 3"
+      description: "Subhead"
+      cell:
+        name: "markdown"
+        content: "### Heading 3"
+        
+- name: "Galaxy"
+  templates:
+    - title: "Collection"
+      description: "Display a Collection"
+      cell:
+        name: "galaxy"
+        configure: true
+        content: "history_dataset_collection_display()"
+    - title: "Dataset"
+      description: "Display a Dataset"
+      cell:
+        name: "galaxy"
+        configure: true
+        content: "history_dataset_display()"
+    - title: "Dataset Details"
+      description: "Display a Dataset Information"
+      cell:
+        name: "galaxy"
+        configure: true
+        content: "history_dataset_info()"
+
+- name: "Vega"
+  templates:
+    - title: "Bar Diagram"
+      description: "Basic bar diagram"
+      cell:
+        name: "vega"
+        content: !!json |
+          {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "description": "A simple bar chart with embedded data.",
+              "data": {
+                  "values": [
+                      { "a": "A", "b": 1 },
+                      { "a": "B", "b": 2 },
+                      { "a": "C", "b": 3 },
+                      { "a": "D", "b": 4 },
+                      { "a": "E", "b": 5 },
+                      { "a": "F", "b": 6 },
+                      { "a": "G", "b": 7 },
+                      { "a": "H", "b": 8 },
+                      { "a": "I", "b": 9 }
+                  ]
+              },
+              "mark": "bar",
+              "encoding": {
+                  "x": {
+                      "field": "a",
+                      "type": "nominal",
+                      "axis": {
+                          "labelAngle": 0
+                      }
+                  },
+                  "y": {
+                      "field": "b",
+                      "type": "quantitative"
+                  }
+              }
+          }
+    - title: "Line Chart"
+      description: "Basic line chart"
+      cell:
+        name: "vega"
+        content: !!json |
+          {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "description": "A simple line chart with embedded data.",
+            "data": {
+                "values": [
+                    { "a": "A", "b": 1 },
+                    { "a": "B", "b": 2 },
+                    { "a": "C", "b": 3 },
+                    { "a": "D", "b": 4 },
+                    { "a": "E", "b": 5 },
+                    { "a": "F", "b": 6 },
+                    { "a": "G", "b": 7 },
+                    { "a": "H", "b": 8 },
+                    { "a": "I", "b": 9 }
+                ]
+            },
+            "mark": "line",
+            "encoding": {
+                "x": {
+                    "field": "a",
+                    "type": "nominal",
+                    "axis": {
+                        "labelAngle": 0
+                    }
+                },
+                "y": {
+                    "field": "b",
+                    "type": "quantitative"
+                }
+            }
+          }

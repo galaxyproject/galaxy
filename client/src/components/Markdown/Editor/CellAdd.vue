@@ -34,7 +34,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { cellTemplates } from "./templates";
+import cellTemplates from "./templates.yml";
 import type { CellType, TemplateCategory } from "./types";
 
 import CellButton from "./CellButton.vue";
@@ -51,7 +51,8 @@ const query = ref("");
 
 const filteredTemplates = computed(() => {
     const filteredCategories: Array<TemplateCategory> = [];
-    cellTemplates.forEach((category) => {
+    const typedCellTemplates = cellTemplates as TemplateCategory[];
+    typedCellTemplates.forEach((category) => {
         const matchedTemplates = category.templates.filter(
             (template) =>
                 category.name.toLowerCase().includes(query.value.toLowerCase()) ||
