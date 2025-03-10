@@ -181,7 +181,7 @@ An example ``job_conf.yml`` file as seen in ``config/job_conf.yml.interactivetoo
           # 'localhost' here is an arbitrary hostname that matches the IP address of your
           # Galaxy host. Make sure this hostname ('localhost') is also set in your galaxy.yml file, e.g.
           # `galaxy_infrastructure_url: http://localhost:8080`.
-          #docker_run_extra_arguments: add-host localhost:host-gateway
+          #docker_run_extra_arguments: --add-host localhost:host-gateway
 
           #docker_cmd: /usr/local/custom_docker/docker
           #docker_host:
