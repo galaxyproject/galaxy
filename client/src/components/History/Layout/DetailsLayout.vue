@@ -120,7 +120,7 @@ function selectText() {
     <section :class="detailsClass" data-description="edit details">
         <div class="d-flex justify-content-between w-100">
             <ClickToEdit
-                v-if="!summarized"
+                v-if="!summarized && !editing"
                 v-model="clickToEditName"
                 component="h3"
                 title="..."
@@ -183,7 +183,6 @@ function selectText() {
 
         <div v-else class="mt-3" data-description="edit form">
             <BFormInput
-                v-if="summarized"
                 ref="name"
                 v-model="localProps.name"
                 class="mb-2"
