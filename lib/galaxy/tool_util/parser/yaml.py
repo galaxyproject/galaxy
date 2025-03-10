@@ -16,17 +16,20 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
 )
+from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.tool_source import (
+    HelpContent,
+    XrefDict,
+)
 from .interface import (
     AssertionDict,
     AssertionList,
-    HelpContent,
     InputSource,
     PageSource,
     PagesSource,
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
-    XrefDict,
 )
 from .output_actions import ToolOutputActionApp
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
@@ -35,10 +38,7 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
-from .parameter_validators import (
-    AnyValidatorModel,
-    parse_dict_validators,
-)
+from .parameter_validators import parse_dict_validators
 from .stdio import error_on_exit_code
 from .util import is_dict
 

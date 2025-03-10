@@ -1,4 +1,7 @@
 util
+tool_util_models
+
+tool_shed_schema
 
 config
 files
