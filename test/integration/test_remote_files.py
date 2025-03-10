@@ -31,13 +31,20 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
     user_library_dir: ClassVar[str]
     ftp_upload_dir: ClassVar[str]
     root: ClassVar[str]
+    conda_tmp_prefix: ClassVar[str]
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        root = os.path.realpath(mkdtemp())
+        cls.conda_tmp_prefix = mkdtemp(prefix="galaxy-conda")
+        cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+        config["use_cached_dependency_manager"] = True
+        config["conda_auto_init"] = True
+        config["conda_auto_install"] = True
+        config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, "conda")
+        root = os.path.realpath(mkdtemp(prefix="galaxy-root"))
         cls._test_driver.temp_directories.append(root)
         cls.root = root
         cls.library_dir = os.path.join(root, "library")
