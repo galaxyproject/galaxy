@@ -55,10 +55,8 @@ const updateTime = computed(() => {
             timeZoneName: "short",
         });
     }
-    return "unavailable";
+    return "";
 });
-
-const version = computed(() => props.markdownConfig.generate_version || "Unknown Galaxy Version");
 
 // Methods
 function initConfig() {
@@ -125,7 +123,7 @@ onMounted(() => {
                 </div>
             </div>
             <div class="d-flex justify-content-between p-1">
-                <small class="text-break">Last updated on {{ updateTime }}</small>
+                <small v-if="updateTime" class="text-break">Last updated on {{ updateTime }}</small>
                 <small class="text-break">Identifier: {{ markdownConfig.id }}</small>
             </div>
         </div>
