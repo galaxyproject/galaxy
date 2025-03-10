@@ -130,6 +130,6 @@ onMounted(() => {
 
 <style scoped>
 .markdown-wrapper-header {
-    z-index: 101;
+    z-index: 1001;
 }
 </style>
