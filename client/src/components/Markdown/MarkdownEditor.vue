@@ -7,6 +7,15 @@
                         {{ title }}
                     </div>
                     <div>
+                        <b-form-radio-group
+                            v-if="!steps || steps.length === 0"
+                            v-model="editor"
+                            v-b-tooltip.hover.bottom
+                            button-variant="outline-primary"
+                            buttons
+                            size="sm"
+                            title="Editor"
+                            :options="editorOptions" />
                         <slot name="buttons" />
                         <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
                             <FontAwesomeIcon icon="question" />
@@ -16,6 +25,14 @@
             </div>
             <div class="unified-panel-body">
                 <TextEditor
+                    v-if="editor === 'text'"
+                    :title="title"
+                    :markdown-text="markdownText"
+                    :steps="steps"
+                    :mode="mode"
+                    @update="$emit('update', $event)" />
+                <CellEditor
+                    v-else
                     :title="title"
                     :markdown-text="markdownText"
                     :steps="steps"
@@ -39,6 +56,7 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
+import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
@@ -52,6 +70,12 @@ defineProps<{
 }>();
 
 const showHelpModal = ref<boolean>(false);
+
+const editor = ref("text");
+const editorOptions = ref([
+    { text: "Text", value: "text" },
+    { text: "Cells", value: "cells" },
+]);
 
 function onHelp() {
     showHelpModal.value = true;
