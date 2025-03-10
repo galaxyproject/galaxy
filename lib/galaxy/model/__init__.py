@@ -11611,6 +11611,59 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class UserCredentials(Base):
+    """
+    Represents a credential associated with a user for a specific service.
+    """
+
+    __tablename__ = "user_credentials"
+    __table_args__ = (UniqueConstraint("user_id", "source_type", "source_id", "source_version", "name", "version"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    source_type: Mapped[str] = mapped_column()
+    source_id: Mapped[str] = mapped_column()
+    source_version: Mapped[str] = mapped_column()
+    name: Mapped[str] = mapped_column()
+    version: Mapped[str] = mapped_column()
+    current_group_id: Mapped[int] = mapped_column(
+        ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+
+
+class CredentialsGroup(Base):
+    """
+    Represents a group of credentials associated with a user for a specific service.
+    """
+
+    __tablename__ = "credentials_group"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column()
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+
+
+class Credential(Base):
+    """
+    Represents a credential (variable or secret) associated with a user for a specific service.
+    """
+
+    __tablename__ = "credential"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column()
+    is_secret: Mapped[bool] = mapped_column(Boolean)
+    is_set: Mapped[bool] = mapped_column(Boolean)
+    value: Mapped[Optional[str]] = mapped_column(nullable=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
