@@ -125,6 +125,7 @@ function selectText() {
                 component="h3"
                 title="..."
                 data-description="name display"
+                no-save-on-blur
                 class="my-2 w-100" />
             <div v-else style="max-width: 80%">
                 <TextSummary

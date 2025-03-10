@@ -8,6 +8,7 @@ interface Props {
     value: string;
     title?: string;
     component?: string;
+    noSaveOnBlur?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -44,6 +45,20 @@ watch(
     }
 );
 
+function onBlur(e: FocusEvent) {
+    if (props.noSaveOnBlur) {
+        const target = e.relatedTarget;
+        // if the user clicked the save button, do nothing
+        if (target instanceof HTMLElement && target.id === "save-btn") {
+            return;
+        } else {
+            revertToOriginal();
+        }
+    } else {
+        editable.value = false;
+    }
+}
+
 function revertToOriginal() {
     localValue.value = props.value;
     editable.value = false;
@@ -60,11 +75,17 @@ function revertToOriginal() {
             tabindex="0"
             contenteditable
             max-rows="4"
-            @blur.prevent.stop="editable = false"
+            @blur.prevent.stop="onBlur"
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="revertToOriginal"
             @click.prevent.stop />
-        <BButton class="p-0" style="border: none" variant="link" size="sm" @click.prevent.stop="editable = false">
+        <BButton
+            id="save-btn"
+            class="p-0"
+            style="border: none"
+            variant="link"
+            size="sm"
+            @click.prevent.stop="editable = false">
             <FontAwesomeIcon :icon="faSave" />
             <span class="sr-only">Save changes</span>
         </BButton>
