@@ -86,7 +86,7 @@ export function useWorkflowRunGraph(
     /** The steps of the original workflow */
     const workflowSteps = computed<Record<string, Readonly<Step>>>(() => loadedWorkflow.value?.steps);
 
-    const steps = computed<Record<string, WorkflowRunStep>>(() => {
+    const steps = computed<Record<string, WorkflowRunStep | Readonly<Step>>>(() => {
         if (!workflowSteps.value || !formInputs.value || !inputs.value) {
             return {};
         }
@@ -103,6 +103,9 @@ export function useWorkflowRunGraph(
                     const dataInput = inputs.value[step.id.toString()];
                     const formInput = formInputs.value.find((input) => parseInt(input.name) === step.id);
                     stepInfo = getWorkflowRunStepInfo(formInput, dataInput);
+                } else {
+                    // not an input, so just the original step
+                    result[stepId] = step;
                 }
                 if (stepInfo) {
                     result[stepId] = { ...step, ...stepInfo };
