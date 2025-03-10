@@ -4,9 +4,6 @@ import { computed, ref, set } from "vue";
 import { GalaxyApi } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 
-// TODO: Define a less specific `Workflow` type here, and unify with the one in `workflows.services.ts`,
-//       instead of using `StoredWorkflowDetailed` directly.
-
 export const useWorkflowStore = defineStore("workflowStore", () => {
     const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
 
