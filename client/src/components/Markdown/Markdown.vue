@@ -96,11 +96,11 @@ onMounted(() => {
                     role="button"
                     size="sm"
                     title="Edit Markdown"
+                    variant="outline-primary"
                     @click="$emit('onEdit')">
                     Edit
                     <FontAwesomeIcon :icon="faEdit" />
                 </b-button>
-                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
