@@ -104,7 +104,7 @@ class FastAPILibraryContents:
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> AnyLibraryContentsShowResponse:
-        """This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead."""
+        """This endpoint is deprecated. Please use GET /api/libraries/datasets/{id} instead."""
         return self.service.show(trans, id)
 
     @router.post(
@@ -150,7 +150,7 @@ class FastAPILibraryContents:
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> None:
-        """This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_dataset_id} instead."""
+        """This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{id} instead."""
         return self.service.update(trans, id, payload)
 
     @router.delete(
@@ -165,5 +165,5 @@ class FastAPILibraryContents:
         payload: Optional[LibraryContentsDeletePayload] = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> LibraryContentsDeleteResponse:
-        """This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_dataset_id} instead."""
+        """This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{id} instead."""
         return self.service.delete(trans, id, payload or LibraryContentsDeletePayload())
