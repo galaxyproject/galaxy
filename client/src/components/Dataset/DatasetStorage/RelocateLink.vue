@@ -3,7 +3,7 @@ import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { type ConcreteObjectStoreModel, type DatasetStorageDetails } from "@/api";
+import { type ConcreteObjectStoreModel, type DatasetStorageDetails, type SelectableObjectStore } from "@/api";
 import { updateObjectStore } from "@/api/objectStores";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
@@ -39,7 +39,7 @@ const currentObjectStore = computed<ConcreteObjectStoreModel | null>(() => {
     return filtered && filtered.length > 0 ? (filtered[0] as ConcreteObjectStoreModel) : null;
 });
 
-const validTargets = computed<ConcreteObjectStoreModel[]>(() => {
+const validTargets = computed<SelectableObjectStore[]>(() => {
     const isLoadedVal = isLoaded.value;
     const objectStores = selectableObjectStores.value;
     const currentObjectStoreId = props.datasetStorageDetails.object_store_id;
@@ -57,10 +57,13 @@ const validTargets = computed<ConcreteObjectStoreModel[]>(() => {
     if (!currentDevice) {
         return [];
     }
-    const validTargets: ConcreteObjectStoreModel[] = objectStores.filter(
-        (objectStore) => objectStore.device == currentDevice && objectStore.object_store_id != currentObjectStoreId
-    );
-    return validTargets as ConcreteObjectStoreModel[];
+    const validTargets = objectStores.filter(
+        (objectStore) =>
+            objectStore.device == currentDevice &&
+            objectStore.object_store_id &&
+            objectStore.object_store_id != currentObjectStoreId
+    ) as SelectableObjectStore[];
+    return validTargets;
 });
 
 const relocatable = computed(() => {

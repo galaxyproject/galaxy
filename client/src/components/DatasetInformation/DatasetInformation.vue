@@ -52,7 +52,7 @@ defineProps<Props>();
                     <td id="file-size" v-html="bytesToString(dataset.file_size, false)" />
                 </tr>
 
-                <tr>
+                <tr v-if="'metadata_dbkey' in dataset">
                     <td>Dbkey</td>
 
                     <td id="dbkey">

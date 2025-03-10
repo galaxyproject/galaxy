@@ -10,8 +10,9 @@ interface Item {
     name: string;
     model_class?: string;
     owner?: string;
-    username?: string;
+    username?: string | null;
     email_hash?: string;
+    author_deleted?: boolean;
     tags?: string[];
     title?: string;
 }
@@ -37,8 +38,14 @@ const plural = computed(() => {
     return `${modelTitle.value}s`;
 });
 
+const owner = computed(() => {
+    if (props.item?.author_deleted) {
+        return "Archived author";
+    }
+    return props.item?.owner ?? props.item?.username ?? "Unavailable";
+});
+
 const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item?.email_hash}?d=identicon`);
-const owner = computed(() => props.item?.owner ?? props.item?.username ?? "Unavailable");
 const pluralPath = computed(() => plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
@@ -76,7 +83,7 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
                     <router-link :to="urlAll">All published {{ plural }}</router-link>
                 </div>
 
-                <div>
+                <div v-if="!props.item?.author_deleted">
                     <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
                 </div>
             </div>

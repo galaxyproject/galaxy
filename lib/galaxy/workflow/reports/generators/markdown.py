@@ -1,5 +1,4 @@
-"""The class defines the default stock Galaxy workflow reporting plugin
-"""
+"""The class defines the default stock Galaxy workflow reporting plugin"""
 
 import logging
 import string

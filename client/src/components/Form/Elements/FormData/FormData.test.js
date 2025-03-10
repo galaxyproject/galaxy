@@ -1,3 +1,4 @@
+import "tests/jest/mockHelpPopovers";
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";

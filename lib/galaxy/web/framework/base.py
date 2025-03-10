@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 #: time of the most recent server startup
 server_starttime = int(time.time())
 try:
-    meta_json = json.loads(resource_string(__package__, "meta.json"))
+    meta_json = json.loads(resource_string(__name__, "meta.json"))
     server_starttime = meta_json.get("epoch") or server_starttime
 except Exception:
     meta_json = {}
@@ -530,7 +530,7 @@ class Response:
         """
         if isinstance(self.status, int):
             exception = webob.exc.status_map.get(self.status)
-            return "%d %s" % (exception.code, exception.title)
+            return f"{exception.code} {exception.title}"
         else:
             return self.status
 

@@ -12,7 +12,6 @@ from galaxy import (
     exceptions,
     web,
 )
-from galaxy.model.base import transaction
 from tool_shed.context import ProvidesUserContext
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import Category
@@ -37,10 +36,9 @@ class CategoryManager:
                 raise exceptions.Conflict("A category with that name already exists.")
             else:
                 # Create the category
-                category = self.app.model.Category(name=name, description=description)
+                category = Category(name=name, description=description)
                 trans.sa_session.add(category)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             return category
         else:
             raise exceptions.RequestParameterMissingException('Missing required parameter "name".')

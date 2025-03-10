@@ -194,7 +194,8 @@ class _Isa(Data):
             # perform extraction
             # For some ZIP files CompressedFile::extract() extract the file inside <output_folder>/<file_name> instead of outputing it inside <output_folder>. So we first create a temporary folder, extract inside it, and move content to final destination.
             temp_folder = tempfile.mkdtemp()
-            CompressedFile(file_name).extract(temp_folder)
+            with CompressedFile(file_name) as cf:
+                cf.extract(temp_folder)
             shutil.rmtree(output_path)
             extracted_files = os.listdir(temp_folder)
             logger.debug(" ".join(extracted_files))

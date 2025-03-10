@@ -70,7 +70,7 @@ describe("ToolPanel", () => {
      *                              mock an error for the default view as well
      * @returns wrapper
      */
-    async function createWrapper(errorView = "", failDefault = false) {
+    async function createWrapper(errorView: string = "", failDefault: boolean = false) {
         const axiosMock = new MockAdapter(axios);
         axiosMock
             .onGet(`/api/tools?in_panel=False`)
@@ -101,6 +101,7 @@ describe("ToolPanel", () => {
                 editorWorkflows: null,
                 dataManagers: null,
                 moduleSections: null,
+                useSearchWorker: false,
             },
             localVue,
             stubs: {
@@ -112,22 +113,21 @@ describe("ToolPanel", () => {
 
         await flushPromises();
 
-        return { wrapper };
+        return wrapper;
     }
 
     it("test navigation of tool panel views menu", async () => {
-        const { wrapper } = await createWrapper();
+        const wrapper = await createWrapper();
         // there is a panel view selector initially collapsed
-        expect(wrapper.find(".panel-view-selector").exists()).toBe(true);
-        expect(wrapper.find(".dropdown-menu.show").exists()).toBe(false);
+        expect(wrapper.find(".panel-view-selector").exists()).toBeTruthy();
 
         // Test: starts up with a default panel view, click to open menu
         expect(wrapper.find("#toolbox-heading").text()).toBe(viewsList[DEFAULT_VIEW_ID]!.name);
         await wrapper.find("#toolbox-heading").trigger("click");
         await flushPromises();
 
-        const dropdownMenu = wrapper.find(".dropdown-menu.show");
-        expect(dropdownMenu.exists()).toBe(true);
+        const dropdownMenu = wrapper.find(".dropdown-menu");
+        expect(dropdownMenu.exists()).toBeTruthy();
 
         // Test: check if the dropdown menu has all the panel views
         const dropdownItems = dropdownMenu.findAll(".dropdown-item");
@@ -165,10 +165,8 @@ describe("ToolPanel", () => {
 
     it("initializes non default current panel view correctly", async () => {
         const { viewKey, view } = storeNonDefaultView();
-
-        const { wrapper } = await createWrapper();
-
-        // starts up with a non default panel view
+        const wrapper = await createWrapper();
+        expect(wrapper.find(".alert").exists()).toBeFalsy();
         expect(wrapper.find("#toolbox-heading").text()).toBe(view!.name);
         const toolStore = useToolStore();
         expect(toolStore.currentPanelView).toBe(viewKey);
@@ -176,28 +174,18 @@ describe("ToolPanel", () => {
 
     it("changes panel to default if current panel view throws error", async () => {
         const { viewKey, view } = storeNonDefaultView();
-
-        const { wrapper } = await createWrapper(viewKey);
-
-        // does not initialize non default panel view, and changes to default
+        const wrapper = await createWrapper(viewKey);
         expect(wrapper.find("#toolbox-heading").text()).not.toBe(view!.name);
         expect(wrapper.find("#toolbox-heading").text()).toBe(viewsList[DEFAULT_VIEW_ID]!.name);
         const toolStore = useToolStore();
         expect(toolStore.currentPanelView).toBe(DEFAULT_VIEW_ID);
-
-        // toolbox loaded
         expect(wrapper.find('[data-description="panel toolbox"]').exists()).toBe(true);
     });
 
     it("simply shows error if even default panel view throws error", async () => {
         const { viewKey } = storeNonDefaultView();
-
-        const { wrapper } = await createWrapper(viewKey, true);
-
-        // toolbox not loaded
-        expect(wrapper.find('[data-description="panel toolbox"]').exists()).toBe(false);
-
-        // error message shown
+        const wrapper = await createWrapper(viewKey, true);
+        expect(wrapper.find('[data-description="panel toolbox"]').exists()).toBeFalsy();
         expect(wrapper.find('[data-description="tool panel error message"]').text()).toBe(PANEL_VIEW_ERR_MSG);
     });
 });

@@ -11,6 +11,7 @@ from galaxy import (
     web,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
 from galaxy.webapps.base import controller
@@ -26,6 +27,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
 
+    app: StructuredApp
     history_manager: HistoryManager = depends(HistoryManager)
 
     def __init__(self, app: StructuredApp):
@@ -98,7 +100,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if the file could not be returned, returns a message as a string.
         """
         # TODO: unencoded id
-        data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+        data = trans.sa_session.query(HistoryDatasetAssociation).get(id)
         authz_method = kwd.get("authz_method", "rbac")
         if data:
             if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(
@@ -122,7 +124,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return data.as_display_type(display_app, **kwd)
         else:
             trans.response.status = 400
-            return "No data with id=%d" % id
+            return f"No data with id={id}"
 
     @web.expose
     def welcome(self, trans: GalaxyWebTransaction, **kwargs):

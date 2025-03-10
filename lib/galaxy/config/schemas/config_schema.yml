@@ -1303,6 +1303,87 @@ mapping:
 
           The value of this option will be resolved with respect to <config_dir>.
 
+      email_ban_file:
+        type: str
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          E-mail ban file is used to specify email addresses that have been banned.
+          If a user attempts to register a new account using an email address listed in this file,
+          registration will be denied. This file does not affect user sign-in. Email addresses are
+          matched against a canonical address representation based on rules defined in <canonical_email_rules>.
+          The file should include one email address per line. Lines starting with the "#" character are ignored.
+
+          Example value "banned_emails.conf"
+
+      canonical_email_rules:
+        type: map
+        desc: |
+          Specifies how email addresses are reduced to their canonical form by assigning rules to
+          email service domains and domain aliases.
+
+          Available rules
+          - ignore_case
+            Values are not case-sensitive (RickDeckard@foo.cOM == rickdeckard@foo.com)
+          - ignore_dots
+            Periods in the local-part of an email address are ignored (rick.deckard@foo.com == rickdeckard@foo.com)
+          - sub_addressing
+            Suffixes prefixed with <sub_addressing_delim> in the local-part of an email address are ignored
+            (rickdeckard+anything@foo.com == rickdeckard@foo.com if delimiter is the character '+')
+
+        default:
+          all:
+            ignore_case: false
+            ignore_dots: false
+            sub_addressing: false
+            sub_addressing_delim: "+"
+          gmail.com:
+            aliases:
+              - googlemail.com
+            ignore_case: true
+            ignore_dots: true
+            sub_addressing: true
+          proton.me:
+            aliases:
+              - pm.me
+              - protonmail.com
+            ignore_case: true
+            sub_addressing: true
+
+        mapping:
+          regex;(.+):
+            type: map
+            desc: |
+              Email service domain name. Note that "all" is a reserved keyword used to refer to all email service domain names.
+              Example value "gmail.com"
+            mapping:
+              aliases:
+                type: seq
+                desc: |
+                  Domain aliases used by email service.
+                sequence:
+                  - type: str
+              ignore_dots:
+                type: bool
+                default: false
+                desc: |
+                  Periods in the local-part of an email address will be ignored.
+              ignore_case:
+                type: bool
+                default: false
+                desc: |
+                  Email addresses are not case-sensitive.
+              sub_addressing:
+                type: bool
+                default: false
+                desc: |
+                  In the email address's local-part, ignore the suffix prefixed with <sub_addressing_delim>.
+              sub_addressing_delim:
+                type: str
+                default: "+"
+                desc: |
+                  The delimiter used to separate the address from the optional sub-addressing suffix.
+
       registration_warning_message:
         type: str
         default: >-
@@ -1717,7 +1798,7 @@ mapping:
 
       helpsite_url:
         type: str
-        required: true
+        required: false
         default: https://help.galaxyproject.org/
         per_host: true
         desc: |
@@ -2788,6 +2869,7 @@ mapping:
 
           Avoiding making this a boolean because we may add options such as 'in-single-form-view'
           or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+
       allow_user_dataset_purge:
         type: bool
         default: true
@@ -3454,6 +3536,26 @@ mapping:
           decreased if extremely high job throughput is necessary, but doing so can increase CPU
           usage of handler processes. Float values are allowed.
 
+      calculate_dataset_hash:
+        type: str
+        default: upload
+        required: false
+        enum: ['always', 'upload', 'never']
+        desc: |
+          In which cases Galaxy should calculate a hash for a new dataset.
+          Dataset hashes can be used by the Galaxy job cache/search to check if job inputs match.
+          Setting the 'enable_celery_tasks' option to true is also required for dataset hash calculation.
+          Possible values are: 'always', 'upload' (the default), 'never'. If set to 'upload', the
+          hash is calculated only for the outputs of upload jobs.
+
+      hash_function:
+        type: str
+        default: sha256
+        required: false
+        desc: |
+          Hash function to use if 'calculate_dataset_hash' is enabled. Possible values
+          are: 'md5', 'sha1', 'sha256', 'sha512'
+
       metadata_strategy:
         type: str
         required: false
@@ -3547,6 +3649,7 @@ mapping:
         default: always
         required: false
         reloadable: true
+        enum: ['always', 'onsuccess', 'never']
         desc: |
           Clean up various bits of jobs left on the filesystem after completion.  These
           bits include the job working directory, external metadata temporary files,
@@ -4137,3 +4240,24 @@ mapping:
           Number of seconds before file source content listings are refreshed. Shorter times will result in more
           queries while browsing a file sources. Longer times will result in fewer requests to file sources but
           outdated contents might be displayed to the user. Currently only affects s3fs file sources.
+
+      enable_failed_jobs_working_directory_cleanup:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables the cleanup of failed Galaxy job's working directories. Runs in a Celery task.
+
+      failed_jobs_working_directory_cleanup_days:
+        type: int
+        required: false
+        default: 5
+        desc: |
+          The number of days to keep failed Galaxy job's working directories before attempting to delete them if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
+
+      failed_jobs_working_directory_cleanup_interval:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          The interval in seconds between attempts to delete all failed Galaxy job's working directories from the filesystem (every 24 hours by default) if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.

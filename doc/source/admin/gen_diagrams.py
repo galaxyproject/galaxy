@@ -10,15 +10,21 @@ from galaxy.files.templates.models import (
     AzureFileSourceTemplateConfiguration,
     DropboxFileSourceConfiguration,
     DropboxFileSourceTemplateConfiguration,
+    eLabFTWFileSourceConfiguration,
+    eLabFTWFileSourceTemplateConfiguration,
     FileSourceTemplate,
     FtpFileSourceConfiguration,
     FtpFileSourceTemplateConfiguration,
+    InvenioFileSourceConfiguration,
+    InvenioFileSourceTemplateConfiguration,
     PosixFileSourceConfiguration,
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
     WebdavFileSourceConfiguration,
     WebdavFileSourceTemplateConfiguration,
+    ZenodoFileSourceConfiguration,
+    ZenodoFileSourceTemplateConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
@@ -61,6 +67,12 @@ class_to_diagram = {
     FtpFileSourceConfiguration: "file_source_ftp_configuration",
     WebdavFileSourceTemplateConfiguration: "file_source_webdav_configuration_template",
     WebdavFileSourceConfiguration: "file_source_webdav_configuration",
+    eLabFTWFileSourceTemplateConfiguration: "file_source_elabftw_configuration_template",
+    eLabFTWFileSourceConfiguration: "file_source_elabftw_configuration",
+    InvenioFileSourceTemplateConfiguration: "file_source_invenio_configuration_template",
+    InvenioFileSourceConfiguration: "file_source_invenio_configuration",
+    ZenodoFileSourceTemplateConfiguration: "file_source_zenodo_configuration_template",
+    ZenodoFileSourceConfiguration: "file_source_zenodo_configuration",
 }
 
 for clazz, diagram_name in class_to_diagram.items():

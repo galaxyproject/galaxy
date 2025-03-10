@@ -8,7 +8,6 @@ import os
 from typing import (
     Any,
     Dict,
-    Generic,
     List,
     Optional,
     Type,
@@ -33,9 +32,9 @@ from galaxy.model import (
     Dataset,
     DatasetHash,
     DatasetInstance,
+    DatasetPermissions,
     HistoryDatasetAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
@@ -83,8 +82,7 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def purge_datasets(self, request: PurgeDatasetsTaskRequest):
@@ -155,14 +153,16 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
             if old_label != new_label:
                 self.quota_agent.relabel_quota_for_dataset(dataset, old_label, new_label)
         sa_session = self.session()
-        with transaction(sa_session):
-            dataset.object_store_id = new_object_store_id
-            sa_session.add(dataset)
-            sa_session.commit()
+        dataset.object_store_id = new_object_store_id
+        sa_session.add(dataset)
+        sa_session.commit()
 
     def compute_hash(self, request: ComputeDatasetHashTaskRequest):
-        # For files in extra_files_path
         dataset = self.by_id(request.dataset_id)
+        if dataset.purged:
+            log.warning("Unable to calculate hash for purged dataset [%s].", dataset.id)
+            return
+        # For files in extra_files_path
         extra_files_path = request.extra_files_path
         if extra_files_path:
             extra_dir = dataset.extra_files_path_name
@@ -171,7 +171,6 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
             file_path = dataset.get_file_name()
         hash_function = request.hash_function
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
-        extra_files_path = request.extra_files_path
         dataset_hash = model.DatasetHash(
             hash_function=hash_function,
             hash_value=calculated_hash_value,
@@ -184,8 +183,7 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
         hash = get_dataset_hash(sa_session, dataset.id, hash_function, extra_files_path)
         if hash is None:
             sa_session.add(dataset_hash)
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
         else:
             old_hash_value = hash.hash_value
             if old_hash_value != calculated_hash_value:
@@ -193,7 +191,7 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
                     f"Re-calculated dataset hash for dataset [{dataset.id}] and new hash value [{calculated_hash_value}] does not equal previous hash value [{old_hash_value}]."
                 )
             else:
-                log.debug("Duplicated dataset hash request, no update to the database.")
+                log.debug("Duplicated dataset hash request for dataset [%s], no update to the database.", dataset.id)
 
     # TODO: implement above for groups
     # TODO: datatypes?
@@ -325,11 +323,10 @@ U = TypeVar("U", bound=DatasetInstance)
 
 
 class DatasetAssociationManager(
-    base.ModelManager[DatasetInstance],
+    base.ModelManager[U],
     secured.AccessibleManagerMixin,
     secured.OwnableManagerMixin,
     deletable.PurgableManagerMixin,
-    Generic[U],
 ):
     """
     DatasetAssociation/DatasetInstances are intended to be working
@@ -382,6 +379,7 @@ class DatasetAssociationManager(
         self.stop_creating_job(item, flush=True)
 
         # more importantly, purge underlying dataset as well
+        assert item.dataset
         if item.dataset.user_can_purge:
             self.dataset_manager.purge(item.dataset, flush=flush, **kwargs)
         return item
@@ -424,8 +422,7 @@ class DatasetAssociationManager(
                         self.app.job_manager.stop(job)
                     if flush:
                         session = self.session()
-                        with transaction(session):
-                            session.commit()
+                        session.commit()
                     return True
         return False
 
@@ -433,7 +430,7 @@ class DatasetAssociationManager(
         """
         Return True if this hda/ldda is a composite type dataset.
 
-        .. note:: see also (whereever we keep information on composite datatypes?)
+        .. note:: see also (wherever we keep information on composite datatypes?)
         """
         return dataset_assoc.extension in self.app.datatypes_registry.get_composite_extensions()
 
@@ -441,6 +438,7 @@ class DatasetAssociationManager(
         """Return a list of file paths for composite files, an empty list otherwise."""
         if not self.is_composite(dataset_assoc):
             return []
+        assert dataset_assoc.dataset
         return glob.glob(os.path.join(dataset_assoc.dataset.extra_files_path, "*"))
 
     def serialize_dataset_association_roles(self, dataset_assoc: U):
@@ -535,8 +533,7 @@ class DatasetAssociationManager(
         path = dataset_assoc.dataset.get_file_name()
         datatype = sniff.guess_ext(path, self.app.datatypes_registry.sniff_order)
         self.app.datatypes_registry.change_datatype(dataset_assoc, datatype)
-        with transaction(session):
-            session.commit()
+        session.commit()
         self.set_metadata(trans, dataset_assoc)
 
     def set_metadata(self, trans, dataset_assoc: U, overwrite: bool = False, validate: bool = True) -> None:
@@ -588,12 +585,11 @@ class DatasetAssociationManager(
         elif action == "make_private":
             if not self.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = self.app.security_agent.get_private_user_role(trans.user)
-                dp = self.app.model.DatasetPermissions(
+                dp = DatasetPermissions(
                     self.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             if not self.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
@@ -875,8 +871,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
             )
         item.change_datatype(val)
         sa_session = self.app.model.context
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         trans = context.get("trans")
         assert (
             trans

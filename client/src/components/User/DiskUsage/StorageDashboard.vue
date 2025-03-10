@@ -5,6 +5,8 @@ import { useRouter } from "vue-router/composables";
 import localize from "@/utils/localization";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import Heading from "@/components/Common/Heading.vue";
 import IconCard from "@/components/IconCard.vue";
 
 const router = useRouter();
@@ -38,6 +40,8 @@ const texts = reactive({
     },
 });
 
+const breadcrumbItems = [{ title: texts.title }];
+
 function goToStorageManager() {
     router.push({ name: "StorageManager" });
 }
@@ -53,13 +57,14 @@ function goToObjectStoresOverview() {
 
 <template>
     <div>
-        <header class="main-header">
-            <h1 class="text-center my-3">
-                <b>{{ texts.title }}</b>
-            </h1>
-            <h2 class="text-center my-3 h-sm">{{ texts.subtitle }}</h2>
-        </header>
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <Heading h2 size="sm">
+            {{ texts.subtitle }}
+        </Heading>
+
         <DiskUsageSummary class="m-3" />
+
         <IconCard
             class="mx-auto mb-3"
             data-description="free space card"

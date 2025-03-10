@@ -20,7 +20,6 @@ from galaxy.managers.workflows import (
     WorkflowsManager,
 )
 from galaxy.model import StoredWorkflow
-from galaxy.model.base import transaction
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -175,8 +174,7 @@ class WorkflowsService(ServiceBase):
             )
             invocations.append(workflow_invocation)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         encoded_invocations = [WorkflowInvocationResponse(**invocation.to_dict()) for invocation in invocations]
         if is_batch:
             return encoded_invocations

@@ -13,7 +13,6 @@ from sqlalchemy import (
 )
 
 from galaxy import util
-from galaxy.model.base import transaction
 from galaxy.tool_shed.metadata.metadata_generator import (
     BaseMetadataGenerator,
     HandleResultT,
@@ -40,6 +39,7 @@ from tool_shed.webapp.model import (
     RepositoryMetadata,
     User,
 )
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
 
@@ -270,8 +270,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata.tool_versions = tool_versions_dict
             self.sa_session.add(repository_metadata)
             session = self.sa_session()
-            with transaction(session):
-                session.commit()
+            session.commit()
 
     def build_repository_ids_select_field(
         self, name="repository_ids", multiple=True, display="checkboxes", my_writable=False
@@ -297,8 +296,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             if changeset_revision not in changeset_revisions:
                 self.sa_session.delete(repository_metadata)
                 session = self.sa_session()
-                with transaction(session):
-                    session.commit()
+                session.commit()
 
     def compare_changeset_revisions(self, ancestor_changeset_revision, ancestor_metadata_dict):
         """
@@ -506,7 +504,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = False
         else:
-            repository_metadata = self.app.model.RepositoryMetadata(
+            repository_metadata = RepositoryMetadata(
                 repository_id=self.repository.id,
                 changeset_revision=changeset_revision,
                 metadata=metadata_dict,
@@ -524,8 +522,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         repository_metadata.missing_test_components = False
         self.sa_session.add(repository_metadata)
         session = self.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         return repository_metadata
 
@@ -555,7 +552,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
             if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
                 # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
-                required_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+                required_repository = get_repository_by_name_and_owner(self.app.model.context, name, owner)
                 repository_type_class = self.app.repository_types_registry.get_class_by_label(required_repository.type)
                 return isinstance(repository_type_class, TipOnly)
         return False
@@ -908,8 +905,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 repository_metadata.tool_versions = tool_versions_dict
                 self.sa_session.add(repository_metadata)
                 session = self.sa_session()
-                with transaction(session):
-                    session.commit()
+                session.commit()
 
     def reset_metadata_on_selected_repositories(self, **kwd):
         """
@@ -943,12 +939,12 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 except Exception:
                     log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
                     unsuccessful_count += 1
-            message = "Successfully reset metadata on %d %s.  " % (
+            message = "Successfully reset metadata on {} {}.  ".format(
                 successful_count,
                 inflector.cond_plural(successful_count, "repository"),
             )
             if unsuccessful_count:
-                message += "Error setting metadata on %d %s - see the paster log for details.  " % (
+                message += "Error setting metadata on {} {} - see the paster log for details.  ".format(
                     unsuccessful_count,
                     inflector.cond_plural(unsuccessful_count, "repository"),
                 )
@@ -1021,8 +1017,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     repository_metadata.missing_test_components = False
                     self.sa_session.add(repository_metadata)
                     session = self.sa_session()
-                    with transaction(session):
-                        session.commit()
+                    session.commit()
                 else:
                     # There are no metadata records associated with the repository.
                     repository_metadata = self.create_or_update_repository_metadata(

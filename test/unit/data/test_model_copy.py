@@ -14,7 +14,6 @@ from galaxy.model import (
     setup_global_object_store_for_models,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
@@ -36,12 +35,11 @@ THREAD_LOCAL_LOG = threading.local()
 def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=INCLUDE_METADATA_FILE):
     with _setup_mapping_and_user() as (test_config, object_store, model, old_history):
         for i in range(num_datasets):
-            hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
+            hda_path = test_config.write("moo", f"test_metadata_original_{i}")
             _create_hda(model, object_store, old_history, hda_path, include_metadata_file=include_metadata_file)
 
         session = model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         history_copy_timer = ExecutionTimer()
         original_update_time = old_history.update_time
@@ -49,8 +47,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
         new_history = old_history.copy(name="new name", target_user=old_history.user, all_datasets=True)
         session.add(new_history)
         session.add(old_history)
-        with transaction(session):
-            session.commit()
+        session.commit()
         session.refresh(old_history)
         new_update_time = session.get(model.History, old_history.id).update_time
         assert original_update_time == new_update_time
@@ -62,7 +59,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
             if include_metadata_file:
                 _check_metadata_file(hda)
             annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
-            assert annotation_str == "annotation #%d" % hda.hid, annotation_str
+            assert annotation_str == f"annotation #{hda.hid}", annotation_str
 
 
 def test_history_collection_copy(list_size=NUM_DATASETS):
@@ -70,12 +67,13 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         for i in range(NUM_COLLECTIONS):
             hdas = []
             for i in range(list_size * 2):
-                hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
+                hda_path = test_config.write("moo", f"test_metadata_original_{i}")
                 hda = _create_hda(
                     model, object_store, old_history, hda_path, visible=False, include_metadata_file=False
                 )
                 hdas.append(hda)
 
+            session = model.context
             list_elements = []
             list_collection = model.DatasetCollection(collection_type="list:paired")
             for j in range(list_size):
@@ -86,29 +84,24 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
                     collection=list_collection, element=paired_collection
                 )
                 list_elements.append(paired_collection_element)
-                model.context.add_all([forward_dce, reverse_dce, paired_collection_element])
+                session.add_all([forward_dce, reverse_dce, paired_collection_element])
             history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=list_collection)
             history_dataset_collection.user = old_history.user
-            model.context.add(history_dataset_collection)
-
-            session = model.context
-            with transaction(session):
-                session.commit()
+            session.add(history_dataset_collection)
+            session.commit()
 
             old_history.add_dataset_collection(history_dataset_collection)
             history_dataset_collection.add_item_annotation(
-                model.context,
+                session,
                 old_history.user,
                 history_dataset_collection,
-                "annotation #%d" % history_dataset_collection.hid,
+                f"annotation #{history_dataset_collection.hid}",
             )
 
-        session = model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         annotation_str = history_dataset_collection.get_item_annotation_str(
-            model.context, old_history.user, history_dataset_collection
+            session, old_history.user, history_dataset_collection
         )
 
         # Saving magic SA invocations for detecting full flushes that may harm performance.
@@ -118,7 +111,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         #     if not instances:
         #         print("FULL FLUSH...")
         #     else:
-        #         print("Flushing just %s" % instances)
+        #         print(f"Flushing just {instances}")
 
         history_copy_timer = ExecutionTimer()
         new_history = old_history.copy(target_user=old_history.user)
@@ -126,13 +119,13 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
 
         for hda in new_history.active_datasets:
             assert hda.get_size() == 3
-            annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
-            assert annotation_str == "annotation #%d" % hda.hid, annotation_str
+            annotation_str = hda.get_item_annotation_str(session, old_history.user, hda)
+            assert annotation_str == f"annotation #{hda.hid}", annotation_str
 
         assert len(new_history.active_dataset_collections) == NUM_COLLECTIONS
         for hdca in new_history.active_dataset_collections:
-            annotation_str = hdca.get_item_annotation_str(model.context, old_history.user, hdca)
-            assert annotation_str == "annotation #%d" % hdca.hid, annotation_str
+            annotation_str = hdca.get_item_annotation_str(session, old_history.user, hdca)
+            assert annotation_str == f"annotation #{hdca.hid}", annotation_str
 
 
 @contextlib.contextmanager
@@ -150,10 +143,9 @@ def _setup_mapping_and_user():
 
         u = User(email="historycopy@example.com", password="password")
         h1 = History(name="HistoryCopyHistory1", user=u)
-        model.context.add_all([u, h1])
         session = model.context
-        with transaction(session):
-            session.commit()
+        session.add_all([u, h1])
+        session.commit()
         yield test_config, object_store, model, h1
 
 
@@ -172,15 +164,14 @@ def _create_hda(
     hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=sa_session)
     hda.visible = visible
     sa_session.add(hda)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     object_store.update_from_file(hda, file_name=path, create=True)
     if include_metadata_file:
         hda.metadata.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})
         _check_metadata_file(hda)
     hda.set_size()
     history.add_dataset(hda)
-    hda.add_item_annotation(sa_session, history.user, hda, "annotation #%d" % hda.hid)
+    hda.add_item_annotation(sa_session, history.user, hda, f"annotation #{hda.hid}")
     return hda
 
 
@@ -190,4 +181,4 @@ def _check_metadata_file(hda):
     assert os.path.exists(copied_index)
     with open(copied_index) as f:
         assert f.read() == "moo"
-    assert copied_index.endswith("metadata_%d.dat" % hda.id)
+    assert copied_index.endswith(f"metadata_{hda.id}.dat")

@@ -8,8 +8,9 @@ from galaxy.job_execution.setup import create_working_directory_for_job
 from galaxy.model import (
     History,
     Job,
+    JobExportHistoryArchive,
+    JobImportHistoryArchive,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
@@ -63,7 +64,7 @@ class ImportHistoryToolAction(ToolAction):
         #
         incoming = incoming or {}
         trans.check_user_activation()
-        job = trans.app.model.Job()
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -81,8 +82,7 @@ class ImportHistoryToolAction(ToolAction):
             job.states.WAITING
         )  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add(job)
-        with transaction(trans.sa_session):  # ensure job.id are available
-            trans.sa_session.commit()
+        trans.sa_session.commit()  # ensure job.id are available
 
         #
         # Setup job and job wrapper.
@@ -93,7 +93,7 @@ class ImportHistoryToolAction(ToolAction):
         # Use abspath because mkdtemp() does not, contrary to the documentation,
         # always return an absolute path.
         archive_dir = os.path.abspath(tempfile.mkdtemp())
-        jiha = trans.app.model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
+        jiha = JobImportHistoryArchive(job=job, archive_dir=archive_dir)
         trans.sa_session.add(jiha)
 
         job_wrapper = JobImportHistoryArchiveWrapper(trans.app, job)
@@ -142,7 +142,7 @@ class ExportHistoryToolAction(ToolAction):
         incoming = incoming or {}
         history = None
         for name, value in incoming.items():
-            if isinstance(value, trans.app.model.History):
+            if isinstance(value, History):
                 history_param_name = name
                 history = value
                 del incoming[history_param_name]
@@ -154,7 +154,7 @@ class ExportHistoryToolAction(ToolAction):
         #
         # Create the job and output dataset objects
         #
-        job = trans.app.model.Job()
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -174,7 +174,7 @@ class ExportHistoryToolAction(ToolAction):
         if not exporting_to_uri:
             # see comment below about how this should be transitioned to occuring in a
             # job handler or detached MQ-driven thread
-            jeha = trans.app.model.JobExportHistoryArchive.create_for_history(
+            jeha = JobExportHistoryArchive.create_for_history(
                 history, job, trans.sa_session, trans.app.object_store, compressed
             )
             store_directory = jeha.temp_directory
@@ -183,8 +183,7 @@ class ExportHistoryToolAction(ToolAction):
             # dynamic objectstore assignment, etc..) but it is arguably less bad than
             # creating a dataset (like above for dataset export case).
             # ensure job.id is available
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             job_directory = create_working_directory_for_job(trans.app.object_store, job)
             store_directory = os.path.join(job_directory, "working", "_object_export")
             os.makedirs(store_directory)
@@ -222,8 +221,7 @@ class ExportHistoryToolAction(ToolAction):
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job.id)
         job_wrapper.setup_job(

@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
+import { suppressErrorForCustomIcons } from "tests/jest/helpers";
 import { nextTick } from "vue";
 
 import { type LazyUndoRedoAction, type UndoRedoAction } from "@/stores/undoRedoStore";
@@ -48,6 +49,8 @@ function getStyleProperty(element: Element, property: string) {
 
     return style.substring(startIndex, endIndex).trim();
 }
+
+suppressErrorForCustomIcons();
 
 describe("WorkflowComment", () => {
     const comment = {

@@ -13,7 +13,7 @@ from galaxy.tools.parameters.basic import (
     TextToolParameter,
 )
 
-param_types = Literal["text", "integer", "float", "color", "boolean", "directory_uri"]
+INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
 default_source_type = Dict[str, Union[int, float, bool, str]]
 tool_param_type = Union[
     TextToolParameter,
@@ -25,21 +25,14 @@ tool_param_type = Union[
 ]
 
 
-def get_default_parameter(param_type: param_types) -> tool_param_type:
+def get_default_parameter(param_type: INPUT_PARAMETER_TYPES) -> tool_param_type:
     """
     param_type is the type of parameter we want to build up, stored_parameter_type is the parameter_type
     as stored in the tool state
     """
     default_source: default_source_type = dict(name="default", label="Default Value", type=param_type, optional=False)
     if param_type == "text":
-        input_default_value: Union[
-            TextToolParameter,
-            IntegerToolParameter,
-            FloatToolParameter,
-            BooleanToolParameter,
-            ColorToolParameter,
-            DirectoryUriToolParameter,
-        ] = TextToolParameter(None, default_source)
+        input_default_value: tool_param_type = TextToolParameter(None, default_source)
     elif param_type == "integer":
         input_default_value = IntegerToolParameter(None, default_source)
     elif param_type == "float":

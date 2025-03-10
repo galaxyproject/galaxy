@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
@@ -73,6 +73,7 @@ const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
         paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: "false" }),
         subsubdirectoryResponse,
     ],
+    [paramsToKey({ target: "gxftp://", recursive: "false" }), pdbResponse],
 ]);
 
 const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
@@ -106,7 +107,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     );
 
     const testingPinia = createTestingPinia({ stubActions: false });
-    const wrapper = mount(FilesDialog, {
+    const wrapper = mount(FilesDialog as object, {
         localVue,
         propsData: { ...props, modalStatic: true },
         pinia: testingPinia,
@@ -239,6 +240,8 @@ describe("FilesDialog, file mode", () => {
     it("should show loading error and can return back when there is an error", async () => {
         utils.expectNoErrorMessage();
 
+        suppressDebugConsole(); // expecting error message.
+
         // open directory with error
         await utils.openDirectoryById("empty-dir");
         utils.expectErrorMessage();
@@ -281,6 +284,8 @@ describe("FilesDialog, directory mode", () => {
 
     it("should show loading error and can return back when there is an error", async () => {
         utils.expectNoErrorMessage();
+
+        suppressDebugConsole(); // expecting error message.
 
         // open directory with error
         await utils.openDirectoryById("empty-dir");

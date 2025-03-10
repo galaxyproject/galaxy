@@ -98,6 +98,9 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
+// computed values
+const canDrag = computed(() => isActiveSideBar("settings"));
+
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
  */
@@ -187,10 +190,6 @@ function setActiveSideBar(key: string) {
     activityStore.toggledSideBar = key;
 }
 
-const canDrag = computed(() => {
-    return isActiveSideBar("settings");
-});
-
 defineExpose({
     isActiveSideBar,
     setActiveSideBar,
@@ -222,7 +221,7 @@ defineExpose({
                     <div
                         v-for="(activity, activityIndex) in activities"
                         :key="activityIndex"
-                        :class="{ 'can-drag': canDrag }">
+                        :class="{ 'activity-can-drag': canDrag }">
                         <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
@@ -355,6 +354,12 @@ defineExpose({
     display: none;
 }
 
+.activity-can-drag .activity-item {
+    border-radius: $border-radius-extralarge;
+    outline: 2px dashed $border-color;
+    outline-offset: -3px;
+}
+
 .activity-chosen-class {
     background: $brand-secondary;
     border-radius: $border-radius-extralarge;
@@ -388,12 +393,5 @@ defineExpose({
 .vertical-overflow {
     overflow-y: auto;
     overflow-x: hidden;
-}
-
-.can-drag {
-    border-radius: 12px;
-    border: 1px;
-    outline: dashed darkgray;
-    outline-offset: -3px;
 }
 </style>

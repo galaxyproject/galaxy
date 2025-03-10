@@ -14,9 +14,10 @@ from typing import (
     Callable,
     Optional,
     Tuple,
+    TYPE_CHECKING,
+    Union,
 )
 
-import sqlalchemy
 from sqlalchemy import (
     desc,
     false,
@@ -54,7 +55,6 @@ from galaxy.model import (
     User,
     Visualization,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -76,6 +76,9 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
 
 log = logging.getLogger(__name__)
 
@@ -122,7 +125,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class PageManager(sharable.SharableModelManager, UsesAnnotations):
+class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
     """Provides operations for managing a Page."""
 
     model_class = model.Page
@@ -140,7 +143,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[sqlalchemy.engine.Result, int]:
+    ) -> Tuple["ScalarResult[model.Page]", Union[int, None]]:
         show_deleted = payload.deleted
         show_own = payload.show_own
         show_published = payload.show_published
@@ -157,6 +160,10 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(message)
 
         stmt = select(self.model_class)
+
+        # Do not include pages authored by deleted users
+        if show_published:
+            stmt = stmt.join(Page.user).where(User.deleted == false())
 
         filters = []
         if show_own or (not show_published and not show_shared and not is_admin):
@@ -239,7 +246,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
+        return trans.sa_session.scalars(stmt), total_matches
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
@@ -266,7 +273,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
-        page = trans.app.model.Page()
+        page = model.Page()
         page.title = payload.title
         page.slug = payload.slug
         if (page_annotation := payload.annotation) is not None:
@@ -275,7 +282,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
         page.user = user
         # And the first (empty) page revision
-        page_revision = trans.app.model.PageRevision()
+        page_revision = model.PageRevision()
         page_revision.title = payload.title
         page_revision.page = page
         page.latest_revision = page_revision
@@ -284,8 +291,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         # Persist
         session = trans.sa_session
         session.add(page)
-        with transaction(session):
-            session.commit()
+        session.commit()
         return page
 
     def save_new_revision(self, trans, page, payload):
@@ -308,7 +314,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             content_format = page.latest_revision.content_format
         content = self.rewrite_content_for_import(trans, content, content_format=content_format)
 
-        page_revision = trans.app.model.PageRevision()
+        page_revision = model.PageRevision()
         page_revision.title = title
         page_revision.page = page
         page.latest_revision = page_revision
@@ -317,8 +323,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
         # Persist
         session = trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
         return page_revision
 
     def rewrite_content_for_import(self, trans, content, content_format: str):

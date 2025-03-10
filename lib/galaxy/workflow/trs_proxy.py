@@ -95,7 +95,7 @@ class TrsProxy:
         if url.lstrip().startswith("file://"):
             # requests doesn't know what to do with file:// anyway, but just in case we swap
             # out the implementation
-            raise RequestParameterInvalidException("Invalid TRS URL %s", url)
+            raise RequestParameterInvalidException(f"Invalid TRS URL {url}")
         validate_non_local(url, ip_allowlist=ip_allowlist or [])
         return self._match_url(url)
 

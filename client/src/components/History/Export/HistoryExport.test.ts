@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -7,7 +7,7 @@ import { setActivePinia } from "pinia";
 import { type HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import { type FilesSourcePlugin } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
@@ -39,7 +39,7 @@ const FAKE_HISTORY: HistorySummary = {
     url: FAKE_HISTORY_URL,
 };
 
-const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
+const REMOTE_FILES_API_RESPONSE: BrowsableFilesSourcePlugin[] = [
     {
         id: "test-posix-source",
         type: "posix",
@@ -54,6 +54,7 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
             search: false,
             sorting: false,
         },
+        uri_root: "gxfiles://test-posix-source",
     },
 ];
 
@@ -143,7 +144,7 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should display the ZENODO tab if the Zenodo plugin is available", async () => {
-        const zenodoPlugin: FilesSourcePlugin = {
+        const zenodoPlugin: BrowsableFilesSourcePlugin = {
             id: "zenodo",
             type: "rdm",
             label: "Zenodo",
@@ -155,6 +156,7 @@ describe("HistoryExport.vue", () => {
                 search: false,
                 sorting: false,
             },
+            uri_root: "zenodo://",
         };
         server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([zenodoPlugin])));
 
@@ -163,7 +165,34 @@ describe("HistoryExport.vue", () => {
         expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
     });
 
+    it("should display the ZENODO tab if the user has a user-defined Zenodo file source", async () => {
+        const userZenodoPlugin: BrowsableFilesSourcePlugin = {
+            id: "998c5bba-b18f-4223-9c93-0f36fa2fdae8",
+            type: "zenodo",
+            label: "ZENODO",
+            doc: "My integration with Zenodo",
+            browsable: true,
+            writable: true,
+            requires_roles: null,
+            requires_groups: null,
+            url: "https://zenodo.org/",
+            supports: {
+                pagination: true,
+                search: true,
+                sorting: false,
+            },
+            uri_root: "gxuserfiles://998c5bba-b18f-4223-9c93-0f36fa2fdae8",
+        };
+        server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([userZenodoPlugin])));
+
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
+    });
+
     it("should not display a fatal error alert if the history is found and loaded", async () => {
+        suppressDebugConsole(); // we rightfully debug message the fact we don't have a history in this test
+
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#fatal-error-alert").exists()).toBe(false);

@@ -11,7 +11,10 @@ from typing_extensions import TypedDict
 
 from galaxy.util import Element
 from galaxy.util.dictifiable import Dictifiable
-from .output_actions import ToolOutputActionGroup
+from .output_actions import (
+    ToolOutputActionApp,
+    ToolOutputActionGroup,
+)
 from .output_collection_def import (
     dataset_collector_descriptions_from_output_dict,
     DatasetCollectionDescription,
@@ -116,7 +119,6 @@ class ToolOutput(ToolOutputBase):
         self.dataset_collector_descriptions: List[DatasetCollectionDescription] = []
         self.default_identifier_source: Optional[str] = None
         self.count: Optional[int] = None
-        self.tool: Optional[Any]
 
     # Tuple emulation
 
@@ -163,7 +165,7 @@ class ToolOutput(ToolOutputBase):
         )
 
     @staticmethod
-    def from_dict(name: str, output_dict: Dict[str, Any], tool: Optional[object] = None) -> "ToolOutput":
+    def from_dict(name: str, output_dict: Dict[str, Any], app: Optional[ToolOutputActionApp] = None) -> "ToolOutput":
         output = ToolOutput(name)
         output.format = output_dict.get("format", "data")
         output.change_format = []
@@ -174,11 +176,11 @@ class ToolOutput(ToolOutputBase):
         output.label = output_dict.get("label", None)
         output.count = output_dict.get("count", 1)
         output.filters = []
-        output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
         output.hidden = output_dict.get("hidden", False)
         # TODO: implement tool output action group fixes
-        output.actions = ToolOutputActionGroup(output, None)
+        if app is not None:
+            output.actions = ToolOutputActionGroup(app, None)
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
         return output
 
@@ -189,6 +191,7 @@ class ToolOutput(ToolOutputBase):
 
 class ToolExpressionOutput(ToolOutputBase):
     dict_collection_visible_keys = ("name", "format", "label", "hidden", "output_type")
+    path: Optional[str]
 
     def __init__(self, name, output_type, from_expression, label=None, filters=None, actions=None, hidden=False):
         super().__init__(name, label=label, filters=filters, hidden=hidden)
@@ -205,6 +208,8 @@ class ToolExpressionOutput(ToolOutputBase):
         self.change_format = []
         self.implicit = False
         self.from_work_dir = None
+
+        self.dataset_collector_descriptions = []
 
     def to_model(self) -> ToolOutputModel:
         model_class: Union[
@@ -281,7 +286,7 @@ class ToolOutputCollection(ToolOutputBase):
         self.collection = True
         self.default_format = default_format
         self.structure = structure
-        self.outputs: Dict[str, str] = {}
+        self.outputs: Dict[str, ToolOutput] = {}
 
         self.inherit_format = inherit_format
         self.inherit_metadata = inherit_metadata
@@ -366,7 +371,7 @@ class ToolOutputCollection(ToolOutputBase):
         )
 
     @staticmethod
-    def from_dict(name, output_dict, tool=None) -> "ToolOutputCollection":
+    def from_dict(name, output_dict, app: Optional[ToolOutputActionApp] = None) -> "ToolOutputCollection":
         structure = ToolOutputCollectionStructure.from_dict(output_dict["structure"])
         rval = ToolOutputCollection(
             name,

@@ -35,9 +35,7 @@ withDefaults(defineProps<Props>(), {
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
         <FontAwesomeIcon :icon="faSpinner" fixed-width spin />
-        <slot>
-            <span v-if="title">{{ title }}</span>
-        </slot>
+        <span v-if="title" class="ml-1">{{ title }}</span>
     </BButton>
     <BButton
         v-else
@@ -49,8 +47,6 @@ withDefaults(defineProps<Props>(), {
         :size="size"
         @click="$emit('onClick')">
         <FontAwesomeIcon :icon="!icon ? faPlay : icon" fixed-width />
-        <slot>
-            <span v-if="title">{{ title }}</span>
-        </slot>
+        <span v-if="title" class="ml-1">{{ title }}</span>
     </BButton>
 </template>

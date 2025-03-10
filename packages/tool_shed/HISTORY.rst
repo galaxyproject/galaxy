@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
------------
-24.2.2.dev0
------------
+---------
+25.0.dev0
+---------
 
 
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Skip slow tests for manage_db, db_dev scripts by `@jdavcs <https://github.com/jdavcs>`_ in `#19744 <https://github.com/galaxyproject/galaxy/pull/19744>`_
 
 -------------------
 24.2.1 (2025-02-28)

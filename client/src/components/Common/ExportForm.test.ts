@@ -10,7 +10,7 @@ describe("ExportForm.vue", () => {
     let wrapper: any;
 
     beforeEach(async () => {
-        wrapper = mount(ExportForm, {
+        wrapper = mount(ExportForm as object, {
             propsData: {},
             localVue,
         });

@@ -80,17 +80,13 @@ class TransLogger:
             offset = time.altzone / 60 / 60 * -100
         else:
             offset = time.timezone / 60 / 60 * -100
-        if offset >= 0:
-            offset = "+%0.4d" % (offset)
-        elif offset < 0:
-            offset = "%0.4d" % (offset)
         d = {
             "REMOTE_ADDR": environ.get("REMOTE_ADDR") or "-",
             "REMOTE_USER": environ.get("REMOTE_USER") or "-",
             "REQUEST_METHOD": method,
             "REQUEST_URI": req_uri,
             "HTTP_VERSION": environ.get("SERVER_PROTOCOL"),
-            "time": time.strftime("%d/%b/%Y:%H:%M:%S ", start) + offset,
+            "time": time.strftime("%d/%b/%Y:%H:%M:%S ", start) + f"{int(offset):+05}",
             "status": status.split(None, 1)[0],
             "bytes": bytes,
             "HTTP_REFERER": environ.get("HTTP_REFERER", "-"),

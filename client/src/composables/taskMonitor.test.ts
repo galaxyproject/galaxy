@@ -1,7 +1,10 @@
 import flushPromises from "flush-promises";
+import { suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useTaskMonitor } from "@/composables/taskMonitor";
+
+import type { StoredTaskStatus } from "./genericTaskMonitor";
 
 const PENDING_TASK_ID = "pending-fake-task-id";
 const COMPLETED_TASK_ID = "completed-fake-task-id";
@@ -23,6 +26,24 @@ describe("useTaskMonitor", () => {
 
                     case FAILED_TASK_ID:
                         return response(200).json("FAILURE");
+
+                    case REQUEST_FAILED_TASK_ID:
+                        return response("5XX").json({ err_msg: "Request failed", err_code: 500 }, { status: 500 });
+
+                    default:
+                        return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
+                }
+            }),
+            http.get("/api/tasks/{task_id}/result", ({ response, params }) => {
+                switch (params.task_id) {
+                    case PENDING_TASK_ID:
+                        return response(200).json({ state: "PENDING", result: "" });
+
+                    case COMPLETED_TASK_ID:
+                        return response(200).json({ state: "SUCCESS", result: "" });
+
+                    case FAILED_TASK_ID:
+                        return response(200).json({ state: "FAILURE", result: "The failure reason" });
 
                     case REQUEST_FAILED_TASK_ID:
                         return response("5XX").json({ err_msg: "Request failed", err_code: 500 }, { status: 500 });
@@ -56,7 +77,7 @@ describe("useTaskMonitor", () => {
     });
 
     it("should indicate the task has failed when the state is FAILED", async () => {
-        const { waitForTask, isRunning, hasFailed, taskStatus } = useTaskMonitor();
+        const { waitForTask, isRunning, hasFailed, taskStatus, failureReason } = useTaskMonitor();
 
         expect(hasFailed.value).toBe(false);
         waitForTask(FAILED_TASK_ID);
@@ -64,10 +85,12 @@ describe("useTaskMonitor", () => {
         expect(hasFailed.value).toBe(true);
         expect(isRunning.value).toBe(false);
         expect(taskStatus.value).toBe("FAILURE");
+        expect(failureReason.value).toBe("The failure reason");
     });
 
     it("should indicate the task status request failed when the request failed", async () => {
         const { waitForTask, requestHasFailed, isRunning, isCompleted, taskStatus } = useTaskMonitor();
+        suppressDebugConsole();
 
         expect(requestHasFailed.value).toBe(false);
         waitForTask(REQUEST_FAILED_TASK_ID);
@@ -80,14 +103,35 @@ describe("useTaskMonitor", () => {
 
     it("should load the status from the stored monitoring data", async () => {
         const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus } = useTaskMonitor();
-        const storedStatus = "SUCCESS";
+        const expectedStatus = "SUCCESS";
+        const storedStatus: StoredTaskStatus = {
+            taskStatus: expectedStatus,
+        };
 
         loadStatus(storedStatus);
 
-        expect(taskStatus.value).toBe(storedStatus);
+        expect(taskStatus.value).toBe(expectedStatus);
         expect(isRunning.value).toBe(false);
         expect(isCompleted.value).toBe(true);
         expect(hasFailed.value).toBe(false);
+    });
+
+    it("should load the status from the stored monitoring data with failure reason", async () => {
+        const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus, failureReason } = useTaskMonitor();
+        const expectedStatus = "FAILURE";
+        const expectedFailureReason = "The stored failure reason";
+        const storedStatus: StoredTaskStatus = {
+            taskStatus: expectedStatus,
+            failureReason: expectedFailureReason,
+        };
+
+        loadStatus(storedStatus);
+
+        expect(taskStatus.value).toBe(expectedStatus);
+        expect(isRunning.value).toBe(false);
+        expect(isCompleted.value).toBe(false);
+        expect(hasFailed.value).toBe(true);
+        expect(failureReason.value).toBe(expectedFailureReason);
     });
 
     describe("isFinalState", () => {

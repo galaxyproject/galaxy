@@ -3,11 +3,38 @@ History
 
 .. to_doc
 
------------
-24.2.2.dev0
------------
+---------
+25.0.dev0
+---------
 
 
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix conditional dependency path resolution by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19723 <https://github.com/galaxyproject/galaxy/pull/19723>`_
+* Allow tool state changes in refactor actions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19730 <https://github.com/galaxyproject/galaxy/pull/19730>`_
+* Update fs.dropboxfs conditional dependency version to 1.0.3 by `@davelopez <https://github.com/davelopez>`_ in `#19741 <https://github.com/galaxyproject/galaxy/pull/19741>`_
+* Follow-up to #19651: Do not reassign: method modifies object in-place by `@jdavcs <https://github.com/jdavcs>`_ in `#19746 <https://github.com/galaxyproject/galaxy/pull/19746>`_
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+* Skip slow tests for manage_db, db_dev scripts by `@jdavcs <https://github.com/jdavcs>`_ in `#19744 <https://github.com/galaxyproject/galaxy/pull/19744>`_
+
+=============
+Other changes
+=============
+
+* Make k8s user and group ids overriddable per job by `@nuwang <https://github.com/nuwang>`_ in `#19568 <https://github.com/galaxyproject/galaxy/pull/19568>`_
 
 -------------------
 24.2.1 (2025-02-28)

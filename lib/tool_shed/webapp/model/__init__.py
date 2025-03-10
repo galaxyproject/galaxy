@@ -54,11 +54,7 @@ from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
-from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import (
-    hg_util,
-    metadata_util,
-)
+from tool_shed.util import hg_util
 from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
@@ -68,6 +64,8 @@ WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
 if TYPE_CHECKING:
     # Workaround for https://github.com/python/mypy/issues/14182
     from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
+
+    from tool_shed.structured_app import ToolShedApp
 
     class DeclarativeMeta(_DeclarativeMeta, type):
         pass
@@ -493,11 +491,14 @@ class Repository(Base, Dictifiable):
         # have repository dependencies. However, if a readme file is uploaded, or some other change
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
-        repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(app, self, changeset)
+        from tool_shed.dependencies.repository.relation_builder import RelationBuilder
+        from tool_shed.util.metadata_util import get_current_repository_metadata_for_changeset_revision
+
+        repository_metadata = get_current_repository_metadata_for_changeset_revision(app, self, changeset)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                rb = relation_builder.RelationBuilder(app, self, repository_metadata, toolshed_url)
+                rb = RelationBuilder(app, self, repository_metadata, toolshed_url)
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 if repository_dependencies:
                     return repository_dependencies
@@ -507,14 +508,18 @@ class Repository(Base, Dictifiable):
         return app.repository_types_registry.get_class_by_label(self.type)
 
     def get_tool_dependencies(self, app, changeset_revision):
-        changeset_revision = metadata_util.get_next_downloadable_changeset_revision(app, self, changeset_revision)
+        from tool_shed.util.metadata_util import get_next_downloadable_changeset_revision
+
+        changeset_revision = get_next_downloadable_changeset_revision(app, self, changeset_revision)
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 return downloadable_revision.metadata.get("tool_dependencies", {})
         return {}
 
-    def installable_revisions(self, app, sort_revisions=True):
-        return metadata_util.get_metadata_revisions(app, self, sort_revisions=sort_revisions)
+    def installable_revisions(self, app: "ToolShedApp", sort_revisions: bool = True):
+        from tool_shed.util.metadata_util import get_metadata_revisions
+
+        return get_metadata_revisions(app, self, sort_revisions=sort_revisions)
 
     def is_new(self):
         tip_rev = self.hg_repo.changelog.tiprev()
@@ -530,7 +535,7 @@ class Repository(Base, Dictifiable):
         if self.id is None:
             raise Exception("Attempting to call hg_repository_path before id has been set on repository object")
         dir = os.path.join(repositories_directory, *util.directory_hash_id(self.id))
-        final_repository_path = os.path.join(dir, "repo_%d" % self.id)
+        final_repository_path = os.path.join(dir, f"repo_{self.id}")
         return final_repository_path
 
     def ensure_hg_repository_path(self, repositories_directory: str) -> str:
@@ -667,7 +672,7 @@ class Tag(Base):
     parent = relationship("Tag", back_populates="children", remote_side=[id])
 
     def __str__(self):
-        return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
+        return f"Tag(id={self.id}, type={self.type}, parent_id={self.parent_id}, name={self.name})"
 
 
 # The RepositoryMetadata model is mapped imperatively (for details see discussion in PR #12064).

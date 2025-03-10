@@ -21,7 +21,6 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
     AnyLibraryContentsCreateResponse,
@@ -35,6 +34,10 @@ from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
+)
+from galaxy.webapps.galaxy.api.common import (
+    LibraryDatasetIdPathParam,
+    LibraryIdPathParam,
 )
 from galaxy.webapps.galaxy.services.library_contents import (
     LibraryContentsService,
@@ -83,7 +86,7 @@ class FastAPILibraryContents:
     )
     def index(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> LibraryContentsIndexListResponse:
         """This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead."""
@@ -97,7 +100,7 @@ class FastAPILibraryContents:
     )
     def show(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> AnyLibraryContentsShowResponse:
@@ -112,7 +115,7 @@ class FastAPILibraryContents:
     )
     def create_json(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         payload: AnyLibraryContentsCreatePayload,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AnyLibraryContentsCreateResponse:
@@ -127,7 +130,7 @@ class FastAPILibraryContents:
     )
     def create_form(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         payload: LibraryContentsFileCreatePayload = Depends(LibraryContentsCreateForm.as_form),
         files: List[StarletteUploadFile] = Depends(get_files),
         trans: ProvidesHistoryContext = DependsOnTrans,
@@ -142,8 +145,8 @@ class FastAPILibraryContents:
     )
     def update(
         self,
-        library_id: DecodedDatabaseIdField,
-        id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
+        id: LibraryDatasetIdPathParam,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> None:
@@ -157,8 +160,8 @@ class FastAPILibraryContents:
     )
     def delete(
         self,
-        library_id: DecodedDatabaseIdField,
-        id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
+        id: LibraryDatasetIdPathParam,
         payload: Optional[LibraryContentsDeletePayload] = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> LibraryContentsDeleteResponse:

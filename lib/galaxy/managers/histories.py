@@ -14,6 +14,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -56,7 +57,6 @@ from galaxy.model import (
     HistoryUserShareAssociation,
     Job,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -86,6 +86,9 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+
 log = logging.getLogger(__name__)
 
 INDEX_SEARCH_FILTERS = {
@@ -96,7 +99,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
+class HistoryManager(sharable.SharableModelManager[model.History], deletable.PurgableManagerMixin, SortableManager):
     model_class = model.History
     foreign_key_name = "history"
     user_share_model = model.HistoryUserShareAssociation
@@ -121,7 +124,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def index_query(
         self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[List[model.History], int]:
+    ) -> Tuple["ScalarResult[model.History]", Union[int, None]]:
         show_deleted = False
         show_own = payload.show_own
         show_published = payload.show_published
@@ -235,7 +238,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
+        return trans.sa_session.scalars(stmt), total_matches
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
@@ -506,8 +509,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         history.archived = True
         history.archive_export_id = archive_export_id
-        with transaction(self.session()):
-            self.session().commit()
+        self.session().commit()
 
         return history
 
@@ -529,8 +531,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             )
 
         history.archived = False
-        with transaction(self.session()):
-            self.session().commit()
+        self.session().commit()
 
         return history
 
@@ -641,8 +642,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
 
         if success_item_count:
             session = self.history_manager.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
 
         return StorageItemsCleanupResult(
             total_item_count=len(item_ids),

@@ -41,7 +41,6 @@ from galaxy.model import (
     Job,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
@@ -157,8 +156,7 @@ def change_datatype(
         path = dataset_instance.dataset.get_file_name()
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
 
 
@@ -174,8 +172,7 @@ def touch(
     stmt = select(model.HistoryDatasetCollectionAssociation).filter_by(id=item_id)
     item = sa_session.execute(stmt).scalar_one()
     item.touch()
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -202,15 +199,14 @@ def set_metadata(
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
-        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore [arg-type]
+        dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
         # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
         dataset_instance.set_metadata_success_state()
     except Exception as e:
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
         dataset_instance.state = dataset_instance.states.FAILED_METADATA
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
 
 def _get_dataset_manager(
@@ -289,7 +285,7 @@ def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job
     if not is_aborted(session, job_id):
         future = celery_app.fork_pool.submit(
             function,
-            timeout=None,
+            None,
             **kwargs,
         )
         while True:
@@ -512,7 +508,7 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
 
 
 @galaxy_task(action="clean up job working directories")
-def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, days: int = 5):
+def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, config: GalaxyAppConfiguration):
     """Cleanup job working directories for failed jobs that are older than X days"""
 
     def get_failed_jobs():
@@ -534,6 +530,7 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
             log.error(f"Error deleting job working directory: {path} : {e.strerror}")
 
     failed_jobs = get_failed_jobs()
+    days = config.failed_jobs_working_directory_cleanup_days
 
     if not failed_jobs:
         log.info("No failed jobs found within the last %s days", days)

@@ -30,11 +30,11 @@ const emit = defineEmits<{
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    panelView: { type: String, required: true },
     showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
+    useSearchWorker: { type: Boolean, default: true },
 });
 
 library.add(faEye, faEyeSlash);
@@ -66,17 +66,20 @@ const query = computed({
     },
 });
 
-const { currentPanel, currentPanelView } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
 
 const hasDataManagerSection = computed(() => props.workflow && props.dataManagers && props.dataManagers.length > 0);
 const dataManagerSection = computed(() => {
-    return {
+    const dynamicSection: ToolSectionType = {
+        model_class: "ToolSection",
+        id: "__data_managers",
         name: localize("Data Managers"),
-        elems: props.dataManagers,
+        elems: props.dataManagers as Tool[],
     };
+    return dynamicSection;
 });
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
@@ -96,7 +99,7 @@ const localSectionsById = computed(() => {
     const validToolIdsInCurrentView = Object.keys(localToolsById.value);
 
     // Looking within each `ToolSection`, and filtering on child elements
-    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentPanel.value);
+    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentToolSections.value);
 
     // Looking at each item in the panel now (not within each child)
     return getValidPanelItems(
@@ -192,13 +195,14 @@ function onToggle() {
         <div class="unified-panel-controls">
             <ToolSearch
                 :enable-advanced="!props.workflow"
-                :current-panel-view="props.panelView || ''"
+                :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
                 :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"
                 :current-panel="localSectionsById"
                 :query="query"
                 :query-pending="queryPending"
+                :use-worker="useSearchWorker"
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
             <section v-if="!propShowAdvanced">

@@ -1,6 +1,6 @@
 import json
 
-from pysam import (  # type: ignore[attr-defined, unused-ignore]
+from pysam import (
     AlignmentFile,
     view,
 )

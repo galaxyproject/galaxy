@@ -1,4 +1,4 @@
-""" This module contains functionality to aid in extracting workflows from
+"""This module contains functionality to aid in extracting workflows from
 histories.
 """
 
@@ -9,10 +9,7 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -76,8 +73,7 @@ def extract_workflow(
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
     ensure_object_added_to_session(workflow, session=trans.sa_session)
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     return stored
 
 
@@ -442,7 +438,7 @@ def __cleanup_param_values(inputs, values):
                     group_values = values[key]
                     for i, rep_values in enumerate(group_values):
                         rep_index = rep_values["__index__"]
-                        cleanup("%s%s_%d|" % (prefix, key, rep_index), input.inputs, group_values[i])
+                        cleanup(f"{prefix}{key}_{rep_index}|", input.inputs, group_values[i])
             elif isinstance(input, Conditional):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include

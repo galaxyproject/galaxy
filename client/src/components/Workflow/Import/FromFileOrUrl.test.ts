@@ -9,6 +9,7 @@ jest.mock("axios", () => ({
     post: jest.fn((_url, request) => {
         lastPostRequest = request;
     }),
+    isAxiosError: jest.fn(() => true),
 }));
 
 const localVue = getLocalVue(true);

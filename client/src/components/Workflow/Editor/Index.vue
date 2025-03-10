@@ -91,12 +91,18 @@
                     :versions="versions"
                     :license="license"
                     :creator="creator"
+                    :logo-url="logoUrl"
+                    :readme="readme"
+                    :help="help"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"
                     @creator="onCreator"
                     @update:nameCurrent="setName"
-                    @update:annotationCurrent="setAnnotation" />
+                    @update:annotationCurrent="setAnnotation"
+                    @update:logoUrlCurrent="setLogoUrl"
+                    @update:readmeCurrent="setReadme"
+                    @update:helpCurrent="setHelp" />
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -129,15 +135,6 @@
                         <span class="editor-title" :title="name"
                             >{{ name }}
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
-                            <b-button
-                                v-if="hasChanges"
-                                id="workflow-save-button"
-                                class="py-1 px-2"
-                                variant="link"
-                                :title="saveWorkflowTitle"
-                                @click="saveOrCreate">
-                                <FontAwesomeIcon :icon="faSave" />
-                            </b-button>
                         </span>
                     </span>
 
@@ -154,10 +151,20 @@
                             @click="undoRedoStore.redo()">
                             <FontAwesomeIcon icon="fa-arrow-right" />
                         </b-button>
+                        <b-button
+                            id="workflow-save-button"
+                            class="py-1 px-2"
+                            variant="link"
+                            :disabled="!hasChanges"
+                            :title="saveWorkflowTitle"
+                            @click="saveOrCreate">
+                            <FontAwesomeIcon :icon="faSave" />
+                        </b-button>
                     </b-button-group>
                 </div>
                 <WorkflowGraph
                     v-if="!datatypesMapperLoading"
+                    ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :highlight-id="highlightId"
@@ -193,7 +200,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useMagicKeys, whenever } from "@vueuse/core";
+import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
@@ -202,6 +209,7 @@ import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
@@ -296,6 +304,7 @@ export default {
         whenever(redoKeys, redo);
 
         const activityBar = ref(null);
+        const workflowGraph = ref(null);
         const reportActive = computed(() => activityBar.value?.isActiveSideBar("workflow-editor-report"));
 
         const parameters = ref(null);
@@ -360,12 +369,51 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify annotation"
+            "modify short description"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
             if (annotation.value !== newAnnotation) {
                 setAnnotationHandler.set(annotation.value, newAnnotation);
+            }
+        }
+
+        const readme = ref(null);
+        const setReadmeHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (readme.value = value),
+            showAttributes,
+            "modify readme"
+        );
+        function setReadme(newReadme) {
+            if (readme.value !== newReadme) {
+                setReadmeHandler.set(readme.value, newReadme);
+            }
+        }
+
+        const help = ref(null);
+        const setHelpHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (help.value = value),
+            showAttributes,
+            "modify help"
+        );
+        function setHelp(newHelp) {
+            if (help.value !== newHelp) {
+                setHelpHandler.set(help.value, newHelp);
+            }
+        }
+
+        const logoUrl = ref(null);
+        const setLogoUrlHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (logoUrl.value = value),
+            showAttributes,
+            "modify logo url"
+        );
+        function setLogoUrl(newLogoUrl) {
+            if (logoUrl.value !== newLogoUrl) {
+                setLogoUrlHandler.set(logoUrl.value, newLogoUrl);
             }
         }
 
@@ -482,6 +530,7 @@ export default {
             id,
             name,
             parameters,
+            workflowGraph,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -492,6 +541,12 @@ export default {
             setCreator,
             annotation,
             setAnnotation,
+            readme,
+            setReadme,
+            help,
+            setHelp,
+            logoUrl,
+            setLogoUrl,
             tags,
             setTags,
             rightPanelElement,
@@ -574,6 +629,21 @@ export default {
         },
         name(newName, oldName) {
             if (newName != oldName) {
+                this.hasChanges = true;
+            }
+        },
+        readme(newReadme, oldReadme) {
+            if (newReadme != oldReadme) {
+                this.hasChanges = true;
+            }
+        },
+        help(newHelp, oldHelp) {
+            if (newHelp != oldHelp) {
+                this.hasChanges = true;
+            }
+        },
+        logoUrl(newLogoUrl, oldLogoUrl) {
+            if (newLogoUrl != oldLogoUrl) {
                 this.hasChanges = true;
             }
         },
@@ -972,6 +1042,15 @@ export default {
             if (data.annotation !== undefined) {
                 this.annotation = data.annotation;
             }
+            if (data.readme !== undefined) {
+                this.readme = data.readme;
+            }
+            if (data.help !== undefined) {
+                this.help = data.help;
+            }
+            if (data.logo_url !== undefined) {
+                this.logoUrl = data.logo_url;
+            }
             if (data.version !== undefined) {
                 this.version = data.version;
             }
@@ -1002,6 +1081,11 @@ export default {
                 } catch (e) {
                     this.onWorkflowError("Loading workflow failed...", e);
                 }
+
+                await until(() => this.datatypesMapperLoading).toBe(false);
+                await nextTick();
+
+                this.workflowGraph.fitWorkflow();
             }
         },
         onLicense(license) {

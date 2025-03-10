@@ -1,7 +1,7 @@
-attrs==24.2.0
-flake8==7.1.1
-flake8-bugbear==24.10.31
+attrs==25.1.0
+flake8==7.1.2
+flake8-bugbear==24.12.12
 mccabe==0.7.0
 pycodestyle==2.12.1
 pyflakes==3.2.0
-ruff==0.7.4
+ruff==0.9.10

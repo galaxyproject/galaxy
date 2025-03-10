@@ -15,7 +15,7 @@ def test_get_tool(provides_repositories: ProvidesRepositoriesContext, new_reposi
     encoded_id = f"{owner}~{name}~Add_a_column1"
 
     repo_path = new_repository.repo_path(app=provides_repositories.app)
-    tool_source = tool_source_for(provides_repositories, encoded_id, "1.2.0", repository_clone_url=repo_path)
+    tool_source = tool_source_for(provides_repositories, encoded_id, "1.2.0", repository_clone_url=repo_path)[0]
     assert tool_source.parse_id() == "Add_a_column1"
     bundle = parsed_tool_model_for(provides_repositories, encoded_id, "1.2.0", repository_clone_url=repo_path)
     assert len(bundle.inputs) == 3

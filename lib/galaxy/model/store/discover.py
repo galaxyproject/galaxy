@@ -80,6 +80,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         name,
         filename=None,
         extra_files=None,
+        metadata=None,
         metadata_source_name=None,
         info=None,
         library_folder=None,
@@ -151,6 +152,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         primary_data.state = final_job_state
         if final_job_state == galaxy.model.Job.states.ERROR and not self.get_implicit_collection_jobs_association_id():
             primary_data.visible = True
+
+        if metadata:
+            for key, value in metadata.items():
+                metadata_element = primary_data.datatype.metadata_spec.get(key)
+                if metadata_element and metadata_element.set_in_upload:
+                    setattr(primary_data.metadata, key, value)
 
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
@@ -860,6 +867,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     name=name,
                     filename=discovered_file.path,
                     extra_files=extra_files,
+                    metadata=element.get("metadata"),
                     info=info,
                     tag_list=tag_list,
                     link_data=link_data,
@@ -1050,7 +1058,7 @@ class JsonCollectedDatasetMatch:
         identifiers = []
         i = 0
         while True:
-            key = "identifier_%d" % i
+            key = f"identifier_{i}"
             if key in self.as_dict:
                 identifiers.append(self.as_dict.get(key))
             else:

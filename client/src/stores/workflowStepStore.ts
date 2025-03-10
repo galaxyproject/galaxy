@@ -35,6 +35,7 @@ export interface PostJobActions {
 }
 
 export interface DataOutput {
+    valid?: boolean;
     extensions: string[];
     name: string;
     optional: boolean;

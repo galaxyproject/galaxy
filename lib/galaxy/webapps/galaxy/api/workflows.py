@@ -50,7 +50,6 @@ from galaxy.managers.workflows import (
     WorkflowCreateOptions,
     WorkflowUpdateOptions,
 )
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
@@ -187,8 +186,7 @@ class WorkflowsAPIController(
             m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
 
             user.stored_workflow_menu_entries.append(m)
-        with transaction(session):
-            session.commit()
+        session.commit()
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
@@ -497,8 +495,7 @@ class WorkflowsAPIController(
                 )
 
             if require_flush:
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
 
             if "steps" in workflow_dict or "comments" in workflow_dict:
                 try:
@@ -687,8 +684,7 @@ class WorkflowsAPIController(
         )
         if importable:
             self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools

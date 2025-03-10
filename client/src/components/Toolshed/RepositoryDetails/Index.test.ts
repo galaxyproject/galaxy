@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -10,6 +10,8 @@ import Index from "./Index.vue";
 const { server, http } = useServerMock();
 
 describe("RepositoryDetails", () => {
+    suppressDebugConsole(); // we issue a debug warning when a repo has no revisions
+
     it("test repository details index", async () => {
         server.use(
             http.get("/api/configuration", ({ response }) => {

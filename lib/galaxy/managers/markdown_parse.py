@@ -27,11 +27,12 @@ class DynamicArguments:
 DYNAMIC_ARGUMENTS = DynamicArguments()
 SHARED_ARGUMENTS: List[str] = ["collapse"]
 VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
-    "history_link": ["history_id"],
-    "history_dataset_display": ["input", "output", "history_dataset_id"],
-    "history_dataset_embedded": ["input", "output", "history_dataset_id"],
-    "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
+    "history_link": ["history_id", "invocation_id"],
+    "history_dataset_display": ["invocation_id", "input", "output", "history_dataset_id"],
+    "history_dataset_embedded": ["invocation_id", "input", "output", "history_dataset_id"],
+    "history_dataset_as_image": ["invocation_id", "input", "output", "history_dataset_id", "path"],
     "history_dataset_as_table": [
+        "invocation_id",
         "input",
         "output",
         "history_dataset_id",
@@ -41,20 +42,20 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
         "show_column_headers",
         "compact",
     ],
-    "history_dataset_peek": ["input", "output", "history_dataset_id"],
-    "history_dataset_info": ["input", "output", "history_dataset_id"],
-    "history_dataset_link": ["input", "output", "history_dataset_id", "path", "label"],
-    "history_dataset_index": ["input", "output", "history_dataset_id", "path"],
-    "history_dataset_name": ["input", "output", "history_dataset_id"],
-    "history_dataset_type": ["input", "output", "history_dataset_id"],
-    "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
-    "workflow_display": ["workflow_id", "workflow_checkpoint"],
-    "workflow_license": ["workflow_id"],
-    "workflow_image": ["workflow_id", "size", "workflow_checkpoint"],
-    "job_metrics": ["step", "job_id", "implicit_collection_jobs_id"],
-    "job_parameters": ["step", "job_id", "implicit_collection_jobs_id"],
-    "tool_stderr": ["step", "job_id", "implicit_collection_jobs_id"],
-    "tool_stdout": ["step", "job_id", "implicit_collection_jobs_id"],
+    "history_dataset_peek": ["invocation_id", "input", "output", "history_dataset_id"],
+    "history_dataset_info": ["invocation_id", "input", "output", "history_dataset_id"],
+    "history_dataset_link": ["invocation_id", "input", "output", "history_dataset_id", "path", "label"],
+    "history_dataset_index": ["invocation_id", "input", "output", "history_dataset_id", "path"],
+    "history_dataset_name": ["invocation_id", "input", "output", "history_dataset_id"],
+    "history_dataset_type": ["invocation_id", "input", "output", "history_dataset_id"],
+    "history_dataset_collection_display": ["invocation_id", "input", "output", "history_dataset_collection_id"],
+    "workflow_display": ["invocation_id", "workflow_id", "workflow_checkpoint"],
+    "workflow_license": ["invocation_id", "workflow_id"],
+    "workflow_image": ["invocation_id", "workflow_id", "size", "workflow_checkpoint"],
+    "job_metrics": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
+    "job_parameters": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
+    "tool_stderr": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
+    "tool_stdout": ["invocation_id", "step", "job_id", "implicit_collection_jobs_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
     "instance_access_link": [],
@@ -67,8 +68,8 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "visualization": DYNAMIC_ARGUMENTS,
     # Invocation Flavored Markdown
     "invocation_time": ["invocation_id"],
-    "invocation_outputs": [],
-    "invocation_inputs": [],
+    "invocation_outputs": ["invocation_id"],
+    "invocation_inputs": ["invocation_id"],
 }
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>{})".format("|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS))
@@ -86,12 +87,12 @@ WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
 
-    def invalid_line(template, line_no, **kwd):
+    def invalid_line(template, line_no: int, **kwd):
         if "line" in kwd:
             kwd["line"] = kwd["line"].rstrip("\r\n")
-        raise ValueError("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
+        raise ValueError(f"Invalid line {line_no + 1}: {template.format(**kwd)}")
 
-    def _validate_arg(arg_str, valid_args, line_no):
+    def _validate_arg(arg_str, valid_args, line_no: int):
         if arg_str is not None:
             arg_name = arg_str.split("=", 1)[0].strip()
             if arg_name not in valid_args and arg_name not in SHARED_ARGUMENTS:

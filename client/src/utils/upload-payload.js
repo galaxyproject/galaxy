@@ -13,6 +13,8 @@ export const URI_PREFIXES = [
     "drs://",
     "invenio://",
     "zenodo://",
+    "dataverse://",
+    "elabftw://",
 ];
 
 export function isUrl(content) {

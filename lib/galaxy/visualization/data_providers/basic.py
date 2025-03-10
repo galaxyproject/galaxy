@@ -77,10 +77,9 @@ class ColumnDataProvider(BaseDataProvider):
         # columns is an array of ints for now (should handle column names later)
         columns = loads(columns)
         for column in columns:
-            assert (column < self.original_dataset.metadata.columns) and (
-                column >= 0
-            ), "column index (%d) must be positive and less" % (column) + " than the number of columns: %d" % (
-                self.original_dataset.metadata.columns
+            assert column < self.original_dataset.metadata.columns and column >= 0, (
+                f"column index ({column}) must be positive and less"
+                f" than the number of columns: {self.original_dataset.metadata.columns}"
             )
 
         # set up the response, column lists

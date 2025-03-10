@@ -4,7 +4,7 @@
         ref="el"
         class="workflow-node card"
         :scale="scale"
-        :root-offset="rootOffset"
+        :root-offset="reactive(rootOffset)"
         :position="position"
         :name="name"
         :node-label="title"
@@ -25,7 +25,7 @@
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <b-button
-                    v-if="canClone && !readonly"
+                    v-if="!readonly"
                     v-b-tooltip.hover
                     class="node-clone py-0"
                     variant="primary"
@@ -118,7 +118,7 @@
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
-                :parent-node="elHtml"
+                :parent-node="elHtml ?? undefined"
                 :readonly="readonly"
                 @onChange="onChange" />
             <div v-if="!isInvocation && showRule" class="rule" />
@@ -164,7 +164,7 @@ import type { GraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
-import type { Step } from "@/stores/workflowStepStore";
+import type { InputTerminalSource, OutputTerminalSource, Step } from "@/stores/workflowStepStore";
 import { composedPartialPath, isClickable } from "@/utils/dom";
 
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
@@ -241,7 +241,6 @@ const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
 const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
-const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
 const isActive = computed(() => props.id === props.activeNodeId);
@@ -282,7 +281,16 @@ const inputs = computed(() => {
     });
     const invalidInputNames = [...new Set(unknownInputs)];
     const invalidInputTerminalSource = invalidInputNames.map((name) => {
-        return { name, optional: false, extensions: [], valid: false, input_type: "dataset" };
+        const invalidInput: InputTerminalSource = {
+            name,
+            label: name,
+            multiple: false,
+            optional: false,
+            extensions: [],
+            valid: false,
+            input_type: "dataset",
+        };
+        return invalidInput;
     });
     return [...stepInputs, ...invalidInputTerminalSource];
 });
@@ -296,7 +304,13 @@ const invalidOutputs = computed(() => {
     );
     const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
     return invalidOutputNames.map((name) => {
-        return { name, optional: false, datatypes: [], valid: false };
+        const invalidOutput: OutputTerminalSource = {
+            name,
+            optional: false,
+            valid: false,
+            extensions: [],
+        };
+        return invalidOutput;
     });
 });
 

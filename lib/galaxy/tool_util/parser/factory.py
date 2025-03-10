@@ -2,6 +2,7 @@
 
 import logging
 from typing import (
+    Any,
     Callable,
     Dict,
     List,
@@ -108,7 +109,7 @@ def get_tool_source(
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
 
 
-def get_tool_source_from_representation(tool_format, tool_representation):
+def get_tool_source_from_representation(tool_format: Optional[str], tool_representation: Dict[str, Any]):
     # TODO: make sure whatever is consuming this method uses ordered load.
     log.info("Loading dynamic tool - this is experimental - tool may not function in future.")
     if tool_format == "GalaxyTool":

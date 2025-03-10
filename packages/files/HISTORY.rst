@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
------------
-24.2.2.dev0
------------
+---------
+25.0.dev0
+---------
 
 
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix RDM token access for user-defined file sources by `@davelopez <https://github.com/davelopez>`_ in `#19768 <https://github.com/galaxyproject/galaxy/pull/19768>`_
 
 -------------------
 24.2.1 (2025-02-28)

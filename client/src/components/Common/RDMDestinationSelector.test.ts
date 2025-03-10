@@ -70,8 +70,6 @@ describe("RDMDestinationSelector", () => {
 
             const emitted = wrapper.emitted("onRecordSelected");
 
-            console.log("EMITTED", emitted);
-
             expect(emitted).toBeTruthy();
             expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
         });

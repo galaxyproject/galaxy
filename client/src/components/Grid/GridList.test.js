@@ -3,24 +3,15 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { useConfig } from "@/composables/config";
 import Filtering from "@/utils/filtering";
 
 import MountTarget from "./GridList.vue";
 
 jest.useFakeTimers();
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {
-        value: {
-            disabled: false,
-            enabled: true,
-        },
-    },
-    isConfigLoaded: true,
-});
+setupMockConfig({ disabled: false, enabled: true });
 
 jest.mock("vue-router/composables");
 

@@ -38,14 +38,14 @@ describe("Index", () => {
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;
         mockLoadWorkflow.mockResolvedValue({ steps: {} });
-        MockGetVersions.mockResolvedValue(() => []);
+        MockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => "prefix/");
         Object.defineProperty(window, "onbeforeunload", {
             value: null,
             writable: true,
         });
-        wrapper = shallowMount(Index, {
+        wrapper = shallowMount(Index as object, {
             propsData: {
                 workflowId: "workflow_id",
                 initialVersion: 1,

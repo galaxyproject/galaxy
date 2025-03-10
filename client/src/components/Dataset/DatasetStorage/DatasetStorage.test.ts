@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { type DatasetStorageDetails } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -21,6 +21,7 @@ const TEST_STORAGE_API_RESPONSE_WITHOUT_ID: DatasetStorageDetails = {
     hashes: [],
     sources: [],
     percent_used: 0,
+    private: false,
 };
 const TEST_DATASET_ID = "1";
 const TEST_ERROR_MESSAGE = "Opps all errors.";
@@ -40,7 +41,7 @@ describe("DatasetStorage.vue", () => {
             })
         );
 
-        wrapper = shallowMount(DatasetStorage, {
+        wrapper = shallowMount(DatasetStorage as object, {
             propsData: { datasetId: TEST_DATASET_ID },
             localVue,
         });
@@ -58,6 +59,7 @@ describe("DatasetStorage.vue", () => {
     });
 
     it("test error rendering...", async () => {
+        suppressDebugConsole();
         mount({ simulateError: true });
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);

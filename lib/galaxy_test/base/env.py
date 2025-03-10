@@ -1,5 +1,4 @@
-"""Base utilities for working Galaxy test environments.
-"""
+"""Base utilities for working Galaxy test environments."""
 
 import fcntl
 import os

@@ -15,7 +15,6 @@ from galaxy.model import (
     FormDefinition,
     FormDefinitionCurrent,
 )
-from galaxy.model.base import transaction
 from galaxy.util import unicodify
 
 
@@ -73,13 +72,11 @@ class FormManager(base.ModelManager[FormDefinitionCurrent]):
     def delete(self, trans: ProvidesUserContext, form: FormDefinitionCurrent) -> FormDefinitionCurrent:
         form.deleted = True
         trans.sa_session.add(form)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return form
 
     def undelete(self, trans: ProvidesUserContext, form: FormDefinitionCurrent) -> FormDefinitionCurrent:
         form.deleted = False
         trans.sa_session.add(form)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return form

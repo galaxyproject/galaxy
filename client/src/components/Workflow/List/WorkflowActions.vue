@@ -70,6 +70,15 @@ const runPath = computed(
             props.workflow.version !== undefined ? `&version=${props.workflow.version}` : ""
         }`
 );
+
+const dockstoreUrl = computed(() => {
+    const trsId = props.workflow?.source_metadata?.trs_tool_id as string | undefined;
+    if (trsId) {
+        return `https://dockstore.org/workflows${trsId.slice(9)}`;
+    } else {
+        return undefined;
+    }
+});
 </script>
 
 <template>
@@ -168,7 +177,7 @@ const runPath = computed(
                     class="source-trs-button"
                     :title="`View on ${props.workflow.source_metadata?.trs_server}`"
                     size="sm"
-                    :href="`https://dockstore.org/workflows${props.workflow?.source_metadata?.trs_tool_id?.slice(9)}`"
+                    :href="dockstoreUrl"
                     target="_blank">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     View on Dockstore

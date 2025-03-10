@@ -4,7 +4,6 @@ import os
 import shutil
 from typing import (
     cast,
-    List,
     NamedTuple,
     Optional,
     Union,
@@ -26,7 +25,6 @@ from galaxy.model import (
     Dataset,
     DatasetCollection,
     DatasetCollectionElement,
-    DatasetHash,
     DatasetSource,
     DescribesHash,
     History,
@@ -34,7 +32,6 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
@@ -138,11 +135,10 @@ class DatasetInstanceMaterializer:
                     sa_session = object_session(dataset_instance)
                 assert sa_session
                 sa_session.add(materialized_dataset)
-                with transaction(sa_session):
-                    sa_session.commit()
+                sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             try:
-                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset_hashes)
+                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
                 object_store.update_from_file(materialized_dataset, file_name=path)
                 materialized_dataset.set_size()
             except Exception as e:
@@ -152,9 +148,9 @@ class DatasetInstanceMaterializer:
             assert transient_path_mapper
             transient_paths = transient_path_mapper.transient_paths_for(dataset)
             # TODO: optimize this by streaming right to this path...
-            # TODO: take into acount transform and ensure we are and are not modifying the file as appropriate.
+            # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
-                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset_hashes)
+                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -178,9 +174,9 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance = cast(HistoryDatasetAssociation, dataset_instance)
         if exception_materializing is not None:
             materialized_dataset.state = Dataset.states.ERROR
-            materialized_dataset_instance.info = (
-                f"Failed to materialize deferred dataset with exception: {exception_materializing}"
-            )
+            error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"
+            materialized_dataset_instance.info = error_msg
+            log.error(error_msg)
         if attached:
             sa_session = self._sa_session
             if sa_session is None:
@@ -206,7 +202,7 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.metadata_deferred = False
         return materialized_dataset_instance
 
-    def _stream_source(self, target_source: DatasetSource, datatype, dataset_hashes: List[DatasetHash]) -> str:
+    def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
         source_uri = target_source.source_uri
         if source_uri is None:
             raise Exception("Cannot stream from dataset source without specified source_uri")
@@ -236,9 +232,11 @@ class DatasetInstanceMaterializer:
             path = convert_result.converted_path
         if datatype_groom:
             datatype.groom_dataset_content(path)
+            # Grooming is not reproducible (e.g. temporary paths in BAM headers), so invalidate hashes
+            dataset.hashes = []
 
-        if dataset_hashes:
-            for dataset_hash in dataset_hashes:
+        if dataset.hashes:
+            for dataset_hash in dataset.hashes:
                 _validate_hash(path, dataset_hash, "dataset contents")
 
         return path

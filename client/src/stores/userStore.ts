@@ -21,13 +21,20 @@ interface Preferences {
     [key: string]: unknown;
 }
 
-type ListViewMode = "grid" | "list";
+export type ListViewMode = "grid" | "list";
+
+type UserListViewPreferences = Record<string, ListViewMode>;
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
-    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
+    const currentListViewPreferences = useUserLocalStorage<UserListViewPreferences>(
+        "user-store-list-view-preferences",
+        {},
+        currentUser
+    );
+
     const hasSeenUploadHelp = useUserLocalStorage("user-store-seen-upload-help", false, currentUser);
 
     let loadPromise: Promise<void> | null = null;
@@ -133,8 +140,11 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
-    function setPreferredListViewMode(view: ListViewMode) {
-        preferredListViewMode.value = view;
+    function setListViewPreference(listId: string, view: ListViewMode) {
+        currentListViewPreferences.value = {
+            ...currentListViewPreferences.value,
+            [listId]: view,
+        };
     }
 
     function processUserPreferences(user: RegisteredUser): Preferences {
@@ -154,13 +164,13 @@ export const useUserStore = defineStore("userStore", () => {
         isAnonymous,
         currentTheme,
         currentFavorites,
-        preferredListViewMode,
+        currentListViewPreferences,
         hasSeenUploadHelp,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,
         setCurrentTheme,
-        setPreferredListViewMode,
+        setListViewPreference,
         addFavoriteTool,
         removeFavoriteTool,
         $reset,

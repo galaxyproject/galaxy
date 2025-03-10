@@ -44,7 +44,7 @@ function onCancel() {
                 v-model="selectedValue"
                 class="ml-2"
                 :has-labels="hasLabels"
-                :label-title="labelTitle"
+                :label-title="labelTitle ?? ''"
                 :labels="labels" />
         </BModal>
     </span>

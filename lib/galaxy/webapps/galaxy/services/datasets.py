@@ -47,7 +47,6 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
-from galaxy.model.base import transaction
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -154,6 +153,9 @@ class DatasetStorageDetails(Model):
     )
     relocatable: bool = Field(
         description="Indicator of whether the objectstore for this dataset can be switched by this user."
+    )
+    private: bool = Field(
+        description="Indicator of whether the objectstore is marked as private.",
     )
 
 
@@ -439,6 +441,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
         badges = object_store.get_concrete_store_badges(dataset)
+        private = object_store.is_private(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -470,6 +473,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             quota=quota,
             badges=badges,
             relocatable=relocatable,
+            private=private,
         )
 
     def show_inheritance_chain(
@@ -537,11 +541,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             checksums.append(Checksum(type=type, checksum=checksum))
 
         if len(checksums) == 0:
-            hash_funciton = HashFunctionNameEnum.md5
+            hash_function = HashFunctionNameEnum.md5
             request = ComputeDatasetHashTaskRequest(
                 dataset_id=dataset_instance.dataset.id,
                 extra_files_path=None,
-                hash_function=hash_funciton,
+                hash_function=hash_function,
                 user=None,
             )
             compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
@@ -765,8 +769,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
         if success_count:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(

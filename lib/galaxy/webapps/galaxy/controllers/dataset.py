@@ -29,7 +29,12 @@ from galaxy.managers.hdas import (
     HDAManager,
 )
 from galaxy.managers.histories import HistoryManager
-from galaxy.model.base import transaction
+from galaxy.model import (
+    Dataset,
+    History,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -96,12 +101,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
-            data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(hda_id))
+            data = trans.sa_session.query(HistoryDatasetAssociation).get(self.decode_id(hda_id))
             if data is None:
                 raise ValueError(f"Invalid reference dataset id: {hda_id}.")
         except Exception:
             try:
-                data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(hda_id))
+                data = trans.sa_session.query(HistoryDatasetAssociation).get(int(hda_id))
             except Exception:
                 data = None
         if not data:
@@ -148,7 +153,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return message
 
         if self._can_access_dataset(trans, data):
-            if data.state == trans.model.Dataset.states.UPLOAD:
+            if data.state == Dataset.states.UPLOAD:
                 raise MessageException(
                     "Please wait until this dataset finishes uploading before attempting to edit its metadata."
                 )
@@ -212,8 +217,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
                 status = "warning"
             metadata_disable = data.state not in [
-                trans.model.Dataset.states.OK,
-                trans.model.Dataset.states.FAILED_METADATA,
+                Dataset.states.OK,
+                Dataset.states.FAILED_METADATA,
             ]
             # datatype conversion
             conversion_options = [
@@ -260,7 +265,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     in_roles = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                         in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]
-                    for index, action in trans.app.model.Dataset.permitted_actions.items():
+                    for index, action in Dataset.permitted_actions.items():
                         if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                             help_text = f"{action.description}<br/>NOTE: Users must have every role associated with this dataset in order to access it."
                         else:
@@ -341,14 +346,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     annotation = sanitize_html(payload.get("annotation"))
                     self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
                 # if setting metadata previously failed and all required elements have now been set, clear the failed state.
-                if data.state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
+                if data.state == Dataset.states.FAILED_METADATA and not data.missing_meta():
                     data.set_metadata_success_state()
                 message = f"Attributes updated. {message}" if message else "Attributes updated."
             else:
                 message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
                 status = "warning"
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         elif operation == "datatype":
             # The user clicked the Save button on the 'Change data type' form
             datatype = payload.get("datatype")
@@ -366,8 +370,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     path = data.dataset.get_file_name()
                     datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                         trans.app.datatypes_registry.set_external_metadata_tool,
                         trans,
@@ -410,7 +413,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _get_dataset_for_edit(self, trans, dataset_id):
         if dataset_id is not None:
             id = self.decode_id(dataset_id)
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+            data = trans.sa_session.query(HistoryDatasetAssociation).get(id)
         else:
             trans.log_event("dataset_id is None, cannot load a dataset to edit.")
             return None, self.message_exception(trans, "You must provide a dataset id to edit attributes.")
@@ -472,7 +475,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 "This method of accessing external display applications has been disabled by a Galaxy administrator."
             )
         site = filename
-        data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dataset_id)
+        data = trans.sa_session.query(HistoryDatasetAssociation).get(dataset_id)
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(
                 f"Invalid reference dataset id: {str(dataset_id)}."
@@ -708,43 +711,36 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 error_msg = "You must provide both source datasets and target histories. "
             else:
                 if new_history_name:
-                    new_history = trans.app.model.History()
+                    new_history = History()
                     new_history.name = new_history_name
                     new_history.user = user
                     trans.sa_session.add(new_history)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     target_history_ids.append(new_history.id)
                 if user:
                     target_histories = [
                         hist
-                        for hist in map(trans.sa_session.query(trans.app.model.History).get, target_history_ids)
+                        for hist in map(trans.sa_session.query(History).get, target_history_ids)
                         if hist is not None and hist.user == user
                     ]
                 else:
                     target_histories = [history]
                 if len(target_histories) != len(target_history_ids):
-                    error_msg = (
-                        error_msg
-                        + "You do not have permission to add datasets to %i requested histories.  "
-                        % (len(target_history_ids) - len(target_histories))
-                    )
-                source_contents = list(
-                    map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids)
-                )
+                    error_msg += f"You do not have permission to add datasets to {len(target_history_ids) - len(target_histories)} requested histories.  "
+                source_contents = list(map(trans.sa_session.query(HistoryDatasetAssociation).get, decoded_dataset_ids))
                 source_contents.extend(
                     map(
-                        trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get,
+                        trans.sa_session.query(HistoryDatasetCollectionAssociation).get,
                         decoded_dataset_collection_ids,
                     )
                 )
                 source_contents.sort(key=lambda content: content.hid)
                 for content in source_contents:
                     if content is None:
-                        error_msg = f"{error_msg}You tried to copy a dataset that does not exist. "
+                        error_msg += "You tried to copy a dataset that does not exist. "
                         invalid_contents += 1
                     elif content.history != history:
-                        error_msg = f"{error_msg}You tried to copy a dataset which is not in your current history. "
+                        error_msg += "You tried to copy a dataset which is not in your current history. "
                         invalid_contents += 1
                     else:
                         for hist in target_histories:
@@ -757,8 +753,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 copy.copy_tags_from(user, content)
                         for hist in target_histories:
                             hist.add_pending_items()
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 if current_history in target_histories:
                     refresh_frames = ["history"]
                 hist_names_str = ", ".join(
@@ -772,7 +767,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 )
                 num_source = len(source_content_ids) - invalid_contents
                 num_target = len(target_histories)
-                done_msg = "%i %s copied to %i %s: %s." % (
+                done_msg = "{} {} copied to {} {}: {}.".format(
                     num_source,
                     inflector.cond_plural(num_source, "dataset"),
                     num_target,

@@ -1056,7 +1056,7 @@ DiscriminatorType = Union[bool, str]
 
 
 def cond_test_parameter_default_value(
-    test_parameter: Union["BooleanParameterModel", "SelectParameterModel"]
+    test_parameter: Union["BooleanParameterModel", "SelectParameterModel"],
 ) -> Optional[DiscriminatorType]:
     default_value: Optional[DiscriminatorType] = None
     if isinstance(test_parameter, BooleanParameterModel):
@@ -1099,7 +1099,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             else:
                 initialize_test = None
             tag = str(discriminator) if not is_boolean else str(discriminator).lower()
-            extra_kwd = {test_param_name: (Union[str, bool], initialize_test)}
+            extra_kwd = {test_param_name: (Literal[when.discriminator], initialize_test)}
             when_types.append(
                 cast(
                     Type[BaseModel],

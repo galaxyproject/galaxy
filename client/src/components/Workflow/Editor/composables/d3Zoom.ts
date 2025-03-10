@@ -3,6 +3,7 @@ import { select } from "d3-selection";
 import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
 import { type Ref, ref, watch } from "vue";
 
+import type { Vector } from "@/components/Workflow/Editor/modules/geometry";
 import { type XYPosition } from "@/stores/workflowEditorStateStore";
 
 // if element is draggable it may implement its own drag handler,
@@ -58,10 +59,10 @@ export function useD3Zoom(
         });
     });
 
-    function setZoom(k: number) {
+    function setZoom(k: number, p?: Vector) {
         if (targetRef.value) {
             const d3Selection = select(targetRef.value).call(d3Zoom);
-            d3Zoom.scaleTo(d3Selection, k);
+            d3Zoom.scaleTo(d3Selection, k, p);
         }
     }
 
@@ -72,10 +73,10 @@ export function useD3Zoom(
         }
     }
 
-    function moveTo(coordinate: XYPosition) {
+    function moveTo(coordinate: XYPosition, p?: Vector) {
         if (targetRef.value) {
             const d3Selection = select(targetRef.value).call(d3Zoom);
-            d3Zoom.translateTo(d3Selection, coordinate.x, coordinate.y);
+            d3Zoom.translateTo(d3Selection, coordinate.x, coordinate.y, p);
         }
     }
 

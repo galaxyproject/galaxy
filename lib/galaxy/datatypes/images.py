@@ -5,11 +5,24 @@ Image classes
 import base64
 import json
 import logging
-from typing import Optional
+import struct
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 import mrcfile
 import numpy as np
 import tifffile
+
+try:
+    import PIL
+    import PIL.Image
+except ImportError:
+    PIL = None  # type: ignore[assignment, unused-ignore]
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -50,6 +63,70 @@ class Image(data.Data):
     edam_format = "format_3547"
     file_ext = ""
 
+    MetadataElement(
+        name="axes",
+        desc="Axes of the image data",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="dtype",
+        desc="Data type of the image pixels or voxels",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="num_unique_values",
+        desc="Number of unique values in the image data (e.g., should be 2 for binary images)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="width",
+        desc="Width of the image (in pixels)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="height",
+        desc="Height of the image (in pixels)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="channels",
+        desc="Number of channels of the image",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="depth",
+        desc="Depth of the image (number of slices)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="frames",
+        desc="Number of frames in the image sequence (number of time steps)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
@@ -72,6 +149,40 @@ class Image(data.Data):
         with open(dataset.get_file_name(), "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
+
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        """
+        Try to populate the metadata of the image using a generic image loading library (pillow), if available.
+
+        If an image has two axes, they are assumed to be ``YX``. If an image has three axes, they are assumed to be ``YXC``.
+        """
+        if PIL is not None:
+            try:
+                with PIL.Image.open(dataset.get_file_name()) as im:
+
+                    # Determine the metadata values that are available without loading the image data
+                    dataset.metadata.width = im.size[1]
+                    dataset.metadata.height = im.size[0]
+                    dataset.metadata.depth = 0
+                    dataset.metadata.frames = getattr(im, "n_frames", 0)
+                    dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
+
+                    # Peek into a small 2x2 section of the image data
+                    im_peek_arr = np.array(im.crop((0, 0, min((2, im.size[1])), min((2, im.size[0])))))
+
+                    # Determine the remaining metadata values
+                    dataset.metadata.dtype = str(im_peek_arr.dtype)
+                    if im_peek_arr.ndim == 2:
+                        dataset.metadata.axes = "YX"
+                        dataset.metadata.channels = 0
+                    elif im_peek_arr.ndim == 3:
+                        dataset.metadata.axes = "YXC"
+                        dataset.metadata.channels = im_peek_arr.shape[2]
+
+            except PIL.UnidentifiedImageError:
+                pass
 
 
 class Jpg(Image):
@@ -104,17 +215,95 @@ class Tiff(Image):
     def set_meta(
         self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
+        """
+        Populate the metadata of the TIFF image using the tifffile library.
+        """
         spec_key = "offsets"
-        offsets_file = dataset.metadata.offsets
-        if not offsets_file:
-            offsets_file = dataset.metadata.spec[spec_key].param.new_file(
-                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
-            )
-        with tifffile.TiffFile(dataset.get_file_name()) as tif:
-            offsets = [page.offset for page in tif.pages]
-        with open(offsets_file.get_file_name(), "w") as f:
-            json.dump(offsets, f)
-        dataset.metadata.offsets = offsets_file
+        if hasattr(dataset.metadata, spec_key):
+            offsets_file = dataset.metadata.offsets
+            if not offsets_file:
+                offsets_file = dataset.metadata.spec[spec_key].param.new_file(
+                    dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+                )
+        else:
+            offsets_file = None
+        try:
+            with tifffile.TiffFile(dataset.get_file_name()) as tif:
+                offsets = [page.offset for page in tif.pages]
+
+                # Aggregate a list of values for each metadata field (one value for each page of the TIFF file)
+                metadata: Dict[str, List[Any]] = {
+                    key: []
+                    for key in [
+                        "axes",
+                        "dtype",
+                        "width",
+                        "height",
+                        "channels",
+                        "depth",
+                        "frames",
+                        "num_unique_values",
+                    ]
+                }
+                for page in tif.series:
+
+                    # Determine the metadata values that should be generally available
+                    metadata["axes"].append(page.axes.upper())
+                    metadata["dtype"].append(str(page.dtype))
+
+                    axes = metadata["axes"][-1].replace("S", "C")
+                    metadata["width"].append(Tiff._get_axis_size(page.shape, axes, "X"))
+                    metadata["height"].append(Tiff._get_axis_size(page.shape, axes, "Y"))
+                    metadata["channels"].append(Tiff._get_axis_size(page.shape, axes, "C"))
+                    metadata["depth"].append(Tiff._get_axis_size(page.shape, axes, "Z"))
+                    metadata["frames"].append(Tiff._get_axis_size(page.shape, axes, "T"))
+
+                    # Determine the metadata values that require reading the image data
+                    try:
+                        im_arr = page.asarray()
+                        metadata["num_unique_values"].append(len(np.unique(im_arr)))
+                    except ValueError:  # Occurs if the compression of the TIFF file is unsupported
+                        pass
+
+                # Populate the metadata fields based on the values determined above
+                for key, values in metadata.items():
+                    if len(values) > 0:
+
+                        # Populate as plain value, if there is just one value, and as a list otherwise
+                        if len(values) == 1:
+                            setattr(dataset.metadata, key, values[0])
+                        else:
+                            setattr(dataset.metadata, key, values)
+
+            # Populate the "offsets" file and metadata field
+            if offsets_file:
+                with open(offsets_file.get_file_name(), "w") as f:
+                    json.dump(offsets, f)
+                dataset.metadata.offsets = offsets_file
+
+        # Catch errors from deep inside the tifffile library
+        except (
+            AttributeError,
+            IndexError,
+            KeyError,
+            OSError,
+            RuntimeError,
+            struct.error,
+            tifffile.OmeXmlError,
+            tifffile.TiffFileError,
+            TypeError,
+            ValueError,
+        ):
+            pass
+
+    @staticmethod
+    def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
+        idx = axes.find(axis)
+        return shape[idx] if idx >= 0 else 0
+
+    def sniff(self, filename: str) -> bool:
+        with tifffile.TiffFile(filename):
+            return True
 
 
 class OMETiff(Tiff):

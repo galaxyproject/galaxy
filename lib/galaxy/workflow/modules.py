@@ -14,7 +14,6 @@ from typing import (
     get_args,
     Iterable,
     List,
-    Literal,
     Optional,
     Tuple,
     Type,
@@ -111,12 +110,14 @@ from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
-from galaxy.workflow.workflow_parameter_input_definitions import get_default_parameter
+from galaxy.workflow.workflow_parameter_input_definitions import (
+    get_default_parameter,
+    INPUT_PARAMETER_TYPES,
+)
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.workflow.run import WorkflowProgress
-
 
 log = logging.getLogger(__name__)
 
@@ -127,7 +128,6 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
-INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
@@ -162,7 +162,8 @@ def to_cwl(value, hda_references, step):
             hda_references.append(value)
             properties = {
                 "class": "File",
-                "location": "step_input://%d" % len(hda_references),
+                "location": f"step_input://{len(hda_references)}",
+                "format": value.extension,
             }
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
@@ -1510,7 +1511,7 @@ class InputParameterModule(WorkflowModule):
         optional = parameter_def["optional"]
         default_value_set = "default" in parameter_def
         default_value = parameter_def.get("default", self.default_default_value)
-        if parameter_type not in ["text", "boolean", "integer", "float", "color", "directory_uri"]:
+        if parameter_type not in POSSIBLE_PARAMETER_TYPES:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.

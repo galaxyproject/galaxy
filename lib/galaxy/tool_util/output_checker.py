@@ -102,11 +102,7 @@ def check_output(
                         code_desc = stdio_exit_code.desc
                         if None is code_desc:
                             code_desc = ""
-                        desc = "%s: Exit code %d (%s)" % (
-                            StdioErrorLevel.desc(stdio_exit_code.error_level),
-                            tool_exit_code,
-                            code_desc,
-                        )
+                        desc = f"{StdioErrorLevel.desc(stdio_exit_code.error_level)}: Exit code {tool_exit_code} ({code_desc})"
                         reason = {
                             "type": "exit_code",
                             "desc": desc,

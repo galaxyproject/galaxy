@@ -367,6 +367,10 @@ function renameElement(element: any, name: string) {
     }
 }
 
+function selectionAsHdaSummary(value: any): HDASummary {
+    return value as HDASummary;
+}
+
 //TODO: issue #9497
 // const removeExtensions = ref(true);
 // removeExtensionsToggle: function () {
@@ -689,8 +693,8 @@ function renameElement(element: any, name: string) {
                         <template v-slot:label-area="{ value }">
                             <DatasetCollectionElementView
                                 class="w-100"
-                                :element="value"
-                                :hide-extension="!showElementExtension(value)"
+                                :element="selectionAsHdaSummary(value)"
+                                :hide-extension="!showElementExtension(selectionAsHdaSummary(value))"
                                 @onRename="(name) => renameElement(value, name)" />
                         </template>
                     </FormSelectMany>

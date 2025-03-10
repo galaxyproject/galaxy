@@ -27,7 +27,9 @@ if (!window.Galaxy) {
         },
     });
 } else {
-    console.debug("Skipping, window.Galaxy already exists.", serverPath());
+    if (process.env.NODE_ENV != "test") {
+        console.debug("Skipping, window.Galaxy already exists.", serverPath());
+    }
 }
 
 export default window.Galaxy;

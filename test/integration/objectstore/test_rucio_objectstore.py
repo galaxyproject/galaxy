@@ -33,5 +33,3 @@ class TestRucioObjectStoreIntegration(BaseRucioObjectStoreIntegrationTestCase):
 
 instance = integration_util.integration_module_instance(TestRucioObjectStoreIntegration)
 test_tools = integration_util.integration_tool_runner(TEST_TOOL_IDS)
-
-integration_util.skip_for_older_python((3, 9))(test_tools)

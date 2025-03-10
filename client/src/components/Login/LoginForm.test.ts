@@ -1,11 +1,19 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse } from "@/api/client/__mocks__/index";
 
 import MountTarget from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
+const testingPinia = createTestingPinia({ stubActions: false });
+
+const { server, http } = useServerMock();
 
 async function mountLoginForm() {
     const wrapper = mount(MountTarget as object, {
@@ -16,6 +24,7 @@ async function mountLoginForm() {
         stubs: {
             ExternalLogin: true,
         },
+        pinia: testingPinia,
     });
 
     return wrapper;
@@ -26,6 +35,11 @@ describe("LoginForm", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response.untyped(HttpResponse.json({ oidc: { cilogon: false, custos: false } }));
+            })
+        );
     });
 
     afterEach(() => {
@@ -62,8 +76,6 @@ describe("LoginForm", () => {
     it("props", async () => {
         const wrapper = await mountLoginForm();
 
-        console.log(wrapper.html());
-
         const $register = "#register-toggle";
         expect(wrapper.findAll($register).length).toBe(0);
 
@@ -79,6 +91,7 @@ describe("LoginForm", () => {
 
         const welcomePage = wrapper.find("iframe");
         expect(welcomePage.attributes("src")).toBe("welcome_url");
+        await flushPromises();
     });
 
     it("connect external provider", async () => {
@@ -126,5 +139,6 @@ describe("LoginForm", () => {
 
         const postedURL = axiosMock.history.post?.[0]?.url;
         expect(postedURL).toBe("/user/login");
+        await flushPromises();
     });
 });

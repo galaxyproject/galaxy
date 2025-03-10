@@ -24,6 +24,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Set,
     Tuple,
@@ -31,6 +32,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from urllib.parse import urlparse
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -60,10 +62,7 @@ from galaxy.files import (
     ProvidesFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
@@ -234,7 +233,7 @@ class SessionlessContext:
     def add(self, obj: model.RepresentById) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
-    def query(self, model_class: model.RepresentById) -> Bunch:
+    def query(self, model_class: Type[model.RepresentById]) -> Bunch:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
@@ -244,7 +243,7 @@ class SessionlessContext:
 
         return Bunch(find=find, get=find, filter_by=filter_by)
 
-    def get(self, model_class: model.RepresentById, primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
+    def get(self, model_class: Type[model.RepresentById], primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
         return self.query(model_class).get(primary_key)
 
 
@@ -266,6 +265,7 @@ def replace_metadata_file(
 class ModelImportStore(metaclass=abc.ABCMeta):
     app: Optional[StoreAppProtocol]
     archive_dir: str
+    sa_session: Union[scoped_session, SessionlessContext]
 
     def __init__(
         self,
@@ -495,7 +495,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
                 model_class = getattr(model, dataset_attrs["model_class"])
-                dataset_instance: model.DatasetInstance = self.sa_session.get(model_class, dataset_attrs["id"])
+                dataset_instance = self.sa_session.get(model_class, dataset_attrs["id"])
+                assert isinstance(dataset_instance, model.DatasetInstance)
                 attributes = [
                     "name",
                     "extension",
@@ -718,7 +719,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
                                 try:
                                     if dataset_instance.has_metadata_files:
-                                        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore[arg-type]
+                                        dataset_instance.datatype.set_meta(dataset_instance)
                                 except Exception:
                                     log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
                                     dataset_instance.state = dataset_instance.dataset.states.FAILED_METADATA
@@ -775,8 +776,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     ld.library_dataset_dataset_association = ldda
                 self._session_add(ld)
 
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
             return library_folder
 
         libraries_attrs = self.library_properties()
@@ -878,6 +878,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc = import_collection(collection_attrs["collection"])
                 if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
                     hdca = self.sa_session.get(model.HistoryDatasetCollectionAssociation, collection_attrs["id"])
+                    assert hdca is not None
                     # TODO: edit attributes...
                 else:
                     hdca = model.HistoryDatasetCollectionAssociation(
@@ -1328,8 +1329,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
 
 def _copied_from_object_key(
@@ -2212,7 +2212,8 @@ class DirectoryModelExportStore(ModelExportStore):
         )
         datasets = sa_session.scalars(stmt_hda).unique()
         for dataset in datasets:
-            dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
+            # Add a new "annotation" attribute so that the user annotation for the dataset can be serialized without needing the user
+            dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)  # type: ignore[attr-defined]
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
             if not dataset.deleted and dataset.id in self.collection_datasets:
                 should_include_file = True
@@ -2619,8 +2620,18 @@ class BcoExportOptions:
     override_xref: Optional[List[XrefItem]] = None
 
 
-class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
-    def __init__(self, uri, export_options: BcoExportOptions, **kwds):
+class FileSourceModelExportStore(abc.ABC, DirectoryModelExportStore):
+    """
+    Export to file sources, from where data can be retrieved later on using a URI.
+    """
+
+    file_source_uri: Optional[StrPath] = None
+    # data can be retrieved later using this URI
+
+    out_file: StrPath
+    # the output file is written to this path, from which it is written to the file source
+
+    def __init__(self, uri, **kwds):
         temp_output_dir = tempfile.mkdtemp()
         self.temp_output_dir = temp_output_dir
         if "://" in str(uri):
@@ -2631,18 +2642,46 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             self.out_file = uri
             self.file_source_uri = None
             export_directory = temp_output_dir
-        self.export_options = export_options
         super().__init__(export_directory, **kwds)
 
+    @abc.abstractmethod
+    def _generate_output_file(self) -> None:
+        """
+        Generate the output file that will be uploaded to the file source.
+
+        Produce an output file and save it to `self.out_file`. A common pattern for this method to create an archive out
+        of `self.export_directory`.
+
+        This method runs after `DirectoryModelExportStore._finalize()`. Therefore, `self.export_directory` will already
+        have been populated when it runs.
+        """
+
     def _finalize(self):
-        super()._finalize()
-        core_biocompute_object, object_id = self._core_biocompute_object_and_object_id()
-        write_to_file(object_id, core_biocompute_object, self.out_file)
+        super()._finalize()  # populate `self.export_directory`
+        self._generate_output_file()  # generate the output file `self.out_file`
         if self.file_source_uri:
+            # upload output file to file source
+            if not self.file_sources:
+                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
+            file_source_uri = urlparse(str(self.file_source_uri))
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
+            self.file_source_uri = f"{file_source_uri.scheme}://{file_source_uri.netloc}" + file_source.write_from(
+                file_source_path.path, self.out_file, user_context=self.user_context
+            )
+        shutil.rmtree(self.temp_output_dir)
+
+
+class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExportStore):
+
+    def __init__(self, uri, export_options: BcoExportOptions, **kwds):
+        self.export_options = export_options
+        super().__init__(uri, **kwds)
+
+    def _generate_output_file(self):
+        core_biocompute_object, object_id = self._core_biocompute_object_and_object_id()
+        write_to_file(object_id, core_biocompute_object, self.out_file)
 
     def _core_biocompute_object_and_object_id(self) -> Tuple[BioComputeObjectCore, str]:
         assert self.app  # need app.security to do anything...
@@ -2832,25 +2871,9 @@ class ROCrateModelExportStore(DirectoryModelExportStore, WriteCrates):
         ro_crate.write(self.crate_directory)
 
 
-class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
-    file_source_uri: Optional[StrPath]
-    out_file: StrPath
+class ROCrateArchiveModelExportStore(FileSourceModelExportStore, WriteCrates):
 
-    def __init__(self, uri: StrPath, **kwds) -> None:
-        temp_output_dir = tempfile.mkdtemp()
-        self.temp_output_dir = temp_output_dir
-        if "://" in str(uri):
-            self.out_file = os.path.join(temp_output_dir, "out")
-            self.file_source_uri = uri
-            export_directory = os.path.join(temp_output_dir, "export")
-        else:
-            self.out_file = uri
-            self.file_source_uri = None
-            export_directory = temp_output_dir
-        super().__init__(export_directory, **kwds)
-
-    def _finalize(self) -> None:
-        super()._finalize()
+    def _generate_output_file(self):
         ro_crate = self._init_crate()
         ro_crate.write(self.export_directory)
         out_file_name = str(self.out_file)
@@ -2858,48 +2881,18 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
             out_file = out_file_name[: -len(".zip")]
         else:
             out_file = out_file_name
-        rval = shutil.make_archive(out_file, "fastzip", self.export_directory)
-        if not self.file_source_uri:
-            shutil.move(rval, self.out_file)
-        else:
-            if not self.file_sources:
-                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
-            file_source = file_source_path.file_source
-            assert os.path.exists(rval), rval
-            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
-        shutil.rmtree(self.temp_output_dir)
+        archive = shutil.make_archive(out_file, "fastzip", self.export_directory)
+        shutil.move(archive, self.out_file)
 
 
-class TarModelExportStore(DirectoryModelExportStore):
-    file_source_uri: Optional[StrPath]
-    out_file: StrPath
+class TarModelExportStore(FileSourceModelExportStore):
 
     def __init__(self, uri: StrPath, gzip: bool = True, **kwds) -> None:
         self.gzip = gzip
-        temp_output_dir = tempfile.mkdtemp()
-        self.temp_output_dir = temp_output_dir
-        if "://" in str(uri):
-            self.out_file = os.path.join(temp_output_dir, "out")
-            self.file_source_uri = uri
-            export_directory = os.path.join(temp_output_dir, "export")
-        else:
-            self.out_file = uri
-            self.file_source_uri = None
-            export_directory = temp_output_dir
-        super().__init__(export_directory, **kwds)
+        super().__init__(uri, **kwds)
 
-    def _finalize(self) -> None:
-        super()._finalize()
+    def _generate_output_file(self):
         tar_export_directory(self.export_directory, self.out_file, self.gzip)
-        if self.file_source_uri:
-            if not self.file_sources:
-                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
-            file_source = file_source_path.file_source
-            assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
-        shutil.rmtree(self.temp_output_dir)
 
 
 class BagDirectoryModelExportStore(DirectoryModelExportStore):
@@ -2912,37 +2905,16 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
         bdb.make_bag(self.out_directory)
 
 
-class BagArchiveModelExportStore(BagDirectoryModelExportStore):
-    file_source_uri: Optional[StrPath]
+class BagArchiveModelExportStore(FileSourceModelExportStore, BagDirectoryModelExportStore):
 
     def __init__(self, uri: StrPath, bag_archiver: str = "tgz", **kwds) -> None:
         # bag_archiver in tgz, zip, tar
         self.bag_archiver = bag_archiver
-        temp_output_dir = tempfile.mkdtemp()
-        self.temp_output_dir = temp_output_dir
-        if "://" in str(uri):
-            # self.out_file = os.path.join(temp_output_dir, "out")
-            self.file_source_uri = uri
-            export_directory = os.path.join(temp_output_dir, "export")
-        else:
-            self.out_file = uri
-            self.file_source_uri = None
-            export_directory = temp_output_dir
-        super().__init__(export_directory, **kwds)
+        super().__init__(uri, **kwds)
 
-    def _finalize(self) -> None:
-        super()._finalize()
-        rval = bdb.archive_bag(self.export_directory, self.bag_archiver)
-        if not self.file_source_uri:
-            shutil.move(rval, self.out_file)
-        else:
-            if not self.file_sources:
-                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
-            file_source = file_source_path.file_source
-            assert os.path.exists(rval)
-            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
-        shutil.rmtree(self.temp_output_dir)
+    def _generate_output_file(self):
+        archive = bdb.archive_bag(self.export_directory, self.bag_archiver)
+        shutil.move(archive, self.out_file)
 
 
 def get_export_store_factory(
@@ -2951,13 +2923,8 @@ def get_export_store_factory(
     export_files=None,
     bco_export_options: Optional[BcoExportOptions] = None,
     user_context=None,
-) -> Callable[[StrPath], ModelExportStore]:
-    export_store_class: Union[
-        Type[TarModelExportStore],
-        Type[BagArchiveModelExportStore],
-        Type[ROCrateArchiveModelExportStore],
-        Type[BcoModelExportStore],
-    ]
+) -> Callable[[StrPath], FileSourceModelExportStore]:
+    export_store_class: Type[FileSourceModelExportStore]
     export_store_class_kwds = {
         "app": app,
         "export_files": export_files,
@@ -2987,9 +2954,7 @@ def get_export_store_factory(
 
 
 def tar_export_directory(export_directory: StrPath, out_file: StrPath, gzip: bool) -> None:
-    tarfile_mode = "w"
-    if gzip:
-        tarfile_mode += ":gz"
+    tarfile_mode: Literal["w", "w:gz"] = "w:gz" if gzip else "w"
 
     with tarfile.open(out_file, tarfile_mode, dereference=True) as store_archive:
         for export_path in os.listdir(export_directory):
@@ -3076,7 +3041,8 @@ def source_to_import_store(
             if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
-                    target_dir = CompressedFile(target_path).extract(temp_dir)
+                    with CompressedFile(target_path) as cf:
+                        target_dir = cf.extract(temp_dir)
                 finally:
                     if delete:
                         os.remove(target_path)

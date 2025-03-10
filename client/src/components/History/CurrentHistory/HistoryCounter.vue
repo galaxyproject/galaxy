@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watchImmediate } from "@vueuse/core";
 import { BButton, BButtonGroup, BModal } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
@@ -9,7 +10,7 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { type HistorySummaryExtended, type RegisteredUser, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
@@ -54,7 +55,12 @@ const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
-const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
+const historyPreferredObjectStoreId = ref<string | null | undefined>();
+
+watchImmediate(
+    () => props.history,
+    () => (historyPreferredObjectStoreId.value = props.history.preferred_object_store_id)
+);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 const canManageStorage = computed(
@@ -125,6 +131,13 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string | null) {
     historyPreferredObjectStoreId.value = preferredObjectStoreId;
 }
 
+const registeredUser = computed<RegisteredUser>(() => {
+    if (isAnonymous.value) {
+        throw new Error("Invalid anonymous user object encountered");
+    }
+    return currentUser.value as RegisteredUser;
+});
+
 onMounted(() => {
     updateTime();
     // update every second
@@ -162,8 +175,8 @@ onMounted(() => {
             <PreferredStorePopover
                 v-if="config && config.object_store_allows_id_selection && !isAnonymous"
                 :history-id="history.id"
-                :history-preferred-object-store-id="historyPreferredObjectStoreId"
-                :user="currentUser">
+                :history-preferred-object-store-id="historyPreferredObjectStoreId ?? undefined"
+                :user="registeredUser">
             </PreferredStorePopover>
 
             <BButtonGroup>
@@ -227,7 +240,8 @@ onMounted(() => {
                 size="sm"
                 hide-footer>
                 <SelectPreferredStore
-                    :user-preferred-object-store-id="currentUser.preferred_object_store_id"
+                    v-if="!isAnonymous"
+                    :user-preferred-object-store-id="registeredUser.preferred_object_store_id ?? undefined"
                     :history="history"
                     @updated="onUpdatePreferredObjectStoreId" />
             </BModal>

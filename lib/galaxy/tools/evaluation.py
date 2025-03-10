@@ -65,6 +65,7 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.template import (
     fill_template,
     InputNotFoundSyntaxError,
@@ -103,7 +104,7 @@ class ToolTemplatingException(Exception):
         self.is_latest = is_latest
 
 
-def global_tool_logs(func, config_file: str, action_str: str, tool: "Tool"):
+def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
     try:
         return func()
     except Exception as e:
@@ -131,7 +132,7 @@ class ToolEvaluator:
     job: model.Job
     materialize_datasets: bool = True
 
-    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
+    def __init__(self, app: MinimalToolApp, tool: "Tool", job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
@@ -385,6 +386,9 @@ class ToolEvaluator:
         do_walk(inputs, input_values)
 
     def __populate_wrappers(self, param_dict, input_datasets, job_working_directory):
+
+        element_identifier_mapper = ElementIdentifierMapper(input_datasets)
+
         def wrap_input(input_values, input):
             value = input_values[input.name]
             if isinstance(input, DataToolParameter) and input.multiple:
@@ -401,26 +405,26 @@ class ToolEvaluator:
 
             elif isinstance(input, DataToolParameter):
                 dataset = input_values[input.name]
-                wrapper_kwds = dict(
+                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
+                input_values[input.name] = DatasetFilenameWrapper(
+                    dataset=dataset,
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self.tool,
                     name=input.name,
                     compute_environment=self.compute_environment,
+                    identifier=element_identifier,
+                    formats=input.formats,
                 )
-                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
-                if element_identifier:
-                    wrapper_kwds["identifier"] = element_identifier
-                wrapper_kwds["formats"] = input.formats
-                input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
-                wrapper_kwds = dict(
+                wrapper = DatasetCollectionWrapper(
+                    job_working_directory=job_working_directory,
+                    has_collection=dataset_collection,
                     datatypes_registry=self.app.datatypes_registry,
                     compute_environment=self.compute_environment,
                     tool=self.tool,
                     name=input.name,
                 )
-                wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
                 if input.multiple:
@@ -430,14 +434,13 @@ class ToolEvaluator:
                 )
             else:
                 input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict, profile=self.tool and self.tool.profile
+                    input, value, param_dict, profile=self.tool and self.tool.profile or None
                 )
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            element_identifier_mapper = ElementIdentifierMapper(input_datasets)
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets):
@@ -464,13 +467,13 @@ class ToolEvaluator:
                     param_dict[name] = wrapper
                     continue
             if not isinstance(param_dict_value, ToolParameterValueWrapper):
-                wrapper_kwds = dict(
+                param_dict[name] = DatasetFilenameWrapper(
+                    dataset=data,
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
                 )
-                param_dict[name] = DatasetFilenameWrapper(data, **wrapper_kwds)
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, job_working_directory):
         tool = self.tool
@@ -481,14 +484,15 @@ class ToolEvaluator:
                 # message = message_template % ( name, tool.output_collections )
                 # raise AssertionError( message )
 
-            wrapper_kwds = dict(
+            wrapper = DatasetCollectionWrapper(
+                job_working_directory=job_working_directory,
+                has_collection=out_collection,
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
                 io_type="output",
                 tool=tool,
                 name=name,
             )
-            wrapper = DatasetCollectionWrapper(job_working_directory, out_collection, **wrapper_kwds)
             param_dict[name] = wrapper
             # TODO: Handle nested collections...
             for element_identifier, output_def in tool.output_collections[name].outputs.items():
@@ -683,6 +687,7 @@ class ToolEvaluator:
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
             executable = command_line.split()[0]
+            assert self.tool.tool_dir
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
             command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)

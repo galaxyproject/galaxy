@@ -6,7 +6,7 @@ import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { types_to_icons } from "./utilities";
 
@@ -16,84 +16,40 @@ import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
 
+const toolStore = useToolStore();
+
 const props = defineProps({
-    workflow: { type: Boolean, default: false },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array, default: null },
+    useSearchWorker: { type: Boolean, default: true },
+    workflow: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
-    (e: "onInsertTool", toolId: string, toolName: string): void;
     (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
+    (e: "onInsertTool", toolId: string, toolName: string): void;
     (e: "onInsertWorkflow", workflowLatestId: string | undefined, workflowName: string): void;
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const arePanelsFetched = ref(false);
-const toolStore = useToolStore();
-const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, panelViews, currentPanel } =
+const { currentPanelView, currentToolSections, isPanelPopulated, loading, panels, toolSections } =
     storeToRefs(toolStore);
 
-const loadingView = ref<string | undefined>(undefined);
+const errorMessage = ref("");
+const panelName = ref("");
+const panelsFetched = ref(false);
 const query = ref("");
 const showAdvanced = ref(false);
-const errorMessage = ref<string | undefined>(undefined);
 
-initializeToolPanel();
-async function initializeToolPanel() {
-    try {
-        await toolStore.fetchPanelViews();
-        await initializeTools();
-    } catch (error) {
-        console.error(error);
-        errorMessage.value = errorMessageAsString(error);
-    } finally {
-        arePanelsFetched.value = true;
-    }
-}
-
-watch(
-    () => currentPanelView.value,
-    () => {
-        query.value = "";
-    }
-);
-
-// if currentPanelView ever becomes null || "", load tools
-watch(
-    () => currentPanelView.value,
-    async (newVal) => {
-        if ((!newVal || !panel.value[newVal]) && arePanelsFetched.value) {
-            await initializeTools();
-        }
-    }
-);
-
-const toolPanelHeader = computed(() => {
-    if (showAdvanced.value) {
-        return localize("Advanced Tool Search");
-    } else if (loading.value && loadingView.value) {
-        return localize(loadingView.value);
-    } else if (
-        currentPanelView.value !== "default" &&
-        panelViews.value &&
-        panelViews.value[currentPanelView.value]?.name
-    ) {
-        return localize(panelViews.value[currentPanelView.value]?.name);
-    } else {
-        return localize("Tools");
-    }
-});
-
-const viewIcon = computed(() => {
+const panelIcon = computed(() => {
     if (showAdvanced.value) {
         return "search";
     } else if (
         currentPanelView.value !== "default" &&
-        panelViews.value &&
-        typeof panelViews.value[currentPanelView.value]?.view_type === "string"
+        panels.value &&
+        typeof panels.value[currentPanelView.value]?.view_type === "string"
     ) {
-        const viewType = panelViews.value[currentPanelView.value]?.view_type;
+        const viewType = panels.value[currentPanelView.value]?.view_type;
         return viewType ? types_to_icons[viewType] : null;
     } else {
         return null;
@@ -115,29 +71,43 @@ const showFavorites = computed({
     },
 });
 
-async function initializeTools() {
+const toolPanelHeader = computed(() => {
+    if (showAdvanced.value) {
+        return localize("Advanced Tool Search");
+    } else if (loading.value && panelName.value) {
+        return localize(panelName.value);
+    } else if (currentPanelView.value !== "default" && panels.value && panels.value[currentPanelView.value]?.name) {
+        return localize(panels.value[currentPanelView.value]?.name);
+    } else {
+        return localize("Tools");
+    }
+});
+
+async function initializePanel() {
     try {
+        await toolStore.fetchPanels();
         await toolStore.fetchTools();
-        await toolStore.initCurrentPanelView(defaultPanelView.value);
-    } catch (error: any) {
-        console.error("ToolPanel - Intialize error:", error);
+        await toolStore.initializePanel();
+    } catch (error) {
+        console.error(`ToolPanel::initializePanel - ${error}`);
         errorMessage.value = errorMessageAsString(error);
-        rethrowSimple(error);
+    } finally {
+        panelsFetched.value = true;
     }
 }
 
 async function updatePanelView(panelView: string) {
-    loadingView.value = panelViews.value[panelView]?.name;
-    await toolStore.setCurrentPanelView(panelView);
-    loadingView.value = undefined;
-}
-
-function onInsertTool(toolId: string, toolName: string) {
-    emit("onInsertTool", toolId, toolName);
+    panelName.value = panels.value[panelView]?.name || "";
+    await toolStore.setPanel(panelView);
+    panelName.value = "";
 }
 
 function onInsertModule(moduleName: string, moduleTitle: string | undefined) {
     emit("onInsertModule", moduleName, moduleTitle);
+}
+
+function onInsertTool(toolId: string, toolName: string) {
+    emit("onInsertTool", toolId, toolName);
 }
 
 function onInsertWorkflow(workflowId: string | undefined, workflowName: string) {
@@ -154,15 +124,28 @@ watch(
         showFavorites.value = newQuery.includes("#favorites");
     }
 );
+
+// if currentPanelView ever becomes null || "", load tools
+watch(
+    () => currentPanelView.value,
+    async (newVal) => {
+        query.value = "";
+        if ((!newVal || !toolSections.value[newVal]) && panelsFetched.value) {
+            await initializePanel();
+        }
+    }
+);
+
+initializePanel();
 </script>
 
 <template>
-    <div v-if="arePanelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
+    <div v-if="panelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
-                    v-if="panelViews && Object.keys(panelViews).length > 1"
-                    :panel-views="panelViews"
+                    v-if="panels && Object.keys(panels).length > 1"
+                    :panel-views="panels"
                     :current-panel-view="currentPanelView"
                     :show-advanced.sync="showAdvanced"
                     :store-loading="loading"
@@ -171,8 +154,8 @@ watch(
                         <div class="d-flex justify-content-between panel-view-selector">
                             <div>
                                 <span
-                                    v-if="viewIcon && !loading"
-                                    :class="['fas', `fa-${viewIcon}`, 'mr-1']"
+                                    v-if="panelIcon && !loading"
+                                    :class="['fas', `fa-${panelIcon}`, 'mr-1']"
                                     data-description="panel view header icon" />
                                 <Heading
                                     id="toolbox-heading"
@@ -180,7 +163,7 @@ watch(
                                     h2
                                     inline
                                     size="sm">
-                                    <span v-if="loading && loadingView">
+                                    <span v-if="loading && panelName">
                                         <LoadingSpan :message="toolPanelHeader" />
                                     </span>
                                     <span v-else>{{ toolPanelHeader }}</span>
@@ -201,11 +184,10 @@ watch(
             v-if="isPanelPopulated"
             :workflow="props.workflow"
             :panel-query.sync="query"
-            :panel-view="currentPanelView"
             :show-advanced.sync="showAdvanced"
             :data-managers="dataManagers"
             :module-sections="moduleSections"
-            @updatePanelView="updatePanelView"
+            :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool"
             @onInsertModule="onInsertModule"
             @onInsertWorkflow="onInsertWorkflow"
@@ -221,7 +203,7 @@ watch(
             </b-badge>
         </div>
     </div>
-    <b-alert v-else-if="currentPanel" class="m-2" variant="info" show>
+    <b-alert v-else-if="currentToolSections" class="m-2" variant="info" show>
         <LoadingSpan message="Loading Toolbox" />
     </b-alert>
 </template>

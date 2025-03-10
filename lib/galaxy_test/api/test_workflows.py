@@ -27,6 +27,7 @@ from requests import (
 
 from galaxy.exceptions import error_codes
 from galaxy.util import UNKNOWN
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -1212,6 +1213,7 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
+    @skip_if_github_down
     def test_url_import(self):
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
         workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
@@ -1228,6 +1230,49 @@ steps:
         workflow_id = response.json()["id"]
         workflow = self._download_workflow(workflow_id)
         assert "TestWorkflow1" in workflow["name"]
+
+    def test_readme_metadata(self):
+        base_workflow_json = json.loads(workflow_str)
+        readme = "This is the body of my readme..."
+        logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
+        help = "This is my instruction for the workflow!"
+        base_workflow_json["readme"] = readme
+        base_workflow_json["logo_url"] = logo_url
+        base_workflow_json["help"] = help
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert "TestWorkflow1" in workflow["name"]
+        assert workflow["readme"] == readme
+        assert workflow["help"] == help
+        assert workflow["logo_url"] == logo_url
+
+    def test_readme_too_large(self):
+        big_but_valid_readme = "READ_" * 3999
+        too_big_readme = "READ_" * 4001
+        base_workflow_json = json.loads(workflow_str)
+        logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
+        help = "This is my instruction for the workflow!"
+        base_workflow_json["readme"] = too_big_readme
+        base_workflow_json["logo_url"] = logo_url
+        base_workflow_json["help"] = help
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+
+        base_workflow_json["readme"] = big_but_valid_readme
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["readme"] == big_but_valid_readme
 
     def test_trs_import(self):
         trs_payload = {
@@ -3142,7 +3187,7 @@ steps:
             assert report_json["render_format"] == "markdown"
             markdown_content = report_json["markdown"]
             assert "## Workflow Outputs" in markdown_content
-            assert "\n```galaxy\nhistory_dataset_display(history_dataset_id=" in markdown_content
+            assert "\n```galaxy\nhistory_dataset_display(invocation_id=" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
 
@@ -5503,7 +5548,10 @@ steps:
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         # We launch a workflow
-        with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
+        with (
+            self.dataset_populator.test_history() as history_id_one,
+            self.dataset_populator.test_history() as history_id_two,
+        ):
             workflow_request, _, workflow_id = self._setup_workflow_run(workflow, history_id=history_id_one)
             invocation_id = self.workflow_populator.invoke_workflow_and_wait(
                 workflow_id, request=workflow_request
@@ -5586,7 +5634,10 @@ steps:
 
     @skip_without_tool("cat1")
     def test_nested_workflow_rerun_with_use_cached_job(self):
-        with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
+        with (
+            self.dataset_populator.test_history() as history_id_one,
+            self.dataset_populator.test_history() as history_id_two,
+        ):
             test_data = """
 outer_input:
   value: 1.bed

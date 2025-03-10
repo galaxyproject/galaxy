@@ -73,6 +73,8 @@ describe("DatasetInformation/DatasetInformation", () => {
 
         // should contain 11 rows
         expect(rows.length).toBe(11);
+
+        await flushPromises();
     });
 
     it("file size should be formatted", async () => {
@@ -88,6 +90,8 @@ describe("DatasetInformation/DatasetInformation", () => {
         const formattedDate = format(parsedDate, "eeee MMM do H:mm:ss yyyy zz");
 
         expect(date).toBe(formattedDate);
+
+        await flushPromises();
     });
 
     it("Table should render data accordingly", async () => {
@@ -108,5 +112,7 @@ describe("DatasetInformation/DatasetInformation", () => {
                 expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
             }
         });
+
+        await flushPromises();
     });
 });

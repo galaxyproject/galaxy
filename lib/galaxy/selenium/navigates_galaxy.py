@@ -100,7 +100,7 @@ DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
 class NullTourCallback:
-    def handle_step(self, step, step_index):
+    def handle_step(self, step, step_index: int):
         pass
 
 
@@ -1645,7 +1645,7 @@ class NavigatesGalaxy(HasDriver):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
             input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            self.select_set_value(input_div_element, "%d: " % value["hid"])
+            self.select_set_value(input_div_element, "{}: ".format(value["hid"]))
 
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow.wait_for_and_click()
@@ -2227,7 +2227,7 @@ class NavigatesGalaxy(HasDriver):
     def assert_no_error_message(self):
         self.components._.messages.error.assert_absent_or_hidden()
 
-    def run_tour_step(self, step, step_index, tour_callback):
+    def run_tour_step(self, step, step_index: int, tour_callback):
         element_str = step.get("element", None)
         if element_str is None:
             component = step.get("component", None)
@@ -2262,7 +2262,7 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def _tour_wait_for_and_click_element(self, selector):
         element = self.tour_wait_for_clickable_element(selector)
-        element.click()
+        self.driver.execute_script("arguments[0].click();", element)
 
     @retry_during_transitions
     def wait_for_and_click_selector(self, selector):

@@ -1,38 +1,45 @@
 <template>
     <div class="d-flex flex-column">
-        <div v-if="historiesLoading">computing tour requirements...</div>
+        <div v-if="historiesLoading">Evaluating requirements...</div>
+        <b-modal
+            v-else-if="errorMessage"
+            id="tour-failed"
+            v-model="showModal"
+            title="Tour Failed"
+            title-class="h3"
+            ok-only>
+            {{ errorMessage }}
+        </b-modal>
         <b-modal
             v-else-if="loginRequired(currentUser)"
-            id="tour-requirement-unment"
-            v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
+            id="tour-requirement"
+            v-model="showModal"
+            title="Requires Login"
+            title-class="h3"
+            ok-only>
+            You must log in to Galaxy to use this tour.
         </b-modal>
         <b-modal
             v-else-if="adminRequired(currentUser)"
-            id="tour-requirement-unment"
-            v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
+            id="tour-requirement"
+            v-model="showModal"
+            title="Requires Admin"
+            title-class="h3"
+            ok-only>
+            You must be an admin user to use this tour.
         </b-modal>
         <b-modal
             v-else-if="newHistoryRequired(currentHistory)"
-            id="tour-requirement-unment"
-            v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger">
-                This tour is designed to run on a new history, please create a new history before running it.
-                <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
-            </b-alert>
+            id="tour-requirement"
+            v-model="showModal"
+            title="Requires New History"
+            title-class="h3"
+            ok-title="Create New History"
+            @ok="createNewHistory()">
+            This tour is designed to run on a new history, please create a new history before running it.
         </b-modal>
         <TourStep
-            v-else-if="currentStep"
+            v-else-if="currentHistory && currentStep && currentUser"
             :key="currentIndex"
             :step="currentStep"
             :is-playing="isPlaying"
@@ -71,8 +78,9 @@ export default {
     data() {
         return {
             currentIndex: -1,
+            errorMessage: "",
             isPlaying: false,
-            showRequirementDialog: true,
+            showModal: true,
         };
     },
     computed: {
@@ -84,11 +92,11 @@ export default {
         numberOfSteps() {
             return this.steps.length;
         },
+        isFirst() {
+            return this.currentIndex === 0;
+        },
         isLast() {
             return this.currentIndex === this.steps.length - 1;
-        },
-        hasBegun() {
-            return this.currentIndex >= 1;
         },
     },
     beforeDestroy() {
@@ -110,48 +118,53 @@ export default {
             }
         },
         loginRequired(user) {
-            return !this.hasBegun && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
+            return this.isFirst && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
         },
         adminRequired(user) {
-            return !this.hasBegun && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
+            return this.isFirst && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
         },
         newHistoryRequired(history) {
-            if (this.hasBegun) {
-                return false;
-            }
-            const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
-            if (!hasNewHistoryRequirement) {
-                return false;
-            } else if (history && history.size != 0) {
-                // TODO: better estimate for whether the history is new.
-                return true;
+            if (this.isFirst) {
+                const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
+                if (!hasNewHistoryRequirement) {
+                    return false;
+                } else if (history && history.size != 0) {
+                    // TODO: better estimate for whether the history is new.
+                    return true;
+                } else {
+                    return false;
+                }
             } else {
                 return false;
             }
         },
         async next() {
-            // do post-actions
-            if (this.currentStep && this.currentStep.onNext) {
-                await this.currentStep.onNext();
-            }
-            // do pre-actions
-            const nextIndex = this.currentIndex + 1;
-            if (nextIndex < this.numberOfSteps && this.currentIndex !== -1) {
-                const nextStep = this.steps[nextIndex];
-                if (nextStep.onBefore) {
-                    await nextStep.onBefore();
-                    // automatically continues to next step if enabled
-                    if (this.isPlaying) {
-                        setTimeout(() => {
-                            if (this.isPlaying) {
-                                this.next();
-                            }
-                        }, playDelay);
+            try {
+                // do post-actions
+                if (this.currentStep && this.currentStep.onNext) {
+                    await this.currentStep.onNext();
+                }
+                // do pre-actions
+                const nextIndex = this.currentIndex + 1;
+                if (nextIndex < this.numberOfSteps && this.currentIndex !== -1) {
+                    const nextStep = this.steps[nextIndex];
+                    if (nextStep.onBefore) {
+                        await nextStep.onBefore();
+                        // automatically continues to next step if enabled, unless its the last one
+                        if (this.isPlaying && nextIndex !== this.numberOfSteps - 1) {
+                            setTimeout(() => {
+                                if (this.isPlaying) {
+                                    this.next();
+                                }
+                            }, playDelay);
+                        }
                     }
                 }
+                // go to next step
+                this.currentIndex = nextIndex;
+            } catch (e) {
+                this.errorMessage = String(e);
             }
-            // go to next step
-            this.currentIndex = nextIndex;
         },
         end() {
             this.currentIndex = -1;

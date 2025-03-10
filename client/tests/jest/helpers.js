@@ -10,9 +10,9 @@ import { PiniaVuePlugin } from "pinia";
 import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
+import VueRouter from "vue-router";
 
 import _short from "@/components/plugins/short";
-import VueRouter from "vue-router";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -183,7 +183,9 @@ export const wait = (n) => {
 export function getLocalVue(instrumentLocalization = false) {
     const localVue = createLocalVue();
     const mockedDirective = {
-        bind() {},
+        bind(el, binding) {
+            el.setAttribute("data-mock-directive", binding.value || el.title);
+        },
     };
     localVue.use(PiniaVuePlugin);
     localVue.use(BootstrapVue);
@@ -266,10 +268,47 @@ export function mockModule(storeModule, state = {}) {
 }
 
 /**
+ * Expect and mock out an API request to /api/configuration. In general, useConfig
+ * and using tests/jest/mockConfig is better since components since be talking to the API
+ * directly in this way but some older components are not using the latest composables.
+ */
+export function expectConfigurationRequest(http, config) {
+    return http.get("/api/configuration", ({ response }) => {
+        return response(200).json(config);
+    });
+}
+
+/**
  * Return a new mocked out router attached the specified localVue instance.
  */
 export function injectTestRouter(localVue) {
     localVue.use(VueRouter);
     const router = new VueRouter();
     return router;
+}
+
+export function suppressDebugConsole() {
+    jest.spyOn(console, "debug").mockImplementation(jest.fn());
+}
+
+export function suppressBootstrapVueWarnings() {
+    const originalWarn = console.warn;
+    jest.spyOn(console, "warn").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("BootstrapVue warn") < 0) {
+                originalWarn(msg);
+            }
+        })
+    );
+}
+
+export function suppressErrorForCustomIcons() {
+    const originalError = console.error;
+    jest.spyOn(console, "error").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("Could not find one or more icon(s)") < 0) {
+                originalError(msg);
+            }
+        })
+    );
 }

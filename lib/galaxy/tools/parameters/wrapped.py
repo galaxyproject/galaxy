@@ -39,9 +39,9 @@ class LegacyUnprefixedDict(UserDict):
     # It used to be valid to access members of conditionals without specifying the conditional.
     # This dict provides a fallback when dict lookup fails using those old rules
 
-    def __init__(self, dict=None, **kwargs):
+    def __init__(self, initialdata=None, **kwargs):
         self._legacy_mapping: Dict[str, str] = {}
-        super().__init__(dict, **kwargs)
+        super().__init__(initialdata, **kwargs)
 
     def set_legacy_alias(self, new_key: str, old_key: str):
         self._legacy_mapping[old_key] = new_key

@@ -14,7 +14,6 @@ from galaxy.managers.pages import (
 )
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
-from galaxy.model.base import transaction
 from galaxy.model.db.user import get_user_by_username
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
@@ -157,8 +156,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     p_annotation = sanitize_html(p_annotation)
                     self.add_item_annotation(trans.sa_session, user, p, p_annotation)
                 trans.sa_session.add(p)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             return {"message": f"Attributes of '{p.title}' successfully saved.", "status": "success"}
 
     @web.expose

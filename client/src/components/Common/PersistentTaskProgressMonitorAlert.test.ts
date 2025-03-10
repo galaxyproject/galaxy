@@ -31,6 +31,7 @@ const FAKE_MONITOR: TaskMonitor = {
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
+    failureReason: ref(""),
     requestHasFailed: ref(false),
     taskStatus: ref(""),
     expirationTime: FAKE_EXPIRATION_TIME,

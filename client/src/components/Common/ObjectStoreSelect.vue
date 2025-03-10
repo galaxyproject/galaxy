@@ -11,7 +11,7 @@ interface RelocateProps {
 defineProps<RelocateProps>();
 
 const emit = defineEmits<{
-    (e: "select", value: string): void;
+    (e: "select", value: string | null): void;
 }>();
 
 const toWhat = "Datasets will be filtered to those stored in";
@@ -28,7 +28,7 @@ const toWhat = "Datasets will be filtered to those stored in";
                 class="filter-target-object-store-select-button"
                 variant="outline-primary"
                 :object-store="objectStore"
-                @click="emit('select', objectStore.object_store_id)" />
+                @click="emit('select', objectStore.object_store_id ?? null)" />
         </b-button-group>
         <ObjectStoreSelectButtonDescribePopover
             v-for="objectStore in objectStores"

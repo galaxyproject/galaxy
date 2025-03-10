@@ -5,8 +5,8 @@ import flushPromises from "flush-promises";
 import { WindowManager } from "layout/window-manager";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
@@ -20,9 +20,9 @@ jest.mock("vue-router/composables", () => ({
     useRouter: jest.fn(),
 }));
 
-const { server, http } = useServerMock();
-
 const currentUser = getFakeRegisteredUser();
+
+setupMockConfig({});
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -45,12 +45,6 @@ describe("Masthead.vue", () => {
         localVue.use(PiniaVuePlugin);
         testPinia = createTestingPinia();
 
-        server.use(
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({});
-            })
-        );
-
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();
 
@@ -63,6 +57,9 @@ describe("Masthead.vue", () => {
             },
             localVue,
             pinia: testPinia,
+            stubs: {
+                Icon: true,
+            },
         });
         await flushPromises();
     });
