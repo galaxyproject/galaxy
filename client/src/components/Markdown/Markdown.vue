@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { parseMarkdown } from "./parse";
 
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 import StsDownloadButton from "@/components/StsDownloadButton.vue";
@@ -80,48 +82,54 @@ onMounted(() => {
 <template>
     <div class="markdown-wrapper px-4">
         <LoadingSpan v-if="loading" />
-        <div v-else>
-            <div>
-                <StsDownloadButton
-                    v-if="effectiveExportLink"
-                    class="float-right markdown-pdf-export"
-                    :fallback-url="exportLink"
-                    :download-endpoint="downloadEndpoint"
-                    size="sm"
-                    title="Generate PDF" />
-                <b-button
-                    v-if="!readOnly"
-                    v-b-tooltip.hover
-                    class="float-right markdown-edit mr-2"
-                    role="button"
-                    size="sm"
-                    title="Edit Markdown"
-                    variant="outline-primary"
-                    @click="$emit('onEdit')">
-                    Edit
-                    <FontAwesomeIcon :icon="faEdit" />
-                </b-button>
-                <span class="float-left font-weight-light">
-                    <h1 class="text-break align-middle">
-                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
-                    </h1>
-                </span>
+        <div v-else class="d-flex flex-column">
+            <div class="markdown-wrapper-header d-flex mb-2 sticky-top bg-white">
+                <Heading v-localize h1 separator inline size="md" class="flex-grow-1">
+                    {{ markdownConfig.title || markdownConfig.model_class }}
+                </Heading>
+                <div>
+                    <StsDownloadButton
+                        v-if="effectiveExportLink"
+                        class="float-right markdown-pdf-export"
+                        :fallback-url="exportLink"
+                        :download-endpoint="downloadEndpoint"
+                        size="sm"
+                        title="Generate PDF" />
+                    <BButton
+                        v-if="!readOnly"
+                        v-b-tooltip.hover
+                        class="float-right markdown-edit mr-2"
+                        role="button"
+                        size="sm"
+                        title="Edit Markdown"
+                        variant="outline-primary"
+                        @click="$emit('onEdit')">
+                        Edit
+                        <FontAwesomeIcon :icon="faEdit" />
+                    </BButton>
+                </div>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
-                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
-                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
-            </b-badge>
-            <div>
+            <div class="flex-grow-1 overflow-auto">
+                <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                    <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
+                    <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
+                </b-badge>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
                         <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>
-            </div>
-            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component py-2">
-                <SectionWrapper :name="obj.name" :content="obj.content" />
+                <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component py-2">
+                    <SectionWrapper :name="obj.name" :content="obj.content" />
+                </div>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.markdown-wrapper-header {
+    z-index: 101;
+}
+</style>
