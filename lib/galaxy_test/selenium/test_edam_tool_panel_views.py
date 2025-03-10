@@ -1,22 +1,21 @@
-from galaxy.selenium.navigates_galaxy import retry_during_transitions
 from .framework import (
+    retry_assertion_during_transitions,
     selenium_test,
-    SeleniumIntegrationTestCase,
+    SeleniumTestCase,
 )
 
 
-class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
+class TestEdamToolPanelViewsSelenium(SeleniumTestCase):
     ensure_registered = True  # to test workflow editor
 
     @selenium_test
     def test_basic_navigation(self):
-        tool_panel = self.components.tool_panel
-        tool_panel.views_button.wait_for_and_click()
-        tool_panel.views_menu_item(panel_id="ontology:edam_operations").wait_for_and_click()
+        self.swap_to_tool_panel_edam_operations()
         self._assert_displaying_edam_operations()
 
         # reload page and ensure the edam operations are still being displayed.
         self.home()
+        tool_panel = self.components.tool_panel
         tool_panel.views_button.wait_for_visible()
         self._assert_displaying_edam_operations()
         self.screenshot("tool_panel_view_edam_landing")
@@ -31,7 +30,7 @@ class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
         self._assert_displaying_edam_operations()
         self.screenshot("tool_panel_view_edam_workflow_editor")
 
-    @retry_during_transitions
+    @retry_assertion_during_transitions
     def _assert_displaying_edam_operations(self):
         tool_panel = self.components.tool_panel
         tool_panel.toolbox.wait_for_visible()

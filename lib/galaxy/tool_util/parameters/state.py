@@ -14,7 +14,7 @@ from typing import (
 from pydantic import BaseModel
 from typing_extensions import Literal
 
-from .models import (
+from galaxy.tool_util_models.parameters import (
     create_job_internal_model,
     create_landing_request_internal_model,
     create_landing_request_model,
@@ -28,6 +28,8 @@ from .models import (
     ToolParameterBundle,
     ToolParameterBundleModel,
     ToolParameterT,
+)
+from .model_validation import (
     validate_against_model,
 )
 

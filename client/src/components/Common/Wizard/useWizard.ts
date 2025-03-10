@@ -25,6 +25,12 @@ export interface WizardStep {
      * This is useful for optional or conditional steps.
      */
     isSkippable: () => boolean;
+
+    /**
+     * Hack added by John, someone component in CSS should undo this or come up
+     * with an alternative that doesn't require this to be set.
+     */
+    hackBodyWidth?: string;
 }
 
 /**
