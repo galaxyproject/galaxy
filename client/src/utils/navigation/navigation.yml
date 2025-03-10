@@ -85,8 +85,10 @@ preferences:
 
   object_store_selection:
     selectors:
-      option_buttons: '.preferred-object-store-select-button'
-      option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
+      modal: '#modal-select-preferred-object-store'
+      option_cards: '.source-option-card'
+      option_card: '.source-option-card[data-source-option-card-id="${object_store_id}"]'
+      option_card_select: '.source-option-card[data-source-option-card-id="${object_store_id}"] .source-option-card-select-button'
 
 object_store_instances:
   index:
