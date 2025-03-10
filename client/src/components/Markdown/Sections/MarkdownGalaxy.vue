@@ -110,12 +110,12 @@ watch(
             {{ args.collapse }}
         </BLink>
         <BCollapse :visible="isVisible">
-            <div v-if="name == 'generate_galaxy_version'" class="galaxy-version">
-                <pre><code>Galaxy Version {{ config.version_major }}</code></pre>
-            </div>
-            <div v-else-if="name == 'generate_time'" class="galaxy-time">
-                <pre><code>{{ new Date().toUTCString() }}</code></pre>
-            </div>
+            <pre
+                v-if="name == 'generate_galaxy_version'"
+                class="galaxy-version m-0"><code>Galaxy Version {{ config.version_major }}</code></pre>
+            <pre
+                v-else-if="name == 'generate_time'"
+                class="galaxy-time m-0"><code>{{ new Date().toUTCString() }}</code></pre>
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
                 :dataset-id="args.history_target_id || args.history_dataset_id"
