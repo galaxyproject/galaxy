@@ -96,7 +96,7 @@ function revertToOriginal() {
         v-else
         role="button"
         for="click-to-edit-input"
-        class="click-to-edit-label"
+        class="click-to-edit-label text-break"
         tabindex="0"
         @keyup.enter="editable = true"
         @click.stop="editable = true">
