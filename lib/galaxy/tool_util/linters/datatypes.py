@@ -1,4 +1,5 @@
 import os.path
+from os import getenv
 from typing import (
     Set,
     TYPE_CHECKING,
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from galaxy.tool_util.parser import ToolSource
     from galaxy.util.resources import Traversable
 
-DATATYPES_CONF = os.getenv('DATATYPES_CONF', resource_path(__package__, "datatypes_conf.xml.sample"))
+DATATYPES_CONF = getenv("DATATYPES_CONF", resource_path(__package__, "datatypes_conf.xml.sample"))
 
 
 def _parse_datatypes(datatype_conf_path: Union[str, "Traversable"]) -> Set[str]:
