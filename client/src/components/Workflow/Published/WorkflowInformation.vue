@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-import { type WorkflowSummary } from "@/api/workflows";
+import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { getFullAppUrl } from "@/utils/utils";
 
@@ -18,7 +18,7 @@ import UtcDate from "@/components/UtcDate.vue";
 library.add(faBuilding, faUser);
 
 interface Props {
-    workflowInfo: WorkflowSummary;
+    workflowInfo: StoredWorkflowDetailed;
     embedded?: boolean;
 }
 

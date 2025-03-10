@@ -5,7 +5,8 @@ import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory } from "@/api";
-import { copyWorkflow, getWorkflowInfo } from "@/components/Workflow/workflows.services";
+import { getWorkflowInfo } from "@/api/workflows";
+import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";

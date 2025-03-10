@@ -7,9 +7,9 @@ import { type AxiosError } from "axios";
 import { BAlert, BButton, BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
-import { type StoredWorkflowDetailed, type WorkflowSummary } from "@/api/workflows";
+import { getWorkflowInfo, type StoredWorkflowDetailed } from "@/api/workflows";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
-import { getWorkflowFull, getWorkflowInfo } from "@/components/Workflow/workflows.services";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
@@ -59,7 +59,7 @@ const { stateStore } = provideScopedWorkflowStores(props.id);
 
 const loading = ref(true);
 const errorMessage = ref("");
-const workflowInfo = ref<WorkflowSummary>();
+const workflowInfo = ref<StoredWorkflowDetailed>();
 const workflow = ref<StoredWorkflowDetailed | null>(null);
 
 const hasError = computed(() => !!errorMessage.value);

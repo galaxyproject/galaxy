@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { BModal } from "bootstrap-vue";
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 
-import type { StoredWorkflowDetailed } from "@/api/workflows";
-import type { Workflow } from "@/components/Workflow/workflows.services";
+import type { WorkflowSummary } from "@/api/workflows";
 
 import type { SelectedWorkflow } from "./types";
 
@@ -12,7 +11,7 @@ import WorkflowRename from "./WorkflowRename.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 interface Props {
-    workflows: Workflow[];
+    workflows: WorkflowSummary[];
     gridView?: boolean;
     hideRuns?: boolean;
     filterable?: boolean;
@@ -33,17 +32,13 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "select", workflow: Workflow): void;
+    (e: "select", workflow: WorkflowSummary): void;
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
     (e: "insertWorkflow", id: string, name: string): void;
     (e: "insertWorkflowSteps", id: string, stepCount: number): void;
 }>();
-
-/** `props.workflows` typed as `StoredWorkflowDetailed[]` because that is the type expected by `WorkflowCard` */
-const detailedWorkflows = computed(() => props.workflows as unknown as StoredWorkflowDetailed[]);
-// TODO: Ideally, components like `WorkflowCard` should accept a less specific type, like `Workflow` instead of `StoredWorkflowDetailed`
 
 const modalOptions = reactive({
     rename: {
@@ -75,11 +70,11 @@ function onPreview(id: string) {
 }
 
 // TODO: clean-up types, as soon as better Workflow type is available
-function onInsert(workflow: StoredWorkflowDetailed) {
-    emit("insertWorkflow", (workflow as any).latest_workflow_id, workflow.name);
+function onInsert(workflow: WorkflowSummary) {
+    emit("insertWorkflow", workflow.latest_workflow_id, workflow.name);
 }
 
-function onInsertSteps(workflow: StoredWorkflowDetailed) {
+function onInsertSteps(workflow: WorkflowSummary) {
     emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
 }
 </script>
@@ -87,7 +82,7 @@ function onInsertSteps(workflow: StoredWorkflowDetailed) {
 <template>
     <div class="workflow-card-list" :class="{ grid: props.gridView }">
         <WorkflowCard
-            v-for="workflow in detailedWorkflows"
+            v-for="workflow in workflows"
             :key="workflow.id"
             :workflow="workflow"
             :selectable="!publishedView && !editorView"

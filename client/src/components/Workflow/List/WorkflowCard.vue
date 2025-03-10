@@ -5,7 +5,7 @@ import { BButton, BFormCheckbox, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { type WorkflowSummary } from "@/api/workflows";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
 
@@ -17,7 +17,7 @@ import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vu
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
 
 interface Props {
-    workflow: StoredWorkflowDetailed;
+    workflow: WorkflowSummary;
     gridView?: boolean;
     hideRuns?: boolean;
     filterable?: boolean;

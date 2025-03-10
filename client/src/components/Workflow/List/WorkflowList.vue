@@ -7,13 +7,12 @@ import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GalaxyApi } from "@/api";
+import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
-import { deleteWorkflow, undeleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
+import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-import { rethrowSimple } from "@/utils/simple-error";
 
 import type { SelectedWorkflow } from "./types";
 
@@ -26,8 +25,6 @@ import LoginRequired from "@/components/Common/LoginRequired.vue";
 import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
-
-type WorkflowsList = Record<string, never>[];
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
@@ -54,7 +51,7 @@ const listHeader = ref<any>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
-const workflowsLoaded = ref<WorkflowsList>([]);
+const workflowsLoaded = ref<WorkflowSummary[]>([]);
 const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
 
 const searchPlaceHolder = computed(() => {
@@ -141,23 +138,15 @@ async function load(overlayLoading = false, silent = false) {
     }
 
     try {
-        const { response, data, error } = await GalaxyApi().GET("/api/workflows", {
-            params: {
-                query: {
-                    sort_by: sortBy.value,
-                    sort_desc: sortDesc.value,
-                    limit: limit.value,
-                    offset: offset.value,
-                    search: search?.trim(),
-                    show_published: published.value,
-                    skip_step_counts: true,
-                },
-            },
+        const { data, totalMatches } = await loadWorkflows({
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+            limit: limit.value,
+            offset: offset.value,
+            filterText: search?.trim(),
+            showPublished: published.value,
+            skipStepCounts: true,
         });
-
-        if (error) {
-            rethrowSimple(error);
-        }
 
         let filteredWorkflows = data;
 
@@ -167,7 +156,7 @@ async function load(overlayLoading = false, silent = false) {
 
         workflowsLoaded.value = filteredWorkflows;
 
-        totalWorkflows.value = parseInt(response.headers.get("Total_matches") || "0", 10) || 0;
+        totalWorkflows.value = totalMatches;
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {

@@ -18,13 +18,13 @@ import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { type AnyWorkflow, hasVersion } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 
 import { useWorkflowActions } from "./useWorkflowActions";
 
 interface Props {
-    workflow: StoredWorkflowDetailed;
+    workflow: AnyWorkflow;
     published?: boolean;
     editor?: boolean;
     current?: boolean;
@@ -67,7 +67,7 @@ const sourceType = computed(() => {
 const runPath = computed(
     () =>
         `/workflows/run?id=${props.workflow.id}${
-            props.workflow.version !== undefined ? `&version=${props.workflow.version}` : ""
+            hasVersion(props.workflow) ? `&version=${props.workflow.version}` : ""
         }`
 );
 
