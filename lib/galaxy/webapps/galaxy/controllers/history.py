@@ -12,6 +12,7 @@ from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import Role
 from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -134,13 +135,20 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == "GET":
             inputs = []
-            all_roles = trans.user.all_roles()
+            all_roles = set(trans.user.all_roles())
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             current_actions = history.default_permissions
             for action_key, action in trans.app.model.Dataset.permitted_actions.items():
                 in_roles = set()
                 for a in current_actions:
                     if a.action == action.action:
                         in_roles.add(a.role)
+
+                role_tuples = []
+                for role in all_roles:
+                    displayed_name = private_role_emails.get(role.id, role.name)
+                    role_tuples.append((displayed_name, trans.security.encode_id(role.id)))
+
                 inputs.append(
                     {
                         "type": "select",
@@ -150,7 +158,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         "name": action_key,
                         "label": action.action,
                         "help": action.description,
-                        "options": [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                        "options": role_tuples,
                         "value": [trans.security.encode_id(role.id) for role in in_roles],
                     }
                 )
