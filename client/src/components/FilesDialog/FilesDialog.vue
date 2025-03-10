@@ -21,7 +21,7 @@ import {
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { USER_FILE_PREFIX } from "@/utils/upload-payload";
+import { USER_FILE_PREFIX } from "@/utils/url";
 
 import { Model } from "./model";
 

@@ -2,25 +2,13 @@ import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-// import type { StoredWorkflowDetailed } from "@/api/workflows"; // TODO: use this instead of locally defined type
-import { type Steps } from "@/stores/workflowStepStore";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 
-export interface Workflow {
-    name: string;
-    id: string;
-    steps: Steps;
-    step_count?: number;
-    latest_id?: string;
-    version: number;
-    deleted?: boolean;
-    owner?: string;
-    annotation?: string;
-    tags?: string[];
-    update_time?: string;
-}
+// TODO: Define a less specific `Workflow` type here, and unify with the one in `workflows.services.ts`,
+//       instead of using `StoredWorkflowDetailed` directly.
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
-    const workflowsByInstanceId = ref<{ [index: string]: Workflow }>({});
+    const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
 
     const getStoredWorkflowByInstanceId = computed(() => (workflowId: string) => {
         return workflowsByInstanceId.value[workflowId];

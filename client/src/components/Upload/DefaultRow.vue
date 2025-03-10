@@ -1,9 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { bytesToString } from "utils/utils";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
+
+import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
+import { bytesToString } from "@/utils/utils";
 
 import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -11,93 +13,55 @@ import UploadSettings from "./UploadSettings.vue";
 
 library.add(faEdit, faLaptop, faFolderOpen);
 
-const fileField = ref(null);
+const fileField: Ref<HTMLInputElement | null> = ref(null);
 
-const props = defineProps({
-    deferred: {
-        type: Boolean,
-        default: null,
-    },
-    extension: {
-        type: String,
-        required: true,
-    },
-    fileContent: {
-        type: String,
-        required: true,
-    },
-    fileMode: {
-        type: String,
-        required: true,
-    },
-    fileName: {
-        type: String,
-        required: true,
-    },
-    fileSize: {
-        type: Number,
-        required: true,
-    },
-    dbKey: {
-        type: String,
-        required: true,
-    },
-    index: {
-        type: String,
-        required: true,
-    },
-    info: {
-        type: String,
-        default: null,
-    },
-    listDbKeys: {
-        type: Array,
-        default: null,
-    },
-    listExtensions: {
-        type: Array,
-        default: null,
-    },
-    percentage: {
-        type: Number,
-        required: true,
-    },
-    spaceToTab: {
-        type: Boolean,
-        required: true,
-    },
-    status: {
-        type: String,
-        required: true,
-    },
-    toPosixLines: {
-        type: Boolean,
-        required: true,
-    },
+interface Props {
+    deferred?: boolean;
+    extension: string;
+    fileContent: string;
+    fileMode: string;
+    fileName: string;
+    fileSize: number;
+    dbKey: string;
+    index: string;
+    info?: string;
+    listDbKeys?: DbKey[];
+    listExtensions?: ExtensionDetails[];
+    percentage: number;
+    spaceToTab: boolean;
+    status: string;
+    toPosixLines: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    deferred: false,
+    info: "",
+    listDbKeys: undefined,
+    listExtensions: undefined,
 });
 
 const emit = defineEmits(["input", "remove"]);
 
 const isDisabled = computed(() => props.status !== "init");
-function inputExtension(newExtension) {
+function inputExtension(newExtension: string) {
     emit("input", props.index, { extension: newExtension });
 }
 
-function inputFileContent(newFileContent) {
+function inputFileContent(newFileContent: string) {
     emit("input", props.index, { fileContent: newFileContent, fileSize: newFileContent.length });
 }
 
-function inputFileName(newFileName) {
+function inputFileName(newFileName: string) {
     emit("input", props.index, { fileName: newFileName });
 }
 
-function inputDbKey(newDbKey) {
+function inputDbKey(newDbKey: string) {
     emit("input", props.index, { dbKey: newDbKey });
 }
 
-function inputSettings(settingId) {
-    const newSettings = {};
-    newSettings[settingId] = !props[settingId];
+function inputSettings(settingId: string) {
+    const newSettings: Record<string, any> = {};
+    newSettings[settingId] = !(props as any)[settingId];
     emit("input", props.index, newSettings);
 }
 
@@ -112,7 +76,7 @@ onMounted(() => {
 });
 
 function autoSelectFileInput() {
-    fileField.value.select();
+    fileField.value?.select();
 }
 </script>
 
@@ -134,7 +98,7 @@ function autoSelectFileInput() {
                 {{ bytesToString(fileSize) }}
             </div>
             <UploadSelect
-                v-if="listExtensions !== null"
+                v-if="listExtensions"
                 class="upload-extension"
                 :value="extension"
                 :disabled="isDisabled"
@@ -142,9 +106,9 @@ function autoSelectFileInput() {
                 placeholder="Select Type"
                 what="file type"
                 @input="inputExtension" />
-            <UploadExtension v-if="listExtensions !== null" :extension="extension" :list-extensions="listExtensions" />
+            <UploadExtension v-if="listExtensions" :extension="extension" :list-extensions="listExtensions" />
             <UploadSelect
-                v-if="listDbKeys !== null"
+                v-if="listDbKeys"
                 class="upload-genome"
                 :value="dbKey"
                 :disabled="isDisabled"

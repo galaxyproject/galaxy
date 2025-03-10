@@ -8,9 +8,9 @@ import { RouterLink } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useUserStore } from "@/stores/userStore";
-import type { Workflow } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -18,6 +18,7 @@ import { copyWorkflow } from "./workflows.services";
 
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 interface Props {
@@ -36,7 +37,7 @@ const emit = defineEmits<{
     (e: "on-execute"): void;
 }>();
 
-const { workflow, error } = useWorkflowInstance(props.workflowId);
+const { workflow, loading, error } = useWorkflowInstance(props.workflowId);
 
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const owned = computed(() => {
@@ -48,7 +49,7 @@ const owned = computed(() => {
 });
 
 const importErrorMessage = ref<string | null>(null);
-const importedWorkflow = ref<Workflow | null>(null);
+const importedWorkflow = ref<StoredWorkflowDetailed | null>(null);
 const workflowImportedAttempted = ref(false);
 
 async function onImport() {
@@ -57,7 +58,7 @@ async function onImport() {
     }
     try {
         const wf = await copyWorkflow(workflow.value.id, workflow.value.owner);
-        importedWorkflow.value = wf as unknown as Workflow;
+        importedWorkflow.value = wf as unknown as StoredWorkflowDetailed;
     } catch (error) {
         importErrorMessage.value = errorMessageAsString(error, "Failed to import workflow");
     } finally {
@@ -163,6 +164,9 @@ const workflowImportTitle = computed(() => {
                 Successfully invoked workflow
                 <b>{{ getWorkflowName() }}</b>
             </div>
+            <BAlert v-else-if="loading" variant="info" show>
+                <LoadingSpan message="Loading workflow details" />
+            </BAlert>
         </div>
     </div>
 </template>

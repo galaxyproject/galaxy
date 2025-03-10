@@ -1,4 +1,4 @@
-import { isUrl, uploadPayload } from "./upload-payload.js";
+import { uploadPayload } from "./upload-payload.js";
 
 describe("uploadPayload", () => {
     test("basic validation", () => {
@@ -24,12 +24,6 @@ describe("uploadPayload", () => {
                 "historyId"
             )
         ).toThrow("Invalid url: xyz://test.me.1");
-    });
-
-    test("url detection", () => {
-        expect(isUrl("xyz://")).toBeFalsy();
-        expect(isUrl("ftp://")).toBeTruthy();
-        expect(isUrl("http://")).toBeTruthy();
     });
 
     test("regular payload", () => {

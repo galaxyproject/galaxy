@@ -26,7 +26,7 @@ import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
-import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
@@ -440,12 +440,12 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             @onSelect="onAddDatasetsDirectory"
             @onClose="onAddDatasets" />
 
-        <CollectionCreatorModal
+        <CollectionCreatorIndex
             v-if="collectionModalType && collectionHistoryId"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
             :selected-items="collectionSelection"
-            :show-modal.sync="collectionModalShow"
+            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

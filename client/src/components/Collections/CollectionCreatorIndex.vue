@@ -7,9 +7,11 @@ import { computed, ref, watch } from "vue";
 import type { HDASummary, HistoryItemSummary, HistorySummary } from "@/api";
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
+import { stateIsTerminal } from "@/utils/utils";
 
 import type { CollectionType, DatasetPair } from "../History/adapters/buildCollectionModal";
 
@@ -22,27 +24,30 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     historyId: string;
-    showModal: boolean;
+    show: boolean;
     collectionType: CollectionType;
     selectedItems?: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     extensions?: string[];
     fromRulesInput?: boolean;
-    hideModalOnCreate?: boolean;
+    hideOnCreate?: boolean;
     filterText?: string;
+    notModal?: boolean;
+    suggestedName?: string;
 }
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "created-collection", collection: any): void;
-    (e: "update:show-modal", showModal: boolean): void;
+    (e: "update:show", show: boolean): void;
+    (e: "on-hide"): void;
 }>();
 
-/** Computed toggle that handles opening and closing the modal */
+/** Computed toggle that handles showing and hiding the creator */
 const localShowToggle = computed({
-    get: () => props.showModal,
+    get: () => props.show,
     set: (value: boolean) => {
-        emit("update:show-modal", value);
+        emit("update:show", value);
     },
 });
 
@@ -140,6 +145,17 @@ const modalTitle = computed(() => {
     }
 });
 
+const historyItemsStore = useHistoryItemsStore();
+/** The created collection accessed from the history items store */
+const createdCollectionInHistory = computed(() => {
+    const historyItems = historyItemsStore.getHistoryItems(props.historyId, "");
+    return historyItems.find((item) => item.id === createdCollection.value?.id);
+});
+/** If the created collection has achieved a terminal state */
+const createdCollectionInReadyState = computed(
+    () => createdCollectionInHistory.value && stateIsTerminal(createdCollectionInHistory.value)
+);
+
 // Methods
 function createListCollection(elements: HDASummary[], name: string, hideSourceItems: boolean) {
     const returnedElems = elements.map((element) => ({
@@ -198,11 +214,10 @@ async function createHDCA(
             options,
         });
 
-        emit("created-collection", collection);
         createdCollection.value = collection;
 
-        if (props.hideModalOnCreate) {
-            hideModal();
+        if (props.hideOnCreate) {
+            hideCreator();
         }
     } catch (error) {
         createCollectionError.value = error as string;
@@ -210,6 +225,15 @@ async function createHDCA(
         creatingCollection.value = false;
     }
 }
+
+watch(
+    () => createdCollectionInReadyState.value,
+    (stateReady) => {
+        if (stateReady) {
+            emit("created-collection", createdCollectionInHistory.value);
+        }
+    }
+);
 
 async function fetchHistoryDatasets() {
     const { error } = await collectionItemsStore.fetchDatasetsForFiltertext(
@@ -225,18 +249,20 @@ async function fetchHistoryDatasets() {
     }
 }
 
-function hideModal() {
+function hideCreator() {
     localShowToggle.value = false;
+    emit("on-hide");
 }
 
-function resetModal() {
+function resetCreator() {
     createCollectionError.value = null;
     createdCollection.value = null;
 }
 </script>
 
 <template>
-    <BModal
+    <component
+        :is="props.notModal ? 'div' : BModal"
         id="collection-creator-modal"
         v-model="localShowToggle"
         :busy="(fromSelection && isFetchingItems) || creatingCollection"
@@ -245,7 +271,7 @@ function resetModal() {
         ok-only
         :ok-title="localize('Exit')"
         ok-variant="secondary"
-        @hidden="resetModal">
+        @hidden="resetCreator">
         <template v-slot:modal-header>
             <Heading class="w-100" size="sm">
                 <div class="d-flex justify-content-between unselectable w-100">
@@ -267,23 +293,32 @@ function resetModal() {
         </BAlert>
         <BAlert v-else-if="createCollectionError" variant="danger" show>
             {{ createCollectionError }}
-            <BLink class="text-decoration-none" @click.stop.prevent="resetModal">
+            <BLink class="text-decoration-none" @click.stop.prevent="resetCreator">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 {{ localize("Try again") }}
             </BLink>
         </BAlert>
         <div v-else-if="createdCollection">
-            <BAlert variant="success" show>
-                <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
-                {{ localize("Collection created successfully.") }}
-                <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetModal">
-                    <FontAwesomeIcon :icon="faUndo" fixed-width />
-                    {{ localize("Create another collection") }}
-                </BLink>
+            <BAlert v-if="!createdCollectionInReadyState" variant="info" show>
+                <LoadingSpan :message="localize('Waiting for collection to be ready')" />
             </BAlert>
+            <template v-else>
+                <BAlert variant="success" show>
+                    <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
+                    {{ localize("Collection created successfully.") }}
+                    {{ localize("It might still not be a valid input based on individual element properties.") }}
+                    {{ localize("Expand the collection to see its individual elements.") }}
+                    <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetCreator">
+                        <FontAwesomeIcon :icon="faUndo" fixed-width />
+                        {{ localize("Create another collection") }}
+                    </BLink>
+                </BAlert>
 
-            <!-- TODO: This is a bit shady, better if we confirm it is a collection type -->
-            <GenericItem :item-id="createdCollection.id" item-src="hdca" />
+                <GenericItem
+                    v-if="createdCollection.history_content_type === 'dataset_collection'"
+                    :item-id="createdCollection.id"
+                    item-src="hdca" />
+            </template>
         </div>
         <ListCollectionCreator
             v-else-if="props.collectionType === 'list'"
@@ -292,8 +327,9 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
+            :suggested-name="props.suggestedName"
             @clicked-create="createListCollection"
-            @on-cancel="hideModal" />
+            @on-cancel="hideCreator" />
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
             :history-id="props.historyId"
@@ -301,8 +337,9 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
+            :suggested-name="props.suggestedName"
             @clicked-create="createListPairedCollection"
-            @on-cancel="hideModal" />
+            @on-cancel="hideCreator" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
             :history-id="props.historyId"
@@ -310,9 +347,10 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
+            :suggested-name="props.suggestedName"
             @clicked-create="createPairedCollection"
-            @on-cancel="hideModal" />
-    </BModal>
+            @on-cancel="hideCreator" />
+    </component>
 </template>
 
 <style lang="scss">

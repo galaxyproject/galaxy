@@ -15,11 +15,11 @@ import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
-import type { Workflow } from "@/stores/workflowStore";
 
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -33,7 +33,7 @@ interface Props {
     /** The invocation to display */
     invocation: WorkflowInvocationElementView;
     /** The workflow which was run */
-    workflow: Workflow;
+    workflow: StoredWorkflowDetailed;
     /** Whether the invocation is terminal */
     isTerminal: boolean;
     /** The zoom level for the graph */
@@ -120,7 +120,7 @@ const initialPosition = computed(() => ({
 }));
 
 function activeStepFor(activeNodeId: number): Step {
-    return props.workflow.steps[activeNodeId] as Step;
+    return props.workflow.steps[activeNodeId] as unknown as Step;
 }
 
 /** Updates and loads the invocation graph */
@@ -194,6 +194,7 @@ function stepClicked(nodeId: number | null) {
                             :scroll-to-id="activeNodeId"
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
+                            :fixed-height="60"
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />

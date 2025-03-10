@@ -82,7 +82,7 @@
             <span class="node-title">{{ title }}</span>
             <span class="float-right">
                 <FontAwesomeIcon
-                    v-if="isInvocation && invocationStep.headerIcon"
+                    v-if="(isInvocation || isPopulatedInput) && invocationStep.headerIcon"
                     :icon="invocationStep.headerIcon"
                     :spin="invocationStep.headerIconSpin" />
             </span>
@@ -101,7 +101,7 @@
         <div
             v-else
             class="node-body position-relative card-body p-0 mx-2"
-            :class="{ 'cursor-pointer': isInvocation }"
+            :class="{ 'cursor-pointer': isInvocation || isPopulatedInput }"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
             @click.shift.capture.prevent.stop="toggleSelected"
@@ -122,15 +122,15 @@
                 :readonly="readonly"
                 @onChange="onChange" />
             <div v-if="!isInvocation && showRule" class="rule" />
-            <NodeInvocationText v-if="isInvocation" :invocation-step="invocationStep" />
+            <NodeInvocationText v-if="isInvocation || isPopulatedInput" :invocation-step="invocationStep" />
             <NodeOutput
                 v-for="(output, index) in outputs"
                 :key="`out-${index}-${output.name}`"
-                :class="isInvocation && 'invocation-node-output'"
+                :class="(isInvocation || isPopulatedInput) && 'invocation-node-output'"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
-                :blank="isInvocation"
+                :blank="isInvocation || isPopulatedInput"
                 :step-id="id"
                 :step-type="step.type"
                 :step-position="step.position ?? { top: 0, left: 0 }"
@@ -167,6 +167,7 @@ import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorSto
 import type { InputTerminalSource, OutputTerminalSource, Step } from "@/stores/workflowStepStore";
 import { composedPartialPath, isClickable } from "@/utils/dom";
 
+import { isWorkflowInput } from "../constants";
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
@@ -198,6 +199,7 @@ const props = defineProps({
     highlight: { type: Boolean, default: false },
     isInvocation: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
+    populatedInputs: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -245,6 +247,14 @@ const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // get
 
 const isActive = computed(() => props.id === props.activeNodeId);
 
+const isPopulatedInput = computed(
+    () =>
+        props.populatedInputs &&
+        isWorkflowInput(props.step.type) &&
+        "nodeText" in props.step &&
+        props.step.nodeText !== undefined
+);
+
 const classes = computed(() => {
     return {
         "node-on-scroll-to": scrolledTo.value,
@@ -263,8 +273,8 @@ const errors = computed(() => props.step.errors || stateStore.getStepLoadingStat
 const headerClass = computed(() => {
     return {
         ...invocationStep.value.headerClass,
-        "cursor-pointer": props.isInvocation,
-        "node-header": !props.isInvocation || invocationStep.value.headerClass === undefined,
+        "cursor-pointer": props.isInvocation || isPopulatedInput.value,
+        "node-header": invocationStep.value.headerClass === undefined,
         "cursor-move": !props.readonly && !props.isInvocation,
     };
 });

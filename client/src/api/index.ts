@@ -200,6 +200,10 @@ export interface SubCollection extends DCObject {
  */
 export type CollectionEntry = HDCASummary | SubCollection;
 
+export function isHDA(entry?: HistoryItemSummary): entry is HDASummary {
+    return entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset";
+}
+
 /**
  * Returns true if the given entry is a top level HDCA and false for sub-collections.
  */

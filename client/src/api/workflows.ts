@@ -1,5 +1,6 @@
 import { type components } from "@/api/schema";
 
+export type Creator = components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 
 //TODO: replace with generated schema model when available
