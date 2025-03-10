@@ -80,7 +80,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="markdown-wrapper px-4">
+    <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
         <div v-else class="d-flex flex-column">
             <div class="markdown-wrapper-header d-flex mb-2 sticky-top bg-white">
@@ -109,7 +109,7 @@ onMounted(() => {
                     </BButton>
                 </div>
             </div>
-            <div class="flex-grow-1 overflow-auto">
+            <div class="flex-grow-1 overflow-auto w-75 mx-auto">
                 <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
                     <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
                     <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
