@@ -85,6 +85,7 @@ function onViewCollection(collection: object) {
             :history="history"
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
+            multi-view
             @view-collection="onViewCollection" />
 
         <HistoryPanel
