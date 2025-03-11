@@ -326,3 +326,6 @@ export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectReq
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
+
+export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
+export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
