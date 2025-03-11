@@ -37,7 +37,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "clicked-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
     (e: "on-cancel"): void;
 }>();
 
@@ -269,7 +269,7 @@ async function clickedCreate(collectionName: string) {
     }
 
     if (state.value !== "error" && (atLeastOneElement.value || confirmed)) {
-        emit("clicked-create", returnedElements, collectionName, hideSourceItems.value);
+        emit("on-create", returnedElements, collectionName, hideSourceItems.value);
     }
 }
 

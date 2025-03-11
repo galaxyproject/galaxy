@@ -66,7 +66,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "clicked-create", workingElements: DatasetPair[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-create", workingElements: DatasetPair[], collectionName: string, hideSourceItems: boolean): void;
     (e: "on-cancel"): void;
 }>();
 
@@ -551,7 +551,7 @@ async function clickedCreate(collectionName: string) {
     }
 
     if (state.value == "build" && (atLeastOnePair.value || confirmed)) {
-        emit("clicked-create", generatedPairs.value, collectionName, hideSourceItems.value);
+        emit("on-create", generatedPairs.value, collectionName, hideSourceItems.value);
     }
 }
 
