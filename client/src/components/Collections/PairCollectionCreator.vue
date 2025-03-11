@@ -5,6 +5,7 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
