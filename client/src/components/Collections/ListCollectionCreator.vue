@@ -8,8 +8,7 @@ import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
-import type { HDASummary, HistoryItemSummary } from "@/api";
-import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";

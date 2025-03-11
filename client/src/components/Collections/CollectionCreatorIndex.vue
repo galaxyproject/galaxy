@@ -4,8 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { HistoryItemSummary } from "@/api";
-import { createHistoryDatasetCollectionInstanceFull, type CreateNewCollectionPayload } from "@/api/datasetCollections";
+import type { CreateNewCollectionPayload, HistoryItemSummary } from "@/api";
+import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";

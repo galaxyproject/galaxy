@@ -1,10 +1,7 @@
 import { storeToRefs } from "pinia";
 
-import {
-    type CollectionElementIdentifiers,
-    createCollectionPayload,
-    type CreateNewCollectionPayload,
-} from "@/api/datasetCollections";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload } from "@/api";
+import { createCollectionPayload } from "@/api/datasetCollections";
 import { useHistoryStore } from "@/stores/historyStore";
 
 export function useCollectionCreation() {
