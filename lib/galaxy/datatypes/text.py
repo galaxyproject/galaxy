@@ -1421,3 +1421,29 @@ class FormattedDensity(Text):
             (lines[9].strip() == end_header and lines[10].strip() == grid_points)
             or (lines[9].strip() == end_header_spin and lines[10].strip() == grid_points_spin)
         )
+
+
+@build_sniff_from_prefix
+class Prm(Text):
+    """rDock prm format
+
+    For system definition files, scoring function definition files and search
+    protocol definition files.
+    """
+
+    file_ext = "prm"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in prm format, according to
+        https://rdock.github.io/documentation/html_docs/reference-guide/file-formats.html
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname("test.prm")
+        >>> Prm().sniff(fname)
+        True
+        >>> fname = get_test_fname("larch_potentials.inp")
+        >>> Prm().sniff(fname)
+        False
+        """
+        return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
