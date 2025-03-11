@@ -25,6 +25,7 @@ const props = defineProps<{
     id: string;
     pluralName: string;
     modelClass: string;
+    noHeading?: boolean;
 }>();
 
 const errors = ref<string[]>([]);
@@ -223,7 +224,7 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
 
 <template>
     <div class="sharing-page">
-        <Heading h1 size="lg" separator>
+        <Heading v-if="!props.noHeading" h1 size="lg" separator>
             <span>
                 Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
             </span>
