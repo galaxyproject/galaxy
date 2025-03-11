@@ -2,6 +2,7 @@ from galaxy import model
 from .types import (
     list,
     paired,
+    paired_or_unpaired,
     record,
 )
 
@@ -9,6 +10,7 @@ PLUGIN_CLASSES = [
     list.ListDatasetCollectionType,
     paired.PairedDatasetCollectionType,
     record.RecordDatasetCollectionType,
+    paired_or_unpaired.PairedOrUnpairedDatasetCollectionType,
 ]
 
 

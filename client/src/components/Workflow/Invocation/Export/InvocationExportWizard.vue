@@ -349,7 +349,7 @@ function resetWizard() {
                         :key="plugin.id"
                         :data-invocation-export-type="plugin.id"
                         class="wizard-selection-card"
-                        :border-variant="borderVariant(exportData.exportPluginFormat)"
+                        :border-variant="borderVariant(exportData.exportPluginFormat == plugin.id)"
                         @click="exportData.exportPluginFormat = plugin.id">
                         <BCardTitle>
                             <b>{{ plugin.title }}</b>

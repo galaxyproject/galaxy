@@ -51,9 +51,12 @@ class CollectionTypeDescription:
         if not self.has_subcollections_of_type(subcollection_type):
             raise ValueError(f"Cannot compute effective subcollection type of {subcollection_type} over {self}")
 
+        if subcollection_type == "single_datasets":
+            return self.collection_type
+
         return self.collection_type[: -(len(subcollection_type) + 1)]
 
-    def has_subcollections_of_type(self, other_collection_type):
+    def has_subcollections_of_type(self, other_collection_type) -> bool:
         """Take in another type (either flat string or another
         CollectionTypeDescription) and determine if this collection contains
         subcollections matching that type.
@@ -65,18 +68,43 @@ class CollectionTypeDescription:
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
         collection_type = self.collection_type
-        return collection_type.endswith(other_collection_type) and collection_type != other_collection_type
+        if collection_type == other_collection_type:
+            return False
+        if collection_type.endswith(other_collection_type):
+            return True
+        if other_collection_type == "paired_or_unpaired":
+            # this can be thought of as a subcollection of anything except a pair
+            # since it would match a pair exactly
+            return collection_type != "paired"
+        if other_collection_type == "single_datasets":
+            # effectively any collection has unpaired subcollections
+            return True
+        return False
 
     def is_subcollection_of_type(self, other_collection_type):
         if not hasattr(other_collection_type, "collection_type"):
             other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
         return other_collection_type.has_subcollections_of_type(self)
 
-    def can_match_type(self, other_collection_type):
+    def can_match_type(self, other_collection_type) -> bool:
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
         collection_type = self.collection_type
-        return other_collection_type == collection_type
+        if other_collection_type == collection_type:
+            return True
+        elif other_collection_type == "paired" and collection_type == "paired_or_unpaired":
+            return True
+
+        if collection_type.endswith(":paired_or_unpaired"):
+            as_plain_list = collection_type[: -len(":paired_or_unpaired")]
+            if other_collection_type == as_plain_list:
+                return True
+            as_paired_list = f"{as_plain_list}:paired"
+            if other_collection_type == as_paired_list:
+                return True
+
+        # can we push this to the type registry somehow?
+        return False
 
     def subcollection_type_description(self):
         if not self.__has_subcollections:

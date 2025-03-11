@@ -101,6 +101,25 @@ class TestDatasetCollectionsApi(ApiTestCase):
             pair_1_element_1 = pair_elements[0]
             assert pair_1_element_1["element_index"] == 0
 
+    def test_create_paried_or_unpaired(self, history_id):
+        collection_name = "a singleton in a paired_or_unpaired collection"
+        contents = [
+            ("unpaired", "1\t2\t3"),
+        ]
+        single_identifier = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name=collection_name,
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=single_identifier,
+            collection_type="paired_or_unpaired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        dataset_collection = self._check_create_response(create_response)
+        assert dataset_collection["collection_type"] == "paired_or_unpaired"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 1, dataset_collection
+
     def test_create_record(self, history_id):
         contents = [
             ("condition", "1\t2\t3"),

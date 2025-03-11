@@ -13,9 +13,9 @@ class TestCollectionBuilders(SeleniumTestCase):
     def test_build_list_simple_hidden(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])
-        self._collection_dropdown("build list")
+        self.history_panel_build_list_auto()
         self.collection_builder_set_name("my cool list")
-        self.screenshot("collection_builder_list")
+        self.screenshot("collection_builder_wizard_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
 
@@ -24,8 +24,7 @@ class TestCollectionBuilders(SeleniumTestCase):
     def test_build_list_and_show_items(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])
-        self._collection_dropdown("build list")
-
+        self.history_panel_build_list_auto()
         # this toggles the checkbox to not hide originals
         self.collection_builder_hide_originals()
         self.collection_builder_set_name("my cool list")
@@ -34,13 +33,15 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_build_paired_list_simple(self):
-        self.perform_upload(self.get_filename("1.tabular"))
-        self.perform_upload(self.get_filename("2.tabular"))
+    def test_build_paired_list_auto_matched(self):
+        self.perform_upload_of_pasted_content(
+            {
+                "basename_1.fasta": "forward content",
+                "basename_2.fasta": "reverse content",
+            }
+        )
         self._wait_for_and_select([1, 2])
-        self._collection_dropdown("build list of pairs")
-        self.collection_builder_click_paired_item("forward", 0)
-        self.collection_builder_click_paired_item("reverse", 1)
+        self.history_panel_build_list_of_pairs()
         self.collection_builder_set_name("my awesome paired list")
         self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
@@ -54,21 +55,50 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_build_paired_list_show_original(self):
-        self.perform_upload(self.get_filename("1.tabular"))
-        self.perform_upload(self.get_filename("2.tabular"))
+    def test_build_paired_list_manual_matched(self):
+        self.perform_upload_of_pasted_content(
+            {
+                "thisdoesnotmatch.fasta": "forward content",
+                "becausethenamesarentalike.fasta": "reverse content",
+            }
+        )
         self._wait_for_and_select([1, 2])
-        self._collection_dropdown("build list of pairs")
-        collection_builders = self.components.collection_builders
-        self.ensure_collection_builder_filters_cleared()
-        forward_column = collection_builders.forward_datasets.wait_for_visible()
-        first_datset_forward = forward_column.find_elements(self.by.CSS_SELECTOR, "li")[0]
-        first_datset_forward.click()
-        reverse_column = collection_builders.reverse_datasets.wait_for_visible()
-        second_dataset_reverse = reverse_column.find_elements(self.by.CSS_SELECTOR, "li")[1]
-        second_dataset_reverse.click()
+        self.history_panel_build_list_of_pairs()
+        self.collection_builder_pair_rows(0, 1)
+        row0 = self.components.collection_builders.list_wizard.row._(index=0)
+        row0.unlink_button.wait_for_present()
+        row0.link_button.assert_absent()
+
+        self.collection_builder_set_name("my awesome paired list manual match")
+        self.screenshot("collection_builder_paired_list_manual_match")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(5)
+        # switch to hidden filters to see the hidden datasets appear
+        self._show_hidden_content()
+        self._wait_for_hid_visible(1)
+        self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
+        self._wait_for_hid_visible(4)
+
+    @selenium_test
+    @managed_history
+    def test_build_paired_list_show_original(self):
+        self.perform_upload_of_pasted_content(
+            {
+                "thisdoesnotmatch.fasta": "forward content",
+                "becausethenamesarentalike.fasta": "reverse content",
+            }
+        )
+        self._wait_for_and_select([1, 2])
+        self.history_panel_build_list_of_pairs()
+
+        self.collection_builder_pair_rows(0, 1)
+        row0 = self.components.collection_builders.list_wizard.row._(index=0)
+        row0.unlink_button.wait_for_present()
+        row0.link_button.assert_absent()
+
         self.collection_builder_hide_originals()
-        self.collection_builder_set_name("my awesome paired list")
+        self.collection_builder_set_name("my awesome paired list shown originals")
         self.collection_builder_create()
         self._wait_for_hid_visible(5)
         self._wait_for_hid_visible(1)
@@ -80,10 +110,14 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_simple_list_via_rules_hidden(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.perform_upload_of_pasted_content(
+            {
+                "1.fasta": "fasta content",
+            }
+        )
         self._wait_for_and_select([1])
-        self._collection_dropdown("build collection from rules")
-        self.collection_builder_set_name("my cool list")
+        self.history_panel_build_rule_builder_for_selection()
+        self.collection_builder_set_name("my cool list from rules originals hidden")
         self.screenshot("collection_builder_rules_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(3)

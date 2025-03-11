@@ -1,3 +1,4 @@
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -16,13 +17,19 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
     collection_type = "paired"
 
     def generate_elements(self, dataset_instances, **kwds):
-        if forward_dataset := dataset_instances.get(FORWARD_IDENTIFIER):
+        num_datasets = len(dataset_instances)
+        if num_datasets != 2:
+            raise RequestParameterInvalidException(
+                "Incorrect number of datasets - 2 datasets exactly are required to create a paired collection"
+            )
+
+        if forward_dataset := self._ensure_dataset_with_identifier(dataset_instances, FORWARD_IDENTIFIER):
             left_association = DatasetCollectionElement(
                 element=forward_dataset,
                 element_identifier=FORWARD_IDENTIFIER,
             )
             yield left_association
-        if reverse_dataset := dataset_instances.get(REVERSE_IDENTIFIER):
+        if reverse_dataset := self._ensure_dataset_with_identifier(dataset_instances, REVERSE_IDENTIFIER):
             right_association = DatasetCollectionElement(
                 element=reverse_dataset,
                 element_identifier=REVERSE_IDENTIFIER,
