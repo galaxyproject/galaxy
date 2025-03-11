@@ -21,8 +21,10 @@ def role_to_model(role, displayed_name: Optional[str] = None):
     item = role.to_dict(view="element")
     role_id = Security.security.encode_id(role.id)
     item["url"] = url_for("role", id=role_id)
+    # If displayed_name provided, use that value in place of Role.name. It is
+    # used to disambiguate generic role names like "private role".
     if displayed_name:
-        item["displayed_name"] = displayed_name
+        item["name"] = displayed_name
     return RoleModelResponse(**item)
 
 
