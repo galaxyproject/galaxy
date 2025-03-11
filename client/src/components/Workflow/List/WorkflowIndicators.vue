@@ -14,7 +14,7 @@ import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { Creator, StoredWorkflowDetailed } from "@/api/workflows";
+import { type AnyWorkflow, type Creator, hasCreator } from "@/api/workflows";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
@@ -31,7 +31,7 @@ interface BadgeData {
 }
 
 interface Props {
-    workflow: StoredWorkflowDetailed;
+    workflow: AnyWorkflow;
     publishedView: boolean;
     noEditTime?: boolean;
     filterable?: boolean;
@@ -86,32 +86,37 @@ const sourceTitle = computed(() => {
 });
 
 const creatorBadges = computed<BadgeData[] | undefined>(() => {
-    return props.workflow.creator
-        ?.map((creator: Creator) => {
-            if (!creator.name) {
-                return;
-            }
-            let url: string | undefined;
-            let titleEnd = "Workflow Creator";
+    if (hasCreator(props.workflow)) {
+        return props.workflow.creator
+            ?.map((creator: Creator) => {
+                if (!creator.name) {
+                    return;
+                }
+                let url: string | undefined;
+                let titleEnd = "Workflow Creator";
 
-            if (creator.url && isUrl(creator.url)) {
-                url = creator.url;
-            }
-            const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
-            if (creator.identifier && orcidRegex.test(creator.identifier)) {
-                url = creator.identifier;
-                titleEnd = "ORCID profile";
-            }
+                if (creator.url && isUrl(creator.url)) {
+                    url = creator.url;
+                }
+                const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
+                if (creator.identifier && orcidRegex.test(creator.identifier)) {
+                    url = creator.identifier;
+                    titleEnd = "ORCID profile";
+                }
 
-            return {
-                name: creator.name,
-                url,
-                icon: creator.class === "Organization" ? faBuilding : faUserEdit,
-                title: `${url ? "Click to view " : ""}${titleEnd}`,
-                class: { "cursor-pointer": !!url, "outline-badge": !!url },
-            };
-        })
-        .filter((b) => !!b);
+                return {
+                    name: creator.name,
+                    url,
+                    icon: creator.class === "Organization" ? faBuilding : faUserEdit,
+                    title: `${url ? "Click to view " : ""}${titleEnd}`,
+                    class: { "cursor-pointer": !!url, "outline-badge": !!url },
+                };
+            })
+            .filter((b) => !!b);
+    }
+    {
+        return undefined;
+    }
 });
 
 const { success } = useToast();
