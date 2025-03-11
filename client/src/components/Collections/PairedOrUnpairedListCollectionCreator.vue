@@ -4,8 +4,7 @@ import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
 import { computed, nextTick, ref } from "vue";
 
-import type { components, HDASummary, HistoryItemSummary } from "@/api";
-import { type CreateNewCollectionPayload } from "@/api/datasetCollections";
+import type { components, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
 import { splitIntoPairedAndUnpaired } from "@/components/Collections/pairing";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
