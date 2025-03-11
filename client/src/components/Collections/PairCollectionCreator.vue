@@ -39,7 +39,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (event: "clicked-create", selectedPair: DatasetPair, collectionName: string, hideSourceItems: boolean): void;
+    (event: "on-create", selectedPair: DatasetPair, collectionName: string, hideSourceItems: boolean): void;
     (event: "on-cancel"): void;
 }>();
 
@@ -263,7 +263,7 @@ function clickedCreate(collectionName: string) {
             reverse: pairElements.value.reverse as HDASummary,
             name: collectionName,
         };
-        emit("clicked-create", returnedPair, collectionName, hideSourceItems.value);
+        emit("on-create", returnedPair, collectionName, hideSourceItems.value);
     }
 }
 
