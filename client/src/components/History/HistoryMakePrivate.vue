@@ -14,7 +14,9 @@ const props = defineProps<{
     historyId: string;
 }>();
 
-const emit = defineEmits(["change"]);
+const emit = defineEmits<{
+    (e: "history-made-private", sharingStatusChanged: boolean): void;
+}>();
 
 const historyStore = useHistoryStore();
 
@@ -25,7 +27,7 @@ async function makeHistoryPrivate() {
         if (!history.value) {
             throw new Error("History not found");
         }
-        await historyStore.secureHistory(history.value);
+        const { sharingStatusChanged } = await historyStore.secureHistory(history.value);
         Toast.success(
             localize(
                 "Existing data in this history is now private, as well as any new data created in this history. \
@@ -33,7 +35,7 @@ async function makeHistoryPrivate() {
             ),
             localize("Successfully made history private.")
         );
-        emit("change");
+        emit("history-made-private", sharingStatusChanged);
     } catch (error) {
         Toast.error(errorMessageAsString(error), localize("An error occurred while making the history private."));
     }
