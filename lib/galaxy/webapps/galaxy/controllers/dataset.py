@@ -166,7 +166,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             role_tuples = []
             for role in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root"):
                 displayed_name = private_role_emails.get(role.id, role.name)
-                role_tuples.add((displayed_name, trans.security.encode_id(role.id)))
+                role_tuples.append((displayed_name, trans.security.encode_id(role.id)))
 
             data_metadata = list(data.metadata.spec.items())
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
