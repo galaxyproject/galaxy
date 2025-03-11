@@ -8,6 +8,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import Heading from "../Common/Heading.vue";
+import PortletSection from "../Common/PortletSection.vue";
 import SharingPage from "../Sharing/SharingPage.vue";
 import HistoryDatasetPermissions from "./HistoryDatasetPermissions.vue";
 import HistoryMakePrivate from "./HistoryMakePrivate.vue";
@@ -57,7 +58,14 @@ function openSharingTab() {
                     </BBadge>
                 </template>
 
-                <SharingPage :id="props.historyId" plural-name="histories" model-class="History" no-heading />
+                <PortletSection :icon="faShareAlt">
+                    <template v-slot:title>
+                        {{ localize("Share or publish history") }}
+                        "{{ historyStore.getHistoryNameById(props.historyId) }}"
+                    </template>
+
+                    <SharingPage :id="props.historyId" plural-name="histories" model-class="History" no-heading />
+                </PortletSection>
             </BTab>
 
             <BTab :lazy="historyPrivacyChanged" @click="historyPrivacyChanged = false">

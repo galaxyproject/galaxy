@@ -1,16 +1,13 @@
 <script lang="ts" setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
+import PortletSection from "../Common/PortletSection.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type FormGenericPropsType = InstanceType<typeof FormGeneric>["$props"];
-
-library.add(faUsers);
 
 interface DatasetPermissionsFormProps {
     loading: boolean;
@@ -42,25 +39,15 @@ watch(props, () => {
     <div>
         <LoadingSpan v-if="loading" message="Loading permission information" />
         <div v-else-if="simplePermissions && !selectedAdvancedForm">
-            <div class="ui-portlet-section">
-                <div class="portlet-header">
-                    <span class="portlet-title">
-                        <FontAwesomeIcon :icon="faUsers" class="portlet-title-icon mr-1" />
-
-                        <b itemprop="name" class="portlet-title-text">{{ title }}</b>
-                    </span>
+            <PortletSection :icon="faUsers" :title="title">
+                <div class="mb-3">
+                    <BFormCheckbox v-model="checkedInForm" name="check-button" switch @change="change">
+                        Make new datasets private
+                    </BFormCheckbox>
                 </div>
 
-                <div class="portlet-content">
-                    <div class="mb-3 mt-3">
-                        <BFormCheckbox v-model="checkedInForm" name="check-button" switch @change="change">
-                            Make new datasets private
-                        </BFormCheckbox>
-                    </div>
-
-                    <a href="#" @click="selectedAdvancedForm = true">Show advanced options.</a>
-                </div>
-            </div>
+                <a href="javascript:void(0)" @click="selectedAdvancedForm = true">Show advanced options.</a>
+            </PortletSection>
         </div>
         <div v-else>
             <FormGeneric v-bind="formConfig" />
