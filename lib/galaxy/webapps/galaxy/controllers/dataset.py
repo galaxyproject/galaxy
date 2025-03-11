@@ -30,6 +30,7 @@ from galaxy.managers.hdas import (
 )
 from galaxy.managers.histories import HistoryManager
 from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -160,10 +161,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if dtype_value.is_datatype_change_allowed()
             ]
             ldatatypes.sort()
-            all_roles = [
-                (r.name, trans.security.encode_id(r.id))
-                for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root")
-            ]
+
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            role_tuples = []
+            for role in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root"):
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuples.append((displayed_name, trans.security.encode_id(role.id)))
+
             data_metadata = list(data.metadata.spec.items())
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(
@@ -273,7 +277,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 "name": index,
                                 "label": action.action,
                                 "help": help_text,
-                                "options": all_roles,
+                                "options": role_tuples,
                                 "value": in_roles.get(action.action),
                                 "readonly": not can_manage_dataset,
                             }

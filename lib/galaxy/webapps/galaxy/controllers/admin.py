@@ -19,6 +19,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -879,6 +880,9 @@ class AdminGalaxy(controller.JSAppLauncher):
                 if user in [x.user for x in group.users]:
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
+
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+
             for role in (
                 trans.sa_session.query(trans.app.model.Role)
                 .filter(trans.app.model.Role.deleted == false())
@@ -886,7 +890,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             ):
                 if role in [x.role for x in group.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
-                all_roles.append((role.name, trans.security.encode_id(role.id)))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                all_roles.append((displayed_name, trans.security.encode_id(role.id)))
             return {
                 "title": f"Group '{group.name}'",
                 "message": "Group '%s' is currently associated with %d user(s) and %d role(s)."
@@ -922,12 +927,16 @@ class AdminGalaxy(controller.JSAppLauncher):
                 .order_by(trans.app.model.User.table.c.email)
             ):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
+
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+
             for role in (
                 trans.sa_session.query(trans.app.model.Role)
                 .filter(trans.app.model.Role.deleted == false())
                 .order_by(trans.app.model.Role.name)
             ):
-                all_roles.append((role.name, trans.security.encode_id(role.id)))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                all_roles.append((displayed_name, trans.security.encode_id(role.id)))
             return {
                 "title": "Create Group",
                 "title_id": "create-group",
