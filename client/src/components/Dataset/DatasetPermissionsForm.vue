@@ -45,7 +45,7 @@ watch(props, () => {
             <div class="ui-portlet-section">
                 <div class="portlet-header">
                     <span class="portlet-title">
-                        <FontAwesomeIcon :icnon="faUsers" class="portlet-title-icon mr-1" />
+                        <FontAwesomeIcon :icon="faUsers" class="portlet-title-icon mr-1" />
 
                         <b itemprop="name" class="portlet-title-text">{{ title }}</b>
                     </span>
