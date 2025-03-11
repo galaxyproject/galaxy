@@ -328,7 +328,7 @@ function resetCreator() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             :suggested-name="props.suggestedName"
-            @clicked-create="createListCollection"
+            @on-create="createListCollection"
             @on-cancel="hideCreator" />
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
@@ -338,7 +338,7 @@ function resetCreator() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             :suggested-name="props.suggestedName"
-            @clicked-create="createListPairedCollection"
+            @on-create="createListPairedCollection"
             @on-cancel="hideCreator" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
@@ -348,7 +348,7 @@ function resetCreator() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             :suggested-name="props.suggestedName"
-            @clicked-create="createPairedCollection"
+            @on-create="createPairedCollection"
             @on-cancel="hideCreator" />
     </component>
 </template>
