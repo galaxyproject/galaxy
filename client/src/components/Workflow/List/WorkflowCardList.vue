@@ -60,7 +60,7 @@ const showPreview = ref(false);
 
 function onRenameClose() {
     showRename.value = false;
-    emit("refreshList", true);
+    emit("refreshList", true, true);
 }
 
 function onRename(id: string, name: string) {
@@ -98,7 +98,6 @@ function onInsertSteps(workflow: StoredWorkflowDetailed) {
             :published-view="props.publishedView"
             :editor-view="props.editorView"
             :current="workflow.id === props.currentWorkflowId"
-            class="workflow-card"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -146,25 +145,8 @@ function onInsertSteps(workflow: StoredWorkflowDetailed) {
     display: flex;
     flex-wrap: wrap;
 
-    .workflow-card {
-        width: 100%;
-    }
-
     &.grid {
-        // it is overwriting the base non used css for the grid class
         padding-top: 0 !important;
-
-        .workflow-card {
-            width: calc(100% / 3);
-
-            @container card-list (max-width: #{$breakpoint-xl}) {
-                width: calc(100% / 2);
-            }
-
-            @container card-list (max-width: #{$breakpoint-sm}) {
-                width: 100%;
-            }
-        }
     }
 }
 </style>
