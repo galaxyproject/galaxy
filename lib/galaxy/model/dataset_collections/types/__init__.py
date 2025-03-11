@@ -21,3 +21,11 @@ class DatasetCollectionType(metaclass=ABCMeta):
 class BaseDatasetCollectionType(DatasetCollectionType):
     def _validation_failed(self, message):
         raise exceptions.ObjectAttributeInvalidException(message)
+
+    def _ensure_dataset_with_identifier(self, dataset_instances: dict, name: str):
+        dataset_instance = dataset_instances.get(name)
+        if dataset_instance is None:
+            raise exceptions.ObjectAttributeInvalidException(
+                f"An element with the identifier {name} is required to create this collection type"
+            )
+        return dataset_instance

@@ -188,6 +188,7 @@ class HdaImplicitMatch:
 
 class HdcaDirectMatch:
     implicit_conversion = False
+    requires_adapter = False
 
     def __init__(self):
         pass

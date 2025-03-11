@@ -1,21 +1,68 @@
-import { ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { type HistoryItemSummary } from "@/api";
+import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
 import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
+import { useCollectionCreation } from "./useCollectionCreation";
 import { useExtensionFiltering } from "./useExtensionFilter";
+
+export type Mode = "modal" | "wizard";
 
 interface CommonCollectionBuilderProps {
     extensions?: string[];
     defaultHideSourceItems?: boolean;
+    mode: Mode;
 }
 
-export function useCollectionCreator(props: CommonCollectionBuilderProps) {
+type EmitsName = {
+    (e: "name", value: string): void;
+    (e: "input-valid", value: boolean): void;
+    (e: "on-create", options: CreateNewCollectionPayload): void;
+};
+
+export type SupportedPairedOrPairedBuilderCollectionTypes =
+    | "list:paired"
+    | "list:paired_or_unpaired"
+    | "list:list"
+    | "list:list:paired";
+
+export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?: EmitsName) {
     const removeExtensions = ref(true);
     const hideSourceItems = ref(props.defaultHideSourceItems || false);
+    const collectionName = ref("");
+
+    const showButtonsForModal = computed(() => {
+        return props.mode === "modal";
+    });
+
+    function onUpdateCollectionName(name: string) {
+        collectionName.value = name;
+    }
+
+    const validInput = computed(() => !!collectionName.value);
+
+    if (emit) {
+        watch(collectionName, (newValue) => {
+            console.log("name upated...");
+            emit("name", newValue);
+        });
+        watch(validInput, (newValue) => {
+            console.log("emitting...");
+            emit("input-valid", newValue);
+        });
+    }
 
     const { hasInvalidExtension, showElementExtension } = useExtensionFiltering(props);
+    const { createPayload } = useCollectionCreation();
+
+    function onCollectionCreate(collectionType: string, elementIdentifiers: CollectionElementIdentifiers) {
+        const payload = createPayload(collectionName.value, collectionType, elementIdentifiers, hideSourceItems.value);
+        if (emit) {
+            emit("on-create", payload);
+        }
+    }
 
     function onUpdateHideSourceItems(newHideSourceItems: boolean) {
         hideSourceItems.value = newHideSourceItems;
@@ -45,11 +92,16 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps) {
     }
 
     return {
+        collectionName,
         removeExtensions,
         hideSourceItems,
         hasInvalidExtension,
         onUpdateHideSourceItems,
         isElementInvalid,
         showElementExtension,
+        onUpdateCollectionName,
+        validInput,
+        onCollectionCreate,
+        showButtonsForModal,
     };
 }
