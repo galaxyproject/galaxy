@@ -1,4 +1,4 @@
-<tool id="bigbedtobed" name="Convert from bigBed to ascii bed format." version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
+<tool id="ucsc_bigbedtobed" name="Convert from bigBed to ascii bed format." version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
     <description>Convert bigBed to BED</description>
     <macros>
         <token name="@TOOL_VERSION@">377</token>
