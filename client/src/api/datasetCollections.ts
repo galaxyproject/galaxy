@@ -1,6 +1,7 @@
 import {
+    type CollectionElementIdentifiers,
     type CollectionEntry,
-    type components,
+    type CreateNewCollectionPayload,
     type DCESummary,
     GalaxyApi,
     type HDCADetailed,
@@ -85,9 +86,6 @@ export async function fetchElementsFromCollection(params: {
     });
 }
 
-export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
-export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
-
 export type NewCollectionOptions = {
     name: string;
     element_identifiers: CollectionElementIdentifiers;
@@ -108,7 +106,7 @@ export function createCollectionPayload(options: NewCollectionOptions): CreateNe
         fields: "auto",
         copy_elements: options.copy_elements || true,
         hide_source_items: hideSourceItems,
-    };
+    } as CreateNewCollectionPayload;
 }
 
 export async function createHistoryDatasetCollectionInstanceSimple(options: NewCollectionOptions) {

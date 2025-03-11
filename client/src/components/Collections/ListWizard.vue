@@ -3,11 +3,8 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
-import {
-    type CollectionElementIdentifiers,
-    createHistoryDatasetCollectionInstanceFull,
-    type CreateNewCollectionPayload,
-} from "@/api/datasetCollections";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload } from "@/api";
+import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
