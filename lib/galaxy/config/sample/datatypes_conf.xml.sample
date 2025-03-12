@@ -88,6 +88,7 @@
     </datatype>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
+      <converter file="bigbed_to_gtf_converter.xml" target_datatype="gtf"/>
       <display file="ucsc/bigbed.xml"/>
       <display file="igb/bb.xml"/>
     </datatype>
