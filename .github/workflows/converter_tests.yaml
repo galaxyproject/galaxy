@@ -60,7 +60,7 @@ jobs:
       - name: Lint converters
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
-          planemo lint --skip citations,stdio,help --report_level warn "${TOOL_ARRAY[@]}"
+          planemo lint --skip CitationsMissing,HelpEmpty,HelpMissing --report_level warn "${TOOL_ARRAY[@]}"
       - name: Run tests
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
