@@ -5,7 +5,6 @@ import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox, BOverlay } fr
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { allowCachedJobs } from "@/components/Tool/utilities";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePanels } from "@/composables/usePanels";
@@ -132,14 +131,6 @@ function onValidation(validation: [string, string] | null) {
     }
 }
 
-function reuseAllowed(user: any) {
-    return user && allowCachedJobs(user.preferences);
-}
-
-function showRuntimeSettings(user: any) {
-    return props.targetHistory && (props.targetHistory.indexOf("prefer") >= 0 || (user && reuseAllowed(user)));
-}
-
 function onChange(data: any) {
     formData.value = data;
 }
@@ -230,7 +221,6 @@ async function onExecute() {
                         <FontAwesomeIcon :icon="faSitemap" fixed-width />
                     </BButton>
                     <BDropdown
-                        v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
                         ref="dropdown"
                         v-b-tooltip.hover.noninteractive
@@ -247,7 +237,6 @@ async function onExecute() {
                                 Send results to a new history
                             </BFormCheckbox>
                             <BFormCheckbox
-                                v-if="reuseAllowed(currentUser)"
                                 v-model="useCachedJobs"
                                 title="This may skip executing jobs that you have already run.">
                                 Attempt to re-use jobs with identical parameters?
