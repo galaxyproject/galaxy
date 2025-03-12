@@ -51,7 +51,6 @@ const emit = defineEmits<{
                 </BButton>
             </span>
         </BButtonGroup>
-
         <span v-b-tooltip.hover.bottom :title="deleteTooltip">
             <BButton
                 :disabled="!canDelete"
