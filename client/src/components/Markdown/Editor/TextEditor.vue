@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { debounce } from "lodash";
-import { defineEmits, defineProps, nextTick, ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 
 import MarkdownToolBox from "@/components/Markdown/MarkdownToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
