@@ -6,15 +6,17 @@ import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import ToolComponent from "@/components/Panels/Common/Tool.vue";
 
 const router = useRouter();
-
 const toolStore = useToolStore();
 const interactiveTools = ref<Tool[]>([]);
+const loading = ref(true);
 
 onMounted(async () => {
     await toolStore.fetchTools();
     interactiveTools.value = toolStore.getInteractiveTools();
+    loading.value = false;
 });
 
 function onToolClick(tool: Tool, evt: Event) {
@@ -36,17 +38,16 @@ function onToolClick(tool: Tool, evt: Event) {
         </template>
 
         <div class="tool-list">
-            <div v-if="interactiveTools.length === 0" class="p-3">Loading interactive tools...</div>
+            <div v-if="loading" class="p-3 text-center">
+                <b-spinner label="Loading interactive tools..."></b-spinner>
+                <p class="mt-2">Loading interactive tools...</p>
+            </div>
+            <div v-else-if="interactiveTools.length === 0" class="p-3 text-center">
+                <p>No interactive tools available</p>
+            </div>
             <div v-else class="tool-list-container p-2">
-                <div v-for="tool in interactiveTools" :key="tool.id" class="tool-item p-2 mb-2 border rounded">
-                    <h4>{{ tool.name }}</h4>
-                    <p v-if="tool.description">{{ tool.description }}</p>
-                    <a
-                        :href="`/?tool_id=${encodeURIComponent(tool.id)}&version=latest`"
-                        class="btn btn-primary btn-sm"
-                        @on-click="onToolClick(tool, $event)">
-                        Launch
-                    </a>
+                <div v-for="tool in interactiveTools" :key="tool.id" class="tool-item">
+                    <ToolComponent :tool="tool" @onClick="onToolClick" />
                 </div>
             </div>
         </div>
@@ -60,11 +61,11 @@ function onToolClick(tool: Tool, evt: Event) {
 }
 
 .tool-item {
-    background-color: #f8f9fa;
-    transition: background-color 0.2s;
+    padding: 0.25rem;
+    border-bottom: 1px solid #eee;
 }
 
-.tool-item:hover {
-    background-color: #e9ecef;
+.tool-item:last-child {
+    border-bottom: none;
 }
 </style>
