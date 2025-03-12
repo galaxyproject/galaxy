@@ -29,7 +29,7 @@ export const defaultActivities = [
         id: "interactivetools",
         mutable: false,
         optional: false,
-        panel: false,
+        panel: true,
         title: "Interactive Tools",
         tooltip: "Show active interactive tools",
         to: "/interactivetool_entry_points/list",

@@ -30,6 +30,8 @@ const emit = defineEmits<{
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
+    interactive: { type: Boolean, default: false },
+    panelView: { type: String, required: true },
     showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
     dataManagers: { type: Array, default: null },

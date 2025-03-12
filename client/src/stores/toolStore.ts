@@ -99,6 +99,12 @@ export const useToolStore = defineStore("toolStore", () => {
         };
     });
 
+    const getInteractiveTools = computed(() => {
+        return () => {
+            return Object.values(toolsById.value).filter((tool) => tool.model_class === "InteractiveTool");
+        };
+    });
+
     const getToolForId = computed(() => {
         return (toolId: string) => toolsById.value[toolId];
     });
@@ -252,6 +258,7 @@ export const useToolStore = defineStore("toolStore", () => {
         getToolForId,
         getToolNameById,
         getToolsById,
+        getInteractiveTools,
         panels,
         saveAllTools,
         saveToolForId,
