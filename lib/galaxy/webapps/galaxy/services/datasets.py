@@ -519,7 +519,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_instance = self.hda_manager.get_accessible(dataset_id, trans.user)
         self.hda_manager.ensure_dataset_on_disk(trans, dataset_instance)
         file_path = trans.app.object_store.get_filename(dataset_instance.dataset)
-        raw_content = open(file_path).read()
+        raw_content = open(file_path).read(1024 * 10)
         internal_markdown = resolve_job_markdown(trans, dataset_instance.creating_job, raw_content)
         content, extra_attributes = ready_galaxy_markdown_for_export(trans, internal_markdown)
         return ToolReportForDataset(
