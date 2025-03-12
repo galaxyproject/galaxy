@@ -22,6 +22,8 @@ function onInput(newCollectionType: string | undefined) {
 const collectionTypeOptions = [
     { value: "list", label: "List of Datasets" },
     { value: "paired", label: "Dataset Pair" },
+    { value: "record", label: "Record" },
+    { value: "list:record", label: "List of Records" },
     { value: "list:paired", label: "List of Dataset Pairs" },
 ];
 
