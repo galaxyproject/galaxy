@@ -45,5 +45,5 @@ function onType(newType: FieldType) {
 </template>
 
 <style lang="scss" scoped>
-@import "@/components/Form/_form-elements.scss";
+// @import "@/components/Form/_form-elements.scss";
 </style>
