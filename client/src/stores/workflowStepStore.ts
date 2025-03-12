@@ -1,5 +1,6 @@
 import { computed, del, ref, set } from "vue";
 
+import { type FieldDict } from "@/api";
 import { type CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
@@ -73,6 +74,7 @@ export interface DataStepInput extends BaseStepInput {
 export interface DataCollectionStepInput extends BaseStepInput {
     input_type: "dataset_collection";
     collection_types: string[];
+    fields: FieldDict[];
 }
 
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
