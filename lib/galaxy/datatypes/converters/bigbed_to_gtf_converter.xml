@@ -1,0 +1,127 @@
+<tool id="ucsc_bigbedtogtf" name="Convert from bigBed to GTF format" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
+    <description>Convert bigBed to GTF</description>
+    <macros>
+        <token name="@TOOL_VERSION@">377</token>
+        <token name="@SUFFIX_VERSION@">0</token>
+    </macros>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">ucsc-bigbedtobed</requirement>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        ## Step 1: Convert BigBed to BED
+        bigBedToBed '${bigbed_input}'
+        #if $chrom
+            -chrom='${chrom}'
+        #end if
+        #if str($start)
+            -start=$start
+        #end if
+        #if str($end)
+            -end=$end
+        #end if
+        temp.bed &&
+
+        ## Step 2: Convert BED to GFF using the existing converter script
+        python '$__tool_directory__/bed_to_gff_converter.py' temp.bed temp.gff &&
+
+        ## Step 3: Convert GFF to GTF (GFF2 is very similar to GTF, just need to adjust the last column)
+        awk -F '\t' '{
+            if ($1 !~ /^#/) {
+                split($9, attrs, ";");
+                feature_id = "";
+                for (i in attrs) {
+                    if (attrs[i] ~ /^[[:space:]]*[[:alnum:]]+[[:space:]]/) {
+                        split(attrs[i], parts, " ");
+                        feature_id = parts[2];
+                        break;
+                    }
+                }
+                if (feature_id == "") feature_id = "gene_" $1 "_" $4 "_" $5;
+                print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\tgene_id \"" feature_id "\"; transcript_id \"" feature_id "\";"
+            } else {
+                print;
+            }
+        }' temp.gff > output.gtf
+    ]]></command>
+    <inputs>
+        <param name="bigbed_input" type="data" format="bigbed" label="BigBed input"/>
+        <param argument="-chrom" type="text" value="" optional="true" label="Restrict output to given chromosome">
+            <sanitizer invalid_char="">
+                <valid initial="string.letters,string.digits">
+                    <add value="+" />
+                    <add value="-" />
+                    <add value=" " />
+                    <add value="_" />
+                </valid>
+            </sanitizer>
+            <validator type="regex">[A-Za-z0-9 -_+]+</validator>
+        </param>
+        <param argument="-start" type="integer" min="0" optional="true" label="Restrict output to only that over start" />
+        <param argument="-end" type="integer" min="0" optional="true" label="Restrict output to only that under end" />
+    </inputs>
+    <outputs>
+        <data name="gtf_output" format="gtf" from_work_dir="output.gtf" label="${tool.name} on ${on_string}: gtf"/>
+    </outputs>
+    <tests>
+        <!--Test 01: Basic conversion -->
+        <test expect_num_outputs="1">
+            <param name="bigbed_input" value="1.bigbed"/>
+            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+        </test>
+        <!--Test 02: With chromosome filter -->
+        <test expect_num_outputs="1">
+            <param name="bigbed_input" value="1.bigbed"/>
+            <param name="chrom" value="chr7"/>
+            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+            <assert_command>
+                <has_text text="-chrom='chr7'"/>
+            </assert_command>
+        </test>
+        <!--Test 03: With start filter -->
+        <test expect_num_outputs="1">
+            <param name="bigbed_input" value="1.bigbed"/>
+            <param name="start" value="100"/>
+            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+            <assert_command>
+                <has_text text="-start=100"/>
+            </assert_command>
+        </test>
+        <!--Test 04: With end filter -->
+        <test expect_num_outputs="1">
+            <param name="bigbed_input" value="1.bigbed"/>
+            <param name="end" value="100000000"/>
+            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+            <assert_command>
+                <has_text text="-end=100000000"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+.. class:: infomark
+
+**Purpose**
+
+This tool converts bigBed format to GTF format by:
+
+1. Using bigBedToBed to convert from bigBed to BED format
+2. Using the bed_to_gff_converter.py script to convert BED to GFF format
+3. Converting GFF to GTF format
+
+This is useful for converting annotation tracks from the UCSC Genome Browser
+into a format that can be used with tools that require GTF input.
+
+    ]]></help>
+    <citations>
+        <citation type="bibtex">
+            @misc{githubKent,
+            author = {Kent, Jim},
+            year = {2021},
+            title = {UCSC Genome Browser utilities},
+            publisher = {GitHub},
+            journal = {GitHub repository},
+            url = {https://github.com/ucscGenomeBrowser/kent}}
+        </citation>
+    </citations>
+</tool>
