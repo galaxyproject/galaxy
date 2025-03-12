@@ -1177,6 +1177,12 @@ class InputDataCollectionModule(InputModule):
         else:
             collection_type = self.default_collection_type
         state_as_dict["collection_type"] = collection_type
+        if "fields" in inputs:
+            fields = inputs["fields"]
+        else:
+            fields = None
+        state_as_dict["collection_type"] = collection_type
+        state_as_dict["fields"] = fields
         return state_as_dict
 
 
