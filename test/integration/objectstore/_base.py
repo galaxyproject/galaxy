@@ -4,6 +4,8 @@ import string
 import subprocess
 import time
 
+import pytest
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -403,7 +405,10 @@ def docker_run(image, name, *args, detach=True, remove=True, ports=None):
     cmd.append(image)
     cmd.extend(args)
 
-    subprocess.check_call(cmd)
+    try:
+        subprocess.check_call(cmd, timeout=60)
+    except subprocess.TimeoutExpired:
+        pytest.xfail(f"Timeout starting docker container for {image}")
 
 
 def docker_exec(container_name, *args, output=True):
