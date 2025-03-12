@@ -10,7 +10,6 @@ import { useConfig } from "@/composables/config";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -47,7 +46,6 @@ const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
 const { activeNodeId } = storeToRefs(stateStore);
 
 const { config, isConfigLoaded } = useConfig(true);
-const { currentUser } = storeToRefs(useUserStore());
 const { showPanels } = usePanels();
 
 const formData = ref<Record<string, any>>({});
