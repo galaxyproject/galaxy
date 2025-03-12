@@ -290,7 +290,7 @@ function _isElementInvalid(element: HistoryItemSummary) {
     if (element.history_content_type === "dataset_collection") {
         return localize("is a collection, this is not allowed");
     }
-    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
+    const validState = STATES.VALID_INPUT_STATES.includes(element.state as string);
     if (!validState) {
         return localize("has errored, is paused, or is not accessible");
     }
