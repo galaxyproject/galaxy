@@ -27,7 +27,6 @@
 
         ## Step 3: Convert GFF to GTF (GFF2 is very similar to GTF, just need to adjust the last column)
         awk -F '\t' 'NR > 3 && $1 !~ /^#/ {
-            if ($1 !~ /^#/) {
                 split($9, attrs, ";");
                 feature_id = "";
                 for (i in attrs) {
@@ -38,11 +37,8 @@
                     }
                 }
                 if (feature_id == "") feature_id = "gene_" $1 "_" $4 "_" $5;
-                print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\tgene_id \"" feature_id "\"; transcript_id \"" feature_id "\";"
-            } else {
-                print;
-            }
-        }' temp.gff > output.gtf
+                print $1 "\tbigbed2gtf\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\tgene_id \"" feature_id "\"; transcript_id \"" feature_id "\";"
+            }' temp.gff > output.gtf
     ]]></command>
     <inputs>
         <param name="bigbed_input" type="data" format="bigbed" label="BigBed input"/>
