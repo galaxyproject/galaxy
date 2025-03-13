@@ -146,7 +146,7 @@ function scrollToCell(cellIndex: number) {
 @import "theme/blue.scss";
 
 .cell-guide {
-    min-width: 5.5rem;
-    max-width: 5.5rem;
+    min-width: 2.5rem;
+    max-width: 2.5rem;
 }
 </style>

@@ -5,10 +5,6 @@
                 class="cell-guide d-flex flex-column justify-content-between cursor-pointer"
                 :class="{ 'cell-hover': hover }"
                 @click="$emit('toggle')">
-                <div class="text-center text-primary">
-                    <div v-if="VALID_TYPES.includes(name)" class="small font-weight-bold">{{ name }}</div>
-                    <div v-else class="small font-weight-bold">unknown</div>
-                </div>
                 <CellButton v-if="toggle" title="Collapse">
                     <FontAwesomeIcon :icon="faAngleDoubleUp" />
                 </CellButton>
@@ -85,8 +81,6 @@ import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
-
-const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
 const props = defineProps<{
     cellIndex: number;
