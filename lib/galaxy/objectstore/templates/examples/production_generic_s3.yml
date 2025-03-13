@@ -4,13 +4,8 @@
   description: |
     The APIs used to connect to Amazon's S3 (Simple Storage Service) have become something
     of an unofficial standard for cloud storage across a variety of vendors and services.
-    Many vendors offer storage APIs compatible with S3 - Galaxy calls these ``generic_s3``
-    storage locations. This template configuration allows using such service as a Galaxy storage
-    location as long as you are able to find the connection details and have the relevant credentials.
-
-    Given the amount of information needed to connect to such a service, this is a bit of an
-    advanced template and probably should not be used to connect to a service if a more
-    specific template is available.
+    Many vendors offer storage APIs compatible with S3. Here, you can configure such service as a Galaxy storage
+    as long as you are able to find the connection details and have the relevant credentials.
   variables:
     access_key:
       label: Access Key ID
