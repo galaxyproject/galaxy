@@ -204,16 +204,30 @@ function stepToElkStep(
     stateStore: ReturnType<typeof useWorkflowStateStore>,
     roundingFunction: (value: number) => number
 ): ElkNode {
-    const inputs = Object.values(step.inputs).map((input, index) => {
-        return {
+    let prefixObjectsCount = 0;
+    const inputs = [];
+    if (step.when) {
+        inputs.push({
+            id: `${step.id}/in/when`,
+            properties: {
+                "port.side": "WEST",
+                "port.index": "0",
+            },
+            x: 0,
+            y: 0,
+        });
+        prefixObjectsCount += 1;
+    }
+    Object.values(step.inputs).forEach((input, index) => {
+        inputs.push({
             id: `${step.id}/in/${input.name}`,
             properties: {
                 "port.side": "WEST",
-                "port.index": `${index}`,
+                "port.index": `${index + prefixObjectsCount}`,
             },
             x: 0,
-            y: index * 20,
-        };
+            y: (index + prefixObjectsCount) * 20,
+        });
     });
 
     const position = stateStore.stepPosition[step.id];
