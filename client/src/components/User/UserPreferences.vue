@@ -98,7 +98,7 @@
             id="manage-file-sources"
             class="manage-file-sources"
             icon="fa-file"
-            title="Manage Your Remote File Sources"
+            title="Manage Your Repositories"
             description="Add, remove, or update your personally configured location to find files from and write files to."
             to="/file_source_instances/index" />
         <UserDeletion
