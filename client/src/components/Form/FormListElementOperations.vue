@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup } from "bootstrap-vue";
-
-// @ts-ignore: bad library types
-library.add(faTrashAlt, faCaretUp, faCaretDown);
 
 interface Props {
     index: number;
@@ -38,7 +34,7 @@ const emit = defineEmits<{
                 size="sm"
                 class="ml-0"
                 @click="() => emit('swap-up')">
-                <FontAwesomeIcon icon="caret-up" />
+                <FontAwesomeIcon :icon="faCaretUp" />
             </BButton>
             <BButton
                 :id="downButtonId"
@@ -50,7 +46,7 @@ const emit = defineEmits<{
                 size="sm"
                 class="ml-0"
                 @click="() => emit('swap-down')">
-                <FontAwesomeIcon icon="caret-down" />
+                <FontAwesomeIcon :icon="faCaretDown" />
             </BButton>
         </BButtonGroup>
 
@@ -63,7 +59,7 @@ const emit = defineEmits<{
                 size="sm"
                 class="ml-0"
                 @click="() => emit('delete')">
-                <FontAwesomeIcon icon="trash-alt" />
+                <FontAwesomeIcon :icon="faTrashAlt" />
             </BButton>
         </span>
     </span>

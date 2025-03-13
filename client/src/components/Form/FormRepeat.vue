@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { defineAsyncComponent, nextTick, type PropType } from "vue";
@@ -67,9 +66,6 @@ const emit = defineEmits<{
     (e: "delete", index: number): void;
     (e: "swap", a: number, b: number): void;
 }>();
-
-// @ts-ignore: bad library types
-library.add(faPlus);
 
 function onInsert() {
     emit("insert");
@@ -148,7 +144,7 @@ const { keyObject } = useKeyedObjects();
 
         <span v-b-tooltip.hover :title="buttonTooltip">
             <b-button v-if="!props.sustainRepeats" :disabled="maxRepeats" @click="onInsert">
-                <FontAwesomeIcon icon="plus" class="mr-1" />
+                <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                 <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
             </b-button>
         </span>
