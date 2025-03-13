@@ -45,7 +45,7 @@
                     <FontAwesomeIcon :icon="faArrowDown" />
                 </CellButton>
             </div>
-            <div class="ml-2 w-100">
+            <div class="w-100">
                 <hr class="solid m-0" />
                 <ConfigureGalaxy
                     v-if="name === 'galaxy' && configure"
