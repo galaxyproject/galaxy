@@ -28,19 +28,24 @@
                     v-if="name !== 'markdown'"
                     title="Attach Data"
                     :active="configure"
+                    :show="hover"
                     @click="$emit('configure')">
                     <FontAwesomeIcon :icon="faPaperclip" />
                 </CellButton>
-                <CellButton title="Clone Cell" @click="$emit('clone')">
+                <CellButton title="Clone Cell" :show="hover" @click="$emit('clone')">
                     <FontAwesomeIcon :icon="faClone" />
                 </CellButton>
-                <CellButton title="Delete Cell" @click="confirmDelete = true">
+                <CellButton title="Delete Cell" :show="hover" @click="confirmDelete = true">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
-                <CellButton title="Move Up" :disabled="cellIndex < 1" @click="$emit('move', 'up')">
+                <CellButton title="Move Up" :disabled="cellIndex < 1" :show="hover" @click="$emit('move', 'up')">
                     <FontAwesomeIcon :icon="faArrowUp" />
                 </CellButton>
-                <CellButton title="Move Down" :disabled="cellTotal - cellIndex < 2" @click="$emit('move', 'down')">
+                <CellButton
+                    title="Move Down"
+                    :disabled="cellTotal - cellIndex < 2"
+                    :show="hover"
+                    @click="$emit('move', 'down')">
                     <FontAwesomeIcon :icon="faArrowDown" />
                 </CellButton>
             </div>
