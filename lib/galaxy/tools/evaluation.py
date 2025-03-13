@@ -13,7 +13,6 @@ from typing import (
     List,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
@@ -21,6 +20,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.deferred import (
     materialize_collection_input,
@@ -117,11 +117,6 @@ def global_tool_logs(func, config_file: str, action_str: str, tool: "Tool"):
         ) from e
 
 
-DeferrableObjectsT = Union[
-    model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
-]
-
-
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -168,6 +163,7 @@ class ToolEvaluator:
 
         # materialize deferred datasets
         materialized_objects = self._materialize_objects(deferred_objects, self.local_working_directory)
+        self.compute_environment.materialized_objects = materialized_objects
 
         # replace materialized objects back into tool input parameters
         self._replaced_deferred_objects(inp_data, incoming, materialized_objects)
