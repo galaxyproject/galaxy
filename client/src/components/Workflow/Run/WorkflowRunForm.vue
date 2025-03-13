@@ -10,6 +10,7 @@
             <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <div class="float-right d-flex flex-gapx-1">
                 <b-button
+                    v-if="!disableSimpleForm"
                     v-b-tooltip.hover.noninteractive
                     variant="link"
                     class="text-decoration-none"
@@ -103,6 +104,10 @@ export default {
         canMutateCurrentHistory: {
             type: Boolean,
             required: true,
+        },
+        disableSimpleForm: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
