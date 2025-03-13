@@ -2,8 +2,8 @@ export const MESSAGES = {
     restricted:
         "This dataset is stored on storage restricted to a single user. It can not be shared, published, or added to Galaxy data libraries.",
     user_defined: "This storage was user defined and is not managed by the Galaxy administrator.",
-    quota: "A Galaxy quota is enabled for this storage location.",
-    no_quota: "No Galaxy quota is enabled for this storage location.",
+    quota: "A Galaxy quota is enabled for this storage.",
+    no_quota: "No Galaxy quota is enabled for this storage.",
     faster: "This storage has been marked as a faster option by the Galaxy administrator.",
     slower: "This storage has been marked as a slower option by the Galaxy administrator.",
     short_term: "This storage has been marked as routinely purged by the Galaxy administrator.",

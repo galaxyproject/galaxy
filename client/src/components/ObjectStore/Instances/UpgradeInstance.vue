@@ -22,6 +22,6 @@ const latestTemplate = computed(
 );
 </script>
 <template>
-    <LoadingSpan v-if="!instance || !latestTemplate" message="Loading storage location instance and templates" />
+    <LoadingSpan v-if="!instance || !latestTemplate" message="Loading Galaxy storage instance and templates" />
     <UpgradeForm v-else :instance="instance" :latest-template="latestTemplate" />
 </template>

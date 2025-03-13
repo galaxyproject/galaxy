@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const selectedObjectStoreId = ref<String | null>(props.invocationPreferredObjectStoreId);
-const newDatasetsDescription = "The default storage location for the outputs of this workflow invocation";
+const newDatasetsDescription = "The default Galaxy storage for the outputs of this workflow invocation";
 const defaultOptionTitle = "Use Defaults";
 const defaultOptionDescription =
     "If the history has a preference set, that will be used. If instead, you've set an option in your user preferences - that will be assumed to be your default selection. Finally, the Galaxy configuration will be used.";

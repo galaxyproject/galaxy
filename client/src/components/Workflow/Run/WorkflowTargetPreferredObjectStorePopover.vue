@@ -2,7 +2,7 @@
     <b-popover :target="target" triggers="hover" placement="bottomleft" boundary="window">
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
-            <p v-if="invocationPreferredObjectStoreId">Storage location has been set at the invocation level.</p>
+            <p v-if="invocationPreferredObjectStoreId">Galaxy Storage has been set at the invocation level.</p>
             <ShowSelectedObjectStore
                 v-if="invocationPreferredObjectStoreId"
                 :preferred-object-store-id="invocationPreferredObjectStoreId"
@@ -13,7 +13,7 @@
                 used.
             </div>
             <div v-localize>
-                Change {{ preferredOrEmptyString }} storage location by clicking on the storage button in the workflow
+                Change {{ preferredOrEmptyString }} Galaxy storage by clicking on the storage button in the workflow
                 run header.
             </div>
         </div>

@@ -39,7 +39,7 @@ watch(
     }
 );
 fetch();
-const loadingMessage = localize("Loading storage location details");
+const loadingMessage = localize("Loading Galaxy storage details");
 </script>
 
 <template>

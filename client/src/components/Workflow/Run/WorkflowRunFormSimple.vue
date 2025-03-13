@@ -250,7 +250,7 @@ async function onExecute() {
                             <BFormCheckbox
                                 v-if="isConfigLoaded && config.object_store_allows_id_selection"
                                 v-model="splitObjectStore">
-                                Send outputs and intermediate to different storage locations?
+                                Send outputs and intermediate to different Galaxy storage?
                             </BFormCheckbox>
                             <!-- Options to default one way or the other, disable if admins want, etc.. -->
                             <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
