@@ -1,4 +1,4 @@
-<tool id="ucsc_bigbedtogtf" name="Convert from bigBed to GTF format" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
+<tool id="bigbedtogtf" name="Convert from bigBed to GTF format" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
     <description>Convert bigBed to GTF</description>
     <macros>
         <token name="@TOOL_VERSION@">377</token>
@@ -26,7 +26,7 @@
         python '$__tool_directory__/bed_to_gff_converter.py' temp.bed temp.gff &&
 
         ## Step 3: Convert GFF to GTF (GFF2 is very similar to GTF, just need to adjust the last column)
-        awk -F '\t' '{
+        awk -F '\t' 'NR > 3 && $1 !~ /^#/ {
             if ($1 !~ /^#/) {
                 split($9, attrs, ";");
                 feature_id = "";

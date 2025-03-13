@@ -1,6 +1,3 @@
-##gff-version 2
-##bed_to_gff_converter.py
-								gene_id "gene___"; transcript_id "gene___";
 chr7	bed2gff	uc003sii.2	54029	73584	0	-	.	gene_id "gene_chr7_54029_73584"; transcript_id "gene_chr7_54029_73584";
 chr7	bed2gff	uc010krx.1	60329	61569	0	-	.	gene_id "gene_chr7_60329_61569"; transcript_id "gene_chr7_60329_61569";
 chr7	bed2gff	uc003sij.2	62968	63529	0	-	.	gene_id "gene_chr7_62968_63529"; transcript_id "gene_chr7_62968_63529";
