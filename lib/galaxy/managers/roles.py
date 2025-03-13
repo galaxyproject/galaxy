@@ -5,10 +5,7 @@ Manager and Serializer for Roles.
 import logging
 from typing import List
 
-from sqlalchemy import (
-    false,
-    select,
-)
+from sqlalchemy import select
 from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
@@ -25,6 +22,7 @@ from galaxy.exceptions import (
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
+from galaxy.model.db.role import get_displayable_roles
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -70,12 +68,7 @@ class RoleManager(base.ModelManager[model.Role]):
         return role
 
     def list_displayable_roles(self, trans: ProvidesUserContext) -> List[Role]:
-        roles = []
-        stmt = select(Role).where(Role.deleted == false())
-        for role in trans.sa_session.scalars(stmt):
-            if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
-                roles.append(role)
-        return roles
+        return get_displayable_roles(trans.sa_session, trans.user, trans.user_is_admin, trans.app.security_agent)
 
     def create_role(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel) -> model.Role:
         name = role_definition_model.name
@@ -83,11 +76,7 @@ class RoleManager(base.ModelManager[model.Role]):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        stmt = (
-            select(Role)
-            .where(Role.name == name)  # type:ignore[arg-type,comparison-overlap]  # Role.name is a SA hybrid property
-            .limit(1)
-        )
+        stmt = select(Role).where(Role.name == name).limit(1)
         if trans.sa_session.scalars(stmt).first():
             raise Conflict(f"A role with that name already exists [{name}]")
 

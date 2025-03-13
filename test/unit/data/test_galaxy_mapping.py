@@ -456,7 +456,7 @@ class TestMappings(BaseModelTestCase):
         def check_private_role(private_role, email):
             assert private_role.type == model.Role.types.PRIVATE
             assert len(private_role.users) == 1
-            assert private_role.name == email
+            assert private_role.name == model.Role.default_name(model.Role.types.PRIVATE)
 
         email = "rule_user_1@example.com"
         u = model.User(email=email, password="password")
