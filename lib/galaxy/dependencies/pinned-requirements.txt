@@ -133,7 +133,7 @@ prompt-toolkit==3.0.48
 propcache==0.2.0
 prov==1.5.1
 psutil==6.1.0
-pulsar-galaxy-lib==0.15.6
+pulsar-galaxy-lib==0.15.7
 pycparser==2.22
 pycryptodome==3.21.0
 pydantic==2.9.2
