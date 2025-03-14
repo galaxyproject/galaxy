@@ -1,8 +1,6 @@
 <template>
     <div class="cell-guide d-flex flex-column justify-content-between">
-        <CellButton ref="buttonRef" title="Insert Cell">
-            <FontAwesomeIcon :icon="faPlus" />
-        </CellButton>
+        <CellButton ref="buttonRef" title="Insert Cell" :icon="faPlus" />
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
             <div class="cell-add-categories overflow-auto">

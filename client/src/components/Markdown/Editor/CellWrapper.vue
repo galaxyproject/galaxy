@@ -1,50 +1,36 @@
 <template>
     <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div
-                class="cell-guide d-flex flex-column justify-content-between cursor-pointer"
-                :class="{ 'cell-hover': hover }"
-                @click="$emit('toggle')">
-                <CellButton v-if="toggle" title="Collapse">
-                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
-                </CellButton>
-                <CellButton v-else title="Expand">
-                    <FontAwesomeIcon :icon="faAngleDoubleDown" />
-                </CellButton>
-            </div>
-            <div class="m-2 w-100">
-                <MarkdownDefault v-if="name === 'markdown'" :content="content" />
-                <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
-                <b-alert v-else variant="danger" show> This cell type `{{ name }}` is not available. </b-alert>
+            <div class="w-100">
+                <div class="d-flex" :class="{ 'cell-hover': hover }">
+                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" :show="hover" @click="$emit('toggle')" />
+                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" :show="hover" @click="$emit('toggle')" />
+                    <CellButton
+                        v-if="name !== 'markdown'"
+                        title="Attach Data"
+                        :active="configure"
+                        :icon="faPaperclip"
+                        :show="hover"
+                        @click="$emit('configure')" />
+                    <CellButton title="Clone Cell" :show="hover" :icon="faClone" @click="$emit('clone')" />
+                    <CellButton title="Delete Cell" :show="hover" :icon="faTrash" @click="confirmDelete = true" />
+                    <CellButton title="Move Up" :disabled="cellIndex < 1" :icon="faArrowUp"
+                     :show="hover" @click="$emit('move', 'up')" />
+                    <CellButton
+                        title="Move Down"
+                        :disabled="cellTotal - cellIndex < 2"
+                        :icon="faArrowDown"
+                        :show="hover"
+                        @click="$emit('move', 'down')" />
+                </div>
+                <div class="m-2">
+                    <MarkdownDefault v-if="name === 'markdown'" :content="content" />
+                    <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
+                    <b-alert v-else variant="danger" show> This cell type `{{ name }}` is not available. </b-alert>
+                </div>
             </div>
         </div>
         <div v-if="toggle" class="d-flex">
-            <div class="cell-guide d-flex flex-column" :class="{ 'cell-hover': hover }">
-                <CellButton
-                    v-if="name !== 'markdown'"
-                    title="Attach Data"
-                    :active="configure"
-                    :show="hover"
-                    @click="$emit('configure')">
-                    <FontAwesomeIcon :icon="faPaperclip" />
-                </CellButton>
-                <CellButton title="Clone Cell" :show="hover" @click="$emit('clone')">
-                    <FontAwesomeIcon :icon="faClone" />
-                </CellButton>
-                <CellButton title="Delete Cell" :show="hover" @click="confirmDelete = true">
-                    <FontAwesomeIcon :icon="faTrash" />
-                </CellButton>
-                <CellButton title="Move Up" :disabled="cellIndex < 1" :show="hover" @click="$emit('move', 'up')">
-                    <FontAwesomeIcon :icon="faArrowUp" />
-                </CellButton>
-                <CellButton
-                    title="Move Down"
-                    :disabled="cellTotal - cellIndex < 2"
-                    :show="hover"
-                    @click="$emit('move', 'down')">
-                    <FontAwesomeIcon :icon="faArrowDown" />
-                </CellButton>
-            </div>
             <div class="w-100">
                 <hr class="solid m-0" />
                 <ConfigureGalaxy

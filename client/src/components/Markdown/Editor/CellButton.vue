@@ -1,18 +1,20 @@
 <template>
     <BButton
-        v-b-tooltip.right
+        v-b-tooltip.noninteractive.bottom
         class="border-0 m-1 px-1 py-0"
         :class="{ active, 'cell-button-hide': !show }"
         :title="title"
         :variant="active ? 'outline-secondary' : 'outline-primary'"
         @click="$emit('click')"
         @mouseleave="onMouseLeave($event)">
-        <slot />
+        <FontAwesomeIcon :icon="icon" fixed-width />
     </BButton>
 </template>
 
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, VBTooltipPlugin } from "bootstrap-vue";
+import type { IconDefinition } from "font-awesome-6";
 import Vue from "vue";
 
 Vue.use(VBTooltipPlugin);
@@ -20,6 +22,7 @@ Vue.use(VBTooltipPlugin);
 withDefaults(
     defineProps<{
         active?: boolean;
+        icon: IconDefinition,
         show?: boolean;
         title: string;
     }>(),
