@@ -2,7 +2,7 @@
 import { faArchive, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { type ROCrateZip, ROCrateZipExplorer } from "ro-crate-zip-explorer";
+import { ROCrateZipExplorer, type ZipArchive } from "ro-crate-zip-explorer";
 import { computed, ref, watch } from "vue";
 
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -26,11 +26,11 @@ const zipUrl = ref<string>();
 const errorMessage = ref<string>();
 const loadingPreview = ref(false);
 
-const rocrateZip = ref<ROCrateZip>();
+const zipArchive = ref<ZipArchive>();
 const rocrateSummary = ref<ROCrateSummary>();
 const selectedItems = ref<ROCrateFile[]>([]);
 
-const showHelper = computed(() => !loadingPreview.value && !rocrateZip.value);
+const showHelper = computed(() => !loadingPreview.value && !zipArchive.value);
 const canStart = computed(() => selectedItems.value.length > 0);
 const canOpenUrl = computed(() => ensureValidUrl(zipUrl.value) !== undefined);
 
@@ -57,7 +57,7 @@ function reset() {
     localZipFile.value = undefined;
     zipUrl.value = undefined;
     errorMessage.value = undefined;
-    rocrateZip.value = undefined;
+    zipArchive.value = undefined;
 }
 
 function onDropError(message: string) {
@@ -88,8 +88,8 @@ async function openZip(zipSource: File | string) {
     loadingPreview.value = true;
     const explorer = new ROCrateZipExplorer(zipSource);
     try {
-        rocrateZip.value = await explorer.open();
-        rocrateSummary.value = await extractROCrateSummary(rocrateZip.value.crate);
+        zipArchive.value = await explorer.open();
+        rocrateSummary.value = await extractROCrateSummary(explorer.crate);
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
     } finally {
