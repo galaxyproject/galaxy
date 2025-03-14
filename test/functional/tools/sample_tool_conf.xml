@@ -250,6 +250,7 @@
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
   <tool file="converter_target_datatype.xml" />
+  <tool file="tool_directory_copy.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
