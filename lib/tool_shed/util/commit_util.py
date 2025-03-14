@@ -18,9 +18,9 @@ from sqlalchemy import select
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
+from galaxy.tool_shed.tools.data_table_manager import BaseShedToolDataTableManager
 from galaxy.util import checkers
 from galaxy.util.path import safe_relpath
-from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import (
     basic_util,
     hg_util,
@@ -100,7 +100,7 @@ def check_file_contents_for_email_alerts(app: "ToolShedApp"):
     """
     sa_session = app.model.session
     admin_users = app.config.get("admin_users", "").split(",")
-    for repository in get_repositories_with_alerts(sa_session, app.model.Repository):
+    for repository in get_repositories_with_alerts(sa_session, Repository):
         email_alerts = json.loads(repository.email_alerts)
         for user_email in email_alerts:
             if user_email in admin_users:
@@ -137,12 +137,15 @@ def get_change_lines_in_file_for_tag(tag, change_dict):
 
 
 def handle_bz2(repository: "Repository", uploaded_file_name):
-    with tempfile.NamedTemporaryFile(
-        mode="wb",
-        prefix=f"repo_{repository.id}_upload_bunzip2_",
-        dir=os.path.dirname(uploaded_file_name),
-        delete=False,
-    ) as uncompressed, bz2.BZ2File(uploaded_file_name, "rb") as bzipped_file:
+    with (
+        tempfile.NamedTemporaryFile(
+            mode="wb",
+            prefix=f"repo_{repository.id}_upload_bunzip2_",
+            dir=os.path.dirname(uploaded_file_name),
+            delete=False,
+        ) as uncompressed,
+        bz2.BZ2File(uploaded_file_name, "rb") as bzipped_file,
+    ):
         while 1:
             try:
                 chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
@@ -216,7 +219,7 @@ def handle_directory_changes(
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables
             # dictionary.
-            stdtm = ShedToolDataTableManager(app)
+            stdtm = BaseShedToolDataTableManager(app)
             error, message = stdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
             if error:
                 return (
@@ -242,9 +245,15 @@ def handle_directory_changes(
 
 
 def handle_gzip(repository, uploaded_file_name):
-    with tempfile.NamedTemporaryFile(
-        mode="wb", prefix=f"repo_{repository.id}_upload_gunzip_", dir=os.path.dirname(uploaded_file_name), delete=False
-    ) as uncompressed, gzip.GzipFile(uploaded_file_name, "rb") as gzipped_file:
+    with (
+        tempfile.NamedTemporaryFile(
+            mode="wb",
+            prefix=f"repo_{repository.id}_upload_gunzip_",
+            dir=os.path.dirname(uploaded_file_name),
+            delete=False,
+        ) as uncompressed,
+        gzip.GzipFile(uploaded_file_name, "rb") as gzipped_file,
+    ):
         while 1:
             try:
                 chunk = gzipped_file.read(basic_util.CHUNK_SIZE)

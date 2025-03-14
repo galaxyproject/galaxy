@@ -13,13 +13,14 @@ const totalCount = computed(() => entryPoints.value.length);
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
     icon: IconDefinition;
     isActive: boolean;
     to: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
@@ -27,7 +28,7 @@ const emit = defineEmits<{
 
 const tooltip = computed(() =>
     totalCount.value === 1
-        ? `You currently have 1 active interactive tool`
+        ? "You currently have 1 active interactive tool"
         : `You currently have ${totalCount.value} active interactive tools`
 );
 </script>
@@ -36,7 +37,7 @@ const tooltip = computed(() =>
     <ActivityItem
         v-if="totalCount > 0"
         :id="id"
-        :activity-bar-id="id"
+        :activity-bar-id="props.activityBarId"
         :icon="icon"
         :indicator="totalCount"
         :is-active="isActive"

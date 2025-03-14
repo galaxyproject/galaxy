@@ -26,10 +26,13 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
 
 import tool_shed.webapp.config as tool_shed_config
 import tool_shed.webapp.model.mapping
-from galaxy.model.base import transaction
 from galaxy.util import (
     build_url,
     send_mail as galaxy_send_mail,
+)
+from tool_shed.webapp.model import (
+    Repository,
+    RepositoryMetadata,
 )
 
 log = logging.getLogger()
@@ -127,7 +130,13 @@ def send_mail_to_owner(app, owner, email, repositories_deprecated, days=14):
         return False
 
 
-def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=False):
+def deprecate_repositories(
+    app: "DeprecateRepositoriesApplication",
+    cutoff_time: datetime,
+    days: int = 14,
+    info_only: bool = False,
+    verbose: bool = False,
+):
     # This method will get a list of repositories that were created on or before cutoff_time, but have never
     # had any metadata records associated with them. Then it will iterate through that list and deprecate the
     # repositories, sending an email to each repository owner.
@@ -135,18 +144,18 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
     repository_ids_to_not_check = []
     # Get a unique list of repository ids from the repository_metadata table. Any repository ID found in this table is not
     # empty, and will not be checked.
-    stmt = sa.select(distinct(app.model.RepositoryMetadata.table.c.repository_id))
+    stmt = sa.select(distinct(RepositoryMetadata.table.c.repository_id))
     metadata_records = app.sa_session.execute(stmt)
     for metadata_record in metadata_records:
         repository_ids_to_not_check.append(metadata_record.repository_id)
     # Get the repositories that are A) not present in the above list, and b) older than the specified time.
     # This will yield a list of repositories that have been created more than n days ago, but never populated.
-    stmt = sa.select(app.model.Repository.table.c.id).where(
+    stmt = sa.select(Repository.table.c.id).where(
         and_(
-            app.model.Repository.table.c.create_time < cutoff_time,
-            app.model.Repository.table.c.deprecated == false(),
-            app.model.Repository.table.c.deleted == false(),
-            not_(app.model.Repository.table.c.id.in_(repository_ids_to_not_check)),
+            Repository.table.c.create_time < cutoff_time,
+            Repository.table.c.deprecated == false(),
+            Repository.table.c.deleted == false(),
+            not_(Repository.table.c.id.in_(repository_ids_to_not_check)),
         )
     )
     query_result = app.sa_session.execute(stmt)
@@ -155,9 +164,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
     repository_ids = [row.id for row in query_result]
     # Iterate through the list of repository ids for empty repositories and deprecate them unless info_only is set.
     for repository_id in repository_ids:
-        repository = (
-            app.sa_session.query(app.model.Repository).filter(app.model.Repository.table.c.id == repository_id).one()
-        )
+        repository = app.sa_session.query(Repository).filter(Repository.table.c.id == repository_id).one()
         owner = repository.user
         if info_only:
             print(
@@ -176,8 +183,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
             repository.deprecated = True
             app.sa_session.add(repository)
             session = app.sa_session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         owner = repositories_by_owner[repository_owner]["owner"]
         send_mail_to_owner(
             app, owner.username, owner.email, repositories_by_owner[repository_owner]["repositories"], days
@@ -196,7 +202,7 @@ class DeprecateRepositoriesApplication:
             config.database_connection = f"sqlite:///{config.database}?isolation_level=IMMEDIATE"
         # Setup the database engine and ORM
         self.model = tool_shed.webapp.model.mapping.init(
-            config.file_path, config.database_connection, engine_options={}, create_tables=False
+            config.database_connection, engine_options={}, create_tables=False
         )
         self.config = config
 
@@ -207,7 +213,7 @@ class DeprecateRepositoriesApplication:
         session from the threadlocal session context, but this is provided
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
-        return self.model.context.current
+        return self.model.context
 
     def shutdown(self):
         pass

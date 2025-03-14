@@ -13,6 +13,7 @@ from typing_extensions import (
     Unpack,
 )
 
+from galaxy import exceptions
 from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
@@ -93,7 +94,10 @@ class S3FsFilesSource(BaseFilesSource):
             return res, len(res)
         else:
             bucket_path = self._bucket_path(_bucket_name, path)
-            res = fs.ls(bucket_path, detail=True)
+            try:
+                res = fs.ls(bucket_path, detail=True)
+            except Exception as e:
+                raise exceptions.MessageException(f"Error listing {bucket_path}: {e}")
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res)), len(res)
 

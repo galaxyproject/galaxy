@@ -53,6 +53,7 @@ URI_PREFIXES = [
         "drs",
         "invenio",
         "zenodo",
+        "dataverse",
     ]
 ]
 
@@ -161,9 +162,9 @@ class Repeat(Group):
                     else:
                         rval_dict[input.name] = input.value_from_basic(d[input.name], app, ignore_errors)
                 rval.append(rval_dict)
-        except Exception as e:
+        except Exception:
             if not ignore_errors:
-                raise e
+                raise
         return rval
 
     def get_initial_value(self, trans, context):
@@ -226,9 +227,9 @@ class Section(Group):
             for input in self.inputs.values():
                 if not ignore_errors or input.name in value:
                     rval[input.name] = input.value_from_basic(value[input.name], app, ignore_errors)
-        except Exception as e:
+        except Exception:
             if not ignore_errors:
-                raise e
+                raise
         return rval
 
     def get_initial_value(self, trans, context):
@@ -389,9 +390,9 @@ class UploadDataset(Group):
                     else:
                         rval_dict[input.name] = input.value_from_basic(d[input.name], app, ignore_errors)
                 rval.append(rval_dict)
-            except Exception as e:
+            except Exception:
                 if not ignore_errors:
-                    raise e
+                    raise
         return rval
 
     def get_file_count(self, trans, context):
@@ -794,9 +795,9 @@ class Conditional(Group):
                 # conditional's values dictionary.
                 if not ignore_errors or input.name in value:
                     rval[input.name] = input.value_from_basic(value[input.name], app, ignore_errors)
-        except Exception as e:
+        except Exception:
             if not ignore_errors:
-                raise e
+                raise
         return rval
 
     def get_initial_value(self, trans, context):

@@ -15,7 +15,6 @@ from galaxy.model import (
     History,
     Role,
 )
-from galaxy.model.base import transaction
 
 
 class WorkRequestContext(ProvidesHistoryContext):
@@ -168,8 +167,7 @@ class SessionRequestContext(WorkRequestContext):
         if history and not history.deleted and self.galaxy_session:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
 
 def proxy_work_context_for_history(

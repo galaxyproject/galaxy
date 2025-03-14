@@ -44,7 +44,6 @@ from galaxy.model import (
     UserAddress,
     UserQuotaUsage,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.user import (
     _cleanup_nonprivate_user_roles,
     get_user_by_email,
@@ -171,8 +170,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session = self.session()
         for job in active_jobs:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
@@ -280,7 +278,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id: int) -> model.User:
+    def by_id(self, user_id: int) -> Optional[model.User]:
         return self.app.model.session.get(self.model_class, user_id)
 
     # ---- filters
@@ -515,8 +513,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 trans.log_event("User change password")
         else:
             return "Failed to determine user, access denied."
@@ -575,8 +572,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
             trans.sa_session.add(user)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return activation_token
 
     def send_reset_email(self, trans, payload, **kwd):
@@ -603,8 +599,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 try:
                     util.send_mail(trans.app.config.email_from, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     trans.log_event(f"User reset password: {email}")
                 except Exception as e:
                     log.debug(body)
@@ -620,8 +615,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if reset_user and not reset_user.deleted:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return reset_user, prt
         return None, None
 
@@ -643,8 +637,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user.active = True
         self.session().add(user)
         session = self.session()
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def get_or_create_remote_user(self, remote_user_email):
         """
@@ -669,8 +662,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user.external = True
             user.username = username_from_email(self.session(), remote_user_email, self.app.model.User)
             self.session().add(user)
-            with transaction(self.session()):
-                self.session().commit()
+            self.session().commit()
             self.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if self.app_type == "galaxy":

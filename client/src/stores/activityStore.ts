@@ -60,11 +60,16 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
 
     const customDefaultActivities = ref<Activity[] | null>(null);
     const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
+    const isSideBarOpen = computed(() => toggledSideBar.value !== "" && toggledSideBar.value !== "closed");
 
     const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
 
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+    }
+
+    function closeSideBar() {
+        toggledSideBar.value = "closed";
     }
 
     function overrideDefaultActivities(activities: Activity[]) {
@@ -127,13 +132,10 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
             }
         });
 
-        // update activities stored in local cache only if changes were applied
-        if (JSON.stringify(activities.value) !== JSON.stringify(newActivities)) {
-            activities.value = newActivities;
-        }
+        activities.value = newActivities;
 
         // if toggled side-bar does not exist, choose the first option
-        if (toggledSideBar.value !== "") {
+        if (isSideBarOpen.value) {
             const allSideBars = activities.value.flatMap((activity) => {
                 if (activity.panel) {
                     return [activity.id];
@@ -199,6 +201,8 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     return {
         toggledSideBar,
         toggleSideBar,
+        closeSideBar,
+        isSideBarOpen,
         activities,
         activityMeta,
         metaForId,

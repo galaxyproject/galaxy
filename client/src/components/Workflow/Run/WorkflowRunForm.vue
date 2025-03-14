@@ -8,13 +8,23 @@
         </BAlert>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-            <ButtonSpinner
-                id="run-workflow"
-                class="float-right"
-                title="Run Workflow"
-                :disabled="!canRunOnHistory"
-                :wait="showExecuting"
-                @onClick="onExecute" />
+            <div class="float-right d-flex flex-gapx-1">
+                <b-button
+                    v-if="!disableSimpleForm"
+                    v-b-tooltip.hover.noninteractive
+                    variant="link"
+                    class="text-decoration-none"
+                    title="Use simplified run form instead"
+                    @click="$emit('showSimple')">
+                    <span class="fas fa-arrow-left" /> Simple Form
+                </b-button>
+                <ButtonSpinner
+                    id="run-workflow"
+                    title="Run Workflow"
+                    :disabled="!canRunOnHistory"
+                    :wait="showExecuting"
+                    @onClick="onExecute" />
+            </div>
         </div>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
@@ -94,6 +104,10 @@ export default {
         canMutateCurrentHistory: {
             type: Boolean,
             required: true,
+        },
+        disableSimpleForm: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {

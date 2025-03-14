@@ -6,6 +6,7 @@ import {
     faMagic,
     faPencilAlt,
     faPlay,
+    faPlus,
     faRecycle,
     faSave,
     faSignOutAlt,
@@ -13,6 +14,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
+import { faDiagramNext } from "font-awesome-6";
 import { computed, type Ref } from "vue";
 
 import { type Activity, useActivityStore } from "@/stores/activityStore";
@@ -25,6 +27,15 @@ export const workflowEditorActivities = [
         description: "View and edit the attributes of this workflow.",
         panel: true,
         icon: faPencilAlt,
+        visible: true,
+    },
+    {
+        title: "Inputs",
+        id: "workflow-editor-inputs",
+        tooltip: "Add input steps to your workflow",
+        description: "Add input steps to your workflow.",
+        icon: faDiagramNext,
+        panel: true,
         visible: true,
     },
     {
@@ -87,7 +98,17 @@ export const workflowEditorActivities = [
         optional: true,
     },
     {
-        description: "Save this workflow with a different name and annotation",
+        description: "Save this workflow.",
+        icon: faSave,
+        id: "save-workflow",
+        title: "Save",
+        tooltip: "Save current changes",
+        visible: true,
+        click: true,
+        optional: true,
+    },
+    {
+        description: "Save this workflow with a different name and annotation.",
         icon: farSave,
         id: "save-workflow-as",
         title: "Save as",
@@ -112,6 +133,16 @@ export const workflowEditorActivities = [
         description: "Download this workflow in '.ga' format.",
         tooltip: "Download workflow",
         icon: faDownload,
+        visible: true,
+        click: true,
+        optional: true,
+    },
+    {
+        description: "Save this workflow and create a new workflow.",
+        icon: faPlus,
+        title: "Create new",
+        id: "workflow-create",
+        tooltip: "Save this workflow and create a new one",
         visible: true,
         click: true,
         optional: true,

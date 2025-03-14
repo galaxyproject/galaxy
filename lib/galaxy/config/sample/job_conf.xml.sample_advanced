@@ -296,7 +296,7 @@
                     HDF5_USE_FILE_LOCKING: 'FALSE'
                     MY_OTHER_ENV_VAR: its_value
                 </param> -->
-            <!-- Sets additional environment variables (in YAML) to be passed to the k8s Jobs that handle each Galaxy job. 
+            <!-- Sets additional environment variables (in YAML) to be passed to the k8s Jobs that handle each Galaxy job.
                  This is probably possible to be set at the destination level as well, based on the source code. -->
 
             <!-- <param id="k8s_supplemental_group_id">0</param> -->
@@ -329,9 +329,9 @@
                  a requirement of the other.
 
                  -->
-            <!-- <param id="k8s_run_as_user_id">101</param> -->
+            <!-- <param id="k8s_run_as_user_id">10001</param> -->
             <!-- ID of user that should be used by the tool command in the job containers -->
-            <!-- <param id="k8s_run_as_group_id">101</param> -->
+            <!-- <param id="k8s_run_as_group_id">10001</param> -->
             <!-- ID of group that should be used by the tool command in the job containers -->
             <!-- <param id="k8s_interactivetools_use_ssl">True</param> -->
             <!-- Whether to enabled HTTPS access in the k8s ingress spec generated for each interactive tools -->
@@ -1160,7 +1160,7 @@
             <!-- `fargate_version` is required to use Fargate compute resources -->
             <param id="auto_platform">true</param>
             <!-- To let AWS Batch retry on failed jobs, set the number of attempts to 2-10 and `on_exit` conditions -->
-            <!-- 
+            <!--
             <param id="retry_attempts">2</param>
             <param id="retry_on_exit_statusReason">...</param>
             <param id="retry_on_exit_reason">...</param>

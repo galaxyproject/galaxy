@@ -13,10 +13,11 @@ import urllib.parse
 from collections.abc import MutableMapping
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
-    Tuple,
+    Sequence,
     TYPE_CHECKING,
     Union,
 )
@@ -43,13 +44,18 @@ from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
+from galaxy.tool_util.parser.interface import DrillDownOptionsDict
 from galaxy.tool_util.parser.util import (
     boolean_is_checked,
     boolean_true_and_false_values,
     ParameterParseException,
     text_input_is_optional,
 )
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.tools.parameters.options import ParameterOption
+from galaxy.tools.parameters.workflow_utils import (
+    NO_REPLACEMENT,
+    workflow_building_modes,
+)
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -128,6 +134,10 @@ def parse_dynamic_options(param, input_source):
     return dynamic_options.DynamicOptions(options_elem, param)
 
 
+def serialize_options(security: "IdEncodingHelper", options: Sequence[ParameterOption]):
+    return [option.serialize(security) for option in options]
+
+
 # Describe a parameter value error where there is no actual supplied
 # parameter - e.g. just a specification issue.
 NO_PARAMETER_VALUE = object()
@@ -172,7 +182,7 @@ class ToolParameter(UsesDictVisibleKeys):
 
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
-    >>> trans = Bunch(app=None)
+    >>> trans = Bunch(app=None, security=lambda x: x)
     >>> p = ToolParameter(None, XML('<param argument="--parameter-name" type="text" value="default" />'))
     >>> assert p.name == 'parameter_name'
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', '--parameter-name'), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ToolParameter'), ('name', 'parameter_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', None)]
@@ -247,6 +257,8 @@ class ToolParameter(UsesDictVisibleKeys):
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
             return runtime_to_json(value)
+        elif value == NO_REPLACEMENT:
+            return {"__class__": "NoReplacement"}
         return self.to_json(value, app, use_security)
 
     def value_from_basic(self, value, app, ignore_errors=False):
@@ -255,16 +267,18 @@ class ToolParameter(UsesDictVisibleKeys):
             if isinstance(self, HiddenToolParameter):
                 raise ParameterValueError(message_suffix="Runtime Parameter not valid", parameter_name=self.name)
             return runtime_to_object(value)
-        elif isinstance(value, MutableMapping) and value.get("__class__") == "UnvalidatedValue":
-            return value["value"]
+        elif isinstance(value, MutableMapping):
+            if value.get("__class__") == "UnvalidatedValue":
+                return value["value"]
+            elif value.get("__class__") == "NoReplacement":
+                return NO_REPLACEMENT
         # Delegate to the 'to_python' method
-        if ignore_errors:
-            try:
-                return self.to_python(value, app)
-            except Exception:
-                return value
-        else:
+        try:
             return self.to_python(value, app)
+        except Exception:
+            if not ignore_errors:
+                raise
+            return value
 
     def value_to_display_text(self, value) -> str:
         if is_runtime_value(value):
@@ -368,11 +382,7 @@ class SimpleTextToolParameter(ToolParameter):
 
     def to_json(self, value, app, use_security):
         """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            rval = "" if not self.optional else None
-        else:
-            rval = unicodify(value)
-        return rval
+        return unicodify(value)
 
     def get_initial_value(self, trans, other_values):
         return self.value
@@ -921,7 +931,7 @@ class SelectToolParameter(ToolParameter):
 
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
-    >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=False)
+    >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=False, security=lambda x: x)
     >>> p = SelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="select">
@@ -979,13 +989,15 @@ class SelectToolParameter(ToolParameter):
             call_other_values.update(other_values.dict)
         return call_other_values
 
-    def get_options(self, trans, other_values):
+    def get_options(self, trans, other_values) -> Sequence[Union[ParameterOption, DrillDownOptionsDict]]:
         if self.options:
             return self.options.get_options(trans, other_values)
         elif self.dynamic_options:
             call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
             try:
-                return eval(self.dynamic_options, self.tool.code_namespace, call_other_values)
+                return [
+                    ParameterOption(*o) for o in eval(self.dynamic_options, self.tool.code_namespace, call_other_values)
+                ]
             except Exception as e:
                 log.debug(
                     "Error determining dynamic options for parameter '%s' in tool '%s':",
@@ -995,22 +1007,21 @@ class SelectToolParameter(ToolParameter):
                 )
                 return []
         else:
-            return self.static_options
+            return [ParameterOption(*o) for o in self.static_options]
 
     def get_legal_values(self, trans, other_values, value):
         """
         determine the set of values of legal options
         """
-        return {
-            history_item_dict_to_python(v, trans.app, self.name) or v
-            for _, v, _ in self.get_options(trans, other_values)
-        }
+        options = cast(List[ParameterOption], self.get_options(trans, other_values))
+        return {option.dataset or option.value for option in options}
 
     def get_legal_names(self, trans, other_values):
         """
-        determine a mapping from names to values for all legal options
+        determine the set of values of legal options
         """
-        return {n: v for n, v, _ in self.get_options(trans, other_values)}
+        options = cast(List[ParameterOption], self.get_options(trans, other_values))
+        return {option.name: option.value for option in options}
 
     def from_json(self, value, trans, other_values=None):
         return self._select_from_json(value, trans, other_values=other_values, require_legal_value=True)
@@ -1132,17 +1143,17 @@ class SelectToolParameter(ToolParameter):
 
     def get_initial_value(self, trans, other_values):
         try:
-            options = list(self.get_options(trans, other_values))
+            options = cast(List[ParameterOption], self.get_options(trans, other_values))
         except ImplicitConversionRequired:
             return None
         if not options:
             return None
-        value = [optval for _, optval, selected in options if selected]
+        value = [option.value for option in options if option.selected]
         if len(value) == 0:
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value2 = options[0][1]
+                value2: Optional[Union[str, List[str]]] = options[0].value
             else:
                 value2 = None
         elif len(value) == 1 or not self.multiple:
@@ -1182,8 +1193,8 @@ class SelectToolParameter(ToolParameter):
         d = super().to_dict(trans, other_values)
 
         # Get options, value.
-        options = self.get_options(trans, other_values)
-        d["options"] = options
+        options = cast(List[ParameterOption], self.get_options(trans, other_values))
+        d["options"] = serialize_options(trans.security, options)
         d["display"] = self.display
         d["multiple"] = self.multiple
         d["textable"] = is_runtime_context(trans, other_values)
@@ -1208,7 +1219,7 @@ class GenomeBuildParameter(SelectToolParameter):
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None), security=lambda x:x)
     >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
     >>> print(p.name)
     _name
@@ -1228,12 +1239,14 @@ class GenomeBuildParameter(SelectToolParameter):
             self.static_options = [(value, key, False) for key, value in self._get_dbkey_names()]
         self.is_dynamic = True
 
-    def get_options(self, trans, other_values):
+    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
         last_used_build = object()
         if trans.history:
             last_used_build = trans.history.genome_build
-        for dbkey, build_name in self._get_dbkey_names(trans=trans):
-            yield build_name, dbkey, (dbkey == last_used_build)
+        return [
+            ParameterOption(build_name, dbkey, (dbkey == last_used_build))
+            for dbkey, build_name in self._get_dbkey_names(trans=trans)
+        ]
 
     def get_legal_values(self, trans, other_values, value):
         return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
@@ -1243,16 +1256,16 @@ class GenomeBuildParameter(SelectToolParameter):
         d = ToolParameter.to_dict(self, trans)
 
         # Get options, value - options is a generator here, so compile to list
-        options = list(self.get_options(trans, {}))
-        value = options[0][1]
+        options = self.get_options(trans, {})
+        value = options[0].value
         for option in options:
-            if option[2]:
+            if option.selected:
                 # Found selected option.
-                value = option[1]
+                value = option.value
 
         d.update(
             {
-                "options": options,
+                "options": serialize_options(trans, options),
                 "value": value,
                 "display": self.display,
                 "multiple": self.multiple,
@@ -1340,13 +1353,13 @@ class SelectTagParameter(SelectToolParameter):
                         tags.add(tag.user_value)
         return list(tags)
 
-    def get_options(self, trans, other_values):
+    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
         """
         Show tags
         """
         options = []
         for tag in self.get_tag_list(other_values):
-            options.append((f"Tags: {tag}", tag, False))
+            options.append(ParameterOption(f"Tags: {tag}", tag, False))
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1513,11 +1526,11 @@ class ColumnListParameter(SelectToolParameter):
                 column_list = [c for c in column_list if c in this_column_list]
         return column_list
 
-    def get_options(self, trans, other_values):
+    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
         """
         Show column labels rather than c1..cn if use_header_names=True
         """
-        options: List[Tuple[str, Union[str, Tuple[str, str]], bool]] = []
+        options: Sequence[ParameterOption] = []
         column_list = self.get_column_list(trans, other_values)
         if not column_list:
             return options
@@ -1531,7 +1544,10 @@ class ColumnListParameter(SelectToolParameter):
                 and dataset.metadata.element_is_set("column_names")
             ):
                 try:
-                    options = [(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False) for c in column_list]
+                    options = [
+                        ParameterOption(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False)
+                        for c in column_list
+                    ]
                 except IndexError:
                     # ignore and rely on fallback
                     pass
@@ -1540,13 +1556,13 @@ class ColumnListParameter(SelectToolParameter):
                     with open(dataset.get_file_name()) as f:
                         head = f.readline()
                     cnames = head.rstrip("\n\r ").split("\t")
-                    options = [(f"c{c}: {cnames[int(c) - 1]}", c, False) for c in column_list]
+                    options = [ParameterOption(f"c{c}: {cnames[int(c) - 1]}", c, False) for c in column_list]
                 except Exception:
                     # ignore and rely on fallback
                     pass
         if not options:
             # fallback if no options list could be built so far
-            options = [(f"Column: {col}", col, False) for col in column_list]
+            options = [ParameterOption(f"Column: {col}", col, False) for col in column_list]
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1609,7 +1625,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> from galaxy.util.bunch import Bunch
     >>> app = Bunch(config=Bunch(tool_data_path=None))
     >>> tool = Bunch(app=app)
-    >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
+    >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None), security=lambda x: x)
     >>> p = DrillDownSelectToolParameter(tool, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
@@ -1676,18 +1692,17 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         except Exception:
             return []
 
-    def get_options(self, trans=None, other_values=None):
+    def get_options(self, trans=None, other_values=None) -> List[DrillDownOptionsDict]:
         other_values = other_values or {}
         if self.is_dynamic:
             if self.dynamic_options:
-                options = self._get_options_from_code(trans=trans, other_values=other_values)
-            else:
-                options = []
-            return options
+                return self._get_options_from_code(trans=trans, other_values=other_values)
+            return []
+
         return self.options
 
     def get_legal_values(self, trans, other_values, value):
-        def recurse_options(legal_values, options):
+        def recurse_options(legal_values, options: List[DrillDownOptionsDict]):
             for option in options:
                 legal_values.append(option["value"])
                 recurse_options(legal_values, option["options"])
@@ -1733,16 +1748,16 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         other_values = other_values or {}
 
         def get_options_list(value):
-            def get_base_option(value, options):
+            def get_base_option(value, options: List[DrillDownOptionsDict]):
                 for option in options:
                     if value == option["value"]:
                         return option
-                    rval = get_base_option(value, option["options"])
+                    rval = get_base_option(value, option["options"] or [])
                     if rval:
                         return rval
                 return None  # not found
 
-            def recurse_option(option_list, option):
+            def recurse_option(option_list, option: DrillDownOptionsDict):
                 if not option["options"]:
                     option_list.append(option["value"])
                 else:
@@ -1750,8 +1765,10 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                         recurse_option(option_list, opt)
 
             rval: List[str] = []
-            base_option = get_base_option(value, self.get_options(other_values=other_values))
-            recurse_option(rval, base_option)
+            options = self.get_options(other_values=other_values)
+            base_option = get_base_option(value, options)
+            if base_option:
+                recurse_option(rval, base_option)
             return rval or [value]
 
         if value is None:
@@ -1777,11 +1794,11 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return rval
 
     def get_initial_value(self, trans, other_values):
-        def recurse_options(initial_values, options):
+        def recurse_options(initial_values, options: List[DrillDownOptionsDict]):
             for option in options:
                 if option["selected"]:
                     initial_values.append(option["value"])
-                recurse_options(initial_values, option["options"])
+                recurse_options(initial_values, option["options"] or [])
 
         # More working around dynamic options for workflow
         options = self.get_options(trans=trans, other_values=other_values)
@@ -1794,11 +1811,11 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return initial_values
 
     def to_text(self, value):
-        def get_option_display(value, options):
+        def get_option_display(value, options: List[DrillDownOptionsDict]):
             for option in options:
                 if value == option["value"]:
                     return option["name"]
-                rval = get_option_display(value, option["options"])
+                rval = get_option_display(value, option["options"] or [])
                 if rval:
                     return rval
             return None  # not found
@@ -1820,7 +1837,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         else:
             rval = []
             for val in value:
-                rval.append(get_option_display(val, self.options) or val)
+                rval.append(get_option_display(val, self.options or val))
         if rval:
             return "\n".join(map(str, rval))
         return "Nothing selected."
@@ -1995,6 +2012,7 @@ class BaseDataToolParameter(ToolParameter):
                         dataset_count += 1
                         do_validate(v.hda)
                     else:
+                        assert v.child_collection
                         for dataset_instance in v.child_collection.dataset_instances:
                             dataset_count += 1
                             do_validate(dataset_instance)
@@ -2004,10 +2022,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if self.min is not None:
             if self.min > dataset_count:
-                raise ValueError("At least %d datasets are required for %s" % (self.min, self.name))
+                raise ValueError(f"At least {self.min} datasets are required for {self.name}")
         if self.max is not None:
             if self.max < dataset_count:
-                raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
+                raise ValueError(f"At most {self.max} datasets are required for {self.name}")
 
 
 def src_id_to_item(
@@ -2173,33 +2191,39 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
+            value_to_check: Union[
+                DatasetInstance, DatasetCollection, DatasetCollectionElement, HistoryDatasetCollectionAssociation
+            ] = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
-                    v = hda
+                    value_to_check = hda
                 elif ldda := v.ldda:
-                    v = ldda
+                    value_to_check = ldda
                 elif collection := v.child_collection:
-                    v = collection
-                elif not v.collection and v.collection.populated_optimized:
+                    value_to_check = collection
+                elif v.collection and not v.collection.populated_optimized:
                     raise ParameterValueError("the selected collection has not been populated.", self.name)
                 else:
                     raise ParameterValueError("Collection element in unexpected state", self.name)
-            if isinstance(v, DatasetInstance):
-                if v.deleted:
+            if isinstance(value_to_check, DatasetInstance):
+                if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset has been deleted.", self.name)
-                elif v.dataset and v.dataset.state in [Dataset.states.ERROR, Dataset.states.DISCARDED]:
+                elif value_to_check.dataset and value_to_check.dataset.state in [
+                    Dataset.states.ERROR,
+                    Dataset.states.DISCARDED,
+                ]:
                     raise ParameterValueError(
                         "the previously selected dataset has entered an unusable state", self.name
                     )
-                match = dataset_matcher.hda_match(v)
+                match = dataset_matcher.hda_match(value_to_check)
                 if match and match.implicit_conversion:
-                    v.implicit_conversion = True  # type:ignore[union-attr]
-            elif isinstance(v, HistoryDatasetCollectionAssociation):
-                if v.deleted:
+                    value_to_check.implicit_conversion = True  # type:ignore[attr-defined]
+            elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
+                if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)
-                v = v.collection
-            if isinstance(v, DatasetCollection):
-                if v.elements_deleted:
+                value_to_check = value_to_check.collection
+            if isinstance(value_to_check, DatasetCollection):
+                if value_to_check.elements_deleted:
                     raise ParameterValueError(
                         "the previously selected dataset collection has elements that are deleted.", self.name
                     )
@@ -2520,7 +2544,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if isinstance(value, HistoryDatasetCollectionAssociation):
                 display_text = f"{value.hid}: {value.name}"
             else:
-                display_text = "Element %d:%s" % (value.identifier_index, value.identifier_name)
+                display_text = f"Element {value.identifier_index}:{value.identifier_name}"
         except AttributeError:
             display_text = "No dataset collection."
         return display_text

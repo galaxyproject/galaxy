@@ -1,72 +1,3 @@
-<template>
-    <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl
-            v-if="props.showZoomControls"
-            :zoom-level="scale"
-            :pan="transform"
-            @onZoom="onZoom"
-            @update:pan="panBy" />
-        <ToolBar v-if="!readonly" />
-        <div
-            id="canvas-container"
-            ref="canvas"
-            class="canvas-content"
-            :class="props.isInvocation ? 'fixed-window-height' : 'h-100'"
-            @drop.prevent
-            @dragover.prevent>
-            <AdaptiveGrid
-                :viewport-bounds="elementBounding"
-                :viewport-bounding-box="viewportBoundingBox"
-                :transform="transform" />
-            <div class="node-area" :style="canvasStyle">
-                <InputCatcher :transform="transform" />
-                <BoxSelectPreview />
-                <WorkflowEdges
-                    :transform="transform"
-                    :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition" />
-                <WorkflowNode
-                    v-for="(step, key) in steps"
-                    :id="step.id"
-                    :key="key"
-                    :name="step.name"
-                    :content-id="step.content_id"
-                    :step="step"
-                    :datatypes-mapper="datatypesMapper"
-                    :active-node-id="activeNodeId"
-                    :root-offset="elementBounding"
-                    :scroll="scroll"
-                    :scale="scale"
-                    :readonly="readonly"
-                    :is-invocation="props.isInvocation"
-                    @pan-by="panBy"
-                    @stopDragging="onStopDragging"
-                    @onDragConnector="onDragConnector"
-                    @onActivate="onActivate"
-                    @onDeactivate="onDeactivate"
-                    v-on="$listeners" />
-                <WorkflowComment
-                    v-for="comment in comments"
-                    :id="`workflow-comment-${comment.id}`"
-                    :key="`workflow-comment-${comment.id}`"
-                    :comment="comment"
-                    :scale="scale"
-                    :readonly="readonly"
-                    :root-offset="elementBounding"
-                    @pan-by="panBy" />
-            </div>
-        </div>
-        <WorkflowMinimap
-            v-if="elementBounding && props.showMinimap"
-            :steps="steps"
-            :comments="comments"
-            :viewport-bounds="elementBounding"
-            :viewport-bounding-box="viewportBoundingBox"
-            @panBy="panBy"
-            @moveTo="moveTo" />
-        <slot></slot>
-    </div>
-</template>
 <script setup lang="ts">
 import { useElementBounding, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
@@ -80,6 +11,8 @@ import { assertDefined } from "@/utils/assertions";
 
 import { useD3Zoom } from "./composables/d3Zoom";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
+import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
+import type { Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -104,6 +37,8 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    fixedHeight: { type: Number, default: undefined },
+    populatedInputs: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -121,12 +56,25 @@ const { transform, panBy, setZoom, moveTo } = useD3Zoom(
     props.initialPosition
 );
 
-defineExpose({
-    setZoom,
-    moveTo,
-});
+const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
+    elementBounding,
+    scale,
+    transform
+);
+const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
-const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
+function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
+    const aabb = getWorkflowBoundingBox();
+    aabb.expand(padding);
+
+    const transform = updateViewportBaseBoundingBox().transformTo(aabb);
+
+    const scale = Math.min(transform.scaleX, transform.scaleY);
+    const clampedScale = Math.max(minimumFitZoom, Math.min(maximumFitZoom, scale));
+
+    zoomTo(clampedScale);
+    moveTo({ x: aabb.x, y: aabb.y }, [0, 0]);
+}
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);
@@ -150,7 +98,7 @@ watch(
                 const centerScreenY = height / 2;
                 const offsetX = centerScreenX - (stepPosition.left + stepWidth / 2);
                 const offsetY = centerScreenY - (stepPosition.top + stepHeight / 2);
-                onZoom(1, { x: offsetX, y: offsetY });
+                zoomTo(1, { x: offsetX, y: offsetY });
             } else {
                 console.log("Step has no position");
             }
@@ -159,8 +107,8 @@ watch(
     }
 );
 
-function onZoom(zoomLevel: number, panTo: XYPosition | null = null) {
-    setZoom(zoomLevel);
+function zoomTo(zoomLevel: number, panTo: XYPosition | null = null, origin?: Vector) {
+    setZoom(zoomLevel, origin);
     if (panTo) {
         panBy({ x: panTo.x - transform.value.x, y: panTo.y - transform.value.y });
     }
@@ -202,7 +150,84 @@ const canvasStyle = computed(() => {
 
 const { commentStore } = useWorkflowStores();
 const { comments } = storeToRefs(commentStore);
+
+defineExpose({
+    fitWorkflow,
+    setZoom,
+    moveTo,
+});
 </script>
+
+<template>
+    <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+        <ZoomControl
+            v-if="props.showZoomControls"
+            :zoom-level="scale"
+            :pan="transform"
+            @onZoom="zoomTo"
+            @update:pan="panBy" />
+        <ToolBar v-if="!readonly" />
+        <div
+            id="canvas-container"
+            ref="canvas"
+            class="canvas-content"
+            :style="{ height: props.fixedHeight ? `${props.fixedHeight}vh` : '100%' }"
+            @drop.prevent
+            @dragover.prevent>
+            <AdaptiveGrid
+                :viewport-bounds="elementBounding"
+                :viewport-bounding-box="viewportBoundingBox"
+                :transform="transform" />
+            <div class="node-area" :style="canvasStyle">
+                <InputCatcher :transform="transform" />
+                <BoxSelectPreview />
+                <WorkflowEdges
+                    :transform="transform"
+                    :dragging-terminal="draggingTerminal"
+                    :dragging-connection="draggingPosition" />
+                <WorkflowNode
+                    v-for="(step, key) in steps"
+                    :id="step.id"
+                    :key="key"
+                    :name="step.name"
+                    :content-id="step.content_id"
+                    :step="step"
+                    :datatypes-mapper="datatypesMapper"
+                    :active-node-id="activeNodeId"
+                    :root-offset="elementBounding"
+                    :scroll="scroll"
+                    :scale="scale"
+                    :readonly="readonly"
+                    :is-invocation="props.isInvocation"
+                    :populated-inputs="props.populatedInputs"
+                    @pan-by="panBy"
+                    @stopDragging="onStopDragging"
+                    @onDragConnector="onDragConnector"
+                    @onActivate="onActivate"
+                    @onDeactivate="onDeactivate"
+                    v-on="$listeners" />
+                <WorkflowComment
+                    v-for="comment in comments"
+                    :id="`workflow-comment-${comment.id}`"
+                    :key="`workflow-comment-${comment.id}`"
+                    :comment="comment"
+                    :scale="scale"
+                    :readonly="readonly"
+                    :root-offset="elementBounding"
+                    @pan-by="panBy" />
+            </div>
+        </div>
+        <WorkflowMinimap
+            v-if="elementBounding && props.showMinimap"
+            :steps="steps"
+            :comments="comments"
+            :viewport-bounds="elementBounding"
+            :viewport-bounding-box="viewportBoundingBox"
+            @panBy="panBy"
+            @moveTo="moveTo" />
+        <slot></slot>
+    </div>
+</template>
 
 <style scoped land="scss">
 .workflow-canvas {
@@ -214,11 +239,6 @@ const { comments } = storeToRefs(commentStore);
         left: 0px;
         top: 0px;
         overflow: hidden;
-
-        /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
-        &.fixed-window-height {
-            height: 60vh;
-        }
     }
 
     .node-area {

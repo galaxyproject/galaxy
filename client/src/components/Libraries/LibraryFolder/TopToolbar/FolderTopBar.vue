@@ -14,6 +14,7 @@ import {
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
@@ -25,12 +26,20 @@ import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 import DirectoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopToolbar/DirectoryDatasetPicker.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
 import HistoryDatasetPicker from "@/components/SelectionDialog/HistoryDatasetPicker.vue";
+
+type CollectionElement = {
+    deleted: boolean;
+    id: string;
+    name: string;
+    src: string;
+};
 
 interface Props {
     metadata: any;
@@ -81,7 +90,7 @@ const containsFileOrFolder = computed(() => {
     return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
 });
 const canDelete = computed(() => {
-    return !!(containsFileOrFolder.value && props.metadata.can_modify_folder);
+    return !!props.metadata.can_modify_folder;
 });
 const datasetManipulation = computed(() => {
     return !!(containsFileOrFolder.value && userStore.currentUser);
@@ -89,6 +98,12 @@ const datasetManipulation = computed(() => {
 const totalRows = computed(() => {
     return props.metadata?.total_rows ?? 0;
 });
+
+// Variables for Collection Creation
+const collectionModalType = ref<CollectionType | null>(null);
+const collectionModalShow = ref(false);
+const collectionSelection = ref<any[]>([]);
+const collectionHistoryId = ref<string | null>(null);
 
 function updateSearch(value: string) {
     emit("updateSearch", value);
@@ -187,6 +202,20 @@ async function importToHistoryModal(isCollection: boolean) {
         if (isCollection) {
             new mod_import_collection.ImportCollectionModal({
                 selected: checkedItems,
+                onCollectionImport: async (
+                    collectionType: string,
+                    selection: { models: CollectionElement[] },
+                    historyId: string
+                ) => {
+                    try {
+                        collectionHistoryId.value = historyId;
+                        collectionModalType.value = collectionType as CollectionType;
+                        collectionSelection.value = selection.models;
+                        collectionModalShow.value = true;
+                    } catch (err) {
+                        console.error(err);
+                    }
+                },
             });
         } else {
             new mod_import_dataset.ImportDatasetModal({
@@ -410,5 +439,13 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             :folder-id="props.folderId"
             @onSelect="onAddDatasetsDirectory"
             @onClose="onAddDatasets" />
+
+        <CollectionCreatorIndex
+            v-if="collectionModalType && collectionHistoryId"
+            :history-id="collectionHistoryId"
+            :collection-type="collectionModalType"
+            :selected-items="collectionSelection"
+            :show.sync="collectionModalShow"
+            default-hide-source-items />
     </div>
 </template>

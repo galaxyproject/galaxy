@@ -1,7 +1,11 @@
 import os
 import threading
 import time
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import psutil
 
@@ -13,6 +17,9 @@ from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
 class TestLocalJobRunner(TestCase, UsesTools):
@@ -97,7 +104,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
-        self.app.model.session = bunch.Bunch(add=lambda x: None, flush=lambda: None)
+        self.app.model.session = cast("scoped_session", bunch.Bunch(add=lambda x: None, flush=lambda: None))
         runner = local.LocalJobRunner(self.app, 1)
         runner.start()
         self.app.config.monitor_thread_join_timeout = 15

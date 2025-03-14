@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8']
+        python-version: ['3.9']
     steps:
       - if: github.event_name == 'schedule'
         run: |
@@ -60,7 +60,7 @@ jobs:
       - name: Lint converters
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
-          planemo lint --skip citations,stdio,help --report_level warn "${TOOL_ARRAY[@]}"
+          planemo lint --skip CitationsMissing,HelpEmpty,HelpMissing --report_level warn "${TOOL_ARRAY[@]}"
       - name: Run tests
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt

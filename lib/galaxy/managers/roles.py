@@ -5,10 +5,7 @@ Manager and Serializer for Roles.
 import logging
 from typing import List
 
-from sqlalchemy import (
-    false,
-    select,
-)
+from sqlalchemy import select
 from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
@@ -25,7 +22,7 @@ from galaxy.exceptions import (
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
-from galaxy.model.base import transaction
+from galaxy.model.db.role import get_displayable_roles
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -71,12 +68,7 @@ class RoleManager(base.ModelManager[model.Role]):
         return role
 
     def list_displayable_roles(self, trans: ProvidesUserContext) -> List[Role]:
-        roles = []
-        stmt = select(Role).where(Role.deleted == false())
-        for role in trans.sa_session.scalars(stmt):
-            if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
-                roles.append(role)
-        return roles
+        return get_displayable_roles(trans.sa_session, trans.user, trans.user_is_admin, trans.app.security_agent)
 
     def create_role(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel) -> model.Role:
         name = role_definition_model.name
@@ -84,11 +76,7 @@ class RoleManager(base.ModelManager[model.Role]):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        stmt = (
-            select(Role)
-            .where(Role.name == name)  # type:ignore[arg-type,comparison-overlap]  # Role.name is a SA hybrid property
-            .limit(1)
-        )
+        stmt = select(Role).where(Role.name == name).limit(1)
         if trans.sa_session.scalars(stmt).first():
             raise Conflict(f"A role with that name already exists [{name}]")
 
@@ -107,15 +95,13 @@ class RoleManager(base.ModelManager[model.Role]):
         for group in groups:
             trans.app.security_agent.associate_group_role(group, role)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
 
     def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
         role.deleted = True
         trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
 
     def purge(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
@@ -131,7 +117,7 @@ class RoleManager(base.ModelManager[model.Role]):
             raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
         # Delete UserRoleAssociations
         for ura in role.users:
-            user = sa_session.get(trans.app.model.User, ura.user_id)
+            user = sa_session.get(model.User, ura.user_id)
             assert user
             # Delete DefaultUserPermissions for associated users
             for dup in user.default_permissions:
@@ -151,8 +137,7 @@ class RoleManager(base.ModelManager[model.Role]):
             sa_session.delete(dp)
         # Delete the role
         sa_session.delete(role)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         return role
 
     def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
@@ -162,6 +147,5 @@ class RoleManager(base.ModelManager[model.Role]):
             )
         role.deleted = False
         trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role

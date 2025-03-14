@@ -111,7 +111,7 @@ function onTagClicked(tag: string) {
                 :options="userTagsStore.userTags"
                 :selected="props.value"
                 :placeholder="props.placeholder"
-                :validator="isValid"
+                :validator="(x) => !!isValid(x)"
                 @addOption="onAddTag"
                 @input="onInput"
                 @selected="(tag) => userTagsStore.onTagUsed(tag)" />

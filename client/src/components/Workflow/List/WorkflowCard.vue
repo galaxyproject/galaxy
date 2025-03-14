@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BLink } from "bootstrap-vue";
+import { BButton, BFormCheckbox, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { type WorkflowSummary } from "@/api/workflows";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
 
@@ -16,13 +17,15 @@ import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vu
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
 
 interface Props {
-    workflow: any;
+    workflow: WorkflowSummary;
     gridView?: boolean;
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
     editorView?: boolean;
     current?: boolean;
+    selected?: boolean;
+    selectable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,9 +35,12 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: true,
     editorView: false,
     current: false,
+    selected: false,
+    selectable: false,
 });
 
 const emit = defineEmits<{
+    (e: "select", workflow: any): void;
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
@@ -56,7 +62,7 @@ const shared = computed(() => {
 
 const description = computed(() => {
     if (workflow.value.annotations && workflow.value.annotations.length > 0) {
-        return workflow.value.annotations[0].trim();
+        return workflow.value.annotations[0]?.trim();
     } else {
         return null;
     }
@@ -85,8 +91,17 @@ const dropdownOpen = ref(false);
             class="workflow-card-container"
             :class="{
                 'workflow-shared': workflow.published,
+                'workflow-card-selected': props.selected,
             }">
             <div class="workflow-card-header">
+                <BFormCheckbox
+                    v-if="props.selectable && !shared"
+                    v-b-tooltip.hover.noninteractive
+                    :checked="props.selected"
+                    class="workflow-card-select-checkbox"
+                    title="Select for bulk actions"
+                    @change="emit('select', workflow)" />
+
                 <WorkflowIndicators
                     class="workflow-card-indicators"
                     :workflow="workflow"
@@ -117,6 +132,7 @@ const dropdownOpen = ref(false);
                         @click.stop.prevent="emit('preview', props.workflow.id)">
                         {{ workflow.name }}
                     </BLink>
+
                     <BButton
                         v-if="!props.current && !shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive
@@ -190,7 +206,13 @@ const dropdownOpen = ref(false);
         gap: 0.5rem;
         flex-direction: column;
         justify-content: space-between;
-        border: 1px solid $brand-secondary;
+        border: 0.1rem solid $brand-secondary;
+
+        &.workflow-card-selected {
+            background-color: $brand-light;
+            border: 0.1rem solid $brand-primary;
+        }
+
         border-radius: 0.5rem;
         padding: 0.5rem;
 
@@ -203,21 +225,28 @@ const dropdownOpen = ref(false);
             position: relative;
             align-items: start;
             grid-template-areas:
-                "i b"
-                "n n"
-                "s s";
+                "i d b"
+                "n n n"
+                "s s s";
+
+            grid-template-columns: auto 1fr auto;
 
             &:has(.invocations-count) {
                 @container workflow-card (max-width: #{$breakpoint-xs}) {
                     grid-template-areas:
-                        "i b"
-                        "n b"
-                        "s s";
+                        "i d b"
+                        "n n b"
+                        "s s s";
                 }
             }
 
-            .workflow-card-indicators {
+            .workflow-card-select-checkbox {
                 grid-area: i;
+                margin: 0%;
+            }
+
+            .workflow-card-indicators {
+                grid-area: d;
             }
 
             .workflow-count-actions {

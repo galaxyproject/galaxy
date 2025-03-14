@@ -38,10 +38,7 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.managers.jobs import get_jobs_to_check_at_startup
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
@@ -123,6 +120,7 @@ class ItemGrabber:
         self.self_handler_tags = self_handler_tags
         self.max_grab = max_grab
         self.handler_tags = handler_tags
+        self._grab_conn_opts = {}
         self._grab_query = None
         self._supports_returning = self.app.application_stack.supports_returning()
 
@@ -193,6 +191,7 @@ class ItemGrabber:
             self.setup_query()
 
         with self.app.model.engine.connect() as conn:
+            conn.execution_options(**self._grab_conn_opts)
             with conn.begin() as trans:
                 try:
                     proxy = conn.execute(self._grab_query)
@@ -306,8 +305,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     self._check_job_at_startup(job)
                 except Exception:
                     log.exception("Error while recovering job %s during application startup.", job.id)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
     def _check_job_at_startup(self, job: model.Job):
         assert job.tool_id is not None
@@ -552,35 +550,29 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 if job_state == JOB_WAIT:
                     new_waiting_jobs.append(job.id)
                 elif job_state == JOB_INPUT_ERROR:
-                    log.info("(%d) Job unable to run: one or more inputs in error state" % job.id)
+                    log.info("(%d) Job unable to run: one or more inputs in error state", job.id)
                 elif job_state == JOB_INPUT_DELETED:
-                    log.info("(%d) Job unable to run: one or more inputs deleted" % job.id)
+                    log.info("(%d) Job unable to run: one or more inputs deleted", job.id)
                 elif job_state == JOB_READY:
                     self.dispatcher.put(self.job_wrappers.pop(job.id))
-                    log.info("(%d) Job dispatched" % job.id)
+                    log.info("(%d) Job dispatched", job.id)
                 elif job_state == JOB_DELETED:
-                    log.info("(%d) Job deleted by user while still queued" % job.id)
+                    log.info("(%d) Job deleted by user while still queued", job.id)
                 elif job_state == JOB_ADMIN_DELETED:
-                    log.info("(%d) Job deleted by admin while still queued" % job.id)
-                elif job_state in (JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME):
-                    if job_state == JOB_USER_OVER_QUOTA:
-                        log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
-                        what = "your disk quota"
-                    else:
-                        log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
-                        what = "your total job runtime"
-
+                    log.info("(%d) Job deleted by admin while still queued", job.id)
+                elif job_state == JOB_USER_OVER_TOTAL_WALLTIME:
+                    log.info("(%d) User (%s) is over total walltime limit: job paused", job.id, job.user_id)
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
-                        dataset_assoc.dataset.info = f"Execution of this dataset's job is paused because you were over {what} at the time it was ready to run"
+                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your total job runtime at the time it was ready to run"
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
                     # A more informative message is shown wherever the job state is set to error
                     pass
                 else:
-                    log.error("(%d) Job in unknown state '%s'" % (job.id, job_state))
+                    log.error("(%d) Job in unknown state '%s'", job.id, job_state)
                     new_waiting_jobs.append(job.id)
             except Exception:
                 log.exception("failure running job %d", job.id)
@@ -591,8 +583,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
             del self.job_wrappers[id]
         # Commit updated state
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     def __filter_jobs_with_invalid_input_states(self, jobs):
         """
@@ -747,8 +738,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
 
         if state == JOB_READY:
             state = self.__check_user_jobs(job, job_wrapper)
-        if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
-            return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
         if state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime:
             jobs_to_check = self.sa_session.query(model.Job).filter(
@@ -1277,7 +1266,7 @@ class DefaultJobDispatcher:
 
     def recover(self, job, job_wrapper):
         runner_name = (job.job_runner_name.split(":", 1))[0]
-        log.debug("recovering job %d in %s runner" % (job.id, runner_name))
+        log.debug("recovering job %d in %s runner", job.id, runner_name)
         runner = self.get_job_runner(job_wrapper)
         try:
             runner.recover(job, job_wrapper)

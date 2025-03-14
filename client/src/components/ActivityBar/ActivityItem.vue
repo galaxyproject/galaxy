@@ -65,12 +65,12 @@ const meta = computed(() => store.metaForId(props.id));
 </script>
 
 <template>
-    <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
+    <Popper :placement="tooltipPlacement">
         <template v-slot:reference>
             <b-nav-item
-                :id="`activity-${id}`"
                 class="activity-item my-1 p-2"
                 :class="{ 'nav-item-active': isActive }"
+                :link-attrs="{ id: `activity-${id}` }"
                 :link-classes="`variant-${props.variant}`"
                 :aria-label="localize(title)"
                 :disabled="meta?.disabled"

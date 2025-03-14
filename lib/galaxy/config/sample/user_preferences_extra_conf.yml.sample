@@ -135,6 +135,32 @@ preferences:
               label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
               type: text
               required: False
+    
+    dataverse:
+        description: Your Dataverse Integration Settings
+        inputs:
+            - name: token
+              label: API Token used to create draft records and to upload files. You can manage your tokens at https://YOUR_INSTANCE/dataverseuser.xhtml?selectTab=apiTokenTab (Replace YOUR_INSTANCE with your Dataverse instance URL)
+              type: secret
+              # store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new datasets (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your dataset directly.
+              type: text
+              required: False
+
+    dataverse_sandbox:
+        description: Your Dataverse Integration Settings (TESTING ONLY)
+        inputs:
+            - name: token
+              label: API Token used to create draft records and to upload files. You can manage your tokens at https://demo.dataverse.org/dataverseuser.xhtml?selectTab=apiTokenTab (Replace demo.dataverse.org with your Dataverse instance URL)
+              type: secret
+              # store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new datasets (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your dataset directly.
+              type: text
+              required: False
 
     # Used in file_sources_conf.yml
     onedata:
@@ -153,3 +179,17 @@ preferences:
               type: boolean
               required: False
               value: False
+
+    # Used in file_sources_conf.yml
+    elabftw:
+        description: Your eLabFTW Integration Settings
+        inputs:
+            - name: api_key
+              label: API key
+              type: secret
+              store: vault  # Requires setting up vault_config_file in your galaxy.yml
+              required: True
+            - name: endpoint
+              label: URL of the eLabFTW instance you want to access
+              type: text
+              required: True

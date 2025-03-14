@@ -29,6 +29,8 @@ from galaxy.tool_util.parser.util import (
     boolean_true_and_false_values,
     parse_tool_version_with_defaults,
 )
+from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
+from galaxy.tool_util.verify.assertion_models import relaxed_assertion_list
 from galaxy.tool_util.verify.interactor import (
     InvalidToolTestDict,
     ToolTestDescription,
@@ -342,7 +344,7 @@ class ParamContext:
         self.allow_unqualified_access = parent_context.allow_unqualified_access
 
     def for_state(self) -> str:
-        name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
+        name = self.name if self.index is None else f"{self.name}_{self.index}"
         parent_for_state = self.parent_context.for_state()
         if parent_for_state:
             return f"{parent_for_state}|{name}"
@@ -358,11 +360,11 @@ class ParamContext:
         else:
             for parent_context_param in self.parent_context.param_names():
                 if self.index is not None:
-                    yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
+                    yield f"{parent_context_param}|{self.name}_{self.index}"
                 else:
                     yield f"{parent_context_param}|{self.name}"
             if self.index is not None:
-                yield "%s_%d" % (self.name, self.index)
+                yield f"{self.name}_{self.index}"
             else:
                 yield self.name
 
@@ -533,7 +535,9 @@ def _add_uploaded_dataset(
     required_files: RequiredFilesT,
 ) -> Optional[str]:
     if value is None:
-        assert input_parameter.parse_optional(), f"{name} is not optional. You must provide a valid filename."
+        assert (
+            input_parameter.parse_optional() or "composite_data" in extra
+        ), f"{name} is not optional. You must provide a valid filename."
         return value
     return require_file(name, value, extra, required_files)
 
@@ -587,3 +591,22 @@ def split_if_str(value):
     if split:
         value = value.split(",")
     return value
+
+
+# convert the sort internal structure used by the tool library {tag: string, attributes: dict, children: []}
+# into the YAML structure consumed by the test framework {that: string, **atributes}
+def tag_structure_to_that_structure(raw_assert):
+    as_json = {"that": raw_assert["tag"], **raw_assert.get("attributes", {})}
+    children = raw_assert.get("children")
+    if children:
+        as_json["children"] = list(map(tag_structure_to_that_structure, children))
+    return as_json
+
+
+def assertion_xml_els_to_models(asserts_raw) -> relaxed_assertion_list:
+    asserts_raw = __parse_assert_list_from_elem(asserts_raw)
+
+    to_yaml_assertions = []
+    for raw_assert in asserts_raw or []:
+        to_yaml_assertions.append(tag_structure_to_that_structure(raw_assert))
+    return relaxed_assertion_list.model_validate(to_yaml_assertions)

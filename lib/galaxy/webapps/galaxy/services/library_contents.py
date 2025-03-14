@@ -22,10 +22,11 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
+    ImplicitlyConvertedDatasetAssociation,
     Library,
+    LibraryDatasetDatasetAssociation,
     tags,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
@@ -58,7 +59,7 @@ MaybeLibraryFolderOrDatasetID = Annotated[
     str,
     Path(
         title="The encoded ID of a library folder or dataset.",
-        example="F0123456789ABCDEF",
+        examples=["F0123456789ABCDEF"],
         min_length=16,
         pattern="F?[0-9a-fA-F]+",
     ),
@@ -190,15 +191,14 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
             content_conv = self.get_library_dataset(
                 trans, payload.converted_dataset_id, check_ownership=False, check_accessible=False
             )
-            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
+            assoc = ImplicitlyConvertedDatasetAssociation(
                 parent=content.library_dataset_dataset_association,
                 dataset=content_conv.library_dataset_dataset_association,
                 file_type=content_conv.library_dataset_dataset_association.extension,
                 metadata_safe=True,
             )
             trans.sa_session.add(assoc)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
     def delete(
         self,
@@ -218,8 +218,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         if payload.purge:
             ld.purged = True
             trans.sa_session.add(ld)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
             # TODO: had to change this up a bit from Dataset.user_can_purge
             dataset = ld.library_dataset_dataset_association.dataset
@@ -234,11 +233,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 except Exception:
                     pass
                 # flush now to preserve deleted state in case of later interruption
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             rval["purged"] = True
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         rval["deleted"] = True
         return LibraryContentsDeleteResponse(**rval)
 
@@ -290,13 +287,13 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 rval.append(ld)
         return rval
 
-    def _create_response(self, trans, payload, output, library_id):
+    def _create_response(self, trans: ProvidesHistoryContext, payload, output, library_id: DecodedDatabaseIdField):
         rval = []
         for v in output.values():
             if payload.extended_metadata is not None:
                 # If there is extended metadata, store it, attach it to the dataset, and index it
                 self.create_extended_metadata(trans, payload.extended_metadata)
-            if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+            if isinstance(v, LibraryDatasetDatasetAssociation):
                 v = v.library_dataset
             url = self._url_for(trans, library_id, v.id, payload.create_type)
             rval.append(dict(id=v.id, name=v.name, url=url))

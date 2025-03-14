@@ -4,6 +4,7 @@ import { BButton } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -14,11 +15,7 @@ import { UrlTracker } from "./utilities";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-interface Record {
-    id: string;
-    isLeaf: boolean;
-    url: string;
-}
+type Record = SelectionItem;
 
 interface Props {
     allowUpload?: boolean;
@@ -47,7 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "onCancel"): void;
-    (e: "onOk", results: Array<Record>): void;
+    (e: "onOk", results: unknown): void;
     (e: "onUpload"): void;
 }>();
 

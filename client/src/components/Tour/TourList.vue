@@ -17,7 +17,7 @@
                         <span
                             v-for="(tag, index) in tour.tags"
                             :key="index"
-                            class="badge badge-primary text-capitalize">
+                            class="badge badge-primary text-capitalize mr-1">
                             {{ tag }}
                         </span>
                     </li>

@@ -21,13 +21,21 @@ interface Preferences {
     [key: string]: unknown;
 }
 
-type ListViewMode = "grid" | "list";
+export type ListViewMode = "grid" | "list";
+
+type UserListViewPreferences = Record<string, ListViewMode>;
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
-    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
+    const currentListViewPreferences = useUserLocalStorage<UserListViewPreferences>(
+        "user-store-list-view-preferences",
+        {},
+        currentUser
+    );
+
+    const hasSeenUploadHelp = useUserLocalStorage("user-store-seen-upload-help", false, currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
@@ -69,30 +77,36 @@ export const useUserStore = defineStore("userStore", () => {
 
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
-            loadPromise = getCurrentUser()
-                .then(async (user) => {
-                    if (isRegisteredUser(user)) {
-                        currentUser.value = user;
-                        currentPreferences.value = processUserPreferences(user);
-                    } else if (isAnonymousUser(user)) {
-                        currentUser.value = user;
-                    } else if (user === null) {
-                        currentUser.value = null;
-                    }
+            loadPromise = new Promise<void>((resolve, reject) => {
+                (async () => {
+                    try {
+                        const user = await getCurrentUser();
 
-                    if (includeHistories) {
-                        const historyStore = useHistoryStore();
-                        // load first few histories for user to start pagination
-                        await historyStore.loadHistories();
+                        if (isRegisteredUser(user)) {
+                            currentUser.value = user;
+                            currentPreferences.value = processUserPreferences(user);
+                        } else if (isAnonymousUser(user)) {
+                            currentUser.value = user;
+                        } else if (user === null) {
+                            currentUser.value = null;
+                        }
+                        if (includeHistories) {
+                            const historyStore = useHistoryStore();
+                            await historyStore.loadHistories();
+                        }
+                        resolve(); // Resolve the promise after successful load
+                    } catch (e) {
+                        console.error("Failed to load user", e);
+                        reject(e); // Reject the promise on error
+                    } finally {
+                        //Don't clear the loadPromise, we still want multiple callers to await.
+                        //Instead we must clear it upon $reset
+                        // loadPromise = null;
                     }
-                })
-                .catch((e) => {
-                    console.error("Failed to load user", e);
-                })
-                .finally(() => {
-                    loadPromise = null;
-                });
+                })();
+            });
         }
+        return loadPromise; // Return the shared promise
     }
 
     async function setCurrentTheme(theme: string) {
@@ -126,8 +140,11 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
-    function setPreferredListViewMode(view: ListViewMode) {
-        preferredListViewMode.value = view;
+    function setListViewPreference(listId: string, view: ListViewMode) {
+        currentListViewPreferences.value = {
+            ...currentListViewPreferences.value,
+            [listId]: view,
+        };
     }
 
     function processUserPreferences(user: RegisteredUser): Preferences {
@@ -147,12 +164,13 @@ export const useUserStore = defineStore("userStore", () => {
         isAnonymous,
         currentTheme,
         currentFavorites,
-        preferredListViewMode,
+        currentListViewPreferences,
+        hasSeenUploadHelp,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,
         setCurrentTheme,
-        setPreferredListViewMode,
+        setListViewPreference,
         addFavoriteTool,
         removeFavoriteTool,
         $reset,

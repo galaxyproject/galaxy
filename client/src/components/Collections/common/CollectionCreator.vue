@@ -1,45 +1,89 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import type { HDASummary } from "@/api";
+import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
+import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import localize from "@/utils/localization";
 
-library.add(faChevronDown, faChevronUp);
+import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
+import CollectionCreatorHelpHeader from "./CollectionCreatorHelpHeader.vue";
+import CollectionCreatorNoItemsMessage from "./CollectionCreatorNoItemsMessage.vue";
+import CollectionCreatorShowExtensions from "./CollectionCreatorShowExtensions.vue";
+import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
+import CollectionNameInput from "./CollectionNameInput.vue";
+import DefaultBox from "@/components/Upload/DefaultBox.vue";
+
+const Tabs = {
+    create: 0,
+    upload: 1,
+};
 
 interface Props {
     oncancel: () => void;
+    historyId: string;
     hideSourceItems: boolean;
     suggestedName?: string;
     renderExtensionsToggle?: boolean;
+    extensions?: string[];
+    extensionsToggle?: boolean;
+    noItems?: boolean;
+    collectionType?: string;
+    showUpload: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     suggestedName: "",
+    extensions: undefined,
+    extensionsToggle: false,
+    showUpload: true,
+    collectionType: undefined,
 });
 
 const emit = defineEmits<{
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
+    (e: "on-update-datatype-toggle", value: "all" | "datatype" | "ext"): void;
+    (e: "add-uploaded-files", value: HDASummary[]): void;
 }>();
 
-const isExpanded = ref(false);
+const currentTab = ref(Tabs.create);
 const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
+
+// Upload properties
+const {
+    configOptions,
+    effectiveExtensions,
+    listDbKeys,
+    ready: uploadReady,
+} = useUploadConfigurations(props.extensions);
 
 const validInput = computed(() => {
     return collectionName.value.length > 0;
 });
 
-function clickForHelp() {
-    isExpanded.value = !isExpanded.value;
-    return isExpanded.value;
+/** Plain language for what is being created */
+const shortWhatIsBeingCreated = computed<string>(() => {
+    return COLLECTION_TYPE_TO_LABEL[props.collectionType] || "collection";
+});
+
+function addUploadedFiles(value: HDASummary[]) {
+    // TODO: We really need to wait for each of these items to get `state = 'ok'`
+    //       before we can add them to the collection.
+    emit("add-uploaded-files", value);
 }
 
 function cancelCreate() {
     props.oncancel();
+}
+
+function removeExtensionsToggle() {
+    emit("remove-extensions-toggle");
 }
 
 watch(
@@ -51,90 +95,109 @@ watch(
 </script>
 
 <template>
-    <div class="collection-creator">
-        <div class="header flex-row no-flex">
-            <div class="main-help well clear" :class="{ expanded: isExpanded }">
-                <a
-                    class="more-help"
-                    href="javascript:void(0);"
-                    role="button"
-                    :title="localize('Expand or Close Help')"
-                    @click="clickForHelp">
-                    <div v-if="!isExpanded">
-                        <FontAwesomeIcon :icon="faChevronDown" />
-                    </div>
-                    <div v-else>
-                        <FontAwesomeIcon :icon="faChevronUp" />
-                    </div>
-                </a>
-
-                <div class="help-content">
-                    <!-- each collection that extends this will add their own help content -->
+    <span>
+        <span v-if="!showUpload" class="collection-creator">
+            <div v-if="props.noItems">
+                <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
+            </div>
+            <div v-else>
+                <CollectionCreatorHelpHeader>
                     <slot name="help-content"></slot>
+                </CollectionCreatorHelpHeader>
 
-                    <a
-                        class="more-help"
-                        href="javascript:void(0);"
-                        role="button"
-                        :title="localize('Expand or Close Help')"
-                        @click="clickForHelp">
-                    </a>
+                <div class="middle flex-row flex-row-container">
+                    <slot name="middle-content"></slot>
+                </div>
+
+                <div class="footer flex-row">
+                    <div class="vertically-spaced">
+                        <CollectionCreatorShowExtensions :extensions="extensions" />
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <CollectionCreatorSourceOptions
+                                v-model="localHideSourceItems"
+                                :render-extensions-toggle="renderExtensionsToggle"
+                                :extensions-toggle="extensionsToggle"
+                                @remove-extensions-toggle="removeExtensionsToggle" />
+                            <CollectionNameInput
+                                v-model="collectionName"
+                                :short-what-is-being-created="shortWhatIsBeingCreated" />
+                        </div>
+                    </div>
+
+                    <CollectionCreatorFooterButtons
+                        :short-what-is-being-created="shortWhatIsBeingCreated"
+                        :valid-input="validInput"
+                        @clicked-cancel="cancelCreate"
+                        @clicked-create="emit('clicked-create', collectionName)" />
                 </div>
             </div>
-        </div>
-
-        <div class="middle flex-row flex-row-container">
-            <slot name="middle-content"></slot>
-        </div>
-
-        <div class="footer flex-row no-flex">
-            <div class="attributes clear">
-                <div class="clear">
-                    <label v-if="renderExtensionsToggle" class="setting-prompt float-right">
-                        {{ localize("Remove file extensions?") }}
-                        <input
-                            class="remove-extensions float-right"
-                            type="checkbox"
-                            checked
-                            @click="emit('remove-extensions-toggle')" />
-                    </label>
-
-                    <label class="setting-prompt float-right">
-                        {{ localize("Hide original elements?") }}
-                        <input v-model="localHideSourceItems" class="hide-originals float-right" type="checkbox" />
-                    </label>
+        </span>
+        <BTabs v-else v-model="currentTab" fill justified>
+            <BTab class="collection-creator" :title="localize('Create Collection')">
+                <div v-if="props.noItems">
+                    <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
                 </div>
+                <div v-else>
+                    <CollectionCreatorHelpHeader>
+                        <slot name="help-content"></slot>
+                    </CollectionCreatorHelpHeader>
 
-                <div class="clear">
-                    <input
-                        v-model="collectionName"
-                        class="collection-name form-control float-right"
-                        :placeholder="localize('Enter a name for your new collection')" />
+                    <div class="middle flex-row flex-row-container">
+                        <slot name="middle-content"></slot>
+                    </div>
 
-                    <div class="collection-name-prompt float-right">
-                        {{ localize("Name:") }}
+                    <div class="footer flex-row">
+                        <div class="vertically-spaced">
+                            <CollectionCreatorShowExtensions :extensions="extensions" />
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <CollectionCreatorSourceOptions
+                                    v-model="localHideSourceItems"
+                                    :render-extensions-toggle="renderExtensionsToggle"
+                                    :extensions-toggle="extensionsToggle" />
+                                <CollectionNameInput
+                                    v-model="collectionName"
+                                    :short-what-is-being-created="shortWhatIsBeingCreated" />
+                            </div>
+                        </div>
+
+                        <CollectionCreatorFooterButtons
+                            :short-what-is-being-created="shortWhatIsBeingCreated"
+                            :valid-input="validInput"
+                            @clicked-cancel="cancelCreate"
+                            @clicked-create="emit('clicked-create', collectionName)" />
                     </div>
                 </div>
-            </div>
-
-            <div class="actions clear vertically-spaced">
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="cancelCreate">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
-
-                <div class="main-options float-right">
-                    <button
-                        class="create-collection btn btn-primary"
-                        :disabled="!validInput"
-                        @click="emit('clicked-create', collectionName)">
-                        {{ localize("Create collection") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+            </BTab>
+            <BTab>
+                <template v-slot:title>
+                    <FontAwesomeIcon :icon="faUpload" fixed-width />
+                    <span>{{ localize("Upload Files to Add to Collection") }}</span>
+                </template>
+                <DefaultBox
+                    v-if="uploadReady && configOptions"
+                    :effective-extensions="effectiveExtensions"
+                    v-bind="configOptions"
+                    :has-callback="false"
+                    :history-id="historyId"
+                    :list-db-keys="listDbKeys"
+                    disable-footer
+                    emit-uploaded
+                    size="sm"
+                    @uploaded="addUploadedFiles"
+                    @dismiss="currentTab = Tabs.create">
+                    <template v-slot:footer>
+                        <CollectionCreatorShowExtensions :extensions="extensions" upload />
+                    </template>
+                    <template v-slot:emit-btn-txt>
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                        {{ localize("Add Uploaded") }}
+                    </template>
+                </DefaultBox>
+            </BTab>
+        </BTabs>
+    </span>
 </template>
 
 <style lang="scss">
@@ -146,9 +209,6 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
 .collection-creator {
     height: 100%;
     overflow: hidden;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     // ------------------------------------------------------------------------ general
     ol,
     li {
@@ -367,38 +427,11 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
     }
     // ------------------------------------------------------------------------ footer
     .footer {
-        .attributes {
-            .setting-prompt {
-                //margin-right: 32px;
-                line-height: 32px;
-                padding-left: 10px;
-                .remove-extensions {
-                    display: inline-block;
-                    width: 24px;
-                    height: 24px;
-                }
-                .hide-originals {
-                    display: inline-block;
-                    width: 24px;
-                    height: 24px;
-                }
-            }
-            // actually appears/floats to the left of the input
-            .collection-name-prompt {
-                margin: 5px 4px 0 0;
-            }
-            .collection-name-prompt.validation-warning:before {
-                //TODO: localize (somehow)
-                content: "(required)";
-                margin-right: 4px;
-                color: red;
-            }
-            .collection-name {
-                width: 50%;
-                &.validation-warning {
-                    border-color: red;
-                }
-            }
+        .inputs-form-group > div {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            column-gap: 0.25rem;
         }
         .actions {
             .other-options > * {

@@ -8,6 +8,9 @@ from .framework import (
 NEW_HISTORY_NAME = "New History Name"
 HISTORY_PANEL_AXE_IMPACT_LEVEL = "moderate"
 
+# the heading is now nested in `ClickToEdit`, and it conditionally replaces the label for the input
+HISTORY_PANEL_VIOLATION_EXCEPTIONS = ["heading-order", "label"]
+
 
 class TestHistoryPanel(SeleniumTestCase):
     ensure_registered = True
@@ -16,7 +19,9 @@ class TestHistoryPanel(SeleniumTestCase):
     def test_history_panel_landing_state(self):
         self.assert_initial_history_panel_state_correct()
         editor = self.components.history_panel.editor.selector(scope=".history-index")
-        self.components.history_panel._.assert_no_axe_violations_with_impact_of_at_least(HISTORY_PANEL_AXE_IMPACT_LEVEL)
+        self.components.history_panel._.assert_no_axe_violations_with_impact_of_at_least(
+            HISTORY_PANEL_AXE_IMPACT_LEVEL, HISTORY_PANEL_VIOLATION_EXCEPTIONS
+        )
         toggle = editor.toggle
         toggle.wait_for_visible()
 
@@ -27,10 +32,11 @@ class TestHistoryPanel(SeleniumTestCase):
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
-        self.open_history_editor()
         editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
-        self.components.history_panel._.assert_no_axe_violations_with_impact_of_at_least(HISTORY_PANEL_AXE_IMPACT_LEVEL)
+        self.components.history_panel._.assert_no_axe_violations_with_impact_of_at_least(
+            HISTORY_PANEL_AXE_IMPACT_LEVEL, HISTORY_PANEL_VIOLATION_EXCEPTIONS
+        )
         self.send_escape(editable_text_input_element)
         self.components.history_panel.name_edit_input.wait_for_absent_or_hidden()
         assert NEW_HISTORY_NAME not in self.history_panel_name()

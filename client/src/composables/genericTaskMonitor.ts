@@ -5,6 +5,22 @@ import { errorMessageAsString } from "@/utils/simple-error";
 const DEFAULT_POLL_DELAY = 10000;
 
 /**
+ * Represents the data that can be stored and restored to monitor the status of a task.
+ */
+export interface StoredTaskStatus {
+    /**
+     * The status of the task when it was last checked.
+     * The meaning of the status string is up to the monitor implementation.
+     */
+    taskStatus?: string;
+
+    /**
+     * The reason why the task has failed in case of an error.
+     */
+    failureReason?: string;
+}
+
+/**
  * Represents a task monitor that can be used to wait for a background task to complete or
  * check its status.
  */
@@ -33,6 +49,11 @@ export interface TaskMonitor {
     hasFailed: Readonly<Ref<boolean>>;
 
     /**
+     * The reason why the task has failed.
+     */
+    failureReason: Readonly<Ref<string | undefined>>;
+
+    /**
      * If true, the status of the task cannot be determined because of a request error.
      */
     requestHasFailed: Readonly<Ref<boolean>>;
@@ -40,15 +61,14 @@ export interface TaskMonitor {
     /**
      * The current status of the task.
      * The meaning of the status string is up to the monitor implementation.
-     * In case of an error, this will be the error message.
      */
     taskStatus: Readonly<Ref<string | undefined>>;
 
     /**
      * Loads the status of the task from a stored value.
-     * @param storedStatus The status string to load.
+     * @param persistedTaskStatus The stored state of the task.
      */
-    loadStatus: (storedStatus: string) => void;
+    loadStatus: (persistedTaskStatus: StoredTaskStatus) => void;
 
     /**
      * Determines if the status represents a final state.
@@ -80,6 +100,9 @@ export function useGenericMonitor(options: {
     /** Function to determine if the task has failed. */
     failedCondition: (status?: string) => boolean;
 
+    /** Function to retrieve the error message when the task has failed. */
+    fetchFailureReason: (taskId: string) => Promise<string>;
+
     /** Default delay between polling requests in milliseconds.
      * By default, this is set to 10 seconds.
      * The delay can be overridden when calling `waitForTask`.
@@ -99,6 +122,7 @@ export function useGenericMonitor(options: {
     const taskStatus = ref<string>();
     const requestId = ref<string>();
     const requestHasFailed = ref(false);
+    const failureReason = ref<string>();
 
     const isCompleted = computed(() => options.completedCondition(taskStatus.value));
     const hasFailed = computed(() => options.failedCondition(taskStatus.value));
@@ -107,8 +131,9 @@ export function useGenericMonitor(options: {
         return options.completedCondition(status) || options.failedCondition(status);
     }
 
-    function loadStatus(storedStatus: string) {
-        taskStatus.value = storedStatus;
+    function loadStatus(persistedTaskStatus: StoredTaskStatus) {
+        taskStatus.value = persistedTaskStatus.taskStatus;
+        failureReason.value = persistedTaskStatus.failureReason;
     }
 
     async function waitForTask(taskId: string, pollDelayInMs?: number) {
@@ -125,6 +150,10 @@ export function useGenericMonitor(options: {
             taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
                 isRunning.value = false;
+                if (hasFailed.value) {
+                    const errorMessage = await options.fetchFailureReason(taskId);
+                    failureReason.value = errorMessage;
+                }
             } else {
                 pollAfterDelay(taskId);
             }
@@ -168,6 +197,7 @@ export function useGenericMonitor(options: {
         isRunning: readonly(isRunning),
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),
+        failureReason: readonly(failureReason),
         requestHasFailed: readonly(requestHasFailed),
         taskStatus: readonly(taskStatus),
         expirationTime: options.expirationTime,

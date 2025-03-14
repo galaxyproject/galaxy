@@ -1817,6 +1817,44 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``email_ban_file``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    E-mail ban file is used to specify email addresses that have been
+    banned. If a user attempts to register a new account using an
+    email address listed in this file, registration will be denied.
+    This file does not affect user sign-in. Email addresses are
+    matched against a canonical address representation based on rules
+    defined in <canonical_email_rules>. The file should include one
+    email address per line. Lines starting with the "#" character are
+    ignored.
+    Example value "banned_emails.conf"
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``canonical_email_rules``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Specifies how email addresses are reduced to their canonical form
+    by assigning rules to email service domains and domain aliases.
+    Available rules - ignore_case   Values are not case-sensitive
+    (RickDeckard@foo.cOM == rickdeckard@foo.com) - ignore_dots
+    Periods in the local-part of an email address are ignored
+    (rick.deckard@foo.com == rickdeckard@foo.com) - sub_addressing
+    Suffixes prefixed with <sub_addressing_delim> in the local-part of
+    an email address are ignored   (rickdeckard+anything@foo.com ==
+    rickdeckard@foo.com if delimiter is the character '+')
+:Default: ``{'all': {'ignore_case': False, 'ignore_dots': False, 'sub_addressing': False, 'sub_addressing_delim': '+'}, 'gmail.com': {'aliases': ['googlemail.com'], 'ignore_case': True, 'ignore_dots': True, 'sub_addressing': True}, 'proton.me': {'aliases': ['pm.me', 'protonmail.com'], 'ignore_case': True, 'sub_addressing': True}}``
+:Type: map
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``registration_warning_message``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1826,7 +1864,7 @@
     registering multiple accounts.  Applies mostly for the main Galaxy
     instance. If no message specified the warning box will not be
     shown.
-:Default: ``Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.``
+:Default: ``Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.``
 :Type: str
 
 
@@ -5706,6 +5744,43 @@
     requests to file sources but outdated contents might be displayed
     to the user. Currently only affects s3fs file sources.
 :Default: ``60``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_failed_jobs_working_directory_cleanup``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the cleanup of failed Galaxy job's working directories.
+    Runs in a Celery task.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``failed_jobs_working_directory_cleanup_days``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The number of days to keep failed Galaxy job's working directories
+    before attempting to delete them if
+    enable_failed_jobs_working_directory_cleanup is ``true``. Runs in
+    a Celery task.
+:Default: ``5``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``failed_jobs_working_directory_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete all failed
+    Galaxy job's working directories from the filesystem (every 24
+    hours by default) if enable_failed_jobs_working_directory_cleanup
+    is ``true``. Runs in a Celery task.
+:Default: ``86400``
 :Type: int
 
 

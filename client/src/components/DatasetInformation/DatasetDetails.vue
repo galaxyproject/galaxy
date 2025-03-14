@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
-import { GalaxyApi, type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed, isAdminUser } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { type JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
@@ -107,7 +107,7 @@ onUnmounted(() => {
 
                 <DatasetStorage :dataset-id="datasetId" />
 
-                <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name" />
+                <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name ?? ''" />
 
                 <JobMetrics
                     v-if="isConfigLoaded"
@@ -118,9 +118,11 @@ onUnmounted(() => {
                     :should-show-aws-estimate="config.aws_estimate"
                     :should-show-carbon-emission-estimates="config.carbon_emission_estimates" />
 
-                <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
+                <JobDestinationParams v-if="isAdminUser(currentUser)" :job-id="dataset.creating_job" />
 
-                <JobDependencies v-if="jobDetails?.dependencies" :dependencies="jobDetails.dependencies" />
+                <span v-if="jobDetails && 'dependencies' in jobDetails">
+                    <JobDependencies v-if="jobDetails.dependencies" :dependencies="jobDetails.dependencies" />
+                </span>
 
                 <div v-if="dataset.peek">
                     <h2 class="h-md">Dataset Peek</h2>

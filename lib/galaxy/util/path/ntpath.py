@@ -1,5 +1,4 @@
-"""Galaxy "safe" path functions forced to work with Windows-style paths regardless of current platform
-"""
+"""Galaxy "safe" path functions forced to work with Windows-style paths regardless of current platform"""
 
 import ntpath
 import sys

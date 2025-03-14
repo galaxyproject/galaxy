@@ -6,9 +6,10 @@ import { BAlert, BButton, BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { GalaxyApi, type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed, isRegisteredUser } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { type JobDetails, type JobInputSummary } from "@/api/jobs";
+import { useConfig } from "@/composables/config";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -27,9 +28,10 @@ interface Props {
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
-const { currentUser } = storeToRefs(userStore);
+const { currentUser, isAnonymous } = storeToRefs(userStore);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+const { config, isConfigLoaded } = useConfig();
 
 const message = ref("");
 const jobLoading = ref(true);
@@ -46,6 +48,8 @@ const showForm = computed(() => {
 
     return noResult || hasError;
 });
+
+const showWizard = computed(() => isConfigLoaded && config.value?.llm_api_configured && !isAnonymous.value);
 
 async function getDatasetDetails() {
     datasetLoading.value = true;
@@ -122,6 +126,15 @@ function onMissingJobId() {
     errorMessage.value = "No job ID found for this dataset.";
 }
 
+const userEmail = computed<string | null>(() => {
+    const user = currentUser.value;
+    if (isRegisteredUser(user)) {
+        return user.email;
+    } else {
+        return null;
+    }
+});
+
 onMounted(async () => {
     await getDatasetDetails();
 
@@ -154,26 +167,29 @@ onMounted(async () => {
                 <b id="dataset-error-tool-id" class="text-break">{{ jobDetails.tool_id }}</b
                 >.
             </p>
+            <template v-if="showWizard">
+                <h4 class="mb-3 h-md">Possible Causes</h4>
+                <p>
+                    <span>
+                        We can use AI to analyze the issue and suggest possible fixes. Please note that the diagnosis
+                        may not always be accurate.
+                    </span>
+                </p>
+                <BCard v-if="'tool_stderr' in jobDetails" class="mb-2">
+                    <GalaxyWizard
+                        view="error"
+                        :query="jobDetails.tool_stderr ?? ''"
+                        context="tool_error"
+                        :job-id="jobDetails.id" />
+                </BCard>
+            </template>
 
-            <h4 class="mb-3 h-md">Possible Causes</h4>
-            <p>
-                <span>
-                    We can use AI to analyze the issue and suggest possible fixes. Please note that the diagnosis may
-                    not always be accurate.
-                </span>
-            </p>
-            <BCard class="mb-2">
-                <GalaxyWizard
-                    view="error"
-                    :query="jobDetails.tool_stderr"
-                    context="tool_error"
-                    :job-id="jobDetails.id" />
-            </BCard>
-
-            <DatasetErrorDetails
-                :tool-stderr="jobDetails.tool_stderr"
-                :job-stderr="jobDetails.job_stderr"
-                :job-messages="jobDetails.job_messages" />
+            <span v-if="'tool_stderr' in jobDetails">
+                <DatasetErrorDetails
+                    :tool-stderr="jobDetails.tool_stderr ?? undefined"
+                    :job-stderr="jobDetails.job_stderr ?? undefined"
+                    :job-messages="jobDetails.job_messages" />
+            </span>
 
             <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                 <h4 class="common_problems mt-3 h-md">Detected Common Potential Problems</h4>
@@ -206,12 +222,12 @@ onMounted(async () => {
 
             <h4 class="mb-3 h-md">Issue Report</h4>
             <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
-                <span v-html="renderMarkdown(resultMessage[0])" />
+                <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
             </BAlert>
 
             <div v-if="showForm" id="dataset-error-form">
                 <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
-                <span v-if="currentUser?.email">{{ currentUser.email }}</span>
+                <span v-if="userEmail">{{ userEmail }}</span>
                 <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
 
                 <FormElement

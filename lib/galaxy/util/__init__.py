@@ -45,6 +45,7 @@ from typing import (
     Optional,
     overload,
     Tuple,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -75,6 +76,7 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+    from lxml.etree import DocumentInvalid
 
     # lxml.etree.Element is a function that returns a new instance of the
     # lxml.etree._Element class. This class doesn't have a proper __init__()
@@ -123,6 +125,10 @@ except ImportError:
         XML,
     )
 
+    class DocumentInvalid(Exception):  # type: ignore[no-redef]
+        pass
+
+
 from . import requests
 from .custom_logging import get_logger
 from .inflection import Inflector
@@ -141,6 +147,9 @@ except AttributeError:
     def shlex_join(split_command):
         return " ".join(map(shlex.quote, split_command))
 
+
+if TYPE_CHECKING:
+    from galaxy.util.resources import Traversable
 
 inflector = Inflector()
 
@@ -333,7 +342,10 @@ def unique_id(KEY_SIZE=128):
 
 
 def parse_xml(
-    fname: StrPath, strip_whitespace=True, remove_comments=True, schemafname: Union[StrPath, None] = None
+    fname: Union[StrPath, "Traversable"],
+    strip_whitespace: bool = True,
+    remove_comments: bool = True,
+    schemafname: Union[StrPath, None] = None,
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
@@ -348,8 +360,10 @@ def parse_xml(
             schema_root = etree.XML(schema_file.read())
             schema = etree.XMLSchema(schema_root)
 
+    source = Path(fname) if isinstance(fname, (str, os.PathLike)) else fname
     try:
-        tree = cast(ElementTree, etree.parse(str(fname), parser=parser))
+        with source.open("rb") as f:
+            tree = cast(ElementTree, etree.parse(f, parser=parser))
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -359,15 +373,10 @@ def parse_xml(
                     elem.tail = elem.tail.strip()
         if schema:
             schema.assertValid(tree)
-    except OSError as e:
-        if e.errno is None and not os.path.exists(fname):  # type: ignore[unreachable]
-            # lxml doesn't set errno
-            e.errno = errno.ENOENT  # type: ignore[unreachable]
-        raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
-    except etree.DocumentInvalid:
+    except DocumentInvalid:
         log.exception("Validation of file %s failed", fname)
         raise
     return tree
@@ -1109,7 +1118,9 @@ def listify(item: Any, do_strip: bool = False) -> List:
     """
     if not item:
         return []
-    elif isinstance(item, (list, tuple)):
+    elif isinstance(item, list):
+        return item
+    elif isinstance(item, tuple):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:

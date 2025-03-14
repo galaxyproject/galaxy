@@ -1,4 +1,4 @@
-""" This module contains functionality to aid in extracting workflows from
+"""This module contains functionality to aid in extracting workflows from
 histories.
 """
 
@@ -9,10 +9,7 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -76,8 +73,7 @@ def extract_workflow(
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
     ensure_object_added_to_session(workflow, session=trans.sa_session)
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     return stored
 
 
@@ -283,7 +279,7 @@ class WorkflowSummary:
         # just grab the implicitly mapped jobs and handle in second pass. Second pass is
         # needed because cannot allow selection of individual datasets from an implicit
         # mapping during extraction - you get the collection or nothing.
-        for content in self.history.active_contents:
+        for content in self.history.visible_contents:
             self.__summarize_content(content)
 
     def __summarize_content(self, content):

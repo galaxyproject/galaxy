@@ -62,6 +62,7 @@ import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateI
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
+import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -238,6 +239,7 @@ export function getRouter(Galaxy) {
                         component: CenterFrame,
                         props: (route) => ({
                             src: `/datasets/${route.params.datasetId}/display/?preview=True`,
+                            isPreview: true,
                         }),
                     },
                     {
@@ -522,6 +524,7 @@ export function getRouter(Galaxy) {
                             public: route.query.public.toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
+                        beforeEnter: requireAuth,
                     },
                     {
                         path: "user",

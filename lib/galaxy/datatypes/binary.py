@@ -667,7 +667,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
         """
-        pysam.merge("-O", "BAM", output_file, *split_files)  # type: ignore[attr-defined]
+        pysam.merge("-O", "BAM", output_file, *split_files)
 
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
@@ -735,7 +735,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             [f"-@{slots}", file_name, "-T", tmp_sorted_dataset_file_name_prefix, "-O", "BAM", "-o", sorted_file_name]
         )
         try:
-            pysam.sort(*sort_args)  # type: ignore[attr-defined]
+            pysam.sort(*sort_args)
         except Exception:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise
@@ -932,9 +932,9 @@ class Bam(BamNative):
             )
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore [attr-defined]
+            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())
         else:
-            pysam.index(index_flag, "-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore [attr-defined]
+            pysam.index(index_flag, "-o", index_file.get_file_name(), dataset.get_file_name())
         dataset.metadata.bam_index = index_file
 
     def sniff(self, filename: str) -> bool:
@@ -1125,7 +1125,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset: HasFileName, index_file) -> bool:
         try:
-            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())  # type: ignore [attr-defined]
+            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())
             return True
         except Exception as exc:
             log.warning("%s, set_index_file Exception: %s", self, exc)
@@ -1196,7 +1196,7 @@ class Bcf(BaseBcf):
         # Create the bcf index
         dataset_symlink = os.path.join(
             os.path.dirname(index_file.get_file_name()),
-            "__dataset_%d_%s" % (dataset.id, os.path.basename(index_file.get_file_name())),
+            f"__dataset_{dataset.id}_{os.path.basename(index_file.get_file_name())}",
         )
         os.symlink(dataset.get_file_name(), dataset_symlink)
         try:
@@ -1612,7 +1612,10 @@ class Anndata(H5):
                 obs = get_index_value(tmp)
                 # Determine cell labels
                 if obs is not None:
-                    dataset.metadata.obs_names = [n.decode() for n in obs]
+                    # This is super expensive because the number of observations is unbounded.
+                    # https://github.com/galaxyproject/tools-iuc/blob/8341270dd36185ebf59d15282bc79f1215e936a4/tools/anndata/import.xml#L53
+                    # seems to be the only tool to consume this in the IUC. drop and make tool compute this?
+                    dataset.metadata.obs_names = [util.unicodify(n) for n in obs]
                 else:
                     log.warning("Could not determine observation index for %s", self)
 
@@ -1677,7 +1680,7 @@ class Anndata(H5):
             def _makelayerstrings(layer, count, names):
                 "Format the layers."
                 if layer in tmp.layers_names:
-                    return "\n[%s]: %d %s\n    %s" % (
+                    return "\n[{}]: {} {}\n    {}".format(
                         layer,
                         count,
                         "layer" if count == 1 else "layers",
@@ -1685,7 +1688,7 @@ class Anndata(H5):
                     )
                 return ""
 
-            peekstr = "[n_obs x n_vars]\n    %d x %d" % tuple(tmp.shape)
+            peekstr = "[n_obs x n_vars]\n    {} x {}".format(*tuple(tmp.shape))
             peekstr += _makelayerstrings("obs", tmp.obs_count, tmp.obs_layers)
             peekstr += _makelayerstrings("var", tmp.var_count, tmp.var_layers)
             peekstr += _makelayerstrings("obsm", tmp.obsm_count, tmp.obsm_layers)

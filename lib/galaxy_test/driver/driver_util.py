@@ -34,6 +34,7 @@ from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import (
     asbool,
     download_to_file,
@@ -965,6 +966,7 @@ class GalaxyTestDriver(TestDriver):
             test_index=index,
             galaxy_interactor=galaxy_interactor,
             resource_parameters=resource_parameters,
+            test_data_resolver=TestDataResolver(),
             **kwd,
         )
 

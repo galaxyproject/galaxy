@@ -18,13 +18,13 @@ import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { type AnyWorkflow, hasVersion } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 
 import { useWorkflowActions } from "./useWorkflowActions";
 
 interface Props {
-    workflow: StoredWorkflowDetailed;
+    workflow: AnyWorkflow;
     published?: boolean;
     editor?: boolean;
     current?: boolean;
@@ -67,9 +67,18 @@ const sourceType = computed(() => {
 const runPath = computed(
     () =>
         `/workflows/run?id=${props.workflow.id}${
-            props.workflow.version !== undefined ? `&version=${props.workflow.version}` : ""
+            hasVersion(props.workflow) ? `&version=${props.workflow.version}` : ""
         }`
 );
+
+const dockstoreUrl = computed(() => {
+    const trsId = props.workflow?.source_metadata?.trs_tool_id as string | undefined;
+    if (trsId) {
+        return `https://dockstore.org/workflows${trsId.slice(9)}`;
+    } else {
+        return undefined;
+    }
+});
 </script>
 
 <template>
@@ -168,7 +177,7 @@ const runPath = computed(
                     class="source-trs-button"
                     :title="`View on ${props.workflow.source_metadata?.trs_server}`"
                     size="sm"
-                    :href="`https://dockstore.org/workflows${props.workflow?.source_metadata?.trs_tool_id?.slice(9)}`"
+                    :href="dockstoreUrl"
                     target="_blank">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     View on Dockstore

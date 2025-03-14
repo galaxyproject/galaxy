@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Set,
     Type,
+    TypeVar,
 )
 
 from slugify import slugify
@@ -44,7 +45,6 @@ from galaxy.model import (
     User,
     UserShareAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import (
     ShareWithExtra,
@@ -55,10 +55,12 @@ from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
 
 log = logging.getLogger(__name__)
+# Only model classes that have `users_shared_with` field
+U = TypeVar("U", model.History, model.Page, model.StoredWorkflow, model.Visualization)
 
 
 class SharableModelManager(
-    base.ModelManager,
+    base.ModelManager[U],
     secured.OwnableManagerMixin,
     secured.AccessibleManagerMixin,
     annotatable.AnnotatableManagerMixin,
@@ -199,8 +201,7 @@ class SharableModelManager(
 
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return user_share_assoc
 
     def unshare_with(self, item, user: User, flush: bool = True):
@@ -212,8 +213,7 @@ class SharableModelManager(
         self.session().delete(user_share_assoc)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return user_share_assoc
 
     def _query_shared_with(self, user, eagerloads=True, **kwargs):
@@ -279,8 +279,7 @@ class SharableModelManager(
 
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return current_shares, needs_adding, needs_removing
 
     # .... slugs
@@ -305,8 +304,7 @@ class SharableModelManager(
 
         item.slug = new_slug
         if flush:
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def _default_slug_base(self, item):
@@ -335,7 +333,7 @@ class SharableModelManager(
         while importable_item_slug_exists(self.session(), item.__class__, item.user, new_slug):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
-            new_slug = "%s-%i" % (slug_base, count)
+            new_slug = f"{slug_base}-{count}"
             count += 1
 
         return new_slug
@@ -348,8 +346,7 @@ class SharableModelManager(
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     # TODO: def by_slug( self, user, **kwargs ):

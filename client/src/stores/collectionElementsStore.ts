@@ -63,7 +63,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
-    const hasLoadingCollectionElementsError = computed(() => {
+    const getLoadingCollectionElementsError = computed(() => {
         return (collection: CollectionEntry) => {
             return loadingCollectionElementsErrors.value[getCollectionKey(collection)] ?? false;
         };
@@ -213,7 +213,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
-        hasLoadingCollectionElementsError,
+        getLoadingCollectionElementsError,
         loadingCollectionElementsErrors,
         getCollectionById,
         fetchCollection,

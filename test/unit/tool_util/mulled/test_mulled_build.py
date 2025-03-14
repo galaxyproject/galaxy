@@ -38,6 +38,7 @@ def test_mulled_build_files_cli(use_mamba: bool, tmpdir) -> None:
     involucro_context = InvolucroContext(involucro_bin=os.path.join(tmpdir, "involucro"))
     exit_code = mull_targets(
         [target],
+        determine_base_image=False,
         involucro_context=involucro_context,
         command="build-and-test",
         singularity=True,

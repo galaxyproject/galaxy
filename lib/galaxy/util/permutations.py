@@ -1,4 +1,4 @@
-""" There is some shared logic between matching/multiplying inputs in workflows
+"""There is some shared logic between matching/multiplying inputs in workflows
 and tools. This module is meant to capture some general permutation logic that
 can be applicable for both cases but will only be used in the newer tools case
 first.

@@ -19,6 +19,7 @@ from typing import (
 import pytest
 from typing_extensions import Literal
 
+from galaxy.model import Job
 from galaxy.tool_util.verify.wait import timeout_type
 from galaxy.util import unicodify
 from galaxy_test.base.populators import (
@@ -270,12 +271,13 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
 
             app = self._app
             sa_session = app.model.session
-            job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
-
-            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+            job = sa_session.get(Job, app.security.decode_id(job_dict["id"]))
+            assert job
+            self._wait_for_external_state(sa_session, job, Job.states.RUNNING)
             assert not job.finished
 
             external_id = job.job_runner_external_id
+            assert external_id
             output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
             status = json.loads(output)
             assert status["status"]["active"] == 1
@@ -307,11 +309,12 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
 
             app = self._app
             sa_session = app.model.session
-            job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
-
-            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+            job = sa_session.get(Job, app.security.decode_id(job_dict["id"]))
+            assert job
+            self._wait_for_external_state(sa_session, job, Job.states.RUNNING)
 
             external_id = job.job_runner_external_id
+            assert external_id
             output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
             status = json.loads(output)
             assert status["status"]["active"] == 1
@@ -324,7 +327,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             ).json()
             details = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
 
-            assert details["state"] == app.model.Job.states.ERROR, details
+            assert details["state"] == Job.states.ERROR, details
 
     @skip_without_tool("job_properties")
     def test_exit_code_127(self, history_id: str) -> None:
@@ -341,8 +344,9 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         app = self._app
         job_id = app.security.decode_id(running_response.json()["jobs"][0]["id"])
         sa_session = app.model.session
-        job = sa_session.get(app.model.Job, job_id)
-        self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
+        job = sa_session.get(Job, job_id)
+        assert job
+        self._wait_for_external_state(sa_session=sa_session, job=job, expected=Job.states.RUNNING)
 
         external_id = job.job_runner_external_id
 

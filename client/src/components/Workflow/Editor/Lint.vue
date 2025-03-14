@@ -5,28 +5,35 @@
         </template>
         <LintSection
             :okay="checkAnnotation"
-            success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
+            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
-            warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
-                    understand the purpose and usage of the workflow."
-            attribute-link="Annotate your Workflow."
-            @onClick="onAttributes" />
+            :warning-message="bestPracticeWarningAnnotation"
+            attribute-link="Describe your Workflow."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkAnnotationLength"
+            :success-message="annotationLengthSuccessMessage"
+            :warning-message="bestPracticeWarningAnnotationLength"
+            attribute-link="Shorten your Workflow Description."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkReadme"
+            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
+            :warning-message="bestPracticeWarningReadme"
+            attribute-link="Provider Readme for your Workflow."
+            @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
             success-message="This workflow defines creator information."
-            warning-message="This workflow does not specify creator(s). This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors know how to cite the
-                    workflow authors."
+            :warning-message="bestPracticeWarningCreator"
             attribute-link="Provide Creator Details."
-            @onClick="onAttributes" />
+            @onClick="onAttributes('creator')" />
         <LintSection
             :okay="checkLicense"
             success-message="This workflow defines a license."
-            warning-message="This workflow does not specify a license. This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors understand how it
-                    may be used."
+            :warning-message="bestPracticeWarningLicense"
             attribute-link="Specify a License."
-            @onClick="onAttributes" />
+            @onClick="onAttributes('license')" />
         <LintSection
             success-message="Workflow parameters are using formal input parameters."
             warning-message="This workflow uses legacy workflow parameters. They should be replaced with
@@ -79,6 +86,11 @@ import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
 import {
+    bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
+    bestPracticeWarningCreator,
+    bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
@@ -135,6 +147,15 @@ export default {
         const { hasActiveOutputs } = storeToRefs(stepStore);
         return { stores, connectionStore, stepStore, hasActiveOutputs, stateStore };
     },
+    data() {
+        return {
+            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
+            bestPracticeWarningAnnotationLength: bestPracticeWarningAnnotationLength,
+            bestPracticeWarningCreator: bestPracticeWarningCreator,
+            bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
+        };
+    },
     computed: {
         showRefactor() {
             // we could be even more precise here and check the inputs and such, because
@@ -142,6 +163,23 @@ export default {
             return !this.checkUntypedParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
         checkAnnotation() {
+            return !!this.annotation;
+        },
+        checkAnnotationLength() {
+            const annotation = this.annotation;
+            if (annotation && annotation.length > 250) {
+                return false;
+            }
+            return true;
+        },
+        annotationLengthSuccessMessage() {
+            if (this.annotation) {
+                return "This workflow has a short description of appropriate length.";
+            } else {
+                return "This workflow does not have a short description.";
+            }
+        },
+        checkReadme() {
             return !!this.annotation;
         },
         checkLicense() {
@@ -177,8 +215,9 @@ export default {
         },
     },
     methods: {
-        onAttributes() {
-            this.$emit("onAttributes");
+        onAttributes(highlight) {
+            const args = { highlight: highlight };
+            this.$emit("onAttributes", args);
         },
         onFixUntypedParameter(item) {
             if (

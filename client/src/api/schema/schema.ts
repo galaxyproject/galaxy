@@ -3195,20 +3195,20 @@ export interface paths {
         /**
          * Return a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{id} instead.
          */
         get: operations["library_content_api_libraries__library_id__contents__id__get"];
         /**
          * Update a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{id} instead.
          */
         put: operations["update_api_libraries__library_id__contents__id__put"];
         post?: never;
         /**
          * Delete a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{id} instead.
          */
         delete: operations["delete_api_libraries__library_id__contents__id__delete"];
         options?: never;
@@ -4252,6 +4252,27 @@ export interface paths {
          *     - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
          */
         put: operations["update_api_tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{task_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get result message for task ID
+         * @description If the task is still running, pending, or is waiting for retry then the result is an empty string.
+         *     If the task failed, the result is an error message.
+         */
+        get: operations["get_result_api_tasks__task_id__result_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -6054,7 +6075,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "History";
             /**
@@ -6171,7 +6191,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "History";
             /**
@@ -6423,7 +6442,6 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
-             * @enum {string}
              */
             category: "broadcast";
             /**
@@ -6466,7 +6484,6 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
-             * @enum {string}
              */
             category: "broadcast";
             content: components["schemas"]["BroadcastNotificationContent"];
@@ -6515,7 +6532,6 @@ export interface components {
             /**
              * Browsable
              * @constant
-             * @enum {boolean}
              */
             browsable: true;
             /**
@@ -6586,7 +6602,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "change_datatype";
         };
@@ -6597,7 +6612,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "change_dbkey";
         };
@@ -6749,6 +6763,8 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            /** Metadata */
+            metadata?: Record<string, never> | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -7276,7 +7292,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -7368,7 +7383,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "User";
             /**
@@ -7798,7 +7812,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "DatasetCollectionElement";
             /**
@@ -7849,7 +7862,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "DatasetCollection";
             /**
@@ -7955,7 +7967,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             tags: components["schemas"]["TagCollection"];
@@ -8018,7 +8029,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "DatasetHash";
         };
@@ -8085,7 +8095,7 @@ export interface components {
              * Transform
              * @description The transformations applied to the dataset source.
              */
-            transform?: unknown[] | null;
+            transform?: components["schemas"]["DatasetSourceTransform"][] | null;
         };
         /** DatasetSourceId */
         DatasetSourceId: {
@@ -8100,6 +8110,24 @@ export interface components {
              */
             src: components["schemas"]["DatasetSourceType"];
         };
+        /** DatasetSourceTransform */
+        DatasetSourceTransform: {
+            /**
+             * Action
+             * @description Action that was applied to dataset source content to transform it into the dataset
+             */
+            action: components["schemas"]["DatasetSourceTransformActionType"];
+            /**
+             * Datatype Extension
+             * @description If action is 'datatype_groom', this is the datatype that was used to find and run the grooming code as part of the transform action.
+             */
+            datatype_ext?: string | null;
+        };
+        /**
+         * DatasetSourceTransformActionType
+         * @enum {string}
+         */
+        DatasetSourceTransformActionType: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
         /**
          * DatasetSourceType
          * @enum {string}
@@ -8159,6 +8187,11 @@ export interface components {
              * @description The percentage indicating how full the store is.
              */
             percent_used: number | null;
+            /**
+             * Private
+             * @description Indicator of whether the objectstore is marked as private.
+             */
+            private: boolean;
             /** @description Information about quota sources around dataset storage. */
             quota: components["schemas"]["ConcreteObjectStoreQuotaSourceDetails"];
             /**
@@ -8320,7 +8353,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "DefaultQuotaAssociation";
             /**
@@ -8576,7 +8608,7 @@ export interface components {
         };
         /** DisplayApplication */
         DisplayApplication: {
-            /** Filename  */
+            /** Filename */
             filename_: string;
             /** Id */
             id: string;
@@ -8735,7 +8767,6 @@ export interface components {
              * Source
              * @description The source of this dataset, which in the case of the model can only be `hdca`.
              * @constant
-             * @enum {string}
              */
             src: "hdca";
         };
@@ -8822,7 +8853,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8951,6 +8981,8 @@ export interface components {
             error?: string | null;
             /** Success */
             success: boolean;
+            /** Uri */
+            uri?: string | null;
         };
         /**
          * ExportObjectType
@@ -9057,7 +9089,6 @@ export interface components {
         };
         /**
          * FavoriteObjectType
-         * @constant
          * @enum {string}
          */
         FavoriteObjectType: "tools";
@@ -9248,7 +9279,18 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
+            type:
+                | "ftp"
+                | "posix"
+                | "s3fs"
+                | "azure"
+                | "onedata"
+                | "webdav"
+                | "dropbox"
+                | "googledrive"
+                | "elabftw"
+                | "inveniordm"
+                | "zenodo";
             /** Variables */
             variables?:
                 | (
@@ -9483,7 +9525,6 @@ export interface components {
             /**
              * Src
              * @constant
-             * @enum {string}
              */
             src: "ftp_import";
             /** Tags */
@@ -9527,7 +9568,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Group";
             /**
@@ -9547,7 +9587,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "GroupQuotaAssociation";
         };
@@ -9565,7 +9604,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Group";
             /** name of the group */
@@ -9904,7 +9942,6 @@ export interface components {
              * @description TODO
              * @default file
              * @constant
-             * @enum {string}
              */
             api_type: "file";
             /**
@@ -10011,7 +10048,6 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
-             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -10048,7 +10084,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /**
@@ -10097,7 +10132,6 @@ export interface components {
              * @description This is always `file` for datasets.
              * @default file
              * @constant
-             * @enum {string}
              */
             type: "file";
             /**
@@ -10146,7 +10180,6 @@ export interface components {
             /**
              * Accessible
              * @constant
-             * @enum {boolean}
              */
             accessible: false;
             /** Copied From Ldda Id */
@@ -10170,7 +10203,6 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
-             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -10250,7 +10282,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /** Purged */
@@ -10308,7 +10339,6 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
-             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -10555,7 +10585,6 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
-             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -10592,7 +10621,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -10621,7 +10649,6 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
-             * @enum {string}
              */
             type: "collection";
             /**
@@ -10695,7 +10722,6 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
-             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -10727,7 +10753,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -10751,7 +10776,6 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
-             * @enum {string}
              */
             type: "collection";
             /**
@@ -10940,7 +10964,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "hdca";
         };
@@ -11378,7 +11401,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "History";
             /**
@@ -11493,7 +11515,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "History";
             /**
@@ -11828,7 +11849,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "ToolShedRepository";
             /**
@@ -12100,7 +12120,6 @@ export interface components {
             /**
              * Model
              * @constant
-             * @enum {string}
              */
             model: "WorkflowInvocation";
             /**
@@ -12140,7 +12159,6 @@ export interface components {
              * Source
              * @description Source model of the output dataset.
              * @constant
-             * @enum {string}
              */
             src: "hda";
             /**
@@ -12161,7 +12179,6 @@ export interface components {
              * Source
              * @description Source model of the output dataset collection.
              * @constant
-             * @enum {string}
              */
             src: "hdca";
             /**
@@ -12236,7 +12253,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Report";
             /**
@@ -12244,7 +12260,6 @@ export interface components {
              * @description Format of the invocation report.
              * @default markdown
              * @constant
-             * @enum {string}
              */
             render_format: "markdown";
             /**
@@ -12317,7 +12332,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "WorkflowInvocationStep";
             /**
@@ -12383,7 +12397,6 @@ export interface components {
              * @description The source model of the output.
              * @default hdca
              * @constant
-             * @enum {string}
              */
             src: "hdca";
         };
@@ -12398,7 +12411,6 @@ export interface components {
             /**
              * Model
              * @constant
-             * @enum {string}
              */
             model: "ImplicitCollectionJobs";
             /**
@@ -12425,7 +12437,6 @@ export interface components {
             /**
              * Model
              * @constant
-             * @enum {string}
              */
             model: "Job";
             /**
@@ -12452,7 +12463,6 @@ export interface components {
             /**
              * Model
              * @constant
-             * @enum {string}
              */
             model: "WorkflowInvocationStep";
             /**
@@ -12481,7 +12491,6 @@ export interface components {
              * @description The source model of the output.
              * @default hda
              * @constant
-             * @enum {string}
              */
             src: "hda";
             /**
@@ -12622,9 +12631,8 @@ export interface components {
             /**
              * Replacement Parameters
              * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
-             * @default {}
              */
-            replacement_params: Record<string, never> | null;
+            replacement_params?: Record<string, never> | null;
             /**
              * Require Exact Tool Versions
              * @description If true, exact tool versions are required for workflow invocation.
@@ -12634,9 +12642,8 @@ export interface components {
             /**
              * Resource Parameters
              * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
-             * @default {}
              */
-            resource_params: Record<string, never> | null;
+            resource_params?: Record<string, never> | null;
             /**
              * Scheduler
              * @description Scheduler to use for workflow invocation.
@@ -12740,7 +12747,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -12923,7 +12929,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -13191,7 +13196,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -13387,7 +13391,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "LibraryDatasetDatasetAssociation";
             /** Name */
@@ -13671,7 +13674,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "LibraryDataset";
             /** Name */
@@ -13716,7 +13718,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "LibraryFolder";
             /** Name */
@@ -13857,7 +13858,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "LibraryFolder";
             /**
@@ -13905,7 +13905,6 @@ export interface components {
         };
         /**
          * LibraryFolderPermissionAction
-         * @constant
          * @enum {string}
          */
         LibraryFolderPermissionAction: "set_permissions";
@@ -13964,7 +13963,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -14075,7 +14073,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -14209,7 +14206,6 @@ export interface components {
          * @description These notification categories cannot be opt-out by the user.
          *
          *     The user will always receive notifications from these categories.
-         * @constant
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
@@ -14781,6 +14777,11 @@ export interface components {
         /** PageDetails */
         PageDetails: {
             /**
+             * Author deleted
+             * @description Whether the author of this Page has been deleted.
+             */
+            author_deleted: boolean;
+            /**
              * Content
              * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
@@ -14839,7 +14840,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -14880,6 +14880,11 @@ export interface components {
         /** PageSummary */
         PageSummary: {
             /**
+             * Author deleted
+             * @description Whether the author of this Page has been deleted.
+             */
+            author_deleted: boolean;
+            /**
              * Create Time
              * Format: date-time
              * @description The time and date this item was created.
@@ -14916,7 +14921,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -15316,7 +15320,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -15369,7 +15372,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -15711,7 +15713,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Role";
             /**
@@ -16244,7 +16245,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -16434,6 +16434,11 @@ export interface components {
                 | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
                 | null;
             /**
+             * Creator deleted
+             * @description Whether the creator of this Workflow has been deleted.
+             */
+            creator_deleted: boolean;
+            /**
              * Deleted
              * @description Whether this item is marked as deleted.
              */
@@ -16480,7 +16485,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "StoredWorkflow";
             /**
@@ -16657,6 +16661,22 @@ export interface components {
             | "StoredWorkflow"
             | "Visualization";
         /**
+         * TaskResult
+         * @description Contains information about the result of an asynchronous task.
+         */
+        TaskResult: {
+            /**
+             * Result
+             * @description The result message of the task. Empty if the task is still running. If the task failed, this will contain the exception message.
+             */
+            result: string;
+            /**
+             * State
+             * @description The current state of the task.
+             */
+            state: components["schemas"]["TaskState"];
+        };
+        /**
          * TaskState
          * @description Enum representing the possible states of a task.
          * @enum {string}
@@ -16687,7 +16707,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "boolean";
         };
@@ -16707,7 +16726,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "integer";
         };
@@ -16724,7 +16742,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "path_component";
         };
@@ -16744,7 +16761,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "string";
         };
@@ -17619,7 +17635,18 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
+            type:
+                | "ftp"
+                | "posix"
+                | "s3fs"
+                | "azure"
+                | "onedata"
+                | "webdav"
+                | "dropbox"
+                | "googledrive"
+                | "elabftw"
+                | "inveniordm"
+                | "zenodo";
             /** Uri Root */
             uri_root: string;
             /**
@@ -17664,7 +17691,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "User";
             /**
@@ -17803,7 +17829,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "UserQuotaAssociation";
             /**
@@ -17974,7 +17999,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "VisualizationRevision";
             /**
@@ -18021,7 +18045,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "Visualization";
             /**
@@ -18224,7 +18247,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -18293,7 +18315,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
-             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -18368,7 +18389,6 @@ export interface components {
              * @description This API yields a particular workflow instance, newer workflows belonging to the same storedworkflow may have different state.
              * @default true
              * @constant
-             * @enum {boolean}
              */
             instance: true;
             /**
@@ -18381,7 +18401,6 @@ export interface components {
              * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
              * @default true
              * @constant
-             * @enum {boolean}
              */
             parameters_normalized: true;
             /**
@@ -18402,15 +18421,13 @@ export interface components {
             /**
              * Replacement Parameters
              * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
-             * @default {}
              */
-            replacement_params: Record<string, never> | null;
+            replacement_params?: Record<string, never> | null;
             /**
              * Resource Parameters
              * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
-             * @default {}
              */
-            resource_params: Record<string, never> | null;
+            resource_params?: Record<string, never> | null;
             /**
              * Use cached job
              * @description Indicated whether to use a cached job for workflow invocation.
@@ -18464,6 +18481,8 @@ export interface components {
          *     }
          */
         WorkflowJobMetric: {
+            /** Job Id */
+            job_id: string;
             /**
              * Name
              * @description The name of the metric variable.
@@ -21975,6 +21994,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The encoded database identifier of the form. */
                 id: string;
             };
             cookie?: never;
@@ -22018,6 +22038,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The encoded database identifier of the form. */
                 id: string;
             };
             cookie?: never;
@@ -22414,6 +22435,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22457,6 +22479,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22504,6 +22527,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22547,6 +22571,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -22772,6 +22797,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
             cookie?: never;
@@ -28100,6 +28126,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
             cookie?: never;
@@ -28945,6 +28972,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
             };
             cookie?: never;
@@ -28988,6 +29016,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
             };
             cookie?: never;
@@ -29039,8 +29068,8 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
-                /** @example F0123456789ABCDEF */
                 id: string;
             };
             cookie?: never;
@@ -29088,7 +29117,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
+                /** @description The encoded ID of the library dataset. */
                 id: string;
             };
             cookie?: never;
@@ -29132,7 +29163,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the Library. */
                 library_id: string;
+                /** @description The encoded ID of the library dataset. */
                 id: string;
             };
             cookie?: never;
@@ -31736,6 +31769,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31779,6 +31813,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31822,6 +31857,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -31865,6 +31901,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
+                /** @description The ID of the role. */
                 id: string;
             };
             cookie?: never;
@@ -32364,6 +32401,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_result_api_tasks__task_id__result_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResult"];
+                };
             };
             /** @description Request Error */
             "4XX": {

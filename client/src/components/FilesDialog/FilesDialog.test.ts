@@ -107,7 +107,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     );
 
     const testingPinia = createTestingPinia({ stubActions: false });
-    const wrapper = mount(FilesDialog, {
+    const wrapper = mount(FilesDialog as object, {
         localVue,
         propsData: { ...props, modalStatic: true },
         pinia: testingPinia,
@@ -129,6 +129,14 @@ describe("FilesDialog, file mode", () => {
     it("should show the number of items expected", async () => {
         await utils.openRootDirectory();
         expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
+    });
+
+    it("should list the user defined file sources first", async () => {
+        await utils.openRoot();
+        const rows = utils.getRenderedRows();
+        const firstItem = rows[0];
+        expect(firstItem).toBeDefined();
+        expect(firstItem!.url).toContain("gxuserfiles://");
     });
 
     it("should allow selecting files and update OK button accordingly", async () => {
@@ -296,9 +304,13 @@ class Utils {
         this.wrapper = wrapper;
     }
 
-    async openRootDirectory() {
+    async openRoot() {
         expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         expect(this.getRenderedRows().length).toBe(rootResponse.length);
+    }
+
+    async openRootDirectory() {
+        await this.openRoot();
         await this.openDirectoryById(rootId);
     }
 

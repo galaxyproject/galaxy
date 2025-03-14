@@ -8,6 +8,7 @@ import logging
 import re
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -34,14 +35,18 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.model import (
+    Dataset,
     FormDefinition,
+    FormValues,
     HistoryDatasetAssociation,
+    Job,
     Role,
+    User,
     UserAddress,
     UserObjectstoreUsage,
     UserQuotaUsage,
 )
-from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema import APIKeyModel
 from galaxy.schema.schema import (
     AnonUserModel,
@@ -376,8 +381,7 @@ class FastAPIUsers:
         user = self.service.get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return payload
 
@@ -401,8 +405,7 @@ class FastAPIUsers:
                 del favorite_tools[favorite_tools.index(object_id)]
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             else:
                 raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
         return FavoriteObjectsSummary.model_validate(favorites)
@@ -433,8 +436,7 @@ class FastAPIUsers:
                 favorite_tools.append(tool_id)
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
@@ -450,8 +452,7 @@ class FastAPIUsers:
     ) -> str:
         user = self.service.get_user(trans, user_id)
         user.preferences["theme"] = theme
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return theme
 
     @router.put(
@@ -481,23 +482,20 @@ class FastAPIUsers:
             )
         else:
             # Have everything needed; create new build.
-            build_dict = {"name": name}
+            build_dict: Dict[str, Any] = {"name": name}
             if len_type in ["text", "file"]:
                 # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation(
-                    extension="len", create_dataset=True, sa_session=trans.sa_session
-                )
+                new_len = HistoryDatasetAssociation(extension="len", create_dataset=True, sa_session=trans.sa_session)
                 trans.sa_session.add(new_len)
                 new_len.name = name
                 new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
+                new_len.state = Job.states.OK
                 new_len.info = "custom build .len file"
                 try:
                     trans.app.object_store.create(new_len.dataset)
                 except ObjectInvalid:
                     raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 counter = 0
                 lines_skipped = 0
                 with open(new_len.get_file_name(), "w") as f:
@@ -537,8 +535,7 @@ class FastAPIUsers:
                     raise exceptions.ToolExecutionError("Failed to convert dataset.")
             dbkeys[key] = build_dict
             user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
@@ -559,7 +556,7 @@ class FastAPIUsers:
                 if (
                     chrom_count_dataset
                     and not chrom_count_dataset.deleted
-                    and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
+                    and chrom_count_dataset.state == HistoryDatasetAssociation.states.OK
                 ):
                     chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
                     dbkey["count"] = chrom_count
@@ -589,8 +586,7 @@ class FastAPIUsers:
         if key and key in dbkeys:
             del dbkeys[key]
             user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return DeletedCustomBuild(message=f"Deleted {key}.")
         else:
             raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
@@ -700,6 +696,7 @@ class FastAPIUsers:
         payload: Optional[UserDeletionPayload] = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
+        assert user_to_update is not None
         purge = payload and payload.purge or purge
         if trans.user_is_admin:
             if purge:
@@ -725,7 +722,7 @@ class FastAPIUsers:
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
-        user = trans.sa_session.query(trans.model.User).get(user_id)
+        user = trans.sa_session.query(User).get(user_id)
         if not user:
             raise exceptions.ObjectNotFound("User not found for given id.")
         if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
@@ -832,7 +829,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "type": "text",
                     "label": "Email address",
                     "value": email,
-                    "help": "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.",
+                    "help": (
+                        "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it."
+                        if trans.app.config.user_activation_on
+                        else ""
+                    ),
                 }
             )
         if is_galaxy_app:
@@ -954,8 +955,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 user.email = email
                 trans.sa_session.add(user)
                 trans.sa_session.add(private_role)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
@@ -982,7 +982,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             for item in payload:
                 if item.startswith(prefix):
                     user_info_values[item[len(prefix) :]] = payload[item]
-            form_values = trans.model.FormValues(user_info_form, user_info_values)
+            form_values = FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
 
@@ -990,6 +990,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         extra_user_pref_data = {}
         extra_pref_keys = self._get_extra_user_preferences(trans)
         user_vault = UserVaultWrapper(trans.app.vault, user)
+        current_extra_user_pref_data = json.loads(user.preferences.get("extra_user_preferences", "{}"))
         if extra_pref_keys is not None:
             for key in extra_pref_keys:
                 key_prefix = f"{key}|"
@@ -1002,8 +1003,17 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                             input = matching_input[0]
                             if input.get("required") and payload[item] == "":
                                 raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                            if not (input.get("type") == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"):
-                                if input.get("store") == "vault":
+                            input_type = input.get("type")
+                            is_secret_value_unchanged = (
+                                input_type == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"
+                            )
+                            is_stored_in_vault = input.get("store") == "vault"
+                            if is_secret_value_unchanged:
+                                if not is_stored_in_vault:
+                                    # If the value is unchanged, keep the current value
+                                    extra_user_pref_data[item] = current_extra_user_pref_data.get(item, "")
+                            else:
+                                if is_stored_in_vault:
                                     user_vault.write_secret(f"preferences/{keys[0]}/{keys[1]}", str(payload[item]))
                                 else:
                                     extra_user_pref_data[item] = payload[item]
@@ -1044,8 +1054,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         trans.log_event("User information added")
         return {"message": "User information has been saved."}
 
@@ -1081,9 +1090,18 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        roles = user.all_roles()
+
+        def get_role_tuples():
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            role_tuples = set()
+            for role in user.all_roles():
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuples.add((displayed_name, role.id))
+            return list(role_tuples)
+
+        role_tuples = get_role_tuples()
         inputs = []
-        for index, action in trans.app.model.Dataset.permitted_actions.items():
+        for index, action in Dataset.permitted_actions.items():
             inputs.append(
                 {
                     "type": "select",
@@ -1092,7 +1110,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "name": index,
                     "label": action.action,
                     "help": action.description,
-                    "options": list({(r.name, r.id) for r in roles}),
+                    "options": role_tuples,
                     "value": [a.role.id for a in user.default_permissions if a.action == action.action],
                 }
             )
@@ -1106,7 +1124,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         payload = payload or {}
         user = self._get_user(trans, id)
         permissions = {}
-        for index, action in trans.app.model.Dataset.permitted_actions.items():
+        for index, action in Dataset.permitted_actions.items():
             action_id = trans.app.security_agent.get_action(action.action).action
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)
@@ -1160,8 +1178,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         new_filters.append(prefixed_name[len(prefix) :])
             user.preferences[filter_type] = ",".join(new_filters)
         trans.sa_session.add(user)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return {"message": "Toolbox filters have been saved."}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):

@@ -28,7 +28,6 @@ from galaxy.model import (
     Quota,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.quota import DatabaseQuotaAgent
 from galaxy.quota._schema import (
     CreateQuotaParams,
@@ -104,8 +103,7 @@ class QuotaManager:
                 self.sa_session.add(gqa)
             message = f"Quota '{quota.name}' has been created with {len(in_users)} associated users and {len(in_groups)} associated groups."
 
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         return quota, message
 
@@ -129,8 +127,7 @@ class QuotaManager:
             if params.description:
                 quota.description = params.description
             self.sa_session.add(quota)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
             if old_name != params.name:
                 return f"Quota '{old_name}' has been renamed to '{params.name}'."
             else:
@@ -182,8 +179,7 @@ class QuotaManager:
             quota.amount = new_amount
             quota.operation = params.operation
             self.sa_session.add(quota)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
             if old_display_amount != quota.display_amount or old_operation != quota.operation:
                 return f"Quota '{quota.name}' is now '{quota.operation}{quota.display_amount}'."
             else:
@@ -201,8 +197,7 @@ class QuotaManager:
                 message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
                 for dqa in quota.default:
                     self.sa_session.delete(dqa)
-                with transaction(self.sa_session):
-                    self.sa_session.commit()
+                self.sa_session.commit()
             return message
 
     def unset_quota_default(self, quota, params=None) -> Optional[str]:
@@ -211,8 +206,7 @@ class QuotaManager:
             message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
             for dqa in quota.default:
                 self.sa_session.delete(dqa)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         return message
 
     def delete_quota(self, quota, params=None) -> str:
@@ -232,8 +226,7 @@ class QuotaManager:
             q.deleted = True
             self.sa_session.add(q)
             names.append(q.name)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         message += ", ".join(names)
         return message
 
@@ -252,8 +245,7 @@ class QuotaManager:
             q.deleted = False
             self.sa_session.add(q)
             names.append(q.name)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         message += ", ".join(names)
         return message
 
@@ -282,8 +274,7 @@ class QuotaManager:
             for gqa in q.groups:
                 self.sa_session.delete(gqa)
             names.append(q.name)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         message += ", ".join(names)
         return message
 

@@ -17,6 +17,7 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -27,7 +28,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
@@ -191,8 +191,7 @@ class ToolsService(ServiceBase):
                     new_pja_flush = True
 
         if new_pja_flush:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
@@ -203,7 +202,17 @@ class ToolsService(ServiceBase):
         rval["produces_entry_points"] = tool.produces_entry_points
         if job_errors := vars.get("job_errors", []):
             # If we are here - some jobs were successfully executed but some failed.
-            rval["errors"] = job_errors
+            # TODO: We should probably alter the response status code and have a component that knows
+            # how to template in things like src and id, so we don't have to rely just on a textual error message.
+            execution_errors = [
+                (
+                    trans.security.encode_all_ids(api_error_to_dict(exception=e))
+                    if isinstance(e, exceptions.MessageException)
+                    else e
+                )
+                for e in job_errors
+            ]
+            rval["errors"] = execution_errors
 
         outputs = rval["outputs"]
         # TODO:?? poss. only return ids?

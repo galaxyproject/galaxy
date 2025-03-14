@@ -7,7 +7,6 @@ from fastapi import (
     Response,
 )
 
-from galaxy.tool_util.models import ParsedTool
 from galaxy.tool_util.parameters import (
     RequestToolState,
     to_json_schema_string,
@@ -16,6 +15,7 @@ from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import (
     parsed_tool_model_cached_for,
     search,
+    ShedParsedTool,
 )
 from tool_shed.managers.trs import (
     get_tool,
@@ -34,9 +34,9 @@ from tool_shed_client.schema.trs_service_info import Service
 from . import (
     depends,
     DependsOnTrans,
-    RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     Router,
+    ToolSearchPageQueryParam,
     ToolsIndexQueryParam,
 )
 
@@ -73,7 +73,7 @@ class FastAPITools:
     def index(
         self,
         q: str = ToolsIndexQueryParam,
-        page: int = RepositorySearchPageQueryParam,
+        page: int = ToolSearchPageQueryParam,
         page_size: int = RepositorySearchPageSizeQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
     ):
@@ -153,7 +153,7 @@ class FastAPITools:
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
         tool_version: str = TOOL_VERSION_PATH_PARAM,
-    ) -> ParsedTool:
+    ) -> ShedParsedTool:
         return parsed_tool_model_cached_for(trans, tool_id, tool_version)
 
     @router.get(

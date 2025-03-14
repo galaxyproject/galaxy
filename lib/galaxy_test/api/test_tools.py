@@ -202,6 +202,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self._assert_has_keys(case2_inputs[0], "name", "type", "label", "help", "argument")
         assert case2_inputs[0]["name"] == "seed"
 
+    @skip_without_tool("gx_conditional_select")
+    def test_invalid_conditional_payload_handled(self):
+        with self.dataset_populator.test_history() as history_id:
+            # Invalid request, should be `{"conditional_parameter": {"test_parameter": "A"}}`
+            response = self._run(
+                tool_id="gx_conditional_select", history_id=history_id, inputs={"conditional_parameter": "A"}
+            )
+            assert response.status_code == 400
+            assert (
+                response.json()["err_msg"]
+                == "Invalid value 'A' submitted for conditional parameter 'conditional_parameter'."
+            )
+
     @skip_without_tool("multi_data_param")
     def test_show_multi_data(self):
         tool_info = self._show_valid_tool("multi_data_param")
@@ -2205,6 +2218,24 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 exception_raised = e
             assert exception_raised, "Expected invalid column selection to fail job"
 
+    @skip_without_tool("implicit_conversion_format_input")
+    def test_implicit_conversion_input_dataset_tracking(self):
+        with self.dataset_populator.test_history() as history_id:
+            compressed_path = self.test_data_resolver.get_filename("1.fastqsanger.gz")
+            with open(compressed_path, "rb") as fh:
+                dataset = self.dataset_populator.new_dataset(
+                    history_id, content=fh, file_type="fastqsanger.gz", wait=True
+                )
+            outputs = self._run(
+                "Grep1", history_id=history_id, inputs={"data": {"src": "hda", "id": dataset["id"]}}, assert_ok=True
+            )
+            job_details = self.dataset_populator.get_job_details(outputs["jobs"][0]["id"], full=True).json()
+            assert job_details["inputs"]["input"]["id"] != dataset["id"]
+            converted_input = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=job_details["inputs"]["input"]["id"]
+            )
+            assert converted_input["extension"] == "fastqsanger"
+
     @skip_without_tool("column_multi_param")
     def test_implicit_conversion_and_reduce(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2348,7 +2379,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             create_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["xxx\n", "yyy\n"], wait=True
             )
-            list_id = create_response.json()["outputs"][0]["id"]
+            list_id = create_response.json()["output_collections"][0]["id"]
             inputs = {
                 "f1": {
                     "batch": True,
@@ -2639,6 +2670,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat_list")
     def test_run_deferred_nested_list_input(self, history_id: str):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
+        url_2 = self.dataset_populator.base64_url_for_test_file("1.bed")
         elements = [
             {
                 "name": "outer",
@@ -2646,7 +2679,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "url": url_1,
                         "info": "my cool bed 4",
                         "deferred": True,
                         "ext": "bed",
@@ -2654,7 +2687,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "url": url_2,
                         "info": "my cool bed 1",
                         "deferred": True,
                         "ext": "bed",
@@ -2697,6 +2730,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("collection_paired_structured_like")
     def test_deferred_map_over_nested_collections(self, history_id):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
+        url_2 = self.dataset_populator.base64_url_for_test_file("1.bed")
         elements = [
             {
                 "name": "outer1",
@@ -2704,7 +2739,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "url": url_1,
                         "info": "my cool bed 4",
                         "deferred": True,
                         "ext": "bed",
@@ -2712,28 +2747,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
-                        "info": "my cool bed 1",
-                        "deferred": True,
-                        "ext": "bed",
-                    },
-                ],
-            },
-            {
-                "name": "outer2",
-                "elements": [
-                    {
-                        "src": "url",
-                        "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
-                        "info": "my cool bed 4",
-                        "deferred": True,
-                        "ext": "bed",
-                    },
-                    {
-                        "src": "url",
-                        "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "url": url_2,
                         "info": "my cool bed 1",
                         "deferred": True,
                         "ext": "bed",
@@ -2763,13 +2777,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        assert len(jobs) == 2
+        assert len(jobs) == 1
         self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
         assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
         assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
         outer_elements = implicit_collection["elements"]
-        assert len(outer_elements) == 2
+        assert len(outer_elements) == 1
         element0 = outer_elements[0]
         pair1 = element0["object"]
         hda = pair1["elements"][0]["object"]

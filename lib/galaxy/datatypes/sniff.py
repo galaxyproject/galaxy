@@ -119,9 +119,10 @@ def convert_newlines(
     converted_regex = False
     NEWLINE_BYTE = 10
     CR_BYTE = 13
-    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
-        fname, mode="rb"
-    ) as fi:
+    with (
+        tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp,
+        open(fname, mode="rb") as fi,
+    ):
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -171,9 +172,10 @@ def convert_sep2tabs(
     i = 0
     converted_newlines = False
     converted_regex = False
-    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
-        fname, mode="rb"
-    ) as fi:
+    with (
+        tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp,
+        open(fname, mode="rb") as fi,
+    ):
         block = fi.read(block_size)
         while block:
             if block:

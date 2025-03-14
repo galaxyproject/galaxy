@@ -313,7 +313,7 @@ class EmptyFieldParameterValidatorModel(StaticValidatorModel):
 
     @staticmethod
     def empty_validate(value: Any, validator: "ValidatorDescription"):
-        raise_error_if_valiation_fails((value != ""), validator)
+        raise_error_if_valiation_fails((value not in ("", None)), validator)
 
     def statically_validate(self, value: Any) -> None:
         EmptyFieldParameterValidatorModel.empty_validate(value, self)
@@ -493,7 +493,6 @@ def parse_xml_validators(input_elem: Element) -> List[AnyValidatorModel]:
 def static_validators(validator_models: List[AnyValidatorModel]) -> List[AnyValidatorModel]:
     static_validators = []
     for validator_model in validator_models:
-        print(validator_model._static)
         if validator_model._static:
             static_validators.append(validator_model)
     return static_validators
@@ -668,9 +667,9 @@ def raise_error_if_valiation_fails(
         raise AssertionError("Validator logic problem - computed validation value must be boolean")
     if message is None:
         message = validator.message
-    if message is None:
+    if not message:
         message = DEFAULT_VALIDATOR_MESSAGE
-    assert message
+    assert message is not None
     if value_to_show and "%s" in message:
         message = message % value_to_show
     negate = validator.negate
@@ -695,7 +694,7 @@ def _parse_int(xml_el: Element, attribute: str) -> Optional[int]:
 
 def _parse_number(xml_el: Element, attribute: str) -> Optional[Union[float, int]]:
     raw_value = xml_el.get(attribute)
-    if raw_value and ("." in raw_value or "e" in raw_value):
+    if raw_value and ("." in raw_value or "e" in raw_value or "inf" in raw_value):
         return float(raw_value)
     elif raw_value:
         return int(raw_value)

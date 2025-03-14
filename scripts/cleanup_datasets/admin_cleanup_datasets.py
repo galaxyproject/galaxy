@@ -62,9 +62,8 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
 
 import galaxy.config
-import galaxy.model.mapping
 import galaxy.util
-from galaxy.model.base import transaction
+from galaxy import model
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -201,17 +200,15 @@ def administrative_delete_datasets(
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
     hda_ids_query = (
-        sa.select(
-            app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted
-        )
+        sa.select(model.HistoryDatasetAssociation.__table__.c.id, model.HistoryDatasetAssociation.__table__.c.deleted)
         .where(
             and_(
-                app.model.Dataset.__table__.c.deleted == false(),
-                app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-                app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
+                model.Dataset.__table__.c.deleted == false(),
+                model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                model.HistoryDatasetAssociation.__table__.c.deleted == false(),
             )
         )
-        .select_from(sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__))
+        .select_from(sa.outerjoin(model.Dataset.__table__, model.HistoryDatasetAssociation.__table__))
     )
 
     # Add all datasets associated with Histories to our list
@@ -233,37 +230,31 @@ def administrative_delete_datasets(
     # Process each of the Dataset objects
     for hda_id in hda_ids:
         user_query = (
-            sa.select(
-                app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__
-            )
-            .where(and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id))
+            sa.select(model.HistoryDatasetAssociation.__table__, model.History.__table__, model.User.__table__)
+            .where(and_(model.HistoryDatasetAssociation.__table__.c.id == hda_id))
             .select_from(
-                sa.join(app.model.User.__table__, app.model.History.__table__).join(
-                    app.model.HistoryDatasetAssociation.__table__
-                )
+                sa.join(model.User.__table__, model.History.__table__).join(model.HistoryDatasetAssociation.__table__)
             )
             .set_label_style()
         )
 
         for result in app.sa_session.execute(user_query):
-            user_notifications[result[app.model.User.__table__.c.email]].append(
+            user_notifications[result[model.User.__table__.c.email]].append(
                 (
-                    result[app.model.HistoryDatasetAssociation.__table__.c.name],
-                    result[app.model.History.__table__.c.name],
+                    result[model.HistoryDatasetAssociation.__table__.c.name],
+                    result[model.History.__table__.c.name],
                 )
             )
             deleted_instance_count += 1
             if not info_only and not email_only:
                 # Get the HistoryDatasetAssociation objects
-                hda = app.sa_session.query(app.model.HistoryDatasetAssociation).get(hda_id)
+                hda = app.sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
                 if not hda.deleted:
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
                     app.sa_session.add(hda)
                     print(f"Marked HistoryDatasetAssociation id {hda.id} as deleted")
-                session = app.sa_session()
-                with transaction(session):
-                    session.commit()
+                app.sa_session().commit()
 
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():
@@ -291,15 +282,15 @@ def _get_tool_id_for_hda(app, hda_id):
     if hda_id is None:
         return None
     job = (
-        app.sa_session.query(app.model.Job)
-        .join(app.model.JobToOutputDatasetAssociation)
-        .filter(app.model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
+        app.sa_session.query(model.Job)
+        .join(model.JobToOutputDatasetAssociation)
+        .filter(model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
         .first()
     )
     if job is not None:
         return job.tool_id
     else:
-        hda = app.sa_session.query(app.model.HistoryDatasetAssociation).get(hda_id)
+        hda = app.sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
         return _get_tool_id_for_hda(app, hda.copied_from_history_dataset_association_id)
 
 

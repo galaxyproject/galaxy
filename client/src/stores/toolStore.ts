@@ -11,6 +11,25 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
+export interface FilterSettings {
+    [key: string]: string | undefined;
+    name?: string;
+    section?: string;
+    ontology?: string;
+    id?: string;
+    owner?: string;
+    help?: string;
+}
+
+export interface Panel {
+    id: string;
+    model_class: string;
+    name: string;
+    description: string;
+    view_type: keyof typeof types_to_icons;
+    searchable: boolean;
+}
+
 export interface Tool {
     model_class: string;
     id: string;
@@ -54,49 +73,19 @@ export interface ToolSectionLabel {
     links?: Record<string, string> | null;
 }
 
-export interface FilterSettings {
-    [key: string]: string | undefined;
-    name?: string;
-    section?: string;
-    ontology?: string;
-    id?: string;
-    owner?: string;
-    help?: string;
-}
-
-export interface PanelView {
-    id: string;
-    model_class: string;
-    name: string;
-    description: string;
-    view_type: keyof typeof types_to_icons;
-    searchable: boolean;
-}
-
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
+    const loading = ref(false);
+    const panels = ref<Record<string, Panel>>({});
+    const searchWorker = ref<Worker | undefined>(undefined);
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
-    const panel = ref<Record<string, Record<string, Tool | ToolSection>>>({});
-    const panelViews = ref<Record<string, PanelView>>({});
-    const loading = ref(false);
+    const toolSections = ref<Record<string, Record<string, Tool | ToolSection>>>({});
 
-    const searchWorker = ref<Worker | undefined>(undefined);
-
-    const getToolForId = computed(() => {
-        return (toolId: string) => toolsById.value[toolId];
-    });
-
-    const getToolNameById = computed(() => {
-        return (toolId: string) => {
-            const details = toolsById.value[toolId];
-            if (details && details.name) {
-                return details.name;
-            } else {
-                return "...";
-            }
-        };
+    const currentToolSections = computed(() => {
+        const effectiveView = currentPanelView.value;
+        return toolSections.value[effectiveView] || {};
     });
 
     const getToolsById = computed(() => {
@@ -110,18 +99,19 @@ export const useToolStore = defineStore("toolStore", () => {
         };
     });
 
-    const currentPanel = computed(() => {
-        const effectiveView = currentPanelView.value;
-        const val = panel.value[effectiveView] || {};
-        return val;
+    const getToolForId = computed(() => {
+        return (toolId: string) => toolsById.value[toolId];
+    });
+
+    const getToolNameById = computed(() => {
+        return (toolId: string) => {
+            const details = toolsById.value[toolId];
+            return details?.name || "...";
+        };
     });
 
     const isPanelPopulated = computed(() => {
-        return allToolsByIdFetched.value && Object.keys(currentPanel.value).length > 0;
-    });
-
-    const allToolsByIdFetched = computed(() => {
-        return Object.keys(toolsById.value).length > 0;
+        return Object.keys(toolsById.value).length > 0 && Object.keys(currentToolSections.value).length > 0;
     });
 
     /** These are filtered tool sections (`ToolSection[]`) for the `currentPanel`;
@@ -131,7 +121,7 @@ export const useToolStore = defineStore("toolStore", () => {
      */
     const panelSections = computed(() => {
         return (panelView: string) => {
-            return Object.values(panel.value[panelView] || {}).filter((section) => {
+            return Object.values(toolSections.value[panelView] || {}).filter((section) => {
                 const sec = section as ToolSection;
                 return (
                     sec.tools &&
@@ -143,6 +133,7 @@ export const useToolStore = defineStore("toolStore", () => {
             });
         };
     });
+
     const sectionDatalist = computed(() => {
         return (panelView: string) => {
             return panelSections.value(panelView).map((section) => {
@@ -151,48 +142,13 @@ export const useToolStore = defineStore("toolStore", () => {
         };
     });
 
-    async function fetchToolForId(toolId: string) {
-        console.log("fetching tool");
-        const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
-        saveToolForId(toolId, data);
-    }
-
-    async function fetchTools(filterSettings?: FilterSettings) {
-        if (filterSettings && Object.keys(filterSettings).length !== 0) {
-            // Parsing filterSettings to Whoosh query
-            const q = createWhooshQuery(filterSettings);
-            // already have results for this query
-            if (toolResults.value[q]) {
-                return;
-            }
-            const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
-            saveToolResults(q, data);
-        }
-        if (!loading.value && !allToolsByIdFetched.value) {
-            loading.value = true;
-            await axios
-                .get(`${getAppRoot()}api/tools?in_panel=False`)
-                .then(({ data }) => {
-                    saveAllTools(data as Tool[]);
-                    loading.value = false;
-                })
-                .catch((error) => {
-                    console.error(error);
-                    loading.value = false;
-                });
-        }
-    }
-
-    async function fetchPanelViews() {
-        if (loading.value || (defaultPanelView.value && Object.keys(panelViews.value).length > 0)) {
-            return;
-        }
-        loading.value = true;
+    async function fetchToolSections(panelView: string) {
         try {
-            const { data } = await axios.get(`${getAppRoot()}api/tool_panels`);
-            const { default_panel_view, views } = data;
-            defaultPanelView.value = default_panel_view;
-            panelViews.value = views;
+            if (!toolSections.value[panelView]) {
+                loading.value = true;
+                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+                saveToolSections(panelView, data);
+            }
         } catch (e) {
             rethrowSimple(e);
         } finally {
@@ -200,53 +156,69 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    // Used to initialize the ToolPanel with the default panel view for this site.
-    async function initCurrentPanelView(siteDefaultPanelView: string) {
-        if (!loading.value && !isPanelPopulated.value) {
-            loading.value = true;
-            const panelView = currentPanelView.value || siteDefaultPanelView;
-            if (currentPanelView.value == "") {
-                currentPanelView.value = panelView;
+    async function fetchPanels() {
+        try {
+            if (!defaultPanelView.value || Object.keys(panels.value).length === 0) {
+                const { data } = await axios.get(`${getAppRoot()}api/tool_panels`);
+                defaultPanelView.value = data.default_panel_view;
+                panels.value = data.views;
             }
-            await axios
-                .get(`${getAppRoot()}api/tool_panels/${panelView}`)
-                .then(({ data }) => {
-                    loading.value = false;
-                    savePanelView(panelView, data);
-                })
-                .catch(async (error) => {
-                    loading.value = false;
-                    if (error.response && error.response.status == 400) {
-                        // Assume the stored panelView disappeared, revert to the panel default for this site.
-                        await setCurrentPanelView(siteDefaultPanelView);
-                    }
-                });
+        } catch (e) {
+            rethrowSimple(e);
         }
     }
 
-    async function setCurrentPanelView(panelView: string) {
-        if (!loading.value) {
-            if (panel.value[panelView]) {
-                currentPanelView.value = panelView;
-                return;
-            }
-            loading.value = true;
-            try {
-                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-                currentPanelView.value = panelView;
-                savePanelView(panelView, data);
-                loading.value = false;
-            } catch (e) {
-                const error = e as { response: { data: { err_msg: string } } };
-                console.error("Could not change panel view", error.response.data.err_msg ?? error.response);
-                loading.value = false;
-            }
+    async function fetchToolForId(toolId: string) {
+        try {
+            const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
+            saveToolForId(toolId, data);
+        } catch (e) {
+            rethrowSimple(e);
         }
     }
 
-    async function fetchPanel(panelView: string) {
-        const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-        savePanelView(panelView, data);
+    async function fetchTools(filterSettings?: FilterSettings) {
+        try {
+            // Backend search
+            if (filterSettings && Object.keys(filterSettings).length !== 0) {
+                const q = createWhooshQuery(filterSettings);
+                if (!toolResults.value[q]) {
+                    const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
+                    saveToolResults(q, data);
+                }
+            }
+
+            // Fetch all tools by IDs if not already fetched
+            if (Object.keys(toolsById.value).length === 0) {
+                loading.value = true;
+                const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
+                saveAllTools(data as Tool[]);
+            }
+        } catch (e) {
+            rethrowSimple(e);
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function initializePanel() {
+        try {
+            currentPanelView.value = currentPanelView.value || defaultPanelView.value;
+            await setPanel(currentPanelView.value);
+        } catch (e) {
+            await setPanel(defaultPanelView.value);
+        }
+    }
+
+    function saveAllTools(toolsData: Tool[]) {
+        toolsById.value = toolsData.reduce((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {} as Record<string, Tool>);
+    }
+
+    function saveToolSections(panelView: string, newPanel: { [id: string]: ToolSection | Tool }) {
+        Vue.set(toolSections.value, panelView, newPanel);
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
@@ -257,40 +229,38 @@ export const useToolStore = defineStore("toolStore", () => {
         Vue.set(toolResults.value, whooshQuery, toolsData);
     }
 
-    function saveAllTools(toolsData: Tool[]) {
-        toolsById.value = toolsData.reduce((acc, item) => {
-            acc[item.id] = item;
-            return acc;
-        }, {} as Record<string, Tool>);
-    }
-
-    function savePanelView(panelView: string, newPanel: { [id: string]: ToolSection | Tool }) {
-        Vue.set(panel.value, panelView, newPanel);
+    async function setPanel(panelView: string) {
+        try {
+            await fetchToolSections(panelView);
+            currentPanelView.value = panelView;
+        } catch (e) {
+            rethrowSimple(e);
+        }
     }
 
     return {
-        toolsById,
-        panel,
-        panelViews,
         currentPanelView,
+        currentToolSections,
         defaultPanelView,
+        fetchToolSections,
+        fetchPanels,
+        fetchToolForId,
+        fetchTools,
+        initializePanel,
+        isPanelPopulated,
         loading,
         getToolForId,
         getToolNameById,
         getToolsById,
-        currentPanel,
-        isPanelPopulated,
-        sectionDatalist,
-        searchWorker,
-        fetchToolForId,
-        fetchTools,
-        fetchPanelViews,
-        initCurrentPanelView,
-        setCurrentPanelView,
-        fetchPanel,
+        panels,
+        saveAllTools,
         saveToolForId,
         saveToolResults,
-        saveAllTools,
-        savePanelView,
+        saveToolSections,
+        searchWorker,
+        sectionDatalist,
+        setPanel,
+        toolsById,
+        toolSections,
     };
 });

@@ -47,7 +47,6 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
-from galaxy.model.base import transaction
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -154,6 +153,9 @@ class DatasetStorageDetails(Model):
     )
     relocatable: bool = Field(
         description="Indicator of whether the objectstore for this dataset can be switched by this user."
+    )
+    private: bool = Field(
+        description="Indicator of whether the objectstore is marked as private.",
     )
 
 
@@ -439,6 +441,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
         badges = object_store.get_concrete_store_badges(dataset)
+        private = object_store.is_private(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -470,6 +473,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             quota=quota,
             badges=badges,
             relocatable=relocatable,
+            private=private,
         )
 
     def show_inheritance_chain(
@@ -747,7 +751,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             try:
                 manager = self.dataset_manager_by_type[dataset.src]
                 dataset_instance = manager.get_owned(dataset.id, trans.user)
-                manager.error_unless_mutable(dataset_instance.history)
+                if hasattr(dataset_instance, "history"):
+                    manager.error_unless_mutable(dataset_instance.history)
                 if dataset.src == DatasetSourceType.hda:
                     self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:
@@ -764,8 +769,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
         if success_count:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(

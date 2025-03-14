@@ -589,9 +589,11 @@ import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocation
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
-import { refreshContentsWrapper } from "utils/data";
 import _l from "utils/localization";
 import Vue from "vue";
+
+import { errorMessageAsString } from "@/utils/simple-error";
+import { startWatchingHistory } from "@/watch/watchHistory";
 
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
@@ -1329,7 +1331,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            refreshContentsWrapper();
+            startWatchingHistory();
             this.waitOnJob(response);
         },
         waitOnJob(response) {
@@ -1345,7 +1347,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    refreshContentsWrapper();
+                    startWatchingHistory();
                     this.oncreate();
                 }
             };
@@ -1373,7 +1375,7 @@ export default {
             this.state = "error";
             if (error.response) {
                 console.log(error.response);
-                this.errorMessage = error.response.data.err_msg;
+                this.errorMessage = errorMessageAsString(error);
             } else {
                 console.log(error);
                 this.errorMessage = "Unknown error encountered: " + error;

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import (
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -48,7 +49,7 @@ from galaxy.model import (
     LibraryFolder,
     LibraryFolderPermissions,
 )
-from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
@@ -220,8 +221,7 @@ class FolderManager:
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return new_folder
@@ -255,8 +255,7 @@ class FolderManager:
             changed = True
         if changed:
             trans.sa_session.add(folder)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return folder
 
     def delete(self, trans, folder, undelete=False):
@@ -280,8 +279,7 @@ class FolderManager:
         else:
             folder.deleted = True
         trans.sa_session.add(folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return folder
 
     def get_current_roles(self, trans, folder):
@@ -295,6 +293,8 @@ class FolderManager:
         :returns:   dict of current roles for all available permission types
         :rtype:     dictionary
         """
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+
         # Omit duplicated roles by converting to set
         modify_roles = set(
             trans.app.security_agent.get_roles_for_action(
@@ -312,17 +312,19 @@ class FolderManager:
             )
         )
 
-        modify_folder_role_list = [
-            (modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles
-        ]
-        manage_folder_role_list = [
-            (manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles
-        ]
-        add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id)) for add_role in add_roles]
+        def make_tuples(roles: Set):
+            tuples = []
+            for role in roles:
+                # use role name for non-private roles, and user.email from private rules
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuple = (displayed_name, trans.security.encode_id(role.id))
+                tuples.append(role_tuple)
+            return tuples
+
         return dict(
-            modify_folder_role_list=modify_folder_role_list,
-            manage_folder_role_list=manage_folder_role_list,
-            add_library_item_role_list=add_library_item_role_list,
+            modify_folder_role_list=make_tuples(modify_roles),
+            manage_folder_role_list=make_tuples(manage_roles),
+            add_library_item_role_list=make_tuples(add_roles),
         )
 
     def can_add_item(self, trans, folder):

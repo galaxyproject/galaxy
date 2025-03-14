@@ -66,19 +66,7 @@ const errorMessage = ref<string>();
 
 const existingProgress = ref<InstanceType<typeof ExistingInvocationExportProgressCard>>();
 
-const exportData: InvocationExportData = reactive({
-    exportPluginFormat: "ro-crate",
-    destination: "download",
-    remoteUri: "",
-    outputFileName: "",
-    includeData: true,
-    bcoDatabase: {
-        serverBaseUrl: "https://biocomputeobject.org",
-        table: "GALXY",
-        ownerGroup: "",
-        authorization: "",
-    },
-});
+const exportData: InvocationExportData = reactive(initializeExportData());
 
 const exportButtonLabel = computed(() => {
     switch (exportData.destination) {
@@ -186,6 +174,15 @@ watch(
         // Only allow BCO format to be exported to BCODB
         if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
             exportData.destination = "download";
+        }
+    }
+);
+
+watch(
+    () => isWizardBusy.value,
+    (newValue, oldValue) => {
+        if (oldValue && !newValue) {
+            resetWizard();
         }
     }
 );
@@ -301,6 +298,28 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
 
     return destinations;
 }
+
+function initializeExportData(): InvocationExportData {
+    return {
+        exportPluginFormat: "ro-crate",
+        destination: "download",
+        remoteUri: "",
+        outputFileName: "",
+        includeData: true,
+        bcoDatabase: {
+            serverBaseUrl: "https://biocomputeobject.org",
+            table: "GALXY",
+            ownerGroup: "",
+            authorization: "",
+        },
+    };
+}
+
+function resetWizard() {
+    const initialExportData = initializeExportData();
+    Object.assign(exportData, initialExportData);
+    wizard.goTo("select-format");
+}
 </script>
 
 <template>
@@ -327,6 +346,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                     <BCard
                         v-for="plugin in exportPlugins"
                         :key="plugin.id"
+                        :data-invocation-export-type="plugin.id"
                         class="wizard-selection-card"
                         :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
                         @click="exportData.exportPluginFormat = plugin.id">
@@ -350,6 +370,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                     <BCard
                         v-for="target in exportDestinationTargets"
                         :key="target.destination"
+                        :data-invocation-export-destination="target.destination"
                         :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"

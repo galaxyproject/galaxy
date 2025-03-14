@@ -17,12 +17,22 @@ from typing import (
     TYPE_CHECKING,
 )
 
-# Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
-logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import (
-    isajson,
-    isatab_meta,
-)
+logger = logging.getLogger(__name__)
+
+ISA_MISSING_MODULE_MESSAGE = "Please install the missing isatools dependency from `isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master`"
+
+try:
+    # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
+    logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
+    from isatools import (
+        isajson,
+        isatab_meta,
+    )
+except ImportError:
+    isajson = None
+    isatab_meta = None
+    logger.exception(ISA_MISSING_MODULE_MESSAGE)
+
 from markupsafe import escape
 
 from galaxy import util
@@ -39,9 +49,6 @@ from galaxy.util.sanitize_html import sanitize_html
 if TYPE_CHECKING:
     from isatools.model import Investigation
 
-# CONSTANTS {{{1
-################################################################
-
 # Main files regex
 JSON_FILE_REGEX = re.compile(r"^.*\.json$", flags=re.IGNORECASE)
 INVESTIGATION_FILE_REGEX = re.compile(r"^i_\w+\.txt$", flags=re.IGNORECASE)
@@ -52,18 +59,6 @@ ISA_ARCHIVE_NAME = "archive"
 # Set max number of lines of the history peek
 _MAX_LINES_HISTORY_PEEK = 11
 
-# Configure logger {{{1
-################################################################
-
-logger = logging.getLogger(__name__)
-
-# Function for opening correctly a CSV file for csv.reader() for both Python 2 and 3 {{{1
-################################################################
-
-
-# ISA class {{{1
-################################################################
-
 
 class _Isa(Data):
     """Base class for implementing ISA datatypes"""
@@ -71,14 +66,8 @@ class _Isa(Data):
     composite_type = "auto_primary_file"
     is_binary = True
 
-    # Make investigation instance {{{2
-    ################################################################
-
     def _make_investigation_instance(self, filename: str) -> "Investigation":
         raise NotImplementedError()
-
-    # Constructor {{{2
-    ################################################################
 
     def __init__(self, main_file_regex: re.Pattern, **kwd) -> None:
         super().__init__(**kwd)
@@ -87,57 +76,34 @@ class _Isa(Data):
         # Add the archive file as the only composite file
         self.add_composite_file(ISA_ARCHIVE_NAME, is_binary=True, optional=True)
 
-    # Get ISA folder path {{{2
-    ################################################################
-
     def _get_isa_folder_path(self, dataset: HasExtraFilesPath) -> str:
         isa_folder = dataset.extra_files_path
         if not isa_folder:
             raise Exception("Unvalid dataset object, or no extra files path found for this dataset.")
         return isa_folder
 
-    # Get main file {{{2
-    ################################################################
-
-    def _get_main_file(self, dataset: HasExtraFilesPath) -> Optional[str]:
+    def _get_main_file(self, dataset: HasExtraFilesPath) -> str:
         """Get the main file of the ISA archive. Either the investigation file i_*.txt for ISA-Tab, or the JSON file for ISA-JSON."""
 
         main_file = None
         isa_folder = self._get_isa_folder_path(dataset)
+        assert os.path.exists(isa_folder)
 
-        if os.path.exists(isa_folder):
-            # Get ISA archive older
-            isa_files = os.listdir(isa_folder)
+        # Get ISA archive older
+        isa_files = os.listdir(isa_folder)
 
-            # Try to find main file
-            main_file = self._find_main_file_in_archive(isa_files)
+        main_file = self._find_main_file_in_archive(isa_files)
+        # Make full path
+        return os.path.join(isa_folder, main_file)
 
-            if main_file is None:
-                raise Exception("Invalid ISA archive. No main file found.")
-
-            # Make full path
-            assert main_file
-            main_file = os.path.join(isa_folder, main_file)
-
-        return main_file
-
-    # Get investigation {{{2
-    ################################################################
-
-    def _get_investigation(self, dataset: HasExtraFilesPath) -> Optional["Investigation"]:
+    def _get_investigation(self, dataset: HasExtraFilesPath) -> "Investigation":
         """Create a contained instance specific to the exact ISA type (Tab or Json).
         We will use it to parse and access information from the archive."""
 
-        investigation = None
-        if (main_file := self._get_main_file(dataset)) is not None:
-            investigation = self._make_investigation_instance(main_file)
+        main_file = self._get_main_file(dataset)
+        return self._make_investigation_instance(main_file)
 
-        return investigation
-
-    # Find main file in archive {{{2
-    ################################################################
-
-    def _find_main_file_in_archive(self, files_list: List) -> Optional[str]:
+    def _find_main_file_in_archive(self, files_list: List) -> str:
         """Find the main file inside the ISA archive."""
 
         found_file = None
@@ -150,23 +116,16 @@ class _Isa(Data):
                     found_file = matched if isinstance(matched, str) else matched[0]
                 else:
                     raise Exception(
-                        'More than one file match the pattern "',
-                        str(self._main_file_regex),
-                        '" to identify the investigation file',
+                        f"More than one file match the pattern '{self._main_file_regex}' to identify the investigation file"
                     )
-
+        if found_file is None:
+            raise Exception("Invalid ISA archive. No main file found.")
         return found_file
-
-    # Set peek {{{2
-    ################################################################
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
-
-        if main_file is None:
-            raise RuntimeError("Unable to find the main file within the 'files_path' folder")
 
         # Read first lines of main file
         with open(main_file, encoding="utf-8") as f:
@@ -182,9 +141,6 @@ class _Isa(Data):
             else:
                 dataset.peek = "file does not exist"
                 dataset.blurb = "file purged from disk"
-
-    # Display peek {{{2
-    ################################################################
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
@@ -204,9 +160,6 @@ class _Isa(Data):
         except Exception as exc:
             return f"Can't create peek: {util.unicodify(exc)}"
 
-    # Generate primary file {{{2
-    ################################################################
-
     def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """Generate the primary file. It is an HTML file containing description of the composite dataset
         as well as a list of the composite files that it contains."""
@@ -223,15 +176,9 @@ class _Isa(Data):
             return "\n".join(rval)
         return "<div>No dataset available</div>"
 
-    # Dataset content needs grooming {{{2
-    ################################################################
-
     def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """This function is called on an output dataset file after the content is initially generated."""
         return os.path.basename(file_name) == ISA_ARCHIVE_NAME
-
-    # Groom dataset content {{{2
-    ################################################################
 
     def groom_dataset_content(self, file_name: str) -> None:
         """This method is called by Galaxy to extract files contained in a composite data type."""
@@ -247,7 +194,8 @@ class _Isa(Data):
             # perform extraction
             # For some ZIP files CompressedFile::extract() extract the file inside <output_folder>/<file_name> instead of outputing it inside <output_folder>. So we first create a temporary folder, extract inside it, and move content to final destination.
             temp_folder = tempfile.mkdtemp()
-            CompressedFile(file_name).extract(temp_folder)
+            with CompressedFile(file_name) as cf:
+                cf.extract(temp_folder)
             shutil.rmtree(output_path)
             extracted_files = os.listdir(temp_folder)
             logger.debug(" ".join(extracted_files))
@@ -259,9 +207,6 @@ class _Isa(Data):
                 shutil.rmtree(temp_folder)
             else:
                 shutil.move(temp_folder, output_path)
-
-    # Display data {{{2
-    ################################################################
 
     def display_data(
         self,
@@ -284,8 +229,10 @@ class _Isa(Data):
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
         # prepare the preview of the ISA dataset
-        investigation = self._get_investigation(dataset)
-        if investigation is None:
+        try:
+            investigation = self._get_investigation(dataset)
+        except Exception:
+            logger.exception(f"Failed to display dataset {dataset.id}")
             html = """<html><header><title>Error while reading ISA archive.</title></header>
                    <body>
                         <h1>An error occurred while reading content of ISA archive.</h1>
@@ -329,23 +276,15 @@ class _Isa(Data):
         return sanitize_html(html).encode("utf-8"), headers
 
 
-# ISA-Tab class {{{1
-################################################################
-
-
 class IsaTab(_Isa):
     file_ext = "isa-tab"
-
-    # Constructor {{{2
-    ################################################################
 
     def __init__(self, **kwd):
         super().__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
-    # Make investigation instance {{{2
-    ################################################################
-
-    def _make_investigation_instance(self, filename: str) -> "Investigation":
+    def _make_investigation_instance(self, filename: str):
+        if not isatab_meta:
+            raise Exception(ISA_MISSING_MODULE_MESSAGE)
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
@@ -362,23 +301,15 @@ class IsaTab(_Isa):
         return isa
 
 
-# ISA-JSON class {{{1
-################################################################
-
-
 class IsaJson(_Isa):
     file_ext = "isa-json"
-
-    # Constructor {{{2
-    ################################################################
 
     def __init__(self, **kwd):
         super().__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
 
-    # Make investigation instance {{{2
-    ################################################################
-
-    def _make_investigation_instance(self, filename: str) -> "Investigation":
+    def _make_investigation_instance(self, filename: str):
+        if not isajson:
+            raise Exception(ISA_MISSING_MODULE_MESSAGE)
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:
             isa = isajson.load(fp)

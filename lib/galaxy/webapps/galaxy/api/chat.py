@@ -16,11 +16,13 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
+from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import ChatPayload
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     Router,
 )
 
@@ -57,6 +59,7 @@ class ChatAPI:
         job_id: JobIdPathParam,
         payload: ChatPayload,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
     ) -> str:
         """We're off to ask the wizard"""
         # Currently job-based chat exchanges are the only ones supported,
@@ -87,6 +90,7 @@ class ChatAPI:
         job_id: JobIdPathParam,
         feedback: int,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
     ) -> Union[int, None]:
         """Provide feedback on the chatbot response."""
         job = self.job_manager.get_accessible_job(trans, job_id)

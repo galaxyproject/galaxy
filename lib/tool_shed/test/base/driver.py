@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""Test driver for tool shed functional tests.
-"""
+"""Test driver for tool shed functional tests."""
 
 import os
 import string
@@ -77,6 +76,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
     def _setup_local(self):
         # ---- Configuration ------------------------------------------------------
+
+        # disable sensitive request limiting for the test suite
+        os.environ["TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT"] = "10000/second"
+
         tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
         if not os.path.isdir(tool_shed_test_tmp_dir):
             os.mkdir(tool_shed_test_tmp_dir)

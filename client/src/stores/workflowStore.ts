@@ -1,27 +1,11 @@
-import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-// import type { StoredWorkflowDetailed } from "@/api/workflows"; // TODO: use this instead of locally defined type
-import { getAppRoot } from "@/onload/loadConfig";
-import { type Steps } from "@/stores/workflowStepStore";
-
-export interface Workflow {
-    name: string;
-    id: string;
-    steps: Steps;
-    step_count?: number;
-    latest_id?: string;
-    version: number;
-    deleted?: boolean;
-    owner?: string;
-    annotation?: string;
-    tags?: string[];
-    update_time?: string;
-}
+import { GalaxyApi } from "@/api";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
-    const workflowsByInstanceId = ref<{ [index: string]: Workflow }>({});
+    const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
 
     const getStoredWorkflowByInstanceId = computed(() => (workflowId: string) => {
         return workflowsByInstanceId.value[workflowId];
@@ -34,7 +18,6 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
 
     const getStoredWorkflowNameByInstanceId = computed(() => (workflowId: string, defaultName = "...") => {
         const details = workflowsByInstanceId.value[workflowId];
-
         if (details && details.name) {
             return details.name;
         } else {
@@ -51,23 +34,24 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
      */
     async function fetchWorkflowForInstanceId(workflowId: string) {
         const promise = workflowDetailPromises.get(workflowId);
-
         if (promise) {
             console.debug("Workflow details fetching already requested for", workflowId);
             await promise;
         } else {
             console.debug("Fetching workflow details for", workflowId);
-
-            const params = { instance: "true" };
-            const promise = axios.get(`${getAppRoot()}api/workflows/${workflowId}`, { params });
-
+            const promise = GalaxyApi().GET("/api/workflows/{workflow_id}", {
+                params: {
+                    path: { workflow_id: workflowId },
+                    query: { instance: true },
+                },
+            });
             workflowDetailPromises.set(workflowId, promise);
-
-            const { data } = await promise;
-
-            set(workflowsByInstanceId.value, workflowId, data as Workflow);
+            const { data, error } = await promise;
+            if (error) {
+                throw Error(`Failed to retrieve workflow. ${error.err_msg}`);
+            }
+            set(workflowsByInstanceId.value, workflowId, data);
         }
-
         workflowDetailPromises.delete(workflowId);
     }
 
@@ -82,11 +66,11 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     }
 
     return {
-        workflowsByInstanceId,
+        fetchWorkflowForInstanceId,
+        fetchWorkflowForInstanceIdCached,
         getStoredWorkflowByInstanceId,
         getStoredWorkflowIdByInstanceId,
         getStoredWorkflowNameByInstanceId,
-        fetchWorkflowForInstanceId,
-        fetchWorkflowForInstanceIdCached,
+        workflowsByInstanceId,
     };
 });

@@ -86,7 +86,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                         .first()
                     )
                 except NoResultFound:
-                    group = self.model.Group(name=role_name)
+                    group = trans.app.model.Group(name=role_name)
                     self.sa_session.add(group)
                 trans.app.security_agent.associate_user_group(user, group)
 

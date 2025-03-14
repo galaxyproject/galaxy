@@ -24,7 +24,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="idle-load" :class="{ center: props.center }">
+    <div class="idle-load" :class="{ center: props.center && !render }">
         <slot v-if="render"></slot>
         <BSpinner v-else-if="props.spinner"></BSpinner>
     </div>

@@ -42,8 +42,26 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         return data;
     }
 
-    const { getItemById: getInvocationById, fetchItemById: fetchInvocationForId } =
-        useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+    async function cancelWorkflowScheduling(invocationId: string) {
+        const { data, error } = await GalaxyApi().DELETE("/api/invocations/{invocation_id}", {
+            params: {
+                path: { invocation_id: invocationId },
+            },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        storedInvocations.value[invocationId] = data;
+        return data;
+    }
+
+    const {
+        fetchItemById: fetchInvocationForId,
+        getItemById: getInvocationById,
+        getItemLoadError: getInvocationLoadError,
+        isLoadingItem: isLoadingInvocation,
+        storedItems: storedInvocations,
+    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
@@ -52,12 +70,15 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         useKeyedCache<InvocationStep>(fetchInvocationStep);
 
     return {
-        getInvocationById,
+        cancelWorkflowScheduling,
         fetchInvocationForId,
-        getInvocationJobsSummaryById,
         fetchInvocationJobsSummaryForId,
-        getInvocationStepById,
         fetchInvocationStepById,
+        getInvocationById,
+        getInvocationJobsSummaryById,
+        getInvocationLoadError,
+        getInvocationStepById,
         graphStepsByStoreId,
+        isLoadingInvocation,
     };
 });

@@ -17,7 +17,6 @@ from webob.exc import (
 
 from galaxy import (
     exceptions,
-    model,
     security,
     util,
     web,
@@ -39,14 +38,17 @@ from galaxy.managers.sharable import (
     SlugBuilder,
 )
 from galaxy.model import (
+    Dataset,
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    LibraryDatasetPermissions,
+    StoredWorkflow,
 )
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -71,7 +73,7 @@ class BaseController:
     Base class for Galaxy web application controllers.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: BasicSharedApp):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
@@ -511,8 +513,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # If there is, refactor `ldda.visible = True` to do this only when adding HDCAs.
         ldda.visible = True
         ldda.update_parent_folder_update_times()
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids(ldda_dict)
         update_time = ldda.update_time.isoformat()
@@ -591,15 +592,14 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
             if action not in library_dataset_actions:
                 for role in dataset_permissions_roles:
-                    ldps = trans.model.LibraryDatasetPermissions(action, library_dataset, role)
+                    ldps = LibraryDatasetPermissions(action, library_dataset, role)
                     ldps = [ldps] if not isinstance(ldps, list) else ldps
                     for ldp in ldps:
                         trans.sa_session.add(ldp)
                         flush_needed = True
 
         if flush_needed:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
         # finally, apply the new library_dataset to its associated ldda (must be the same)
         security_agent.copy_library_permissions(trans, library_dataset, ldda)
@@ -612,87 +612,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     """
 
     slug_builder = SlugBuilder()
-
-    def save_visualization(self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None):
-        session = trans.sa_session
-
-        # Create/get visualization.
-        if not id:
-            # Create new visualization.
-            vis = self._create_visualization(trans, title, type, dbkey, slug, annotation)
-        else:
-            decoded_id = trans.security.decode_id(id)
-            vis = session.get(model.Visualization, decoded_id)
-            # TODO: security check?
-
-        # Create new VisualizationRevision that will be attached to the viz
-        vis_rev = trans.model.VisualizationRevision()
-        vis_rev.visualization = vis
-        # do NOT alter the dbkey
-        vis_rev.dbkey = vis.dbkey
-        # do alter the title and config
-        vis_rev.title = title
-
-        # -- Validate config. --
-
-        if vis.type == "trackster":
-
-            def unpack_track(track_dict):
-                """Unpack a track from its json."""
-                dataset_dict = track_dict["dataset"]
-                return {
-                    "dataset_id": trans.security.decode_id(dataset_dict["id"]),
-                    "hda_ldda": dataset_dict.get("hda_ldda", "hda"),
-                    "track_type": track_dict["track_type"],
-                    "prefs": track_dict["prefs"],
-                    "mode": track_dict["mode"],
-                    "filters": track_dict["filters"],
-                    "tool_state": track_dict["tool_state"],
-                }
-
-            def unpack_collection(collection_json):
-                """Unpack a collection from its json."""
-                unpacked_drawables = []
-                drawables = collection_json["drawables"]
-                for drawable_json in drawables:
-                    if "track_type" in drawable_json:
-                        drawable = unpack_track(drawable_json)
-                    else:
-                        drawable = unpack_collection(drawable_json)
-                    unpacked_drawables.append(drawable)
-                return {
-                    "obj_type": collection_json["obj_type"],
-                    "drawables": unpacked_drawables,
-                    "prefs": collection_json.get("prefs", []),
-                    "filters": collection_json.get("filters", None),
-                }
-
-            # TODO: unpack and validate bookmarks:
-            def unpack_bookmarks(bookmarks_json):
-                return bookmarks_json
-
-            # Unpack and validate view content.
-            view_content = unpack_collection(config["view"])
-            bookmarks = unpack_bookmarks(config["bookmarks"])
-            vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
-            # Viewport from payload
-            viewport = config.get("viewport")
-            if viewport:
-                chrom = viewport["chrom"]
-                start = viewport["start"]
-                end = viewport["end"]
-                overview = viewport["overview"]
-                vis_rev.config["viewport"] = {"chrom": chrom, "start": start, "end": end, "overview": overview}
-        else:
-            # Default action is to save the config as is with no validation.
-            vis_rev.config = config
-
-        vis.latest_revision = vis_rev
-        session.add(vis_rev)
-        with transaction(session):
-            session.commit()
-        encoded_id = trans.security.encode_id(vis.id)
-        return {"vis_id": encoded_id, "url": url_for(controller="visualization", action=vis.type, id=encoded_id)}
 
     def get_tool_def(self, trans, hda):
         """Returns definition of an interactive tool for an HDA."""
@@ -741,10 +660,14 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                dataset_id = track_dict["dataset_id"]
+                unencoded_id = track_dict.get("dataset_id")
+                if unencoded_id:
+                    encoded_id = trans.security.encode_id(unencoded_id)
+                else:
+                    encoded_id = track_dict["dataset"]["id"]
                 hda_ldda = track_dict.get("hda_ldda", "hda")
-                dataset_id = trans.security.encode_id(dataset_id)
-                dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
+
+                dataset = self.get_hda_or_ldda(trans, hda_ldda, encoded_id)
                 try:
                     prefs = track_dict["prefs"]
                 except KeyError:
@@ -877,7 +800,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                 error("You are not allowed to access this dataset")
 
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+            if check_state and data.state == Dataset.states.UPLOAD:
                 return trans.show_error_message(
                     "Please wait until this dataset finishes uploading " + "before attempting to view it."
                 )
@@ -957,12 +880,11 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             # Older workflows may be missing slugs, so set them here.
             if not workflow.slug:
                 self.slug_builder.create_item_slug(trans.sa_session, workflow)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
         workflow = stored_workflow.latest_workflow
@@ -973,10 +895,10 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored):
+    def _import_shared_workflow(self, trans, stored: StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
-        imported_stored = model.StoredWorkflow()
+        imported_stored = StoredWorkflow()
         imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
@@ -986,8 +908,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         # Save new workflow.
         session = trans.sa_session
         session.add(imported_stored)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         # Copy annotations.
         self.copy_item_annotation(session, stored.user, stored, imported_stored.user, imported_stored)
@@ -995,8 +916,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             self.copy_item_annotation(
                 session, stored.user, step, imported_stored.user, imported_stored.latest_workflow.steps[order_index]
             )
-        with transaction(session):
-            session.commit()
+        session.commit()
         return imported_stored
 
     def _workflow_to_dict(self, trans, stored):
@@ -1044,8 +964,7 @@ class UsesFormDefinitionsMixin:
             field_obj.country = util.restore_text(params.get(f"{widget_name}_country", ""))
             field_obj.phone = util.restore_text(params.get(f"{widget_name}_phone", ""))
             trans.sa_session.add(field_obj)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
     def get_form_values(self, trans, user, form_definition, **kwd):
         """
@@ -1100,8 +1019,7 @@ class SharableMixin:
             # Only update slug if slug is not already in use.
             if not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
                 item.slug = new_slug
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
 
         return item.slug
 
@@ -1152,16 +1070,14 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         deleted = tagged_item and trans.tag_handler.remove_item_tag(user, tagged_item, tag_name)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return deleted
 
     def _apply_item_tag(self, trans, item_class_name, id, tag_name, tag_value=None):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         tag_assoc = trans.tag_handler.apply_item_tag(user, tagged_item, tag_name, tag_value)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return tag_assoc
 
     def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
@@ -1224,8 +1140,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 trans.get_current_user_roles(), item, trans.user
             ):
                 item.extended_metadata = extmeta_obj
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
         if item.__class__ == HistoryDatasetAssociation:
             history = None
             if check_writable:
@@ -1234,8 +1149,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 history = self.security_check(trans, item, check_ownership=False, check_accessible=True)
             if history:
                 item.extended_metadata = extmeta_obj
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
 
     def unset_item_extended_metadata_obj(self, trans, item, check_writable=False):
         if item.__class__ == LibraryDatasetDatasetAssociation:
@@ -1243,8 +1157,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 trans.get_current_user_roles(), item, trans.user
             ):
                 item.extended_metadata = None
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
         if item.__class__ == HistoryDatasetAssociation:
             history = None
             if check_writable:
@@ -1253,8 +1166,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 history = self.security_check(trans, item, check_ownership=False, check_accessible=True)
             if history:
                 item.extended_metadata = None
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
 
     def create_extended_metadata(self, trans, extmeta):
         """
@@ -1263,20 +1175,17 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         ex_meta = ExtendedMetadata(extmeta)
         trans.sa_session.add(ex_meta)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         for path, value in self._scan_json_block(extmeta):
             meta_i = ExtendedMetadataIndex(ex_meta, path, value)
             trans.sa_session.add(meta_i)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return ex_meta
 
     def delete_extended_metadata(self, trans, item):
         if item.__class__ == ExtendedMetadata:
             trans.sa_session.delete(item)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
     def _scan_json_block(self, meta, prefix=""):
         """

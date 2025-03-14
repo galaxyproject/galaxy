@@ -5,9 +5,9 @@ import os
 import re
 import shutil
 import sys
-import tarfile
 import tempfile
 import time
+import traceback
 import urllib.parse
 import zipfile
 from json import dumps
@@ -35,6 +35,7 @@ from typing_extensions import (
 )
 
 from galaxy import util
+from galaxy.tool_util.client.staging import StagingInterface
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
@@ -43,8 +44,10 @@ from galaxy.tool_util.parser.interface import (
     ToolSourceTestOutputs,
     XmlTestCollectionDefDict,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import (
     memory_bound_hexdigest,
     parse_checksum_hash,
@@ -136,45 +139,42 @@ ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
 ToolTestDictsT = List[ToolTestDict]
 
 
+class PathOrLocation(NamedTuple):
+    name: str
+    path: Optional[str]
+    location: Optional[str]
+
+
 def stage_data_in_history(
     galaxy_interactor: "GalaxyInteractorApi",
     tool_id: str,
     all_test_data,
-    history=None,
+    history: str,
     force_path_paste=False,
     maxseconds=DEFAULT_TOOL_TEST_WAIT,
     tool_version=None,
+    test_data_resolver: Optional[TestDataResolver] = None,
 ):
-    # Upload any needed files
-    upload_waits = []
-
     assert tool_id
 
-    if UPLOAD_ASYNC:
-        for test_data in all_test_data:
-            upload_waits.append(
-                galaxy_interactor.stage_data_async(
-                    test_data,
-                    history,
-                    tool_id,
-                    force_path_paste=force_path_paste,
-                    maxseconds=maxseconds,
-                    tool_version=tool_version,
-                )
-            )
-        for upload_wait in upload_waits:
-            upload_wait()
-    else:
-        for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(
-                test_data,
-                history,
-                tool_id,
-                force_path_paste=force_path_paste,
-                maxseconds=maxseconds,
-                tool_version=tool_version,
-            )
-            upload_wait()
+    staging_interface = InteractorStagingInterface(galaxy_interactor, maxseconds=maxseconds, upload_async=UPLOAD_ASYNC)
+    job = {}
+    for test_data in all_test_data:
+        test_dict = galaxy_interactor.remote_to_input(
+            test_data=test_data, tool_id=tool_id, force_path_paste=force_path_paste, tool_version=tool_version
+        )
+        job[test_data["fname"]] = test_dict
+    resolve_data = test_data_resolver.get_filename if test_data_resolver else None
+    staging_interface.stage(
+        "tool",
+        history_id=history,
+        job=job,
+        use_path_paste=force_path_paste,
+        resolve_data=resolve_data,
+    )
+    staging_interface.handle_jobs()
+    galaxy_interactor.uploads = job
+    return
 
 
 class RunToolResponse(NamedTuple):
@@ -182,6 +182,38 @@ class RunToolResponse(NamedTuple):
     outputs: OutputsDict
     output_collections: Dict[str, Any]
     jobs: List[Dict[str, Any]]
+
+
+class InteractorStagingInterface(StagingInterface):
+
+    def __init__(self, galaxy_interactor: "GalaxyInteractorApi", maxseconds: Optional[int], upload_async: bool) -> None:
+        super().__init__()
+        self.galaxy_interactor = galaxy_interactor
+        self.maxseconds = maxseconds or DEFAULT_TOOL_TEST_WAIT
+        self.upload_async = upload_async
+        self.job_responses: List[Dict[str, Any]] = []
+
+    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.galaxy_interactor._post(api_path, payload, json=True)
+        assert response.status_code == 200, f"Staging failed: {response.text}"
+        return response.json()
+
+    def _handle_job(self, job_response: Dict[str, Any]):
+        if not self.upload_async:
+            return self.galaxy_interactor.wait_for_job(
+                job_response["id"], job_response["history_id"], maxseconds=self.maxseconds
+            )
+        else:
+            self.job_responses.append(job_response)
+        return
+
+    def handle_jobs(self):
+        for job_response in self.job_responses:
+            self.galaxy_interactor.wait_for_job(job_response["id"], job_response["history_id"], self.maxseconds)
+
+    @property
+    def use_fetch_api(self):
+        return True
 
 
 class GalaxyInteractorApi:
@@ -381,7 +413,7 @@ class GalaxyInteractorApi:
 
     def get_history(self, history_name: str = "test_history") -> Optional[Dict[str, Any]]:
         # Return the most recent non-deleted history matching the provided name
-        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
+        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time", "show_own": "true"})
         response = self._get(f"histories?{filters}")
         try:
             return response.json()[-1]
@@ -434,16 +466,23 @@ class GalaxyInteractorApi:
             return result
         raise Exception(result["err_msg"])
 
-    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
-        result = None
-        local_path = None
+    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None, path_only=False):
+        result: Optional[Union[str, bytes]] = None
+        local_path: Optional[str] = None
 
         if self.supports_test_data_download:
             version_fragment = f"&tool_version={tool_version}" if tool_version else ""
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
             if response.status_code == 200:
                 if mode == "file":
-                    result = response.content
+                    if path_only:
+                        pardir = tempfile.mkdtemp()
+                        path = os.path.join(pardir, os.path.basename(filename))
+                        with open(path, "wb") as out:
+                            out.write(response.content)
+                        return out.name
+                    else:
+                        return response.content
                 elif mode == "directory":
                     prefix = os.path.basename(filename)
                     path = tempfile.mkdtemp(prefix=prefix)
@@ -453,9 +492,11 @@ class GalaxyInteractorApi:
                             contents.extractall(path=path)
                     else:
                         # Galaxy < 21.01
-                        with tarfile.open(fileobj=fileobj) as tar_contents:
+                        with CompressedFile.open_tar(fileobj) as tar_contents:
                             tar_contents.extractall(path=path)
                     result = path
+                    if path_only:
+                        return result
         else:
             # We can only use local data
             local_path = self.test_data_path(tool_id, filename, tool_version=tool_version)
@@ -465,6 +506,8 @@ class GalaxyInteractorApi:
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == "file":
+                if path_only:
+                    return local_path
                 with open(local_path, mode="rb") as f:
                     result = f.read()
             elif mode == "directory":
@@ -500,88 +543,87 @@ class GalaxyInteractorApi:
             output_id = output_data
         return output_id
 
-    def stage_data_async(
-        self,
-        test_data: Dict[str, Any],
-        history_id: str,
-        tool_id: str,
-        force_path_paste: bool = False,
-        maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-        tool_version: Optional[str] = None,
-    ) -> Callable[[], None]:
+    def remote_to_input(
+        self, test_data, tool_id: str, force_path_paste: bool = False, tool_version: Optional[str] = None
+    ):
         fname = test_data["fname"]
         tags = test_data.get("tags")
         tool_input = {
-            "file_type": test_data["ftype"],
+            "format": test_data["ftype"],
             "dbkey": test_data["dbkey"],
+            "class": test_data.get("class", "File"),
+            # Match legacy test behavior
+            "decompress": util.string_as_bool(test_data.get("decompress", True)),
         }
         if tags:
+            if isinstance(tags, str):
+                tags = tags.split(",")
             tool_input["tags"] = tags
 
         metadata = test_data.get("metadata", {})
         if not hasattr(metadata, "items"):
             raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
-        for metadata_name, value in test_data.get("metadata", {}).items():
-            tool_input[f"files_metadata|{metadata_name}"] = value
+        tool_input["metadata"] = metadata
 
         composite_data = test_data["composite_data"]
-        files = {}
         if composite_data:
-            for i, file_name in enumerate(composite_data):
-                if force_path_paste:
-                    file_path = self.test_data_path(tool_id, file_name, tool_version=tool_version)
-                    tool_input.update({f"files_{i}|url_paste": f"file://{file_path}"})
-                else:
-                    file_content = self.test_data_download(
-                        tool_id, file_name, is_output=False, tool_version=tool_version
-                    )
-                    files[f"files_{i}|file_data"] = file_content
-                tool_input.update(
-                    {
-                        f"files_{i}|type": "upload_dataset",
-                    }
-                )
-            name = test_data["name"]
+            tool_input["composite_data"] = [
+                self._get_path_or_location(
+                    fname=fname_,
+                    test_data={},
+                    tool_id=tool_id,
+                    tool_version=tool_version,
+                    force_path_paste=force_path_paste,
+                ).path
+                for fname_ in composite_data
+            ]
         else:
-            file_name = None
-            file_name_exists = False
-            location = self._ensure_valid_location_in(test_data)
-            if fname and force_path_paste:
-                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                file_name_exists = os.path.exists(file_name)
-            tool_input["files_0|type"] = "upload_dataset"
-            if not file_name_exists and location is not None:
-                name = location
-                tool_input["files_0|url_paste"] = location
+            assert fname, "File path is required and cannot be empty string"
+            path_or_location = self._get_path_or_location(
+                fname,
+                test_data,
+                tool_id,
+                tool_version=tool_version,
+                mode="file" if tool_input["class"].lower() == "file" else "directory",
+            )
+            if path_or_location.path:
+                tool_input["path"] = path_or_location.path
+            if path_or_location.location:
+                tool_input["location"] = path_or_location.location
+            tool_input["name"] = os.path.basename(path_or_location.name)
+        return tool_input
+
+    def _get_path_or_location(
+        self,
+        fname: str,
+        test_data: Dict[str, Any],
+        tool_id: str,
+        tool_version: Optional[str] = None,
+        force_path_paste: bool = False,
+        mode: Literal["file", "directory"] = "file",
+    ) -> PathOrLocation:
+        file_name = None
+        file_name_exists = False
+        location = self._ensure_valid_location_in(test_data)
+        if fname and force_path_paste:
+            file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+            file_name_exists = os.path.exists(file_name)
+        if not file_name_exists and location is not None:
+            return PathOrLocation(name=location, location=location, path=None)
+        else:
+            if force_path_paste:
+                if file_name is None:
+                    file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                return PathOrLocation(name=fname, location=f"file://{file_name}", path=None)
             else:
-                name = fname
-                if force_path_paste:
-                    if file_name is None:
-                        file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                    tool_input["files_0|url_paste"] = f"file://{file_name}"
-                else:
-                    file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
-                    files["files_0|file_data"] = file_content
-            name = os.path.basename(name)
-            tool_input["files_0|NAME"] = name
-        submit_response_object = self.__submit_tool(
-            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
-        )
-        submit_response = ensure_tool_run_response_okay(submit_response_object, f"upload dataset {name}")
-        assert (
-            "outputs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting outputs in response."
-        outputs = submit_response["outputs"]
-        assert len(outputs) > 0, f"Invalid response from server [{submit_response}], expecting an output dataset."
-        dataset = outputs[0]
-        hid = dataset["id"]
-        self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
-        assert (
-            "jobs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting jobs in response."
-        jobs = submit_response["jobs"]
-        assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
-        return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
+                path = self.test_data_download(
+                    tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
+                )
+                assert isinstance(path, str)
+                # Downloaded directories contain root directory
+                if path and mode == "directory":
+                    path = os.path.join(path, fname)
+                return PathOrLocation(name=fname, location=None, path=path)
 
     def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
         location: Optional[str] = test_data.get("location")
@@ -671,7 +713,8 @@ class GalaxyInteractorApi:
                 element["name"] = element_identifier
                 tags = element_def.get("attributes").get("tags")
                 if tags:
-                    element["tags"] = tags.split(",")
+                    if isinstance(tags, str):
+                        element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 
@@ -889,7 +932,7 @@ class GalaxyInteractorApi:
                 else:
                     break
 
-            assert response
+            assert response, f"Failed to fetch url '{url}'"
             response.raise_for_status()
             return response.content
 
@@ -1028,7 +1071,7 @@ def prepare_request_params(
                 new_items[key] = dumps(val)
         data.update(new_items)
 
-    kwd = {
+    kwd: Dict[str, Any] = {
         "files": files,
     }
     if headers:
@@ -1325,6 +1368,7 @@ def verify_tool(
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
     _tool_test_dicts: Optional[List[ToolTestDescriptionDict]] = None,  # extension point only for tests
+    test_data_resolver: Optional[TestDataResolver] = None,
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1382,7 +1426,7 @@ def verify_tool(
     job_stdio = None
     job_output_exceptions = None
     tool_execution_exception: Optional[Exception] = None
-    input_staging_exception = None
+    input_staging_exc_info = None
     expected_failure_occurred = False
     begin_time = time.time()
     try:
@@ -1395,9 +1439,10 @@ def verify_tool(
                 force_path_paste=force_path_paste,
                 maxseconds=maxseconds,
                 tool_version=tool_version,
+                test_data_resolver=test_data_resolver,
             )
-        except Exception as e:
-            input_staging_exception = e
+        except Exception:
+            input_staging_exc_info = sys.exc_info()
             raise
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
@@ -1447,8 +1492,10 @@ def verify_tool(
                         status = "skip"
                     else:
                         status = "error"
-            if input_staging_exception:
-                job_data["execution_problem"] = f"Input staging problem: {util.unicodify(input_staging_exception)}"
+            if input_staging_exc_info:
+                job_data["execution_problem"] = (
+                    f"Input staging problem: {''.join(traceback.format_exception(*input_staging_exc_info))}"
+                )
                 status = "error"
             job_data["status"] = status
             register_job_data(job_data)
@@ -1688,7 +1735,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
-        maxseconds = _get_maxseconds(processed_test_dict)
+        maxseconds = processed_test_dict.get("maxseconds")
         output_collections = processed_test_dict.get("output_collections", [])
         if "num_outputs" in processed_test_dict and processed_test_dict["num_outputs"]:
             num_outputs = int(processed_test_dict["num_outputs"])
@@ -1748,10 +1795,6 @@ def _get_test_index(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> 
 def _get_test_name(test_dict: Union[ToolTestDict, ToolTestDescriptionDict], test_index: int) -> str:
     name = cast(str, test_dict.get("name", f"Test-{test_index + 1}"))
     return name
-
-
-def _get_maxseconds(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> int:
-    return int(cast(Union[str, int], test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400))
 
 
 def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified) -> ExpandedToolInputs:
@@ -1829,7 +1872,7 @@ class ToolTestDescription:
         self.inputs = expanded_inputs_from_json(json_dict.get("inputs", {}))
         self.tool_id = json_dict["tool_id"]
         self.tool_version = json_dict.get("tool_version")
-        self.maxseconds = _get_maxseconds(json_dict)
+        self.maxseconds = json_dict.get("maxseconds")
 
     def test_data(self):
         """
@@ -1839,44 +1882,46 @@ class ToolTestDescription:
 
     def to_dict(self) -> ToolTestDescriptionDict:
         inputs = expanded_inputs_to_json(self.inputs)
-        return ToolTestDescriptionDict(
-            {
-                "inputs": inputs,
-                "outputs": self.outputs,
-                "output_collections": [_.to_dict() for _ in self.output_collections],
-                "num_outputs": self.num_outputs,
-                "command_line": self.command_line,
-                "command_version": self.command_version,
-                "stdout": self.stdout,
-                "stderr": self.stderr,
-                "expect_exit_code": self.expect_exit_code,
-                "expect_failure": self.expect_failure,
-                "expect_test_failure": self.expect_test_failure,
-                "name": self.name,
-                "test_index": self.test_index,
-                "tool_id": self.tool_id,
-                "tool_version": self.tool_version,
-                "required_files": self.required_files,
-                "required_data_tables": self.required_data_tables,
-                "required_loc_files": self.required_loc_files,
-                "error": self.error,
-                "exception": self.exception,
-                "maxseconds": self.maxseconds,
-            }
-        )
+        test_description_def: ToolTestDescriptionDict = {
+            "inputs": inputs,
+            "outputs": self.outputs,
+            "output_collections": [_.to_dict() for _ in self.output_collections],
+            "num_outputs": self.num_outputs,
+            "command_line": self.command_line,
+            "command_version": self.command_version,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "expect_exit_code": self.expect_exit_code,
+            "expect_failure": self.expect_failure,
+            "expect_test_failure": self.expect_test_failure,
+            "name": self.name,
+            "test_index": self.test_index,
+            "tool_id": self.tool_id,
+            "tool_version": self.tool_version,
+            "required_files": self.required_files,
+            "required_data_tables": self.required_data_tables,
+            "required_loc_files": self.required_loc_files,
+            "error": self.error,
+            "exception": self.exception,
+        }
+        if self.maxseconds is not None:
+            test_description_def["maxseconds"] = self.maxseconds
+        return ToolTestDescriptionDict(**test_description_def)
 
 
 def test_data_iter(required_files):
     for fname, extra in required_files:
-        data_dict = dict(
-            fname=fname,
-            metadata=extra.get("metadata", {}),
-            composite_data=extra.get("composite_data", []),
-            ftype=extra.get("ftype", DEFAULT_FTYPE),
-            dbkey=extra.get("dbkey", DEFAULT_DBKEY),
-            location=extra.get("location", None),
-            tags=extra.get("tags", []),
-        )
+        default_ftype = DEFAULT_FTYPE if extra.get("class", "File").lower() != "directory" else "directory"
+        data_dict = {
+            "fname": fname,
+            "class": extra.get("class", "File"),
+            "metadata": extra.get("metadata", {}),
+            "composite_data": extra.get("composite_data", []),
+            "ftype": extra.get("ftype", default_ftype),
+            "dbkey": extra.get("dbkey", DEFAULT_DBKEY),
+            "location": extra.get("location", None),
+            "tags": extra.get("tags", []),
+        }
         edit_attributes = extra.get("edit_attributes", [])
 
         # currently only renaming is supported

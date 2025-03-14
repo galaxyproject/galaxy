@@ -65,7 +65,6 @@ from galaxy.model import (
     WorkflowStep,
     YIELD_PER_ROWS,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -346,10 +345,9 @@ class JobManager:
 
     def stop(self, job, message=None):
         if not job.finished:
-            job.mark_deleted(self.app.config.track_jobs_in_database)
+            job.mark_deleted(self.app.config.track_jobs_in_database, message)
             session = self.app.model.session
-            with transaction(session):
-                session.commit()
+            session.commit()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
@@ -393,7 +391,12 @@ class JobSearch:
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
-                src = current_case["src"]
+                src = current_case.get("src")
+                if src is None:
+                    # just a parameter named id.
+                    # TODO: dispatch on tool parameter type instead of values,
+                    # maybe with tool state variant
+                    return key, value
                 current_case = param
                 for i, p in enumerate(path):
                     if p == "values" and i == len(path) - 2:
@@ -788,7 +791,7 @@ def invocation_job_source_iter(sa_session, invocation_id):
 
 def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
     single_job_stmnt = (
-        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
         .join(
             WorkflowInvocationStep,
@@ -799,7 +802,7 @@ def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation
         .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
     )
     collection_job_stmnt = (
-        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
         .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
         .join(
@@ -1084,7 +1087,11 @@ def summarize_job_parameters(trans, job: Job):
                         is_valid = False
                     if is_valid:
                         rval.append(
-                            dict(text=input.test_param.label, depth=depth, value=input.cases[current_case].value)
+                            dict(
+                                text=input.test_param.label or input.test_param.name,
+                                depth=depth,
+                                value=input.cases[current_case].value,
+                            )
                         )
                         rval.extend(
                             inputs_recursive(
@@ -1247,6 +1254,6 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
     return session.scalars(stmt).all()
 
 
-def get_job(session, *where_clauses):
+def get_job(session: galaxy_scoped_session, *where_clauses):
     stmt = select(Job).where(*where_clauses).limit(1)
     return session.scalars(stmt).first()

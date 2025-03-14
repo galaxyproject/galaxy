@@ -58,6 +58,14 @@ function openUrl(url, target = null) {
     }
 }
 
+function extensionTabClick(tab) {
+    if (tab.url) {
+        openUrl(tab.url, tab.target);
+    } else if (typeof tab.onclick === "function") {
+        tab.onclick();
+    }
+}
+
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
     props.windowTab.onclick();
@@ -103,7 +111,7 @@ onMounted(() => {
                 :url="tab.url"
                 :tooltip="tab.tooltip"
                 :target="tab.target"
-                @click="tab.onclick ? tab.onclick : undefined" />
+                @click="extensionTabClick(tab)" />
             <MastheadItem
                 id="help"
                 icon="fa-question"
@@ -191,7 +199,7 @@ onMounted(() => {
                         position: absolute;
                         left: 1.6rem;
                         top: 1.6rem;
-                        font-size: 0.4rem;
+                        font-size: 0.6rem;
                         font-weight: bold;
                     }
                 }

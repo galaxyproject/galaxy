@@ -44,7 +44,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        assert save_button.is_absent
+        save_button.assert_disabled()
 
         self.screenshot("workflow_editor_blank")
 
@@ -58,7 +58,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
     def test_edit_annotation(self):
         editor = self.components.workflow_editor
         annotation = "new_annotation_test"
-        name = self.workflow_create_new(annotation=annotation)
+        name = self.create_and_wait_for_new_workflow_in_editor(annotation=annotation)
         edit_annotation = self.components.workflow_editor.edit_annotation
         self.assert_wf_annotation_is(annotation)
 
@@ -72,9 +72,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
     @selenium_test
     def test_edit_name(self):
-        editor = self.components.workflow_editor
-        name = self.workflow_create_new()
-        editor.canvas_body.wait_for_visible()
+        name = self.create_and_wait_for_new_workflow_in_editor()
         new_name = self._get_random_name()
         edit_name = self.components.workflow_editor.edit_name
         edit_name.wait_for_and_send_keys(new_name)
@@ -86,8 +84,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
     @selenium_test
     def test_edit_license(self):
         editor = self.components.workflow_editor
-        name = self.workflow_create_new()
-        editor.canvas_body.wait_for_visible()
+        name = self.create_and_wait_for_new_workflow_in_editor()
         editor.license_selector.wait_for_visible()
         assert "Do not specify" in editor.license_current_value.wait_for_text()
 
@@ -97,6 +94,85 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.workflow_index_open_with_name(name)
         editor.license_selector.wait_for_visible()
         assert "MIT" in editor.license_current_value.wait_for_text()
+
+    @selenium_test
+    def test_parameter_regex_validation(self):
+        editor = self.components.workflow_editor
+        workflow_run = self.components.workflow_run
+
+        parameter_name = "text_param"
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        self.workflow_editor_add_input("parameter_input")
+        editor.label_input.wait_for_and_send_keys(parameter_name)
+        # this really should be parameterized with the repeat name
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_match"
+        ).wait_for_and_send_keys("moocow.*")
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_doc"
+        ).wait_for_and_send_keys("input must start with moocow")
+        self.save_after_node_form_changes()
+
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
+        input_element.send_keys("startswrong")
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        workflow_run.run_error.assert_absent_or_hidden()
+        self.workflow_run_submit()
+        element = workflow_run.run_error.wait_for_present()
+        assert "input must start with moocow" in element.text
+
+    @selenium_test
+    def test_int_parameter_minimum_validation(self):
+        editor = self.components.workflow_editor
+        workflow_run = self.components.workflow_run
+
+        parameter_name = "int_param"
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        self.workflow_editor_add_input("parameter_input")
+        editor.label_input.wait_for_and_send_keys(parameter_name)
+        select_field = self.components.tool_form.parameter_select(parameter="parameter_definition|parameter_type")
+        self.select_set_value(select_field, "integer")
+        self.components.tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("4")
+        self.save_after_node_form_changes()
+
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
+        input_element.send_keys("3")
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        workflow_run.run_error.assert_absent_or_hidden()
+        self.workflow_run_submit()
+        element = workflow_run.run_error.wait_for_present()
+        # follow up with a bigger PR to just make this (4 <= value) right? need to set default message
+        # in parameter validators
+        assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
+
+    @selenium_test
+    def test_float_parameter_maximum_validation(self):
+        editor = self.components.workflow_editor
+        workflow_run = self.components.workflow_run
+
+        parameter_name = "float_param"
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        self.workflow_editor_add_input("parameter_input_float")
+        editor.label_input.wait_for_and_send_keys(parameter_name)
+        self.components.tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("3.14")
+        self.save_after_node_form_changes()
+
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
+        input_element.send_keys("3.2")
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        workflow_run.run_error.assert_absent_or_hidden()
+        self.workflow_run_submit()
+        element = workflow_run.run_error.wait_for_present()
+        # see message in test test_int_parameter_minimum_validation about making this a little more human
+        # friendly.
+        assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
 
     @selenium_test
     def test_optional_select_data_field(self):
@@ -109,9 +185,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         node.title.wait_for_and_click()
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
         self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter value")
-        # onSetData does an extra POST to build_modules, so we need to wait for that ...
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.assert_workflow_has_changes_and_save()
+        self.save_after_node_form_changes()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
         assert tool_state["select_single"] == "parameter value"
@@ -1295,6 +1369,17 @@ steps:
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 comment") != -1
 
+    def create_and_wait_for_new_workflow_in_editor(self, annotation: Optional[str] = None) -> str:
+        editor = self.components.workflow_editor
+        name = self.workflow_create_new(annotation=annotation)
+        editor.canvas_body.wait_for_visible()
+        return name
+
+    def save_after_node_form_changes(self):
+        # onSetData does an extra POST to build_modules, so we need to wait for that ...
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+
     def get_node_position(self, label: str):
         node = self.components.workflow_editor.node._(label=label).wait_for_present()
 
@@ -1409,16 +1494,6 @@ steps:
         sink_id = input_element.get_attribute("id").replace("|", r"\|")
 
         return source_id, sink_id
-
-    def workflow_editor_add_input(self, item_name="data_input"):
-        editor = self.components.workflow_editor
-
-        # Make sure we're on the workflow editor and not clicking the main tool panel.
-        editor.canvas_body.wait_for_visible()
-
-        self.open_toolbox()
-        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
-        editor.tool_menu_item_link(item_name=item_name).wait_for_and_click()
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor

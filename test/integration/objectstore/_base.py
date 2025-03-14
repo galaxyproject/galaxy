@@ -120,7 +120,7 @@ def wait_rucio_ready(container_name):
 
 def start_rucio(container_name):
     ports = [(OBJECT_STORE_PORT, 80)]
-    docker_run("code.ornl.gov:4567/ndip/public-docker/rucio:1.29.8", container_name, ports=ports)
+    docker_run("savannah.ornl.gov/ndip/public-docker/rucio:1.29.8", container_name, ports=ports)
 
     wait_rucio_ready(container_name)
 

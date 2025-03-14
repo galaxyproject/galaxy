@@ -4,11 +4,11 @@
  */
 import Backbone from "backbone";
 import { createDatasetCollection } from "components/History/model/queries";
-import { startWatchingHistory } from "store/historyStore/model/watchHistory";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
+import { startWatchingHistory } from "watch/watchHistory";
 
-import { buildCollectionModal } from "./buildCollectionModal";
+import { buildRuleCollectionModal } from "./buildCollectionModal";
 
 // extend existing current history panel
 export class HistoryPanelProxy {
@@ -34,18 +34,16 @@ export class HistoryPanelProxy {
         this.model.set("name", currentHistory.name);
     }
 
-    refreshContents() {
-        // to be removed after disabling legacy history, present to provide uniform interface
-        // with History Panel Backbone View.
-    }
     loadCurrentHistory() {
         this.historyStore.loadCurrentHistory();
     }
+
     switchToHistory(historyId) {
         this.model.id = historyId;
         this.historyStore.setCurrentHistory(historyId);
     }
-    async buildCollection(collectionType, selection, historyId = null, fromRulesInput = false) {
+
+    async buildCollectionFromRules(selection, historyId = null, fromRulesInput = false) {
         let selectionContent = null;
         historyId = historyId || this.model.id;
         if (fromRulesInput) {
@@ -56,7 +54,7 @@ export class HistoryPanelProxy {
                 selectionContent.set(obj.id, obj);
             });
         }
-        const modalResult = await buildCollectionModal(collectionType, selectionContent, historyId, fromRulesInput);
+        const modalResult = await buildRuleCollectionModal(selectionContent, historyId, fromRulesInput);
         if (modalResult) {
             console.debug("Submitting collection build request.", modalResult);
             await createDatasetCollection({ id: historyId }, modalResult);

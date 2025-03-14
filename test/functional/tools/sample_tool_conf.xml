@@ -149,7 +149,7 @@
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
-  <tool file="validation_image.xml"/>
+  <tool file="validation_image.xml" />
   <tool file="validation_zip.xml" />
   <tool file="validation_tar.xml" />
   <tool file="validation_tar_gz.xml" />
@@ -232,6 +232,7 @@
   <tool file="expect_num_outputs.xml" />
   <tool file="text_repeat.xml" />
   <tool file="integer_default.xml" />
+  <tool file="float_default.xml" />
   <tool file="all_output_types.xml" />
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
@@ -244,10 +245,12 @@
 
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
+  <tool file="html_output.xml" />
 
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
   <tool file="converter_target_datatype.xml" />
+  <tool file="tool_directory_copy.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
@@ -270,6 +273,8 @@
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
+  <tool file="create_directory_index.xml" />
+  <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />
 

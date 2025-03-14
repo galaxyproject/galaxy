@@ -700,7 +700,7 @@ OUTPUTS_FILTER_EXPRESSION = """
     <outputs>
         <data name="another_valid_name" format="fasta" label="a label">
             <filter>an invalid condition</filter>
-            <filter>an and condition</filter>
+            <filter> an and condition </filter>
         </data>
         <collection name="yet_another_valid_name" type="list" format="fasta" label="another label">
             <filter>another invalid condition</filter>
@@ -1376,13 +1376,23 @@ def test_inputs_data_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_boolean_param(lint_ctx):
+def test_inputs_boolean_param_duplicate_labels(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_DUPLICATE_LABELS)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_boolean_param_swapped_labels(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_SWAPPED_LABELS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
 
 
@@ -2116,8 +2126,10 @@ VALID_DATATYPES = """
         <param name="adata" type="data" format="txt"/>
         <param name="bdata" type="data" format="invalid,fasta,custom"/>
         <param name="fdata" type="data" format="fasta.gz"/>
+        <param name="auto_input" type="data" format="auto"/>
     </inputs>
     <outputs>
+        <data name="autoformat" format="auto"/>
         <data name="name" format="another_invalid">
             <change_format>
                 <when input="input_text" value="foo" format="just_another_invalid"/>
@@ -2132,6 +2144,7 @@ VALID_DATATYPES = """
         <test>
             <param name="adata" ftype="txt"/>
             <param name="bdata" ftype="invalid"/>
+            <param name="auto_test_input" ftype="auto"/>
         </test>
     </tests>
 </tool>
@@ -2169,7 +2182,8 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 6
+    assert "Format [auto] can not be used for tool or tool test inputs" in lint_ctx.error_messages  # 2x
+    assert len(lint_ctx.error_messages) == 8
 
 
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">

@@ -171,9 +171,9 @@ class TestUsersApi(ApiTestCase):
             # Delete user will cancel all jobs
             self._delete(f"users/{user_id}", admin=True)
 
-            # Get the job state again (this time as admin), it should be deleting
+            # Get the job state again (this time as admin), it should be deleting or deleted
             job_response = self._get(f"jobs/{job_id}", admin=True).json()
-            assert job_response["state"] == "deleting", job_response
+            assert job_response["state"] in ["deleting", "deleted"], job_response
 
     @requires_new_user
     def test_information(self):

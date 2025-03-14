@@ -2,7 +2,6 @@ import logging
 import os
 
 from galaxy import util
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.util import utility_container_manager
 from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
@@ -198,7 +197,7 @@ class DependencyDisplayer:
         them for uninstalled repositories that are being reinstalled.
         """
         if metadata := repository.metadata_:
-            irm = InstalledRepositoryManager(self.app)
+            irm = self.app.installed_repository_manager
             # Handle repository dependencies.
             (
                 installed_repository_dependencies,

@@ -3,6 +3,7 @@ import os
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
 )
 
@@ -85,6 +86,8 @@ class WorkflowRunCrateProfileBuilder:
         self.file_entities: Dict[int, Any] = {}
         self.param_entities: Dict[int, Any] = {}
         self.pv_entities: Dict[str, Any] = {}
+        # Cache for tools to avoid duplicating entities for the same tool
+        self.tool_cache: Dict[str, ContextEntity] = {}
 
     def build_crate(self):
         crate = ROCrate()
@@ -123,25 +126,27 @@ class WorkflowRunCrateProfileBuilder:
     def _add_files(self, crate: ROCrate):
         for wfda in self.invocation.input_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
-                properties = {
-                    "exampleOfWork": {"@id": f"#{wfda.dataset.dataset.uuid}"},
-                }
-                file_entity = self._add_file(wfda.dataset, properties, crate)
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
                 crate.mainEntity.append_to("input", dataset_formal_param)
+                properties = {
+                    "exampleOfWork": {"@id": dataset_formal_param.id},
+                }
+                file_entity = self._add_file(wfda.dataset, properties, crate)
                 self.create_action.append_to("object", file_entity)
 
         for wfda in self.invocation.output_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
-                properties = {
-                    "exampleOfWork": {"@id": f"#{wfda.dataset.dataset.uuid}"},
-                }
-                file_entity = self._add_file(wfda.dataset, properties, crate)
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
                 crate.mainEntity.append_to("output", dataset_formal_param)
+                properties = {
+                    "exampleOfWork": {"@id": dataset_formal_param.id},
+                }
+                file_entity = self._add_file(wfda.dataset, properties, crate)
                 self.create_action.append_to("result", file_entity)
 
-    def _add_collection(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate) -> ContextEntity:
+    def _add_collection(
+        self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate, collection_formal_param: ContextEntity
+    ) -> ContextEntity:
         name = hdca.name
         dataset_ids = []
         for hda in hdca.dataset_instances:
@@ -158,7 +163,7 @@ class WorkflowRunCrateProfileBuilder:
             "@type": "Collection",
             "additionalType": self._get_collection_additional_type(hdca.collection.collection_type),
             "hasPart": dataset_ids,
-            "exampleOfWork": {"@id": f"#{hdca.type_id}-param"},
+            "exampleOfWork": {"@id": collection_formal_param.id},
         }
         collection_entity = crate.add(
             ContextEntity(
@@ -185,14 +190,14 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_collections(self, crate: ROCrate):
         for wfdca in self.invocation.input_dataset_collections:
-            collection_entity = self._add_collection(wfdca.dataset_collection, crate)
             collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
+            collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
             crate.mainEntity.append_to("input", collection_formal_param)
             self.create_action.append_to("object", collection_entity)
 
         for wfdca in self.invocation.output_dataset_collections:
-            collection_entity = self._add_collection(wfdca.dataset_collection, crate)
             collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
+            collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
             crate.mainEntity.append_to("output", collection_formal_param)
             self.create_action.append_to("result", collection_entity)
 
@@ -221,6 +226,162 @@ class WorkflowRunCrateProfileBuilder:
             crate.license = self.workflow.license or ""
             crate.mainEntity["name"] = self.workflow.name
             crate.mainEntity["subjectOf"] = cwl_wf
+
+            # Adding multiple creators if available
+            if self.workflow.creator_metadata:
+                for creator_data in self.workflow.creator_metadata:
+                    if creator_data.get("class") == "Person":
+                        # Create the person entity
+                        creator_entity = crate.add(
+                            ContextEntity(
+                                crate,
+                                creator_data.get("identifier", ""),  # Default to empty string if identifier is missing
+                                properties={
+                                    "@type": "Person",
+                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                                    "identifier": creator_data.get(
+                                        "identifier", ""
+                                    ),  # Assuming identifier is ORCID, or adjust as needed
+                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                                    "email": creator_data.get(
+                                        "email", ""
+                                    ),  # Add email if available, otherwise empty string
+                                },
+                            )
+                        )
+                        # Append the person creator entity to the mainEntity
+                        crate.mainEntity.append_to("creator", creator_entity)
+
+                    elif creator_data.get("class") == "Organization":
+                        # Create the organization entity
+                        organization_entity = crate.add(
+                            ContextEntity(
+                                crate,
+                                creator_data.get(
+                                    "url", ""
+                                ),  # Use URL as identifier if available, otherwise empty string
+                                properties={
+                                    "@type": "Organization",
+                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                                },
+                            )
+                        )
+                        # Append the organization entity to the mainEntity
+                        crate.mainEntity.append_to("creator", organization_entity)
+
+            # Add CWL workflow entity if exists
+            crate.mainEntity["subjectOf"] = cwl_wf
+
+        # Add tools used in the workflow
+        self._add_tools(crate)
+        self._add_steps(crate)
+
+    def _add_steps(self, crate: ROCrate):
+        """
+        Add workflow steps (HowToStep) to the RO-Crate. These are unique for each tool occurrence.
+        """
+        step_entities: List[ContextEntity] = []
+        # Initialize the position as a list with a single element to keep it mutable
+        position = [1]
+        self._add_steps_recursive(self.workflow.steps, crate, step_entities, position)
+        return step_entities
+
+    def _add_steps_recursive(self, steps, crate: ROCrate, step_entities, position):
+        """
+        Recursively add HowToStep entities from workflow steps, ensuring that
+        the position index is maintained across subworkflows.
+        """
+        for step in steps:
+            if step.type == "tool":
+                # Create a unique HowToStep entity for each step
+                step_id = f"step_{position[0]}"
+                step_description = None
+                if step.annotations:
+                    annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
+                    step_description = " ".join(annotations_list) if annotations_list else None
+
+                # Add HowToStep entity to the crate
+                step_entity = crate.add(
+                    ContextEntity(
+                        crate,
+                        step_id,
+                        properties={
+                            "@type": "HowToStep",
+                            "position": position[0],
+                            "name": step.tool_id,
+                            "description": step_description,
+                            "workExample": f"#{step.tool_id}",
+                        },
+                    )
+                )
+
+                # Append the HowToStep entity to the workflow steps list
+                step_entities.append(step_entity)
+                crate.mainEntity.append_to("step", step_entity)
+
+                # Increment the position counter
+                position[0] += 1
+
+            # Handle subworkflows recursively
+            elif step.type == "subworkflow":
+                subworkflow = step.subworkflow
+                if subworkflow:
+                    self._add_steps_recursive(subworkflow.steps, crate, step_entities, position)
+
+    def _add_tools(self, crate: ROCrate):
+        tool_entities: List[ContextEntity] = []
+        self._add_tools_recursive(self.workflow.steps, crate, tool_entities)
+
+    def _add_tools_recursive(self, steps, crate: ROCrate, tool_entities):
+        """
+        Recursively add SoftwareApplication entities from workflow steps, reusing tools when necessary.
+        """
+        for step in steps:
+            if step.type == "tool":
+                tool_id = step.tool_id
+                tool_version = step.tool_version
+
+                # Cache key based on tool ID and version
+                tool_key = f"{tool_id}:{tool_version}"
+
+                # Check if tool entity is already in cache
+                if tool_key in self.tool_cache:
+                    tool_entity = self.tool_cache[tool_key]
+                else:
+                    # Create a new tool entity
+                    tool_name = tool_id
+                    tool_description = None
+                    if step.annotations:
+                        annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
+                        tool_description = " ".join(annotations_list) if annotations_list else None
+
+                    # Add tool entity to the RO-Crate
+                    tool_entity = crate.add(
+                        ContextEntity(
+                            crate,
+                            f"#{tool_id}",  # Prepend # to tool_id
+                            properties={
+                                "@type": "SoftwareApplication",
+                                "name": tool_name,
+                                "version": tool_version,
+                                "description": tool_description,
+                            },
+                        )
+                    )
+
+                    # Store the tool entity in the cache
+                    self.tool_cache[tool_key] = tool_entity
+
+                # Append the tool entity to the workflow (instrument) and store it in the list
+                tool_entities.append(tool_entity)
+                crate.mainEntity.append_to("hasPart", tool_entity)
+
+            # Handle subworkflows recursively
+            elif step.type == "subworkflow":
+                subworkflow = step.subworkflow
+                if subworkflow:
+                    self._add_tools_recursive(subworkflow.steps, crate, tool_entities)
 
     def _add_create_action(self, crate: ROCrate):
         self.create_action = crate.add(
@@ -336,30 +497,14 @@ class WorkflowRunCrateProfileBuilder:
     def _add_parameters(self, crate: ROCrate):
         for step in self.invocation.steps:
             if step.workflow_step.type == "parameter_input":
-                property_value = self._add_step_parameter_pv(step, crate)
-                formal_param = self._add_step_parameter_fp(step, crate)
-                crate.mainEntity.append_to("input", formal_param)
+                property_value = self._add_step_parameter(step, crate)
                 self.create_action.append_to("object", property_value)
 
-    def _add_step_parameter_pv(self, step: WorkflowInvocationStep, crate: ROCrate):
+    def _add_step_parameter(self, step: WorkflowInvocationStep, crate: ROCrate) -> ContextEntity:
         param_id = step.workflow_step.label
-        return crate.add(
-            ContextEntity(
-                crate,
-                f"{param_id}-pv",
-                properties={
-                    "@type": "PropertyValue",
-                    "name": f"{param_id}",
-                    "value": step.output_value.value,
-                    "exampleOfWork": {"@id": f"#{param_id}-param"},
-                },
-            )
-        )
-
-    def _add_step_parameter_fp(self, step: WorkflowInvocationStep, crate: ROCrate):
-        param_id = step.workflow_step.label
+        assert step.workflow_step.tool_inputs
         param_type = step.workflow_step.tool_inputs["parameter_type"]
-        return crate.add(
+        formal_param = crate.add(
             ContextEntity(
                 crate,
                 f"{param_id}-param",
@@ -372,18 +517,16 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
-
-    def _add_step_tool_pv(self, step: WorkflowInvocationStep, tool_input: str, crate: ROCrate):
-        param_id = tool_input
+        crate.mainEntity.append_to("input", formal_param)
         return crate.add(
             ContextEntity(
                 crate,
                 f"{param_id}-pv",
                 properties={
                     "@type": "PropertyValue",
-                    "name": f"{step.workflow_step.label}",
-                    "value": step.workflow_step.tool_inputs[tool_input],
-                    "exampleOfWork": {"@id": f"#{param_id}-param"},
+                    "name": f"{param_id}",
+                    "value": step.output_value.value,
+                    "exampleOfWork": {"@id": formal_param.id},
                 },
             )
         )
@@ -417,7 +560,9 @@ class WorkflowRunCrateProfileBuilder:
             )
         )
 
-    def _add_collection_formal_parameter(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate):
+    def _add_collection_formal_parameter(
+        self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate
+    ) -> ContextEntity:
         return crate.add(
             ContextEntity(
                 crate,

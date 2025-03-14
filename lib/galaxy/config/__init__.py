@@ -70,7 +70,7 @@ DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 GALAXY_APP_NAME = "galaxy"
-GALAXY_SCHEMAS_PATH = resource_path(__package__, "schemas")
+GALAXY_SCHEMAS_PATH = resource_path(__name__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
 REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
@@ -310,7 +310,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _set_config_base(self, config_kwargs):
         def _set_global_conf():
-            self.config_file = config_kwargs.get("__file__", None)
+            self.config_file = config_kwargs.get("__file__") or config_kwargs.get("config_file")
             self.global_conf = config_kwargs.get("global_conf")
             self.global_conf_parser = configparser.ConfigParser()
             if not self.config_file and self.global_conf and "__file__" in self.global_conf:
@@ -512,10 +512,10 @@ class BaseAppConfiguration(HasDynamicProperties):
             if not parent:  # base case: nothing else needs resolving
                 return path
             parent_path = resolve(parent)  # recursively resolve parent path
-            if path is not None:
+            if path:
                 path = os.path.join(parent_path, path)  # resolve path
             else:
-                path = parent_path  # or use parent path
+                log.warning("Trying to resolve path for the '%s' option but it's empty/None", key)
 
             setattr(self, key, path)  # update property
             _cache[key] = path  # cache it!
@@ -539,7 +539,7 @@ class BaseAppConfiguration(HasDynamicProperties):
             if self.is_set(key) and self.paths_to_check_against_root and key in self.paths_to_check_against_root:
                 self._check_against_root(key)
 
-    def _check_against_root(self, key):
+    def _check_against_root(self, key: str):
         def get_path(current_path, initial_path):
             # if path does not exist and was set as relative:
             if not self._path_exists(current_path) and not os.path.isabs(initial_path):
@@ -558,6 +558,8 @@ class BaseAppConfiguration(HasDynamicProperties):
             return current_path
 
         current_value = getattr(self, key)  # resolved path or list of resolved paths
+        if not current_value:
+            return
         if isinstance(current_value, list):
             initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
             updated_paths = []
@@ -1100,8 +1102,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self._process_celery_config()
 
-        # load in the chat_prompts if openai is enabled
-        self._load_chat_prompts()
+        # load in the chat_prompts if openai api key is configured
+        if self.openai_api_key:
+            self._load_chat_prompts()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
@@ -1264,21 +1267,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
 
     def _load_chat_prompts(self):
-        if self.openai_api_key:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            chat_prompts_path = os.path.join(current_dir, "chat_prompts.json")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        chat_prompts_path = os.path.join(current_dir, "chat_prompts.json")
 
-            if os.path.exists(chat_prompts_path):
-                try:
-                    with open(chat_prompts_path, encoding="utf-8") as file:
-                        data = json.load(file)
-                        self.chat_prompts = data.get("prompts", {})
-                except json.JSONDecodeError as e:
-                    log.error(f"JSON decoding error in chat prompts file: {e}")
-                except Exception as e:
-                    log.error(f"An error occurred while reading chat prompts file: {e}")
-            else:
-                log.warning(f"Chat prompts file not found at {chat_prompts_path}")
+        if os.path.exists(chat_prompts_path):
+            try:
+                with open(chat_prompts_path, encoding="utf-8") as file:
+                    data = json.load(file)
+                    self.chat_prompts = data.get("prompts", {})
+            except json.JSONDecodeError as e:
+                log.error(f"JSON decoding error in chat prompts file: {e}")
+            except Exception as e:
+                log.error(f"An error occurred while reading chat prompts file: {e}")
+        else:
+            log.warning(f"Chat prompts file not found at {chat_prompts_path}")
 
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:

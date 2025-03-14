@@ -95,7 +95,7 @@ def check_regex(v: typing.Any):
 def check_non_negative_if_set(v: typing.Any):
     if v is not None:
         try:
-            assert v >= 0
+            assert float(v) >= 0
         except TypeError:
             raise AssertionError(f"Invalid type found {v}")
     return v
@@ -137,6 +137,31 @@ class base_{{assertion.name}}_model(AssertionModel):
 {% endif %}
 
 
+class base_{{assertion.name}}_model_relaxed(AssertionModel):
+    '''base model for {{assertion.name}} describing attributes.'''
+{% for parameter in assertion.parameters %}
+{% if not parameter.is_deprecated %}
+    {{ parameter.name }}: {{ parameter.lax_type_str }} = Field(
+        {{ parameter.field_default_str }},
+        description={{ assertion.name }}_{{ parameter.name }}_description,
+    )
+{% endif %}
+{% endfor %}
+{% if assertion.children in ["required", "allowed"] %}
+    children: typing.Optional["assertion_list"] = None
+    asserts: typing.Optional["assertion_list"] = None
+
+{% if assertion.children == "required" %}
+    @model_validator(mode='before')
+    @classmethod
+    def validate_children(self, data: typing.Any):
+        if isinstance(data, dict) and 'children' not in data and 'asserts' not in data:
+            raise ValueError("At least one of 'children' or 'asserts' must be specified for this assertion type.")
+        return data
+{% endif %}
+{% endif %}
+
+
 class {{assertion.name}}_model(base_{{assertion.name}}_model):
     r\"\"\"{{ assertion.docstring }}\"\"\"
     that: Literal["{{assertion.name}}"] = "{{assertion.name}}"
@@ -144,6 +169,10 @@ class {{assertion.name}}_model(base_{{assertion.name}}_model):
 class {{assertion.name}}_model_nested(AssertionModel):
     r\"\"\"Nested version of this assertion model.\"\"\"
     {{assertion.name}}: base_{{assertion.name}}_model
+
+class {{assertion.name}}_model_relaxed(base_{{assertion.name}}_model_relaxed):
+    r\"\"\"{{ assertion.docstring }}\"\"\"
+    that: Literal["{{assertion.name}}"] = "{{assertion.name}}"
 {% endfor %}
 
 any_assertion_model_flat = Annotated[typing.Union[
@@ -158,8 +187,17 @@ any_assertion_model_nested = typing.Union[
 {% endfor %}
 ]
 
+any_assertion_model_flat_relaxed = Annotated[typing.Union[
+{% for assertion in assertions %}
+    {{assertion.name}}_model_relaxed,
+{% endfor %}
+], Field(discriminator="that")]
+
 assertion_list = RootModel[typing.List[typing.Union[any_assertion_model_flat, any_assertion_model_nested]]]
 
+# used to model what the XML conversion should look like - not meant to be consumed outside of
+# of Galaxy internals / linting.
+relaxed_assertion_list = RootModel[typing.List[any_assertion_model_flat_relaxed]]
 
 class assertion_dict(AssertionModel):
 {% for assertion in assertions %}
@@ -310,7 +348,20 @@ class AssertionParameter:
 
     @property
     def type_str(self) -> str:
-        raw_type_str = as_type_str(self.type)
+        raw_type_str = as_type_str(self.type, strict=True)
+        validators = self.validators[:]
+        if self.xml_type_str == "Bytes":
+            validators.append("check_bytes")
+            validators.append("check_non_negative_if_int")
+        if len(validators) > 0:
+            validation_str = ",".join([f"BeforeValidator({v})" for v in validators])
+            return f"Annotated[{raw_type_str}, {validation_str}]"
+
+        return raw_type_str
+
+    @property
+    def lax_type_str(self) -> str:
+        raw_type_str = as_type_str(self.type, strict=False)
         validators = self.validators[:]
         if self.xml_type_str == "Bytes":
             validators.append("check_bytes")
@@ -395,11 +446,11 @@ def as_xml_type(target_type) -> str:
     return "xs:string"
 
 
-def as_type_str(target_type):
+def as_type_str(target_type, strict=True):
     if get_origin(target_type) is Annotated:
         args = get_args(target_type)
         if len(args) > 1:
-            if args[1].json_type:
+            if args[1].json_type and strict:
                 return args[1].json_type
 
         return as_type_str(args[0])

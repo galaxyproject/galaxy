@@ -21,10 +21,10 @@ from typing import (
 
 from boltons.iterutils import remap
 from packaging.version import Version
+from typing_extensions import TypeAlias
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
@@ -52,7 +52,7 @@ BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} reque
 
 
 CompletedJobsT = Dict[int, Optional[model.Job]]
-JobCallbackT = Callable
+JobCallbackT: TypeAlias = Callable
 WorkflowResourceParametersT = Dict[str, Any]
 DatasetCollectionElementsSliceT = Dict[str, model.DatasetCollectionElement]
 DEFAULT_USE_CACHED_JOB = False
@@ -196,8 +196,7 @@ def execute(
     if execution_slice:
         history.add_pending_items()
     # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
 
     tool_id = tool.id
     for job2 in execution_tracker.successful_jobs:
@@ -230,8 +229,7 @@ def execute(
             continue
         tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -325,9 +323,8 @@ class ExecutionTracker:
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_names = ["%d" % c.hid for c in collection_info.collections.values()]
+            collection_names = [str(%d) % c.hid for c in collection_info.collections.values()]
             self._on_text = on_text_for_dataset_and_collections(collection_names=collection_names)
-
         return self._on_text
 
     def output_name(self, trans, history, params, output):
@@ -482,8 +479,7 @@ class ExecutionTracker:
             trans.sa_session.add(collection_instance)
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         self.implicit_collections = collection_instances
 
     @property
@@ -553,8 +549,7 @@ class ExecutionTracker:
 
                 trans.sa_session.add(implicit_collection.collection)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     @property
     def implicit_inputs(self):

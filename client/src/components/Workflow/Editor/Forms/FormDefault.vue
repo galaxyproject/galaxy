@@ -30,7 +30,7 @@
                 :value="label"
                 title="Label"
                 help="Add a step label."
-                :error="uniqueErrorLabel"
+                :error="uniqueErrorLabel ?? undefined"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
@@ -97,9 +97,6 @@ const { stepId, contentId, annotation, label, name, type, configForm } = useStep
 const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
-    if (label.value) {
-        return label.value;
-    }
     if (isSubworkflow.value) {
         return name.value;
     } else {

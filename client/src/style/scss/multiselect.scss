@@ -95,3 +95,7 @@
         }
     }
 }
+
+.multiselect--active {
+    z-index: 1500; // Should be on top of everything
+}

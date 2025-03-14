@@ -2,7 +2,12 @@ import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
-import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import {
+    type ConnectionOutputLink,
+    type StepInputConnection,
+    type Steps,
+    useWorkflowStepStore,
+} from "@/stores/workflowStepStore";
 
 export interface Workflow {
     name: string;
@@ -14,6 +19,9 @@ export interface Workflow {
     steps: Steps;
     comments: WorkflowComment[];
     tags: string[];
+    logo_url?: string | null;
+    readme?: string | null;
+    help?: string | null;
 }
 
 export interface LoadWorkflowOptions {
@@ -49,18 +57,32 @@ export async function fromSimple(
     // Galaxy assign new ones.
     if (options?.reassignIds ?? appendData) {
         const stepIdOffset = stepStore.getStepIndex + 1;
+        const stepArray = Object.values(data.steps);
 
-        Object.values(data.steps).forEach((step) => {
+        // Since we are resigning IDs based on index, ensure correct ordering
+        stepArray.sort((a, b) => a.id - b.id);
+
+        const stepIdMapOldToNew = new Map<number, number>();
+
+        stepArray.forEach((step, index) => {
+            const oldId = step.id;
+            step.id = index + stepIdOffset;
+            stepIdMapOldToNew.set(oldId, step.id);
+        });
+
+        stepArray.forEach((step) => {
             delete step.uuid;
             if (!step.position) {
                 // Should only happen for manually authored editor content,
                 // good enough for a first pass IMO.
                 step.position = { top: step.id * 100, left: step.id * 100 };
             }
-            step.id += stepIdOffset;
             step.position.left += defaultPosition.left;
             step.position.top += defaultPosition.top;
-            Object.values(step.input_connections).forEach((link) => {
+
+            const newInputConnections: StepInputConnection = {};
+
+            Object.entries(step.input_connections).forEach(([key, link]) => {
                 if (link === undefined) {
                     console.error("input connections invalid", step.input_connections);
                 } else {
@@ -70,11 +92,25 @@ export async function fromSimple(
                     } else {
                         linkArray = link;
                     }
-                    linkArray.forEach((link) => {
-                        link.id += stepIdOffset;
+
+                    const remappedLinkArray = linkArray.map((link) => {
+                        const newId = stepIdMapOldToNew.get(link.id);
+
+                        return {
+                            ...link,
+                            id: newId,
+                        };
                     });
+
+                    // id may be undefined, if the partial Workflow does not contain the step
+                    // in that case, remove the link
+                    const newLinkArray = remappedLinkArray.filter((link) => link.id) as ConnectionOutputLink[];
+
+                    newInputConnections[key] = newLinkArray;
                 }
             });
+
+            step.input_connections = newInputConnections;
         });
 
         data.comments.forEach((comment, index) => {
@@ -105,6 +141,9 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
     const annotation = workflow.annotation;
     const name = workflow.name;
     const tags = workflow.tags;
+    const logo_url = workflow.logo_url;
+    const readme = workflow.readme;
+    const help = workflow.help;
 
     const commentStore = useWorkflowCommentStore(id);
     commentStore.resolveCommentsInFrames();
@@ -112,5 +151,5 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
 
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
-    return { steps, report, license, creator, annotation, name, comments, tags };
+    return { steps, report, license, creator, annotation, name, comments, tags, readme, help, logo_url };
 }

@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from galaxy import model
-from galaxy.model.base import transaction
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from .util import BaseParameterTestCase
 
@@ -42,25 +42,32 @@ class TestSelectToolParameter(BaseParameterTestCase):
 
     def test_filter_param_value(self):
         self.options_xml = """<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>"""
-        assert ("testname1", "testpath1", False) in self.param.get_options(self.trans, {"input_bam": "testname1"})
-        assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testname2"})
+        assert ParameterOption("testname1", "testpath1", False) in self.param.get_options(
+            self.trans, {"input_bam": "testname1"}
+        )
+        assert ParameterOption("testname2", "testpath2", False) in self.param.get_options(
+            self.trans, {"input_bam": "testname2"}
+        )
         assert len(self.param.get_options(self.trans, {"input_bam": "testname3"})) == 0
 
     def test_filter_param_value2(self):
         # Same test as above, but filtering on a different column.
         self.options_xml = """<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>"""
-        assert ("testname1", "testpath1", False) in self.param.get_options(self.trans, {"input_bam": "testpath1"})
-        assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testpath2"})
+        assert ParameterOption("testname1", "testpath1", False) in self.param.get_options(
+            self.trans, {"input_bam": "testpath1"}
+        )
+        assert ParameterOption("testname2", "testpath2", False) in self.param.get_options(
+            self.trans, {"input_bam": "testpath2"}
+        )
         assert len(self.param.get_options(self.trans, {"input_bam": "testpath3"})) == 0
 
     # TODO: Good deal of overlap here with TestDataToolParameter, refactor.
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.app.tool_data_tables["test_table"] = MockToolDataTable()
         self.trans = Mock(
             app=self.app,

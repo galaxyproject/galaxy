@@ -29,11 +29,13 @@ from tool_shed_client.schema import (
     GetOrderedInstallableRevisionsRequest,
     InstallInfo,
     OrderedInstallableRevisions,
+    PaginatedRepositoryIndexResults,
     RepositoriesByCategory,
     Repository,
     RepositoryIndexRequest,
     RepositoryIndexResponse,
     RepositoryMetadata,
+    RepositoryPaginatedIndexRequest,
     RepositorySearchRequest,
     RepositorySearchResults,
     RepositoryUpdate,
@@ -53,7 +55,7 @@ from .api_util import (
 HasRepositoryId = Union[str, Repository]
 
 DEFAULT_PREFIX = "repofortest"
-TEST_DATA_REPO_FILES = resource_path(__package__, "../test_data")
+TEST_DATA_REPO_FILES = resource_path(__name__, "../test_data")
 COLUMN_MAKER_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker.tar")
 COLUMN_MAKER_1_1_1_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker_1.1.1.tar")
 DEFAULT_COMMIT_MESSAGE = "a test commit message"
@@ -323,6 +325,15 @@ class ToolShedPopulator:
         repository_response = self._api_interactor.get("repositories", params=(request.model_dump() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(root=repository_response.json())
+
+    def repository_index_paginated(
+        self, request: Optional[RepositoryPaginatedIndexRequest]
+    ) -> PaginatedRepositoryIndexResults:
+        repository_response = self._api_interactor.get(
+            "repositories", params=(request.model_dump() if request else {"page": 1})
+        )
+        api_asserts.assert_status_code_is_ok(repository_response)
+        return PaginatedRepositoryIndexResults(**repository_response.json())
 
     def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> List[str]:
         repository_id = self._repository_id(repository)

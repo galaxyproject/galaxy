@@ -193,12 +193,7 @@ class Interval(Tabular):
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.deleted
-                and not dataset.dataset.purged
-                and dataset.has_data()
-                and dataset.state == dataset.states.OK
-                and dataset.metadata.columns > 0
-                and dataset.metadata.data_lines != 0
+                super().displayable(dataset)
                 and dataset.metadata.chromCol
                 and dataset.metadata.startCol
                 and dataset.metadata.endCol
@@ -284,7 +279,7 @@ class Interval(Tabular):
             if t >= 0:  # strand column (should) exists
                 for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     strand = "+"
-                    name = "region_%i" % i
+                    name = f"region_{i}"
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     if t < len(elems):
@@ -293,7 +288,7 @@ class Interval(Tabular):
                     fh.write("{}\n".format("\t".join(tmp)))
             elif n >= 0:  # name column (should) exists
                 for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
-                    name = "region_%i" % i
+                    name = f"region_{i}"
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     tmp = [elems[c], elems[s], elems[e], name]
@@ -346,8 +341,7 @@ class Interval(Tabular):
                 filename="ucsc_" + site_name,
             )
             display_url = quote_plus(
-                "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                % (
+                "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
                     base_url,
                     app.url_for(controller="root"),
                     dataset.id,
@@ -784,8 +778,7 @@ class _RemoteCallMixin:
         internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus(
-            "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-            % (
+            "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
                 base_url,
                 app.url_for(controller="root"),
                 dataset.id,
@@ -1567,8 +1560,7 @@ class CustomTrack(Tabular):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
                     display_url = quote_plus(
-                        "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                        % (
+                        "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
                             base_url,
                             app.url_for(controller="root"),
                             dataset.id,
