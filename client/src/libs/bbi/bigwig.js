@@ -76,7 +76,7 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
             // TODO: raise error.
         }
 
-        // Read data from remote file / repository.
+        // Read data from remote file.
         return $.ajax({
             type: 'GET',
             dataType: 'native',
