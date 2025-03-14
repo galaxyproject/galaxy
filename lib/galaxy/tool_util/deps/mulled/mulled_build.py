@@ -356,9 +356,6 @@ def mull_targets(
                 "base_image": dest_base_image or DEFAULT_BASE_IMAGE,
             }
             sin_def.write(fill_template)
-
-    cmd = involucro_context.build_command(involucro_args)
-
     with PrintProgress():
         ret = involucro_context.exec_command(involucro_args)
     if singularity:
