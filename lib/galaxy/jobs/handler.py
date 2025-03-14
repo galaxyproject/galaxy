@@ -6,6 +6,8 @@ import datetime
 import os
 import time
 from collections import defaultdict
+from contextvars import ContextVar
+from dataclasses import dataclass
 from queue import (
     Empty,
     Queue,
@@ -13,6 +15,7 @@ from queue import (
 from typing import (
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
     Union,
@@ -247,6 +250,16 @@ class BaseJobHandlerQueue(Monitors):
         self.queue: Queue[Tuple[int, str]] = Queue()
 
 
+@dataclass
+class JobLimitData:
+    user_job_count: Optional[Dict[int, int]] = None
+    user_job_count_per_destination: Optional[Dict[int, Dict[str, int]]] = None
+    total_job_count_per_destination: Optional[Dict[str, int]] = None
+
+
+job_limit_data: ContextVar[JobLimitData] = ContextVar("job_limit_data", default=JobLimitData())
+
+
 class JobHandlerQueue(BaseJobHandlerQueue):
     """
     Job Handler's Internal Queue, this is what actually implements waiting for
@@ -258,7 +271,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # self.queue contains tuples: (job_id, tool_id)
 
         # Initialize structures for handling job limits
-        self.__clear_job_count()
         # Contains job ids for jobs that are waiting (only use from monitor thread)
         self.waiting_jobs: List[int] = []
         # Contains wrappers of jobs that are limited or ready (so they aren't created unnecessarily/multiple times)
@@ -819,14 +831,18 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         return None
 
     def __clear_job_count(self):
-        self.user_job_count = None
-        self.user_job_count_per_destination = None
-        self.total_job_count_per_destination = None
+        data = job_limit_data.get()
+        data.user_job_count = None
+        data.user_job_count_per_destination = None
+        data.total_job_count_per_destination = None
 
-    def get_user_job_count(self, user_id):
+    def get_user_job_count(self, user_id) -> int:
+        data = job_limit_data.get()
         self.__cache_user_job_count()
+        if data.user_job_count is None:
+            data.user_job_count = {}
         # This could have been incremented by a previous job dispatched on this iteration, even if we're not caching
-        rval = self.user_job_count.get(user_id, 0)
+        rval = data.user_job_count.get(user_id, 0)
         if not self.app.config.cache_user_job_count:
             result = self.sa_session.execute(
                 select(func.count(model.Job.table.c.id)).where(
@@ -845,8 +861,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
 
     def __cache_user_job_count(self):
         # Cache the job count if necessary
-        if self.user_job_count is None and self.app.config.cache_user_job_count:
-            self.user_job_count = {}
+        data = job_limit_data.get()
+        if data.user_job_count is None:
+            data.user_job_count = {}
+        if self.app.config.cache_user_job_count:
             query = self.sa_session.execute(
                 select(model.Job.table.c.user_id, func.count(model.Job.table.c.user_id))
                 .where(
@@ -860,26 +878,24 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 .group_by(model.Job.table.c.user_id)
             )
             for row in query:
-                self.user_job_count[row[0]] = row[1]
-        elif self.user_job_count is None:
-            self.user_job_count = {}
+                data.user_job_count[row[0]] = row[1]
 
-    def get_user_job_count_per_destination(self, user_id):
+    def get_user_job_count_per_destination(self, user_id) -> Dict[str, int]:
         self.__cache_user_job_count_per_destination()
-        cached = self.user_job_count_per_destination.get(user_id, {})
+        data = job_limit_data.get()
+        assert data.user_job_count_per_destination is not None
+        cached = data.user_job_count_per_destination.get(user_id, {})
         if self.app.config.cache_user_job_count:
-            rval = cached
+            return cached
         else:
             # The cached count is still used even when we're not caching, it is
             # incremented when a job is run by this handler to ensure that
             # multiple jobs can't get past the limits in one iteration of the
             # queue.
-            rval = {}
+            rval: Dict[str, int] = {}
             rval.update(cached)
             result = self.sa_session.execute(
-                select(
-                    model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")
-                )
+                select(model.Job.destination_id, func.count(model.Job.destination_id).label("job_count"))
                 .where(
                     and_(
                         model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)),
@@ -895,8 +911,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
 
     def __cache_user_job_count_per_destination(self):
         # Cache the job count if necessary
-        if self.user_job_count_per_destination is None and self.app.config.cache_user_job_count:
-            self.user_job_count_per_destination = {}
+        data = job_limit_data.get()
+        if data.user_job_count_per_destination is None:
+            data.user_job_count_per_destination = {}
+        if self.app.config.cache_user_job_count:
             result = self.sa_session.execute(
                 select(
                     model.Job.table.c.user_id,
@@ -907,11 +925,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id)
             )
             for row in result.mappings():
-                if row["user_id"] not in self.user_job_count_per_destination:
-                    self.user_job_count_per_destination[row["user_id"]] = {}
-                self.user_job_count_per_destination[row["user_id"]][row["destination_id"]] = row["job_count"]
-        elif self.user_job_count_per_destination is None:
-            self.user_job_count_per_destination = {}
+                if row["user_id"] not in data.user_job_count_per_destination:
+                    data.user_job_count_per_destination[row["user_id"]] = {}
+                data.user_job_count_per_destination[row["user_id"]][row["destination_id"]] = row["job_count"]
 
     def increase_running_job_count(self, user_id, destination_id):
         if (
@@ -919,21 +935,22 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             or self.app.job_config.limits.anonymous_user_concurrent_jobs
             or self.app.job_config.limits.destination_user_concurrent_jobs
         ):
-            if self.user_job_count is None:
-                self.user_job_count = {}
-            if self.user_job_count_per_destination is None:
-                self.user_job_count_per_destination = {}
-            self.user_job_count[user_id] = self.user_job_count.get(user_id, 0) + 1
-            if user_id not in self.user_job_count_per_destination:
-                self.user_job_count_per_destination[user_id] = {}
-            self.user_job_count_per_destination[user_id][destination_id] = (
-                self.user_job_count_per_destination[user_id].get(destination_id, 0) + 1
+            data = job_limit_data.get()
+            if data.user_job_count is None:
+                data.user_job_count = {}
+            if data.user_job_count_per_destination is None:
+                data.user_job_count_per_destination = {}
+            data.user_job_count[user_id] = data.user_job_count.get(user_id, 0) + 1
+            if user_id not in data.user_job_count_per_destination:
+                data.user_job_count_per_destination[user_id] = {}
+            data.user_job_count_per_destination[user_id][destination_id] = (
+                data.user_job_count_per_destination[user_id].get(destination_id, 0) + 1
             )
         if self.app.job_config.limits.destination_total_concurrent_jobs:
-            if self.total_job_count_per_destination is None:
-                self.total_job_count_per_destination = {}
-            self.total_job_count_per_destination[destination_id] = (
-                self.total_job_count_per_destination.get(destination_id, 0) + 1
+            if data.total_job_count_per_destination is None:
+                data.total_job_count_per_destination = {}
+            data.total_job_count_per_destination[destination_id] = (
+                data.total_job_count_per_destination.get(destination_id, 0) + 1
             )
 
     def __check_user_jobs(self, job, job_wrapper):
@@ -993,8 +1010,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
 
     def __cache_total_job_count_per_destination(self):
         # Cache the job count if necessary
-        if self.total_job_count_per_destination is None:
-            self.total_job_count_per_destination = {}
+        data = job_limit_data.get()
+        if data.total_job_count_per_destination is None:
+            data.total_job_count_per_destination = {}
             result = self.sa_session.execute(
                 select(
                     model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")
@@ -1003,14 +1021,15 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 .group_by(model.Job.table.c.destination_id)
             )
             for row in result.mappings():
-                self.total_job_count_per_destination[row["destination_id"]] = row["job_count"]
+                data.total_job_count_per_destination[row["destination_id"]] = row["job_count"]
 
     def get_total_job_count_per_destination(self):
         self.__cache_total_job_count_per_destination()
         # Always use caching (at worst a job will have to wait one iteration,
         # and this would be more fair anyway as it ensures FIFO scheduling,
         # insofar as FIFO would be fair...)
-        return self.total_job_count_per_destination
+        data = job_limit_data.get()
+        return data.total_job_count_per_destination
 
     def __check_destination_jobs(self, job, job_wrapper):
         if self.app.job_config.limits.destination_total_concurrent_jobs:
