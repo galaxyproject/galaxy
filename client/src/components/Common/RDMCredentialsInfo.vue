@@ -24,7 +24,7 @@ const repositoryName = props.selectedRepository?.label ?? "the selected reposito
         <span v-if="isPrivateFileSource && selectedRepository">
             in your
             <RouterLink :to="`/file_source_instances/${selectedRepository.id}/edit`" target="_blank">
-                Remote File Source settings
+                Repository settings
             </RouterLink>
         </span>
         <span v-else>

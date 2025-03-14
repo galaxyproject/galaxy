@@ -163,7 +163,7 @@ function onDrop(evt) {
                     </BDropdownItem>
                     <BDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
                         <FontAwesomeIcon icon="fa-folder-open" />
-                        <span v-localize>Choose remote file</span>
+                        <span v-localize>Choose repository</span>
                     </BDropdownItem>
                     <BDropdownItem @click="inputPaste">
                         <FontAwesomeIcon icon="fa-edit" />

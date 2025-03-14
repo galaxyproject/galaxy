@@ -245,7 +245,7 @@ function updateExportParams(newParams: ExportParams) {
 
                         <BAlert show variant="warning">
                             History archive downloads can expire and are removed at regular intervals. For permanent
-                            storage, export to a <b>remote file</b> or download and then import the archive on another
+                            storage, export to a <b>repository</b> or download and then import the archive on another
                             Galaxy server.
                         </BAlert>
 
@@ -268,7 +268,7 @@ function updateExportParams(newParams: ExportParams) {
                     <BTab
                         v-if="hasWritableFileSources"
                         id="file-source-tab"
-                        title="to remote file"
+                        title="to repository"
                         title-link-class="tab-export-to-file">
                         <p>
                             If you need a "more permanent" way of storing your history archive you can export it

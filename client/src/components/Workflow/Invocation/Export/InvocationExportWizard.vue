@@ -278,7 +278,7 @@ More information about how to set up an account and submit data to a BCODB serve
     if (hasWritableFileSources.value) {
         destinations.push({
             destination: "remote-source",
-            label: "Remote File Source",
+            label: "Repository",
             markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available repositories. You will be able to re-import it later as long as it remains available on the remote server.
 
 Examples of remote sources include Amazon S3, Azure Storage, Google Drive... and other public or personal file sources that you have setup access to.`,
@@ -386,7 +386,7 @@ function resetWizard() {
                 <BFormGroup
                     id="fieldset-directory"
                     label-for="directory"
-                    :description="`Select a 'remote files' directory to export ${resource} to.`"
+                    :description="`Select a 'repository' to export ${resource} to.`"
                     class="mt-3">
                     <FilesInput
                         id="directory"
