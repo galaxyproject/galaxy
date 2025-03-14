@@ -1,5 +1,5 @@
 <template>
-    <div class="cell-guide d-flex flex-column justify-content-between">
+    <div>
         <CellButton ref="buttonRef" title="Insert Cell" :icon="faPlus" />
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
@@ -28,7 +28,6 @@
 
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 

@@ -141,12 +141,3 @@ function scrollToCell(cellIndex: number) {
     });
 }
 </script>
-
-<style lang="scss">
-@import "theme/blue.scss";
-
-.cell-guide {
-    min-width: 33px;
-    max-width: 33px;
-}
-</style>

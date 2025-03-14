@@ -1,6 +1,6 @@
 <template>
     <BButton
-        v-b-tooltip.noninteractive.bottom
+        v-b-tooltip.noninteractive.right
         class="border-0 m-1 px-1 py-0"
         :class="{ active, 'cell-button-hide': !show }"
         :title="title"
@@ -22,7 +22,7 @@ Vue.use(VBTooltipPlugin);
 withDefaults(
     defineProps<{
         active?: boolean;
-        icon: IconDefinition,
+        icon: IconDefinition;
         show?: boolean;
         title: string;
     }>(),
