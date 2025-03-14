@@ -166,28 +166,29 @@ def stream_and_decompress(file_extract_params: FileExtractParameters, output_fil
 
     # Calculate actual start of file data
     file_data_offset = calculate_file_data_offset(final_url, file_extract_params.header_offset)
-    response_stream = get_range(final_url, file_data_offset, file_extract_params.compress_size)
 
-    if file_extract_params.compression_method == 0:  # Stored (no compression)
+    # Stream and decompress file
+    with get_range(final_url, file_data_offset, file_extract_params.compress_size) as response_stream:
+        if file_extract_params.compression_method == 0:  # Stored (no compression)
+            with open(output_file, "wb") as f:
+                for chunk in response_stream.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            return output_file
+
+        if file_extract_params.compression_method == 8:  # Deflate
+            decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
+        else:
+            raise ValueError(f"Unsupported compression method: {file_extract_params.compression_method}")
+
         with open(output_file, "wb") as f:
             for chunk in response_stream.iter_content(chunk_size=8192):
-                f.write(chunk)
+                if chunk:
+                    f.write(decompressor.decompress(chunk))
+
+            # Flush remaining decompressed data
+            f.write(decompressor.flush())
+
         return output_file
-
-    if file_extract_params.compression_method == 8:  # Deflate
-        decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
-    else:
-        raise ValueError(f"Unsupported compression method: {file_extract_params.compression_method}")
-
-    with open(output_file, "wb") as f:
-        for chunk in response_stream.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(decompressor.decompress(chunk))
-
-        # Flush remaining decompressed data
-        f.write(decompressor.flush())
-
-    return output_file
 
 
 __all__ = ("RemoteZipFilesSource",)
