@@ -9916,19 +9916,19 @@ rimraf@^3.0.2:
   dependencies:
     glob "^7.1.3"
 
-ro-crate-zip-explorer@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.1.1.tgz#72f7455b65fddba218e7e4d0a94415b327a954c8"
-  integrity sha512-//RtF+Zi//vNK9vV5YAsothUkKV7tLtG/sYGWjyn3VPhXjs1/AtLnhtoUOYUt/kfcYanhWs3HPvAhjL4FVZQMQ==
+ro-crate-zip-explorer@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.2.0.tgz#ee6ebac943605ad473bf2f9d40daf4412867c7f3"
+  integrity sha512-mENLxCcwnRy228lujg0RLkvadd7D1TWQyj+0pC7VMBvcjPUeOK+p6Fnpntcp2iIh/RXDElJVJ1hlZ3No8tQRUA==
   dependencies:
     jszip "^3.10.1"
     pako "^2.1.0"
-    ro-crate "^3.4.1"
+    ro-crate "^3.4.6"
 
-ro-crate@^3.4.1:
-  version "3.4.5"
-  resolved "https://registry.yarnpkg.com/ro-crate/-/ro-crate-3.4.5.tgz#b719023d83b5dd198309a1e26ccfd936fad17930"
-  integrity sha512-88w3mwZDR+LulZVAdB1oEctI6gDrdJZzswduW8PCPWGoN25QJBRYDPJ3WTIvij87SN8fxeA0uoN2bh9jNdNn1A==
+ro-crate@^3.4.6:
+  version "3.4.6"
+  resolved "https://registry.yarnpkg.com/ro-crate/-/ro-crate-3.4.6.tgz#8854674298e14e6fe33d681337274b93b383861e"
+  integrity sha512-+TSJOblZRz+GXq86dF8EFIRCOVJaicelom+S7POIlniGy2/Jl7wO62BvcL7KuksR7PHpIgSJ5qBZr2qCeQ0iyg==
   dependencies:
     commander "^12.0.0"
     cross-fetch "^4.0.0"
