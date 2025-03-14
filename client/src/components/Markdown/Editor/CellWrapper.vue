@@ -1,7 +1,7 @@
 <template>
     <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div class="d-flex flex-column" :class="{ 'cell-hover': hover }" @click="$emit('toggle')">
+            <div class="d-flex flex-column cursor-pointer" :class="{ 'cell-hover': hover }" @click="$emit('toggle')">
                 <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
                 <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
             </div>

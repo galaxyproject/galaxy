@@ -9,8 +9,8 @@ function mountTarget(props = {}) {
     return mount(Target, {
         localVue,
         propsData: props,
-        slots: {
-            default: "<div class='button_content' />",
+        stubs: {
+            FontAwesomeIcon: true,
         },
     });
 }
@@ -18,9 +18,10 @@ function mountTarget(props = {}) {
 describe("CellButton.vue", () => {
     it("should render button", async () => {
         const wrapper = mountTarget({
+            icon: "button-icon",
             title: "button-title",
         });
-        expect(wrapper.find(".button_content").exists()).toBeTruthy();
+        expect(wrapper.find("[icon='button-icon']").exists()).toBeTruthy();
         expect(wrapper.attributes()["title"]).toBe("button-title");
         expect(wrapper.classes()).not.toContain("active");
         expect(wrapper.classes()).toContain("btn-outline-primary");
