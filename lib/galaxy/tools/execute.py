@@ -323,7 +323,7 @@ class ExecutionTracker:
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_names = [str(%d) % c.hid for c in collection_info.collections.values()]
+            collection_names = [str(c.hid) for c in collection_info.collections.values()]
             self._on_text = on_text_for_dataset_and_collections(collection_names=collection_names)
         return self._on_text
 
