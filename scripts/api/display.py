@@ -4,7 +4,7 @@ import os
 import sys
 from urllib.error import URLError
 
-from common import display  # noqa: I100,I202
+from common import display
 
 try:
     display(*sys.argv[1:3])
