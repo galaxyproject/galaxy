@@ -18,27 +18,13 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="d-flex flex-column" :class="{ 'cell-wrapper-hover': hover }">
-                <CellButton
-                    v-if="name !== 'markdown'"
-                    title="Attach Data"
-                    :active="configure"
-                    :icon="faPaperclip"
+                <CellAction
+                    :name="name"
                     :show="hover"
-                    @click="$emit('configure')" />
-                <CellButton title="Clone Cell" :show="hover" :icon="faClone" @click="$emit('clone')" />
-                <CellButton title="Delete Cell" :show="hover" :icon="faTrash" @click="confirmDelete = true" />
-                <CellButton
-                    title="Move Up"
-                    :disabled="cellIndex < 1"
-                    :icon="faArrowUp"
-                    :show="hover"
-                    @click="$emit('move', 'up')" />
-                <CellButton
-                    title="Move Down"
-                    :disabled="cellTotal - cellIndex < 2"
-                    :icon="faArrowDown"
-                    :show="hover"
-                    @click="$emit('move', 'down')" />
+                    @clone="$emit('clone')"
+                    @configure="$emit('configure')"
+                    @delete="$emit('delete')"
+                    @move="$emit('move', $event)" />
             </div>
             <div class="w-100 position-relative">
                 <hr class="solid m-0" />
@@ -54,27 +40,16 @@
                 </small>
             </div>
         </div>
-        <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
-            <p v-localize>Are you sure you want to delete this cell?</p>
-        </BModal>
     </div>
 </template>
 
 <script setup lang="ts">
-import {
-    faAngleDoubleDown,
-    faAngleDoubleUp,
-    faArrowDown,
-    faArrowUp,
-    faClone,
-    faPaperclip,
-    faTrash,
-} from "@fortawesome/free-solid-svg-icons";
-import { BModal } from "bootstrap-vue";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
+import CellAction from "./CellAction.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
@@ -92,7 +67,6 @@ const props = defineProps<{
 
 const emit = defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
 
-const confirmDelete = ref(false);
 const hover = ref(false);
 
 const mode = computed(() => {
