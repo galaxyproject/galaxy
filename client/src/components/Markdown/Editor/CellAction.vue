@@ -13,18 +13,6 @@
                     <small class="my-1 mx-3 text-info">{{ title }}</small>
                 </span>
                 <CellOption
-                    v-if="cellIndex > 0"
-                    title="Move Up"
-                    description="Move this cell upwards"
-                    :icon="faArrowUp"
-                    @click="$emit('move', 'up')" />
-                <CellOption
-                    v-if="cellTotal - cellIndex > 1"
-                    title="Move Down"
-                    description="Move this cell downwards"
-                    :icon="faArrowDown"
-                    @click="$emit('move', 'down')" />
-                <CellOption
                     v-if="name !== 'markdown'"
                     title="Attach Data"
                     description="Select data for this cell"
@@ -40,6 +28,18 @@
                     description="Delete this cell"
                     :icon="faTrash"
                     @click="confirmDelete = true" />
+                <CellOption
+                    v-if="cellIndex > 0"
+                    title="Move Up"
+                    description="Move this cell upwards"
+                    :icon="faArrowUp"
+                    @click="$emit('move', 'up')" />
+                <CellOption
+                    v-if="cellTotal - cellIndex > 1"
+                    title="Move Down"
+                    description="Move this cell downwards"
+                    :icon="faArrowDown"
+                    @click="$emit('move', 'down')" />
             </div>
         </Popper>
         <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
