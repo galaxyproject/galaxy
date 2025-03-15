@@ -209,10 +209,10 @@ function onArchiveHistoryWithExport() {
             <BTabs card vertical lazy class="export-option-tabs">
                 <BTab id="to-remote-file-tab" title="To Repository" active>
                     <p>
-                        <b>Exporting to a repository</b> will create a compressed archive of the history
-                        contents, copy it to a remote location (e.g. an FTP server) and create an export record with
-                        this information that will be associated with the archived history. You will be able to recreate
-                        the history later by importing it from the export record.
+                        <b>Exporting to a repository</b> will create a compressed archive of the history contents, copy
+                        it to a remote location (e.g. an FTP server) and create an export record with this information
+                        that will be associated with the archived history. You will be able to recreate the history
+                        later by importing it from the export record.
                     </p>
                     <ExportToFileSourceForm what="history" @export="doExportToFileSourceWithPrefix" />
                 </BTab>

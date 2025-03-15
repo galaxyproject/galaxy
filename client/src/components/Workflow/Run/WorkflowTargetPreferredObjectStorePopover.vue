@@ -13,8 +13,8 @@
                 used.
             </div>
             <div v-localize>
-                Change {{ preferredOrEmptyString }} Galaxy storage by clicking on the storage button in the workflow
-                run header.
+                Change {{ preferredOrEmptyString }} Galaxy storage by clicking on the storage button in the workflow run
+                header.
             </div>
         </div>
     </b-popover>

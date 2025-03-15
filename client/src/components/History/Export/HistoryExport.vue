@@ -272,8 +272,8 @@ function updateExportParams(newParams: ExportParams) {
                         title-link-class="tab-export-to-file">
                         <p>
                             If you need a "more permanent" way of storing your history archive you can export it
-                            directly to one of the available repositories. You will be able to re-import it
-                            later as long as it remains available on the remote server.
+                            directly to one of the available repositories. You will be able to re-import it later as
+                            long as it remains available on the remote server.
                         </p>
 
                         <ExportToFileSourceForm

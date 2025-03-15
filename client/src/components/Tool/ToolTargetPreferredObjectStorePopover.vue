@@ -16,8 +16,7 @@
                 No selection has been made for this tool execution. Defaults from history, user, or Galaxy will be used.
             </div>
             <div v-localize>
-                Change {{ preferredOrEmptyString }} Galaxy storage by clicking on the storage button in the tool
-                header.
+                Change {{ preferredOrEmptyString }} Galaxy storage by clicking on the storage button in the tool header.
             </div>
         </div>
     </b-popover>
