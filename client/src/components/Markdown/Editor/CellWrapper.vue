@@ -1,7 +1,10 @@
 <template>
     <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div class="d-flex flex-column cursor-pointer" :class="{ 'cell-hover': hover }" @click="$emit('toggle')">
+            <div
+                class="d-flex flex-column cursor-pointer"
+                :class="{ 'cell-wrapper-hover': hover }"
+                @click="$emit('toggle')">
                 <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
                 <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
             </div>
@@ -14,7 +17,7 @@
             </div>
         </div>
         <div v-if="toggle" class="d-flex">
-            <div class="d-flex flex-column" :class="{ 'cell-hover': hover }">
+            <div class="d-flex flex-column" :class="{ 'cell-wrapper-hover': hover }">
                 <CellButton
                     v-if="name !== 'markdown'"
                     title="Attach Data"
@@ -37,7 +40,7 @@
                     :show="hover"
                     @click="$emit('move', 'down')" />
             </div>
-            <div class="w-100">
+            <div class="w-100 position-relative">
                 <hr class="solid m-0" />
                 <ConfigureGalaxy
                     v-if="name === 'galaxy' && configure"
@@ -46,6 +49,9 @@
                     @cancel="$emit('configure')"
                     @change="handleConfigure($event)" />
                 <CellCode :key="name" class="mt-1" :value="content" :mode="mode" @change="$emit('change', $event)" />
+                <small class="cell-wrapper-type position-absolute">
+                    {{ VALID_TYPES.includes(name) ? name : "unknown" }}
+                </small>
             </div>
         </div>
         <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
@@ -72,6 +78,8 @@ import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
+
+const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
 const props = defineProps<{
     cellIndex: number;
@@ -106,7 +114,13 @@ function handleConfigure(newValue: string) {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.cell-hover {
+.cell-wrapper-hover {
     background-color: $gray-100;
+}
+
+.cell-wrapper-type {
+    bottom: 0;
+    color: $gray-500;
+    right: 0;
 }
 </style>
