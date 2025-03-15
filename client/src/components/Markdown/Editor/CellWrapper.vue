@@ -21,6 +21,8 @@
                 <CellAction
                     :name="name"
                     :show="hover"
+                    :cellIndex="cellIndex"
+                    :cellTotal="cellTotal"
                     @clone="$emit('clone')"
                     @configure="$emit('configure')"
                     @delete="$emit('delete')"

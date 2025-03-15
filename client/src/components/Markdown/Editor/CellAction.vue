@@ -13,11 +13,13 @@
                     <small class="my-1 mx-3 text-info">{{ title }}</small>
                 </span>
                 <CellOption
+                    v-if="cellIndex > 0"
                     title="Move Up"
                     description="Move this cell upwards"
                     :icon="faArrowUp"
                     @click="$emit('move', 'up')" />
                 <CellOption
+                    v-if="cellTotal - cellIndex > 1"
                     title="Move Down"
                     description="Move this cell downwards"
                     :icon="faArrowDown"
@@ -59,6 +61,8 @@ import CellOption from "./CellOption.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
 const props = defineProps<{
+    cellIndex: number;
+    cellTotal: number;
     name: string;
     show: boolean;
 }>();
