@@ -23,6 +23,8 @@ instance = integration_util.integration_module_instance(EmbeddedPulsarIntegratio
 
 test_tools = integration_util.integration_tool_runner(
     [
+        "cat_default",
+        "collection_nested_default",
         "collection_creates_dynamic_nested_from_json",
         "composite",
         "simple_constructs",

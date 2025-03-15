@@ -365,7 +365,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
+                    compute_environment.materialized_objects
+                ):
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
