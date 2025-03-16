@@ -66,6 +66,7 @@ FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_c
 MIGRATED_TOOL_PANEL_CONFIG = "config/migrated_tools_conf.xml"
 INSTALLED_TOOL_PANEL_CONFIGS = [os.environ.get("GALAXY_TEST_SHED_TOOL_CONF", "config/shed_tool_conf.xml")]
 DEFAULT_LOCALES = "en"
+DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 60))
 
 log = logging.getLogger("test_driver")
 
@@ -961,12 +962,17 @@ class GalaxyTestDriver(TestDriver):
             "keep_outputs_dir": None,
         }
         galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
+        # Cut down default timeout to 60 seconds within tests run via
+        # GalaxyTestDriver. Does not affect tests run via galaxy-tool-util,
+        # which use a much longer timeout.
+        maxseconds = kwd.pop("maxseconds", DEFAULT_TOOL_TEST_WAIT)
         verify_tool(
             tool_id=tool_id,
             test_index=index,
             galaxy_interactor=galaxy_interactor,
             resource_parameters=resource_parameters,
             test_data_resolver=TestDataResolver(),
+            maxseconds=maxseconds,
             **kwd,
         )
 
