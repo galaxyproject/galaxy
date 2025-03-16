@@ -31,17 +31,13 @@ class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase)
 
     def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
-        self._run_tool_test(
-            tool_id, resource_parameters=resource_parameters, test_history=history_id, maxseconds=self.maxseconds
-        )
+        self._run_tool_test(tool_id, resource_parameters=resource_parameters, test_history=history_id)
 
     def _assert_job_fails(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
         exception_thrown = False
         try:
-            self._run_tool_test(
-                tool_id, resource_parameters=resource_parameters, test_history=history_id, maxseconds=self.maxseconds
-            )
+            self._run_tool_test(tool_id, resource_parameters=resource_parameters, test_history=history_id)
         except Exception:
             exception_thrown = True
 

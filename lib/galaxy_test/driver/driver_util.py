@@ -863,6 +863,7 @@ class GalaxyTestDriver(TestDriver):
         self.allow_tool_conf_override = allow_tool_conf_override
         self.default_tool_conf = default_tool_conf
         self.datatypes_conf_override = datatypes_conf_override
+        self.maxseconds = getattr(config_object, "maxseconds", DEFAULT_TOOL_TEST_WAIT)
 
     def setup(self, config_object=None):
         """Setup a Galaxy server for functional test (if needed).
@@ -965,7 +966,7 @@ class GalaxyTestDriver(TestDriver):
         # Cut down default timeout to 60 seconds within tests run via
         # GalaxyTestDriver. Does not affect tests run via galaxy-tool-util,
         # which use a much longer timeout.
-        maxseconds = kwd.pop("maxseconds", DEFAULT_TOOL_TEST_WAIT)
+        maxseconds = kwd.pop("maxseconds", self.maxseconds)
         verify_tool(
             tool_id=tool_id,
             test_index=index,
