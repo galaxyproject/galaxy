@@ -34,8 +34,7 @@ def test_DoiCache(url_factory):  # noqa: F811
         dois = (("10.1093/bioinformatics/bts252", "Jörg"), ("10.1101/2021.12.24.474111", "Özkurt"))
         for doi, author in dois:
             responses.add(method="GET", url=f"https://doi.org/{doi}", body=author)
-        assert "Jörg" in doi_cache.get_bibtex("10.1093/bioinformatics/bts252")
-        assert "Özkurt" in doi_cache.get_bibtex("10.1101/2021.12.24.474111")
+            assert author in doi_cache.get_bibtex(doi)
         assert not is_cache_empty(db_url, "doi")
         doi_cache._cache.clear()
         assert is_cache_empty(db_url, "doi")
