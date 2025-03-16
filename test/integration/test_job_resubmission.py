@@ -27,16 +27,21 @@ JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubm
 
 class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
+    maxseconds = 60
 
     def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
-        self._run_tool_test(tool_id, resource_parameters=resource_parameters, test_history=history_id)
+        self._run_tool_test(
+            tool_id, resource_parameters=resource_parameters, test_history=history_id, maxseconds=self.maxseconds
+        )
 
     def _assert_job_fails(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
         exception_thrown = False
         try:
-            self._run_tool_test(tool_id, resource_parameters=resource_parameters, test_history=history_id)
+            self._run_tool_test(
+                tool_id, resource_parameters=resource_parameters, test_history=history_id, maxseconds=self.maxseconds
+            )
         except Exception:
             exception_thrown = True
 
@@ -271,6 +276,10 @@ class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmission
 
 # Verify that a failure to connect to pulsar can trigger a resubmit
 class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegrationTestCase):
+
+    # It takes a little longer to hit the timeout error for pulsar connections
+    maxseconds = 120
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
