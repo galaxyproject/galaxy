@@ -921,7 +921,9 @@ steps:
         self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
-        self.action_chains().move_to_element(element).click().send_keys(param_type).send_keys(Keys.ENTER).perform()
+        self.action_chains().move_to_element(element).click().pause(1).send_keys(param_type).pause(1).send_keys(
+            Keys.ENTER
+        ).perform()
 
     @selenium_test
     def test_editor_invalid_tool_state(self):
