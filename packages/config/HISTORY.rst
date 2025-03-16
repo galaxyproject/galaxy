@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.2.3.dev0
------------
+-------------------
+24.2.3 (2025-03-16)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Add rDock prm datatype by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19783 <https://github.com/galaxyproject/galaxy/pull/19783>`_
 
 -------------------
 24.2.2 (2025-03-08)

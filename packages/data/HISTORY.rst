@@ -3,11 +3,24 @@ History
 
 .. to_doc
 
------------
-24.2.3.dev0
------------
+-------------------
+24.2.3 (2025-03-16)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix private role name performance issue by `@jdavcs <https://github.com/jdavcs>`_ in `#19679 <https://github.com/galaxyproject/galaxy/pull/19679>`_
+* Fix anndata metadata setting for data with integer indexes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19774 <https://github.com/galaxyproject/galaxy/pull/19774>`_
+* Fix parameter model constructions with leading underscores, fixes converter linting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19790 <https://github.com/galaxyproject/galaxy/pull/19790>`_
+
+============
+Enhancements
+============
+
+* Add rDock prm datatype by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19783 <https://github.com/galaxyproject/galaxy/pull/19783>`_
 
 -------------------
 24.2.2 (2025-03-08)

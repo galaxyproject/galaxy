@@ -3,11 +3,18 @@ History
 
 .. to_doc
 
------------
-24.2.3.dev0
------------
+-------------------
+24.2.3 (2025-03-16)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix private role name performance issue by `@jdavcs <https://github.com/jdavcs>`_ in `#19679 <https://github.com/galaxyproject/galaxy/pull/19679>`_
+* Fix tool directory pulsar transfer by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19799 <https://github.com/galaxyproject/galaxy/pull/19799>`_
+* Use materialized datasets in pulsar job runner by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19807 <https://github.com/galaxyproject/galaxy/pull/19807>`_
 
 -------------------
 24.2.2 (2025-03-08)

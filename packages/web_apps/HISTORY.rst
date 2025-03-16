@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.2.3.dev0
------------
+-------------------
+24.2.3 (2025-03-16)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix private role name performance issue by `@jdavcs <https://github.com/jdavcs>`_ in `#19679 <https://github.com/galaxyproject/galaxy/pull/19679>`_
 
 -------------------
 24.2.2 (2025-03-08)
