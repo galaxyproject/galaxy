@@ -54,7 +54,7 @@ def view_mapping(datatypes_registry: Registry) -> DatatypesMap:
         n = f"{c.__module__}.{c.__name__}"
         types = {n}
         visit_bases(types, c)
-        class_to_classes[n] = {t: True for t in types}
+        class_to_classes[n] = dict.fromkeys(types, True)
     return DatatypesMap(ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes)
 
 

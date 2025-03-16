@@ -8,7 +8,7 @@ import optparse
 import time
 from urllib.parse import urljoin
 
-from common import (  # noqa: I100,I202
+from common import (
     get,
     post,
 )

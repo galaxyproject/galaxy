@@ -268,7 +268,7 @@ class WeblessApplicationStack(ApplicationStack):
 
     @property
     def configured_pools(self):
-        return {p: self.config.server_name for p in self.config.attach_to_pools}
+        return dict.fromkeys(self.config.attach_to_pools, self.config.server_name)
 
     def in_pool(self, pool_name):
         return pool_name in self.config.attach_to_pools
