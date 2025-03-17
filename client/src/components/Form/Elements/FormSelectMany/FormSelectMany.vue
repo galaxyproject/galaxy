@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltLeft, faLongArrowAltRight, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
@@ -11,8 +10,6 @@ import { useUid } from "@/composables/utils/uid";
 import { useHighlight } from "./useHighlight";
 import { filterOptions } from "./worker/filterOptions";
 import { useSelectMany } from "./worker/selectMany";
-
-library.add(faLongArrowAltLeft, faLongArrowAltRight, faTimes);
 
 type SelectValue = Record<string, unknown> | string | number | null;
 
@@ -321,7 +318,7 @@ const selectedCount = computed(() => {
                     :class="{ hidden: searchValue === '' }"
                     title="Clear search"
                     @click="searchValue = ''">
-                    <FontAwesomeIcon icon="fa-times" />
+                    <FontAwesomeIcon :icon="faTimes" />
                 </button>
             </fieldset>
 
@@ -353,7 +350,7 @@ const selectedCount = computed(() => {
                 </span>
                 <BButton class="selection-button select" :title="selectText" variant="primary" @click="selectAll">
                     {{ selectText }}
-                    <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
+                    <FontAwesomeIcon :icon="faLongArrowAltRight" />
                 </BButton>
             </div>
 
@@ -386,7 +383,7 @@ const selectedCount = computed(() => {
                     <span class="font-weight-normal selected-count"> ({{ selectedCount }}) </span>
                 </span>
                 <BButton class="selection-button deselect" :title="deselectText" variant="primary" @click="deselectAll">
-                    <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
+                    <FontAwesomeIcon :icon="faLongArrowAltLeft" />
                     {{ deselectText }}
                 </BButton>
             </div>
