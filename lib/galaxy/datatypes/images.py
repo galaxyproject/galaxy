@@ -9,6 +9,7 @@ import struct
 from typing import (
     Any,
     Dict,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -245,24 +246,23 @@ class Tiff(Image):
                         "num_unique_values",
                     ]
                 }
-                for page in tif.pages:
+
+                # TIFF files can contain multiple images, each represented by a series of pages
+                for series in tif.series:
 
                     # Determine the metadata values that should be generally available
-                    metadata["axes"].append(page.axes.upper())
-                    metadata["dtype"].append(str(page.dtype))
+                    metadata["axes"].append(series.axes.upper())
+                    metadata["dtype"].append(str(series.dtype))
 
                     axes = metadata["axes"][-1].replace("S", "C")
-                    metadata["width"].append(Tiff._get_axis_size(page.shape, axes, "X"))
-                    metadata["height"].append(Tiff._get_axis_size(page.shape, axes, "Y"))
-                    metadata["channels"].append(Tiff._get_axis_size(page.shape, axes, "C"))
-                    metadata["depth"].append(Tiff._get_axis_size(page.shape, axes, "Z"))
-                    metadata["frames"].append(Tiff._get_axis_size(page.shape, axes, "T"))
+                    metadata["width"].append(Tiff._get_axis_size(series.shape, axes, "X"))
+                    metadata["height"].append(Tiff._get_axis_size(series.shape, axes, "Y"))
+                    metadata["channels"].append(Tiff._get_axis_size(series.shape, axes, "C"))
+                    metadata["depth"].append(Tiff._get_axis_size(series.shape, axes, "Z"))
+                    metadata["frames"].append(Tiff._get_axis_size(series.shape, axes, "T"))
 
                     # Determine the metadata values that require reading the image data
-                    try:
-                        metadata["num_unique_values"].append(Tiff._get_num_unique_values(page))
-                    except ValueError:  # Occurs if the compression of the TIFF file is unsupported
-                        pass
+                    metadata["num_unique_values"].append(Tiff._get_num_unique_values(series))
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
@@ -301,17 +301,32 @@ class Tiff(Image):
         return shape[idx] if idx >= 0 else 0
 
     @staticmethod
-    def _get_num_unique_values(page: tifffile.TiffPage, mmap_window_size: int = 2 ** 14) -> int:
+    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> int:
         """
-        Determines the number of unique values in a TIFF page.
+        Determines the number of unique values in a TIFF series of pages.
+        """
+        unique_values = []
+        try:
+            for page in series.pages:
+                for chunk in Tiff._read_chunks(page):
+                    unique_values = list(np.unique(unique_values + list(chunk)))
+            return len(unique_values)
+        except ValueError:
+            return None  # Occurs if the compression of the TIFF file is unsupported
+
+    @staticmethod
+    def _read_chunks(page: tifffile.TiffPage, mmap_window_size: int = 2 ** 14) -> Iterator[np.ndarray]:
+        """
+        Generator that reads all chunks of values from a TIFF page.
         """
         is_tiled = (len(page.dataoffsets) > 1)
         unique_values = []
         if is_tiled:
 
             # There are multiple segments that can be processed consecutively
-            for segment in Tiff._read_segments(page)
-                unique_values = np.unique(unique_values + list(np.unique(segment)))
+            # TODO: Add test case that covers this path (we have `is_tiled=False` for all previous tests)
+            for segment in Tiff._read_segments(page):
+                yield segment.reshape(-1)
 
         else:
 
@@ -320,15 +335,16 @@ class Tiff(Image):
             arr_flat = arr.reshape(-1)  # This should only produce a view without any new allocations
             for step in range(1 + len(arr_flat) // mmap_window_size):
                 i0 = step * mmap_window_size
-                i1 = i0 + mmap_window_size
+                i1 = min(i0 + mmap_window_size, len(arr_flat))
                 if i0 + 1 < len(arr_flat):
-                    window = arr_flat[i0, i1]
-                    unique_values = np.unique(unique_values + list(np.unique(window)))
-
-        return len(unique_values)
+                    window = arr_flat[i0:i1]
+                    yield window
 
     @staticmethod
-    def _read_segments(page):
+    def _read_segments(page: tifffile.TiffPage) -> Iterator[np.ndarray]:
+        """
+        Generator that reads all segments of a TIFF page.
+        """
         reader = page.parent.filehandle
         for segment_idx, (segment_offset, segment_size) in enumerate(zip(page.dataoffsets, page.databytecounts)):
             reader.seek(segment_offset)
