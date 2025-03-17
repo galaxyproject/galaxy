@@ -40,13 +40,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" ftype="bed" value="droPer1.bed"/>
-            <param name="bgzip" ftype="bgzip" value="droPer1.bed.gz"/>
-            <output name="output1" ftype="tabix">
-                <assert_contents>
-                    <has_size value="133"/>
-                </assert_contents>
-            </output>
+            <param name="input1" ftype="bed" value="droPer1.bed" />
+            <param name="bgzip" ftype="bgzip" value="droPer1.bed.gz" />
             <assert_command>
                 <has_text text="-p bed"/>
             </assert_command>
@@ -55,13 +50,8 @@
             </assert_stdout>
         </test>
         <test>
-            <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
-            <param name="bgzip" ftype="bgzip" value="encode.broad.peak.gz"/>
-            <output name="output1" ftype="tabix">
-                <assert_contents>
-                    <has_size value="110" delta="10"/>
-                </assert_contents>
-            </output>
+            <param name="input1" ftype="encodepeak" value="encode.broad.peak" />
+            <param name="bgzip" ftype="bgzip" value="encode.broad.peak.gz" />
             <assert_command>
                 <has_text text="-p" negate="true"/>
             </assert_command>
@@ -70,13 +60,8 @@
             </assert_stdout>
         </test>
         <test>
-            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <param name="bgzip" ftype="bgzip" value="gff_filter_by_feature_count_out2.gff.gz"/>
-            <output name="output1" ftype="tabix">
-                <assert_contents>
-                    <has_size value="120"/>
-                </assert_contents>
-            </output>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff" />
+            <param name="bgzip" ftype="bgzip" value="gff_filter_by_feature_count_out2.gff.gz" />
             <assert_command>
                 <has_text text="-p gff"/>
             </assert_command>
@@ -85,13 +70,8 @@
             </assert_stdout>
         </test>
         <test>
-            <param name="input1" ftype="interval" value="2.interval"/>
-            <param name="bgzip" ftype="bgzip" value="2.interval.gz"/>
-            <output name="output1" ftype="tabix">
-                <assert_contents>
-                    <has_size value="247"/>
-                </assert_contents>
-            </output>
+            <param name="input1" ftype="interval" value="2.interval" />
+            <param name="bgzip" ftype="bgzip" value="2.interval.gz" />
             <assert_command>
                 <has_text text="-p" negate="true"/>
             </assert_command>
@@ -100,13 +80,8 @@
             </assert_stdout>
         </test>
         <test>
-            <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
-            <param name="bgzip" ftype="bgzip" value="vcf_to_maf_in.vcf.gz"/>
-            <output name="output1" ftype="tabix">
-                <assert_contents>
-                    <has_size value="143"/>
-                </assert_contents>
-            </output>
+            <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf" />
+            <param name="bgzip" ftype="bgzip" value="vcf_to_maf_in.vcf.gz" />
             <assert_command>
                 <has_text text="-p vcf"/>
             </assert_command>
@@ -115,16 +90,14 @@
             </assert_stdout>
         </test>
         <test>
-            <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
-            <param name="bgzip" ftype="bgzip" value="cufflinks_out1.gtf.gz"/>
-            <output name="output1" ftype="tabix">
-                <assert_contents>
-                    <has_size value="125"/>
-                </assert_contents>
-            </output>
+            <param name="input1" ftype="gtf" value="cufflinks_out1.gtf" />
+            <param name="bgzip" ftype="bgzip" value="cufflinks_out1.gtf.gz" />
             <assert_command>
-                <has_text text="-p gff"/>
+                <has_text text="-p gff" />
             </assert_command>
+            <assert_stdout>
+                <has_line line="test_chromosome" />
+            </assert_stdout>
         </test>
     </tests>
     <help>

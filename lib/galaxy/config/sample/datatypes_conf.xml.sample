@@ -532,7 +532,7 @@
     <datatype extension="juicer_medium_tabix.gz" type="galaxy.datatypes.interval:JuicerMediumTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="bed_tabix.gz" type="galaxy.datatypes.interval:BedTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gff_tabix.gz" type="galaxy.datatypes.interval:GffTabix" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true"/>
+    <datatype extension="bgzip" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml"/>
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>

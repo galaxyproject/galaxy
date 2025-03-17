@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
-<!-- 
+<!--
     Variant of resubmission_job_conf for testing Pulsar resubmission.
 -->
 <job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
-        <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner"/>
+        <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner">
+            <param id="transport_timeout">10</param>
+        </plugin>
     </plugins>
 
     <destinations default="initial_pulsar">
