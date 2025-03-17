@@ -172,7 +172,7 @@ def _get_max_peek_size(data):
 
     max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
     if isinstance(data.datatype, text.Html):
-        max_peek_size = 10000000  # 10 MB for html
+        max_peek_size = 50000000  # 50 MB for html
     elif isinstance(data.datatype, binary.Binary):
         max_peek_size = 100000  # 100 KB for binary
     return max_peek_size
