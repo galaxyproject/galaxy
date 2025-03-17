@@ -245,7 +245,7 @@ class Tiff(Image):
                         "num_unique_values",
                     ]
                 }
-                for page in tif.series:
+                for page in tif.pages:
 
                     # Determine the metadata values that should be generally available
                     metadata["axes"].append(page.axes.upper())
@@ -260,8 +260,7 @@ class Tiff(Image):
 
                     # Determine the metadata values that require reading the image data
                     try:
-                        im_arr = page.asarray()
-                        metadata["num_unique_values"].append(len(np.unique(im_arr)))
+                        metadata["num_unique_values"].append(Tiff._get_num_unique_values(page))
                     except ValueError:  # Occurs if the compression of the TIFF file is unsupported
                         pass
 
@@ -300,6 +299,41 @@ class Tiff(Image):
     def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
         idx = axes.find(axis)
         return shape[idx] if idx >= 0 else 0
+
+    @staticmethod
+    def _get_num_unique_values(page: tifffile.TiffPage, mmap_window_size: int = 2 ** 14) -> int:
+        """
+        Determines the number of unique values in a TIFF page.
+        """
+        is_tiled = (len(page.dataoffsets) > 1)
+        unique_values = []
+        if is_tiled:
+
+            # There are multiple segments that can be processed consecutively
+            for segment in Tiff._read_segments(page)
+                unique_values = np.unique(unique_values + list(np.unique(segment)))
+
+        else:
+
+            # The page can be memory-mapped and processed patch-wise
+            arr = page.asarray(out='memmap')  # No considerable amounts of memory should be allocated here
+            arr_flat = arr.reshape(-1)  # This should only produce a view without any new allocations
+            for step in range(1 + len(arr_flat) // mmap_window_size):
+                i0 = step * mmap_window_size
+                i1 = i0 + mmap_window_size
+                if i0 + 1 < len(arr_flat):
+                    window = arr_flat[i0, i1]
+                    unique_values = np.unique(unique_values + list(np.unique(window)))
+
+        return len(unique_values)
+
+    @staticmethod
+    def _read_segments(page):
+        reader = page.parent.filehandle
+        for segment_idx, (segment_offset, segment_size) in enumerate(zip(page.dataoffsets, page.databytecounts)):
+            reader.seek(segment_offset)
+            segment_data = reader.read(segment_size)
+            yield page.decode(segment_data, segment_idx)[0]
 
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename):
