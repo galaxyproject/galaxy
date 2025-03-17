@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -10,6 +10,7 @@ import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -21,6 +22,7 @@ import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     model: Record<string, any>;
@@ -62,6 +64,8 @@ const waitingForRequest = ref(false);
 //       (panel that toggles between readme/help or graph) to `true` if the readme/help exists, and if no
 //       readme/help exists, it will be `false`.
 const showGraph = ref(!showPanels.value);
+
+const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
 watch(
     () => showGraph.value,
@@ -278,15 +282,20 @@ async function onExecute() {
                     :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
                     <div v-if="showGraph" class="ui-form-header-underlay sticky-top" />
                     <Heading v-if="showGraph" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
-                    <FormDisplay
-                        :inputs="formInputs"
-                        :allow-empty-value-on-required-input="true"
-                        :sync-with-graph="showGraph"
-                        :active-node-id="computedActiveNodeId"
-                        workflow-run
-                        @onChange="onChange"
-                        @onValidation="onValidation"
-                        @update:active-node-id="($event) => (activeNodeId = $event)" />
+                    <BOverlay :show="changingCurrentHistory" no-fade rounded="sm" opacity="0.5">
+                        <template v-slot:overlay>
+                            <LoadingSpan message="Changing your current history" />
+                        </template>
+                        <FormDisplay
+                            :inputs="formInputs"
+                            :allow-empty-value-on-required-input="true"
+                            :sync-with-graph="showGraph"
+                            :active-node-id="computedActiveNodeId"
+                            workflow-run
+                            @onChange="onChange"
+                            @onValidation="onValidation"
+                            @update:active-node-id="($event) => (activeNodeId = $event)" />
+                    </BOverlay>
                 </div>
                 <div v-if="showGraph" class="h-100 w-50 d-flex flex-shrink-0">
                     <WorkflowRunGraph
