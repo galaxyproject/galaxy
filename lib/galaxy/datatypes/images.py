@@ -319,9 +319,8 @@ class Tiff(Image):
         """
         Generator that reads all chunks of values from a TIFF page.
         """
-        is_tiled = (len(page.dataoffsets) > 1)
         unique_values = []
-        if is_tiled:
+        if len(page.dataoffsets) > 1:
 
             # There are multiple segments that can be processed consecutively
             for segment in Tiff._read_segments(page):
