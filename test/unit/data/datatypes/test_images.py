@@ -103,8 +103,8 @@ def test_tiff_unsupported_compression(metadata):
     assert getattr(metadata, "num_unique_values", None) is None
 
 
-@__test(Tiff, "im9_multipage.tif")
-def test_tiff_multipage(metadata):
+@__test(Tiff, "im9_multiseries.tif")
+def test_tiff_multiseries(metadata):
     assert metadata.axes == ["YXS", "YX"]
     assert metadata.dtype == ["uint8", "uint16"]
     assert metadata.num_unique_values == [2, 255]
