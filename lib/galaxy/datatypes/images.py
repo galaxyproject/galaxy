@@ -319,7 +319,6 @@ class Tiff(Image):
         """
         Generator that reads all chunks of values from a TIFF page.
         """
-        unique_values = []
         if len(page.dataoffsets) > 1:
 
             # There are multiple segments that can be processed consecutively
@@ -334,8 +333,7 @@ class Tiff(Image):
             if mmap_chunk_size > len(arr_flat):
                 yield arr_flat
             else:
-                for chunk in np.array_split(arr_flat, mmap_chunk_size):
-                    yield chunk
+                yield from np.array_split(arr_flat, mmap_chunk_size)
 
     @staticmethod
     def _read_segments(page: tifffile.TiffPage) -> Iterator[np.ndarray]:
