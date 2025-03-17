@@ -1727,7 +1727,9 @@ class MinimalJobWrapper(HasResourceParameters):
     def enqueue(self):
         job = self.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        if not self.queue_with_limit(job, self.job_destination):
+        if self.is_task:
+            self.change_state(model.Job.states.QUEUED, flush=False, job=job)
+        elif not self.queue_with_limit(job, self.job_destination):
             return False
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
