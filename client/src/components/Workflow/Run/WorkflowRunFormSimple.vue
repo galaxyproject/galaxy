@@ -205,7 +205,7 @@ async function onExecute() {
 </script>
 
 <template>
-    <div class="d-flex flex-column h-100">
+    <div class="d-flex flex-column h-100 workflow-run-form-simple">
         <div v-if="!showGraph" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showGraph }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>

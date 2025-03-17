@@ -541,7 +541,7 @@ function onDragEnter(evt: DragEvent) {
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
-    } else if (props.workflowRun && canBrowse.value && evt.dataTransfer?.items) {
+    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "create") {
         // if any item in DataTransfer is a file
         const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
         if (hasFiles) {
@@ -553,10 +553,17 @@ function onDragEnter(evt: DragEvent) {
     }
 }
 
-function onDragLeave(evt: MouseEvent) {
+function onDragLeave(evt: DragEvent) {
     if (dragTarget.value === evt.target) {
-        currentHighlighting.value = null;
-        $emit("alert", undefined);
+        if (props.workflowRun && evt.dataTransfer?.items) {
+            setTimeout(() => {
+                currentHighlighting.value = null;
+                $emit("alert", undefined);
+            }, 3000);
+        } else {
+            currentHighlighting.value = null;
+            $emit("alert", undefined);
+        }
     }
 }
 
