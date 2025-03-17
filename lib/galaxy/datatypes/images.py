@@ -315,7 +315,7 @@ class Tiff(Image):
             return None  # Occurs if the compression of the TIFF file is unsupported
 
     @staticmethod
-    def _read_chunks(page: tifffile.TiffPage, mmap_window_size: int = 2 ** 14) -> Iterator[np.ndarray]:
+    def _read_chunks(page: tifffile.TiffPage, mmap_chunk_size: int = 2 ** 14) -> Iterator[np.ndarray]:
         """
         Generator that reads all chunks of values from a TIFF page.
         """
@@ -330,15 +330,14 @@ class Tiff(Image):
 
         else:
 
-            # The page can be memory-mapped and processed patch-wise
+            # The page can be memory-mapped and processed chunk-wise
             arr = page.asarray(out='memmap')  # No considerable amounts of memory should be allocated here
             arr_flat = arr.reshape(-1)  # This should only produce a view without any new allocations
-            for step in range(1 + len(arr_flat) // mmap_window_size):
-                i0 = step * mmap_window_size
-                i1 = min(i0 + mmap_window_size, len(arr_flat))
-                if i0 + 1 < len(arr_flat):
-                    window = arr_flat[i0:i1]
-                    yield window
+            if mmap_chunk_size > len(arr_flat):
+                yield arr_flat
+            else:
+                for chunk in np.array_split(arr_flat, mmap_chunk_size):
+                    yield chunk
 
     @staticmethod
     def _read_segments(page: tifffile.TiffPage) -> Iterator[np.ndarray]:
