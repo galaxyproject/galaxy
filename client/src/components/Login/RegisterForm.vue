@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
     BAlert,
@@ -21,6 +23,7 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import PasswordStrength from "@/components/Login/PasswordStrength.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 interface Props {
@@ -36,6 +39,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const showPassword = ref(false);
 
 const emit = defineEmits<{
     (e: "toggle-login"): void;
@@ -43,7 +47,7 @@ const emit = defineEmits<{
 
 const email = ref(null);
 const confirm = ref(null);
-const password = ref(null);
+const password = ref<string | null>(null);
 const username = ref(null);
 const subscribe = ref(null);
 const messageText: Ref<string | null> = ref(null);
@@ -60,6 +64,10 @@ const custosPreferred = computed(() => {
 
 function toggleLogin() {
     emit("toggle-login");
+}
+
+function togglePasswordVisibility() {
+    showPassword.value = !showPassword.value;
 }
 
 async function submit() {
@@ -139,13 +147,23 @@ async function submit() {
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelPassword" label-for="register-form-password">
-                                    <BFormInput
-                                        id="register-form-password"
-                                        v-model="password"
-                                        name="password"
-                                        type="password"
-                                        autocomplete="new-password"
-                                        required />
+                                    <div class="input-group">
+                                        <BFormInput
+                                            id="register-form-password"
+                                            v-model="password"
+                                            name="password"
+                                            :type="showPassword ? 'text' : 'password'"
+                                            autocomplete="new-password"
+                                            required />
+                                        <button
+                                            type="button"
+                                            title="Show Password"
+                                            class="input-group-text password-toggle-icon"
+                                            @click.prevent="togglePasswordVisibility">
+                                            <FontAwesomeIcon :icon="showPassword ? faEyeSlash : faEye" />
+                                        </button>
+                                    </div>
+                                    <PasswordStrength :password="password" />
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
@@ -217,7 +235,10 @@ async function submit() {
         </div>
     </div>
 </template>
+
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .embed-container {
     position: relative;
 
@@ -237,6 +258,39 @@ async function submit() {
         border: 1px solid #ccc;
         padding: 2px 5px;
         border-radius: 4px;
+    }
+}
+
+.input-group {
+    background-color: transparent;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    input {
+        flex: 1;
+        padding-right: 2.5rem;
+    }
+
+    .password-toggle-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        font-size: 1rem;
+        color: $gray-600;
+
+        &:hover {
+            color: $gray-900;
+        }
+    }
+
+    .input-group-text {
+        background: transparent;
+        border: none;
+        padding: 0;
+        z-index: 10;
     }
 }
 </style>
