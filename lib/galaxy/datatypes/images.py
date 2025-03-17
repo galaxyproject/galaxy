@@ -324,7 +324,6 @@ class Tiff(Image):
         if is_tiled:
 
             # There are multiple segments that can be processed consecutively
-            # TODO: Add test case that covers this path (we have `is_tiled=False` for all previous tests)
             for segment in Tiff._read_segments(page):
                 yield segment.reshape(-1)
 
