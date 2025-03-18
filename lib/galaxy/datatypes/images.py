@@ -13,6 +13,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 import mrcfile
@@ -213,13 +214,13 @@ class Png(Image):
         super().set_meta(dataset, overwrite, metadata_tmp_files_dir, **kwd)
 
         # Read the image data row by row, to avoid allocating memory for the entire image
-        if dataset.metadata.dtype == 'uint8' and dataset.metadata.frames in (0, 1):
+        if dataset.metadata.dtype == "uint8" and dataset.metadata.frames in (0, 1):
             reader = png.Reader(filename=dataset.get_file_name())
             width, height, pixels, metadata = reader.asDirect()
 
-            unique_values = []
+            unique_values: List[Any] = []
             for row in pixels:
-                values = np.uint(row)
+                values = np.array(row, dtype="uint8")
                 unique_values = list(np.unique(unique_values + list(values)))
             dataset.metadata.num_unique_values = len(unique_values)
 
@@ -325,21 +326,26 @@ class Tiff(Image):
         return shape[idx] if idx >= 0 else 0
 
     @staticmethod
-    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> int:
+    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> Optional[int]:
         """
         Determines the number of unique values in a TIFF series of pages.
         """
-        unique_values = []
+        unique_values: List[Any] = []
         try:
             for page in series.pages:
+
+                if page is None:
+                    continue  # No idea how this might occur, but mypy demands that we check it, just to be sure
+
                 for chunk in Tiff._read_chunks(page):
                     unique_values = list(np.unique(unique_values + list(chunk)))
+
             return len(unique_values)
         except ValueError:
             return None  # Occurs if the compression of the TIFF file is unsupported
 
     @staticmethod
-    def _read_chunks(page: tifffile.TiffPage, mmap_chunk_size: int = 2 ** 14) -> Iterator["np.typing.NDArray"]:
+    def _read_chunks(page: Union[tifffile.TiffPage, tifffile.TiffFrame], mmap_chunk_size: int = 2 ** 14) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all chunks of values from a TIFF page.
         """
@@ -360,7 +366,7 @@ class Tiff(Image):
                 yield from np.array_split(arr_flat, mmap_chunk_size)
 
     @staticmethod
-    def _read_segments(page: tifffile.TiffPage) -> Iterator["np.typing.NDArray"]:
+    def _read_segments(page: Union[tifffile.TiffPage, tifffile.TiffFrame]) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all segments of a TIFF page.
         """
@@ -368,7 +374,12 @@ class Tiff(Image):
         for segment_idx, (segment_offset, segment_size) in enumerate(zip(page.dataoffsets, page.databytecounts)):
             reader.seek(segment_offset)
             segment_data = reader.read(segment_size)
-            yield page.decode(segment_data, segment_idx)[0]
+            segment = page.decode(segment_data, segment_idx)[0]
+
+            if segment is None:
+                continue  # No idea how this might occur, but mypy demands that we check it, just to be sure
+
+            yield segment
 
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename):
