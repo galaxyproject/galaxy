@@ -6,6 +6,7 @@ from typing import (
 from galaxy.datatypes.images import (
     Image,
     Pdf,
+    Png,
     Tiff,
 )
 from .util import (
@@ -117,17 +118,17 @@ def test_tiff_multiseries(metadata):
 
 # Tests with PNG files
 
-test_png_axes_yx = __create_test(Image, "im1_uint8.png", "axes", "YX")
-test_png_axes_yxc = __create_test(Image, "im3_a.png", "axes", "YXC")
-test_png_dtype_uint8 = __create_test(Image, "im1_uint8.png", "dtype", "uint8")
-test_png_num_unique_values_1 = __create_test(Image, "im2_a.png", "num_unique_values", 1)
-test_png_num_unique_values_2 = __create_test(Image, "im2_b.png", "num_unique_values", 2)
-test_png_width_32 = __create_test(Image, "im2_b.png", "width", 32)
-test_png_height_32 = __create_test(Image, "im2_b.png", "height", 32)
-test_png_channels_0 = __create_test(Image, "im1_uint8.png", "channels", 0)
-test_png_channels_3 = __create_test(Image, "im3_a.png", "channels", 3)
-test_png_depth_0 = __create_test(Image, "im1_uint8.png", "depth", 0)
-test_png_frames_1 = __create_test(Image, "im1_uint8.png", "frames", 1)
+test_png_axes_yx = __create_test(Png, "im1_uint8.png", "axes", "YX")
+test_png_axes_yxc = __create_test(Png, "im3_a.png", "axes", "YXC")
+test_png_dtype_uint8 = __create_test(Png, "im1_uint8.png", "dtype", "uint8")
+test_png_num_unique_values_1 = __create_test(Png, "im2_a.png", "num_unique_values", 1)
+test_png_num_unique_values_2 = __create_test(Png, "im2_b.png", "num_unique_values", 2)
+test_png_width_32 = __create_test(Png, "im2_b.png", "width", 32)
+test_png_height_32 = __create_test(Png, "im2_b.png", "height", 32)
+test_png_channels_0 = __create_test(Png, "im1_uint8.png", "channels", 0)
+test_png_channels_3 = __create_test(Png, "im3_a.png", "channels", 3)
+test_png_depth_0 = __create_test(Png, "im1_uint8.png", "depth", 0)
+test_png_frames_1 = __create_test(Png, "im1_uint8.png", "frames", 1)
 
 
 # Test with files that neither Pillow nor tifffile can open
