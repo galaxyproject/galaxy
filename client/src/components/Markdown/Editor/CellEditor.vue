@@ -6,9 +6,10 @@
             <CellWrapper
                 :cell-index="cellIndex"
                 :cell-total="cells.length"
-                :name="cell.name"
                 :content="cell.content"
                 :configure="cell.configure"
+                :labels="labels"
+                :name="cell.name"
                 :toggle="cell.toggle"
                 @configure="onConfigure(cellIndex)"
                 @change="onChange(cellIndex, $event)"
@@ -27,13 +28,14 @@ import { nextTick, ref } from "vue";
 
 import { parseMarkdown } from "@/components/Markdown/parse";
 
-import type { CellType } from "./types";
+import type { CellType, WorkflowLabel } from "./types";
 
 import CellAdd from "./CellAdd.vue";
 import CellWrapper from "./CellWrapper.vue";
 
 const props = defineProps<{
     markdownText: string;
+    labels?: Array<WorkflowLabel>;
 }>();
 
 const emit = defineEmits(["update"]);
