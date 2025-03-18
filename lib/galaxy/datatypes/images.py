@@ -156,7 +156,7 @@ class Image(data.Data):
         self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         """
-        Try to populate the metadata of the image using a generic image loading library (pillow), if available.
+        Try to populate the metadata of the image using a generic image loading library (Pillow), if available.
 
         If an image has two axes, they are assumed to be ``YX``. If an image has three axes, they are assumed to be ``YXC``.
 
@@ -200,18 +200,28 @@ class Png(Image):
     edam_format = "format_3603"
     file_ext = "png"
 
-#    def set_meta(
-#        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
-#    ) -> None:
-#        """
-#        Try to populate the metadata of the image using PyPNG.
-#
-#        The base implementation is not used here, because Pillow is an optional dependency. This means that the base implementation might do nothing.
-#        """
-#        with PIL.Image.open(dataset.get_file_name()) as im:
-#
-#            dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
-#            dataset.metadata.dtype = str(im_peek_arr.dtype)
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        """
+        Try to populate the metadata of the image using PyPNG.
+
+        The base implementation is used to determine metadata elements that cannot be determined with PyPNG, but with Pillow.
+
+        Only 8bit PNG without animations is supported.
+        """
+        super(Png, self).set_meta(dataset, overwrite, metadata_tmp_files_dir, **kwd)
+
+        # Read the image data row by row, to avoid allocating memory for the entire image
+        if dataset.metadata.dtype == 'uint8' and dataset.metadata.frames in (0, 1):
+            reader = png.Reader(filename=dataset.get_file_name())
+            width, height, pixels, metadata = reader.asDirect()
+
+            unique_values = []
+            for row in pixels:
+                values = np.uint(row)
+                unique_values = list(np.unique(unique_values + list(values)))
+            dataset.metadata.num_unique_values = len(unique_values)
 
 
 class Tiff(Image):
