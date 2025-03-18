@@ -36,8 +36,9 @@ import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
-import { directiveEntry } from "./directives.ts";
 import { fromSteps } from "@/components/Workflow/Editor/modules/labels";
+
+import { directiveEntry } from "./directives.ts";
 import MarkdownDialog from "./MarkdownDialog";
 
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
