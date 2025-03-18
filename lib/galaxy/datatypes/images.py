@@ -210,7 +210,7 @@ class Png(Image):
 
         Only 8bit PNG without animations is supported.
         """
-        super(Png, self).set_meta(dataset, overwrite, metadata_tmp_files_dir, **kwd)
+        super().set_meta(dataset, overwrite, metadata_tmp_files_dir, **kwd)
 
         # Read the image data row by row, to avoid allocating memory for the entire image
         if dataset.metadata.dtype == 'uint8' and dataset.metadata.frames in (0, 1):
