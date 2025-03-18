@@ -339,7 +339,7 @@ class Tiff(Image):
             return None  # Occurs if the compression of the TIFF file is unsupported
 
     @staticmethod
-    def _read_chunks(page: tifffile.TiffPage, mmap_chunk_size: int = 2 ** 14) -> Iterator["numpy.typing.NDArray"]:
+    def _read_chunks(page: tifffile.TiffPage, mmap_chunk_size: int = 2 ** 14) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all chunks of values from a TIFF page.
         """
@@ -360,7 +360,7 @@ class Tiff(Image):
                 yield from np.array_split(arr_flat, mmap_chunk_size)
 
     @staticmethod
-    def _read_segments(page: tifffile.TiffPage) -> Iterator["numpy.typing.NDArray"]:
+    def _read_segments(page: tifffile.TiffPage) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all segments of a TIFF page.
         """
