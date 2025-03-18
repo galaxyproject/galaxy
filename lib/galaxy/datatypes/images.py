@@ -346,7 +346,7 @@ class Tiff(Image):
 
     @staticmethod
     def _read_chunks(
-        page: Union[tifffile.TiffPage, tifffile.TiffFrame], mmap_chunk_size: int = 2 ** 14
+        page: Union[tifffile.TiffPage, tifffile.TiffFrame], mmap_chunk_size: int = 2**14
     ) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all chunks of values from a TIFF page.
