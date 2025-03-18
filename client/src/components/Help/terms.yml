@@ -10,13 +10,13 @@ unix:
 
     More information on exit codes can be found on [Wikipedia](https://en.wikipedia.org/wiki/Exit_status).
   stdout: |
-    When an application is executed most of its reporting, diagnostic, and logging messages are printed to a stream of
+    When an application is executed, most of its reporting, diagnostic, and logging messages are printed to a stream of
     data called the "standard output" (often abbreviated as stdout). Error messages are more typically
     printed to an alternative stream called "standard error".
 
     More information on standard output can be found on [Wikipedia](https://en.wikipedia.org/wiki/Standard_streams).
   stderr: |
-    When an application is executed most of its error messages are typically printed to a stream of
+    When an application is executed, most of its error messages are typically printed to a stream of
     data called the "standard error" (often abbreviated as stderr). Other reporting, diagnostic, and
     logging messages are typically printed to an alternative stream called "standard output".
 
@@ -45,18 +45,18 @@ galaxy:
       matches the structure of the provided collection. This matching structure means the output collections
       will have the same element identifiers as the provided collection and they will appear in the same order.
 
-      It is easiest to visualize "mapping over" a collection is in the context of a tool that consumes a dataset
+      It is easiest to visualize "mapping over" a collection in the context of a tool that consumes a dataset
       and produces a dataset, but the semantics apply rather naturally to tools that consume collections or
       produce collections as well.
       
       For instance, consider a tool that consumes a ``paired`` collection and produces an output dataset.
       If a list of paired collections (collection type ``list:paired``) is passed to the tool - it will
-      will produce a flat list (collection type ``list``) of output datasets with the same number of elements
+      produce a flat list (collection type ``list``) of output datasets with the same number of elements
       in the same order as the provided list of ``paired`` collections.
 
       In the case of outputs, consider a tool that takes in a dataset and produces a flat list. If this tool
       is run over a flat list of datasets - that list will be "mapped over" and each element will produce a list.
-      These lists will be gathered together in a nested list structured (collection type ``list:list``) where
+      These lists will be gathered together in a nested list structure (collection type ``list:list``) where
       the outer element count and structure matches that of the input and the inner list for each of those
       is just the outputs of the tool for the corresponding element of the input.
     collectionBuilder:
@@ -86,17 +86,17 @@ galaxy:
       cores: |
         This is how many [cores](https://en.wikipedia.org/wiki/Central_processing_unit) (or distinct central processing units (CPUs)) are
         allocated to run the job for the tool. This value is generally configured for the tool by the Galaxy administrator. This value
-        does not guarantee how many cores the job actually used - the job may have used more and less based on how Galaxy is configured
+        does not guarantee how many cores the job actually used - the job may have used more or less based on how Galaxy is configured
         and how the tool is programmed.
 
       walltime: |
-        This is estimate of the length of time the job ran created by recording the start and stop of the job in the job script
-        created for the tool execution and subtracting these values. 
+        This is an estimate of the length of time the job ran, created by recording the start and stop times of the job in the job script
+        created for the tool execution and subtracting these values.
 
       allocated_core_time: |
         This is the number of cores Galaxy believes is allocated for the job times the estimated walltime for the job. This can be thought
-        of as scaling the runtime/walltime metric by the number of cores allocated - when purchasing compute time per core hour or consuming
-        compute time from a compute center's allocation - this is likely to be a more interesting and useful number than the walltime.
+        of as scaling the runtime/walltime metric by the number of cores allocated. When purchasing compute time per core hour or consuming
+        compute time from a compute center's allocation, this is likely to be a more interesting and useful number than the walltime.
 
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.

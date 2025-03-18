@@ -418,35 +418,35 @@ const groupByInTitles = computed(() => {
             </BRow>
             <BRow>
                 <BCol v-if="wallclockAggregate && wallclockAggregate.values" class="text-center">
-                    <h2 class="h-l truncate text-center">
+                    <Heading class="h3 truncate text-center">
                         Aggregate
                         <HelpText :for-title="true" uri="galaxy.jobs.metrics.walltime" text="Runtime Time" /> (in
                         {{ timingInTitles }})
-                    </h2>
+                    </Heading>
                     <VegaWrapper :spec="itemToBarChartSpec(wallclockAggregate)" :fill-width="false" />
                 </BCol>
                 <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values" class="text-center">
-                    <h2 class="h-l truncate text-center">
+                    <Heading class="h3 truncate text-center">
                         Aggregate
                         <HelpText
                             :for-title="true"
                             uri="galaxy.jobs.metrics.allocated_core_time"
                             text="Allocated Core Time" />
                         (in {{ timingInTitles }})
-                    </h2>
+                    </Heading>
                     <VegaWrapper :spec="itemToBarChartSpec(allocatedCoreTimeAggregate)" :fill-width="false" />
                 </BCol>
             </BRow>
             <BRow v-for="({ spec, item }, key) in metrics" :key="key">
                 <BCol>
-                    <h2 class="h-l truncate text-center">
+                    <Heading class="h3 truncate text-center">
                         <span v-if="item.helpTerm">
                             <HelpText :for-title="true" :uri="item.helpTerm" :text="`${key}`" />
                         </span>
                         <span v-else>
                             {{ key }}
                         </span>
-                    </h2>
+                    </Heading>
                     <VegaWrapper :spec="spec" />
                 </BCol>
             </BRow>
