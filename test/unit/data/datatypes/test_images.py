@@ -62,7 +62,7 @@ def __assert_empty_metadata(metadata):
         assert getattr(metadata, key, None) is None
 
 
-# Tests with TIFF files
+# Tests for `Tiff` class
 
 test_tiff_axes_yx = __create_test(Tiff, "im1_uint8.tif", "axes", "YX")
 test_tiff_axes_zcyx = __create_test(Tiff, "im6_uint8.tif", "axes", "ZCYX")
@@ -116,7 +116,22 @@ def test_tiff_multiseries(metadata):
     assert metadata.frames == [0, 0]
 
 
-# Tests with PNG files
+# Tests for `Image` class
+
+test_png_axes_yx = __create_test(Image, "im1_uint8.png", "axes", "YX")
+test_png_axes_yxc = __create_test(Image, "im3_a.png", "axes", "YXC")
+test_png_dtype_uint8 = __create_test(Image, "im1_uint8.png", "dtype", "uint8")
+test_png_num_unique_values_1 = __create_test(Image, "im2_a.png", "num_unique_values", None)
+test_png_num_unique_values_2 = __create_test(Image, "im2_b.png", "num_unique_values", None)
+test_png_width_32 = __create_test(Image, "im2_b.png", "width", 32)
+test_png_height_32 = __create_test(Image, "im2_b.png", "height", 32)
+test_png_channels_0 = __create_test(Image, "im1_uint8.png", "channels", 0)
+test_png_channels_3 = __create_test(Image, "im3_a.png", "channels", 3)
+test_png_depth_0 = __create_test(Image, "im1_uint8.png", "depth", 0)
+test_png_frames_1 = __create_test(Image, "im1_uint8.png", "frames", 1)
+
+
+# Tests for `Png` class
 
 test_png_axes_yx = __create_test(Png, "im1_uint8.png", "axes", "YX")
 test_png_axes_yxc = __create_test(Png, "im3_a.png", "axes", "YXC")
