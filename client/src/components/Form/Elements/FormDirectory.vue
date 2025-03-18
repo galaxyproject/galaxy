@@ -22,8 +22,8 @@
                 :key="index"
                 class="existent-url-path align-items-center">
                 <b-button class="regular-path-chunk" :disabled="!editable" variant="dark" @click="removePath(index)">
-                    {{ pathChunk }}</b-button
-                >
+                    {{ decodeURIComponent(pathChunk) }}
+                </b-button>
             </b-breadcrumb-item>
             <b-breadcrumb-item class="directory-input-field align-items-center">
                 <b-input
@@ -46,7 +46,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { FilesDialog } from "components/FilesDialog";
+import { Toast } from "composables/toast";
 import _l from "utils/localization";
+
+import { errorMessageAsString } from "@/utils/simple-error";
 
 library.add(faFolder, faFolderOpen);
 
@@ -102,15 +105,19 @@ export default {
             }
         },
         setUrl({ url }) {
-            this.url = new URL(url);
-            // split path and keep only valid entries
-            this.pathChunks = this.url.href
-                .split(/[/\\]/)
-                .splice(2)
-                .map((x) => ({ pathChunk: x, editable: false }));
+            try {
+                this.url = new URL(encodeURI(url));
+                // split path and keep only valid entries
+                this.pathChunks = this.url.href
+                    .split(/[/\\]/)
+                    .splice(2)
+                    .map((x) => ({ pathChunk: x, editable: false }));
 
-            if (url) {
-                this.updateURL();
+                if (url) {
+                    this.updateURL();
+                }
+            } catch (error) {
+                Toast.error(errorMessageAsString(error), "Invalid directory path");
             }
         },
         addPath({ key }) {
@@ -125,7 +132,12 @@ export default {
             let url = undefined;
             if (!isReset) {
                 // create an string of path chunks separated by `/`
-                url = encodeURI(`${this.url.protocol}//${this.pathChunks.map(({ pathChunk }) => pathChunk).join("/")}`);
+                url = encodeURI(
+                    `${this.url.protocol}//${this.pathChunks
+                        .map(({ pathChunk }) => decodeURIComponent(pathChunk))
+                        .join("/")}`
+                );
+                url = decodeURI(url);
             }
             this.$emit("input", url);
         },
