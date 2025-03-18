@@ -111,7 +111,7 @@
                 :markdown-text="report.markdown"
                 mode="report"
                 :title="'Workflow Report: ' + name"
-                :steps="steps"
+                :labels="getLabels"
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
@@ -224,6 +224,7 @@ import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflo
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { getWorkflowInputs } from "./modules/inputs";
+import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -510,6 +511,8 @@ export default {
             }))
         );
 
+        const getLabels = computed(() => fromSteps(steps.value));
+
         const saveWorkflowTitle = computed(() =>
             hasInvalidConnections.value
                 ? "Workflow has invalid connections, review and remove invalid connections"
@@ -536,6 +539,7 @@ export default {
             setName,
             report,
             license,
+            getLabels,
             setLicense,
             creator,
             setCreator,
