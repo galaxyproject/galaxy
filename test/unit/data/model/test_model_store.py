@@ -17,6 +17,7 @@ from typing import (
 
 import pytest
 from rocrate.rocrate import ROCrate
+from rocrate_validator import services, models
 from sqlalchemy import select
 
 from galaxy import model
@@ -551,7 +552,12 @@ def open_ro_crate(crate_directory):
 
 
 def validate_history_crate_directory(crate_directory):
+    # first validate against the base RO-Crate spec
+    validate_with_roc_validator(crate_directory=crate_directory, profile="ro-crate-1.1")
+
+    # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
+    # TODO: then check the tests below to see if they can be removed thanks to roc-validator
     validate_has_readme(crate)
 
 
@@ -603,9 +609,15 @@ def validate_other_entities(ro_crate: ROCrate):
 
 
 def validate_invocation_crate_directory(crate_directory):
+    # first validate against the Workflow Run Crate profile
+    validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+
+    # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
     for e in crate.contextual_entities:
         print(e.type)
+
+    # TODO: then check the tests below to see if they can be removed thanks to roc-validator
     validate_main_entity(crate)
     validate_create_action(crate)
     validate_other_entities(crate)
@@ -619,6 +631,11 @@ def validate_invocation_crate_directory(crate_directory):
 
 
 def validate_invocation_collection_crate_directory(crate_directory):
+    # first validate against the Workflow Run Crate profile
+    validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+    # TODO: then check the tests below to see if they can be removed thanks to roc-validator
+
+    # then do Galaxy-specific validation
     ro_crate = open_ro_crate(crate_directory)
     workflow = ro_crate.mainEntity
     root = ro_crate.root_dataset
@@ -640,6 +657,20 @@ def validate_invocation_collection_crate_directory(crate_directory):
     assert len(collection["hasPart"]) == 2
     for dataset in collection["hasPart"]:
         assert dataset in root["hasPart"]
+
+
+def validate_with_roc_validator(crate_directory, profile):
+    settings = services.ValidationSettings(
+        data_path=crate_directory,
+        profile_identifier=profile,
+        requirement_severity=models.Severity.REQUIRED,
+        abort_on_first=False,  # do not stop on first issue
+    )
+
+    result = services.validate(settings)
+
+    issues = result.get_issues()
+    assert len(issues) == 0, f"RO-Crate is invalid: {[issue.message for issue in issues]}"
 
 
 def test_export_history_with_missing_hid(tmp_path):
