@@ -13,6 +13,7 @@ import type { VariantInterface } from "./variants";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import CollectionCreatorShowExtensions from "@/components/Collections/common/CollectionCreatorShowExtensions.vue";
+import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import DefaultBox from "@/components/Upload/DefaultBox.vue";
 
@@ -77,11 +78,11 @@ function goToFirstWorkflowTab() {
 
 <template>
     <div>
-        <div v-show="currentWorkflowTab === WorkflowRunTabs.view && currentValue" class="bordered-container">
-            <div class="heading-container d-flex align-items-center flex-gapx-1">
+        <div v-show="currentWorkflowTab === WorkflowRunTabs.view && currentValue">
+            <Heading separator size="sm">
                 <FontAwesomeIcon :icon="faEye" fixed-width />
-                <h4 class="m-0">View selected {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}</h4>
-            </div>
+                View selected {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}
+            </Heading>
             <div v-for="item in currentValue" :key="item.id">
                 <GenericItem class="mr-2 w-100" :item-id="item.id" :item-src="item.src" />
             </div>
@@ -89,12 +90,11 @@ function goToFirstWorkflowTab() {
         <div
             v-show="
                 props.canBrowse && props.currentVariant?.src !== 'hdca' && currentWorkflowTab === WorkflowRunTabs.create
-            "
-            class="bordered-container">
-            <div class="heading-container d-flex align-items-center flex-gapx-1">
+            ">
+            <Heading separator size="sm">
                 <FontAwesomeIcon :icon="faUpload" fixed-width />
-                <h4 class="m-0">Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}</h4>
-            </div>
+                Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}
+            </Heading>
             <DefaultBox
                 v-if="currentHistoryId && uploadReady && configOptions"
                 :effective-extensions="effectiveExtensions"
@@ -128,22 +128,3 @@ function goToFirstWorkflowTab() {
         </div>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-
-.bordered-container {
-    border: 2px solid $portlet-bg-color;
-    border-radius: 8px;
-    padding: 16px;
-    position: relative;
-}
-
-.heading-container {
-    position: absolute;
-    top: -12px;
-    left: 16px;
-    background: $body-bg;
-    padding: 0 8px;
-}
-</style>
