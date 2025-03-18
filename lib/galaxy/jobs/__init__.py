@@ -1625,8 +1625,14 @@ class MinimalJobWrapper(HasResourceParameters):
     def queue_with_limit(self, job: Job, job_destination: JobDestination):
         anonymous_user_concurrent_jobs = self.app.job_config.limits.anonymous_user_concurrent_jobs
         registered_user_concurrent_jobs = self.app.job_config.limits.registered_user_concurrent_jobs
+        destination_total_concurrent_jobs = self.app.job_config.limits.destination_total_concurrent_jobs
         destination_total_limit = self.app.job_config.limits.destination_total_concurrent_jobs.get(job_destination.id)
         destination_user_limit = self.app.job_config.limits.destination_user_concurrent_jobs.get(job_destination.id)
+        destination_tag_limits = {}
+        if job_destination.tags:
+            for tag in job_destination.tags:
+                if tag_limit := destination_total_concurrent_jobs.get(tag):
+                    destination_tag_limits[tag] = tag_limit
 
         conditions = [model.Job.table.c.id == job.id]
 
@@ -1707,6 +1713,27 @@ class MinimalJobWrapper(HasResourceParameters):
                 .scalar_subquery()
             )
             conditions.append(destination_total_count < destination_total_limit)
+
+        if destination_tag_limits:
+            for tag, limit in destination_tag_limits.items():
+                destination_ids = {destination.id for destination in self.app.job_config.get_destinations(tag)}
+                tag_count = (
+                    select(func.count(model.Job.table.c.id))
+                    .where(
+                        and_(
+                            model.Job.table.c.state.in_(
+                                [
+                                    model.Job.states.QUEUED,
+                                    model.Job.states.RUNNING,
+                                    model.Job.states.RESUBMITTED,
+                                ]
+                            ),
+                            model.Job.table.c.destination_id.in_(destination_ids),
+                        )
+                    )
+                    .scalar_subquery()
+                )
+                conditions.append(tag_count < limit)
 
         update_stmt = (
             update(model.Job)
