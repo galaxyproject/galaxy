@@ -72,7 +72,6 @@ watch(
             :implicit-collection-jobs-id="implicitCollectionJobsId"
             :select-job-options="selectJobOptions">
             <JobParameters class="job-parameters" :job-id="targetJobId" :param="param" :include-title="false" />
-            {{ targetJobId }}
         </JobSelection>
         <b-card-footer v-if="footer">
             {{ footer }}
