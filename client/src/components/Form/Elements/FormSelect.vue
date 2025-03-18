@@ -64,7 +64,7 @@ const filteredOptions = useFilterObjectArray(() => props.options, filter, ["labe
 const optionReorderThreshold = 8;
 
 const reorderedOptions = computed(() => {
-    if (filteredOptions.value.length <= optionReorderThreshold) {
+    if (!props.multiple || filteredOptions.value.length <= optionReorderThreshold) {
         return filteredOptions.value;
     } else {
         const selectedOptions: SelectOption[] = [];
