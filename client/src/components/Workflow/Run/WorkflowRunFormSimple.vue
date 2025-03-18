@@ -233,6 +233,7 @@ async function onExecute() {
                         v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
                         ref="dropdown"
+                        v-b-tooltip.hover.noninteractive
                         class="workflow-run-settings"
                         title="Workflow Run Settings"
                         size="sm"
