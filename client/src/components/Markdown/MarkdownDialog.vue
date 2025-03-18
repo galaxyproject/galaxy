@@ -57,7 +57,7 @@ const effectiveLabels = computed<Array<WorkflowLabel>>(() => {
     return filteredLabels;
 });
 
-const hasLabels = computed(() => props.labels && props.labels.length > 0);
+const hasLabels = computed(() => props.labels !== undefined);
 
 const selectorConfig = {
     job_id: {
