@@ -8,13 +8,12 @@
                 <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
                 <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
             </div>
-            <div class="w-100">
-                <div class="m-2">
-                    <MarkdownDefault v-if="name === 'markdown'" :content="content" />
-                    <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
-                    <b-alert v-else variant="danger" show> This cell type `{{ name }}` is not available. </b-alert>
-                </div>
-            </div>
+            <SectionWrapper
+                class="m-2 w-100"
+                :name="name"
+                :content="content"
+                :labels="labels"
+                @change="$emit('change', $event)" />
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="d-flex flex-column" :class="{ 'cell-wrapper-hover': hover }">
@@ -34,9 +33,16 @@
                     v-if="name === 'galaxy' && configure"
                     :name="name"
                     :content="content"
+                    :labels="labels"
                     @cancel="$emit('configure')"
                     @change="handleConfigure($event)" />
-                <CellCode :key="name" class="mt-1" :value="content" :mode="mode" @change="$emit('change', $event)" />
+                <CellCode
+                    :key="name"
+                    class="mt-1"
+                    :value="content"
+                    :max-lines="30"
+                    :mode="mode"
+                    @change="$emit('change', $event)" />
                 <small class="cell-wrapper-type position-absolute">
                     {{ VALID_TYPES.includes(name) ? name : "unknown" }}
                 </small>
@@ -49,12 +55,13 @@
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
-import MarkdownDefault from "../Sections/MarkdownDefault.vue";
-import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
+import type { WorkflowLabel } from "./types";
+
 import CellAction from "./CellAction.vue";
 import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
+import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
@@ -63,6 +70,7 @@ const props = defineProps<{
     cellTotal: number;
     configure?: boolean;
     content: string;
+    labels?: Array<WorkflowLabel>;
     name: string;
     toggle?: boolean;
 }>();
