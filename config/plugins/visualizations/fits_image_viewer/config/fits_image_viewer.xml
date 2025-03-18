@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="FITS Aladin viewer" embeddable="false">
+<visualization name="FITS Aladin viewer">
     <description>Basic plugin for fits file visualization with aladin-lite viewer</description>
     <data_sources>
         <data_source>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="H5Web" embeddable="false">
+<visualization name="H5Web" embeddable="true">
     <description>HDF5 data visualization and exploration</description>
     <data_sources>
         <data_source>

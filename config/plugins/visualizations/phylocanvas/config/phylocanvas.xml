@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Phylogenetic Tree Visualization">
+<visualization name="Phylogenetic Tree Visualization" embeddable="true">
     <description>A performant, reusable, and extensible tree visualisation from the Centre for Genomic Pathogen Surveillance at https://www.phylocanvas.gl</description>
     <data_sources>
         <data_source>
@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.3" package="@galaxyproject/phylocanvas"/>
+        <requirement type="npm" version="0.0.7" package="@galaxyproject/phylocanvas"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
