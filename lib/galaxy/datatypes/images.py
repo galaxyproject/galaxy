@@ -345,7 +345,9 @@ class Tiff(Image):
             return None  # Occurs if the compression of the TIFF file is unsupported
 
     @staticmethod
-    def _read_chunks(page: Union[tifffile.TiffPage, tifffile.TiffFrame], mmap_chunk_size: int = 2 ** 14) -> Iterator["np.typing.NDArray"]:
+    def _read_chunks(
+        page: Union[tifffile.TiffPage, tifffile.TiffFrame], mmap_chunk_size: int = 2 ** 14
+    ) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all chunks of values from a TIFF page.
         """
@@ -358,7 +360,7 @@ class Tiff(Image):
         else:
 
             # The page can be memory-mapped and processed chunk-wise
-            arr = page.asarray(out='memmap')  # No considerable amounts of memory should be allocated here
+            arr = page.asarray(out="memmap")  # No considerable amounts of memory should be allocated here
             arr_flat = arr.reshape(-1)  # This should only produce a view without any new allocations
             if mmap_chunk_size > len(arr_flat):
                 yield arr_flat
