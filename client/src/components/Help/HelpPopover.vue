@@ -22,7 +22,7 @@ defineProps<Props>();
 .help-popover-content {
     font-size: $font-size-base;
     font-weight: normal;
-    line-height: 1.5;
+    line-height: $line-height-base;
     text-transform: none;
 }
 </style>
