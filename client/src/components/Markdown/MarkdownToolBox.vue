@@ -238,7 +238,7 @@ export default {
             };
         },
         workflowLabels() {
-            return fromSteps(this.steps);
+            return this.isWorkflow ? fromSteps(this.steps) : undefined;
         },
     },
     created() {
