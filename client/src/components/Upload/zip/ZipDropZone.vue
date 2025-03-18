@@ -3,7 +3,7 @@ import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import { validateLocalZipFile } from "./rocrate.utils";
+import { isZipFile } from "./utils";
 
 const isDragging = ref(false);
 
@@ -21,12 +21,12 @@ function onDrop(event: DragEvent) {
     }
 
     if (files.length !== 1) {
-        emit("dropError", "Please drop a single RO-Crate Zip file");
+        emit("dropError", "Please drop a single Zip file");
         return;
     }
 
     const file = files[0];
-    const errorMessage = validateLocalZipFile(file);
+    const errorMessage = isZipFile(file);
     if (errorMessage) {
         emit("dropError", errorMessage);
         return;
@@ -67,7 +67,7 @@ function resetError() {
         @drop.prevent="onDrop">
         <div class="helper" :class="{ highlight: isDragging }">
             <FontAwesomeIcon class="mr-1" :icon="faArchive" />
-            <span v-localize>Drop your RO-Crate Zip file here, choose a local file or paste a URL below</span>
+            <span v-localize>Drop your ZIP archive here, choose a local file or paste a URL below</span>
         </div>
     </div>
 </template>

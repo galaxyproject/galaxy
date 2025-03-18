@@ -1,29 +1,6 @@
 import { type ROCrateEntity, type ROCrateImmutableView } from "ro-crate-zip-explorer";
 
-export function validateLocalZipFile(file?: File | null): string {
-    if (!file) {
-        return "No file selected";
-    }
-
-    if (file.type !== "application/zip") {
-        return "Invalid file type. Please select a ZIP file.";
-    }
-
-    return "";
-}
-
-const KNOWN_IGNORED_FILES = [
-    "collections_attrs.txt",
-    "datasets_attrs.txt",
-    "datasets_attrs.txt.provenance",
-    "export_attrs.txt",
-    "implicit_collection_jobs_attrs.txt",
-    "implicit_dataset_conversions.txt",
-    "invocation_attrs.txt",
-    "jobs_attrs.txt",
-    "libraries_attrs.txt",
-    "library_folders_attrs.txt",
-];
+import { GALAXY_EXPORT_METADATA_FILES } from "../utils";
 
 interface Conforms {
     id: string;
@@ -67,7 +44,7 @@ function isOfType(item: ROCrateEntity, type: string): boolean {
 }
 
 function shouldBeIgnored(item: ROCrateEntity): boolean {
-    return KNOWN_IGNORED_FILES.some((ignoredFile) => item["@id"].includes(ignoredFile));
+    return GALAXY_EXPORT_METADATA_FILES.some((ignoredFile) => item["@id"].includes(ignoredFile));
 }
 
 function isWorkflow(item: ROCrateEntity): boolean {
@@ -85,6 +62,10 @@ function isFile(item: ROCrateEntity): boolean {
 
 export function isCrate(crate: unknown): crate is ROCrateImmutableView {
     return typeof crate === "object" && crate !== null && "@graph" in crate;
+}
+
+export function isWorkflowFile(rocrateFile: ROCrateFile): boolean {
+    return rocrateFile.type === "ComputationalWorkflow";
 }
 
 export async function extractROCrateSummary(crate: ROCrateImmutableView): Promise<ROCrateSummary> {
