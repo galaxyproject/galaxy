@@ -76,7 +76,7 @@
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
     "jquery-ui": "^1.13.2",
-    "jspdf": "^2.5.1",
+    "jspdf": "^3.0.1",
     "linkify-html": "^4.1.1",
     "linkifyjs": "^4.1.1",
     "lodash.isequal": "^4.5.0",
