@@ -63,6 +63,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 __all__ = (
+    "PulsarARCJobRunner",
     "PulsarLegacyJobRunner",
     "PulsarRESTJobRunner",
     "PulsarMQJobRunner",
@@ -1059,6 +1060,44 @@ class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
         if "staging_directory" not in pulsar_app_config:
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
+
+
+ARC_DESTINATION_DEFAULTS: Dict[str, Any] = {
+    **COEXECUTION_DESTINATION_DEFAULTS,
+    "default_file_action": "json_transfer",
+}
+
+
+class PulsarARCJobRunner(PulsarCoexecutionJobRunner):
+    runner_name = "PulsarARCJobRunner"
+
+    destination_defaults = ARC_DESTINATION_DEFAULTS
+
+    use_mq = False
+    poll = True
+
+    def get_client_from_state(self, job_state):
+        client = super().get_client_from_state(job_state)
+        client._arc_job_id = job_state.job_id  # used by the client to get the job state
+        return client
+
+    def queue_job(self, job_wrapper):
+        """
+        Inject user's own ARC endpoint and OIDC token (if defined) as destination parameters.
+        """
+        destination_arc_url = job_wrapper.job_destination.params.get("arc_url")
+        destination_oidc_token = job_wrapper.job_destination.params.get("oidc_token")
+        user_arc_url = job_wrapper.get_job().user.extra_preferences.get("distributed_arc_compute|remote_arc_resources")
+        user_oidc_token = job_wrapper.get_job().user.extra_preferences.get("distributed_arc_compute|remote_arc_token")
+
+        job_wrapper.job_destination.params.update(
+            {
+                "arc_url": user_arc_url or destination_arc_url,
+                "oidc_token": user_oidc_token or destination_oidc_token,
+            }
+        )
+
+        return super().queue_job(job_wrapper)
 
 
 KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
