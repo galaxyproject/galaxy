@@ -11,7 +11,7 @@
                 :require-writable="true"
                 :is-open="isModalShown" />
         </div>
-        <b-breadcrumb v-if="url">
+        <b-breadcrumb v-if="url" class="mb-0">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
                 <b-button class="pathname" variant="primary">
                     <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}</b-button
@@ -38,6 +38,11 @@
                     @keydown.8.capture="removeLastPath" />
             </b-breadcrumb-item>
         </b-breadcrumb>
+
+        <div v-if="value" class="px-2">
+            <span v-localize>Directory Path:</span>
+            <code>{{ value }}</code>
+        </div>
     </div>
 </template>
 
@@ -64,6 +69,12 @@ export default {
     components: {
         FontAwesomeIcon,
         FilesDialog,
+    },
+    props: {
+        value: {
+            type: String,
+            default: null,
+        },
     },
     data() {
         return { ...getDefaultValues(), modalKey: 0, selectText: _l("Select") };
