@@ -174,7 +174,7 @@ class Image(data.Data):
                     dataset.metadata.depth = 0
                     dataset.metadata.frames = getattr(im, "n_frames", 0)
                     dataset.metadata.dtype = str(np.array((0,), im_typestr).dtype)
-                    
+
                     # Determine the remaining values, by assuming the order of axes
                     if im_ndim == 2:
                         dataset.metadata.axes = "YX"
