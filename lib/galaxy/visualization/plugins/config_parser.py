@@ -75,12 +75,12 @@ class VisualizationsConfigParser:
             log.info("Visualizations plugin disabled: %s. Skipping...", returned["name"])
             return None
 
-        # record the embeddable flag - defaults to true
-        returned["embeddable"] = True
+        # record the embeddable flag - defaults to False
+        returned["embeddable"] = False
         if "embeddable" in xml_tree.attrib:
             returned["embeddable"] = asbool(xml_tree.attrib.get("embeddable"))
 
-        # record the visible flag - defaults to true
+        # record the visible flag - defaults to False
         returned["hidden"] = False
         if "hidden" in xml_tree.attrib:
             returned["hidden"] = asbool(xml_tree.attrib.get("hidden"))
