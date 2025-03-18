@@ -14,6 +14,7 @@ import {
     faPlay,
     faPlus,
     faShareAlt,
+    faSpinner,
     faStream,
     faTrash,
     faUserLock,
@@ -91,7 +92,7 @@ const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
 const { isAnonymous } = storeToRefs(userStore);
-const { totalHistoryCount } = storeToRefs(historyStore);
+const { totalHistoryCount, changingCurrentHistory } = storeToRefs(historyStore);
 
 const canEditHistory = computed(() => {
     return canMutateHistory(props.history);
@@ -167,10 +168,13 @@ async function resumePausedJobs() {
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    :disabled="isAnonymous"
+                    :disabled="isAnonymous || changingCurrentHistory"
                     :title="userTitle('Switch to history')"
                     @click="showSwitchModal = !showSwitchModal">
-                    <FontAwesomeIcon fixed-width :icon="faExchangeAlt" />
+                    <FontAwesomeIcon
+                        fixed-width
+                        :icon="changingCurrentHistory ? faSpinner : faExchangeAlt"
+                        :spin="changingCurrentHistory" />
                 </BButton>
 
                 <BDropdown

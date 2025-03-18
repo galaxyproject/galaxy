@@ -117,7 +117,11 @@ defineExpose({
         <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
         <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
         <FormSelectMany v-else-if="displayMany" v-model="currentValue" :options="currentOptions" />
-        <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
+        <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions">
+            <template v-slot:no-options>
+                <slot name="no-options" />
+            </template>
+        </FormSelect>
 
         <div v-if="showSelectPreference" class="d-flex">
             <button v-if="showManyButton" class="ui-link ml-1" @click="useMany = true">switch to column select</button>

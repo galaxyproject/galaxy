@@ -541,7 +541,7 @@ function onDragEnter(evt: DragEvent) {
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
-    } else if (props.workflowRun && canBrowse.value && evt.dataTransfer?.items) {
+    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "create") {
         // if any item in DataTransfer is a file
         const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
         if (hasFiles) {
@@ -553,10 +553,17 @@ function onDragEnter(evt: DragEvent) {
     }
 }
 
-function onDragLeave(evt: MouseEvent) {
+function onDragLeave(evt: DragEvent) {
     if (dragTarget.value === evt.target) {
-        currentHighlighting.value = null;
-        $emit("alert", undefined);
+        if (props.workflowRun && evt.dataTransfer?.items) {
+            setTimeout(() => {
+                currentHighlighting.value = null;
+                $emit("alert", undefined);
+            }, 3000);
+        } else {
+            currentHighlighting.value = null;
+            $emit("alert", undefined);
+        }
     }
 }
 
@@ -665,7 +672,6 @@ const noOptionsWarningMessage = computed(() => {
         <div class="d-flex flex-gapx-1">
             <div class="d-flex flex-column">
                 <FormDataContextButtons
-                    :class="{ 'field-options': props.workflowRun && !currentVariant?.multiple }"
                     :variant="variant"
                     :current-field="currentField"
                     :can-browse="canBrowse"
@@ -692,14 +698,20 @@ const noOptionsWarningMessage = computed(() => {
                 <FormSelect
                     v-if="currentVariant && !currentVariant.multiple"
                     v-model="currentValue"
-                    class="align-self-start w-100"
-                    :class="{ 'form-select': props.workflowRun }"
+                    class="w-100"
+                    :class="{
+                        'form-select': props.workflowRun,
+                        'align-self-start': !props.workflowRun,
+                    }"
                     :multiple="currentVariant.multiple"
                     :optional="currentVariant.multiple || optional"
                     :options="formattedOptions"
                     :placeholder="`Select a ${placeholder}`">
                     <template v-slot:no-options>
-                        <BAlert class="mb-0" variant="warning" show>
+                        <BAlert
+                            :class="props.workflowRun && 'py-0 my-0 d-flex w-100 h-100 align-items-center'"
+                            variant="warning"
+                            show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
                     </template>
@@ -711,18 +723,24 @@ const noOptionsWarningMessage = computed(() => {
                     class="w-100"
                     :data="formattedOptions"
                     optional
-                    multiple />
-                <FormDataContextButtons
-                    v-if="props.workflowRun && usingSimpleSelect"
-                    :class="{ 'h-100': !currentVariant?.multiple }"
-                    compact
-                    :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
-                    :current-source="currentSource || undefined"
-                    :is-populated="currentValue && currentValue.length > 0"
-                    show-view-create-options
-                    :workflow-tab.sync="workflowTab"
-                    @create-collection-type="(value) => (currentCollectionTypeTab = value)" />
+                    multiple>
+                    <template v-slot:no-options>
+                        <BAlert class="py-2 my-0" variant="warning" show>
+                            {{ noOptionsWarningMessage }}
+                        </BAlert>
+                    </template>
+                </FormSelection>
             </div>
+
+            <FormDataContextButtons
+                v-if="props.workflowRun && usingSimpleSelect"
+                compact
+                :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                :current-source="currentSource || undefined"
+                :is-populated="currentValue && currentValue.length > 0"
+                show-view-create-options
+                :workflow-tab.sync="workflowTab"
+                @create-collection-type="(value) => (currentCollectionTypeTab = value)" />
         </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
@@ -787,16 +805,32 @@ const noOptionsWarningMessage = computed(() => {
 // To ensure the field options, select field and the workflow run options are all the same height
 .form-data {
     .form-select {
-        height: 100%;
         .multiselect,
         .multiselect__tags {
             height: 100%;
+            min-height: auto;
+            padding-top: 0;
+            padding-bottom: 0;
         }
-    }
-    .field-options {
-        height: 100%;
-        .btn-group {
-            height: 100%;
+        .multiselect {
+            // the caret-down button
+            .multiselect__select {
+                height: 100%;
+                padding: 0;
+            }
+            // the selector containing the current value
+            .multiselect__tags {
+                .multiselect__single {
+                    margin-top: 5px;
+                }
+            }
+        }
+        .multiselect--active {
+            // the search input field
+            .multiselect__input {
+                height: 100%;
+                padding-left: 5px;
+            }
         }
     }
 }

@@ -455,7 +455,12 @@ defineExpose({
                 @input="updateDbKey" />
         </div>
         <slot name="footer" />
-        <div class="d-flex justify-content-end flex-wrap" :class="!disableFooter && 'upload-buttons'">
+        <div
+            class="d-flex justify-content-end flex-wrap"
+            :class="{
+                'upload-buttons': !disableFooter,
+                'flex-gapx-1': disableFooter,
+            }">
             <BButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
                 <FontAwesomeIcon :icon="faLaptop" />
                 <span v-localize>Choose local file</span>

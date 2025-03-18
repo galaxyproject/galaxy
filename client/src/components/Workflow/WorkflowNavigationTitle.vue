@@ -148,7 +148,7 @@ const workflowImportTitle = computed(() => {
                         v-else
                         :id="workflow.id"
                         data-description="route to workflow run button"
-                        variant="link"
+                        variant="primary"
                         :title="
                             !workflow.deleted
                                 ? `<b>Rerun</b><br>${getWorkflowName()}`
