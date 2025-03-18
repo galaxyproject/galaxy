@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
+import { BAlert, BButtonGroup, BCol, BContainer, BDropdown, BDropdownItem, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import { computed, ref, watch } from "vue";
 import { type ComputedRef } from "vue";
@@ -399,21 +399,21 @@ const groupByInTitles = computed(() => {
         <BContainer>
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>
-                    <b-dropdown right :text="'Timing: ' + timingInTitles">
-                        <b-dropdown-item @click="timing = 'seconds'">
+                    <BDropdown variant="outline-primary" size="sm" right :text="'Timing: ' + timingInTitles">
+                        <BDropdownItem @click="timing = 'seconds'">
                             {{ capitalizeFirstLetter("seconds") }}
-                        </b-dropdown-item>
-                        <b-dropdown-item @click="timing = 'minutes'">
+                        </BDropdownItem>
+                        <BDropdownItem @click="timing = 'minutes'">
                             {{ capitalizeFirstLetter("minutes") }}
-                        </b-dropdown-item>
-                        <b-dropdown-item @click="timing = 'hours'">
+                        </BDropdownItem>
+                        <BDropdownItem @click="timing = 'hours'">
                             {{ capitalizeFirstLetter("hours") }}
-                        </b-dropdown-item>
-                    </b-dropdown>
-                    <b-dropdown right :text="'Group By: ' + groupByInTitles">
-                        <b-dropdown-item @click="groupBy = 'tool_id'">Tool</b-dropdown-item>
-                        <b-dropdown-item @click="groupBy = 'step_id'">Workflow Step</b-dropdown-item>
-                    </b-dropdown>
+                        </BDropdownItem>
+                    </BDropdown>
+                    <BDropdown variant="outline-primary" size="sm" right :text="'Group By: ' + groupByInTitles">
+                        <BDropdownItem @click="groupBy = 'tool_id'">Tool</BDropdownItem>
+                        <BDropdownItem @click="groupBy = 'step_id'">Workflow Step</BDropdownItem>
+                    </BDropdown>
                 </BButtonGroup>
             </BRow>
             <BRow>
