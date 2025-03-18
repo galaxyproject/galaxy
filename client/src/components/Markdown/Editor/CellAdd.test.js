@@ -8,19 +8,11 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
 jest.mock("./templates", () => ({
-    cellTemplates: [
-        {
-            name: "Category 1",
-            templates: [
-                { title: "Option A", description: "Desc A", cell: { id: 1 } },
-                { title: "Option B", description: "Desc B", cell: { id: 2 } },
-            ],
-        },
-        {
-            name: "Category 2",
-            templates: [{ title: "Option C", description: "Desc C", cell: { id: 3 } }],
-        },
+    "Category 1": [
+        { title: "Option A", description: "Desc A", cell: { id: 1 } },
+        { title: "Option B", description: "Desc B", cell: { id: 2 } },
     ],
+    "Category 2": [{ title: "Option C", description: "Desc C", cell: { id: 3 } }],
 }));
 
 const createContainer = (tag = "div") => {
