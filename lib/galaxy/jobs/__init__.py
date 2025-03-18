@@ -459,10 +459,18 @@ class JobConfiguration(ConfiguresHandlers):
         job_metrics = self.app.job_metrics
         execution_dict = job_config_dict.get("execution", {})
         environments = execution_dict.get("environments", [])
-        enviroment_iter = (
+        environments_list = list(
             ((e["id"], e) for e in environments) if isinstance(environments, list) else environments.items()
         )
-        for environment_id, environment_dict in enviroment_iter:
+        for _, environment_dict in environments_list:
+            runner = environment_dict.get("runner")
+            if runner == "dynamic_tpv":
+                environment_dict["runner"] = "dynamic"
+                environment_dict["type"] = "python"
+                environment_dict["function"] = "map_tool_to_destination"
+                environment_dict["rules_module"] = "tpv.rules"
+
+        for environment_id, environment_dict in environments_list:
             metrics = environment_dict.get("metrics")
             if metrics is None:
                 metrics = {"src": "default"}
