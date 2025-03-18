@@ -138,16 +138,8 @@ class SlurmJobRunner(DRMAAJobRunner):
                         ajs.job_wrapper.get_id_tag(),
                         ajs.job_id,
                     )
-                    ajs.job_wrapper.change_state(
-                        model.Job.states.QUEUED, info="Job was resubmitted due to node failure"
-                    )
-                    try:
-                        self.queue_job(ajs.job_wrapper)
-                        return
-                    except Exception:
-                        ajs.fail_message = (
-                            "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
-                        )
+                    self.mark_as_resubmitted(ajs, info="Job was resubmitted due to node failure")
+                    return
                 elif slurm_state == "OUT_OF_MEMORY":
                     log.info(
                         "(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)",
