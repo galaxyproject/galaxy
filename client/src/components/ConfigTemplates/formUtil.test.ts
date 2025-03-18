@@ -21,7 +21,7 @@ describe("formUtils", () => {
             expect(form.length).toBe(6);
             const formEl0 = form[0];
             expect(formEl0?.name).toEqual("_meta_name");
-            expect(formEl0?.help).toEqual("Label this new Galaxy storage with a name.");
+            expect(formEl0?.help).toEqual("Label this new storage location with a name.");
             const formEl1 = form[1];
             expect(formEl1?.name).toEqual("_meta_description");
         });

@@ -91,7 +91,7 @@ preferences:
 object_store_instances:
   index:
     selectors:
-      create_button: '#create-button-storage-locations'
+      create_button: '#create-button-galaxy-storage'
       _: '#user-object-stores-index'
 
   create:
@@ -103,7 +103,7 @@ object_store_instances:
 file_source_instances:
   index:
     selectors:
-      create_button: '#create-button-remote-file-sources'
+      create_button: '#create-button-my-repositories'
       _: '#user-file-sources-index'
 
   create:
