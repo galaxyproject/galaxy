@@ -82,6 +82,16 @@ ENCODED_ID_PATTERN = re.compile(
 GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE ^ re.DOTALL)
 
 
+def process_invocation_ids(f, workflow_markdown: str) -> str:
+    """Finds all invocation ids in jsons and applies f to them."""
+    def replace_match(match):
+        original_id = match.group(2)
+        new_id = f(original_id)
+        return f'{match.group(1)}"{new_id}"'
+    pattern = r'("invocation_id"\s*:\s*)"([^"]*)"'
+    return re.sub(pattern, replace_match, workflow_markdown)
+
+
 def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
     """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
 
@@ -96,6 +106,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         return (line, False)
 
     internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    internal_markdown = process_invocation_ids(trans.security.decode_id, internal_markdown)
     return internal_markdown
 
 
@@ -534,10 +545,12 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
         "generate_time": now().isoformat(),
         "generate_version": trans.app.config.version_major,
     }
+
     # Walk Galaxy directives inside the Galaxy Markdown and collect dict-ified data
     # needed to render this efficiently.
     directive_handler = ReadyForExportMarkdownDirectiveHandler(trans, extra_rendering_data)
     export_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
+    export_markdown = process_invocation_ids(lambda value: trans.security.encode_id(int(value)), export_markdown)
     return export_markdown, extra_rendering_data
 
 
@@ -925,6 +938,7 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
         return (line, False)
 
     galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = process_invocation_ids(lambda _: invocation.id, galaxy_markdown)
     return galaxy_markdown
 
 
