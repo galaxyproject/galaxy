@@ -17,6 +17,7 @@ from typing import (
 
 import mrcfile
 import numpy as np
+import png
 import tifffile
 
 try:
@@ -158,29 +159,29 @@ class Image(data.Data):
         Try to populate the metadata of the image using a generic image loading library (pillow), if available.
 
         If an image has two axes, they are assumed to be ``YX``. If an image has three axes, they are assumed to be ``YXC``.
+
+        The metadata element `num_unique_values` remains unset.
         """
         if PIL is not None:
             try:
                 with PIL.Image.open(dataset.get_file_name()) as im:
+                    im_shape, im_typestr = PIL.Image._conv_type_shape(im)
+                    im_ndim = len(im_shape)
 
                     # Determine the metadata values that are available without loading the image data
                     dataset.metadata.width = im.size[1]
                     dataset.metadata.height = im.size[0]
                     dataset.metadata.depth = 0
                     dataset.metadata.frames = getattr(im, "n_frames", 0)
-                    dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
-
-                    # Peek into a small 2x2 section of the image data
-                    im_peek_arr = np.array(im.crop((0, 0, min((2, im.size[1])), min((2, im.size[0])))))
-
-                    # Determine the remaining metadata values
-                    dataset.metadata.dtype = str(im_peek_arr.dtype)
-                    if im_peek_arr.ndim == 2:
+                    dataset.metadata.dtype = str(np.array((0,), im_typestr).dtype)
+                    
+                    # Determine the remaining values, by assuming the order of axes
+                    if im_ndim == 2:
                         dataset.metadata.axes = "YX"
                         dataset.metadata.channels = 0
-                    elif im_peek_arr.ndim == 3:
+                    elif im_ndim == 3:
                         dataset.metadata.axes = "YXC"
-                        dataset.metadata.channels = im_peek_arr.shape[2]
+                        dataset.metadata.channels = im_shape[2]
 
             except PIL.UnidentifiedImageError:
                 pass
@@ -198,6 +199,19 @@ class Jpg(Image):
 class Png(Image):
     edam_format = "format_3603"
     file_ext = "png"
+
+#    def set_meta(
+#        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+#    ) -> None:
+#        """
+#        Try to populate the metadata of the image using PyPNG.
+#
+#        The base implementation is not used here, because Pillow is an optional dependency. This means that the base implementation might do nothing.
+#        """
+#        with PIL.Image.open(dataset.get_file_name()) as im:
+#
+#            dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
+#            dataset.metadata.dtype = str(im_peek_arr.dtype)
 
 
 class Tiff(Image):
