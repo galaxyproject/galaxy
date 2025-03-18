@@ -258,6 +258,16 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Email Hash",
         description="The hash of the email of the creator of this workflow",
     )
+    readme: Optional[str] = Field(
+        ...,
+        title="Readme",
+        description="The detailed markdown readme of the workflow.",
+    )
+    help: Optional[str] = Field(
+        ...,
+        title="Help",
+        description="The detailed help text for how to use the workflow and debug problems with it.",
+    )
     slug: Optional[str] = Field(
         ...,
         title="Slug",
