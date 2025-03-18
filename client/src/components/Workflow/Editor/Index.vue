@@ -112,6 +112,7 @@
                 mode="report"
                 :title="'Workflow Report: ' + name"
                 :labels="getLabels"
+                :steps="steps"
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>

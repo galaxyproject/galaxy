@@ -8,7 +8,7 @@
                     </div>
                     <div>
                         <b-form-radio-group
-                            v-if="!steps || steps.length === 0"
+                            v-if="!labels || labels.length === 0"
                             v-model="editor"
                             v-b-tooltip.hover.bottom
                             button-variant="outline-primary"
@@ -31,13 +31,7 @@
                     :steps="steps"
                     :mode="mode"
                     @update="$emit('update', $event)" />
-                <CellEditor
-                    v-else
-                    :title="title"
-                    :markdown-text="markdownText"
-                    :steps="steps"
-                    :mode="mode"
-                    @update="$emit('update', $event)" />
+                <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
         </div>
         <b-modal v-model="showHelpModal" hide-footer>
@@ -56,6 +50,8 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
+import type { WorkflowLabel } from "./Editor/types";
+
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
@@ -64,17 +60,18 @@ library.add(faQuestion);
 
 defineProps<{
     markdownText: string;
+    mode: "report" | "page";
+    labels?: Array<WorkflowLabel>;
     steps?: Record<string, any>;
     title: string;
-    mode: "report" | "page";
 }>();
 
 const showHelpModal = ref<boolean>(false);
 
 const editor = ref("text");
 const editorOptions = ref([
+    { text: "Editor", value: "editor" },
     { text: "Text", value: "text" },
-    { text: "Cells", value: "cells" },
 ]);
 
 function onHelp() {
