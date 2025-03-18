@@ -94,6 +94,7 @@ export default {
     methods: {
         removePath(index) {
             this.pathChunks = this.pathChunks.slice(0, index);
+            this.updateURL();
         },
         reset() {
             const data = getDefaultValues();
