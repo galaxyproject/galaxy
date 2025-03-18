@@ -82,7 +82,7 @@ onMounted(() => {
     <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
         <div v-else class="d-flex flex-column">
-            <div class="markdown-wrapper-header d-flex flex-column sticky-top bg-white">
+            <div class="d-flex flex-column sticky-top bg-white">
                 <div class="d-flex">
                     <Heading v-localize h1 separator inline size="md" class="flex-grow-1">
                         {{ markdownConfig.title || markdownConfig.model_class }}
@@ -129,9 +129,3 @@ onMounted(() => {
         </div>
     </div>
 </template>
-
-<style scoped>
-.markdown-wrapper-header {
-    z-index: 1001;
-}
-</style>
