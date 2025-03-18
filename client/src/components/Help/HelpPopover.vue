@@ -16,9 +16,11 @@ defineProps<Props>();
     </Popper>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
 .help-popover-content {
-    font-size: 1rem; /* Reset to default text size */
+    font-size: $font-size-base;
     font-weight: normal;
     line-height: 1.5;
     text-transform: none;
