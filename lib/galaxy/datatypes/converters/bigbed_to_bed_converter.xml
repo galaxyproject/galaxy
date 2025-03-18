@@ -43,34 +43,50 @@
         <!--Test 01 -->
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
-            <output name="bed_output" value="output.bed" ftype="bed"/>
-        </test>
+	    <output name="bed_output" ftype="bed">
+	        <assert_contents>
+                    <has_n_lines n="3339"/>
+                </assert_contents>
+	    </output>
+	</test>
         <!--Test 02 -->
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
             <param name="chrom" value="chr21"/>
-            <output name="bed_output" value="output.bed" ftype="bed"/>
+	    <output name="bed_output" ftype="bed">
+            	<assert_contents>
+          		<has_n_lines n="0"/>
+        	</assert_contents>
+	    </output>
             <assert_command>
                 <has_text text="-chrom='chr21'"/>
-            </assert_command>
+	    </assert_command>
         </test>
         <!--Test 03 -->
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
             <param name="start" value="100"/>
-            <output name="bed_output" value="output.bed" ftype="bed"/>
+	    <output name="bed_output" ftype="bed">
+	    	<assert_contents>
+          		<has_n_lines n="3339"/>
+        	</assert_contents>
+	    </output>
             <assert_command>
                 <has_text text="-start=100"/>
-            </assert_command>
+	    </assert_command>
         </test>
         <!--Test 04 -->
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
             <param name="end" value="100000000"/>
-            <output name="bed_output" value="output.bed" ftype="bed"/>
+	    <output name="bed_output" ftype="bed">
+	    	<assert_contents>
+          		<has_n_lines n="1966"/>
+        	</assert_contents>
+	    </output>
             <assert_command>
                 <has_text text="-end=100000000"/>
-            </assert_command>
+	    </assert_command>
         </test>
     </tests>
     <help><![CDATA[
