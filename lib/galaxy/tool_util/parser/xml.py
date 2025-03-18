@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import math
@@ -12,6 +13,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
 )
 
 from packaging.version import Version
@@ -86,6 +88,9 @@ from .stdio import (
     ToolStdioExitCode,
     ToolStdioRegex,
 )
+
+if TYPE_CHECKING:
+    from .output_objects import ToolOutputBase
 
 log = logging.getLogger(__name__)
 
@@ -444,12 +449,13 @@ class XmlToolSource(ToolSource):
 
     def parse_outputs(self, app: Optional[ToolOutputActionApp] = None):
         out_elem = self.root.find("outputs")
-        outputs: Dict[str, ToolOutput] = {}
+        outputs: Dict[str, ToolOutputBase] = {}
         output_collections: Dict[str, ToolOutputCollection] = {}
         if out_elem is None:
             return outputs, output_collections
 
         data_dict: Dict[str, ToolOutput] = {}
+        expression_dict: Dict[str, ToolExpressionOutput] = {}
 
         def _parse(data_elem, **kwds):
             output_def = self._parse_output(data_elem, app, **kwds)
@@ -462,11 +468,12 @@ class XmlToolSource(ToolSource):
         def _parse_expression(output_elem, app: Optional[ToolOutputActionApp] = None, **kwds):
             output_def = self._parse_expression_output(output_elem, app, **kwds)
             output_def.filters = output_elem.findall("filter")
-            data_dict[output_def.name] = output_def
+            expression_dict[output_def.name] = output_def
             return output_def
 
-        def _parse_collection(collection_elem):
+        def _parse_collection(collection_elem: Element):
             name = collection_elem.get("name")
+            assert name
             label = xml_text(collection_elem, "label")
             default_format = collection_elem.get("format", "data")
             collection_type = collection_elem.get("type", None)
@@ -515,6 +522,7 @@ class XmlToolSource(ToolSource):
 
             for data_elem in collection_elem.findall("data"):
                 output_name = data_elem.get("name")
+                assert output_name
                 data = data_dict[output_name]
                 assert data
                 del data_dict[output_name]
@@ -539,7 +547,7 @@ class XmlToolSource(ToolSource):
             else:
                 log.warning(f"Unknown output tag encountered [{out_child.tag}]")
 
-        for output_def in data_dict.values():
+        for output_def in itertools.chain(data_dict.values(), expression_dict.values()):
             outputs[output_def.name] = output_def
         return outputs, output_collections
 

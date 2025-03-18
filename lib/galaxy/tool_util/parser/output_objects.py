@@ -1,9 +1,11 @@
+import abc
 from typing import (
     Any,
     Dict,
     List,
     Optional,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -30,6 +32,9 @@ from .output_models import (
     ToolOutputText as ToolOutputTextModel,
 )
 
+if TYPE_CHECKING:
+    from typing_extensions import TypeIs  # Supported only under Python >=3.8
+
 
 class ChangeFormatModel(TypedDict):
     value: Optional[str]
@@ -47,6 +52,7 @@ class ToolOutputBase(Dictifiable):
     def __init__(
         self,
         name: str,
+        output_type: str,
         label: Optional[str] = None,
         filters: Optional[List[Element]] = None,
         hidden: bool = False,
@@ -54,6 +60,7 @@ class ToolOutputBase(Dictifiable):
     ) -> None:
         super().__init__()
         self.name = name
+        self.output_type = output_type
         self.label = label
         self.filters = filters or []
         self.hidden = hidden
@@ -66,6 +73,9 @@ class ToolOutputBase(Dictifiable):
     @property
     def output_discover_patterns(self) -> List[str]:
         return []
+
+    @abc.abstractmethod
+    def to_model(self) -> ToolOutputModel: ...
 
 
 class ToolOutput(ToolOutputBase):
@@ -104,8 +114,9 @@ class ToolOutput(ToolOutputBase):
         implicit: bool = False,
         from_expression: Optional[str] = None,
     ) -> None:
-        super().__init__(name, label=label, filters=filters, hidden=hidden, from_expression=from_expression)
-        self.output_type = "data"
+        super().__init__(
+            name, output_type="data", label=label, filters=filters, hidden=hidden, from_expression=from_expression
+        )
         self.format = format
         self.format_source = format_source
         self.metadata_source = metadata_source
@@ -194,8 +205,7 @@ class ToolExpressionOutput(ToolOutputBase):
     path: Optional[str]
 
     def __init__(self, name, output_type, from_expression, label=None, filters=None, actions=None, hidden=False):
-        super().__init__(name, label=label, filters=filters, hidden=hidden)
-        self.output_type = output_type  # JSON type...
+        super().__init__(name, output_type=output_type, label=label, filters=filters, hidden=hidden)
         self.from_expression = from_expression
         self.format = "expression.json"  # galaxy.datatypes.text.ExpressionJson.file_ext
 
@@ -281,8 +291,7 @@ class ToolOutputCollection(ToolOutputBase):
         inherit_format: bool = False,
         inherit_metadata: bool = False,
     ) -> None:
-        super().__init__(name, label=label, filters=filters, hidden=hidden)
-        self.output_type = "collection"
+        super().__init__(name, output_type="collection", label=label, filters=filters, hidden=hidden)
         self.collection = True
         self.default_format = default_format
         self.structure = structure
@@ -371,7 +380,7 @@ class ToolOutputCollection(ToolOutputBase):
         )
 
     @staticmethod
-    def from_dict(name, output_dict, app: Optional[ToolOutputActionApp] = None) -> "ToolOutputCollection":
+    def from_dict(name: str, output_dict, app: Optional[ToolOutputActionApp] = None) -> "ToolOutputCollection":
         structure = ToolOutputCollectionStructure.from_dict(output_dict["structure"])
         rval = ToolOutputCollection(
             name,
@@ -390,6 +399,10 @@ class ToolOutputCollection(ToolOutputBase):
     @property
     def output_discover_patterns(self) -> List[str]:
         return self.structure.output_discover_patterns
+
+
+def tool_output_is_collection(tool_output: ToolOutputBase) -> "TypeIs[ToolOutputCollection]":
+    return tool_output.collection
 
 
 class ToolOutputCollectionStructure:

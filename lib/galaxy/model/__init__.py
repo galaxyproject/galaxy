@@ -1541,7 +1541,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     interactivetool_entry_points: Mapped[List["InteractiveToolEntryPoint"]] = relationship(
         back_populates="job", uselist=True
     )
-    implicit_collection_jobs_association: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(
+    implicit_collection_jobs_association: Mapped["ImplicitCollectionJobsJobAssociation"] = relationship(
         back_populates="job", uselist=False
     )
     container: Mapped[Optional["JobContainerAssociation"]] = relationship(back_populates="job", uselist=False)
@@ -1801,7 +1801,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
-    def add_output_dataset(self, name: str, dataset: "DatasetInstance"):
+    def add_output_dataset(self, name: str, dataset: "HistoryDatasetAssociation"):
         joda = JobToOutputDatasetAssociation(name, dataset)
         if dataset.dataset.job is None:
             # Only set job if dataset doesn't already have associated job.
@@ -2459,7 +2459,7 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
     )
     job: Mapped["Job"] = relationship(back_populates="output_datasets")
 
-    def __init__(self, name, dataset):
+    def __init__(self, name: str, dataset: "HistoryDatasetAssociation"):
         self.name = name
         add_object_to_object_session(self, dataset)
         self.dataset = dataset
@@ -5101,8 +5101,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 fake_hda = HistoryDatasetAssociation(dataset=fake_dataset)
                 return fake_hda
 
-    def clear_associated_files(self, metadata_safe=False, purge=False):
-        raise Exception("Unimplemented")
+    @abc.abstractmethod
+    def clear_associated_files(self, metadata_safe=False, purge=False): ...
 
     def get_converter_types(self):
         return self.datatype.get_converter_types(self, _get_datatypes_registry())
@@ -5848,7 +5848,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     description: Mapped[Optional[str]] = mapped_column(TEXT)
     order_id: Mapped[Optional[int]]  # not currently being used, but for possible future use
-    item_count: Mapped[Optional[int]]
+    item_count: Mapped[int] = mapped_column(nullable=True)
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     genome_build: Mapped[Optional[str]] = mapped_column(TrimmedString(40))
@@ -5901,7 +5901,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
         "deleted",
     ]
 
-    def __init__(self, name=None, description=None, item_count=0, order_id=None, genome_build=None):
+    def __init__(self, name=None, description=None, item_count: int = 0, order_id=None, genome_build=None):
         self.name = name or "Unnamed folder"
         self.description = description
         self.item_count = item_count

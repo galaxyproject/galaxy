@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     )
     from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
     from galaxy.tool_util.parser.output_objects import (
-        ToolOutput,
+        ToolOutputBase,
         ToolOutputCollection,
     )
 
@@ -339,7 +339,7 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_outputs(
         self, app: Optional["ToolOutputActionApp"]
-    ) -> Tuple[Dict[str, "ToolOutput"], Dict[str, "ToolOutputCollection"]]:
+    ) -> Tuple[Dict[str, "ToolOutputBase"], Dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
         """
