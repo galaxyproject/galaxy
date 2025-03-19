@@ -3,7 +3,7 @@
 <visualization name="Vizarr Viewer" embeddable="true">
     <description>Basic visualization for Zarr-based images like OME-Zarr</description>
     <requirements>
-        <requirement type="npm" version="0.1.6" package="@galaxyproject/vizarr"/>
+        <requirement type="npm" version="0.1.7" package="@galaxyproject/vizarr"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <data_sources>
