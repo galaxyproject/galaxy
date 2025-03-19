@@ -1,18 +1,11 @@
 import { type ROCrateEntity, type ROCrateImmutableView } from "ro-crate-zip-explorer";
 
-import { GALAXY_EXPORT_METADATA_FILES } from "../utils";
+import { GALAXY_EXPORT_METADATA_FILES, type ZipContentFile } from "@/composables/zipExplorer";
 
 interface Conforms {
     id: string;
     name: string;
     version: string;
-}
-
-export interface ROCrateFile {
-    id: string;
-    name: string;
-    path: string;
-    type: string;
 }
 
 interface Person {
@@ -31,8 +24,8 @@ export interface ROCrateSummary {
     publicationDate: Date;
     conformsTo: Conforms[];
     license: string;
-    workflows: ROCrateFile[];
-    files: ROCrateFile[];
+    workflows: ZipContentFile[];
+    files: ZipContentFile[];
     creators: Person[] | Organization[];
 }
 
@@ -62,10 +55,6 @@ function isFile(item: ROCrateEntity): boolean {
 
 export function isCrate(crate: unknown): crate is ROCrateImmutableView {
     return typeof crate === "object" && crate !== null && "@graph" in crate;
-}
-
-export function isWorkflowFile(rocrateFile: ROCrateFile): boolean {
-    return rocrateFile.type === "ComputationalWorkflow";
 }
 
 export async function extractROCrateSummary(crate: ROCrateImmutableView): Promise<ROCrateSummary> {
@@ -98,21 +87,25 @@ export async function extractROCrateSummary(crate: ROCrateImmutableView): Promis
 
     const workflows = crate.graph
         .filter((item) => isWorkflow(item))
-        .map((workflow) => ({
-            id: workflow["@id"],
-            name: String(workflow.name),
-            type: "ComputationalWorkflow",
-            path: workflow["@id"],
-        }));
+        .map((workflow) => {
+            const workflowFile: ZipContentFile = {
+                name: String(workflow.name),
+                type: "workflow",
+                path: workflow["@id"],
+            };
+            return workflowFile;
+        });
 
     const files = crate.graph
         .filter((item) => isFile(item))
-        .map((dataset) => ({
-            id: dataset["@id"],
-            name: String(dataset.name),
-            type: String(dataset.encodingFormat),
-            path: dataset["@id"],
-        }));
+        .map((dataset) => {
+            const file: ZipContentFile = {
+                name: String(dataset.name),
+                type: "file",
+                path: dataset["@id"],
+            };
+            return file;
+        });
 
     // TODO: Handle collections?
 

@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { faArchive, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
 import { BButton } from "bootstrap-vue";
-import { ROCrateZipExplorer, type ZipArchive } from "ro-crate-zip-explorer";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { withPrefix } from "@/utils/redirect";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { isZipFile, useZipExplorer } from "@/composables/zipExplorer";
 
-import { isZipFile } from "./utils";
-
+import GalaxyZipView from "./views/GalaxyZipView.vue";
+import RegularZipView from "./views/RegularZipView.vue";
+import RoCrateZipView from "./views/RoCrateZipView.vue";
 import ZipDropZone from "./ZipDropZone.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -21,20 +19,28 @@ interface Props {
 
 defineProps<Props>();
 
+const emit = defineEmits(["dismiss"]);
+
 const router = useRouter();
+
+const {
+    openZip,
+    isLoading: loadingPreview,
+    isGalaxyExport,
+    zipArchive,
+    zipExplorer,
+    errorMessage,
+    reset: resetExplorer,
+    isValidUrl,
+} = useZipExplorer();
 
 const fileInputRef = ref<HTMLInputElement>();
 const localZipFile = ref<File>();
 const zipUrl = ref<string>();
-const errorMessage = ref<string>();
-const loadingPreview = ref(false);
-
-const zipArchive = ref<ZipArchive>();
-const zipExplorer = ref<ROCrateZipExplorer>();
 
 const showHelper = computed(() => !loadingPreview.value && !zipArchive.value);
 const canStart = computed(() => Boolean(zipArchive.value));
-const canOpenUrl = computed(() => ensureValidUrl(zipUrl.value) !== undefined);
+const canOpenUrl = computed(() => isValidUrl(zipUrl.value));
 
 function browseZipFile() {
     fileInputRef.value?.click();
@@ -50,76 +56,19 @@ async function onFileChange(event: Event) {
     }
 }
 
-// async function start() {
-//     if (!zipArchive.value) {
-//         return;
-//     }
-
-//     const selectedPaths = selectedFiles.value.map((item) => item.path);
-//     const selectedZipEntries = zipArchive.value.entries.filter((entry) => selectedPaths.includes(entry.path));
-//     // Combine selected items with their corresponding zip entries into a new array
-
-//     if (zipUrl.value !== undefined) {
-//         const toUploadToHistory = [];
-//         for (const item of selectedFiles.value) {
-//             const entry = zipArchive.value.entries.find((e) => e.path === item.path);
-//             if (!entry) {
-//                 continue;
-//             }
-//             const extractUrl = toExtractUrl(entry as ZipFileEntry);
-//             console.log("Selected REMOTE entry:", extractUrl, item);
-//             if (isWorkflowFile(item)) {
-//                 const response = await axios.post(withPrefix("/api/workflows"), { archive_source: extractUrl });
-//                 console.log("Response:", response);
-//             } else {
-//                 toUploadToHistory.push(entry);
-//             }
-//         }
-//         if (toUploadToHistory.length > 0) {
-//             const elements = toUploadToHistory.map((entry) => {
-//                 const extractUrl = toExtractUrl(entry as ZipFileEntry);
-//                 return {
-//                     name: entry.path.split("/").pop() ?? "unknown",
-//                     deferred: false,
-//                     src: "url",
-//                     url: extractUrl,
-//                     // dbkey: item.dbKey ?? "?",
-//                     // ext: item.extension ?? "auto",
-//                     // space_to_tab: item.spaceToTab,
-//                     // to_posix_lines: item.toPosixLines,
-//                 };
-//             });
-//             const target = {
-//                 destination: { type: "hdas" },
-//                 elements: elements,
-//             };
-//             const payload = {
-//                 history_id: props.historyId,
-//                 targets: [target],
-//             };
-//             const response = await axios.post(withPrefix("/api/tools/fetch"), payload);
-//             console.log("Response:", response);
-//         }
-//     }
-//     //TODO: handle local zip files. This will require downloading the compressed file to a temporary location and then extracting and uploading the selected files.
-
-//     console.log("Selected entries:", selectedZipEntries);
-// }
-
-// function toExtractUrl(entry: ZipFileEntry): string {
-//     return `zip://extract?source=${zipUrl.value}&header_offset=${entry.headerOffset}&compress_size=${entry.compressSize}&compression_method=${entry.compressionMethod}`;
-// }
+function dismiss() {
+    emit("dismiss");
+}
 
 function start() {
     router.push({ name: "ZipImportWizard" });
+    dismiss();
 }
 
 function reset() {
     localZipFile.value = undefined;
     zipUrl.value = undefined;
-    errorMessage.value = undefined;
-    zipArchive.value = undefined;
-    zipExplorer.value = undefined;
+    resetExplorer();
 }
 
 function onDropError(message: string) {
@@ -135,41 +84,7 @@ async function exploreRemoteZip() {
     if (!zipUrl.value) {
         return;
     }
-
-    // // TODO: this is obviously not the right way to get the full URL
-    // // but getApiRoot() only returns "/" here.
-    const appRoot = window.location.origin;
-
-    const proxyUrl = `${appRoot}/api/proxy?url=${encodeURIComponent(zipUrl.value)}`;
-    // const proxyUrl = withPrefix(`/api/proxy?url=${encodeURIComponent(zipUrl.value)}`);
-
-    return openZip(proxyUrl);
-}
-
-async function openZip(zipSource: File | string) {
-    errorMessage.value = undefined;
-    loadingPreview.value = true;
-    try {
-        const explorer = new ROCrateZipExplorer(zipSource);
-        zipArchive.value = await explorer.open();
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
-    } finally {
-        loadingPreview.value = false;
-    }
-}
-
-function ensureValidUrl(url?: string): string | undefined {
-    if (!url) {
-        return undefined;
-    }
-    try {
-        new URL(url);
-        return url;
-    } catch (e) {
-        errorMessage.value = "Invalid URL provided";
-        return undefined;
-    }
+    return openZip(zipUrl.value);
 }
 
 watch(canOpenUrl, (newValue, oldValue) => {
@@ -194,11 +109,9 @@ watch(canOpenUrl, (newValue, oldValue) => {
             <ZipDropZone v-if="showHelper" @dropError="onDropError" @dropSuccess="exploreLocalZip" />
             <div v-else>
                 <LoadingSpan v-if="loadingPreview" message="Checking ZIP contents..." />
-                <!-- <RoCrateExplorer
-                    v-else-if="rocrateSummary"
-                    :crate-summary="rocrateSummary"
-                    :selected-items="selectedFiles"
-                    @update:selected-items="onSelectedItemsUpdate" /> -->
+                <RoCrateZipView v-else-if="zipExplorer?.crate" :crate="zipExplorer.crate" />
+                <GalaxyZipView v-else-if="isGalaxyExport" />
+                <RegularZipView v-else />
             </div>
         </div>
 
@@ -235,7 +148,7 @@ watch(canOpenUrl, (newValue, oldValue) => {
                 <span v-localize>Reset</span>
             </BButton>
 
-            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
+            <BButton id="btn-close" title="Close" @click="dismiss">
                 <span v-if="hasCallback" v-localize>Close</span>
                 <span v-else v-localize>Cancel</span>
             </BButton>

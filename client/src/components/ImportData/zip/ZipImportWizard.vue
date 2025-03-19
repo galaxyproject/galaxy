@@ -1,20 +1,27 @@
 <script setup lang="ts">
-import { type ROCrateZipExplorer, type ZipArchive, type ZipFileEntry } from "ro-crate-zip-explorer";
-import { computed, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { useZipExplorer, type ZipContentFile } from "@/composables/zipExplorer";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
-interface Props {
-    zipExplorer: ROCrateZipExplorer;
-}
-
-const props = defineProps<Props>();
+const { getImportableZipContents, importArtifacts } = useZipExplorer();
 
 const isWizardBusy = ref<boolean>(false);
 const errorMessage = ref<string>();
+
+interface ImportData {
+    filesToImport: ZipContentFile[];
+}
+
+const importableZipFiles = getImportableZipContents();
+
+const importData = reactive<ImportData>({
+    filesToImport: [],
+});
 
 const wizard = useWizard({
     "select-items": {
@@ -28,7 +35,14 @@ const wizard = useWizard({
 });
 
 async function importItems() {
-    console.log("Importing items");
+    isWizardBusy.value = true;
+    try {
+        await importArtifacts(importData.filesToImport);
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    } finally {
+        isWizardBusy.value = false;
+    }
 }
 </script>
 
@@ -42,7 +56,11 @@ async function importItems() {
             :is-busy="isWizardBusy"
             @submit="importItems">
             <div v-if="wizard.isCurrent('select-items')">
-                <ZipFileSelector />
+                <ZipFileSelector
+                    :workflows="importableZipFiles.workflows"
+                    :files="importableZipFiles.files"
+                    :selected-items="importData.filesToImport"
+                    @update:selectedItems="importData.filesToImport = $event" />
             </div>
         </GenericWizard>
         <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">

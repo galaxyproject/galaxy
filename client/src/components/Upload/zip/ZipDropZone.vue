@@ -3,7 +3,7 @@ import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import { isZipFile } from "./utils";
+import { isZipFile } from "@/composables/zipExplorer";
 
 const isDragging = ref(false);
 
