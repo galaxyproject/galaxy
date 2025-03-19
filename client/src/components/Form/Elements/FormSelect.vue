@@ -114,6 +114,10 @@ const selectedLabel: ComputedRef<string> = computed(() => {
  */
 const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
+const selectedIds = computed(() => {
+    return selectedValues.value.map((v) => (isValueWithId(v) ? v.id : undefined)).filter((v) => v !== undefined);
+});
+
 /**
  * Tracks current value and emits changes
  */
@@ -163,8 +167,19 @@ function isValueWithTags(item: SelectValue): item is ValueWithTags {
     return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
 }
 
+function isValueWithId(item: SelectValue): item is { id: string } {
+    return !!item && typeof item === "object" && (item as { id: string }).id !== undefined;
+}
+
 function onSearchChange(search: string): void {
     filter.value = search;
+}
+
+function isSelected(item: SelectValue): boolean {
+    if (isValueWithId(item)) {
+        return selectedIds.value.includes(item.id);
+    }
+    return selectedValues.value.includes(item);
 }
 </script>
 
@@ -200,7 +215,7 @@ function onSearchChange(search: string): void {
                             :value="option.value.tags"
                             disabled />
                     </div>
-                    <FontAwesomeIcon v-if="selectedValues.includes(option.value)" :icon="faCheckSquare" />
+                    <FontAwesomeIcon v-if="isSelected(option.value)" :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else :icon="faSquare" />
                 </div>
             </template>
