@@ -122,6 +122,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
 ]]></xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="icon" type="Icon" minOccurs="0"/>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
         <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1"/>
@@ -242,6 +243,16 @@ this attribute defined the HTTP request method to use when communicating with an
       </xs:attribute>
     </xs:complexType>
   </xs:element>
+  <xs:complexType name="Icon">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Icon image associated with the tool. Ideally, this should be a square PNG image with maximum dimensions of 512x512 pixels.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="src" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Relative path to the icon image. It must be contained within the tool directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Macros">
     <xs:annotation>
       <xs:documentation xml:lang="en">Frequently, tools may require the same XML
