@@ -2120,6 +2120,11 @@ class JobSummary(JobBaseModel):
             "Only the owner of the job and administrators can see this value."
         ),
     )
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="User ID",
+        description="The encoded ID of the user that owns this job.",
+    )
 
 
 class DatasetSourceIdBase(Model):
