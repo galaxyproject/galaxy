@@ -68,7 +68,7 @@ defineProps<{
 
 const showHelpModal = ref<boolean>(false);
 
-const editor = ref("editor");
+const editor = ref("text");
 const editorOptions = ref([
     { text: "Editor", value: "editor" },
     { text: "Text", value: "text" },
