@@ -73,6 +73,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, toRef, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { FormParameterValue } from "@/components/Form/parameterTypes";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
@@ -115,10 +116,10 @@ const nodeIcon = computed(() => WorkflowIcons[type.value]);
 const formDisplayId = computed(() => stepId.value.toString());
 const isSubworkflow = computed(() => type.value === "subworkflow");
 
-function onAnnotation(newAnnotation: string) {
+function onAnnotation(newAnnotation: FormParameterValue, _id: string) {
     emit("onAnnotation", stepId.value, newAnnotation);
 }
-function onLabel(newLabel: string) {
+function onLabel(newLabel: FormParameterValue, _id: string) {
     emit("onLabel", stepId.value, newLabel);
 }
 function onEditSubworkflow() {
