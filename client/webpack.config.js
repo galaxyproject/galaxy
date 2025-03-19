@@ -4,7 +4,6 @@ const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
-const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
@@ -243,7 +242,6 @@ module.exports = (env = {}, argv = {}) => {
             new MiniCssExtractPlugin({
                 filename: "[name].css",
             }),
-            new DuplicatePackageCheckerPlugin(),
             new DumpMetaPlugin({
                 filename: path.join(__dirname, "../lib/galaxy/web/framework/meta.json"),
                 prepare: (stats) => ({

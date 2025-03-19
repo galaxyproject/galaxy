@@ -1376,16 +1376,6 @@
     "@types/tough-cookie" "^4.0.5"
     tough-cookie "^4.1.4"
 
-"@cerner/duplicate-package-checker-webpack-plugin@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.npmjs.org/@cerner/duplicate-package-checker-webpack-plugin/-/duplicate-package-checker-webpack-plugin-2.3.0.tgz"
-  integrity sha512-2FdUL/10qOjXzPTt/2dcjQPHDcsI+svvdU3KERGZaUvH5IwDdzE+nGLAx1+ICxhr6cqU29zvWR6GHGOFp+fbWA==
-  dependencies:
-    chalk "^4.1.0"
-    find-root "^1.0.0"
-    lodash.groupby "^4.6.0"
-    semver "^7.3.4"
-
 "@citation-js/core@^0.7.1":
   version "0.7.1"
   resolved "https://registry.yarnpkg.com/@citation-js/core/-/core-0.7.1.tgz#61d9cd5a848db5cc7f26650f550fee4af1f6734a"
@@ -6425,11 +6415,6 @@ finalhandler@1.3.1:
     statuses "2.0.1"
     unpipe "~1.0.0"
 
-find-root@^1.0.0:
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/find-root/-/find-root-1.1.0.tgz"
-  integrity sha512-NKfW6bec6GfKc0SGx1e07QZY9PE99u0Bft/0rzSD5k3sO/vwkVUpDUKVm5Gpp5Ue3YfShPFTX2070tDs5kB9Ng==
-
 find-up@^1.0.0:
   version "1.1.2"
   resolved "https://registry.npmjs.org/find-up/-/find-up-1.1.2.tgz"
@@ -8724,11 +8709,6 @@ lodash.debounce@^4.0.8:
   version "4.0.8"
   resolved "https://registry.npmjs.org/lodash.debounce/-/lodash.debounce-4.0.8.tgz"
   integrity sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==
-
-lodash.groupby@^4.6.0:
-  version "4.6.0"
-  resolved "https://registry.npmjs.org/lodash.groupby/-/lodash.groupby-4.6.0.tgz"
-  integrity sha512-5dcWxm23+VAoz+awKmBaiBvzox8+RqMgFhi7UvX9DHZr2HdxHXM/Wrf8cfKpsW37RNrvtPn6hSwNqurSILbmJw==
 
 lodash.isequal@^4.5.0:
   version "4.5.0"
