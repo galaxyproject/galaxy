@@ -69,7 +69,7 @@
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
             <param name="chrom" value="chr7"/>
-            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+            <output name="gtf_output" value="output_chr7.gtf" ftype="gtf"/>
             <assert_command>
                 <has_text text="-chrom='chr7'"/>
             </assert_command>
@@ -78,7 +78,7 @@
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
             <param name="start" value="100"/>
-            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+            <output name="gtf_output" value="output_start.gtf" ftype="gtf"/>
             <assert_command>
                 <has_text text="-start=100"/>
             </assert_command>
@@ -87,7 +87,7 @@
         <test expect_num_outputs="1">
             <param name="bigbed_input" value="1.bigbed"/>
             <param name="end" value="100000000"/>
-            <output name="gtf_output" value="output.gtf" ftype="gtf"/>
+            <output name="gtf_output" value="output_end.gtf" ftype="gtf"/>
             <assert_command>
                 <has_text text="-end=100000000"/>
             </assert_command>
