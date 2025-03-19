@@ -8,6 +8,7 @@ const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -114,13 +115,13 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: "thread-loader",
-                            options: { workers: 2 },
+                            // options: { workers: 2 },
                         },
                         {
                             loader: "ts-loader",
                             options: {
                                 transpileOnly: true,
-                                happyPackMode: true, // IMPORTANT! use happyPackMode mode to speed-up compilation and reduce errors reported to webpack
+                                happyPackMode: true, // IMPORTANT! use happyPackMode mode to allow thread-loader
                                 configFile: "tsconfig.webpack.json",
                                 appendTsSuffixTo: [/\.vue$/],
                             },
@@ -252,6 +253,15 @@ module.exports = (env = {}, argv = {}) => {
                     hash: stats.hash,
                     epoch: Date.parse(buildDate),
                 }),
+            }),
+            new ForkTsCheckerWebpackPlugin({
+                async: false,
+                typescript: {
+                    diagnosticOptions: {
+                        semantic: true,
+                        syntactic: true,
+                    },
+                },
             }),
         ],
         cache: {
