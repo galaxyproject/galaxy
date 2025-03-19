@@ -42,12 +42,12 @@ interface FormElementProps {
     id?: string;
     type: FormParameterTypes | undefined;
     value: FormParameterValue;
-    title?: string;
+    title: string | undefined;
     refreshOnChange?: boolean;
-    help?: string;
+    help: string | undefined;
     helpFormat?: string;
-    error?: string;
-    warning?: string;
+    error: string | undefined;
+    warning: string | undefined;
     disabled?: boolean;
     loading?: boolean;
     attributes?: FormParameterAttributes;
