@@ -120,6 +120,7 @@ module.exports = (env = {}, argv = {}) => {
                             loader: "ts-loader",
                             options: {
                                 transpileOnly: true,
+                                happyPackMode: true, // IMPORTANT! use happyPackMode mode to speed-up compilation and reduce errors reported to webpack
                                 configFile: "tsconfig.webpack.json",
                                 appendTsSuffixTo: [/\.vue$/],
                             },
