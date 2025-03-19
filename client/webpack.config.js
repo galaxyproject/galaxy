@@ -193,10 +193,9 @@ module.exports = (env = {}, argv = {}) => {
                         {
                             loader: "sass-loader",
                             options: {
-                                sourceMap: true,
                                 sassOptions: {
                                     quietDeps: true,
-                                    includePaths: [
+                                    loadPaths: [
                                         path.join(styleBase, "scss"),
                                         path.resolve(__dirname, "./node_modules"),
                                     ],
