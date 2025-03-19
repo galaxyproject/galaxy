@@ -21,8 +21,8 @@
                 <CellAction
                     :name="name"
                     :show="hover"
-                    :cellIndex="cellIndex"
-                    :cellTotal="cellTotal"
+                    :cell-index="cellIndex"
+                    :cell-total="cellTotal"
                     @clone="$emit('clone')"
                     @configure="$emit('configure')"
                     @delete="$emit('delete')"
@@ -53,8 +53,9 @@ import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
 import CellAction from "./CellAction.vue";
 import CellButton from "./CellButton.vue";
-import CellCode from "./CellCode.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
+
+const CellCode = () => import("./CellCode.vue");
 
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
