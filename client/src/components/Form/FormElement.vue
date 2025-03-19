@@ -40,14 +40,14 @@ const TYPE_TO_PLACEHOLDER: Record<string, string> = {
 
 interface FormElementProps {
     id?: string;
-    type: FormParameterTypes | undefined;
+    type?: FormParameterTypes;
     value: FormParameterValue;
-    title: string | undefined;
+    title?: string;
     refreshOnChange?: boolean;
-    help: string | undefined;
+    help?: string;
     helpFormat?: string;
-    error: string | undefined;
-    warning: string | undefined;
+    error?: string;
+    warning?: string;
     disabled?: boolean;
     loading?: boolean;
     attributes?: FormParameterAttributes;
@@ -80,6 +80,11 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     workflowBuildingMode: false,
     workflowRun: false,
     attributes: () => ({}),
+    type: undefined,
+    title: undefined,
+    help: undefined,
+    error: undefined,
+    warning: undefined,
 });
 
 const emit = defineEmits<{
