@@ -192,8 +192,8 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_icon(self) -> Optional["ToolIcon"]:
-        """Return icon for tool."""
+    def parse_icon(self) -> Optional[str]:
+        """Return icon path for tool."""
 
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
@@ -920,8 +920,3 @@ class DrillDownOptionsDict(TypedDict):
     value: str
     options: List["DrillDownOptionsDict"]
     selected: bool
-
-
-class ToolIcon(TypedDict):
-    src: str
-    alt: str

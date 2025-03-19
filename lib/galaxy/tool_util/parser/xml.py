@@ -53,7 +53,6 @@ from .interface import (
     TestCollectionDefElementDict,
     TestCollectionDefElementObject,
     TestCollectionOutputDef,
-    ToolIcon,
     ToolSource,
     ToolSourceTest,
     ToolSourceTestInput,
@@ -234,17 +233,14 @@ class XmlToolSource(ToolSource):
     def parse_description(self) -> str:
         return xml_text(self.root, "description")
 
-    def parse_icon(self) -> Optional[ToolIcon]:
+    def parse_icon(self) -> Optional[str]:
         icon_elem = self.root.find("icon")
         if icon_elem is None:
             return None
         icon_src = icon_elem.get("src", None)
         if icon_src is None:
             return None
-        return ToolIcon(
-            src=icon_src,
-            alt=icon_elem.get("alt", "Tool Icon"),
-        )
+        return icon_src
 
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
