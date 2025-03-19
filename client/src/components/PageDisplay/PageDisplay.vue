@@ -22,7 +22,6 @@ import { storeToRefs } from "pinia";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
-import { withPrefix } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
 
 import PageHtml from "./PageHtml.vue";
