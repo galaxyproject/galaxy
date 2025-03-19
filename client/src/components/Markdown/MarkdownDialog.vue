@@ -43,7 +43,7 @@ type SelectType = "job_id" | "invocation_id" | "history_dataset_id" | "history_d
 
 const effectiveLabels = computed<Array<WorkflowLabel>>(() => {
     if (!props.labels) {
-        return [] as Array<WorkflowLabel>;
+        return [];
     }
     const selectSteps = props.argumentType == "job_id";
     const filteredLabels: Array<WorkflowLabel> = [];
