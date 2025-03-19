@@ -1,0 +1,119 @@
+<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="24.2+bioc" profile="22.01">
+    <description>R 4.4.2 with Bioconductor 3.20</description>
+    <requirements>
+        <container type="docker">bioconductor/rstudio-galaxy:3.20</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="RStudio" requires_domain="False" requires_path_in_header_named="X-RStudio-Root-Path">
+            <port>8787</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($jupyter_notebook.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="DEBUG">true</environment_variable>
+        <environment_variable name="DISABLE_AUTH">true</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <inputs>
+        <param name="input" multiple="true" type="data" optional="true" label="Include data into the environment"/>
+    </inputs>
+    <command><![CDATA[
+        #import re
+        echo "[`date`] - Setting up for RStudio." &&
+        ## This is where GalaxyConnector places files copied from Galaxy
+        mkdir -p /import &&
+        chown rstudio:rstudio /import &&
+        ln -s "/import" /home/rstudio/galaxy_imports &&
+        mkdir -p ./rstudio_outputs && chown rstudio:rstudio ./rstudio_outputs && ln -s "\$PWD/rstudio_outputs" /home/rstudio/galaxy_outputs &&
+        #if $input:
+            echo "[`date`] - Linking input files to '/home/rstudio/galaxy_inputs/'" &&
+            mkdir -p /home/rstudio/galaxy_inputs/ &&
+            #for $count, $file in enumerate($input):
+                #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
+                echo "[`date`] - Linking '$file' to '/home/rstudio/galaxy_inputs/${cleaned_name}.${file.ext}'" &&
+                ln -sf '$file' '/home/rstudio/galaxy_inputs/${cleaned_name}.${file.ext}' &&
+            #end for
+        #else
+            echo "[`date`] - No input files provided, skipping file linking step." &&
+        #end if
+
+        echo "[`date`] - Creating Rprofile" &&
+        cp '$__tool_directory__/Rprofile.R' /home/rstudio/.Rprofile &&
+        chown rstudio:rstudio /home/rstudio/.Rprofile &&
+
+        echo "[`date`] - Starting container processes, including RStudio..." &&
+        /init
+    ]]>
+    </command>
+    <outputs>
+        <data name="jupyter_notebook" format="ipynb" label="RStudio Interactive Tool"></data>
+        <collection name="output_collection" type="list" label="RStudio outputs">
+            <discover_datasets pattern="__name_and_ext__" directory="rstudio_outputs/" assign_primary_output="true" recurse="true"/>
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mode" value="previous" />
+            <param name="ipynb" value="test.ipynb" />
+            <param name="run_it" value="true" />
+            <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+The RStudio Interactive Tool in Galaxy provides a user-friendly interface
+for conducting statistical analysis, visualization, and scripting using the
+R programming language. This tool is ideal for bioinformatics workflows
+involving data exploration, statistical modeling, and custom script
+development within the Galaxy ecosystem.
+
+Use Cases
+---------
+- Exploratory data analysis
+- Custom script development
+- Genomic and transcriptomic data visualization
+- Statistical modeling and hypothesis testing
+
+Galaxy Integration Functions
+----------------------------
+
+To facilitate seamless data transfer between RStudio and Galaxy, the
+following built-in functions are available:
+
+Before launching the tool, you can select datasets from your history to include
+in the RStudio environment. This allows you to work with your data directly
+within RStudio without needing to manually transfer files. All files will be
+located in the `/home/rstudio/galaxy_inputs/` directory. Note that files
+mapped from a Galaxy history into RStudio like this are read only.
+
+In addition, you can use the following functions within your R scripts to
+facilitate data transfer:. All files will be located in the `~/galaxy_imports`
+directory.
+
+**GalaxyConnector::gx_get(history_dataset_number)** – Loads a dataset from your
+Galaxy history into the R environment. Example:
+
+.. code-block:: r
+
+    GalaxyConnector::gx_get(1)
+    df <- read.csv("~/galaxy_imports/1")
+    head(df)
+
+**GalaxyConnector::gx_put("file_name", ["file_type"])** – Saves an R object as a
+new dataset in your Galaxy history. Example:
+
+.. code-block:: r
+
+    GalaxyConnector::gx_put("/home/rstudio/output.csv")
+
+**GalaxyConnector::gx_save("session_name")** – Saves your R script to Galaxy for
+reproducibility. Example:
+
+.. code-block:: r
+
+    GalaxyConnector::gx_save("analysis_script.R")
+
+    ]]></help>
+</tool>
