@@ -64,9 +64,6 @@ export default {
         exportUrl() {
             return `${this.dataUrl}.pdf`;
         },
-        editUrl() {
-            return `/pages/editor?id=${this.pageId}`;
-        },
     },
     created() {
         urlData({ url: this.dataUrl }).then((data) => {
@@ -75,7 +72,7 @@ export default {
     },
     methods: {
         onEdit() {
-            window.location = withPrefix(this.editUrl);
+            this.$router.push(`/pages/editor?id=${this.pageId}`);
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;
