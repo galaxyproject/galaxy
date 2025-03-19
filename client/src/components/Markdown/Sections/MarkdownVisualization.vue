@@ -82,7 +82,7 @@ function processContent() {
 function processInvocation() {
     if (invocation.value) {
         const inputId = parseInput(invocation.value as Invocation, datasetLabel.value?.input);
-        const outputId = parseOutput(invocation.value, datasetLabel.value?.output);
+        const outputId = parseOutput(invocation.value as Invocation, datasetLabel.value?.output);
         const datasetId = inputId || outputId;
         visualizationConfig.value.dataset_id = datasetId;
     }
