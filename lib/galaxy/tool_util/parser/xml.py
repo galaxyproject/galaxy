@@ -235,12 +235,7 @@ class XmlToolSource(ToolSource):
 
     def parse_icon(self) -> Optional[str]:
         icon_elem = self.root.find("icon")
-        if icon_elem is None:
-            return None
-        icon_src = icon_elem.get("src", None)
-        if icon_src is None:
-            return None
-        return icon_src
+        return icon_elem.get("src") if icon_elem is not None else None
 
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
