@@ -2530,7 +2530,7 @@ class WriteCrates:
 
         ro_crate = ROCrate()
         # TODO: allow user to set the name, or get the name of the history
-        ro_crate.name = f"Galaxy dataset export"
+        ro_crate.name = "Galaxy dataset export"
         ro_crate.description = (
             "This is a Galaxy dataset export "
             f"including {len(self.included_datasets)} datasets "
