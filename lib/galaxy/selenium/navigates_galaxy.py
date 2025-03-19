@@ -399,8 +399,6 @@ class NavigatesGalaxy(HasDriver):
         return self.history_panel_name_element().text
 
     def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: Optional[str] = None):
-        toggle = self.history_element("editor toggle")
-        toggle.wait_for_and_click()
         self.history_panel_rename(new_name)
 
     def history_panel_expand_collection(self, collection_hid: int) -> SmartComponent:
@@ -410,7 +408,7 @@ class NavigatesGalaxy(HasDriver):
         return collection_view
 
     def history_panel_collection_name_element(self):
-        title_element = self.history_element("collection name display").wait_for_present()
+        title_element = self.history_element("name display").wait_for_present()
         return title_element
 
     def make_accessible_and_publishable(self):
@@ -1696,6 +1694,14 @@ class NavigatesGalaxy(HasDriver):
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
+    def swap_to_tool_panel(self, panel_id: str) -> None:
+        tool_panel = self.components.tool_panel
+        tool_panel.views_button.wait_for_and_click()
+        tool_panel.views_menu_item(panel_id=panel_id).wait_for_and_click()
+
+    def swap_to_tool_panel_edam_operations(self) -> None:
+        self.swap_to_tool_panel("ontology:edam_operations")
+
     def tool_open(self, tool_id, outer=False):
         self.open_toolbox()
 
@@ -1879,25 +1885,21 @@ class NavigatesGalaxy(HasDriver):
 
         self.send_escape(input_element)
 
-    @edit_details
     def history_panel_rename(self, new_name):
         editable_text_input_element = self.history_panel_name_input()
-        editable_text_input_element.clear()
+        # a simple .clear() doesn't work here since we perform a .blur because of that
+        self.driver.execute_script("arguments[0].value = '';", editable_text_input_element)
         editable_text_input_element.send_keys(new_name)
+        editable_text_input_element.send_keys(self.keys.ENTER)
         return editable_text_input_element
 
     def history_panel_name_input(self):
         history_panel = self.components.history_panel
-        edit = history_panel.name_edit_input
-        editable_text_input_element = edit.wait_for_visible()
+        edit_label = history_panel.history_name_edit_label
+        # then, edit_label once clicked, will be replaced by an input field
+        edit_label.wait_for_and_click()
+        editable_text_input_element = history_panel.history_name_edit_input.wait_for_visible()
         return editable_text_input_element
-
-    def history_panel_click_to_rename(self):
-        history_panel = self.components.history_panel
-        name = history_panel.name
-        edit = history_panel.name_edit_input
-        name.wait_for_and_click()
-        return edit.wait_for_visible()
 
     def history_panel_refresh_click(self):
         self.wait_for_and_click(self.navigation.history_panel.selectors.refresh_button)
@@ -2369,7 +2371,7 @@ class NavigatesGalaxy(HasDriver):
 
     def open_history_editor(self, scope=".history-index"):
         panel = self.components.history_panel.editor.selector(scope=scope)
-        if panel.name_input.is_absent:
+        if panel.annotation_input.is_absent:
             toggle = panel.toggle
             toggle.wait_for_and_click()
             editor = panel.form

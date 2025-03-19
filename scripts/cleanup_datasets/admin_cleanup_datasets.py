@@ -59,7 +59,7 @@ from sqlalchemy import (
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
-from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
+from cleanup_datasets import CleanupDatasetsApplication
 
 import galaxy.config
 import galaxy.util

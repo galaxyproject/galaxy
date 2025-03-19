@@ -17,6 +17,7 @@ import traceback
 from json import loads
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -1629,19 +1630,19 @@ class MinimalJobWrapper(HasResourceParameters):
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
         """Subclasses should implement this to persist a destination, if necessary."""
 
-    def _set_object_store_ids(self, job):
+    def _set_object_store_ids(self, job: Job):
         if job.object_store_id:
             # We aren't setting this during job creation anymore, but some existing
             # jobs may have this set. Skip this following code if that is the case.
             return
 
         object_store = self.app.object_store
-        if not object_store.object_store_allows_id_selection:
+        if not object_store.object_store_allows_id_selection():
             self._set_object_store_ids_basic(job)
         else:
             self._set_object_store_ids_full(job)
 
-    def _set_object_store_ids_basic(self, job):
+    def _set_object_store_ids_basic(self, job: Job):
         object_store_id = self.get_destination_configuration("object_store_id", None)
         object_store_populator = ObjectStorePopulator(self.app, job.user)
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
@@ -1662,11 +1663,11 @@ class MinimalJobWrapper(HasResourceParameters):
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
 
-    def _set_object_store_ids_full(self, job):
+    def _set_object_store_ids_full(self, job: Job):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
-        split_object_stores = None
-        object_store_id_overrides = None
+        split_object_stores: Optional[Callable[[str], ObjectStorePopulator]] = None
+        object_store_id_overrides: Optional[Dict[str, Optional[str]]] = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
@@ -1687,7 +1688,11 @@ class MinimalJobWrapper(HasResourceParameters):
                 # directory?
                 object_store_id = invocation_object_stores.preferred_outputs_object_store_id
                 object_store_populator = intermediate_object_store_populator
-                output_names = [o.output_name for o in workflow_invocation_step.workflow_step.unique_workflow_outputs]
+                output_names = [
+                    o.output_name
+                    for o in workflow_invocation_step.workflow_step.unique_workflow_outputs
+                    if o.output_name
+                ]
                 if invocation_object_stores.step_effective_outputs is not None:
                     output_names = [
                         o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
@@ -1696,9 +1701,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 # we resolve the precreated datasets here with object store populators
                 # but for dynamically created datasets after the job we need to record
                 # the outputs and set them accordingly
-                object_store_id_overrides = {o: preferred_outputs_object_store_id for o in output_names}
+                object_store_id_overrides = dict.fromkeys(output_names, preferred_outputs_object_store_id)
 
-                def split_object_stores(output_name):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
+                def split_object_stores(output_name: str):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
                         output_name = output_name.split("|__part__|", 1)[0]
                     if output_name in output_names:
@@ -1718,7 +1723,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 object_store_id = user.preferred_object_store_id
 
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
-        if not split_object_stores:
+        if split_object_stores is None:
             object_store_populator = ObjectStorePopulator(self.app, user)
 
             if object_store_id:

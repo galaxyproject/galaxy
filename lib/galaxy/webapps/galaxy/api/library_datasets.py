@@ -27,6 +27,7 @@ from galaxy.managers import (
     roles,
 )
 from galaxy.model import DatasetPermissions
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -150,10 +151,12 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 page_limit = 10
             query = kwd.get("q", None)
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset, query, page, page_limit)
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(dict(id=role_id, name=displayed_name, type=role.type))
             return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise exceptions.RequestParameterInvalidException(

@@ -3195,20 +3195,20 @@ export interface paths {
         /**
          * Return a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead.
+         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{id} instead.
          */
         get: operations["library_content_api_libraries__library_id__contents__id__get"];
         /**
          * Update a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_dataset_id} instead.
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{id} instead.
          */
         put: operations["update_api_libraries__library_id__contents__id__put"];
         post?: never;
         /**
          * Delete a library file or folder.
          * @deprecated
-         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_dataset_id} instead.
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{id} instead.
          */
         delete: operations["delete_api_libraries__library_id__contents__id__delete"];
         options?: never;

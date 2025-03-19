@@ -46,6 +46,7 @@ from galaxy.model import (
     UserObjectstoreUsage,
     UserQuotaUsage,
 )
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema import APIKeyModel
 from galaxy.schema.schema import (
     AnonUserModel,
@@ -1089,7 +1090,16 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        roles = user.all_roles()
+
+        def get_role_tuples():
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            role_tuples = set()
+            for role in user.all_roles():
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuples.add((displayed_name, role.id))
+            return list(role_tuples)
+
+        role_tuples = get_role_tuples()
         inputs = []
         for index, action in Dataset.permitted_actions.items():
             inputs.append(
@@ -1100,7 +1110,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "name": index,
                     "label": action.action,
                     "help": action.description,
-                    "options": list({(r.name, r.id) for r in roles}),
+                    "options": role_tuples,
                     "value": [a.role.id for a in user.default_permissions if a.action == action.action],
                 }
             )

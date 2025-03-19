@@ -1,6 +1,6 @@
 import { computed, type Ref, ref } from "vue";
 
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import type { AnyWorkflow } from "@/api/workflows";
 import {
     copyWorkflow as copyWorkflowService,
     deleteWorkflow as deleteWorkflowService,
@@ -12,9 +12,7 @@ import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
 import { getFullAppUrl } from "@/utils/utils";
 
-type Workflow = StoredWorkflowDetailed;
-
-export function useWorkflowActions(workflow: Ref<Workflow>, refreshCallback: () => void) {
+export function useWorkflowActions(workflow: Ref<AnyWorkflow>, refreshCallback: () => void) {
     const toast = useToast();
 
     const bookmarkLoading = ref(false);

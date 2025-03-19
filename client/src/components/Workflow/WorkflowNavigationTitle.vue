@@ -8,7 +8,7 @@ import { RouterLink } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import type { WorkflowSummary } from "@/api/workflows";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -49,7 +49,7 @@ const owned = computed(() => {
 });
 
 const importErrorMessage = ref<string | null>(null);
-const importedWorkflow = ref<StoredWorkflowDetailed | null>(null);
+const importedWorkflow = ref<WorkflowSummary | null>(null);
 const workflowImportedAttempted = ref(false);
 
 async function onImport() {
@@ -58,7 +58,7 @@ async function onImport() {
     }
     try {
         const wf = await copyWorkflow(workflow.value.id, workflow.value.owner);
-        importedWorkflow.value = wf as unknown as StoredWorkflowDetailed;
+        importedWorkflow.value = wf;
     } catch (error) {
         importErrorMessage.value = errorMessageAsString(error, "Failed to import workflow");
     } finally {

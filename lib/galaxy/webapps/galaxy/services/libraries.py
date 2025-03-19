@@ -19,6 +19,7 @@ from galaxy.model import (
     Library,
     Role,
 )
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     BasicRoleModel,
@@ -173,9 +174,11 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
                 trans, library, query, page, page_limit, is_library_access
             )
 
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             return_roles = []
             for role in roles:
-                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(BasicRoleModel(id=role.id, name=displayed_name, type=role.type))
             return LibraryAvailablePermissions.model_construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
