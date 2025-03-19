@@ -111,12 +111,20 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.tsx?$/,
                     exclude: /node_modules/,
-                    loader: "ts-loader",
-                    options: {
-                        configFile: "tsconfig.webpack.json",
-                        transpileOnly: true,
-                        appendTsSuffixTo: [/\.vue$/],
-                    },
+                    use: [
+                        {
+                            loader: "thread-loader",
+                            options: { workers: 2 },
+                        },
+                        {
+                            loader: "ts-loader",
+                            options: {
+                                transpileOnly: true,
+                                configFile: "tsconfig.webpack.json",
+                                appendTsSuffixTo: [/\.vue$/],
+                            },
+                        },
+                    ],
                 },
                 {
                     test: /\.mjs$/,

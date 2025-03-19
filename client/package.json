@@ -201,6 +201,7 @@
     "sass-loader": "^13.3.2",
     "store": "^2.0.12",
     "style-loader": "^3.3.3",
+    "thread-loader": "^4.0.4",
     "ts-jest": "^29.2.3",
     "ts-loader": "^9.5.0",
     "tsconfig-paths-webpack-plugin": "^4.1.0",
