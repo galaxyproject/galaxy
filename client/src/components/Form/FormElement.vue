@@ -182,7 +182,11 @@ const nonMdHelp = computed(() =>
 );
 const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
 
-const currentValue = computed({
+// TODO: Replace nay cast with template casts
+// the any cast is a work around for vue 2
+// once upgraded to vue 3, remove this `any`,
+// and use type casts in the template
+const currentValue = computed<any>({
     get() {
         return props.value ?? props.attributes.value;
     },
@@ -190,6 +194,12 @@ const currentValue = computed({
         setValue(val);
     },
 });
+
+// TODO: Remove
+// the any cast is a work around for vue 2
+// once upgraded to vue 3, remove this computed,
+// and use type casts in the template
+const attributeOptions = computed<any>(() => props.attributes.options);
 
 /**
  * Instead of just using `props.title`, we check `attrs.label` and `attrs.name`:
@@ -412,7 +422,7 @@ function onAlert(value: string | undefined) {
                     v-model="currentValue"
                     :data="props.attributes.data"
                     :display="props.attributes.display"
-                    :options="props.attributes.options"
+                    :options="attributeOptions"
                     :optional="props.attributes.optional"
                     :multiple="props.attributes.multiple" />
                 <FormDataUri v-else-if="isUriDataField" :id="props.id" :multiple="props.attributes.multiple" />
@@ -425,7 +435,7 @@ function onAlert(value: string | undefined) {
                     :flavor="props.attributes.flavor"
                     :multiple="props.attributes.multiple"
                     :optional="props.attributes.optional"
-                    :options="props.attributes.options"
+                    :options="attributeOptions"
                     :tag="props.attributes.tag"
                     :user-defined-title="userDefinedTitle"
                     :type="formDataField"
@@ -437,7 +447,7 @@ function onAlert(value: string | undefined) {
                     v-else-if="props.type === 'drill_down'"
                     :id="props.id"
                     v-model="currentValue"
-                    :options="props.attributes.options ?? []"
+                    :options="attributeOptions"
                     :multiple="props.attributes.multiple" />
                 <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
                 <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
