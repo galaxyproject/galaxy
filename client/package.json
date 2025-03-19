@@ -177,7 +177,7 @@
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "eslint-plugin-vue": "^9.17.0",
     "eslint-plugin-vuejs-accessibility": "^2.2.0",
-    "expose-loader": "^4.1.0",
+    "expose-loader": "^5.0.1",
     "fake-indexeddb": "^6.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "fs-extra": "^11.2.0",
