@@ -4,13 +4,11 @@
     the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
     initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
 -->
-<tool name="DICED Database" id="DICED_table_direct1" tool_type="data_source" version="1.0.0" profile="20.09">
+<tool name="DICED Database" id="diced_database" tool_type="data_source" version="1.0.0" profile="20.09">
     <description>DICED is a web interface for access to proteolytic peptides</description>
     <command> python '$__tool_directory__/data_source.py'  '$output' $__app__.config.output_size_limit</command>
     <inputs action="https://diced.lerner.ccf.org" check_values="false" method="post">
         <display>go to DICED database $GALAXY_URL</display>
-        <param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
-        <param name="tool_id" type="hidden" value="DICED_table_direct1" />
     </inputs>
     <request_param_translation>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
