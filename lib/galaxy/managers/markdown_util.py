@@ -84,10 +84,12 @@ GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE ^ re
 
 def process_invocation_ids(f, workflow_markdown: str) -> str:
     """Finds all invocation ids in jsons and applies f to them."""
+
     def replace_match(match):
         original_id = match.group(2)
         new_id = f(original_id)
         return f'{match.group(1)}"{new_id}"'
+
     pattern = r'("invocation_id"\s*:\s*)"([^"]*)"'
     return re.sub(pattern, replace_match, workflow_markdown)
 
