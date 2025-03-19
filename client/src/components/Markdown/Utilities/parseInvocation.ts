@@ -21,7 +21,7 @@ export function parseInput(invocation: Invocation, name: string | undefined) {
     }
 }
 
-export function parseOutput(invocation: any, name: string | undefined) {
+export function parseOutput(invocation: Invocation, name: string | undefined) {
     if (name && invocation.outputs) {
         const output = invocation.outputs[name];
         return output?.id;
