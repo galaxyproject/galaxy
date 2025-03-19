@@ -8,7 +8,7 @@ const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -291,8 +291,9 @@ module.exports = (env = {}, argv = {}) => {
             // proxy *everything* to the galaxy server.
             // someday, when we have a fully API-driven independent client, this
             // can be a more limited set -- e.g. `/api`, `/auth`
-            proxy: {
-                "**": {
+            proxy: [
+                {
+                    context: ["**"],
                     // We explicitly use ipv4 loopback instead of localhost to
                     // avoid ipv6/ipv4 resolution order issues; this should
                     // align with Galaxy's default.
@@ -301,7 +302,7 @@ module.exports = (env = {}, argv = {}) => {
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
                     logLevel: "debug",
                 },
-            },
+            ],
         },
     };
 
