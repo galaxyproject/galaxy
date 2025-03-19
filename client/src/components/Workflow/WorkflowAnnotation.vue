@@ -85,7 +85,7 @@ const workflowTags = computed(() => {
             </div>
             <slot name="middle-content" />
             <div class="d-flex align-items-center">
-                <div class="d-flex flex-column align-items-end mr-2">
+                <div class="d-flex flex-column align-items-end mr-2 flex-gapy-1">
                     <WorkflowIndicators :workflow="workflow" published-view no-edit-time />
                     <WorkflowInvocationsCount v-if="owned" class="mr-1" :workflow="workflow" />
                 </div>
