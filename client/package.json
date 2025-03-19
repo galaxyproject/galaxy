@@ -168,7 +168,7 @@
     "babel-plugin-transform-import-meta": "^2.2.1",
     "buffer": "^6.0.3",
     "cpy-cli": "^5.0.0",
-    "css-loader": "^6.8.1",
+    "css-loader": "^7.1.2",
     "css-minimizer-webpack-plugin": "^5.0.1",
     "del": "^6.0.0",
     "eslint": "^8.52.0",
