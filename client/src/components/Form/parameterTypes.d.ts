@@ -1,7 +1,15 @@
 import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 
 // TODO: stricter types
-export type FormParameterValue = string | number | boolean | undefined | FormParameterClass | FormParameterDataField;
+export type FormParameterValue =
+    | string
+    | number
+    | boolean
+    | undefined
+    | null
+    | string[]
+    | FormParameterClass
+    | FormParameterDataField;
 export type FormParameterAttributes = {
     value?: FormParameterValue;
     collapsible_value?: FormParameterValue;
