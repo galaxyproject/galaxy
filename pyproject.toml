@@ -75,6 +75,7 @@ dependencies = [
     "pykwalify",
     "pylibmagic",
     "pyparsing",
+    "pypng",
     "pysam>=0.21",  # for Python 3.11 support on macOS
     "python-dateutil",
     "python-magic",
