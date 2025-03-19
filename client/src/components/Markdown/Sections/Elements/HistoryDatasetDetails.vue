@@ -4,20 +4,20 @@ import { computed } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 
-type AttributeType = "name" | "info" | "peek" | "file_ext";
+type AttributeType = "name" | "misc_blurb" | "peek" | "extension";
 
 const ATTRIBUTES: Record<string, AttributeType> = {
     history_dataset_name: "name",
-    history_dataset_info: "info",
+    history_dataset_info: "misc_blurb",
     history_dataset_peek: "peek",
-    history_dataset_type: "file_ext",
+    history_dataset_type: "extension",
 };
 
 interface Dataset {
     name?: string;
-    info?: string;
+    misc_blurb?: string;
     peek?: string;
-    file_ext?: string;
+    extension?: string;
 }
 
 const { getDatasetError, getDataset } = useDatasetStore();
@@ -44,5 +44,5 @@ const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 
 <template>
     <BAlert v-if="error" show variant="warning">{{ error }}</BAlert>
-    <pre v-else><code :class="getClass">{{ attributeValue }}</code></pre>
+    <pre v-else :class="getClass" class="m-0" v-html="attributeValue" />
 </template>

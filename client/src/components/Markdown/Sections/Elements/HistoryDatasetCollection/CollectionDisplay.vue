@@ -1,5 +1,8 @@
 <template>
-    <b-card body-class="p-0">
+    <b-alert v-if="!!errorText" variant="warning" show>
+        {{ errorText }}
+    </b-alert>
+    <b-card v-else body-class="p-0">
         <b-card-header>
             <span class="float-right">
                 <b-button
@@ -67,6 +70,7 @@ const currentHistoryId = computed(() => historyStore.currentHistoryId);
 
 const itemContent = ref<any>(null);
 const loading = ref(true);
+const errorText = ref<string>("");
 const messageText = ref<string>("");
 const messageVariant = ref<string>("");
 
@@ -91,10 +95,9 @@ const getContent = async () => {
         },
     });
     if (error) {
-        messageVariant.value = "danger";
-        messageText.value = `Failed to retrieve content. ${error}`;
+        errorText.value = `Failed to retrieve content. ${error.err_msg}`;
     } else {
-        messageText.value = "";
+        errorText.value = "";
     }
     itemContent.value = data;
     loading.value = false;

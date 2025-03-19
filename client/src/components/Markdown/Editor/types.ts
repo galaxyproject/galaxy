@@ -5,13 +5,29 @@ export interface CellType {
     toggle?: boolean;
 }
 
-export interface TemplateCategory {
-    name: string;
-    templates: Array<TemplateEntry>;
+export interface DatasetLabel {
+    invocation_id: string;
+    input?: string;
+    output?: string;
+}
+
+export interface Invocation {
+    history_id: string;
+    inputs: Record<string, { label?: string; id?: string }>;
+    outputs: Record<string, { id?: string }>;
+    steps: { workflow_step_label?: string; job_id?: string; implicit_collection_jobs_id?: string }[];
+    workflow_id: string;
 }
 
 export interface TemplateEntry {
     title: string;
     description: string;
+    icon?: string;
+    logo?: string;
     cell: CellType;
+}
+
+export interface WorkflowLabel {
+    label: string;
+    type: "input" | "output" | "step";
 }

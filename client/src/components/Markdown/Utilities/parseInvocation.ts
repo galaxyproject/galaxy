@@ -1,10 +1,4 @@
-interface Invocation {
-    history_id: string;
-    inputs: Record<string, { label?: string; id?: string }>;
-    outputs: Record<string, { id?: string }>;
-    steps: { workflow_step_label?: string; job_id?: string; implicit_collection_jobs_id?: string }[];
-    workflow_id: string;
-}
+import type { Invocation } from "@/components/Markdown/Editor/types";
 
 interface ParsedAttributes {
     history_id?: string;
@@ -19,35 +13,54 @@ interface ParsedAttributes {
     workflow_id?: string;
 }
 
+export function parseInput(invocation: Invocation, name: string | undefined) {
+    if (name && invocation.inputs) {
+        const inputs = Object.values(invocation.inputs);
+        const input = inputs.find((i) => i.label && i.label === name);
+        return input?.id;
+    }
+}
+
+export function parseOutput(invocation: Invocation, name: string | undefined) {
+    if (name && invocation.outputs) {
+        const output = invocation.outputs[name];
+        return output?.id;
+    }
+}
+
+export function parseStep(invocation: Invocation, name: string | undefined) {
+    if (name && invocation.steps) {
+        const step = invocation.steps.find((s) => s.workflow_step_label === name);
+        if (step) {
+            return {
+                job_id: step.job_id,
+                implicit_collection_jobs_id: step.implicit_collection_jobs_id,
+            };
+        }
+    }
+}
+
 export function parseInvocation(
     invocation: Invocation,
     workflowId: string,
     name: string,
     attributes: ParsedAttributes
 ): ParsedAttributes {
-    const result: ParsedAttributes = { ...attributes };
-    result.invocation = invocation;
+    const result: ParsedAttributes = { ...attributes, invocation };
+    const inputId = parseInput(invocation, result.input);
+    const outputId = parseOutput(invocation, result.output);
+    const step = parseStep(invocation, result.step);
     if (name === "history_link") {
         result.history_id = invocation.history_id;
     } else if (["workflow_display", "workflow_image", "workflow_license"].includes(name)) {
         result.workflow_id = workflowId;
-    } else if (result.input && invocation.inputs) {
-        const inputs = Object.values(invocation.inputs);
-        const input = inputs.find((i) => i.label && i.label === result?.input);
-        if (input) {
-            result.history_target_id = input.id;
-        }
-    } else if (result.output && invocation.outputs) {
-        const output = invocation.outputs[result.output];
-        if (output) {
-            result.history_target_id = output.id;
-        }
-    } else if (result.step && invocation.steps) {
-        const step = invocation.steps.find((s) => s.workflow_step_label === result.step);
-        if (step) {
-            result.job_id = step.job_id;
-            result.implicit_collection_jobs_id = step.implicit_collection_jobs_id;
-        }
+    } else if (inputId) {
+        result.history_target_id = inputId;
+    } else if (outputId) {
+        result.history_target_id = outputId;
+    } else if (step) {
+        result.job_id = step.job_id;
+        result.implicit_collection_jobs_id = step.implicit_collection_jobs_id;
     }
     return result;
 }

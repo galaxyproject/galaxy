@@ -31,6 +31,6 @@ watch(
 
 <template>
     <div class="invocation-time">
-        <pre><code>{{ invocationTime }}</code></pre>
+        <pre class="m-0">{{ invocationTime }}</pre>
     </div>
 </template>

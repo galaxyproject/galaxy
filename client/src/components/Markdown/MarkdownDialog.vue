@@ -5,7 +5,7 @@ import Vue, { computed, ref } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { type WorkflowLabel, type WorkflowLabels } from "./labels";
+import { type WorkflowLabel } from "./Editor/types";
 import { getHistories, getInvocations, getJobs, getWorkflows } from "./services";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
@@ -20,8 +20,7 @@ interface MarkdownDialogProps {
     argumentName?: string;
     argumentType?: string;
     argumentPayload?: object;
-    labels?: WorkflowLabels;
-    useLabels: boolean;
+    labels?: Array<WorkflowLabel>;
 }
 
 const props = withDefaults(defineProps<MarkdownDialogProps>(), {
@@ -42,12 +41,12 @@ interface SelectTitles {
 
 type SelectType = "job_id" | "invocation_id" | "history_dataset_id" | "history_dataset_collection_id";
 
-const effectiveLabels = computed<WorkflowLabels>(() => {
+const effectiveLabels = computed<Array<WorkflowLabel>>(() => {
     if (!props.labels) {
-        return [] as WorkflowLabels;
+        return [];
     }
     const selectSteps = props.argumentType == "job_id";
-    const filteredLabels: WorkflowLabels = [];
+    const filteredLabels: Array<WorkflowLabel> = [];
     for (const label of props.labels) {
         if (selectSteps && label.type == "step") {
             filteredLabels.push(label);
@@ -57,6 +56,8 @@ const effectiveLabels = computed<WorkflowLabels>(() => {
     }
     return filteredLabels;
 });
+
+const hasLabels = computed(() => props.labels !== undefined);
 
 const selectorConfig = {
     job_id: {
@@ -139,25 +140,25 @@ function onOk(selectedLabel: WorkflowLabel | undefined) {
     }
 
     if (props.argumentType == "history_dataset_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             dataShow.value = true;
         }
     } else if (props.argumentType == "history_dataset_collection_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             dataCollectionShow.value = true;
         }
     } else if (props.argumentType == "job_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             jobShow.value = true;
         }
     } else if (props.argumentType == "invocation_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             invocationShow.value = true;
@@ -181,25 +182,25 @@ if (props.argumentType == "workflow_id") {
 } else if (props.argumentType == "history_id") {
     historyShow.value = true;
 } else if (props.argumentType == "history_dataset_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         dataShow.value = true;
     }
 } else if (props.argumentType == "history_dataset_collection_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         dataCollectionShow.value = true;
     }
 } else if (props.argumentType == "invocation_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         invocationShow.value = true;
     }
 } else if (props.argumentType == "job_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         jobShow.value = true;
@@ -224,7 +225,7 @@ if (props.argumentType == "workflow_id") {
             :argument-name="argumentName"
             :argument-payload="argumentPayload"
             :labels="effectiveLabels"
-            :use-labels="useLabels"
+            :use-labels="hasLabels"
             :history="currentHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel" />
