@@ -244,6 +244,12 @@ module.exports = (env = {}, argv = {}) => {
                 }),
             }),
         ],
+        cache: {
+            type: "filesystem",
+            buildDependencies: {
+                config: [__filename],
+            },
+        },
         devServer: {
             client: {
                 overlay: {
