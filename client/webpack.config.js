@@ -28,6 +28,7 @@ const modulesExcludedFromLibs = [
     "vega",
     "vega-embed",
     "vega-lite",
+    "ace-builds",
 ].join("|");
 
 const buildDate = new Date();
