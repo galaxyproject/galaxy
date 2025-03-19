@@ -114,6 +114,7 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "ts-loader",
                     options: {
                         configFile: "tsconfig.webpack.json",
+                        transpileOnly: true,
                         appendTsSuffixTo: [/\.vue$/],
                     },
                 },
