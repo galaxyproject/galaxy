@@ -332,14 +332,14 @@ class ToolsService(ServiceBase):
     def get_tool_icon(self, trans, tool_id, tool_version=None):
         tool = self._get_tool(trans, tool_id, tool_version)
         if tool and tool.icon:
-            icon_src = tool.icon.get("src")
-            if icon_src and tool.tool_dir:
+            icon_file_path = tool.icon
+            if icon_file_path and tool.tool_dir:
                 # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
-                if not safe_contains(tool.tool_dir, icon_src):
+                if not safe_contains(tool.tool_dir, icon_file_path):
                     raise Exception(
                         f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
                     )
-                file_path = os.path.join(tool.tool_dir, icon_src)
+                file_path = os.path.join(tool.tool_dir, icon_file_path)
                 if not os.path.exists(file_path):
                     raise exceptions.ObjectNotFound(f"Could not find icon for tool '{tool_id}'.")
                 return FileResponse(file_path)
