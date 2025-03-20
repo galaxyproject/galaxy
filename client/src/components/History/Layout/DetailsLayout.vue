@@ -95,8 +95,8 @@ function onToggle() {
     editing.value = !editing.value;
 
     localProps.value = {
-        name: props.name,
-        annotation: props.annotation,
+        name: props.name ?? "",
+        annotation: props.annotation ?? "",
         tags: props.tags,
     };
 
