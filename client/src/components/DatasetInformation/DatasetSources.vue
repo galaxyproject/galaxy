@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { type DatasetTransform } from "@/api";
+import { type DatasetSource as DatasetSourceModel } from "@/api";
 
 import DatasetSource from "@/components/DatasetInformation/DatasetSource.vue";
 
 interface Props {
-    sources: {
-        source_uri: string;
-        transform: DatasetTransform[];
-    }[];
+    sources: DatasetSourceModel[];
 }
 
 defineProps<Props>();
