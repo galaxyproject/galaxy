@@ -46,7 +46,7 @@ const editing = ref(false);
 const textSelected = ref(false);
 const localProps = ref<{ name: string; annotation: string | null; tags: string[] }>({
     name: "",
-    annotation: "",
+    annotation: null,
     tags: [],
 });
 
@@ -96,7 +96,7 @@ function onToggle() {
 
     localProps.value = {
         name: props.name ?? "",
-        annotation: props.annotation ?? "",
+        annotation: props.annotation ?? null,
         tags: props.tags,
     };
 
