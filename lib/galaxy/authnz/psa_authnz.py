@@ -45,6 +45,7 @@ BACKENDS = {
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
     "oidc": "social_core.backends.open_id_connect.OpenIdConnectAuth",
+    "tapis": "galaxy.authnz.tapis.TapisOAuth2",
 }
 
 BACKENDS_NAME = {
@@ -55,6 +56,7 @@ BACKENDS_NAME = {
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
     "oidc": "oidc",
+    "tapis": "tapis",
 }
 
 AUTH_PIPELINE = (
