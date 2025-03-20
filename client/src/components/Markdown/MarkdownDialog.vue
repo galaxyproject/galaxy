@@ -129,8 +129,9 @@ function onVisualization(response: string) {
 }
 
 function onOk(selectedLabel: WorkflowLabel | undefined) {
+    const argumentType = props.argumentType ?? "";
     const defaultLabelType: string =
-        ["history_dataset_id", "history_dataset_collection_id"].indexOf(props.argumentType) >= 0 ? "output" : "step";
+        ["history_dataset_id", "history_dataset_collection_id"].indexOf(argumentType) >= 0 ? "output" : "step";
     const labelText: string = selectedLabel ? selectedLabel.label : "<ENTER LABEL>";
     const labelType: string = selectedLabel ? selectedLabel.type : defaultLabelType;
     selectedShow.value = false;
