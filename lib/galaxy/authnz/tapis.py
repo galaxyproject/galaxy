@@ -7,6 +7,7 @@ class TapisOAuth2(BaseOAuth2):
     AUTHORIZATION_URL = "https://cfde.tapis.io/v3/oauth2/authorize"
     ACCESS_TOKEN_URL = "https://cfde.tapis.io/v3/oauth2/tokens"
     ACCESS_TOKEN_METHOD = "POST"
+    REDIRECT_STATE = False  # Don't include state parameter since tapis validates redirect_uri and state invalidates it?
 
     RESPONSE_TYPE = "code"
 
