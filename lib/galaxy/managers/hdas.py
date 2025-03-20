@@ -364,7 +364,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     HistoryDatasetAssociation.deleted == true(),
-                    HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
+                    HistoryDatasetAssociation.purged == false(),
                     model.History.user_id == user.id,
                 )
             )
@@ -394,7 +394,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     HistoryDatasetAssociation.deleted == true(),
-                    HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
+                    HistoryDatasetAssociation.purged == false(),
                     model.History.user_id == user.id,
                 )
             )
