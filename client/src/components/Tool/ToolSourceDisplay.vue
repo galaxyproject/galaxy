@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import loader from '@monaco-editor/loader';
+import loader from "@monaco-editor/loader";
 
 export default {
     props: {
@@ -31,7 +31,7 @@ export default {
             if (this.editor) {
                 this.editor.setModelLanguage(this.editor.getModel(), newValue);
             }
-        }
+        },
     },
     mounted() {
         this.initMonaco();
@@ -43,7 +43,7 @@ export default {
     },
     methods: {
         initMonaco() {
-            loader.init().then(monaco => {
+            loader.init().then((monaco) => {
                 this.editor = monaco.editor.create(this.$refs.editorContainer, {
                     value: this.code,
                     language: this.language,
@@ -51,11 +51,11 @@ export default {
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
                     automaticLayout: true,
-                    theme: 'vs',
+                    theme: "vs",
                 });
             });
-        }
-    }
+        },
+    },
 };
 </script>
 
