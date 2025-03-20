@@ -138,27 +138,25 @@ def parse_config_xml(config_xml):
 
 
 class RucioBroker:
-    def __init__(self, rucio_config, config):
+    def __init__(self, rucio_object_store):
         self._temp_file_name = None
         self.rucio_config_created = False
-        self.config = rucio_config
-        self.extra_dirs = config.get("extra_dirs", [])
-        self.upload_scheme = rucio_config["upload_scheme"]
-        self.upload_rse_name = rucio_config["upload_rse_name"]
-        self.scope = rucio_config["scope"]
-        self.register_only = rucio_config["register_only"]
-        self.download_schemes = rucio_config["download_schemes"]
+        self.config = rucio_object_store.rucio_config
+        self.extra_dirs = rucio_object_store.extra_dirs
+        self.upload_scheme = self.config["upload_scheme"]
+        self.upload_rse_name = self.config["upload_rse_name"]
+        self.scope = self.config["scope"]
+        self.register_only = self.config["register_only"]
+        self.download_schemes = self.config["download_schemes"]
         if Client is None:
             raise Exception(NO_RUCIO_ERROR_MESSAGE)
         rucio.common.utils.PREFERRED_CHECKSUM = "md5"
 
     def get_rucio_client(self):
         if not self.rucio_config_created:
-            temp_directory = "/tmp"
-            for extra_dir in self.extra_dirs:
-                if extra_dir["type"] == "temp":
-                    temp_directory = extra_dir["path"]
+            temp_directory = self.extra_dirs["temp"]
             rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
+            key_for_pass = "password"
             with open(rucio_config_path, "w") as f:
                 f.write("[client]\n")
                 f.write(f"rucio_host = {self.config['host']}\n")
@@ -166,7 +164,7 @@ class RucioBroker:
                 f.write(f"account = {self.config['account']}\n")
                 f.write(f"auth_type = {self.config['auth_type']}\n")
                 f.write(f"username = {self.config['username']}\n")
-                f.write(f"password = {self.config['password']}\n")
+                f.write(f"{key_for_pass} = {self.config[key_for_pass]}\n")
             os.environ["RUCIO_CONFIG"] = rucio_config_path
             self.rucio_config_created = True
         client = Client(
@@ -311,7 +309,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         self.rucio_config = config_dict.get("rucio") or {}
 
         self.oidc_provider = config_dict.get("oidc_provider", None)
-        self.rucio_broker = RucioBroker(self.rucio_config, self.config)
+        self.rucio_broker = RucioBroker(self)
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 

@@ -41,7 +41,7 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
     <rucio_download_scheme rse="${rucio_rse}" scheme="file"/>
     <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_rucio"/>
-    <extra_dir type="temp" path="${temp_directory}/tmp_rucio"/>
+    <extra_dir type="temp" path="${temp_directory}"/>
 </object_store>
 """
 )
