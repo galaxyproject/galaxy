@@ -51,7 +51,7 @@ const localProps = ref<{ name: string; annotation: string | null; tags: string[]
 });
 
 const clickToEditName = computed({
-    get: () => props.name,
+    get: () => props.name ?? "",
     set: (newName) => {
         if (newName && newName !== props.name) {
             emit("save", { name: newName.trim() });
