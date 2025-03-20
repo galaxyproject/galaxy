@@ -6,7 +6,8 @@ import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type ActivityVariant, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { ActivityVariant } from "@/stores/activityStoreTypes";
 import localize from "@/utils/localization";
 
 import TextShort from "@/components/Common/TextShort.vue";
