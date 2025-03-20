@@ -229,7 +229,7 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
     gap: 0.25rem;
     margin-top: 0.25rem;
     align-items: center;
-    justify-content: end;
+    justify-content: flex-end;
 
     @container (max-width: #{$breakpoint-md}) {
         .compact-view {

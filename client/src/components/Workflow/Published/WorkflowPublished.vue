@@ -279,7 +279,7 @@ onMounted(async () => {
             grid-column: 1 / span 3;
 
             display: flex;
-            justify-content: end;
+            justify-content: flex-end;
         }
 
         .workflow-preview {

@@ -184,8 +184,8 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
     .settings {
         flex: 1;
         display: flex;
-        align-items: start;
-        justify-content: start;
+        align-items: flex-start;
+        justify-content: flex-start;
         flex-direction: column;
     }
 
