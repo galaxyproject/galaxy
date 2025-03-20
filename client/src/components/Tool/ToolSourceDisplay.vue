@@ -29,7 +29,7 @@ export default {
         },
         language(newValue) {
             if (this.editor) {
-                monaco.editor.setModelLanguage(this.editor.getModel(), newValue);
+                this.editor.setModelLanguage(this.editor.getModel(), newValue);
             }
         }
     },
