@@ -224,17 +224,6 @@ module.exports = (env = {}, argv = {}) => {
         plugins: [
             // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
             // and webpack will automagically require them in the bundle for you
-            new CircularDependencyPlugin({
-                // exclude detection of files based on a RegExp
-                exclude: /a\.js|node_modules|src\/libs/,
-                // add errors to webpack instead of warnings
-                failOnError: !!process.env.CIRCULAR_DEPENDENCY_FAIL_ON_ERROR,
-                // allow import cycles that include an asyncronous import,
-                // e.g. via import(/* webpackMode: "weak" */ './file.js')
-                allowAsyncCycles: false,
-                // set the current working directory for displaying module paths
-                cwd: process.cwd(),
-            }),
             new webpack.ProvidePlugin({
                 $: `${libsBase}/jquery.custom.js`,
                 jQuery: `${libsBase}/jquery.custom.js`,
@@ -313,6 +302,23 @@ module.exports = (env = {}, argv = {}) => {
             ],
         },
     };
+
+    // Only include CircularDependencyPlugin in development mode
+    if (targetEnv === "development") {
+        buildconfig.plugins.push(
+            new CircularDependencyPlugin({
+                // exclude detection of files based on a RegExp
+                exclude: /a\.js|node_modules|src\/libs/,
+                // add errors to webpack instead of warnings
+                failOnError: !!process.env.CIRCULAR_DEPENDENCY_FAIL_ON_ERROR,
+                // allow import cycles that include an asyncronous import,
+                // e.g. via import(/* webpackMode: "weak" */ './file.js')
+                allowAsyncCycles: false,
+                // set the current working directory for displaying module paths
+                cwd: process.cwd(),
+            })
+        );
+    }
 
     if (process.env.GXY_BUILD_SOURCEMAPS) {
         buildconfig.devtool = "eval-cheap-module-source-map";
