@@ -39,6 +39,7 @@
     "@handsontable/vue": "^2.0.0",
     "@hirez_io/observer-spy": "^2.1.2",
     "@johmun/vue-tags-input": "^2.1.0",
+    "@monaco-editor/loader": "^1.5.0",
     "@popperjs/core": "^2.11.8",
     "@sentry/browser": "^7.74.1",
     "@sentry/vue": "^7.114.0",
