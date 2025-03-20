@@ -47,7 +47,7 @@
         }
 
         &.multiselect__option--highlight {
-            background: $brand-danger;
+            background: $brand-success;
 
             &::after {
                 background: unset;
