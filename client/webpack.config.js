@@ -226,7 +226,7 @@ module.exports = (env = {}, argv = {}) => {
             // and webpack will automagically require them in the bundle for you
             new CircularDependencyPlugin({
                 // exclude detection of files based on a RegExp
-                exclude: /a\.js|node_modules/,
+                exclude: /a\.js|node_modules|src\/libs/,
                 // add errors to webpack instead of warnings
                 failOnError: true,
                 // allow import cycles that include an asyncronous import,
