@@ -1,0 +1,17 @@
+<tool id="invalid_citation" name="invalid_citation" version="1.0.0" profile="24.2">
+    <command>
+        cat $input1 > $out_file1
+    </command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+    </outputs>
+    <!-- https://github.com/workflow4metabolomics/anova/blob/4bd408440b71359eac2c373917f5daff2ec9f69f/galaxy/stat_anova/abims_anova.xml -->
+    <citations>
+        <citation>Ronald A. Fisher in the 1930s</citation>
+    </citations>
+    <help>
+    </help>
+</tool>
