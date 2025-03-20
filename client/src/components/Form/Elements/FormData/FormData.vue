@@ -338,24 +338,16 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
         if (!canAcceptDatatype(extensions)) {
             return false;
         }
-        if (values.some((v) => !canAcceptSrc(v.history_content_type, v.collection_type))) {
+        if (values.some((v) => !canAcceptSrc(v))) {
             return false;
         }
         if (values.length > 0) {
             const incomingValues: Array<DataOption> = [];
             values.forEach((v) => {
                 // Map incoming objects to data option values
-                let newSrc;
-                if (isDCE(v)) {
-                    if (isDatasetElement(v)) {
-                        newSrc = SOURCE.DATASET;
-                        v = v.object;
-                    } else {
-                        newSrc = SOURCE.COLLECTION_ELEMENT;
-                    }
-                } else {
-                    newSrc =
-                        v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
+                const { newSrc, isADatasetElement } = getSrcAndContentType(v);
+                if (isADatasetElement) {
+                    v = v.object;
                 }
                 const newHid = v.hid;
                 const newId = v.id;
@@ -455,7 +447,37 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
     return true;
 }
 
-function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
+/**
+ * Given an element, determine the source and content type.
+ * Also determine if the element is a dataset element object.
+ */
+function getSrcAndContentType(element: any): {
+    historyContentType: string;
+    newSrc: string;
+    isADatasetElement: boolean;
+} {
+    let historyContentType: string;
+    let newSrc: string;
+    let isADatasetElement = false;
+    if (isDCE(element)) {
+        if (isDatasetElement(element)) {
+            historyContentType = "dataset";
+            newSrc = SOURCE.DATASET;
+            isADatasetElement = true;
+        } else {
+            historyContentType = "dataset_collection";
+            newSrc = SOURCE.COLLECTION_ELEMENT;
+        }
+    } else {
+        historyContentType = element.history_content_type;
+        newSrc = element.src || (historyContentType === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
+    }
+    return { historyContentType, newSrc, isADatasetElement };
+}
+
+function canAcceptSrc(element: any) {
+    const { historyContentType } = getSrcAndContentType(element);
+    const collectionType = element.collection_type;
     if (historyContentType === "dataset") {
         // HDA can only be fed into data parameters, not collection parameters
         if (props.type === "data") {
@@ -523,12 +545,7 @@ function onDragEnter(evt: MouseEvent) {
         if (!canAcceptDatatype(extensions)) {
             highlightingState = "warning";
             $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
-        } else if (
-            !canAcceptSrc(
-                eventData.history_content_type as "dataset" | "dataset_collection",
-                eventData.collection_type as string
-            )
-        ) {
+        } else if (!canAcceptSrc(eventData)) {
             highlightingState = "warning";
             $emit("alert", `${eventData.history_content_type} is not an acceptable input type for this parameter.`);
         }
