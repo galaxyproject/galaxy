@@ -97,7 +97,7 @@ function onToggle() {
     localProps.value = {
         name: props.name ?? "",
         annotation: props.annotation ?? null,
-        tags: props.tags,
+        tags: props.tags ?? [],
     };
 
     if (nameRef.value) {
