@@ -4,6 +4,8 @@ import string
 import subprocess
 import time
 
+import pytest
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -241,6 +243,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def setUpClass(cls):
+        pytest.skip("Rucio object store tests currently disabled, https://github.com/galaxyproject/galaxy/issues/19838")
         cls.container_name = f"{cls.__name__}_container"
         start_rucio(cls.container_name)
         super().setUpClass()
