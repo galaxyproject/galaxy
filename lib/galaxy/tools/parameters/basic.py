@@ -2669,6 +2669,14 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         if not user_has_access:
             raise ParameterValueError(f"The user cannot access {value}.", self.name)
 
+    def to_param_dict_string(self, value, other_values=None) -> str:
+        """Called via __str__ when used in the Cheetah template"""
+        if value is None:
+            value = ""
+        elif not isinstance(value, str):
+            value = str(value)
+        return value
+
 
 class RulesListToolParameter(BaseJsonToolParameter):
     """
