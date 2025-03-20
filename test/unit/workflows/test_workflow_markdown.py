@@ -110,6 +110,7 @@ def test_populating_invocation_json():
 }
 ```
 """
+
     workflow_markdown_1 = """
 ```any
 {
@@ -119,7 +120,18 @@ def test_populating_invocation_json():
 }
 ```
 """
+
     workflow_markdown_2 = """
+```any
+{
+    "nested_structure": {
+        "invocation_id": "REPLACE"
+    }
+}
+```
+"""
+
+    workflow_markdown_3 = """
 {
     "invocation_id": ""
 }
@@ -129,6 +141,8 @@ def test_populating_invocation_json():
     galaxy_markdown = populate_markdown(workflow_markdown_1)
     assert '\n```any\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
     galaxy_markdown = populate_markdown(workflow_markdown_2)
+    assert '\n```any\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
+    galaxy_markdown = populate_markdown(workflow_markdown_3)
     assert '\n{\n    "invocation_id": ""\n}\n' in galaxy_markdown
 
 
