@@ -443,19 +443,20 @@ class TestQuota(BaseModelTestCase):
     def _assert_user_quota_is(self, user, amount, quota_source_label=None):
         actual_quota = self.quota_agent.get_quota(user, quota_source_label=quota_source_label)
         assert amount == actual_quota, f"Expected quota [{amount}], got [{actual_quota}]"
+        quota_source_map = QuotaSourceMap()
         if quota_source_label is None:
             if amount is None:
                 user.total_disk_usage = 1000
                 job = model.Job()
                 job.user = user
-                assert not self.quota_agent.is_over_quota(None, job, None)
+                assert not self.quota_agent.is_over_quota(quota_source_map, job)
             else:
                 job = model.Job()
                 job.user = user
                 user.total_disk_usage = amount - 1
-                assert not self.quota_agent.is_over_quota(None, job, None)
+                assert not self.quota_agent.is_over_quota(quota_source_map, job)
                 user.total_disk_usage = amount + 1
-                assert self.quota_agent.is_over_quota(None, job, None)
+                assert self.quota_agent.is_over_quota(quota_source_map, job)
 
 
 class TestUsage(BaseModelTestCase):
