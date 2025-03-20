@@ -8,7 +8,6 @@
                     </div>
                     <div>
                         <b-form-radio-group
-                            v-if="!labels || labels.length === 0"
                             v-model="editor"
                             v-b-tooltip.hover.bottom
                             button-variant="outline-primary"
