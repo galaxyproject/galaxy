@@ -5,9 +5,7 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { getGalaxyInstance } from "@/app";
 import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
-import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 
 export function stateIsTerminal(result: Record<string, any>) {
@@ -286,15 +284,6 @@ export function appendScriptStyle(data: Readonly<{ script?: string; styles?: str
     }
 }
 
-export function setWindowTitle(title: string): void {
-    const Galaxy = getGalaxyInstance();
-    if (title) {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
-    } else {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
-    }
-}
-
 /**
  * Calculate a 32 bit FNV-1a hash
  * Found here: https://gist.github.com/vaiorabbit/5657561
@@ -422,21 +411,6 @@ export function hasKeys(object: unknown, keys: string[]) {
     }
 }
 
-/**
- * Get the full URL path of the app
- *
- * @param path Path to append to the URL path
- * @returns Full URL path of the app
- */
-export function getFullAppUrl(path: string = ""): string {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : "";
-    const appRoot = getAppRoot();
-
-    return `${protocol}//${hostname}${port}${appRoot}${path}`;
-}
-
 export default {
     get,
     merge,
@@ -450,9 +424,7 @@ export default {
     clone,
     linkify,
     appendScriptStyle,
-    setWindowTitle,
     waitForElementToBePresent,
     wait,
     mergeObjectListsById,
-    getFullAppUrl,
 };
