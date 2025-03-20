@@ -45,9 +45,16 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution import output_collect
+from galaxy.job_execution.output_collect import (
+    BaseJobContext,
+    MetadataSourceProvider,
+    PermissionProvider,
+)
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    HistoryDatasetCollectionAssociation,
     Job,
+    JobToOutputDatasetAssociation,
     StoredWorkflow,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -81,10 +88,6 @@ from galaxy.tool_util.parser.interface import (
     InputSource,
     PageSource,
     ToolSource,
-)
-from galaxy.tool_util.parser.output_objects import (
-    ToolOutput,
-    ToolOutputCollection,
 )
 from galaxy.tool_util.parser.util import (
     parse_profile_version,
@@ -219,9 +222,19 @@ from .execute import (
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm.scoping import scoped_session
+
     from galaxy.app import UniverseApplication
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
+    from galaxy.model import LibraryFolder
+    from galaxy.objectstore import ObjectStore
+    from galaxy.schema.schema import JobState
+    from galaxy.tool_util.parser.output_objects import (
+        ToolOutputBase,
+        ToolOutputCollection,
+    )
+    from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
 log = logging.getLogger(__name__)
@@ -763,6 +776,186 @@ class _Options(Bunch):
     refresh: str
 
 
+class JobContext(BaseJobContext):
+    def __init__(
+        self,
+        tool: "Tool",
+        tool_provided_metadata: "BaseToolProvidedMetadata",
+        job: Job,
+        job_working_directory: str,
+        permission_provider,
+        metadata_source_provider,
+        input_dbkey,
+        object_store: "ObjectStore",
+        final_job_state: "JobState",
+        max_discovered_files: Optional[int],
+        flush_per_n_datasets=None,
+    ):
+        self.tool = tool
+        self._metadata_source_provider = metadata_source_provider
+        self._permission_provider = permission_provider
+        self._input_dbkey = input_dbkey
+        self.app = tool.app
+        self._sa_session = tool.sa_session
+        self._job = job
+        self.job_working_directory = job_working_directory
+        self.tool_provided_metadata = tool_provided_metadata
+        self._object_store = object_store
+        self.final_job_state = final_job_state
+        self._flush_per_n_datasets = flush_per_n_datasets
+        self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
+        self.discovered_file_count = 0
+        self._tag_handler = None
+
+    @property
+    def change_datatype_actions(self):
+        return self.job.get_change_datatype_actions()
+
+    @property
+    def tag_handler(self):
+        if self._tag_handler is None:
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.job.galaxy_session)
+        return self._tag_handler
+
+    @property
+    def work_context(self):
+        return WorkRequestContext(self.app, user=self.user, galaxy_session=self.job.galaxy_session)
+
+    @property
+    def sa_session(self) -> "scoped_session":
+        return self._sa_session
+
+    @property
+    def permission_provider(self) -> PermissionProvider:
+        return self._permission_provider
+
+    @property
+    def metadata_source_provider(self) -> MetadataSourceProvider:
+        return self._metadata_source_provider
+
+    @property
+    def job(self) -> Job:
+        return self._job
+
+    @property
+    def flush_per_n_datasets(self) -> Optional[int]:
+        return self._flush_per_n_datasets
+
+    @property
+    def input_dbkey(self) -> str:
+        return self._input_dbkey
+
+    @property
+    def object_store(self) -> "ObjectStore":
+        return self._object_store
+
+    @property
+    def user(self):
+        if self.job:
+            user = self.job.user
+        else:
+            user = None
+        return user
+
+    def persist_object(self, obj):
+        self.sa_session.add(obj)
+
+    def flush(self):
+        self.sa_session.commit()
+
+    def get_library_folder(self, destination: Dict[str, Any]):
+        folder_id = destination.get("library_folder_id")
+        assert folder_id
+        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
+        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        return library_folder
+
+    def get_hdca(self, object_id):
+        hdca = self.sa_session.query(HistoryDatasetCollectionAssociation).get(int(object_id))
+        return hdca
+
+    def create_library_folder(self, parent_folder: "LibraryFolder", name: str, description: str):
+        nested_folder = self.app.library_folder_manager.create(self.work_context, parent_folder.id, name, description)
+        return nested_folder
+
+    def create_hdca(self, name, structure):
+        history = self.job.history
+        trans = self.work_context
+        collection_manager = self.app.dataset_collection_manager
+        hdca = collection_manager.precreate_dataset_collection_instance(trans, history, name, structure=structure)
+        return hdca
+
+    def add_output_dataset_association(self, name, dataset):
+        assoc = JobToOutputDatasetAssociation(name, dataset)
+        assoc.job = self.job
+        self.sa_session.add(assoc)
+
+    def add_library_dataset_to_folder(self, library_folder, ld):
+        trans = self.work_context
+        ldda = ld.library_dataset_dataset_association
+        trans.sa_session.add(ldda)
+
+        trans = self.work_context
+        trans.app.security_agent.copy_library_permissions(trans, library_folder, ld)
+        trans.sa_session.add(ld)
+        trans.sa_session.commit()
+
+        # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
+        trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
+        # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
+        trans.app.security_agent.set_all_dataset_permissions(
+            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), flush=False, new=True
+        )
+        library_folder.add_library_dataset(ld, genome_build=ldda.dbkey)
+        trans.sa_session.add(library_folder)
+        trans.sa_session.commit()
+
+        trans.sa_session.add(ld)
+        trans.sa_session.commit()
+
+    def add_datasets_to_history(self, datasets, for_output_dataset=None):
+        sa_session = self.sa_session
+        assert self.job.history
+        self.job.history.stage_addition(datasets)
+        pending_histories = {self.job.history}
+        if for_output_dataset is not None:
+            # Need to update all associated output hdas, i.e. history was
+            # shared with job running
+            for copied_dataset in for_output_dataset.dataset.history_associations:
+                if copied_dataset == for_output_dataset:
+                    continue
+                for dataset in datasets:
+                    new_data = dataset.copy()
+                    copied_dataset.history.stage_addition(new_data)
+                    pending_histories.add(copied_dataset.history)
+                    sa_session.add(new_data)
+        for history in pending_histories:
+            history.add_pending_items()
+
+    def output_collection_def(self, name):
+        tool = self.tool
+        if name not in tool.output_collections:
+            return None
+        output_collection_def = tool.output_collections[name]
+        return output_collection_def
+
+    def output_def(self, name):
+        tool = self.tool
+        if name not in tool.outputs:
+            return None
+        output_collection_def = tool.outputs[name]
+        return output_collection_def
+
+    def job_id(self):
+        return self.job.id
+
+    def get_job_id(self):
+        return self.job.id
+
+    def get_implicit_collection_jobs_association_id(self):
+        return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
+
+
 class Tool(UsesDictVisibleKeys):
     """
     Represents a computational tool that can be executed through Galaxy.
@@ -848,7 +1041,7 @@ class Tool(UsesDictVisibleKeys):
         self.tool_errors = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
-        self.outputs: Dict[str, ToolOutput] = {}
+        self.outputs: Dict[str, ToolOutputBase] = {}
         self.output_collections: Dict[str, ToolOutputCollection] = {}
         self._is_workflow_compatible = None
         self.__help = None
@@ -1493,7 +1686,7 @@ class Tool(UsesDictVisibleKeys):
                 self.input_required = True
                 break
 
-    def parse_outputs(self, tool_source):
+    def parse_outputs(self, tool_source: ToolSource):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
@@ -2379,7 +2572,7 @@ class Tool(UsesDictVisibleKeys):
         out_collections,
         tool_provided_metadata,
         tool_working_directory,
-        job,
+        job: Job,
         input_ext,
         input_dbkey,
         inp_data=None,
@@ -2392,9 +2585,9 @@ class Tool(UsesDictVisibleKeys):
         # given the job_execution import is the only one, probably makes sense to refactor this out
         # into job_wrapper.
         tool = self
-        permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
-        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
-        job_context = output_collect.JobContext(
+        permission_provider = PermissionProvider(inp_data, tool.app.security_agent, job)
+        metadata_source_provider = MetadataSourceProvider(inp_data)
+        job_context = JobContext(
             tool,
             tool_provided_metadata,
             job,
@@ -2731,7 +2924,7 @@ class Tool(UsesDictVisibleKeys):
             if isinstance(value, model.HistoryDatasetAssociation):
                 id = value.dataset.id
                 source = hda_source_dict
-            elif isinstance(value, model.HistoryDatasetCollectionAssociation):
+            elif isinstance(value, HistoryDatasetCollectionAssociation):
                 id = value.collection.id
                 source = hdca_source_dict
             else:

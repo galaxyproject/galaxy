@@ -33,6 +33,7 @@ from galaxy.structured_app import (
     MinimalToolApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import determine_output_format
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -285,6 +286,7 @@ class ToolEvaluator:
         for output_name, output in out_data.items():
             if (
                 (tool_output := self.tool.outputs.get(output_name))
+                and isinstance(tool_output, ToolOutput)
                 and (tool_output.format_source or tool_output.change_format)
                 and output.extension == "expression.json"
             ):

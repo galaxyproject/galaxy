@@ -13,6 +13,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     NamedTuple,
     Optional,
@@ -20,11 +21,10 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm.scoping import ScopedSession
-
 import galaxy.model
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model import LibraryFolder
 from galaxy.model.dataset_collections import builder
 from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.objectstore import (
@@ -38,11 +38,19 @@ from galaxy.util import (
 from galaxy.util.hash_util import HASH_NAME_MAP
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm.scoping import scoped_session
+
     from galaxy.job_execution.output_collect import (
         DatasetCollector,
         ToolMetadataDatasetCollector,
     )
-    from galaxy.model.store import ModelExportStore
+    from galaxy.model import DatasetInstance
+    from galaxy.model.dataset_collections.structure import UninitializedTree
+    from galaxy.model.store import (
+        DirectoryModelExportStore,
+        ModelExportStore,
+        SessionlessContext,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -84,8 +92,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         metadata_source_name=None,
         info=None,
         library_folder=None,
-        link_data=False,
-        primary_data=None,
+        link_data: bool = False,
+        primary_data: Optional["DatasetInstance"] = None,
         init_from=None,
         dataset_attributes=None,
         tag_list=None,
@@ -97,7 +105,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         output_name=None,
         storage_callbacks=None,
         purged=False,
-    ):
+    ) -> "DatasetInstance":
         tag_list = tag_list or []
         sources = sources or []
         hashes = hashes or []
@@ -227,7 +235,14 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         return primary_data
 
     def finalize_storage(
-        self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name, init_from
+        self,
+        primary_data: "DatasetInstance",
+        dataset_attributes,
+        extra_files,
+        filename,
+        link_data: bool,
+        output_name,
+        init_from,
     ):
         if primary_data.dataset.purged:
             # metadata won't be set, maybe we should do that, then purge ?
@@ -240,10 +255,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             object_store_id = self.override_object_store_id(output_name)
             if object_store_id:
                 dataset.object_store_id = object_store_id
+            assert self.object_store
             self.object_store.update_from_file(dataset, file_name=filename, create=True)
         else:
             primary_data.link_to(filename)
         if extra_files:
+            assert self.object_store
             persist_extra_files(self.object_store, extra_files, primary_data)
             primary_data.set_size()
         else:
@@ -301,7 +318,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         self,
         collection,
         root_collection_builder,
-        discovered_files,
+        discovered_files: Iterable["DiscoveredResult"],
         name=None,
         metadata_source_name=None,
         final_job_state="ok",
@@ -342,7 +359,13 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             )
 
     def _populate_elements(
-        self, chunk, name, root_collection_builder, metadata_source_name, final_job_state, change_datatype_actions
+        self,
+        chunk: Iterable["DiscoveredResult"],
+        name,
+        root_collection_builder,
+        metadata_source_name,
+        final_job_state,
+        change_datatype_actions,
     ):
         element_datasets: Dict[str, List[Any]] = {
             "element_identifiers": [],
@@ -440,6 +463,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 self.tag_handler.add_tags_from_list(self.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files, output_name):
+        assert self.object_store
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
             object_store_id = self.override_object_store_id(output_name)
             if object_store_id:
@@ -467,7 +491,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def sa_session(self) -> Optional[ScopedSession]:
+    def sa_session(self) -> Optional[Union["scoped_session", "SessionlessContext"]]:
         """If bound to a database, return the SQL Alchemy session.
 
         Return None otherwise.
@@ -508,7 +532,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def object_store(self) -> ObjectStore:
+    def object_store(self) -> Union[ObjectStore, None]:
         """Return object store to use for populating discovered dataset contents."""
 
     @property
@@ -525,15 +549,17 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         """Add library dataset to persisted library folder."""
 
     @abc.abstractmethod
-    def create_library_folder(self, parent_folder, name, description):
+    def create_library_folder(self, parent_folder: LibraryFolder, name: str, description: str) -> LibraryFolder:
         """Create a library folder ready from supplied attributes for supplied parent."""
 
     @abc.abstractmethod
-    def add_output_dataset_association(self, name, dataset):
+    def add_output_dataset_association(self, name: str, dataset: "DatasetInstance"):
         """If discovering outputs for a job, persist output dataset association."""
 
     @abc.abstractmethod
-    def add_datasets_to_history(self, datasets, for_output_dataset=None):
+    def add_datasets_to_history(
+        self, datasets: List["DatasetInstance"], for_output_dataset: Optional["DatasetInstance"] = None
+    ):
         """Add datasets to the history this context points at."""
 
     def job_id(self):
@@ -543,8 +569,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def persist_object(self, obj):
         """Add the target to the persistence layer."""
 
-    def persist_library_folder(self, library_folder: galaxy.model.LibraryFolder) -> None:  # noqa: B027
+    def persist_library_folder(self, library_folder: LibraryFolder) -> None:
         """Add library folder to sessionless export. Noop for session export."""
+        return
 
     @abc.abstractmethod
     def flush(self):
@@ -606,7 +633,9 @@ class UnusedMetadataSourceProvider(MetadataSourceProvider):
 class SessionlessModelPersistenceContext(ModelPersistenceContext):
     """A variant of ModelPersistenceContext that persists to an export store instead of database directly."""
 
-    def __init__(self, object_store, export_store: "ModelExportStore", working_directory: str) -> None:
+    def __init__(
+        self, object_store: Optional[ObjectStore], export_store: Optional["ModelExportStore"], working_directory: str
+    ) -> None:
         self._permission_provider = UnusedPermissionProvider()
         self._metadata_source_provider = UnusedMetadataSourceProvider()
         self._object_store = object_store
@@ -641,7 +670,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return self._metadata_source_provider
 
     @property
-    def object_store(self) -> ObjectStore:
+    def object_store(self) -> Union[ObjectStore, None]:
         return self._object_store
 
     @property
@@ -660,33 +689,33 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         library_folder.item_count += 1
 
     def get_library_folder(self, destination):
-        folder = galaxy.model.LibraryFolder()
+        folder = LibraryFolder()
         folder.id = destination.get("library_folder_id")
         return folder
 
     def get_hdca(self, object_id):
         raise NotImplementedError()
 
-    def create_hdca(self, name, structure):
+    def create_hdca(self, name: str, structure: "UninitializedTree"):
         collection = galaxy.model.DatasetCollection(
             collection_type=structure.collection_type_description.collection_type, populated=False
         )
         return galaxy.model.HistoryDatasetCollectionAssociation(name=name, collection=collection)
 
-    def create_library_folder(self, parent_folder, name, description):
-        nested_folder = galaxy.model.LibraryFolder(
-            name=name, description=description, order_id=parent_folder.item_count
-        )
+    def create_library_folder(self, parent_folder: LibraryFolder, name: str, description: str):
+        nested_folder = LibraryFolder(name=name, description=description, order_id=parent_folder.item_count)
         parent_folder.item_count += 1
         parent_folder.folders.append(nested_folder)
         return nested_folder
 
-    def persist_library_folder(self, library_folder: galaxy.model.LibraryFolder) -> None:
+    def persist_library_folder(self, library_folder: LibraryFolder) -> None:
+        assert self.export_store
         self.export_store.export_library_folder(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories
         # somehow. Not sure it is worth the effort/complexity?
+        assert self.export_store
         for dataset in datasets:
             self.export_store.add_dataset(dataset)
 
@@ -707,7 +736,12 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         """No-op, no job context."""
 
 
-def persist_target_to_export_store(target_dict, export_store, object_store, work_directory):
+def persist_target_to_export_store(
+    target_dict: Dict[str, Any],
+    export_store: "DirectoryModelExportStore",
+    object_store: ObjectStore,
+    work_directory: str,
+):
     replace_request_syntax_sugar(target_dict)
     model_persistence_context = SessionlessModelPersistenceContext(object_store, export_store, work_directory)
 
@@ -724,7 +758,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
         name = get_required_item(destination, "name", "Must specify a library name")
         description = destination.get("description", "")
         synopsis = destination.get("synopsis", "")
-        root_folder = galaxy.model.LibraryFolder(name=name, description="")
+        root_folder = LibraryFolder(name=name, description="")
         library = galaxy.model.Library(
             name=name,
             description=description,
@@ -755,7 +789,7 @@ def persist_elements_to_hdca(
     hdca,
     collector=None,
 ):
-    discovered_files = []
+    discovered_files: List[DiscoveredResult] = []
 
     def add_to_discovered_files(elements, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []
@@ -780,7 +814,9 @@ def persist_elements_to_hdca(
     collection_builder.populate()
 
 
-def persist_elements_to_folder(model_persistence_context, elements, library_folder):
+def persist_elements_to_folder(
+    model_persistence_context: ModelPersistenceContext, elements, library_folder: LibraryFolder
+):
     for element in elements:
         if "elements" in element:
             assert "name" in element
@@ -822,7 +858,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             )
 
 
-def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
+def persist_hdas(elements, model_persistence_context: ModelPersistenceContext, final_job_state="ok"):
     # discover files as individual datasets for the target history
     datasets = []
     storage_callbacks: List[Callable] = []
@@ -847,9 +883,8 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
 
                 primary_dataset = None
                 if hda_id:
-                    sa_session = (
-                        model_persistence_context.sa_session or model_persistence_context.import_store.sa_session
-                    )
+                    sa_session = model_persistence_context.sa_session
+                    assert sa_session
                     primary_dataset = sa_session.get(galaxy.model.HistoryDatasetAssociation, hda_id)
 
                 sources = fields_match.sources
@@ -878,7 +913,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     final_job_state=state,
                     storage_callbacks=storage_callbacks,
                 )
-                dataset.discovered = True
+                dataset.discovered = True  # type: ignore[attr-defined]
                 if not hda_id:
                     datasets.append(dataset)
 
