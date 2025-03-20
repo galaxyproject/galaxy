@@ -166,6 +166,7 @@
     "babel-jest": "^29.7.0",
     "babel-plugin-transform-import-meta": "^2.2.1",
     "buffer": "^6.0.3",
+    "circular-dependency-plugin": "^5.2.2",
     "cpy-cli": "^5.0.0",
     "css-loader": "^7.1.2",
     "css-minimizer-webpack-plugin": "^5.0.1",

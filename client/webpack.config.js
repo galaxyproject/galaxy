@@ -8,6 +8,7 @@ const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const CircularDependencyPlugin = require("circular-dependency-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -223,6 +224,17 @@ module.exports = (env = {}, argv = {}) => {
         plugins: [
             // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
             // and webpack will automagically require them in the bundle for you
+            new CircularDependencyPlugin({
+                // exclude detection of files based on a RegExp
+                exclude: /a\.js|node_modules/,
+                // add errors to webpack instead of warnings
+                failOnError: true,
+                // allow import cycles that include an asyncronous import,
+                // e.g. via import(/* webpackMode: "weak" */ './file.js')
+                allowAsyncCycles: false,
+                // set the current working directory for displaying module paths
+                cwd: process.cwd(),
+            }),
             new webpack.ProvidePlugin({
                 $: `${libsBase}/jquery.custom.js`,
                 jQuery: `${libsBase}/jquery.custom.js`,
