@@ -377,8 +377,12 @@ WHERE default_quota_association.type = :default_type
     def is_over_quota(self, app, job, job_destination):
         if is_user_object_store(job.object_store_id):
             return False  # User object stores are not subject to quotas
-        if job_destination is not None:
-            object_store_id = job_destination.params.get("object_store_id", None)
+
+        object_store_id = job.object_store_id
+        if job_destination is not None and job_destination.params.get("object_store_id"):
+            object_store_id = job_destination.params.get("object_store_id")
+
+        if object_store_id:
             object_store = app.object_store
             quota_source_map = object_store.get_quota_source_map()
             quota_source_label = quota_source_map.get_quota_source_info(object_store_id).label
