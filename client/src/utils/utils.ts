@@ -170,26 +170,6 @@ export function get(options: getOptions): void {
 }
 
 /**
- * Load a CSS file
- *
- * @param url Url of CSS file
- */
-export function cssLoadFile(url: string): void {
-    const fullUrl = getAppRoot() + url;
-    const links = document.head.getElementsByTagName("link");
-
-    if (Array.from(links).find((link) => link.href === fullUrl)) {
-        return;
-    }
-
-    const link = document.createElement("link");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    link.href = fullUrl;
-    document.head.appendChild(link);
-}
-
-/**
  * Safely merge two dictionaries
  *
  * @param options        Target dictionary
@@ -458,7 +438,6 @@ export function getFullAppUrl(path: string = ""): string {
 }
 
 export default {
-    cssLoadFile,
     get,
     merge,
     bytesToString,
