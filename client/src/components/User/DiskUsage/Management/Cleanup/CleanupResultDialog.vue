@@ -25,7 +25,7 @@ const title = computed<string>(() => {
     let message = localize("Something went wrong...");
     if (isLoading.value) {
         message = localize("Freeing up some space...");
-    } else if (props.result.isPartialSuccess) {
+    } else if (props.result?.isPartialSuccess) {
         message = localize("Sorry, some items couldn't be cleared");
     } else if (props.result.success) {
         message = localize("Congratulations!");
