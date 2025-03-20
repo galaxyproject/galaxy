@@ -368,7 +368,7 @@ function updateExportParams(newParams: ExportParams) {
 <style scoped>
 .zenodo-info {
     display: flex;
-    align-items: start;
+    align-items: flex-start;
     gap: 0.5rem;
 }
 </style>
