@@ -1,6 +1,7 @@
 import zipfile
 from io import BytesIO
 from typing import List
+from urllib.parse import quote
 
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_object_id_error
@@ -189,6 +190,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             hdca_id = self.dataset_populator.fetch(payload, wait=True).json()["outputs"][0]["id"]
             create_response = self._download_dataset_collection(history_id=history_id, hdca_id=hdca_id)
             self._assert_status_code_is(create_response, 200)
+            assert quote(name, safe="") in create_response.headers["Content-Disposition"]
 
     @requires_new_user
     def test_hda_security(self):

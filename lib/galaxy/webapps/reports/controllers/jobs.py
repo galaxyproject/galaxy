@@ -24,8 +24,8 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.managers.users import get_user_by_email
 from galaxy.model import Job
+from galaxy.model.db.user import get_user_by_email
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,

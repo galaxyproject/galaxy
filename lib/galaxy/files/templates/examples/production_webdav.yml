@@ -1,0 +1,42 @@
+- id: webdav
+  version: 0
+  name: WebDAV
+  description: |
+    The WebDAV protocol is a simple way to access files over the internet. This template
+    configuration allows you to connect to a WebDAV server.
+  variables:
+    url:
+      label: Server Domain (e.g. https://myowncloud.org)
+      type: string
+      help: |
+        The domain of the WebDAV server you are connecting to. This should be the full URL
+        including the protocol (http or https) and the domain name.
+    root:
+      label: WebDAV server Path (should end with /remote.php/webdav, e.g. /a/sub/path/remote.php/webdav)
+      type: string
+      help: |
+        The full server path to the WebDAV service. Ensure the path includes /remote.php/webdav.
+    login:
+      label: Username
+      type: string
+      help: |
+        The username to use to connect to the WebDAV server. This should be the username you use
+        to log in to the WebDAV server.
+    writable:
+      label: Writable?
+      type: boolean
+      default: false
+      help: Allow Galaxy to write data to this WebDAV server.
+  secrets:
+    password:
+      label: Password
+      help: |
+        The password to use to connect to the WebDAV server. This should be the password you use
+        to log in to the WebDAV server.
+  configuration:
+    type: webdav
+    url: '{{ variables.url }}'
+    root: '{{ variables.root }}'
+    login: '{{ variables.login }}'
+    writable: '{{ variables.writable }}'
+    password: '{{ secrets.password }}'

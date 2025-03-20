@@ -4,13 +4,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import (
-    false,
-    or_,
-    select,
-    true,
-)
-
 import galaxy.managers.base as managers_base
 from galaxy import (
     exceptions as glx_exceptions,
@@ -27,6 +20,7 @@ from galaxy.managers.users import (
     UserSerializer,
 )
 from galaxy.model import User
+from galaxy.model.db.user import get_users_for_index
 from galaxy.queue_worker import send_local_control_task
 from galaxy.quota import QuotaAgent
 from galaxy.schema import APIKeyModel
@@ -36,6 +30,7 @@ from galaxy.schema.schema import (
     FlexibleUserIdType,
     LimitedUserModel,
     MaybeLimitedUserModel,
+    RoleListResponse,
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -43,6 +38,7 @@ from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ServiceBase,
 )
+from galaxy.webapps.galaxy.services.roles import role_to_model
 
 
 class UsersService(ServiceBase):
@@ -206,31 +202,11 @@ class UsersService(ServiceBase):
         f_name: Optional[str],
         f_any: Optional[str],
     ) -> List[MaybeLimitedUserModel]:
-        rval: List[MaybeLimitedUserModel] = []
-        stmt = select(User)
-
-        if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            stmt = stmt.filter(User.email.like(f"%{f_email}%"))
-
-        if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            stmt = stmt.filter(User.username.like(f"%{f_name}%"))
-
-        if f_any:
-            if trans.user_is_admin:
-                stmt = stmt.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-            else:
-                if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
-                    stmt = stmt.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-                elif trans.app.config.expose_user_email:
-                    stmt = stmt.filter(User.email.like(f"%{f_any}%"))
-                elif trans.app.config.expose_user_name:
-                    stmt = stmt.filter(User.username.like(f"%{f_any}%"))
-
+        # check for early return conditions
         if deleted:
-            # only admins can see deleted users
             if not trans.user_is_admin:
+                # only admins can see deleted users
                 return []
-            stmt = stmt.filter(User.deleted == true())
         else:
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
@@ -244,8 +220,19 @@ class UsersService(ServiceBase):
                     return [UserModel(**trans.user.to_dict())]
                 else:
                     return []
-            stmt = stmt.filter(User.deleted == false())
-        for user in trans.sa_session.scalars(stmt).all():
+
+        users = get_users_for_index(
+            trans.sa_session,
+            deleted,
+            f_email,
+            f_name,
+            f_any,
+            trans.user_is_admin,
+            trans.app.config.expose_user_email,
+            trans.app.config.expose_user_name,
+        )
+        rval: List[MaybeLimitedUserModel] = []
+        for user in users:
             user_dict = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin
@@ -263,3 +250,8 @@ class UsersService(ServiceBase):
             else:
                 rval.append(UserModel(**user_dict))
         return rval
+
+    def get_user_roles(self, trans, user_id):
+        user = self.get_user(trans, user_id)
+        roles = [ura.role for ura in user.roles]
+        return RoleListResponse(root=[role_to_model(r) for r in roles])

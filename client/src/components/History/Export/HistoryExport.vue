@@ -12,7 +12,7 @@ import {
     reimportHistoryFromRecord,
 } from "@/api/histories.export";
 import type { ColorVariant } from "@/components/Common";
-import { areEqual, ExportParams, ExportRecord } from "@/components/Common/models/exportRecordModel";
+import { areEqual, type ExportParams, type ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useFileSources } from "@/composables/fileSources";
 import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
@@ -23,11 +23,11 @@ import { absPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportOptions from "./ExportOptions.vue";
-import RDMCredentialsInfo from "./RDMCredentialsInfo.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 

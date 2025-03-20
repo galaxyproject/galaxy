@@ -1,6 +1,5 @@
-import { AxiosResponse } from "axios";
-import type { Ref } from "vue";
-import { computed, ref } from "vue";
+import { type AxiosResponse } from "axios";
+import { computed, type Ref, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";

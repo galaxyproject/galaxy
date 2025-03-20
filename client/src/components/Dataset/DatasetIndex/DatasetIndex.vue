@@ -2,7 +2,7 @@
 import { computed } from "vue";
 
 import type { DatasetExtraFiles } from "@/api/datasets";
-import { PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
+import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
 
 interface Props {
     historyDatasetId: string;

@@ -3,7 +3,6 @@
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
 )
 from typing import (
     Any,
@@ -65,7 +64,8 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
         of the tool and its requirements.
         """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def resolver_type(self) -> str:
         """Short label for the type of container resolution."""
 

@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { BBadge } from "bootstrap-vue";
-
 import type { HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import type { DetailsLayoutSummarized } from "../Layout/types";
+
+import HistoryIndicators from "../HistoryIndicators.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
-import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
     history: HistorySummary;
     writeable: boolean;
-    summarized: boolean;
+    summarized?: DetailsLayoutSummarized;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     writeable: true,
-    summarized: false,
+    summarized: undefined,
 });
 
 const historyStore = useHistoryStore();
@@ -49,10 +49,7 @@ function onSave(newDetails: HistorySummary) {
                 no-expand />
         </template>
         <template v-if="summarized" v-slot:update-time>
-            <BBadge v-b-tooltip pill>
-                <span v-localize>last edited </span>
-                <UtcDate v-if="history.update_time" :date="history.update_time" mode="elapsed" />
-            </BBadge>
+            <HistoryIndicators :history="history" detailed-time />
         </template>
     </DetailsLayout>
 </template>

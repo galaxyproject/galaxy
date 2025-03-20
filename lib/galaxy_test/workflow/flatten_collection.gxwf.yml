@@ -1,0 +1,17 @@
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: flatten/output
+steps:
+  nested:
+    tool_id: collection_creates_dynamic_nested
+    state:
+      sleep_time: 0
+      foo: 'dummy'
+  flatten:
+    tool_id: '__FLATTEN__'
+    state:
+      join_identifier: '-'
+    in:
+      input: nested/list_output

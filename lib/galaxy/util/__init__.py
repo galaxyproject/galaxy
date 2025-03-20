@@ -45,10 +45,12 @@ from typing import (
     Optional,
     overload,
     Tuple,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
 from urllib.parse import (
+    quote,
     urlencode,
     urlparse,
     urlsplit,
@@ -74,6 +76,7 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+    from lxml.etree import DocumentInvalid
 
     # lxml.etree.Element is a function that returns a new instance of the
     # lxml.etree._Element class. This class doesn't have a proper __init__()
@@ -122,6 +125,10 @@ except ImportError:
         XML,
     )
 
+    class DocumentInvalid(Exception):  # type: ignore[no-redef]
+        pass
+
+
 from . import requests
 from .custom_logging import get_logger
 from .inflection import Inflector
@@ -140,6 +147,9 @@ except AttributeError:
     def shlex_join(split_command):
         return " ".join(map(shlex.quote, split_command))
 
+
+if TYPE_CHECKING:
+    from galaxy.util.resources import Traversable
 
 inflector = Inflector()
 
@@ -332,7 +342,10 @@ def unique_id(KEY_SIZE=128):
 
 
 def parse_xml(
-    fname: StrPath, strip_whitespace=True, remove_comments=True, schemafname: Union[StrPath, None] = None
+    fname: Union[StrPath, "Traversable"],
+    strip_whitespace: bool = True,
+    remove_comments: bool = True,
+    schemafname: Union[StrPath, None] = None,
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
@@ -347,8 +360,10 @@ def parse_xml(
             schema_root = etree.XML(schema_file.read())
             schema = etree.XMLSchema(schema_root)
 
+    source = Path(fname) if isinstance(fname, (str, os.PathLike)) else fname
     try:
-        tree = cast(ElementTree, etree.parse(str(fname), parser=parser))
+        with source.open("rb") as f:
+            tree = cast(ElementTree, etree.parse(f, parser=parser))
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -358,15 +373,10 @@ def parse_xml(
                     elem.tail = elem.tail.strip()
         if schema:
             schema.assertValid(tree)
-    except OSError as e:
-        if e.errno is None and not os.path.exists(fname):  # type: ignore[unreachable]
-            # lxml doesn't set errno
-            e.errno = errno.ENOENT  # type: ignore[unreachable]
-        raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
-    except etree.DocumentInvalid:
+    except DocumentInvalid:
         log.exception("Validation of file %s failed", fname)
         raise
     return tree
@@ -995,7 +1005,7 @@ class Params:
         self.__dict__.update(values)
 
 
-def xml_text(root, name=None):
+def xml_text(root, name=None, default=""):
     """Returns the text inside an element"""
     if name is not None:
         # Try attribute first
@@ -1010,7 +1020,7 @@ def xml_text(root, name=None):
         text = "".join(elem.text.splitlines())
         return text.strip()
     # No luck, return empty string
-    return ""
+    return default
 
 
 def parse_resource_parameters(resource_param_file):
@@ -1133,7 +1143,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[overload-overlap]
+def unicodify(
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1730,12 +1740,20 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
+# never load packages this way (won't work for installed packages),
+# but while we're working on packaging everything this can be a way to point
+# an installed Galaxy at a Galaxy root for things like tools. Ultimately
+# this all needs to be packaged, but we have some very old PRs working on this
+# that are pretty tricky and shouldn't slow current development.
+GALAXY_INCLUDES_ROOT = os.environ.get("GALAXY_INCLUDES_ROOT")
+
+
 #  Don't use this directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = Path(__file__).parent.parent.parent.parent
+galaxy_root_path = Path(GALAXY_INCLUDES_ROOT) if GALAXY_INCLUDES_ROOT else Path(__file__).parent.parent.parent.parent
 
 
 def galaxy_directory() -> str:
-    if in_packages():
+    if in_packages() and not GALAXY_INCLUDES_ROOT:
         # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
         cwd = Path.cwd()
         path = cwd.parent.parent
@@ -1998,3 +2016,11 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     import numpy as np
 
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
+
+
+def to_content_disposition(target: str) -> str:
+    filename, ext = os.path.splitext(target)
+    character_limit = 255 - len(ext)
+    sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
+    utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
+    return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"

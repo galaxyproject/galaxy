@@ -3,11 +3,12 @@ import { computed, ref, watch } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
 import RepositoryGrid from "@/components/RepositoriesGrid.vue"
 import { type RepositoryGridItem, type OnScroll } from "@/components/RepositoriesGridInterface"
-import { fetcher, components } from "@/schema"
-const searchFetcher = fetcher.path("/api/repositories").method("get").create()
+import { ToolShedApi, components } from "@/schema"
+import { notifyOnCatch } from "@/util"
 
 const query = ref("")
 const page = ref(1)
+const searching = ref(false)
 const fetchedLastPage = ref(false)
 const hits = ref([] as Array<RepositorySearchHit>)
 
@@ -15,23 +16,40 @@ type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
 async function doQuery() {
     const queryValue = query.value
-    const { data } = await searchFetcher({ q: queryValue, page: page.value, page_size: 10 })
-    if (query.value != queryValue) {
-        console.log("query changed.... not using these results...")
+    if (!queryValue) {
+        hits.value = []
         return
     }
-    if ("hits" in data) {
-        if (page.value == 1) {
-            hits.value = data.hits
+    searching.value = true
+    try {
+        const { data } = await ToolShedApi().GET("/api/repositories", {
+            params: {
+                query: { q: queryValue, page: page.value, page_size: 10 },
+            },
+        })
+
+        if (query.value != queryValue) {
+            console.log("query changed.... not using these results...")
+            return
+        }
+
+        if (data && "hits" in data) {
+            if (page.value == 1) {
+                hits.value = data.hits
+            } else {
+                data.hits.forEach((h) => hits.value.push(h))
+            }
+            if (hits.value.length >= parseInt(data.total_results)) {
+                fetchedLastPage.value = true
+            }
+            page.value = page.value + 1
         } else {
-            data.hits.forEach((h) => hits.value.push(h))
+            throw Error("Server response structure error for [" + queryValue + "]")
         }
-        if (hits.value.length >= parseInt(data.total_results)) {
-            fetchedLastPage.value = true
-        }
-        page.value = page.value + 1
-    } else {
-        throw Error("Server response structure error.")
+    } catch (e) {
+        notifyOnCatch(e)
+    } finally {
+        searching.value = false
     }
 }
 
@@ -77,12 +95,26 @@ function rowsFunc() {
     return rows
 }*/
 
+const noDataLabel = computed<string>(() => {
+    if (searching.value) {
+        return "Searching..."
+    } else {
+        return "No repositories matching query"
+    }
+})
+
 const rows = realRows
 </script>
 <template>
     <page-container>
         <q-input debounce="20" filled v-model="query" label="Search Repositories" />
-        <repository-grid v-if="query && query.length > 1" :rows="rows" title="Search Results" :on-scroll="OnScrollImpl">
+        <repository-grid
+            v-if="query && query.length > 1"
+            :rows="rows"
+            title="Search Results"
+            :on-scroll="OnScrollImpl"
+            :no-data-label="noDataLabel"
+        >
         </repository-grid>
     </page-container>
 </template>

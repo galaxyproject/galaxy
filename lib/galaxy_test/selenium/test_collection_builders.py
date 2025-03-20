@@ -34,24 +34,11 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_build_pair_simple_hidden(self):
-        self.perform_upload(self.get_filename("1.tabular"))
-        self.perform_upload(self.get_filename("2.tabular"))
-        self._wait_for_and_select([1, 2])
-        self._collection_dropdown("build pair")
-        self.collection_builder_set_name("my awesome pair")
-        self.screenshot("collection_builder_pair")
-        self.collection_builder_create()
-        self._wait_for_hid_visible(5)
-
-    @selenium_test
-    @managed_history
     def test_build_paired_list_simple(self):
         self.perform_upload(self.get_filename("1.tabular"))
         self.perform_upload(self.get_filename("2.tabular"))
         self._wait_for_and_select([1, 2])
         self._collection_dropdown("build list of pairs")
-        self.collection_builder_clear_filters()
         self.collection_builder_click_paired_item("forward", 0)
         self.collection_builder_click_paired_item("reverse", 1)
         self.collection_builder_set_name("my awesome paired list")
@@ -73,7 +60,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_and_select([1, 2])
         self._collection_dropdown("build list of pairs")
         collection_builders = self.components.collection_builders
-        collection_builders.clear_filters.wait_for_and_click()
+        self.ensure_collection_builder_filters_cleared()
         forward_column = collection_builders.forward_datasets.wait_for_visible()
         first_datset_forward = forward_column.find_elements(self.by.CSS_SELECTOR, "li")[0]
         first_datset_forward.click()

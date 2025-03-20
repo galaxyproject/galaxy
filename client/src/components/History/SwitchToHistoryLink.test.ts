@@ -1,26 +1,42 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 
 import { type HistorySummaryExtended } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import SwitchToHistoryLink from "./SwitchToHistoryLink.vue";
 
 const localVue = getLocalVue(true);
 
+const { server, http } = useServerMock();
+
 const selectors = {
     historyLink: ".history-link",
 } as const;
 
+// Mock the history store to always return the same current history id
+jest.mock("@/stores/historyStore", () => {
+    const originalModule = jest.requireActual("@/stores/historyStore");
+    return {
+        ...originalModule,
+        useHistoryStore: () => ({
+            ...originalModule.useHistoryStore(),
+            currentHistoryId: "current-history-id",
+        }),
+    };
+});
+
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended) {
     const pinia = createTestingPinia();
 
-    const axiosMock = new MockAdapter(axios);
-    axiosMock.onGet(`/api/histories/${history.id}`).reply(200, history);
+    server.use(
+        http.get("/api/histories/{history_id}", ({ response }) => {
+            return response(200).json(history);
+        })
+    );
 
     const wrapper = mount(SwitchToHistoryLink as object, {
         propsData: {
@@ -40,6 +56,13 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended) {
         tags_used: [],
         isAnonymous: false,
         total_disk_usage: 0,
+        nice_total_disk_usage: "0 bytes",
+        purged: false,
+        deleted: false,
+        is_admin: false,
+        username: "user",
+        preferences: {},
+        quota: "abcdef",
     };
     return wrapper;
 }
@@ -85,6 +108,18 @@ describe("SwitchToHistoryLink", () => {
             user_id: "user_id",
         } as HistorySummaryExtended;
         await expectOptionForHistory("Switch", history);
+    });
+
+    it("should display the appropriate text when the history is the Current history", async () => {
+        const history = {
+            id: "current-history-id",
+            name: "History Current",
+            deleted: false,
+            purged: false,
+            archived: false,
+            user_id: "user_id",
+        } as HistorySummaryExtended;
+        await expectOptionForHistory("This is your current history", history);
     });
 
     it("should display the View option when the history is purged", async () => {

@@ -1,9 +1,10 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import jobDestinationResponseData from "./testData/jobDestinationResponse.json";
@@ -12,14 +13,18 @@ import JobDestinationParams from "./JobDestinationParams.vue";
 
 const JOB_ID = "foo_job_id";
 
-jest.mock("@/api/schema");
-
 const localVue = getLocalVue();
 
 const jobDestinationResponse = jobDestinationResponseData as Record<string, string | null>;
 
+const { server, http } = useServerMock();
+
 async function mountJobDestinationParams() {
-    mockFetcher.path("/api/jobs/{job_id}/destination_params").method("get").mock({ data: jobDestinationResponse });
+    server.use(
+        http.get("/api/jobs/{job_id}/destination_params", ({ response }) => {
+            return response(200).json(jobDestinationResponse);
+        })
+    );
 
     const pinia = createPinia();
     const wrapper = shallowMount(JobDestinationParams as object, {
@@ -31,14 +36,7 @@ async function mountJobDestinationParams() {
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = {
-        email: "admin@email",
-        id: "1",
-        tags_used: [],
-        isAnonymous: false,
-        total_disk_usage: 1048576,
-        is_admin: true,
-    };
+    userStore.currentUser = getFakeRegisteredUser({ is_admin: true });
 
     await flushPromises();
 

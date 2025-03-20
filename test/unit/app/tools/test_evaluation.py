@@ -27,6 +27,7 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat,
 )
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
@@ -57,8 +58,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         assert command_line == "bwa --thresh=4 --in=/galaxy/files/dataset_1.dat --out=/galaxy/files/dataset_2.dat"
 
     def test_repeat_evaluation(self):
-        repeat = Repeat()
-        repeat.name = "r"
+        repeat = Repeat("r")
         repeat.inputs = {"thresh": self.tool.test_thresh_param()}
         self.tool.set_params({"r": repeat})
         self.job.parameters = [
@@ -85,8 +85,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         select_xml = XML("""<param name="always_true" type="select"><option value="true">True</option></param>""")
         parameter = SelectToolParameter(self.tool, select_xml)
 
-        conditional = Conditional()
-        conditional.name = "c"
+        conditional = Conditional("c")
         conditional.test_param = parameter
         when = ConditionalWhen()
         when.inputs = {"thresh": self.tool.test_thresh_param()}
@@ -173,7 +172,7 @@ class TestToolEvaluator(TestCase, UsesApp):
             return ["/old/path/human"]
 
         def get_options(trans, other_values):
-            return [["", "/old/path/human", ""]]
+            return [ParameterOption("", "/old/path/human", False)]
 
         parameter.options = Bunch(get_field_by_name_for_value=get_field_by_name_for_value, get_options=get_options)
         self.tool.set_params({"index_path": parameter})

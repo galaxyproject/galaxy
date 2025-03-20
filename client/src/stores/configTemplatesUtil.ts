@@ -1,4 +1,4 @@
-import type { TemplateSummary } from "@/api/configTemplates";
+import { type TemplateSummary } from "@/api/configTemplates";
 
 export function findTemplate<T extends TemplateSummary>(
     templates: T[],

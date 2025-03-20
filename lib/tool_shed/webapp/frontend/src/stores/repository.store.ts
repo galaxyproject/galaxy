@@ -1,24 +1,15 @@
 import { defineStore } from "pinia"
 
-import { fetcher, components } from "@/schema"
-const repositoryFetcher = fetcher.path("/api/repositories/{encoded_repository_id}").method("get").create()
-const repositoryMetadataFetcher = fetcher
-    .path("/api_internal/repositories/{encoded_repository_id}/metadata")
-    .method("get")
-    .create()
-const repositoryPermissionsFetcher = fetcher
-    .path("/api/repositories/{encoded_repository_id}/permissions")
-    .method("get")
-    .create()
-const repositoryPermissionsAdder = fetcher
-    .path("/api/repositories/{encoded_repository_id}/allow_push/{username}")
-    .method("post")
-    .create()
-const repositoryPermissionsRemover = fetcher
-    .path("/api/repositories/{encoded_repository_id}/allow_push/{username}")
-    .method("delete")
-    .create()
-const repositoryInstallInfoFetcher = fetcher.path("/api/repositories/install_info").method("get").create()
+import { ToolShedApi, components } from "@/schema"
+import { notifyOnCatch } from "@/util"
+
+function fetchRepositoryPermissions(repositoryId: string) {
+    return ToolShedApi().GET("/api/repositories/{encoded_repository_id}/permissions", {
+        params: {
+            path: { encoded_repository_id: repositoryId },
+        },
+    })
+}
 
 type DetailedRepository = components["schemas"]["DetailedRepository"]
 type InstallInfo = components["schemas"]["InstallInfo"]
@@ -38,28 +29,40 @@ export const useRepositoryStore = defineStore({
     }),
     actions: {
         async allowPush(username: string) {
-            if (this.repositoryId == null) {
-                throw Error("Logic problem in repository store")
+            try {
+                if (this.repositoryId == null) {
+                    throw Error("Logic problem in repository store")
+                }
+                const params = {
+                    encoded_repository_id: this.repositoryId,
+                    username: username,
+                }
+                await ToolShedApi().POST("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
+                    params: { path: params },
+                })
+                const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
+                this.repositoryPermissions = _repositoryPermissions ?? null
+            } catch (e) {
+                notifyOnCatch(e)
             }
-            const params = {
-                encoded_repository_id: this.repositoryId,
-                username: username,
-            }
-            await repositoryPermissionsAdder(params)
-            const { data: _repositoryPermissions } = await repositoryPermissionsFetcher(params)
-            this.repositoryPermissions = _repositoryPermissions
         },
         async disallowPush(username: string) {
-            if (this.repositoryId == null) {
-                throw Error("Logic problem in repository store")
+            try {
+                if (this.repositoryId == null) {
+                    throw Error("Logic problem in repository store")
+                }
+                const params = {
+                    encoded_repository_id: this.repositoryId,
+                    username: username,
+                }
+                await ToolShedApi().DELETE("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
+                    params: { path: params },
+                })
+                const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
+                this.repositoryPermissions = _repositoryPermissions ?? null
+            } catch (e) {
+                notifyOnCatch(e)
             }
-            const params = {
-                encoded_repository_id: this.repositoryId,
-                username: username,
-            }
-            await repositoryPermissionsRemover(params)
-            const { data: _repositoryPermissions } = await repositoryPermissionsFetcher(params)
-            this.repositoryPermissions = _repositoryPermissions
         },
         async setId(repositoryId: string) {
             this.repositoryId = repositoryId
@@ -71,41 +74,50 @@ export const useRepositoryStore = defineStore({
             }
             this.loading = true
             const params = { encoded_repository_id: this.repositoryId }
-            const metadataParams = { encoded_repository_id: this.repositoryId, downloadable_only: false }
-            const [{ data: repository }, { data: repositoryMetadata }] = await Promise.all([
-                repositoryFetcher(params),
-                repositoryMetadataFetcher(metadataParams),
-            ])
-            this.repository = repository
-            this.repositoryMetadata = repositoryMetadata
-            let repositoryPermissions = {
-                can_manage: false,
-                can_push: false,
-                allow_push: [] as string[],
-            }
             try {
-                const { data: _repositoryPermissions } = await repositoryPermissionsFetcher(params)
-                repositoryPermissions = _repositoryPermissions
-                this.repositoryPermissions = repositoryPermissions
+                const [{ data: repository }, { data: repositoryMetadata }] = await Promise.all([
+                    ToolShedApi().GET("/api/repositories/{encoded_repository_id}", { params: { path: params } }),
+                    ToolShedApi().GET("/api_internal/repositories/{encoded_repository_id}/metadata", {
+                        params: { path: params, query: { downloadable_only: false } },
+                    }),
+                ])
+                this.repository = repository ?? null
+                this.repositoryMetadata = repositoryMetadata ?? null
+
+                let repositoryPermissions = {
+                    can_manage: false,
+                    can_push: false,
+                    allow_push: [] as string[],
+                }
+                try {
+                    const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
+                    repositoryPermissions = _repositoryPermissions ?? repositoryPermissions
+                    this.repositoryPermissions = repositoryPermissions
+                } catch (e) {
+                    // console.log(e)
+                }
+                const latestMetadata = Object.values(repositoryMetadata ?? {})[0]
+                if (!latestMetadata || !repository) {
+                    this.empty = true
+                } else {
+                    if (this.empty) {
+                        this.empty = false
+                    }
+                    const installParams = {
+                        name: repository.name,
+                        owner: repository.owner,
+                        changeset_revision: latestMetadata.changeset_revision,
+                    }
+                    const { data: repositoryInstallInfo } = await ToolShedApi().GET("/api/repositories/install_info", {
+                        params: { query: installParams },
+                    })
+                    this.repositoryInstallInfo = repositoryInstallInfo ?? null
+                }
             } catch (e) {
-                // console.log(e)
+                notifyOnCatch(e)
+            } finally {
+                this.loading = false
             }
-            const latestMetadata = Object.values(repositoryMetadata)[0]
-            if (!latestMetadata) {
-                this.empty = true
-            } else {
-                if (this.empty) {
-                    this.empty = false
-                }
-                const installParams = {
-                    name: repository.name,
-                    owner: repository.owner,
-                    changeset_revision: latestMetadata.changeset_revision,
-                }
-                const { data: repositoryInstallInfo } = await repositoryInstallInfoFetcher(installParams)
-                this.repositoryInstallInfo = repositoryInstallInfo
-            }
-            this.loading = false
         },
     },
 })

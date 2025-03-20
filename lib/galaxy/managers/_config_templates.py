@@ -1,17 +1,24 @@
 import logging
 import os
 from typing import (
+    Any,
     cast,
     Dict,
     List,
     Optional,
+    Type,
     TypeVar,
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    UUID4,
+)
+from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
+    InconsistentDatabase,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -30,19 +37,26 @@ from galaxy.security.vault import (
     UserVaultWrapper,
     Vault,
 )
+from galaxy.util import config_templates  # defer get_token_from_refresh_raw access for monkey patching
 from galaxy.util.config_templates import (
     EnvironmentDict,
     find_template_by,
+    ImplicitConfigurationParameters,
+    OAuth2ClientPair,
+    OAuth2Configuration,
+    PluginAspectStatus,
     secrets_as_dict,
     SecretsDict,
     Template,
     TemplateEnvironmentEntry,
     TemplateEnvironmentSecret,
     TemplateEnvironmentVariable,
+    TemplateReference,
     TemplateVariableValueType,
     validate_no_extra_variables_defined,
     validate_specified_datatypes_variables,
 )
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +71,7 @@ class CreateInstancePayload(BaseModel):
     template_version: int
     variables: SuppliedVariables
     secrets: SuppliedSecrets
+    uuid: Optional[UUID4] = None
 
 
 class UpdateInstancePayload(BaseModel):
@@ -78,14 +93,56 @@ class UpgradeInstancePayload(BaseModel):
     secrets: SuppliedSecrets
 
 
+class TestUpdateInstancePayload(BaseModel):
+    variables: Optional[SuppliedVariables] = None
+
+
+class TestUpgradeInstancePayload(BaseModel):
+    template_version: int
+    variables: SuppliedVariables
+    secrets: SuppliedSecrets
+
+
+class UpgradeTestTarget:
+    instance: HasConfigTemplate
+    payload: TestUpgradeInstancePayload
+
+    def __init__(self, instance: HasConfigTemplate, payload: TestUpgradeInstancePayload):
+        self.instance = instance
+        self.payload = payload
+
+
+class UpdateTestTarget:
+    instance: HasConfigTemplate
+    payload: TestUpdateInstancePayload
+
+    def __init__(self, instance: HasConfigTemplate, payload: TestUpdateInstancePayload):
+        self.instance = instance
+        self.payload = payload
+
+
+class CreateTestTarget:
+    payload: CreateInstancePayload
+    instance_class: Type[HasConfigSecrets]
+
+    def __init__(self, payload: CreateInstancePayload, instance_class: Type[HasConfigSecrets]):
+        self.payload = payload
+        self.instance_class = instance_class
+
+
 ModifyInstancePayload = Union[UpdateInstanceSecretPayload, UpgradeInstancePayload, UpdateInstancePayload]
+TestModifyInstancePayload = Union[TestUpgradeInstancePayload, TestUpdateInstancePayload]
+CanTestPluginStatus = Union[HasConfigTemplate, CreateTestTarget, UpgradeTestTarget, UpdateTestTarget]
 
 
 def recover_secrets(
-    user_object_store: HasConfigSecrets, vault: Vault, app_config: UsesTemplatesAppConfig
+    user_object_store: HasConfigSecrets, vault: Union[UserVaultWrapper, Vault], app_config: UsesTemplatesAppConfig
 ) -> SecretsDict:
-    user: User = user_object_store.user
-    user_vault = UserVaultWrapper(vault, user)
+    if isinstance(vault, UserVaultWrapper):
+        user_vault = vault
+    else:
+        user: User = user_object_store.user
+        user_vault = UserVaultWrapper(vault, user)
     secrets: SecretsDict = {}
     # now we could recover the list of secrets to fetch from...
     # ones recorded as written in the persisted object, the ones
@@ -100,6 +157,111 @@ def recover_secrets(
     return secrets
 
 
+class TemplateParameters(TypedDict):
+    secrets: SuppliedSecrets
+    variables: SuppliedVariables
+    environment: EnvironmentDict
+    user_details: Dict[str, Any]
+    implicit: Optional[ImplicitConfigurationParameters]
+
+
+class TemplateServerConfiguration:
+    """Extra configuration relevant to a given template.
+
+    For state defined in the server but not defined in the template JSON/YAML directly.
+    Currently this only contains optional oauth2 client credentials and oauth2 configuration
+    information (provider URLs and provider specific configuration for the oauth2 flow).
+    """
+
+    oauth2_client_pair: Optional[OAuth2ClientPair]
+    oauth2_configuration: Optional[OAuth2Configuration]
+
+    def __init__(
+        self,
+        oauth2_client_pair: Optional[OAuth2ClientPair] = None,
+        oauth2_configuration: Optional[OAuth2Configuration] = None,
+        oauth2_scope: Optional[str] = None,
+    ):
+        self.oauth2_client_pair = oauth2_client_pair
+        self.oauth2_configuration = oauth2_configuration
+        self.oauth2_scope = oauth2_scope
+
+    @property
+    def uses_oauth2(self):
+        return self.oauth2_configuration is not None
+
+
+def prepare_template_parameters_for_testing(
+    trans: ProvidesUserContext,
+    template: Template,
+    template_server_configuration: TemplateServerConfiguration,
+    target: CanTestPluginStatus,
+    vault: Vault,
+    app_config: UsesTemplatesAppConfig,
+) -> TemplateParameters:
+    secrets = _secrets_for_plugin_status_test(target, trans.user_vault, app_config)
+    variables = _variables_for_plugin_status_test(target)
+    environment = prepare_environment_from_root(template.environment, vault, app_config)
+    user_details = trans.user.config_template_details()
+    implicit = implicit_parameters_for_testing(
+        trans,
+        template_server_configuration,
+        target,
+        app_config,
+    )
+    return TemplateParameters(
+        {
+            "secrets": secrets,
+            "variables": variables,
+            "environment": environment,
+            "user_details": user_details,
+            "implicit": implicit,
+        }
+    )
+
+
+def _variables_for_plugin_status_test(target: CanTestPluginStatus) -> SuppliedVariables:
+    if isinstance(target, CreateTestTarget):
+        return target.payload.variables
+    elif isinstance(target, UpgradeTestTarget) or isinstance(target, UpdateTestTarget):
+        if target.instance.template_variables:
+            variables = target.instance.template_variables.copy()
+        else:
+            variables = {}
+        new_variables = target.payload.variables or {}
+        for new_variable in new_variables:
+            variables[new_variable] = new_variables[new_variable]
+        return new_variables
+    else:
+        return target.template_variables or {}
+
+
+def _secrets_for_plugin_status_test(
+    target: CanTestPluginStatus, user_vault: UserVaultWrapper, app_config: UsesTemplatesAppConfig
+) -> SecretsDict:
+    if isinstance(target, CreateTestTarget):
+        payload = target.payload
+        secrets = payload.secrets.copy()
+        return secrets
+    elif isinstance(target, UpgradeTestTarget):
+        secrets = recover_secrets(target.instance, user_vault, app_config)
+        new_secrets = target.payload.secrets or {}
+        for new_secret in new_secrets:
+            secrets[new_secret] = new_secrets[new_secret]
+        return secrets
+    elif isinstance(target, UpdateTestTarget):
+        secrets = recover_secrets(target.instance, user_vault, app_config)
+        return secrets
+    else:
+        secrets = recover_secrets(target, user_vault, app_config)
+        return secrets
+
+
+def to_template_reference(persisted_instance: HasConfigTemplate) -> TemplateReference:
+    # for mypy convert Mapped[X] -> X
+    return cast(TemplateReference, persisted_instance)
+
+
 def prepare_environment(
     configuration_template: HasConfigEnvironment, vault: Vault, app_config: UsesTemplatesAppConfig
 ) -> EnvironmentDict:
@@ -108,7 +270,7 @@ def prepare_environment(
 
 def prepare_environment_from_root(
     root: Optional[List[TemplateEnvironmentEntry]], vault: Vault, app_config: UsesTemplatesAppConfig
-):
+) -> EnvironmentDict:
     environment: EnvironmentDict = {}
     for environment_entry in root or []:
         e_type = environment_entry.type
@@ -279,3 +441,95 @@ def sort_templates(config, catalog: List[T], instance: HasConfigTemplate) -> Lis
     else:
         templates = [stored_template]
     return templates
+
+
+def implicit_parameters_for_testing(
+    trans: ProvidesUserContext,
+    template_server_configuration: TemplateServerConfiguration,
+    target: CanTestPluginStatus,
+    app_config: UsesTemplatesAppConfig,
+) -> Optional[ImplicitConfigurationParameters]:
+    implicit: ImplicitConfigurationParameters = {}
+    if template_server_configuration.oauth2_configuration:
+        refresh_token_key = None
+        oauth2_refresh_token = None
+        if isinstance(target, CreateTestTarget):
+            if target.payload.uuid:
+                refresh_token_key = target.instance_class.vault_key_from_uuid(
+                    target.payload.uuid, "_oauth2_refresh_token", app_config
+                )
+        else:
+            if isinstance(target, (UpgradeTestTarget, UpdateTestTarget)):
+                instance = target.instance
+            else:
+                instance = target
+            refresh_token_key = instance.vault_key_from_uuid(instance.uuid, "_oauth2_refresh_token", app_config)
+        oauth2_refresh_token = trans.user_vault.read_secret(refresh_token_key)
+        if not oauth2_refresh_token:
+            raise InconsistentDatabase(
+                f"Failed to recover oauth2 refresh token from vault at location {refresh_token_key}, Galaxy is in an inconsistent state and probably requires admin intervention"
+            )
+        _inject_oauth2_access_token(implicit, oauth2_refresh_token, template_server_configuration)
+
+    return implicit
+
+
+def implicit_parameters_for_instance(
+    user_instance: HasConfigSecrets,
+    template_server_configuration: TemplateServerConfiguration,
+    vault: Vault,
+    app_config: UsesTemplatesAppConfig,
+) -> ImplicitConfigurationParameters:
+    implicit: ImplicitConfigurationParameters = {}
+
+    if template_server_configuration.oauth2_configuration:
+        refresh_token_key = user_instance.__class__.vault_key_from_uuid(
+            str(user_instance.uuid), "_oauth2_refresh_token", app_config
+        )
+        user_vault = UserVaultWrapper(vault, user_instance.user)
+        oauth2_refresh_token = user_vault.read_secret(refresh_token_key)
+        if not oauth2_refresh_token:
+            raise Exception("null refresh token key read from user vault")
+        _inject_oauth2_access_token(implicit, oauth2_refresh_token, template_server_configuration)
+
+    return implicit
+
+
+def _inject_oauth2_access_token(
+    implicit: ImplicitConfigurationParameters,
+    oauth2_refresh_token: str,
+    template_server_configuration: TemplateServerConfiguration,
+) -> None:
+    oauth2_client_pair = template_server_configuration.oauth2_client_pair
+    oauth2_configuration = template_server_configuration.oauth2_configuration
+    assert oauth2_client_pair
+    assert oauth2_configuration
+    response = config_templates.get_token_from_refresh_raw(
+        oauth2_refresh_token, oauth2_client_pair, oauth2_configuration
+    )
+    response.raise_for_status()
+    implicit["oauth2_access_token"] = response.json()["access_token"]
+
+
+def oauth2_refresh_token_status(
+    template_server_configuration: TemplateServerConfiguration, exception: Optional[Exception]
+) -> Optional[PluginAspectStatus]:
+    if not template_server_configuration.uses_oauth2:
+        # no oauth enabled, don't report a status associated with
+        return None
+    else:
+        if not exception:
+            return PluginAspectStatus(
+                state="ok", message="OAuth2 secret refresh token generated an access token for this resource"
+            )
+        else:
+            return PluginAspectStatus(
+                state="not_ok",
+                message=f"OAuth2 secret refresh token failed to generate an access token for this resource: {exception}",
+            )
+
+
+def oauth2_redirect_uri(trans: SessionRequestContext) -> str:
+    galaxy_root = trans.request.url_path
+    redirect_uri = f"{galaxy_root}oauth2_callback"
+    return redirect_uri

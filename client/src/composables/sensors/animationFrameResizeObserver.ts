@@ -1,5 +1,4 @@
-import type { MaybeRefOrGetter } from "@vueuse/core";
-import { resolveUnref } from "@vueuse/core";
+import { type MaybeRefOrGetter, resolveUnref } from "@vueuse/core";
 
 import { useAnimationFrame } from "./animationFrame";
 

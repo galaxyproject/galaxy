@@ -82,6 +82,11 @@ const baseRules = {
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
+
+    "@typescript-eslint/consistent-type-imports": [
+        "error",
+        { prefer: "type-imports", fixStyle: "inline-type-imports" },
+    ],
 };
 
 const baseExtends = [

@@ -201,11 +201,8 @@ class RDMFilesSource(BaseFilesSource):
         return effective_props
 
     def get_authorization_token(self, user_context: OptionalUserContext) -> Optional[str]:
-        token = None
-        if user_context:
-            effective_props = self._serialization_props(user_context)
-            token = effective_props.get("token")
-        return token
+        effective_props = self._serialization_props(user_context)
+        return effective_props.get("token")
 
     def get_public_name(self, user_context: OptionalUserContext) -> Optional[str]:
         effective_props = self._serialization_props(user_context)

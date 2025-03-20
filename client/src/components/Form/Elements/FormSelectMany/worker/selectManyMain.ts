@@ -1,7 +1,7 @@
-import type { UnwrapNestedRefs } from "vue";
+import { type UnwrapNestedRefs } from "vue";
 
 import { filterOptions } from "./filterOptions";
-import type { SelectOption, SelectValue, UseSelectManyOptions, UseSelectManyReturn } from "./selectMany";
+import { type SelectOption, type SelectValue, type UseSelectManyOptions, type UseSelectManyReturn } from "./selectMany";
 
 export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNestedRefs<UseSelectManyReturn> {
     const unselectedOptionsFiltered: SelectOption[] = [];
@@ -41,6 +41,19 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
                 moreUnselected = true;
             }
         }
+    }
+
+    // In case maintainSelectionOrder is enabled, we need to maintain the order from selectedValues
+    if (options.maintainSelectionOrder) {
+        const selectedValuesArray = Array.from(selectedValues);
+        selectedOptionsFiltered.sort((a, b) => {
+            const aAsString = stringifyObject(a.value);
+            const bAsString = stringifyObject(b.value);
+
+            const aIndex = selectedValuesArray.findIndex((v) => v === aAsString);
+            const bIndex = selectedValuesArray.findIndex((v) => v === bAsString);
+            return aIndex - bIndex;
+        });
     }
 
     return {

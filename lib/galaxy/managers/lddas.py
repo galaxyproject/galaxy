@@ -4,20 +4,23 @@ from typing import (
     Optional,
 )
 
-from galaxy import model
 from galaxy.managers import base as manager_base
 from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.model import (
+    LibraryDatasetDatasetAssociation,
+    User,
+)
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
 
-class LDDAManager(DatasetAssociationManager):
+class LDDAManager(DatasetAssociationManager[LibraryDatasetDatasetAssociation]):
     """
     A fairly sparse manager for LDDAs.
     """
 
-    model_class = model.LibraryDatasetDatasetAssociation
+    model_class = LibraryDatasetDatasetAssociation
 
     def __init__(self, app: MinimalManagerApp):
         """
@@ -25,16 +28,16 @@ class LDDAManager(DatasetAssociationManager):
         """
         super().__init__(app)
 
-    def get(self, trans, id: int, check_accessible=True) -> model.LibraryDatasetDatasetAssociation:
+    def get(self, trans, id: int, check_accessible=True) -> LibraryDatasetDatasetAssociation:
         return manager_base.get_object(
             trans, id, "LibraryDatasetDatasetAssociation", check_ownership=False, check_accessible=check_accessible
         )
 
-    def is_owner(self, item, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_owner(self, item, user: Optional[User], **kwargs: Any) -> bool:
         """
         Return True if user owns the item.
         """
-        assert isinstance(item, model.LibraryDatasetDatasetAssociation)
+        assert isinstance(item, LibraryDatasetDatasetAssociation)
         if self.app.config.is_admin_user(user):
             return True
         return item.user == user

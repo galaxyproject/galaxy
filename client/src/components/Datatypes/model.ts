@@ -1,4 +1,4 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 export type DatatypesCombinedMap = components["schemas"]["DatatypesCombinedMap"];
 
@@ -38,5 +38,11 @@ export class DatatypesMapperModel {
 
     isSubTypeOfAny(child: string, parents: DatatypesCombinedMap["datatypes"]): boolean {
         return parents.some((parent) => this.isSubType(child, parent));
+    }
+
+    /** For classes like `galaxy.datatypes.{parent}.{extension}`, get the extension's parent */
+    getParentDatatype(extension: string) {
+        const fullClassName = this.datatypesMapping.ext_to_class_name[extension];
+        return fullClassName?.split(".")[2];
     }
 }

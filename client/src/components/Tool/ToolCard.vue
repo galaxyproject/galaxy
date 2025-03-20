@@ -118,7 +118,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 
 <template>
     <div class="position-relative">
-        <div class="underlay sticky-top" />
+        <div class="ui-form-header-underlay sticky-top" />
         <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
@@ -186,7 +186,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
         <div>
             <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
-                <ToolHelp :content="props.options.help" />
+                <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 
             <ToolTutorialRecommendations
@@ -209,19 +209,6 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
-
-.underlay::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: -$margin-h;
-    left: -0.5rem;
-    right: -0.5rem;
-    height: 50px;
-    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
-}
-
 .fa-wrench {
     cursor: unset;
 }

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { getShortToolId } from "@/utils/tool";
 
@@ -19,8 +19,6 @@ const props = defineProps<{
 
 const toolHelpTag = "tool-help";
 
-const helpFetcher = fetcher.path("/api/help/forum/search").method("get").create();
-
 const topics = ref<HelpForumTopic[]>([]);
 const posts = ref<HelpForumPost[]>([]);
 const helpAvailable = computed(() => topics.value.length > 0);
@@ -31,12 +29,17 @@ const shortToolId = computed(() => getShortToolId(props.toolId));
 const query = computed(() => `tags:${shortToolId.value}+${toolHelpTag} status:solved`);
 
 onMounted(async () => {
-    const response = await helpFetcher({ query: query.value });
+    const { data, error } = await GalaxyApi().GET("/api/help/forum/search", {
+        params: {
+            query: { query: query.value },
+        },
+    });
+    if (error) {
+        console.error("Error fetching help forum data", error);
+    }
 
-    const data = response.data;
-
-    topics.value = (data.topics ?? []) as HelpForumTopic[];
-    posts.value = data.posts ?? [];
+    topics.value = data?.topics ?? [];
+    posts.value = data?.posts ?? [];
 });
 
 const displayCount = 5;

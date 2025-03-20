@@ -2,12 +2,23 @@ import importlib
 import logging
 from inspect import getfullargspec
 from types import ModuleType
+from typing import (
+    Callable,
+    TYPE_CHECKING,
+)
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.util.submodules import import_submodules
 from .rule_helper import RuleHelper
+
+if TYPE_CHECKING:
+    from galaxy.jobs import (
+        JobConfiguration,
+        JobDestination,
+        JobWrapper,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +63,12 @@ class JobRunnerMapper:
 
     rules_module: ModuleType
 
-    def __init__(self, job_wrapper, url_to_destination, job_config):
+    def __init__(
+        self,
+        job_wrapper: "JobWrapper",
+        url_to_destination: Callable[[str], "JobDestination"],
+        job_config: "JobConfiguration",
+    ):
         self.job_wrapper = job_wrapper
         self.url_to_destination = url_to_destination
         self.job_config = job_config
@@ -129,7 +145,7 @@ class JobRunnerMapper:
         param_values = job.get_param_values(app, ignore_errors=True)
         return param_values
 
-    def __convert_url_to_destination(self, url):
+    def __convert_url_to_destination(self, url: str):
         """
         Job runner URLs are deprecated, but dynamic mapper functions may still
         be returning them.  Runners are expected to be able to convert these to

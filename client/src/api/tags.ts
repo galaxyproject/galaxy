@@ -1,13 +1,18 @@
-import { components, fetcher } from "@/api/schema";
+import { type components, GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 type TaggableItemClass = components["schemas"]["TaggableItemClass"];
 
-const putItemTags = fetcher.path("/api/tags").method("put").create();
-
 export async function updateTags(itemId: string, itemClass: TaggableItemClass, itemTags?: string[]): Promise<void> {
-    await putItemTags({
-        item_id: itemId,
-        item_class: itemClass,
-        item_tags: itemTags,
+    const { error } = await GalaxyApi().PUT("/api/tags", {
+        body: {
+            item_id: itemId,
+            item_class: itemClass,
+            item_tags: itemTags,
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
 }

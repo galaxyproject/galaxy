@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class SlackPlugin(BaseGitPlugin):
-    """Send error report to Sentry."""
+    """Send error report to Slack."""
 
     plugin_type = "slack"
 

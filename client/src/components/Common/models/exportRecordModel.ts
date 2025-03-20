@@ -1,12 +1,11 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
 
-import type { components } from "@/api/schema";
-
-type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
-
-export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
-export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
-export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+import {
+    type ExportObjectRequestMetadata,
+    type ModelStoreFormat,
+    type ObjectExportTaskResponse,
+    type StoreExportPayload,
+} from "@/api";
 
 export interface ExportParams {
     readonly modelStoreFormat: ModelStoreFormat;
@@ -41,8 +40,8 @@ export interface ExportRecord {
 }
 
 export class ExportParamsModel implements ExportParams {
-    private _params: StoreExportPayload;
-    constructor(data: StoreExportPayload = {}) {
+    private _params: Partial<StoreExportPayload>;
+    constructor(data: Partial<StoreExportPayload> = {}) {
         this._params = data;
     }
 

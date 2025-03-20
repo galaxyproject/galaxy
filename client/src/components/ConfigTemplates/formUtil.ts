@@ -1,12 +1,13 @@
-import type {
-    Instance,
-    PluginStatus,
-    SecretData,
-    TemplateSecret,
-    TemplateSummary,
-    TemplateVariable,
-    VariableData,
-    VariableValueType,
+import {
+    type CreateInstancePayload,
+    type Instance,
+    type PluginStatus,
+    type SecretData,
+    type TemplateSecret,
+    type TemplateSummary,
+    type TemplateVariable,
+    type VariableData,
+    type VariableValueType,
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
@@ -39,7 +40,7 @@ export function metadataFormEntryDescription(what: string): FormEntry {
     };
 }
 
-export function templateVariableFormEntry(variable: TemplateVariable, variableValue: VariableValueType): FormEntry {
+export function templateVariableFormEntry(variable: TemplateVariable, variableValue?: VariableValueType): FormEntry {
     const common_fields = {
         name: variable.name,
         label: variable.label ?? variable.name,
@@ -139,7 +140,7 @@ export function createTemplateForm(template: TemplateSummary, what: string): For
     return form;
 }
 
-export function createFormDataToPayload(template: TemplateSummary, formData: any) {
+export function createFormDataToPayload(template: TemplateSummary, formData: any): CreateInstancePayload {
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];
     const variableData: VariableData = {};
@@ -155,7 +156,7 @@ export function createFormDataToPayload(template: TemplateSummary, formData: any
     }
     const name: string = formData._meta_name;
     const description: string = formData._meta_description;
-    const payload = {
+    const payload: CreateInstancePayload = {
         name: name,
         description: description,
         secrets: secretData,
@@ -166,7 +167,7 @@ export function createFormDataToPayload(template: TemplateSummary, formData: any
     return payload;
 }
 
-export function formDataTypedGet(variableDefinition: TemplateVariable, formData: any): VariableValueType {
+export function formDataTypedGet(variableDefinition: TemplateVariable, formData: any): VariableValueType | undefined {
     // galaxy form library doesn't type values traditionally, so add a typed
     // access to the data if coming back as string. Though it does seem to be
     // typed properly - this might not be needed anymore?

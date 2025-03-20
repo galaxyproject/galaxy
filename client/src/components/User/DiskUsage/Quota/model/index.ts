@@ -1,1 +1,1 @@
-export { QuotaUsage, UserQuotaUsageData } from "./QuotaUsage";
+export { type QuotaUsage, toQuotaUsage } from "./QuotaUsage";

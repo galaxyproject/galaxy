@@ -1,3 +1,4 @@
+import os
 from typing import (
     Callable,
     Dict,
@@ -5,6 +6,8 @@ from typing import (
     Union,
 )
 from unittest.mock import Mock
+
+from galaxy.util import galaxy_directory
 
 
 def mock_trans(has_user=True, is_admin=False):
@@ -26,3 +29,11 @@ def t_data_downloader_for(content: Union[Dict[Optional[str], bytes], bytes]) -> 
             return content
 
     return get_content
+
+
+def functional_test_tool_directory() -> str:
+    return os.path.join(galaxy_directory(), "test/functional/tools")
+
+
+def functional_test_tool_path(test_path: str) -> str:
+    return os.path.join(functional_test_tool_directory(), test_path)

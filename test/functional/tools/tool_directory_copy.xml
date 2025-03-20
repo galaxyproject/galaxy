@@ -1,0 +1,16 @@
+<tool id="tool_directory_copy" name="tool_directory_copy" version="0.1.0" profile="24.2">
+    <!-- Copy a directory to a new location. -->
+    <command><![CDATA[
+cp -r '$__tool_directory__/realtime/simple' '$output_directory.extra_files_path'
+    ]]></command>
+    <outputs>
+        <data name="output_directory" format="directory" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output_directory" ftype="directory">
+                <extra_files type="file" name="Dockerfile" md5="ed0e3613e45ca9111121f78643afbb52"></extra_files>
+            </output>
+        </test>
+    </tests>
+</tool>

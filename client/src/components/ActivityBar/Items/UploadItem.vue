@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 
@@ -6,16 +7,17 @@ import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
 import { useUploadStore } from "@/stores/uploadStore";
 import Query from "@/utils/query-string-parsing.js";
 
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
-    icon: string;
+    icon: IconDefinition;
     tooltip: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
@@ -39,6 +41,7 @@ function onUploadModal() {
 <template>
     <ActivityItem
         :id="id"
+        :activity-bar-id="props.activityBarId"
         :title="title"
         :tooltip="tooltip"
         :icon="icon"

@@ -1,114 +1,78 @@
+<script setup lang="ts">
+import { BLink, BProgress, BProgressBar } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
+
+import { isRegisteredUser } from "@/api";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+import { bytesToString } from "@/utils/utils";
+
+const { config } = useConfig();
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+
+const hasQuota = computed<boolean>(() => {
+    const quotasEnabled = config.value.enable_quotas ?? false;
+    const quotaLimited = (isRegisteredUser(currentUser.value) && currentUser.value.quota !== "unlimited") ?? false;
+    return quotasEnabled && quotaLimited;
+});
+
+const quotaLimit = computed(() => (isRegisteredUser(currentUser.value) && currentUser.value.quota) ?? null);
+
+const totalUsageString = computed(() => {
+    const total = currentUser.value?.total_disk_usage ?? 0;
+    return bytesToString(total, true);
+});
+
+const usage = computed(() => {
+    if (hasQuota.value) {
+        return currentUser.value?.quota_percent ?? 0;
+    }
+    return currentUser.value?.total_disk_usage ?? 0;
+});
+
+const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
+
+const quotaTitle = computed(() =>
+    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"
+);
+
+const variant = computed(() => {
+    if (!hasQuota.value || usage.value < 80) {
+        return "success";
+    } else if (usage.value < 95) {
+        return "warning";
+    }
+    return "danger";
+});
+</script>
+
 <template>
-    <div>
-        <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
-            <b-link
-                v-b-tooltip.hover.left
-                to="/storage"
-                :disabled="isAnonymous"
-                class="ml-auto"
-                :title="title"
-                data-description="storage dashboard link">
-                {{ usingString + " " + totalUsageString }}
-            </b-link>
-        </div>
-        <div v-else class="quota-meter d-flex align-items-center">
-            <b-link
-                v-b-tooltip.hover.left
-                class="quota-progress"
-                :disabled="isAnonymous"
-                to="/storage"
-                :title="title"
-                data-description="storage dashboard link">
-                <b-progress :max="100">
-                    <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
-                </b-progress>
-                <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
-            </b-link>
-        </div>
+    <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
+        <BLink class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
+            <BProgress :max="100">
+                <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
+            </BProgress>
+            <span>
+                <span v-localize>Using</span>
+                <span v-if="hasQuota">
+                    <span>{{ usage.toFixed(0) }}%</span>
+                    <span v-if="quotaLimit !== null">of {{ quotaLimit }}</span>
+                </span>
+                <span v-else>{{ totalUsageString }}</span>
+            </span>
+        </BLink>
     </div>
 </template>
 
-<script>
-import { mapState } from "pinia";
-import { bytesToString } from "utils/utils";
-
-import { useConfigStore } from "@/stores/configurationStore";
-import { useUserStore } from "@/stores/userStore";
-
-export default {
-    name: "QuotaMeter",
-    data() {
-        return {
-            usingString: this.l("Using"),
-        };
-    },
-    computed: {
-        ...mapState(useConfigStore, ["config"]),
-        ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
-        hasQuota() {
-            const quotasEnabled = this.config?.enable_quotas ?? false;
-            const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
-
-            return quotasEnabled && quotaLimited;
-        },
-        usage() {
-            if (this.hasQuota) {
-                return this.currentUser?.quota_percent ?? 0;
-            } else {
-                return this.currentUser?.total_disk_usage ?? 0;
-            }
-        },
-        totalUsageString() {
-            const total = this.currentUser?.total_disk_usage ?? 0;
-            return bytesToString(total, true);
-        },
-        title() {
-            let details = "";
-            if (this.isAnonymous) {
-                details = this.l("Log in for details.");
-            } else {
-                details = this.l("Click for details.");
-            }
-
-            if (this.hasQuota) {
-                return this.usingString + " " + this.totalUsageString + ". " + details;
-            } else {
-                return details;
-            }
-        },
-        variant() {
-            if (!this.hasQuota || this.usage < 80) {
-                return "success";
-            } else if (this.usage < 95) {
-                return "warning";
-            } else {
-                return "danger";
-            }
-        },
-    },
-};
-</script>
-
 <style lang="scss" scoped>
-.quote-container {
+.quota-meter {
     position: relative;
     height: 100%;
+    margin-left: 0.5rem;
     margin-right: 0.5rem;
-}
-.quota-text {
-    @extend .quote-container;
-    background: var(--masthead-link-color);
-    padding-right: 0.5rem;
-    padding-left: 0.5rem;
-    a {
-        color: var(--masthead-text-color);
-        text-decoration: none;
-    }
-}
-.quota-meter {
-    @extend .quote-container;
     .quota-progress {
-        width: 100px;
+        width: 12rem;
         height: 1.4em;
         position: relative;
         & > * {
@@ -116,8 +80,6 @@ export default {
             width: 100%;
             height: 100%;
             text-align: center;
-        }
-        & > span {
             line-height: 1.4em;
             pointer-events: none;
         }

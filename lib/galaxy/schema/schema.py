@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import base64
 from datetime import (
     date,
     datetime,
@@ -28,6 +29,7 @@ from pydantic import (
     RootModel,
     UUID4,
 )
+from pydantic_core import core_schema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -48,6 +50,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.util.sanitize_html import sanitize_html
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
@@ -362,7 +365,7 @@ class CreatedUserModel(UserModel, DiskUsageUserModel):
 
 
 class AnonUserModel(DiskUsageUserModel):
-    quota_percent: Any = QuotaPercentField
+    quota_percent: Optional[float] = QuotaPercentField
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
@@ -371,8 +374,16 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     preferences: Dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     quota: str = Field(default=..., title="Quota", description="Quota applicable to the user")
-    quota_bytes: Any = Field(default=..., title="Quota in bytes", description="Quota applicable to the user in bytes.")
+    quota_bytes: Optional[int] = Field(
+        default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
+    )
     tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
+
+
+class UserUpdatePayload(Model):
+    active: Annotated[Optional[bool], Field(None, title="Active", description="User is active")]
+    username: Annotated[Optional[str], Field(None, title="Username", description="The name of the user.")]
+    preferred_object_store_id: Annotated[Optional[str], PreferredObjectStoreIdField]
 
 
 class UserCreationPayload(Model):
@@ -1442,6 +1453,18 @@ AnyHistoryView = Annotated[
 ]
 
 
+class UpdateHistoryPayload(Model):
+    name: Optional[str] = None
+    annotation: Optional[str] = None
+    tags: Optional[TagCollection] = None
+    published: Optional[bool] = None
+    importable: Optional[bool] = None
+    deleted: Optional[bool] = None
+    purged: Optional[bool] = None
+    genome_build: Optional[str] = None
+    preferred_object_store_id: Optional[str] = None
+
+
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
         default=True,
@@ -1893,12 +1916,24 @@ class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
     pass
 
 
-AnyArchivedHistoryView = Union[
-    ArchivedHistorySummary,
-    ArchivedHistoryDetailed,
-    # Any will cover those cases in which only specific `keys` are requested
-    # otherwise the validation will fail because the required fields are not returned
-    Any,
+@partial_model()
+class CustomArchivedHistoryView(CustomHistoryView, ExportAssociationData):
+    """Archived History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter.
+    """
+
+    pass
+
+
+AnyArchivedHistoryView = Annotated[
+    Union[
+        CustomArchivedHistoryView,
+        ArchivedHistoryDetailed,
+        ArchivedHistorySummary,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 
@@ -2134,6 +2169,13 @@ class JobMetric(Model):
             }
         }
     )
+
+
+class WorkflowJobMetric(JobMetric):
+    tool_id: str
+    job_id: str
+    step_index: int
+    step_label: Optional[str]
 
 
 class JobMetricCollection(RootModel):
@@ -3083,7 +3125,7 @@ class LibraryAvailablePermissions(Model):
     roles: List[BasicRoleModel] = Field(
         ...,
         title="Roles",
-        description="A list available roles that can be assigned to a particular permission.",
+        description="A list containing available roles that can be assigned to a particular permission.",
     )
     page: int = Field(
         ...,
@@ -3232,30 +3274,65 @@ class DatasetAssociationRoles(Model):
     )
 
 
-class UpdateDatasetPermissionsPayload(Model):
+class UpdateDatasetPermissionsPayloadBase(Model):
     action: Optional[DatasetPermissionAction] = Field(
         DatasetPermissionAction.set_permissions,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )
-    access_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+
+
+AccessIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Access IDs",
         description="A list of role encoded IDs defining roles that should have access permission on the dataset.",
-    )
-    manage_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="manage_ids[]",
+    ),
+]
+
+ManageIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Manage IDs",
         description="A list of role encoded IDs defining roles that should have manage permission on the dataset.",
-    )
-    modify_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="modify_ids[]",
+    ),
+]
+
+ModifyIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Modify IDs",
         description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
-    )
+    ),
+]
+
+
+class UpdateDatasetPermissionsPayload(UpdateDatasetPermissionsPayloadBase):
+    access_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="access_ids[]")] = None
+    manage_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="manage_ids[]")] = None
+    modify_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="modify_ids[]")] = None
+
+
+class UpdateDatasetPermissionsPayloadAliasB(UpdateDatasetPermissionsPayloadBase):
+    access: AccessIdsField = None
+    manage: ManageIdsField = None
+    modify: ModifyIdsField = None
+
+
+class UpdateDatasetPermissionsPayloadAliasC(UpdateDatasetPermissionsPayloadBase):
+    access_ids: AccessIdsField = None
+    manage_ids: ManageIdsField = None
+    modify_ids: ModifyIdsField = None
+
+
+UpdateDatasetPermissionsPayloadAliases = Union[
+    UpdateDatasetPermissionsPayload,
+    UpdateDatasetPermissionsPayloadAliasB,
+    UpdateDatasetPermissionsPayloadAliasC,
+]
 
 
 @partial_model()
@@ -3269,7 +3346,7 @@ class HDACustom(HDADetailed):
     # TODO: Fix this workaround for partial_model not supporting UUID fields for some reason.
     # The error otherwise is: `PydanticUserError: 'UuidVersion' cannot annotate 'nullable'.`
     # Also ignoring mypy complaints about the type redefinition.
-    uuid: Optional[UUID4]  # type: ignore
+    uuid: Optional[UUID4]  # type: ignore[assignment]
 
     # Add fields that are not part of any view here
     visualizations: Annotated[
@@ -3608,7 +3685,7 @@ class PageSummaryBase(Model):
         ...,  # Required
         title="Identifier",
         description="The title slug for the page URL, must be unique.",
-        pattern=r"^[a-z0-9\-]+$",
+        pattern=r"^[^/:?#]+$",
     )
 
 
@@ -3629,6 +3706,19 @@ class MaterializeDatasetInstanceAPIRequest(Model):
 
 class MaterializeDatasetInstanceRequest(MaterializeDatasetInstanceAPIRequest):
     history_id: DecodedDatabaseIdField
+
+
+class ChatPayload(Model):
+    query: str = Field(
+        ...,
+        title="Query",
+        description="The query to be sent to the chatbot.",
+    )
+    context: Optional[str] = Field(
+        default="",
+        title="Context",
+        description="The context for the chatbot.",
+    )
 
 
 class CreatePagePayload(PageSummaryBase):
@@ -3666,6 +3756,22 @@ class AsyncTaskResultSummary(Model):
         None,
         title="Queue of task being done derived from Celery AsyncResult",
     )
+
+
+ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
+
+
+class ToolRequestState(str, Enum):
+    NEW = "new"
+    SUBMITTED = "submitted"
+    FAILED = "failed"
+
+
+class ToolRequestModel(Model):
+    id: EncodedDatabaseIdField = ToolRequestIdField
+    request: Dict[str, Any]
+    state: ToolRequestState
+    state_message: Optional[str]
 
 
 class AsyncFile(Model):
@@ -3732,6 +3838,18 @@ GenerateTimeField = Field(
 )
 
 
+class OAuth2State(BaseModel):
+    route: str
+    nonce: str
+
+    def encode(self) -> str:
+        return base64.b64encode(self.model_dump_json().encode("utf-8")).decode("utf-8")
+
+    @staticmethod
+    def decode(base64_param: str) -> "OAuth2State":
+        return OAuth2State.model_validate_json(base64.b64decode(base64_param.encode("utf-8")))
+
+
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
@@ -3747,14 +3865,74 @@ class PageSummaryList(RootModel):
     )
 
 
-class DatasetSummary(Model):
-    id: EncodedDatabaseIdField
-    create_time: Optional[datetime] = CreateTimeField
-    update_time: Optional[datetime] = UpdateTimeField
-    state: DatasetStateField
-    deleted: bool
-    purged: bool
-    purgable: bool
-    file_size: int
-    total_size: int
+class LandingRequestState(str, Enum):
+    UNCLAIMED = "unclaimed"
+    CLAIMED = "claimed"
+
+
+ToolLandingRequestIdField = Field(title="ID", description="Encoded ID of the tool landing request")
+WorkflowLandingRequestIdField = Field(title="ID", description="Encoded ID of the workflow landing request")
+
+
+class CreateToolLandingRequestPayload(Model):
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+    public: bool = False
+
+
+class CreateWorkflowLandingRequestPayload(Model):
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+    public: bool = Field(
+        False,
+        description="If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.",
+    )
+
+
+class ClaimLandingPayload(Model):
+    client_secret: Optional[str] = None
+
+
+class ToolLandingRequest(Model):
     uuid: UuidField
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    state: LandingRequestState
+
+
+class WorkflowLandingRequest(Model):
+    uuid: UuidField
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    request_state: Dict[str, Any]
+    state: LandingRequestState
+
+
+class MessageExceptionModel(BaseModel):
+    err_msg: str
+    err_code: int
+
+
+class SanitizedString(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        if isinstance(value, str):
+            return cls(sanitize_html(value))
+        raise TypeError("string required")
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+            serialization=core_schema.to_string_ser_schema(),
+        )

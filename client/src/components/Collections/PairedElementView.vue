@@ -1,69 +1,58 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onMounted, ref, watch } from "vue";
+import { BButton } from "bootstrap-vue";
+import { ref, watch } from "vue";
 
+import type { HDASummary } from "@/api";
 import localize from "@/utils/localization";
 
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 
-library.add(faUnlink);
-
 interface Props {
-    // TODO: Define the type of the pair prop
     pair: {
         name: string;
-        forward: { name: string };
-        reverse: { name: string };
+        forward: HDASummary;
+        reverse: HDASummary;
     };
-    unlinkFn: () => void;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (event: "onPairRename", name: string): void;
+    (event: "onUnpair"): void;
 }>();
 
-const name = ref("");
+const elementName = ref(props.pair.name);
 
-watch(
-    () => props.pair,
-    () => {
-        name.value = props.pair.name;
-    }
-);
-
-watch(name, () => {
-    emit("onPairRename", name.value);
-});
-
-onMounted(() => {
-    name.value = props.pair.name;
+watch(elementName, () => {
+    emit("onPairRename", elementName.value);
 });
 </script>
 
 <template>
-    <div>
-        <li class="dataset paired">
+    <li class="d-flex align-items-center justify-content-between">
+        <div class="dataset paired w-100">
             <span class="forward-dataset-name flex-column">
                 {{ pair.forward.name }}
+                <FontAwesomeIcon :icon="faArrowRight" fixed-width />
             </span>
 
             <span class="pair-name-column flex-column">
                 <span class="pair-name">
-                    <ClickToEdit v-model="name" :title="localize('Click to rename')" />
+                    <ClickToEdit v-model="elementName" :title="localize('Click to rename')" />
                 </span>
             </span>
 
             <span class="reverse-dataset-name flex-column">
+                <FontAwesomeIcon :icon="faArrowLeft" fixed-width />
                 {{ pair.reverse.name }}
             </span>
-        </li>
+        </div>
 
-        <button class="unpair-btn" @click="unlinkFn">
+        <BButton class="unpair-btn" variant="link" @click="emit('onUnpair')">
             <FontAwesomeIcon :icon="faUnlink" :title="localize('Unpair')" />
-        </button>
-    </div>
+        </BButton>
+    </li>
 </template>

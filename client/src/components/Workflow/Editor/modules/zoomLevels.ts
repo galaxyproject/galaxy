@@ -1,4 +1,4 @@
-import type { Last } from "types/utilityTypes";
+import { type Last } from "types/utilityTypes";
 
 export const zoomLevels = [
     0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5,

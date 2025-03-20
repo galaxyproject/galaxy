@@ -34,6 +34,7 @@ from galaxy.celery.base_task import (
     GalaxyTaskBeforeStartUserRateLimitPostgres,
     GalaxyTaskBeforeStartUserRateLimitStandard,
 )
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.files import (
@@ -147,6 +148,7 @@ from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
+from galaxy.tools.evaluation import ToolTemplatingException
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import (
@@ -205,7 +207,7 @@ class HaltableContainer(Container):
 
 
 class SentryClientMixin:
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     application_stack: ApplicationStack
 
     def configure_sentry_client(self):
@@ -227,12 +229,34 @@ class SentryClientMixin:
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=getattr(logging, event_level),  # Send errors as events
             )
+
+            def before_send(event, hint):
+                if "exc_info" in hint:
+                    exc_type, exc_value, tb = hint["exc_info"]
+                    if isinstance(exc_value, ToolTemplatingException):
+                        # We set a custom fingerprint that may look like:
+                        # ["Error occurred while {action_str.lower()} for tool '{tool.id}'",
+                        #  "1.0",
+                        #  "cannot find 'file_name' while searching for 'species_chromosomes.file_name'"]
+                        # If we don't do this issues are never properly grouped since by default the calling stack is inspected,
+                        # and that is always unique in cheetah as it is dynamically generated.
+                        event["fingerprint"] = [str(exc_value), str(exc_value.tool_version), str(exc_value.__cause__)]
+                        event.setdefault("tags", {}).update(
+                            {
+                                "tool_is_latest": exc_value.is_latest,
+                                "tool_id": str(exc_value.tool_id),
+                                "tool_version": exc_value.tool_version,
+                            }
+                        )
+                return event
+
             self.sentry_client = sentry_sdk.init(
                 self.config.sentry_dsn,
                 release=f"{self.config.version_major}.{self.config.version_minor}",
                 integrations=[sentry_logging],
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
                 ca_certs=self.config.sentry_ca_certs,
+                before_send=before_send,
             )
 
 
@@ -240,7 +264,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     """Encapsulates the state of a minimal Galaxy application"""
 
     model: GalaxyModelMapping
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     tool_cache: ToolCache
     job_config: jobs.JobConfiguration
     toolbox_search: ToolBoxSearch
@@ -264,7 +288,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.name = "galaxy"
         self.is_webapp = False
         # Read config file and check for errors
-        self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
+        self.config = self._register_singleton(GalaxyAppConfiguration, GalaxyAppConfiguration(**kwargs))
         self.config.check()
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
@@ -632,7 +656,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+            self.security_agent.sa_session, permitted_actions=self.security_agent.permitted_actions
         )
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
@@ -642,6 +666,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
             InstalledRepositoryManager, InstalledRepositoryManager(self)
         )
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
+        self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         self._configure_datatypes_registry(
             use_converters=use_converters,
             use_display_applications=use_display_applications,
@@ -819,7 +844,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         # We need InteractiveToolManager before the job handler starts
         self.interactivetool_manager = InteractiveToolManager(self)
         # Start the job manager

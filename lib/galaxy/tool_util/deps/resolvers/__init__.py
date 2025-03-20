@@ -5,7 +5,6 @@ import os.path
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
 )
 from typing import (
     Any,
@@ -237,7 +236,8 @@ class SpecificationAwareDependencyResolver(metaclass=ABCMeta):
 class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolver):
     """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def _specification_pattern(self):
         """Pattern of URI to match against."""
 
@@ -275,7 +275,8 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
         Return shell commands to enable this dependency.
         """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def exact(self):
         """Return true if version information wasn't discarded to resolve
         the dependency.

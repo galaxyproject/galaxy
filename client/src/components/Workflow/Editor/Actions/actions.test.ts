@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 
-import { LazyUndoRedoAction, UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
+import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -269,11 +269,8 @@ describe("Workflow Undo Redo Actions", () => {
 
         it("RemoveStepAction", () => {
             const step = addStep();
-            const showAttributesCallback = jest.fn();
-            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
+            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, step);
             testUndoRedo(action);
-
-            expect(showAttributesCallback).toBeCalledTimes(2);
         });
 
         it("CopyStepAction", () => {

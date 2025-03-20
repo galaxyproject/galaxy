@@ -141,7 +141,7 @@ preferences:
         description: Your Onedata account
         inputs:
             - name: onezone_domain
-              label: Domain of the Onezone service (e.g. datahub.egi.eu)
+              label: Domain of the Onezone service (e.g. datahub.egi.eu). The minimal supported Onezone version is 21.02.4.
               type: text
               required: False
             - name: access_token

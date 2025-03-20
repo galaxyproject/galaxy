@@ -36,11 +36,12 @@ and that you have configured your remotes so that you can push to the configured
 The script should abort gracefully if that is not the case.
 
 Follow these steps:
+    0. Enable the push URL of the galaxyproject git remote if you have disabled it (e.g. `git remote set-url --push upstream git@github.com:galaxyproject/galaxy.git`) and disable any pre-commit hooks you might have
     1. Check out the branch from which you want to create a release, e.g. release_23.0: `git checkout release_23.0`
     2. Activate your local virtualenv with Galaxy's dev requirements: `. .venv/bin/activate`
     3. Update Galaxy's dev dependencies (if you haven't done this in a while): `pip install -r lib/galaxy/dependencies/dev-requirements.txt`
     4. You need a personal access token from github (only needs public read permissions).
-    5. `GITHUB_AUTH=$YOUR_PAT_FROM_STEP_3 galaxy-release-util create-release --new-version 23.0.1 --last-commit v23.0`
+    5. `GITHUB_AUTH=$YOUR_PAT_FROM_STEP_4 galaxy-release-util create-release --new-version 23.0.1 --last-commit v23.0`
     6. Follow along the prompts and make sure the proposed changes look correct
 
 When the script is finished you should find a new tag in the GitHub interface, as well as updated release and dev branches.

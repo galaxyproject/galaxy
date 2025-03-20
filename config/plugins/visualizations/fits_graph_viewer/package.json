@@ -1,0 +1,21 @@
+{
+    "name": "fits-graph-visualization",
+    "version": "1.0.0",
+    "keywords": [
+        "galaxy",
+        "visualization"
+    ],
+    "main": "index.js",
+    "license": "AFL-3.0",
+    "dependencies": {
+        "astrovisjs": "0.9.92",
+        "webpack": "^5.94.0"
+    },
+    "devDependencies": {
+        "webpack-cli": "^5.1.4"
+    },
+    "scripts": {
+        "build": "npx webpack build --config webpack.prod.js --output-path=./static"
+    }
+}
+

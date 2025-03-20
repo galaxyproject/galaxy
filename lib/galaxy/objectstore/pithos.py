@@ -149,7 +149,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
 
     # No need to overwrite "shutdown"
 
-    def _exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs) -> bool:
         """Check if file exists, fix if file in cache and not on Pithos+
         :returns: weather the file exists remotely or in cache
         """

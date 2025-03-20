@@ -23,10 +23,10 @@ from typing import (
 
 import yaml
 
+from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util.verify.interactor import (
     DictClientTestConfig,
     GalaxyInteractorApi,
-    ToolTestDictsT,
     verify_tool,
 )
 
@@ -341,9 +341,11 @@ def build_case_references(
                     test_references.append(test_reference)
     else:
         assert tool_id
-        tool_test_dicts: ToolTestDictsT = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+        tool_test_dicts: List[ToolTestDescriptionDict] = galaxy_interactor.get_tool_tests(
+            tool_id, tool_version=tool_version
+        )
         for i, tool_test_dict in enumerate(tool_test_dicts):
-            this_tool_version = tool_test_dict.get("tool_version", tool_version)
+            this_tool_version = tool_test_dict.get("tool_version") or tool_version
             this_test_index = i
             if test_index == ALL_TESTS or i == test_index:
                 test_reference = TestReference(tool_id, this_tool_version, this_test_index)

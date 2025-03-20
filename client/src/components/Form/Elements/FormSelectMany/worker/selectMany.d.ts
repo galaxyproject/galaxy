@@ -1,4 +1,4 @@
-import type { Ref } from "vue";
+import { type Ref } from "vue";
 
 export type SelectValue = Record<string, unknown> | string | number | null;
 
@@ -14,6 +14,7 @@ export interface UseSelectManyOptions {
     unselectedDisplayCount: Ref<number>;
     selectedDisplayCount: Ref<number>;
     caseSensitive: Ref<boolean>;
+    maintainSelectionOrder: Ref<boolean>;
 }
 
 export interface UseSelectManyReturn {

@@ -589,8 +589,9 @@ galaxy:
 
   # Set to true to instruct Galaxy to install Conda from the web
   # automatically if it cannot find a local copy and conda_exec is not
-  # configured.
-  #conda_auto_init: true
+  # configured. The default is true if running Galaxy from source, and
+  # false if running from installed packages.
+  #conda_auto_init: false
 
   # You must set this to true if conda_prefix and job_working_directory
   # are not on the same volume, or some conda dependencies will fail to
@@ -720,15 +721,6 @@ galaxy:
 
   # Configured user file source templates embedded into Galaxy's config.
   #file_source_templates: null
-
-  # Configure URIs for user object stores to use either the object ID
-  # ('id') or UUIDs ('uuid'). Either is fine really, Galaxy doesn't
-  # typically expose database objects by 'id' but there isn't any
-  # obvious disadvantage to doing it in this case and it keeps user
-  # exposed URIs much smaller. The default of UUID feels a little more
-  # like a typical way to do this within Galaxy though. Do not change
-  # this value once user object stores have been created.
-  #user_config_templates_index_by: uuid
 
   # User defined object stores and file sources are saved in the
   # database with their last valid configuration. It may be the case
@@ -1113,8 +1105,8 @@ galaxy:
   # <cache_dir>.
   #object_store_cache_path: object_store_cache
 
-  # Default cache size for caching object stores if cache not configured
-  # for that object store entry.
+  # Default cache size, in GB, for caching object stores if the cache is
+  # not configured for that object store entry.
   #object_store_cache_size: -1
 
   # Set this to true to indicate in the UI that a user's object store
@@ -1228,7 +1220,7 @@ galaxy:
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
   # instance. If no message specified the warning box will not be shown.
-  #registration_warning_message: Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+  #registration_warning_message: Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.
 
   # User account activation feature global flag.  If set to false, the
   # rest of the Account activation configuration is ignored and user
@@ -1357,10 +1349,23 @@ galaxy:
   # subdomain. Defaults to "/".
   #interactivetools_base_path: /
 
-  # Map for interactivetool proxy.
+  # Map for the interactivetool proxy. Mappings are stored in a SQLite
+  # database file located on this path. As an alternative, you may also
+  # store them in any other RDBMS supported by SQLAlchemy using the
+  # option ``interactivetoolsproxy_map``, which overrides this one.
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Use a database supported by SQLAlchemy as map for the
+  # interactivetool proxy. When this option is set, the value of
+  # ``interactivetools_map`` is ignored. The value of this option must
+  # be a `SQLAlchemy database URL
+  # <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+  # Mappings are written to the table "gxitproxy" within the database.
+  # This value cannot match ``database_connection`` nor
+  # ``install_database_connection``.
+  #interactivetoolsproxy_map: null
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
@@ -2744,6 +2749,19 @@ galaxy:
   # <config_dir>.
   #workflow_schedulers_config_file: workflow_schedulers_conf.xml
 
+  # Workflows launched with URI/URL inputs that are not marked as
+  # 'deferred' are "materialized" (or undeferred) by the workflow
+  # scheduler. This might be a lengthy process. Setting this to 'True'
+  # will place the invocation back in the queue after materialization
+  # before scheduling the workflow so it is less likely to starve other
+  # workflow scheduling. Ideally, Galaxy would allow more fine grain
+  # control of handlers but until then, this provides a way to tip the
+  # balance between "doing more work" and "being more fair". The default
+  # here is pretty arbitrary - it has been to False to optimize Galaxy
+  # for automated, single user applications where "fairness" is mostly
+  # irrelevant.
+  #workflow_scheduling_separate_materialization_iteration: false
+
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the
   # number of jobs a user has dispatched to a given destination.  By
@@ -2864,6 +2882,13 @@ galaxy:
   # as threshold (above threshold: regular select fields will be used)
   #select_type_workflow_threshold: -1
 
+  # API key for OpenAI (https://openai.com/) to enable the wizard (or
+  # more?)
+  #openai_api_key: null
+
+  # OpenAI model to enable the wizard.
+  #openai_model: gpt-4o
+
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well
@@ -2974,4 +2999,19 @@ galaxy:
   # Enable the integration of the Galaxy Help Forum in the tool panel.
   # This requires the help_forum_api_url to be set.
   #enable_help_forum_tool_panel_integration: false
+
+  # Directory to store temporary files for file sources. This defaults
+  # to new_file_path if not set.
+  #file_source_temp_dir: null
+
+  # Default value for use_temp_files for webdav plugins that don't
+  # explicitly declare this.
+  #file_source_webdav_use_temp_files: true
+
+  # Number of seconds before file source content listings are refreshed.
+  # Shorter times will result in more queries while browsing a file
+  # sources. Longer times will result in fewer requests to file sources
+  # but outdated contents might be displayed to the user. Currently only
+  # affects s3fs file sources.
+  #file_source_listings_expiry_time: 60
 

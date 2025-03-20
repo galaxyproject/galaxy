@@ -634,7 +634,7 @@ steps:
         assert response.status_code == 400
         assert (
             response.json()["err_msg"]
-            == "parameter 'collection': the previously selected dataset collection has elements that are deleted."
+            == "Parameter 'collection': the previously selected dataset collection has elements that are deleted."
         )
 
     @pytest.mark.require_new_history

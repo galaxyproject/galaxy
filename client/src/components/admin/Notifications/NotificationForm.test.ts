@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import Vue from "vue";
+import type Vue from "vue";
 
 import NotificationForm from "./NotificationForm.vue";
 

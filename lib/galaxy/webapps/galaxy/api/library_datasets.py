@@ -27,6 +27,7 @@ from galaxy.managers import (
     roles,
 )
 from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -150,10 +151,12 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 page_limit = 10
             query = kwd.get("q", None)
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset, query, page, page_limit)
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(dict(id=role_id, name=displayed_name, type=role.type))
             return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise exceptions.RequestParameterInvalidException(
@@ -171,7 +174,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -199,7 +202,8 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         """
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
-        updated = self.ld_manager.update(trans, library_dataset, payload)
+        self.ld_manager.check_modifiable(trans, library_dataset)
+        updated = self.ld_manager.update(library_dataset, payload, trans=trans)
         serialized = self.ld_manager.serialize(trans, updated)
         return serialized
 
@@ -486,9 +490,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                     os.path.realpath(path),
                 )
                 raise exceptions.RequestParameterInvalidException("The given path is invalid.")
-            if trans.app.config.user_library_import_check_permissions and not full_path_permission_for_user(
-                full_dir, path, username
-            ):
+            if username is not None and not full_path_permission_for_user(full_dir, path, username):
                 log.error(
                     "User attempted to import a path that resolves to a path outside of their import dir: "
                     "%s -> %s and cannot be read by them.",

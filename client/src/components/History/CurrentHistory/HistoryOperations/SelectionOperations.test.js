@@ -1,26 +1,19 @@
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import SelectionOperations from "./SelectionOperations.vue";
 
-jest.mock("@/api/schema");
-
 const localVue = getLocalVue();
+
+const { server, http } = useServerMock();
 
 const FAKE_HISTORY_ID = "fake_history_id";
 const FAKE_HISTORY = { id: FAKE_HISTORY_ID, update_time: new Date() };
-const BULK_OPERATIONS_ENDPOINT = new RegExp(`/api/histories/${FAKE_HISTORY_ID}/contents/bulk`);
 const BULK_SUCCESS_RESPONSE = { success_count: 1, errors: [] };
-const BULK_ERROR_RESPONSE = {
-    success_count: 0,
-    errors: [{ error: "Error reason", item: { history_content_type: "dataset", id: "dataset_id" } }],
-};
 
 const NO_TASKS_CONFIG = {
     enable_celery_tasks: false,
@@ -39,7 +32,12 @@ const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
 async function mountSelectionOperationsWrapper(config) {
-    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json(config);
+        })
+    );
+
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
         propsData: {
@@ -49,6 +47,7 @@ async function mountSelectionOperationsWrapper(config) {
             selectionSize: 1,
             isQuerySelection: false,
             totalItemsInQuery: 5,
+            isMultiViewItem: false,
         },
         localVue,
         pinia,
@@ -58,18 +57,12 @@ async function mountSelectionOperationsWrapper(config) {
 }
 
 describe("History Selection Operations", () => {
-    let axiosMock;
     let wrapper;
 
     describe("With Celery Enabled", () => {
         beforeEach(async () => {
-            axiosMock = new MockAdapter(axios);
             wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG);
             await flushPromises();
-        });
-
-        afterEach(() => {
-            axiosMock.restore();
         });
 
         describe("Dropdown Menu", () => {
@@ -218,23 +211,18 @@ describe("History Selection Operations", () => {
 
             it("should display collection building options only on active (non-deleted) items", async () => {
                 const buildListOption = '[data-description="build list"]';
-                const buildPairOption = '[data-description="build pair"]';
                 const buildListOfPairsOption = '[data-description="build list of pairs"]';
                 await wrapper.setProps({ filterText: "visible:true deleted:false" });
                 expect(wrapper.find(buildListOption).exists()).toBe(true);
-                expect(wrapper.find(buildPairOption).exists()).toBe(true);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
                 await wrapper.setProps({ filterText: "deleted:true" });
                 expect(wrapper.find(buildListOption).exists()).toBe(false);
-                expect(wrapper.find(buildPairOption).exists()).toBe(false);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
                 await wrapper.setProps({ filterText: "visible:any deleted:false" });
                 expect(wrapper.find(buildListOption).exists()).toBe(true);
-                expect(wrapper.find(buildPairOption).exists()).toBe(true);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
                 await wrapper.setProps({ filterText: "deleted:any" });
                 expect(wrapper.find(buildListOption).exists()).toBe(false);
-                expect(wrapper.find(buildPairOption).exists()).toBe(false);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
             });
 
@@ -249,7 +237,11 @@ describe("History Selection Operations", () => {
 
         describe("Operation Run", () => {
             it("should emit event to disable selection", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_SUCCESS_RESPONSE);
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response(200).json(BULK_SUCCESS_RESPONSE);
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:show-selection");
                 wrapper.vm.hideSelected();
@@ -259,7 +251,11 @@ describe("History Selection Operations", () => {
             });
 
             it("should update operation-running state when running any operation that succeeds", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_SUCCESS_RESPONSE);
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response(200).json(BULK_SUCCESS_RESPONSE);
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
                 wrapper.vm.hideSelected();
@@ -273,7 +269,11 @@ describe("History Selection Operations", () => {
             });
 
             it("should update operation-running state to null when the operation fails", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(400);
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
                 wrapper.vm.hideSelected();
@@ -290,7 +290,11 @@ describe("History Selection Operations", () => {
             });
 
             it("should emit operation error event when the operation fails", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(400);
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");
                 wrapper.vm.hideSelected();
@@ -299,7 +303,15 @@ describe("History Selection Operations", () => {
             });
 
             it("should emit operation error event with the result when any item fail", async () => {
-                axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_ERROR_RESPONSE);
+                const BULK_ERROR_RESPONSE = {
+                    success_count: 0,
+                    errors: [{ error: "Error reason", item: { history_content_type: "dataset", id: "dataset_id" } }],
+                };
+                server.use(
+                    http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
+                        return response(200).json(BULK_ERROR_RESPONSE);
+                    })
+                );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");
                 wrapper.vm.hideSelected();
@@ -317,13 +329,8 @@ describe("History Selection Operations", () => {
 
     describe("With Celery Disabled", () => {
         beforeEach(async () => {
-            axiosMock = new MockAdapter(axios);
             wrapper = await mountSelectionOperationsWrapper(NO_TASKS_CONFIG);
             await flushPromises();
-        });
-
-        afterEach(() => {
-            axiosMock.restore();
         });
 
         describe("Dropdown Menu", () => {

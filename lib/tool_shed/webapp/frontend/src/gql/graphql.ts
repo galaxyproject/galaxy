@@ -20,6 +20,27 @@ export type Scalars = {
     DateTime: any
 }
 
+export type BooleanFilter = {
+    eq?: InputMaybe<Scalars["Boolean"]>
+    in?: InputMaybe<Array<InputMaybe<Scalars["Boolean"]>>>
+    nEq?: InputMaybe<Scalars["Boolean"]>
+    notIn?: InputMaybe<Array<InputMaybe<Scalars["Boolean"]>>>
+}
+
+export type DefaultDateTimeScalarFilter = {
+    eq?: InputMaybe<Scalars["DateTime"]>
+    in?: InputMaybe<Array<InputMaybe<Scalars["DateTime"]>>>
+    nEq?: InputMaybe<Scalars["DateTime"]>
+    notIn?: InputMaybe<Array<InputMaybe<Scalars["DateTime"]>>>
+}
+
+export type IdFilter = {
+    eq?: InputMaybe<Scalars["ID"]>
+    in?: InputMaybe<Array<InputMaybe<Scalars["ID"]>>>
+    nEq?: InputMaybe<Scalars["ID"]>
+    notIn?: InputMaybe<Array<InputMaybe<Scalars["ID"]>>>
+}
+
 /** An object with an ID */
 export type Node = {
     /** The ID of the object */
@@ -61,6 +82,7 @@ export type QueryNodeArgs = {
 export type QueryRelayCategoriesArgs = {
     after?: InputMaybe<Scalars["String"]>
     before?: InputMaybe<Scalars["String"]>
+    filter?: InputMaybe<RelayCategoryFilter>
     first?: InputMaybe<Scalars["Int"]>
     last?: InputMaybe<Scalars["Int"]>
     sort?: InputMaybe<Array<InputMaybe<RelayCategorySortEnum>>>
@@ -69,6 +91,7 @@ export type QueryRelayCategoriesArgs = {
 export type QueryRelayRepositoriesArgs = {
     after?: InputMaybe<Scalars["String"]>
     before?: InputMaybe<Scalars["String"]>
+    filter?: InputMaybe<RelayRepositoryFilter>
     first?: InputMaybe<Scalars["Int"]>
     last?: InputMaybe<Scalars["Int"]>
     sort?: InputMaybe<Array<InputMaybe<RelayRepositorySortEnum>>>
@@ -78,6 +101,7 @@ export type QueryRelayRepositoriesForCategoryArgs = {
     after?: InputMaybe<Scalars["String"]>
     before?: InputMaybe<Scalars["String"]>
     encodedId?: InputMaybe<Scalars["String"]>
+    filter?: InputMaybe<RelayRepositoryFilter>
     first?: InputMaybe<Scalars["Int"]>
     id?: InputMaybe<Scalars["Int"]>
     last?: InputMaybe<Scalars["Int"]>
@@ -87,6 +111,7 @@ export type QueryRelayRepositoriesForCategoryArgs = {
 export type QueryRelayRepositoriesForOwnerArgs = {
     after?: InputMaybe<Scalars["String"]>
     before?: InputMaybe<Scalars["String"]>
+    filter?: InputMaybe<RelayRepositoryFilter>
     first?: InputMaybe<Scalars["Int"]>
     last?: InputMaybe<Scalars["Int"]>
     sort?: InputMaybe<Array<InputMaybe<RelayRepositorySortEnum>>>
@@ -96,6 +121,7 @@ export type QueryRelayRepositoriesForOwnerArgs = {
 export type QueryRelayRevisionsArgs = {
     after?: InputMaybe<Scalars["String"]>
     before?: InputMaybe<Scalars["String"]>
+    filter?: InputMaybe<RelayRepositoryMetadataFilter>
     first?: InputMaybe<Scalars["Int"]>
     last?: InputMaybe<Scalars["Int"]>
     sort?: InputMaybe<Array<InputMaybe<RelayRepositoryMetadataSortEnum>>>
@@ -104,6 +130,7 @@ export type QueryRelayRevisionsArgs = {
 export type QueryRelayUsersArgs = {
     after?: InputMaybe<Scalars["String"]>
     before?: InputMaybe<Scalars["String"]>
+    filter?: InputMaybe<RelayUserFilter>
     first?: InputMaybe<Scalars["Int"]>
     last?: InputMaybe<Scalars["Int"]>
     sort?: InputMaybe<Array<InputMaybe<RelayUserSortEnum>>>
@@ -136,6 +163,17 @@ export type RelayCategoryEdge = {
     cursor: Scalars["String"]
     /** The item at the end of the edge */
     node?: Maybe<RelayCategory>
+}
+
+export type RelayCategoryFilter = {
+    and?: InputMaybe<Array<InputMaybe<RelayCategoryFilter>>>
+    createTime?: InputMaybe<DefaultDateTimeScalarFilter>
+    deleted?: InputMaybe<BooleanFilter>
+    description?: InputMaybe<StringFilter>
+    id?: InputMaybe<IdFilter>
+    name?: InputMaybe<StringFilter>
+    or?: InputMaybe<Array<InputMaybe<RelayCategoryFilter>>>
+    updateTime?: InputMaybe<DefaultDateTimeScalarFilter>
 }
 
 /** An enumeration. */
@@ -187,6 +225,20 @@ export type RelayRepositoryEdge = {
     node?: Maybe<RelayRepository>
 }
 
+export type RelayRepositoryFilter = {
+    and?: InputMaybe<Array<InputMaybe<RelayRepositoryFilter>>>
+    createTime?: InputMaybe<DefaultDateTimeScalarFilter>
+    description?: InputMaybe<StringFilter>
+    homepageUrl?: InputMaybe<StringFilter>
+    id?: InputMaybe<IdFilter>
+    longDescription?: InputMaybe<StringFilter>
+    name?: InputMaybe<StringFilter>
+    or?: InputMaybe<Array<InputMaybe<RelayRepositoryFilter>>>
+    remoteRepositoryUrl?: InputMaybe<StringFilter>
+    type?: InputMaybe<StringFilter>
+    updateTime?: InputMaybe<DefaultDateTimeScalarFilter>
+}
+
 export type RelayRepositoryMetadata = Node & {
     __typename?: "RelayRepositoryMetadata"
     changesetRevision: Scalars["String"]
@@ -215,6 +267,12 @@ export type RelayRepositoryMetadataEdge = {
     cursor: Scalars["String"]
     /** The item at the end of the edge */
     node?: Maybe<RelayRepositoryMetadata>
+}
+
+export type RelayRepositoryMetadataFilter = {
+    and?: InputMaybe<Array<InputMaybe<RelayRepositoryMetadataFilter>>>
+    id?: InputMaybe<IdFilter>
+    or?: InputMaybe<Array<InputMaybe<RelayRepositoryMetadataFilter>>>
 }
 
 /** An enumeration. */
@@ -267,6 +325,13 @@ export type RelayUserEdge = {
     cursor: Scalars["String"]
     /** The item at the end of the edge */
     node?: Maybe<RelayUser>
+}
+
+export type RelayUserFilter = {
+    and?: InputMaybe<Array<InputMaybe<RelayUserFilter>>>
+    id?: InputMaybe<IdFilter>
+    or?: InputMaybe<Array<InputMaybe<RelayUserFilter>>>
+    username?: InputMaybe<StringFilter>
 }
 
 /** An enumeration. */
@@ -327,6 +392,16 @@ export type SimpleUser = {
     username: Scalars["String"]
 }
 
+export type StringFilter = {
+    eq?: InputMaybe<Scalars["String"]>
+    ilike?: InputMaybe<Scalars["String"]>
+    in?: InputMaybe<Array<InputMaybe<Scalars["String"]>>>
+    like?: InputMaybe<Scalars["String"]>
+    nEq?: InputMaybe<Scalars["String"]>
+    notIn?: InputMaybe<Array<InputMaybe<Scalars["String"]>>>
+    notlike?: InputMaybe<Scalars["String"]>
+}
+
 export type RecentlyCreatedRepositoriesQueryVariables = Exact<{ [key: string]: never }>
 
 export type RecentlyCreatedRepositoriesQuery = {
@@ -383,14 +458,6 @@ export type RepositoriesByOwnerQuery = {
     } | null
 }
 
-export type RepositoryCreationItemFragment = {
-    __typename?: "RelayRepository"
-    encodedId: string
-    name: string
-    createTime?: any | null
-    user: { __typename?: "SimpleUser"; username: string }
-} & { " $fragmentName"?: "RepositoryCreationItemFragment" }
-
 export type RepositoriesByCategoryQueryVariables = Exact<{
     categoryId?: InputMaybe<Scalars["String"]>
     cursor?: InputMaybe<Scalars["String"]>
@@ -433,32 +500,14 @@ export type RepositoryUpdateItemFragment = {
     user: { __typename?: "SimpleUser"; username: string }
 } & { " $fragmentName"?: "RepositoryUpdateItemFragment" }
 
-export const RepositoryCreationItemFragmentDoc = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "FragmentDefinition",
-            name: { kind: "Name", value: "RepositoryCreationItem" },
-            typeCondition: { kind: "NamedType", name: { kind: "Name", value: "RelayRepository" } },
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    { kind: "Field", name: { kind: "Name", value: "encodedId" } },
-                    { kind: "Field", name: { kind: "Name", value: "name" } },
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "user" },
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [{ kind: "Field", name: { kind: "Name", value: "username" } }],
-                        },
-                    },
-                    { kind: "Field", name: { kind: "Name", value: "createTime" } },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<RepositoryCreationItemFragment, unknown>
+export type RepositoryCreationItemFragment = {
+    __typename?: "RelayRepository"
+    encodedId: string
+    name: string
+    createTime?: any | null
+    user: { __typename?: "SimpleUser"; username: string }
+} & { " $fragmentName"?: "RepositoryCreationItemFragment" }
+
 export const RepositoryListItemFragmentFragmentDoc = {
     kind: "Document",
     definitions: [
@@ -515,6 +564,32 @@ export const RepositoryUpdateItemFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<RepositoryUpdateItemFragment, unknown>
+export const RepositoryCreationItemFragmentDoc = {
+    kind: "Document",
+    definitions: [
+        {
+            kind: "FragmentDefinition",
+            name: { kind: "Name", value: "RepositoryCreationItem" },
+            typeCondition: { kind: "NamedType", name: { kind: "Name", value: "RelayRepository" } },
+            selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                    { kind: "Field", name: { kind: "Name", value: "encodedId" } },
+                    { kind: "Field", name: { kind: "Name", value: "name" } },
+                    {
+                        kind: "Field",
+                        name: { kind: "Name", value: "user" },
+                        selectionSet: {
+                            kind: "SelectionSet",
+                            selections: [{ kind: "Field", name: { kind: "Name", value: "username" } }],
+                        },
+                    },
+                    { kind: "Field", name: { kind: "Name", value: "createTime" } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<RepositoryCreationItemFragment, unknown>
 export const RecentlyCreatedRepositoriesDocument = {
     kind: "Document",
     definitions: [
@@ -537,7 +612,7 @@ export const RecentlyCreatedRepositoriesDocument = {
                             {
                                 kind: "Argument",
                                 name: { kind: "Name", value: "sort" },
-                                value: { kind: "EnumValue", value: "UPDATE_TIME_DESC" },
+                                value: { kind: "EnumValue", value: "CREATE_TIME_DESC" },
                             },
                         ],
                         selectionSet: {
@@ -760,7 +835,7 @@ export const RepositoriesByCategoryDocument = {
                             {
                                 kind: "Argument",
                                 name: { kind: "Name", value: "sort" },
-                                value: { kind: "EnumValue", value: "UPDATE_TIME_DESC" },
+                                value: { kind: "EnumValue", value: "NAME_ASC" },
                             },
                             {
                                 kind: "Argument",

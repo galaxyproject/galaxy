@@ -8,8 +8,8 @@ from galaxy import (
     web,
 )
 from galaxy.managers.api_keys import ApiKeyManager
-from galaxy.managers.users import get_user_by_email
 from galaxy.model.base import transaction
+from galaxy.model.db.user import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,

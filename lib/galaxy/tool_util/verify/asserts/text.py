@@ -1,23 +1,35 @@
 import re
-from typing import (
-    Optional,
-    Union,
-)
 
+from typing_extensions import Annotated
+
+from ._types import (
+    AssertionParameter,
+    Delta,
+    Max,
+    Min,
+    N,
+    Negate,
+    NEGATE_DEFAULT,
+    Output,
+)
 from ._util import (
     _assert_number,
     _assert_presence_number,
 )
 
+Text = Annotated[str, AssertionParameter("The text to search for in the output.")]
+Line = Annotated[str, AssertionParameter("The full line of text to search for in the output.")]
+Expression = Annotated[str, AssertionParameter("The regular expressions to attempt match in the output.")]
+
 
 def assert_has_text(
-    output: str,
-    text: str,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output: Output,
+    text: Text,
+    n: N = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
     """Asserts specified output contains the substring specified by
     the argument text. The exact number of occurrences can be
@@ -39,7 +51,7 @@ def assert_has_text(
     )
 
 
-def assert_not_has_text(output: str, text: str) -> None:
+def assert_not_has_text(output: Output, text: Text) -> None:
     """Asserts specified output does not contain the substring
     specified by the argument text"""
     assert output is not None, "Checking not_has_text assertion on empty output (None)"
@@ -47,13 +59,13 @@ def assert_not_has_text(output: str, text: str) -> None:
 
 
 def assert_has_line(
-    output: str,
-    line: str,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output: Output,
+    line: Line,
+    n: N = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
     """Asserts the specified output contains the line specified by the
     argument line. The exact number of occurrences can be optionally
@@ -76,12 +88,12 @@ def assert_has_line(
 
 
 def assert_has_n_lines(
-    output: str,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output: Output,
+    n: N = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
     """Asserts the specified output contains ``n`` lines allowing
     for a difference in the number of lines (delta)
@@ -101,13 +113,13 @@ def assert_has_n_lines(
 
 
 def assert_has_text_matching(
-    output: str,
-    expression: str,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output: Output,
+    expression: Expression,
+    n: N = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
     """Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
@@ -131,13 +143,13 @@ def assert_has_text_matching(
 
 
 def assert_has_line_matching(
-    output: str,
-    expression: str,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output: Output,
+    expression: Expression,
+    n: N = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
     """Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given

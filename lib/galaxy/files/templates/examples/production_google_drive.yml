@@ -1,0 +1,15 @@
+- id: google_drive
+  name: Export to Google Drive
+  description: This file source allows export to your Google Drive but can only read files uploaded by this Galaxy instance.
+  configuration:
+    type: googledrive
+    oauth2_client_id: "{{ environment.oauth2_client_id }}"
+    oauth2_client_secret: "{{ environment.oauth2_client_secret }}"
+    writable: true
+  environment:
+    oauth2_client_id:
+      type: variable
+      variable: GALAXY_GOOGLE_DRIVE_APP_CLIENT_ID
+    oauth2_client_secret:
+      type: variable
+      variable: GALAXY_GOOGLE_DRIVE_APP_CLIENT_SECRET

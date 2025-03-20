@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections.abc import MutableMapping
 from typing import (
     Any,
     Dict,
@@ -37,6 +38,11 @@ from galaxy.schema.invocation import (
     WarningReason,
 )
 from galaxy.tools.parameters.basic import raw_to_galaxy
+from galaxy.tools.parameters.workflow_utils import (
+    is_runtime_value,
+    NO_REPLACEMENT,
+    NoReplacement,
+)
 from galaxy.tools.parameters.wrapped import nested_key_to_path
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
@@ -144,7 +150,12 @@ def queue_invoke(
         )
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params, flush=flush)
+    initial_state = model.WorkflowInvocation.states.NEW
+    if workflow_run_config.requires_materialization:
+        initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
+    return trans.app.workflow_scheduling_manager.queue(
+        workflow_invocation, request_params, flush=flush, initial_state=initial_state
+    )
 
 
 class WorkflowInvoker:
@@ -252,7 +263,7 @@ class WorkflowInvoker:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
-                log_function = log.exception
+                log_function = log.error
                 if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
                     log_function = log.info
                 log_function(
@@ -329,6 +340,7 @@ class WorkflowInvoker:
                 )
 
     def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
+        assert invocation_step.workflow_step.module
         incomplete_or_none = invocation_step.workflow_step.module.execute(
             self.trans,
             self.progress,
@@ -427,11 +439,11 @@ class WorkflowProgress:
 
     def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]):
         replacement: Union[
-            modules.NoReplacement,
+            NoReplacement,
             model.DatasetCollectionInstance,
             List[model.DatasetCollectionInstance],
-            "HistoryItem",
-        ] = modules.NO_REPLACEMENT
+            HistoryItem,
+        ] = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
@@ -451,15 +463,18 @@ class WorkflowProgress:
                     replacement = temp
             else:
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
-        elif step.state and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None)):
+        elif (
+            step.state
+            and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None))
+            and not is_runtime_value(state_input)
+        ):
             # workflow submitted with step parameters populates state directly
             # via populate_module_and_state
             replacement = state_input
-        else:
-            for step_input in step.inputs:
-                if step_input.name == prefixed_name and step_input.default_value_set:
-                    if is_data:
-                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
+        elif (step_input := step.inputs_by_name.get(prefixed_name)) and step_input.default_value_set:
+            replacement = step_input.default_value
+            if is_data:
+                replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
@@ -489,6 +504,8 @@ class WorkflowProgress:
                     dependent_workflow_step_id=output_step_id,
                 )
             )
+        if isinstance(replacement, MutableMapping) and replacement.get("__class__") == "NoReplacement":
+            return NO_REPLACEMENT
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.waiting_for_elements:
@@ -569,21 +586,11 @@ class WorkflowProgress:
         if self.inputs_by_step_id:
             step_id = step.id
             if step_id not in self.inputs_by_step_id and "output" not in outputs:
-                default_value = step.input_default_value
-                if default_value or step.input_optional:
-                    outputs["output"] = default_value
-                else:
-                    log.error(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")
-                    raise modules.FailWorkflowEvaluation(
-                        why=InvocationFailureOutputNotFound(
-                            reason=FailureReason.output_not_found,
-                            workflow_step_id=invocation_step.workflow_step_id,
-                            output_name="output",
-                            dependent_workflow_step_id=invocation_step.workflow_step_id,
-                        )
-                    )
+                default_value = step.get_input_default_value(NO_REPLACEMENT)
+                outputs["output"] = default_value
             elif step_id in self.inputs_by_step_id:
-                outputs["output"] = self.inputs_by_step_id[step_id]
+                if self.inputs_by_step_id[step_id] is not None or "output" not in outputs:
+                    outputs["output"] = self.inputs_by_step_id[step_id]
 
         if step.label and step.type == "parameter_input" and "output" in outputs:
             self.runtime_replacements[step.label] = str(outputs["output"])
@@ -614,7 +621,7 @@ class WorkflowProgress:
                     # Add this non-data, non workflow-output output to the workflow outputs.
                     # This is required for recovering the output in the next scheduling iteration,
                     # and should be replaced with a WorkflowInvocationStepOutputValue ASAP.
-                    if not workflow_outputs_by_name.get(output_name) and not output_object == modules.NO_REPLACEMENT:
+                    if not workflow_outputs_by_name.get(output_name) and output_object is not NO_REPLACEMENT:
                         workflow_output = model.WorkflowOutput(step, output_name=output_name)
                         step.workflow_outputs.append(workflow_output)
             for workflow_output in step.workflow_outputs:
@@ -639,6 +646,8 @@ class WorkflowProgress:
                 )
 
     def _record_workflow_output(self, step: "WorkflowStep", workflow_output: "WorkflowOutput", output: Any) -> None:
+        if output is NO_REPLACEMENT:
+            output = {"__class__": "NoReplacement"}
         self.workflow_invocation.add_output(workflow_output, step, output)
 
     def mark_step_outputs_delayed(self, step: "WorkflowStep", why: Optional[str] = None) -> None:
@@ -695,7 +704,8 @@ class WorkflowProgress:
         for input_subworkflow_step in subworkflow.input_steps:
             connection_found = False
             subworkflow_step_id = input_subworkflow_step.id
-            for input_connection in step.input_connections:
+            input_connections = step.input_connections
+            for input_connection in input_connections:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
                     is_data = input_connection.output_step.type != "parameter_input"
                     replacement = self.replacement_for_connection(
@@ -706,7 +716,18 @@ class WorkflowProgress:
                     connection_found = True
                     break
 
-            if not connection_found and not input_subworkflow_step.input_optional:
+            if not input_subworkflow_step.input_optional and not connection_found:
+
+                if not input_connections:
+                    # TODO: Prevent this on import / runtime !
+                    raise modules.FailWorkflowEvaluation(
+                        InvocationUnexpectedFailure(
+                            reason=FailureReason.unexpected_failure,
+                            workflow_step_id=step.id,
+                            details="Subworkflow has disconnected required input.",
+                        )
+                    )
+
                 raise modules.FailWorkflowEvaluation(
                     InvocationFailureOutputNotFound(
                         reason=FailureReason.output_not_found,
@@ -731,6 +752,7 @@ class WorkflowProgress:
         return raw_to_galaxy(self.module_injector.trans.app, self.module_injector.trans.history, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
+        assert step_invocation.workflow_step.module
         try:
             step_invocation.workflow_step.module.recover_mapping(step_invocation, self)
         except modules.DelayedWorkflowEvaluation as de:

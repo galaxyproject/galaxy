@@ -231,12 +231,7 @@ def create_repository(
     session = sa_session()
     with transaction(session):
         session.commit()
-    dir = os.path.join(app.config.file_path, *util.directory_hash_id(repository.id))
-    # Define repo name inside hashed directory.
-    final_repository_path = os.path.join(dir, "repo_%d" % repository.id)
-    # Create final repository directory.
-    if not os.path.exists(final_repository_path):
-        os.makedirs(final_repository_path)
+    final_repository_path = repository.ensure_hg_repository_path(app.config.file_path)
     os.rename(repository_path, final_repository_path)
     app.hgweb_config_manager.add_entry(lhs, final_repository_path)
     # Update the repository registry.
@@ -437,16 +432,26 @@ def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
 def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
     """Update an existing ToolShed repository"""
     app = trans.app
-    message = None
-    flush_needed = False
     sa_session = app.model.session
     repository = sa_session.get(app.model.Repository, app.security.decode_id(id))
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin or trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
+    if not (trans.user_is_admin or app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message
+
+    return update_validated_repository(trans, repository, **kwds)
+
+
+def update_validated_repository(
+    trans: "ProvidesUserContext", repository: "Repository", **kwds
+) -> Tuple[Optional["Repository"], Optional[str]]:
+    """Update an existing ToolShed repository metadata once permissions have been checked."""
+    app = trans.app
+    sa_session = app.model.session
+    message = None
+    flush_needed = False
 
     # Allowlist properties that can be changed via this method
     for key in ("type", "description", "long_description", "remote_repository_url", "homepage_url"):
@@ -456,10 +461,9 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
             flush_needed = True
 
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
+
         # Remove existing category associations
-        delete_repository_category_associations(
-            sa_session, app.model.RepositoryCategoryAssociation, app.security.decode_id(id)
-        )
+        delete_repository_category_associations(sa_session, app.model.RepositoryCategoryAssociation, repository.id)
 
         # Then (re)create category associations
         for category_id in kwds["category_ids"]:

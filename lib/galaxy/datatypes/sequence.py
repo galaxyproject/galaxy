@@ -41,6 +41,7 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import (
     compression_utils,
     nice_size,
@@ -316,6 +317,34 @@ class Sequence(data.Text):
         cmd += f' > "{output_name}"'
 
         return [cmd]
+
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        headers = kwd.get("headers", {})
+        if preview:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+                max_peek_size = 100000
+                try:
+                    chunk = fh.read(max_peek_size + 1)
+                except UnicodeDecodeError:
+                    raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+                if len(chunk) <= max_peek_size:
+                    mime = "text/plain"
+                    self._clean_and_set_mime_type(trans, mime, headers)
+                    return chunk[:-1], headers
+                return (
+                    trans.fill_template_mako("/dataset/large_file.mako", truncated_data=chunk[:-1], data=dataset),
+                    headers,
+                )
+        else:
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
 
 class Alignment(data.Text):
@@ -762,32 +791,6 @@ class BaseFastq(Sequence):
         if not self.quality_check(headers):
             return False
         return self.check_first_block(file_prefix)
-
-    def display_data(
-        self,
-        trans,
-        dataset: DatasetHasHidProtocol,
-        preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        **kwd,
-    ):
-        headers = kwd.get("headers", {})
-        if preview:
-            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-                max_peek_size = 1000000  # 1 MB
-                if os.stat(dataset.get_file_name()).st_size < max_peek_size:
-                    mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime, headers)
-                    return fh.read(), headers
-                return (
-                    trans.fill_template_mako(
-                        "/dataset/large_file.mako", truncated_data=fh.read(max_peek_size), data=dataset
-                    ),
-                    headers,
-                )
-        else:
-            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     @classmethod
     def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:

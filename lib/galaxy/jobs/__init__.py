@@ -20,6 +20,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -100,6 +101,7 @@ from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.jobs.handler import JobHandlerQueue
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -327,7 +329,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parse the job configuration XML."""
         self.app = app
         self.runner_plugins = []
-        self.dynamic_params = None
+        self.dynamic_params: Optional[Dict[str, Any]] = None
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
@@ -383,6 +385,8 @@ class JobConfiguration(ConfiguresHandlers):
                             f" release of Galaxy. Please convert to YAML at {self.app.config.job_config_file} or"
                             f" explicitly set `job_config_file` to {job_config_file} to remove this message"
                         )
+                if not job_config_file:
+                    raise OSError()
                 if ".xml" in job_config_file:
                     tree = load(job_config_file)
                     job_config_dict = self.__parse_job_conf_xml(tree)
@@ -431,7 +435,7 @@ class JobConfiguration(ConfiguresHandlers):
                 continue
             self.runner_plugins.append(runner_info)
         if "dynamic" in job_config_dict:
-            self.dynamic_params = job_config_dict.get("dynamic", None)
+            self.dynamic_params = job_config_dict["dynamic"]
 
         # Parse handlers
         handling_config_dict = job_config_dict.get("handling", {})
@@ -829,12 +833,12 @@ class JobConfiguration(ConfiguresHandlers):
         """
         return self.destinations.get(id_or_tag, [])
 
-    def get_job_runner_plugins(self, handler_id):
+    def get_job_runner_plugins(self, handler_id: str):
         """Load all configured job runner plugins
 
         :returns: list of job runner plugins
         """
-        rval = {}
+        rval: Dict[str, BaseJobRunner] = {}
         if handler_id in self.handler_runner_plugins:
             plugins_to_load = [rp for rp in self.runner_plugins if rp["id"] in self.handler_runner_plugins[handler_id]]
             log.info(
@@ -870,11 +874,9 @@ class JobConfiguration(ConfiguresHandlers):
                     # If the name included a '.' or loading from the static runners path failed, try the original name
                     module = __import__(load)
                     module_name = load
-            if module is None:
-                # Module couldn't be loaded, error should have already been displayed
-                continue
             for comp in module_name.split(".")[1:]:
                 module = getattr(module, comp)
+            assert module  # make mypy happy
             if not class_names:
                 # If there's not a ':', we check <module>.__all__ for class names
                 try:
@@ -985,11 +987,17 @@ class MinimalJobWrapper(HasResourceParameters):
 
     is_task = False
 
-    def __init__(self, job: model.Job, app: MinimalManagerApp, use_persisted_destination: bool = False, tool=None):
+    def __init__(
+        self,
+        job: model.Job,
+        app: MinimalManagerApp,
+        use_persisted_destination: bool = False,
+        tool: Optional["Tool"] = None,
+    ):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
-        self.app: MinimalManagerApp = app
+        self.app = app
         self.tool = tool
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
@@ -1320,7 +1328,7 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         return self.__working_directory
 
-    def working_directory_exists(self):
+    def working_directory_exists(self) -> bool:
         job = self.get_job()
         return self.app.object_store.exists(job, base_dir="job_work", dir_only=True, obj_dir=True)
 
@@ -2145,7 +2153,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         return state
 
-    def cleanup(self, delete_files=True):
+    def cleanup(self, delete_files: bool = True) -> None:
         # At least one of these tool cleanup actions (job import), is needed
         # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
@@ -2520,7 +2528,9 @@ class MinimalJobWrapper(HasResourceParameters):
     def user_system_pwent(self):
         if self.__user_system_pwent is None:
             job = self.get_job()
-            self.__user_system_pwent = job.user.system_user_pwent(self.app.config.real_system_username)
+            self.__user_system_pwent = job.user.system_user_pwent(
+                self.get_destination_configuration("real_system_username", self.app.config.real_system_username)
+            )
         return self.__user_system_pwent
 
     @property
@@ -2562,10 +2572,15 @@ class MinimalJobWrapper(HasResourceParameters):
 
 
 class JobWrapper(MinimalJobWrapper):
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False, app=None):
-        super().__init__(job, app=queue.app, use_persisted_destination=use_persisted_destination)
+    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False):
+        app = queue.app
+        super().__init__(
+            job,
+            app=app,
+            use_persisted_destination=use_persisted_destination,
+            tool=app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True),
+        )
         self.queue = queue
-        self.tool = self.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)

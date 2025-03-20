@@ -64,6 +64,7 @@
             :viewport-bounding-box="viewportBoundingBox"
             @panBy="panBy"
             @moveTo="moveTo" />
+        <slot></slot>
     </div>
 </template>
 <script setup lang="ts">
@@ -92,7 +93,7 @@ import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 
-const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
+const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "stepClicked"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
@@ -176,6 +177,7 @@ function onDragConnector(position: TerminalPosition, draggingTerminal: OutputTer
     isDragging.value = true;
 }
 function onActivate(nodeId: number | null) {
+    emit("stepClicked", nodeId);
     if (activeNodeId.value !== nodeId) {
         stateStore.activeNodeId = nodeId;
     }

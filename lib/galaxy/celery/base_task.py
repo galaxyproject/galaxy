@@ -80,7 +80,7 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
     We take advantage of efficiencies in its dialect.
     """
 
-    def calculate_task_start_time(  # type: ignore
+    def calculate_task_start_time(
         self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         with transaction(sa_session):

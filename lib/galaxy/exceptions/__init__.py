@@ -154,10 +154,13 @@ class ToolInputsNotReadyException(MessageException):
 
 
 class ToolInputsNotOKException(MessageException):
-    def __init__(self, err_msg: Optional[str] = None, type="info", *, src: str, id: int, **extra_error_info):
-        super().__init__(err_msg, type, **extra_error_info)
+    def __init__(
+        self, err_msg: Optional[str] = None, type="info", *, src: str, id: str, input_name: str, **extra_error_info
+    ):
+        super().__init__(err_msg, type, src=src, id=id, input_name=input_name, **extra_error_info)
         self.src = src
         self.id = id
+        self.input_name = input_name
 
     status_code = 400
     error_code = error_codes_by_name["TOOL_INPUTS_NOT_OK"]
@@ -224,6 +227,11 @@ class UserActivationRequiredException(MessageException):
     err_code = error_codes_by_name["USER_ACTIVATION_REQUIRED"]
 
 
+class ItemAlreadyClaimedException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["ITEM_IS_CLAIMED"]
+
+
 class ObjectNotFound(MessageException):
     """Accessed object was not found"""
 
@@ -234,6 +242,10 @@ class ObjectNotFound(MessageException):
 class Conflict(MessageException):
     status_code = 409
     err_code = error_codes_by_name["CONFLICT"]
+
+
+class ItemMustBeClaimed(Conflict):
+    err_code = error_codes_by_name["MUST_CLAIM"]
 
 
 class DeprecatedMethod(MessageException):
@@ -253,6 +265,11 @@ class ConfigurationError(Exception):
 class InconsistentDatabase(MessageException):
     status_code = 500
     err_code = error_codes_by_name["INCONSISTENT_DATABASE"]
+
+
+class InconsistentApplicationState(MessageException):
+    status_code = 500
+    err_code = error_codes_by_name["INCONSISTENT_APPLICATION_STATE"]
 
 
 class InternalServerError(MessageException):

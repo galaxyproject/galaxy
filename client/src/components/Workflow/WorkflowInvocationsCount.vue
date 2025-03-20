@@ -4,8 +4,9 @@ import { faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
 
-import { invocationCountsFetcher } from "@/api/workflows";
+import { GalaxyApi } from "@/api";
 import localize from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 library.add(faList);
 
@@ -18,7 +19,14 @@ const props = defineProps<Props>();
 const count = ref<number | undefined>(undefined);
 
 async function initCounts() {
-    const { data } = await invocationCountsFetcher({ workflow_id: props.workflow.id });
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
+        params: { path: { workflow_id: props.workflow.id } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
     let allCounts = 0;
     for (const stateCount of Object.values(data)) {
         if (stateCount) {
@@ -33,7 +41,7 @@ onMounted(initCounts);
 
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
-        <BBadge v-if="count != undefined && count === 0" pill class="list-view">
+        <BBadge v-if="count != undefined && count === 0" pill>
             <span>never run</span>
         </BBadge>
         <BBadge
@@ -41,7 +49,7 @@ onMounted(initCounts);
             v-b-tooltip.hover.noninteractive
             pill
             :title="localize('View workflow invocations')"
-            class="outline-badge cursor-pointer list-view"
+            class="outline-badge cursor-pointer"
             :to="`/workflows/${props.workflow.id}/invocations`">
             <FontAwesomeIcon :icon="faList" fixed-width />
 

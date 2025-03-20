@@ -116,6 +116,9 @@ class HasDriver:
     def element_absent(self, selector_template: Target) -> bool:
         return len(self.find_elements(selector_template)) == 0
 
+    def switch_to_frame(self, name: str = "frame"):
+        return self._wait_on(ec.frame_to_be_available_and_switch_to_it((By.NAME, name)))
+
     def wait_for_xpath(self, xpath: str, **kwds) -> WebElement:
         element = self._wait_on(
             ec.presence_of_element_located((By.XPATH, xpath)), f"XPATH selector [{xpath}] to become present", **kwds

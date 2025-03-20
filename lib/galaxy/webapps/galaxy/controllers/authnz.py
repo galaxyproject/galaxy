@@ -19,6 +19,7 @@ from galaxy.webapps.base.controller import JSAppLauncher
 log = logging.getLogger(__name__)
 
 PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
+LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 
 
 class OIDC(JSAppLauncher):
@@ -52,10 +53,14 @@ class OIDC(JSAppLauncher):
                 userinfo = jwt.decode(
                     token.id_token, options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
                 )
+                provider_label = trans.app.authnz_manager.oidc_backends_config.get(token.provider, {}).get(
+                    "label", token.provider
+                )
                 rtv.append(
                     {
                         "id": trans.app.security.encode_id(token.id),
                         "provider": token.provider,
+                        "provider_label": provider_label,
                         "email": userinfo["email"],
                         "expiration": str(datetime.datetime.utcfromtimestamp(userinfo["exp"])),
                     }
@@ -72,12 +77,17 @@ class OIDC(JSAppLauncher):
 
     @web.json
     @web.expose
-    def login(self, trans, provider, idphint=None):
+    def login(self, trans, provider, idphint=None, next=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
             return trans.show_error_message(msg)
-        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint=idphint)
+        if next:
+            trans.set_cookie(value=next, name=LOGIN_NEXT_COOKIE_NAME, age=1)
+        else:
+            # If no next parameter is provided, ensure we unset any existing next cookie.
+            trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
+        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -86,6 +96,7 @@ class OIDC(JSAppLauncher):
     @web.expose
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
+        login_next = url_for(trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME) or "/")
         if not bool(kwargs):
             log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
@@ -110,7 +121,7 @@ class OIDC(JSAppLauncher):
                 kwargs.get("state", " "),
                 kwargs["code"],
                 trans,
-                login_redirect_url=url_for("/"),
+                login_redirect_url=login_next,
                 idphint=idphint,
             )
         except exceptions.AuthenticationFailed:
@@ -134,6 +145,8 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        # Clear the login next cookie back to default.
+        trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose

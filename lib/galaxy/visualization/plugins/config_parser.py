@@ -6,7 +6,10 @@ from typing import (
 )
 
 import galaxy.model
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    listify,
+)
 from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
@@ -151,9 +154,9 @@ class VisualizationsConfigParser:
         if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
 
-        # load group specifiers
-        if (groups_section := xml_tree.find("groups")) is not None:
-            returned["groups"] = ListParser(groups_section)
+        # load tracks specifiers (allow 'groups' section for backward compatibility)
+        if (tracks_section := xml_tree.find("tracks") or xml_tree.find("groups")) is not None:
+            returned["tracks"] = ListParser(tracks_section)
 
         # load settings specifiers
         if (settings_section := xml_tree.find("settings")) is not None:
@@ -221,7 +224,7 @@ class DataSourceParser:
         # when no tests are given, default to isinstance( object, model_class )
         returned["tests"] = self.parse_tests(xml_tree.findall("test"))
 
-        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
+        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_class, tests
         returned["to_params"] = {}
         if to_params := self.parse_to_params(xml_tree.findall("to_param")):
             returned["to_params"] = to_params
@@ -301,8 +304,16 @@ class DataSourceParser:
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
+            # allow_uri_if_protocol indicates that the visualization can work with deferred data_sources which source URI
+            # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
+            # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
+            # deferred data_sources.
+            allow_uri_if_protocol = []
+
             # test functions should be sent an object to test, and the parsed result expected from the test
             if test_type == "isinstance":
+                allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
+
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 def test_fn(o, result, getter=getter):
@@ -328,7 +339,15 @@ class DataSourceParser:
                 def test_fn(o, result, getter=getter):
                     return str(getter(o)) == result
 
-            tests.append({"type": test_type, "result": test_result, "result_type": test_result_type, "fn": test_fn})
+            tests.append(
+                {
+                    "type": test_type,
+                    "result": test_result,
+                    "result_type": test_result_type,
+                    "fn": test_fn,
+                    "allow_uri_if_protocol": allow_uri_if_protocol,
+                }
+            )
 
         return tests
 

@@ -1,5 +1,5 @@
-import type { components } from "@/api/schema";
-import { fetcher } from "@/api/schema/fetcher";
+import { type components, GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 /** The browsing mode:
  * - `file` - allows to select files or directories contained in a source (default)
@@ -28,23 +28,29 @@ export interface FilterFileSourcesOptions {
     exclude?: FileSourcePluginKind[];
 }
 
-const remoteFilesPluginsFetcher = fetcher.path("/api/remote_files/plugins").method("get").create();
-
 /**
  * Get the list of available file sources from the server that can be browsed.
  * @param options The options to filter the file sources.
  * @returns The list of available (browsable) file sources from the server.
  */
 export async function fetchFileSources(options: FilterFileSourcesOptions = {}): Promise<BrowsableFilesSourcePlugin[]> {
-    const { data } = await remoteFilesPluginsFetcher({
-        browsable_only: true,
-        include_kind: options.include,
-        exclude_kind: options.exclude,
+    const { data, error } = await GalaxyApi().GET("/api/remote_files/plugins", {
+        params: {
+            query: {
+                browsable_only: true,
+                include_kind: options.include,
+                exclude_kind: options.exclude,
+            },
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    // Since we specified browsable_only in the query, we can safely cast the data to the expected type.
     return data as BrowsableFilesSourcePlugin[];
 }
-
-export const remoteFilesFetcher = fetcher.path("/api/remote_files").method("get").create();
 
 export interface BrowseRemoteFilesResult {
     entries: RemoteEntry[];
@@ -71,28 +77,28 @@ export async function browseRemoteFiles(
     query?: string,
     sortBy?: string
 ): Promise<BrowseRemoteFilesResult> {
-    const { data, headers } = await remoteFilesFetcher({
-        target: uri,
-        recursive: isRecursive,
-        writeable,
-        limit,
-        offset,
-        query,
-        sort_by: sortBy,
+    const { response, data, error } = await GalaxyApi().GET("/api/remote_files", {
+        params: {
+            query: {
+                format: "uri",
+                target: uri,
+                recursive: isRecursive,
+                writeable,
+                limit,
+                offset,
+                query,
+                sort_by: sortBy,
+            },
+        },
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return { entries: data as RemoteEntry[], totalMatches };
-}
 
-const createEntry = fetcher.path("/api/remote_files").method("post").create();
+    if (error) {
+        rethrowSimple(error);
+    }
 
-/**
- * Create a new entry (directory/record) on the given file source URI.
- * @param uri The file source URI to create the entry in.
- * @param name The name of the entry to create.
- * @returns The created entry details.
- */
-export async function createRemoteEntry(uri: string, name: string): Promise<CreatedEntry> {
-    const { data } = await createEntry({ target: uri, name: name });
-    return data;
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
+
+    // Since we specified format=uri in the query, we can safely cast the data to the expected type.
+    const entries = data as RemoteEntry[];
+    return { entries, totalMatches };
 }

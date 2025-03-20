@@ -4,8 +4,8 @@ import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-v
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { createBroadcast, fetchBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
-import { type components } from "@/api/schema";
+import { type components, GalaxyApi } from "@/api";
+import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -40,7 +40,9 @@ const loading = ref(false);
 const broadcastData = ref<BroadcastNotificationCreateRequest>({
     source: "admin",
     variant: "info",
+    category: "broadcast",
     content: {
+        category: "broadcast",
         subject: "",
         message: "",
     },
@@ -106,7 +108,19 @@ async function createOrUpdateBroadcast() {
 async function loadBroadcastData() {
     loading.value = true;
     try {
-        const loadedBroadcast = await fetchBroadcast(props.id);
+        const { data: loadedBroadcast, error } = await GalaxyApi().GET(
+            "/api/notifications/broadcast/{notification_id}",
+            {
+                params: {
+                    path: { notification_id: props.id },
+                },
+            }
+        );
+
+        if (error) {
+            Toast.error(errorMessageAsString(error));
+            return;
+        }
 
         broadcastData.value.publication_time = convertUTCtoLocal(loadedBroadcast.publication_time);
 
@@ -119,10 +133,9 @@ async function loadBroadcastData() {
         if (broadcastData.value.publication_time) {
             broadcastPublished.value = new Date(broadcastData.value.publication_time) < new Date();
         }
-    } catch (error: any) {
-        Toast.error(errorMessageAsString(error));
+    } finally {
+        loading.value = false;
     }
-    loading.value = false;
 }
 
 if (props.id) {

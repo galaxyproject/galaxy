@@ -104,8 +104,8 @@ class MaterializeDatasetInstanceTaskRequest(Model):
         title="Content",
         description=(
             "Depending on the `source` it can be:\n"
-            "- The encoded id of the source library dataset\n"
-            "- The encoded id of the HDA\n"
+            "- The decoded id of the source library dataset\n"
+            "- The decoded id of the HDA\n"
         ),
     )
 

@@ -38,7 +38,7 @@
                 </b-button>
             </span>
             <b-button
-                v-if="currentUser.is_admin"
+                v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
                 :to="{
@@ -83,7 +83,7 @@
                             collection-name="Data Types"
                             :loading="loadingDatatypes"
                             :items="datatypes"
-                            :current-item-id="dataset.file_ext"
+                            :current-item="datatypes?.find((datatype) => datatype.id === dataset.file_ext)"
                             @update:selected-item="onSelectedDatatype" />
                     </DatatypesProvider>
                     <DbKeyProvider
@@ -93,7 +93,7 @@
                             collection-name="Database/Builds"
                             :loading="loadingDbKeys"
                             :items="dbkeys"
-                            :current-item-id="dataset.genome_build"
+                            :current-item="dbkeys?.find((dbkey) => dbkey.id === dataset.genome_build)"
                             @update:selected-item="onSelectedDbKey" />
                     </DbKeyProvider>
                     <b-form-input

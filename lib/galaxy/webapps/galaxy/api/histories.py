@@ -8,6 +8,7 @@ import logging
 from typing import (
     Any,
     List,
+    Literal,
     Optional,
     Union,
 )
@@ -33,7 +34,10 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    AcceptHeaderValidator,
+    DecodedDatabaseIdField,
+)
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
@@ -57,6 +61,7 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     SharingStatus,
     StoreExportPayload,
+    UpdateHistoryPayload,
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
@@ -160,6 +165,16 @@ class UndeleteHistoriesPayload(BaseModel):
 @as_form
 class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
+
+
+IndexExportsAcceptHeader = Annotated[
+    Literal[
+        "application/json",
+        "application/vnd.galaxy.task.export+json",
+    ],
+    AcceptHeaderValidator,
+    Header(description="Accept header to determine the response format. Default is 'application/json'."),
+]
 
 
 @router.cbv
@@ -271,6 +286,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/archived",
         summary="Get a list of all archived histories for the current user.",
+        response_model_exclude_unset=True,
     )
     def get_archived_histories(
         self,
@@ -457,13 +473,14 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        payload: Any = Body(
+        payload: UpdateHistoryPayload = Body(
             ...,
             description="Object containing any of the editable fields of the history.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
-        return self.service.update(trans, history_id, payload, serialization_params)
+        data = payload.model_dump(exclude_unset=True)
+        return self.service.update(trans, history_id, data, serialization_params)
 
     @router.post(
         "/api/histories/from_store",
@@ -513,7 +530,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
-        accept: str = Header(default="application/json", include_in_schema=False),
+        accept: IndexExportsAcceptHeader = "application/json",
     ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
         """
         By default the legacy job-based history exports (jeha) are returned.
@@ -613,6 +630,7 @@ class FastAPIHistories:
     @router.post(
         "/api/histories/{history_id}/archive",
         summary="Archive a history.",
+        response_model_exclude_unset=True,
     )
     def archive_history(
         self,

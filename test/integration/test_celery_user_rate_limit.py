@@ -50,7 +50,7 @@ def setup_users(dburl: str, num_users: int = 2):
                 for user_id in user_ids_to_add:
                     conn.execute(
                         text("insert into galaxy_user(id, active, email, password) values (:id, :active, :email, :pw)"),
-                        [{"id": user_id, "active": True, "email": "e", "pw": "p"}],
+                        [{"id": user_id, "active": True, "email": f"e{user_id}", "pw": "p"}],
                     )
 
 

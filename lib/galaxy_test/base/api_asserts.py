@@ -24,14 +24,25 @@ def assert_status_code_is(response: Response, expected_status_code: int, failure
 def assert_status_code_is_ok(response: Response, failure_message: Optional[str] = None):
     """Assert that the supplied response is okay.
 
-    The easier alternative ``response.raise_for_status()`` might be
-    preferable generally.
+    This is an alternative to ``response.raise_for_status()`` with a more detailed
+    error message.
 
     .. seealso:: :py:meth:`requests.Response.raise_for_status()`
     """
     response_status_code = response.status_code
     is_two_hundred_status_code = response_status_code >= 200 and response_status_code <= 300
     if not is_two_hundred_status_code:
+        _report_status_code_error(response, "2XX", failure_message)
+
+
+def assert_status_code_is_not_ok(response: Response, failure_message: Optional[str] = None):
+    """Assert that the supplied response is not okay.
+
+    .. seealso:: :py:meth:`assert_status_code_is_ok`
+    """
+    response_status_code = response.status_code
+    is_two_hundred_status_code = response_status_code >= 200 and response_status_code <= 300
+    if is_two_hundred_status_code:
         _report_status_code_error(response, "2XX", failure_message)
 
 

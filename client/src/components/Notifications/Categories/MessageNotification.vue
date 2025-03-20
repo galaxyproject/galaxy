@@ -4,14 +4,12 @@ import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type MessageNotification } from "@/api/notifications";
+import { type MessageNotification, type MessageNotificationCreateData } from "@/api/notifications";
 import { useMarkdown } from "@/composables/markdown";
 
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faInbox);
-
-type PartialNotification = Partial<MessageNotification> & { content: MessageNotification["content"] };
 
 type Options =
     | {
@@ -20,7 +18,7 @@ type Options =
       }
     | {
           previewMode: true;
-          notification: PartialNotification;
+          notification: MessageNotificationCreateData;
       };
 
 const props = defineProps<{
@@ -37,12 +35,16 @@ const notificationVariant = computed(() => {
             return props.options.notification.variant;
     }
 });
+
+const notificationSeen = computed(() => {
+    return "seen_time" in props.options.notification && !!props.options.notification.seen_time;
+});
 </script>
 
 <template>
     <div class="notification-container">
         <div class="notification-header">
-            <div :class="!props.options.notification.seen_time ? 'font-weight-bold' : ''" class="notification-title">
+            <div :class="!notificationSeen ? 'font-weight-bold' : ''" class="notification-title">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" :icon="faInbox" fixed-width size="sm" />
                 {{ props.options.notification?.content?.subject }}
             </div>

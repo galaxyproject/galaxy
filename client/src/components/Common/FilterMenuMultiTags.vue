@@ -2,7 +2,7 @@
 import { BInputGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { ValidFilter } from "@/utils/filtering";
+import { type ValidFilter } from "@/utils/filtering";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 

@@ -1,6 +1,6 @@
 <tool id="output_format_input" name="output_format_input" version="1.0" profile="21.01">
   <!-- test format="input" for the profile version where the format is set to "input"
-       (for legacy tools, i.e. profile <16.04, the format of a ramdom input is used) -->
+       (for legacy tools, i.e. profile <16.04, the format of a random input is used) -->
   <description></description>
   <command>
     cat '$input' > '$output'

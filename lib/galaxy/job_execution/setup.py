@@ -22,6 +22,7 @@ from galaxy.files import (
 from galaxy.job_execution.datasets import (
     DatasetPath,
     DatasetPathRewriter,
+    DeferrableObjectsT,
     get_path_rewriter,
 )
 from galaxy.model import (
@@ -31,7 +32,7 @@ from galaxy.model import (
     MetadataFile,
 )
 from galaxy.util import safe_makedirs
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 
 TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
@@ -62,7 +63,7 @@ class JobOutputs(threading.local):
         self.output_hdas_and_paths = {t.output_name: (t.dataset, t.dataset_path) for t in job_outputs}
 
 
-class JobIO(Dictifiable):
+class JobIO(UsesDictVisibleKeys):
     dict_collection_visible_keys = (
         "job_id",
         "working_directory",
@@ -148,7 +149,7 @@ class JobIO(Dictifiable):
         self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
 
     @property
-    def job(self):
+    def job(self) -> Job:
         return self.sa_session.get(Job, self.job_id)
 
     @classmethod
@@ -168,7 +169,7 @@ class JobIO(Dictifiable):
         return cls(sa_session=sa_session, **io_dict)
 
     def to_dict(self):
-        io_dict = super().to_dict()
+        io_dict = super()._dictify_view_keys()
         # dict_for will always add `model_class`, we don't need or want it
         io_dict.pop("model_class")
         io_dict["user_context"] = self.user_context.to_dict()
@@ -217,11 +218,19 @@ class JobIO(Dictifiable):
             filenames.append(ds.dataset.extra_files_path)
         return filenames
 
-    def get_input_datasets(self) -> List[DatasetInstance]:
+    def get_input_datasets(
+        self, materialized_objects: Optional[Dict[str, DeferrableObjectsT]] = None
+    ) -> List[DatasetInstance]:
         job = self.job
-        return [
-            da.dataset for da in job.input_datasets + job.input_library_datasets if da.dataset
-        ]  # da is JobToInputDatasetAssociation object
+        datasets: List[DatasetInstance] = []
+        for da in job.input_datasets + job.input_library_datasets:
+            if materialized_objects and da.name in materialized_objects:
+                materialized_object = materialized_objects[da.name]
+                if isinstance(materialized_object, DatasetInstance):
+                    datasets.append(materialized_object)
+            elif da.dataset:
+                datasets.append(da.dataset)
+        return datasets
 
     def get_input_fnames(self) -> List[str]:
         filenames = []
@@ -229,9 +238,9 @@ class JobIO(Dictifiable):
             filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
-    def get_input_paths(self) -> List[DatasetPath]:
+    def get_input_paths(self, materialized_objects: Optional[Dict[str, DeferrableObjectsT]]) -> List[DatasetPath]:
         paths = []
-        for ds in self.get_input_datasets():
+        for ds in self.get_input_datasets(materialized_objects):
             paths.append(self.get_input_path(ds))
         return paths
 

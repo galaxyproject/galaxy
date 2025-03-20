@@ -103,6 +103,18 @@ class BaseUserObjectStoreIntegration(BaseObjectStoreIntegrationTestCase):
         object_store_id = object_store_json["object_store_id"]
         assert object_store_id.startswith("user_objects://")
 
+        response = self.dataset_populator._get(f"object_store_instances/{object_store_json['uuid']}/test")
+        response.raise_for_status()
+        from galaxy.util.config_templates import PluginStatus
+
+        status = PluginStatus.model_validate(response.json())
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert status.template_definition
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
         object_stores = self.dataset_populator.selectable_object_stores()
         after_selectable_object_store_count = len(object_stores)
         assert after_selectable_object_store_count == before_selectable_object_store_count + 1

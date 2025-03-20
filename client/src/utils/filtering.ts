@@ -10,7 +10,7 @@
  */
 
 import { isEqual, omit } from "lodash";
-import type { DefineComponent } from "vue";
+import { type DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
@@ -525,13 +525,16 @@ export default class Filtering<T> {
             if (this.validFilters[key]?.type === "MultiTags" && Array.isArray(value)) {
                 const validValues = value
                     .map((v) => this.getConvertedValue(key, v, backendFormatted))
-                    .filter((v) => v !== undefined);
+                    .filter((v) => v !== undefined) as T[];
+
                 if (validValues.length > 0) {
                     validFilters[key] = validValues as T;
                 }
+
                 const invalidValues = value.filter(
-                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted))
+                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted) as T)
                 );
+
                 if (invalidValues.length > 0) {
                     invalidFilters[key] = invalidValues as T;
                 }

@@ -1,4 +1,5 @@
 - id: generic_s3
+  version: 0
   name: Any S3 Compatible Storage
   description: |
     The APIs used to connect to Amazon's S3 (Simple Storage Service) have become something
@@ -20,7 +21,6 @@
         the [CloudFlare documentation](https://developers.cloudflare.com/r2/examples/aws/boto3/)
         describes these as ``aws_access_key_id``. Internally to Galaxy, we often just call
         this the ``access_key``.
-
     bucket:
       label: Bucket
       type: string

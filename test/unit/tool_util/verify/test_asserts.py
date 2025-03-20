@@ -1315,7 +1315,7 @@ if h5py is not None:
         """test has_attribute .. negative"""
         a = run_assertions(H5_HAS_ATTRIBUTE_NEGATIVE, H5BYTES)
         assert (
-            "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', 1)]\n\n\t(myfileattr : wrong)"
+            "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', '1')]\n\n\t(myfileattr : wrong)"
             in a
         )
         assert len(a) == 1
@@ -1324,6 +1324,7 @@ if h5py is not None:
 def run_assertions(assertion_xml: str, data, decompress=False) -> Tuple:
     assertion = parse_xml_string(assertion_xml)
     assertion_description = __parse_assert_list_from_elem(assertion)
+    assert assertion_description
     try:
         asserts.verify_assertions(data, assertion_description, decompress=decompress)
     except AssertionError as e:

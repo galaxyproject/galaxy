@@ -38,6 +38,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
     DeleteJobPayload,
     EncodedJobDetails,
+    JobConsoleOutput,
     JobDestinationParams,
     JobDisplayParametersSummary,
     JobErrorSummary,
@@ -71,7 +72,7 @@ from galaxy.webapps.galaxy.services.jobs import (
     JobIndexViewEnum,
     JobsService,
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import proxy_work_context_for_history
 
 log = logging.getLogger(__name__)
 
@@ -370,6 +371,36 @@ class FastAPIJobs:
         return output_associations
 
     @router.get(
+        "/api/jobs/{job_id}/console_output",
+        name="get_console_output",
+        summary="Returns STDOUT and STDERR from the tool running in a specific job.",
+    )
+    def console_output(
+        self,
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        stdout_position: int,
+        stdout_length: int,
+        stderr_position: int,
+        stderr_length: int,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobConsoleOutput:
+        """
+        Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
+        of where to start reading stdout/stderr. The length parameters control how much
+        stdout/stderr is read.
+        """
+        job = self.service.get_job(trans, job_id)
+        output = self.service.job_manager.get_job_console_output(
+            trans,
+            job,
+            int(stdout_position),
+            int(stdout_length),
+            int(stderr_position),
+            int(stderr_length),
+        )
+        return JobConsoleOutput(state=output["state"], stdout=output["stdout"], stderr=output["stderr"])
+
+    @router.get(
         "/api/jobs/{job_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
@@ -478,10 +509,8 @@ class FastAPIJobs:
         for k, v in payload.__annotations__.items():
             if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
+        request_context = proxy_work_context_for_history(trans)
+        all_params, all_errors, _, _ = tool.expand_incoming(request_context, incoming=inputs)
         if any(all_errors):
             return []
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]

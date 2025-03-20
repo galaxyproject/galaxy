@@ -1,7 +1,7 @@
 <tool id="__FLATTEN__"
       name="Flatten collection"
       version="1.0.0"
-      tool_type="filter_collection">
+      tool_type="flatten_collection">
     <description></description>
     <type class="FlattenTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"

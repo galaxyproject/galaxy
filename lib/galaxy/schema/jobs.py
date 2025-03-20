@@ -191,6 +191,7 @@ class EncodedJobDetails(JobSummary):
         title="Output collections",
         description="",
     )
+    user_id: Optional[EncodedDatabaseIdField] = Field(default=None, description="User ID of user that ran this job")
 
 
 class JobDestinationParams(Model):
@@ -210,6 +211,12 @@ class JobDestinationParams(Model):
 class JobOutput(Model):
     label: Any = Field(default=..., title="Output label", description="The output label")  # check if this is true
     value: EncodedDataItemSourceId = Field(default=..., title="Dataset", description="The associated dataset.")
+
+
+class JobConsoleOutput(Model):
+    state: Optional[JobState] = Field(None, title="Job State", description="The current job's state")
+    stdout: Optional[str] = Field(None, title="STDOUT", description="Tool STDOUT from job.")
+    stderr: Optional[str] = Field(None, title="STDERR", description="Tool STDERR from job.")
 
 
 class JobParameter(Model):

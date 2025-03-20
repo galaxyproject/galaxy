@@ -14,7 +14,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Sequence,
 )
 
 from markupsafe import escape
@@ -46,7 +45,11 @@ from galaxy.model import (
     UserQuotaUsage,
 )
 from galaxy.model.base import transaction
-from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.model.db.user import (
+    _cleanup_nonprivate_user_roles,
+    get_user_by_email,
+    get_user_by_username,
+)
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
@@ -212,10 +215,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserGroupAssociations
         for uga in user.groups:
             self.session().delete(uga)
-        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-        for ura in user.roles:
-            if ura.role_id != private_role.id:
-                self.session().delete(ura)
+        _cleanup_nonprivate_user_roles(self.session(), user, private_role.id)
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)
@@ -656,11 +656,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             remote_user_email = remote_user_email.lower()
         user = get_user_by_email(self.session(), remote_user_email, self.app.model.User)
         if user:
-            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
-            # role and default user / history permissions were not set for remote users.  When a
-            # remote user authenticates, we'll look for this information, and if missing, create it.
-            if not self.app.security_agent.get_private_user_role(user):
-                self.app.security_agent.create_private_user_role(user)
+            # Ensure a private role and default permissions are set for remote users (remote user creation bug existed prior to 2009)
+            self.app.security_agent.get_private_user_role(user, auto_create=True)
             if self.app_type == "galaxy":
                 if not user.default_permissions:
                     self.app.security_agent.user_set_default_permissions(user)
@@ -864,28 +861,6 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         )
 
         self.fn_filter_parsers.update({})
-
-
-def get_users_by_ids(session: galaxy_scoped_session, user_ids: List[int]) -> Sequence[User]:
-    stmt = select(User).where(User.id.in_(user_ids))
-    return session.scalars(stmt).all()
-
-
-# The get_user_by_email and get_user_by_username functions may be called from
-# the tool_shed app, which has its own User model, which is different from
-# galaxy.model.User. In that case, the tool_shed user model should be passed as
-# the model_class argument.
-def get_user_by_email(session, email: str, model_class=User, case_sensitive=True):
-    filter_clause = model_class.email == email
-    if not case_sensitive:
-        filter_clause = func.lower(model_class.email) == func.lower(email)
-    stmt = select(model_class).where(filter_clause).limit(1)
-    return session.scalars(stmt).first()
-
-
-def get_user_by_username(session, username: str, model_class=User):
-    stmt = select(model_class).filter(model_class.username == username).limit(1)
-    return session.scalars(stmt).first()
 
 
 def username_from_email(session, email, model_class=User):

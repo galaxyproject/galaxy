@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 
-import type { DataValuePoint } from ".";
+import { type DataValuePoint } from ".";
 
 import BarChart from "./BarChart.vue";
 

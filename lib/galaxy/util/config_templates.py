@@ -3,17 +3,22 @@
 This is capturing code shared by file source templates and object store templates.
 """
 
+import logging
 import os
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
 )
+from urllib.parse import urlencode
 
+import requests
 import yaml
 from boltons.iterutils import remap
 from pydantic import (
@@ -24,7 +29,9 @@ from pydantic import (
 )
 from typing_extensions import (
     Literal,
+    NotRequired,
     Protocol,
+    TypedDict,
 )
 
 try:
@@ -44,6 +51,8 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.util import asbool
+
+log = logging.getLogger(__name__)
 
 TemplateVariableType = Literal["string", "path_component", "boolean", "integer"]
 TemplateVariableValueType = Union[str, bool, int]
@@ -178,6 +187,12 @@ def expand_raw_config(
         "environment": environment,
     }
 
+    return _expand_raw_config(template_configuration, template_variables)
+
+
+def _expand_raw_config(
+    template_configuration: TemplateConfiguration, template_variables: Dict[str, Any]
+) -> RawTemplateConfig:
     template_start = template_configuration.template_start or "{{"
     template_end = template_configuration.template_end or "}}"
 
@@ -191,6 +206,14 @@ def expand_raw_config(
     raw_config = remap(template_model_as_json, visit=expand_template)
     _clean_template_meta_parameters(raw_config)
     return raw_config
+
+
+def merge_implicit_parameters(raw_config: RawTemplateConfig, implicit: Optional["ImplicitConfigurationParameters"]):
+    if implicit:
+        raw_config.update(implicit)
+        raw_config.pop("oauth2_client_id", None)
+        raw_config.pop("oauth2_client_secret", None)
+        raw_config.pop("oauth2_scope", None)
 
 
 def verify_vault_configured_if_uses_secrets(catalog, vault_configured: bool, exception_message: str) -> None:
@@ -282,6 +305,9 @@ class Template(Protocol):
 
     @property
     def version(self) -> int: ...
+
+    @property
+    def type(self) -> str: ...
 
     @property
     def variables(self) -> Optional[List[TemplateVariable]]: ...
@@ -445,6 +471,7 @@ class PluginStatus(StrictModel):
 
     # TODO: Fill in writable checks.
     # writable: Optional[PluginAspectStatus] = None
+    oauth2_access_token_generation: Optional[PluginAspectStatus] = None
 
 
 def status_template_definition(template: Optional[Template]) -> PluginAspectStatus:
@@ -478,3 +505,106 @@ def connection_exception_to_status(what: str, exception: Optional[Exception]) ->
         message = f"Failed to connect to a {what} with supplied settings: {exception}"
         connection_status = PluginAspectStatus(state="not_ok", message=message)
     return connection_status
+
+
+class OAuth2Info(StrictModel):
+    authorize_url: str
+
+
+class OAuth2Configuration(StrictModel):
+    authorize_url: str
+    token_url: str
+    authorize_params: Optional[Dict[str, str]]
+    scope: Optional[str] = None
+
+
+ConfiguredOAuth2Sources = Dict[str, OAuth2Configuration]
+
+
+class OAuth2ClientPair(StrictModel):
+    client_id: str
+    client_secret: str
+
+
+def get_authorize_url(
+    client_id_or_pair: Union[str, OAuth2ClientPair],
+    config: OAuth2Configuration,
+    redirect_uri: Optional[str],
+    state: Optional[str] = None,
+    scope: Optional[str] = None,
+) -> str:
+    client_id = client_id_or_pair if isinstance(client_id_or_pair, str) else client_id_or_pair.client_id
+    query_data = dict(
+        client_id=client_id,
+        response_type="code",
+    )
+    if redirect_uri is not None:
+        query_data["redirect_uri"] = redirect_uri
+    if state is not None:
+        query_data["state"] = state
+    if scope is not None:
+        query_data["scope"] = scope
+    elif config.scope is not None:
+        query_data["scope"] = config.scope
+    query_data.update(config.authorize_params or {})
+    query = urlencode(query_data)
+    return f"{config.authorize_url}?{query}"
+
+
+def get_token_from_code_raw(
+    code: str, client_pair: OAuth2ClientPair, config: OAuth2Configuration, redirect_uri: Optional[str]
+) -> requests.Response:
+    data = {
+        "code": code,
+        "grant_type": "authorization_code",
+        "client_id": client_pair.client_id,
+        "client_secret": client_pair.client_secret,
+    }
+    if redirect_uri is not None:
+        data["redirect_uri"] = redirect_uri
+
+    return requests.post(config.token_url, data=data)
+
+
+def get_token_from_refresh_raw(
+    refresh_token: str, client_pair: OAuth2ClientPair, config: OAuth2Configuration
+) -> requests.Response:
+    data = {
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
+        "client_id": client_pair.client_id,
+        "client_secret": client_pair.client_secret,
+    }
+
+    return requests.post(config.token_url, data=data)
+
+
+def get_oauth2_config_from(template, sources: ConfiguredOAuth2Sources) -> OAuth2Configuration:
+    template_type = template.configuration.type
+    if template_type not in sources:
+        raise ObjectNotFound(f"oauth information not available for template type {template_type}")
+    return sources[template_type]
+
+
+def read_oauth2_info_from_configuration(
+    template_configuration: TemplateConfiguration,
+    user_details: UserDetailsDict,
+    environment: EnvironmentDict,
+) -> Tuple[OAuth2ClientPair, Optional[str]]:
+    template_variables = {
+        "user": user_details,
+        "environment": environment,
+    }
+
+    expanded_config = _expand_raw_config(template_configuration, template_variables)
+    oauth2_client_id = expanded_config["oauth2_client_id"]
+    oauth2_client_secret = expanded_config["oauth2_client_secret"]
+    oauth2_scope = cast(Optional[str], expanded_config.get("oauth2_scope"))
+    client_pair = OAuth2ClientPair(client_id=oauth2_client_id, client_secret=oauth2_client_secret)
+    return client_pair, oauth2_scope
+
+
+# Things added to configuration dictionary not managed by the template
+# but injected dynamically. Currently only `oauth2_access_token`.
+class ImplicitConfigurationParameters(TypedDict):
+    oauth2_access_token: NotRequired[str]

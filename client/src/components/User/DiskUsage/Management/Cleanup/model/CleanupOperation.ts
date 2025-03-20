@@ -1,7 +1,7 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
-import type { CleanableSummary } from "./CleanableSummary";
-import type { CleanupResult } from "./CleanupResult";
+import { type CleanableSummary } from "./CleanableSummary";
+import { type CleanupResult } from "./CleanupResult";
 
 export type CleanableItem = components["schemas"]["StoredItem"];
 export type SortableKey = "name" | "size" | "update_time";

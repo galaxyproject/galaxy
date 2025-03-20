@@ -2,20 +2,15 @@ import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } fr
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
 import { updateTags } from "@/api/tags";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
-
-/**
- * Api endpoint handlers
- */
-const getVisualizations = fetcher.path("/api/visualizations").method("get").create();
 
 /**
  * Local types
@@ -27,17 +22,26 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getVisualizations({
-        limit,
-        offset,
-        search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_published: false,
-        show_own: true,
-        show_shared: false,
+    const { response, data, error } = await GalaxyApi().GET("/api/visualizations", {
+        params: {
+            query: {
+                limit,
+                offset,
+                search,
+                sort_by: sort_by as SortKeyLiteral,
+                sort_desc,
+                show_published: false,
+                show_own: true,
+                show_shared: false,
+            },
+        },
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 

@@ -36,7 +36,8 @@ class ShedBrowser(metaclass=abc.ABCMeta):
     def submit_form_with_name(self, form_name: str, button="runtool_btn", **kwd):
         """Submit the target button."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_twill(self) -> bool:
         """Return whether this is a twill browser."""
 

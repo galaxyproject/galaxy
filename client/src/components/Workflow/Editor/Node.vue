@@ -18,7 +18,8 @@
         <div
             class="unselectable clearfix card-header py-1 px-2"
             :class="headerClass"
-            @click.exact="makeActive"
+            @pointerdown.exact="onPointerDown"
+            @pointerup.exact="onPointerUp"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
@@ -91,7 +92,8 @@
             variant="danger"
             show
             class="node-error m-0 rounded-0 rounded-bottom"
-            @click.exact="makeActive"
+            @pointerdown.exact="onPointerDown"
+            @pointerup.exact="onPointerUp"
             @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
@@ -100,7 +102,8 @@
             v-else
             class="node-body position-relative card-body p-0 mx-2"
             :class="{ 'cursor-pointer': isInvocation }"
-            @click.exact="makeActive"
+            @pointerdown.exact="onPointerDown"
+            @pointerup.exact="onPointerUp"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
@@ -160,7 +163,9 @@ import WorkflowIcons from "@/components/Workflow/icons";
 import type { GraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
+import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
 import type { Step } from "@/stores/workflowStepStore";
+import { composedPartialPath, isClickable } from "@/utils/dom";
 
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
@@ -224,12 +229,14 @@ const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const { connectionStore, stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
+
 useNodePosition(
     elHtml,
     props.id,
     stateStore,
     computed(() => props.scale)
 );
+
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
@@ -247,10 +254,13 @@ const classes = computed(() => {
         "node-multi-selected": stateStore.getStepMultiSelected(props.id),
     };
 });
+
 const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
+
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
+
 const headerClass = computed(() => {
     return {
         ...invocationStep.value.headerClass,
@@ -259,6 +269,7 @@ const headerClass = computed(() => {
         "cursor-move": !props.readonly && !props.isInvocation,
     };
 });
+
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
     const extraStepInputs = stepStore.getStepExtraInputs(props.id);
@@ -275,6 +286,7 @@ const inputs = computed(() => {
     });
     return [...stepInputs, ...invalidInputTerminalSource];
 });
+
 const invalidOutputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
     const invalidConnections = connections.filter(
@@ -287,6 +299,7 @@ const invalidOutputs = computed(() => {
         return { name, optional: false, datatypes: [], valid: false };
     });
 });
+
 const invocationStep = computed(() => props.step as GraphStep);
 const outputs = computed(() => {
     return [...props.step.outputs, ...invalidOutputs.value];
@@ -296,7 +309,56 @@ function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTermina
     emit("onDragConnector", dragPosition, terminal);
 }
 
+const mouseMovementThreshold = 9;
+const singleClickTimeout = 800;
+const doubleClickTimeout = 500;
+
+let mouseDownTime = 0;
+let doubleClickTime = 0;
+
+let movementDistance = 0;
+let lastPosition: XYPosition | null = null;
+
+const inspectorStore = useWorkflowNodeInspectorStore();
+
+function onPointerDown() {
+    mouseDownTime = Date.now();
+}
+
+function onPointerUp(e: PointerEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
+    const mouseUpTime = Date.now();
+    const clickTime = mouseUpTime - mouseDownTime;
+
+    if (clickTime <= singleClickTimeout && movementDistance <= mouseMovementThreshold) {
+        makeActive();
+    }
+
+    const timeBetweenClicks = mouseUpTime - doubleClickTime;
+
+    if (timeBetweenClicks < doubleClickTimeout) {
+        inspectorStore.setMaximized(props.step, true);
+    }
+
+    doubleClickTime = Date.now();
+    lastPosition = null;
+    movementDistance = 0;
+}
+
 function onMoveTo(position: XYPosition) {
+    if (lastPosition) {
+        movementDistance += Math.abs(position.x - lastPosition.x);
+        movementDistance += Math.abs(position.y - lastPosition.y);
+    }
+
+    lastPosition = position;
+
     emit("onUpdateStepPosition", props.id, {
         top: position.y + props.scroll.y.value / props.scale,
         left: position.x + props.scroll.x.value / props.scale,
@@ -337,6 +399,8 @@ function toggleSelected() {
 @import "theme/blue.scss";
 
 .workflow-node {
+    --dblclick: prevent;
+
     position: absolute;
     z-index: 100;
     width: $workflow-node-width;

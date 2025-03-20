@@ -8,6 +8,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import traceback
 import urllib.parse
 import zipfile
 from json import dumps
@@ -35,11 +36,16 @@ from typing_extensions import (
 )
 
 from galaxy import util
+from galaxy.tool_util.client.staging import StagingInterface
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
     TestCollectionOutputDef,
+    TestSourceTestOutputColllection,
+    ToolSourceTestOutputs,
+    XmlTestCollectionDefDict,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import (
@@ -47,6 +53,14 @@ from galaxy.util.hash_util import (
     parse_checksum_hash,
 )
 from . import verify
+from ._types import (
+    ExpandedToolInputs,
+    ExpandedToolInputsJsonified,
+    RequiredDataTablesT,
+    RequiredFilesT,
+    RequiredLocFileT,
+    ToolTestDescriptionDict,
+)
 from .asserts import verify_assertions
 from .wait import wait_on
 
@@ -58,7 +72,7 @@ log = getLogger(__name__)
 VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False))
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
-DEFAULT_TOOL_TEST_WAIT = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
 CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
 DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
@@ -90,21 +104,21 @@ JobDataCallbackT = Callable[[JobDataT], None]
 
 
 class ValidToolTestDict(TypedDict):
-    inputs: Any
-    outputs: Any
-    output_collections: List[Dict[str, Any]]
+    inputs: ExpandedToolInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: NotRequired[AssertionList]
     stderr: NotRequired[AssertionList]
-    expect_exit_code: NotRequired[int]
+    expect_exit_code: NotRequired[Optional[Union[str, int]]]
     expect_failure: NotRequired[bool]
     expect_test_failure: NotRequired[bool]
-    maxseconds: NotRequired[int]
-    num_outputs: NotRequired[int]
+    maxseconds: NotRequired[Optional[int]]
+    num_outputs: NotRequired[Optional[Union[str, int]]]
     command_line: NotRequired[AssertionList]
     command_version: NotRequired[AssertionList]
-    required_files: NotRequired[List[Any]]
-    required_data_tables: NotRequired[List[Any]]
-    required_loc_files: NotRequired[List[str]]
+    required_files: NotRequired[RequiredFilesT]
+    required_data_tables: NotRequired[RequiredDataTablesT]
+    required_loc_files: NotRequired[RequiredLocFileT]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -125,45 +139,42 @@ ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
 ToolTestDictsT = List[ToolTestDict]
 
 
+class PathOrLocation(NamedTuple):
+    name: str
+    path: Optional[str]
+    location: Optional[str]
+
+
 def stage_data_in_history(
     galaxy_interactor: "GalaxyInteractorApi",
     tool_id: str,
     all_test_data,
-    history=None,
+    history: str,
     force_path_paste=False,
     maxseconds=DEFAULT_TOOL_TEST_WAIT,
     tool_version=None,
+    test_data_resolver: Optional[TestDataResolver] = None,
 ):
-    # Upload any needed files
-    upload_waits = []
-
     assert tool_id
 
-    if UPLOAD_ASYNC:
-        for test_data in all_test_data:
-            upload_waits.append(
-                galaxy_interactor.stage_data_async(
-                    test_data,
-                    history,
-                    tool_id,
-                    force_path_paste=force_path_paste,
-                    maxseconds=maxseconds,
-                    tool_version=tool_version,
-                )
-            )
-        for upload_wait in upload_waits:
-            upload_wait()
-    else:
-        for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(
-                test_data,
-                history,
-                tool_id,
-                force_path_paste=force_path_paste,
-                maxseconds=maxseconds,
-                tool_version=tool_version,
-            )
-            upload_wait()
+    staging_interface = InteractorStagingInterface(galaxy_interactor, maxseconds=maxseconds, upload_async=UPLOAD_ASYNC)
+    job = {}
+    for test_data in all_test_data:
+        test_dict = galaxy_interactor.remote_to_input(
+            test_data=test_data, tool_id=tool_id, force_path_paste=force_path_paste, tool_version=tool_version
+        )
+        job[test_data["fname"]] = test_dict
+    resolve_data = test_data_resolver.get_filename if test_data_resolver else None
+    staging_interface.stage(
+        "tool",
+        history_id=history,
+        job=job,
+        use_path_paste=force_path_paste,
+        resolve_data=resolve_data,
+    )
+    staging_interface.handle_jobs()
+    galaxy_interactor.uploads = job
+    return
 
 
 class RunToolResponse(NamedTuple):
@@ -171,6 +182,38 @@ class RunToolResponse(NamedTuple):
     outputs: OutputsDict
     output_collections: Dict[str, Any]
     jobs: List[Dict[str, Any]]
+
+
+class InteractorStagingInterface(StagingInterface):
+
+    def __init__(self, galaxy_interactor: "GalaxyInteractorApi", maxseconds: Optional[int], upload_async: bool) -> None:
+        super().__init__()
+        self.galaxy_interactor = galaxy_interactor
+        self.maxseconds = maxseconds or DEFAULT_TOOL_TEST_WAIT
+        self.upload_async = upload_async
+        self.job_responses: List[Dict[str, Any]] = []
+
+    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.galaxy_interactor._post(api_path, payload, json=True)
+        assert response.status_code == 200, f"Staging failed: {response.text}"
+        return response.json()
+
+    def _handle_job(self, job_response: Dict[str, Any]):
+        if not self.upload_async:
+            return self.galaxy_interactor.wait_for_job(
+                job_response["id"], job_response["history_id"], maxseconds=self.maxseconds
+            )
+        else:
+            self.job_responses.append(job_response)
+        return
+
+    def handle_jobs(self):
+        for job_response in self.job_responses:
+            self.galaxy_interactor.wait_for_job(job_response["id"], job_response["history_id"], self.maxseconds)
+
+    @property
+    def use_fetch_api(self):
+        return True
 
 
 class GalaxyInteractorApi:
@@ -225,7 +268,7 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List[ToolTestDescriptionDict]:
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
@@ -337,18 +380,7 @@ class GalaxyInteractorApi:
         `dbkey` and `tags` all map to the API description directly. Other metadata attributes
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
-        metadata = attributes.get("metadata", {}).copy()
-        for key in metadata.copy().keys():
-            if key not in ["name", "info", "tags", "created_from_basename"]:
-                new_key = f"metadata_{key}"
-                metadata[new_key] = metadata[key]
-                del metadata[key]
-            elif key == "info":
-                metadata["misc_info"] = metadata["info"]
-                del metadata["info"]
-        expected_file_type = attributes.get("ftype", None)
-        if expected_file_type:
-            metadata["file_ext"] = expected_file_type
+        metadata = get_metadata_to_test(attributes)
 
         if metadata:
 
@@ -361,29 +393,7 @@ class GalaxyInteractorApi:
                     return None
 
             dataset = wait_on(wait_for_content, desc="dataset metadata", timeout=10)
-
-            for key, value in metadata.items():
-                try:
-                    dataset_value = dataset.get(key, None)
-
-                    def compare(val, expected):
-                        if str(val) != str(expected):
-                            raise Exception(
-                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
-                            )
-
-                    if isinstance(dataset_value, list):
-                        value = str(value).split(",")
-                        if len(value) != len(dataset_value):
-                            raise Exception(
-                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
-                            )
-                        for val, expected in zip(dataset_value, value):
-                            compare(val, expected)
-                    else:
-                        compare(dataset_value, value)
-                except KeyError:
-                    raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
+            compare_expected_metadata_to_api_response(metadata, dataset)
 
     def wait_for_job(self, job_id: str, history_id: Optional[str] = None, maxseconds=DEFAULT_TOOL_TEST_WAIT) -> None:
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
@@ -403,7 +413,7 @@ class GalaxyInteractorApi:
 
     def get_history(self, history_name: str = "test_history") -> Optional[Dict[str, Any]]:
         # Return the most recent non-deleted history matching the provided name
-        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
+        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time", "show_own": "true"})
         response = self._get(f"histories?{filters}")
         try:
             return response.json()[-1]
@@ -412,14 +422,17 @@ class GalaxyInteractorApi:
 
     @contextlib.contextmanager
     def test_history(
-        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+        self,
+        require_new: bool = True,
+        cleanup_callback: Optional[Callable[[str], None]] = None,
+        name: Optional[str] = None,
     ) -> Generator[str, None, None]:
         history_id = None
         if not require_new:
             history_id = DEFAULT_TARGET_HISTORY
 
         cleanup = CLEANUP_TEST_HISTORIES
-        history_id = history_id or self.new_history()
+        history_id = history_id or self.new_history(name)
         try:
             yield history_id
         except Exception:
@@ -429,7 +442,8 @@ class GalaxyInteractorApi:
             if cleanup and cleanup_callback is not None:
                 cleanup_callback(history_id)
 
-    def new_history(self, history_name: str = "test_history", publish_history: bool = False) -> str:
+    def new_history(self, history_name: Optional[str] = None, publish_history: bool = False) -> str:
+        history_name = history_name or "test_history"
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
@@ -452,16 +466,23 @@ class GalaxyInteractorApi:
             return result
         raise Exception(result["err_msg"])
 
-    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
-        result = None
-        local_path = None
+    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None, path_only=False):
+        result: Optional[Union[str, bytes]] = None
+        local_path: Optional[str] = None
 
         if self.supports_test_data_download:
             version_fragment = f"&tool_version={tool_version}" if tool_version else ""
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
             if response.status_code == 200:
                 if mode == "file":
-                    result = response.content
+                    if path_only:
+                        pardir = tempfile.mkdtemp()
+                        path = os.path.join(pardir, os.path.basename(filename))
+                        with open(path, "wb") as out:
+                            out.write(response.content)
+                        return out.name
+                    else:
+                        return response.content
                 elif mode == "directory":
                     prefix = os.path.basename(filename)
                     path = tempfile.mkdtemp(prefix=prefix)
@@ -474,6 +495,8 @@ class GalaxyInteractorApi:
                         with tarfile.open(fileobj=fileobj) as tar_contents:
                             tar_contents.extractall(path=path)
                     result = path
+                    if path_only:
+                        return result
         else:
             # We can only use local data
             local_path = self.test_data_path(tool_id, filename, tool_version=tool_version)
@@ -483,6 +506,8 @@ class GalaxyInteractorApi:
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == "file":
+                if path_only:
+                    return local_path
                 with open(local_path, mode="rb") as f:
                     result = f.read()
             elif mode == "directory":
@@ -518,96 +543,97 @@ class GalaxyInteractorApi:
             output_id = output_data
         return output_id
 
-    def stage_data_async(
-        self,
-        test_data: Dict[str, Any],
-        history_id: str,
-        tool_id: str,
-        force_path_paste: bool = False,
-        maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-        tool_version: Optional[str] = None,
-    ) -> Callable[[], None]:
+    def remote_to_input(
+        self, test_data, tool_id: str, force_path_paste: bool = False, tool_version: Optional[str] = None
+    ):
         fname = test_data["fname"]
+        tags = test_data.get("tags")
         tool_input = {
-            "file_type": test_data["ftype"],
+            "format": test_data["ftype"],
             "dbkey": test_data["dbkey"],
+            "class": test_data.get("class", "File"),
+            # Match legacy test behavior
+            "decompress": util.string_as_bool(test_data.get("decompress", True)),
         }
+        if tags:
+            if isinstance(tags, str):
+                tags = tags.split(",")
+            tool_input["tags"] = tags
+
         metadata = test_data.get("metadata", {})
         if not hasattr(metadata, "items"):
             raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
-        for name, value in test_data.get("metadata", {}).items():
-            tool_input[f"files_metadata|{name}"] = value
+        tool_input["metadata"] = metadata
 
         composite_data = test_data["composite_data"]
         if composite_data:
-            files = {}
-            for i, file_name in enumerate(composite_data):
-                if force_path_paste:
-                    file_path = self.test_data_path(tool_id, file_name, tool_version=tool_version)
-                    tool_input.update({f"files_{i}|url_paste": f"file://{file_path}"})
-                else:
-                    file_content = self.test_data_download(
-                        tool_id, file_name, is_output=False, tool_version=tool_version
-                    )
-                    files[f"files_{i}|file_data"] = file_content
-                tool_input.update(
-                    {
-                        f"files_{i}|type": "upload_dataset",
-                    }
-                )
-            name = test_data["name"]
+            tool_input["composite_data"] = [
+                self._get_path_or_location(
+                    fname=fname_,
+                    test_data={},
+                    tool_id=tool_id,
+                    tool_version=tool_version,
+                    force_path_paste=force_path_paste,
+                ).path
+                for fname_ in composite_data
+            ]
         else:
-            file_name = None
-            file_name_exists = False
-            location = self._ensure_valid_location_in(test_data)
-            if fname and force_path_paste:
-                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                file_name_exists = os.path.exists(f"{file_name}")
-            upload_from_location = not file_name_exists and location is not None
-            name = os.path.basename(location if upload_from_location else fname)
-            tool_input.update(
-                {
-                    "files_0|NAME": name,
-                    "files_0|type": "upload_dataset",
-                }
+            assert fname, "File path is required and cannot be empty string"
+            path_or_location = self._get_path_or_location(
+                fname,
+                test_data,
+                tool_id,
+                tool_version=tool_version,
+                mode="file" if tool_input["class"].lower() == "file" else "directory",
             )
-            files = {}
-            if upload_from_location:
-                tool_input.update({"files_0|url_paste": location})
-            elif force_path_paste:
+            if path_or_location.path:
+                tool_input["path"] = path_or_location.path
+            if path_or_location.location:
+                tool_input["location"] = path_or_location.location
+            tool_input["name"] = os.path.basename(path_or_location.name)
+        return tool_input
+
+    def _get_path_or_location(
+        self,
+        fname: str,
+        test_data: Dict[str, Any],
+        tool_id: str,
+        tool_version: Optional[str] = None,
+        force_path_paste: bool = False,
+        mode: Literal["file", "directory"] = "file",
+    ) -> PathOrLocation:
+        file_name = None
+        file_name_exists = False
+        location = self._ensure_valid_location_in(test_data)
+        if fname and force_path_paste:
+            file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+            file_name_exists = os.path.exists(file_name)
+        if not file_name_exists and location is not None:
+            return PathOrLocation(name=location, location=location, path=None)
+        else:
+            if force_path_paste:
                 if file_name is None:
                     file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                tool_input.update({"files_0|url_paste": f"file://{file_name}"})
+                return PathOrLocation(name=fname, location=f"file://{file_name}", path=None)
             else:
-                file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
-                files = {"files_0|file_data": file_content}
-        submit_response_object = self.__submit_tool(
-            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
-        )
-        submit_response = ensure_tool_run_response_okay(submit_response_object, f"upload dataset {name}")
-        assert (
-            "outputs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting outputs in response."
-        outputs = submit_response["outputs"]
-        assert len(outputs) > 0, f"Invalid response from server [{submit_response}], expecting an output dataset."
-        dataset = outputs[0]
-        hid = dataset["id"]
-        self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
-        assert (
-            "jobs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting jobs in response."
-        jobs = submit_response["jobs"]
-        assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
-        return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
+                path = self.test_data_download(
+                    tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
+                )
+                assert isinstance(path, str)
+                # Downloaded directories contain root directory
+                if path and mode == "directory":
+                    path = os.path.join(path, fname)
+                return PathOrLocation(name=fname, location=None, path=path)
 
     def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
         location: Optional[str] = test_data.get("location")
-        has_valid_location = location and util.is_url(location)
-        if location and not has_valid_location:
+        if location and not util.is_url(location):
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(
+        self, testdef: "ToolTestDescription", history_id: str, resource_parameters: Optional[Dict[str, Any]] = None
+    ) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -687,7 +713,8 @@ class GalaxyInteractorApi:
                 element["name"] = element_identifier
                 tags = element_def.get("attributes").get("tags")
                 if tags:
-                    element["tags"] = tags.split(",")
+                    if isinstance(tags, str):
+                        element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 
@@ -905,7 +932,7 @@ class GalaxyInteractorApi:
                 else:
                     break
 
-            assert response
+            assert response, f"Failed to fetch url '{url}'"
             response.raise_for_status()
             return response.content
 
@@ -1149,7 +1176,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     expected_element_count = output_collection_def.count
-    if expected_element_count:
+    if expected_element_count is not None:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
             message = f"Output collection '{name}': expected to have {expected_element_count} elements, but it had {actual_element_count}."
@@ -1202,7 +1229,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                     message = f"Output collection '{name}': identifier '{identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
-    verify_elements(data_collection["elements"], output_collection_def.element_tests)
+    if output_collection_def.element_tests:
+        verify_elements(data_collection["elements"], output_collection_def.element_tests)
 
 
 def _verify_composite_datatype_file_content(
@@ -1339,7 +1367,8 @@ def verify_tool(
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
-    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
+    _tool_test_dicts: Optional[List[ToolTestDescriptionDict]] = None,  # extension point only for tests
+    test_data_resolver: Optional[TestDataResolver] = None,
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1380,7 +1409,7 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
+    testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1397,7 +1426,7 @@ def verify_tool(
     job_stdio = None
     job_output_exceptions = None
     tool_execution_exception: Optional[Exception] = None
-    input_staging_exception = None
+    input_staging_exc_info = None
     expected_failure_occurred = False
     begin_time = time.time()
     try:
@@ -1410,9 +1439,10 @@ def verify_tool(
                 force_path_paste=force_path_paste,
                 maxseconds=maxseconds,
                 tool_version=tool_version,
+                test_data_resolver=test_data_resolver,
             )
-        except Exception as e:
-            input_staging_exception = e
+        except Exception:
+            input_staging_exc_info = sys.exc_info()
             raise
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
@@ -1462,8 +1492,10 @@ def verify_tool(
                         status = "skip"
                     else:
                         status = "error"
-            if input_staging_exception:
-                job_data["execution_problem"] = f"Input staging problem: {util.unicodify(input_staging_exception)}"
+            if input_staging_exc_info:
+                job_data["execution_problem"] = (
+                    f"Input staging problem: {''.join(traceback.format_exception(*input_staging_exc_info))}"
+                )
                 status = "error"
             job_data["status"] = status
             register_job_data(job_data)
@@ -1658,27 +1690,132 @@ class JobOutputsError(AssertionError):
         self.output_exceptions = output_exceptions
 
 
-class ToolTestDescriptionDict(TypedDict):
-    name: str
-    inputs: Any
-    outputs: Any
-    output_collections: List[Dict[str, Any]]
-    stdout: Optional[AssertionList]
-    stderr: Optional[AssertionList]
-    expect_exit_code: Optional[int]
-    expect_failure: bool
-    expect_test_failure: bool
-    num_outputs: Optional[int]
-    command_line: Optional[AssertionList]
-    command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
-    error: bool
-    tool_id: str
-    tool_version: Optional[str]
-    test_index: int
-    exception: Optional[str]
+DEFAULT_NUM_OUTPUTS: Optional[int] = None
+DEFAULT_OUTPUT_COLLECTIONS: List[TestSourceTestOutputColllection] = []
+DEFAULT_REQUIRED_FILES: RequiredFilesT = []
+DEFAULT_REQUIRED_DATA_TABLES: RequiredDataTablesT = []
+DEFAULT_REQUIRED_LOC_FILES: RequiredLocFileT = []
+DEFAULT_COMMAND_LINE: Optional[AssertionList] = []
+DEFAULT_COMMAND_VERSION: Optional[AssertionList] = []
+DEFAULT_STDOUT: Optional[AssertionList] = []
+DEFAULT_STDERR: Optional[AssertionList] = []
+DEFAULT_OUTPUTS: ToolSourceTestOutputs = []
+DEFAULT_EXPECT_EXIT_CODE: Optional[int] = None
+DEFAULT_EXPECT_FAILURE: bool = False
+DEFAULT_EXPECT_TEST_FAILURE: bool = False
+DEFAULT_EXCEPTION: Optional[str] = None
+
+
+def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionDict:
+    """Convert the dictionaries parsed from tool sources (ToolTestDict) to a ToolTestDescriptionDict.
+
+    ToolTestDescription is used inside and outside of Galaxy, so convert the dictionaries to the format
+    produced by ToolTestDescription.to_dict() and then construct a ToolTestDescription from that.
+    """
+    test_index: int = _get_test_index(processed_dict)
+    name = _get_test_name(processed_dict, test_index)
+    error_in_test_definition = processed_dict["error"]
+
+    exception: Optional[str] = DEFAULT_EXCEPTION
+    output_collections: List[TestSourceTestOutputColllection] = []
+    num_outputs: Optional[int] = DEFAULT_NUM_OUTPUTS
+    required_files: RequiredFilesT = DEFAULT_REQUIRED_FILES
+    required_data_tables: RequiredDataTablesT = DEFAULT_REQUIRED_DATA_TABLES
+    required_loc_files: RequiredLocFileT = DEFAULT_REQUIRED_LOC_FILES
+    command_line: Optional[AssertionList] = DEFAULT_COMMAND_LINE
+    command_version: Optional[AssertionList] = DEFAULT_COMMAND_VERSION
+    stdout: Optional[AssertionList] = DEFAULT_STDERR
+    stderr: Optional[AssertionList] = DEFAULT_STDERR
+    outputs: ToolSourceTestOutputs = DEFAULT_OUTPUTS
+    expect_exit_code: Optional[int] = DEFAULT_EXPECT_EXIT_CODE
+    expect_failure: bool = DEFAULT_EXPECT_FAILURE
+    expect_test_failure: bool = DEFAULT_EXPECT_TEST_FAILURE
+    inputs: ExpandedToolInputsJsonified = {}
+    maxseconds: Optional[int] = None
+
+    if not error_in_test_definition:
+        processed_test_dict = cast(ValidToolTestDict, processed_dict)
+        maxseconds = processed_test_dict.get("maxseconds")
+        output_collections = processed_test_dict.get("output_collections", [])
+        if "num_outputs" in processed_test_dict and processed_test_dict["num_outputs"]:
+            num_outputs = int(processed_test_dict["num_outputs"])
+
+        required_files = processed_test_dict.get("required_files", DEFAULT_REQUIRED_FILES)
+        required_data_tables = processed_test_dict.get("required_data_tables", DEFAULT_REQUIRED_DATA_TABLES)
+        required_loc_files = processed_test_dict.get("required_loc_files", DEFAULT_REQUIRED_LOC_FILES)
+        command_line = processed_test_dict.get("command_line", DEFAULT_COMMAND_LINE)
+        command_version = processed_test_dict.get("command_version", DEFAULT_COMMAND_VERSION)
+        stdout = processed_test_dict.get("stdout", DEFAULT_STDOUT)
+        stderr = processed_test_dict.get("stderr", DEFAULT_STDERR)
+        outputs = processed_test_dict.get("outputs", DEFAULT_OUTPUTS)
+        raw_expect_exit_code: Optional[Union[str, int]] = processed_test_dict.get(
+            "expect_exit_code", DEFAULT_EXPECT_EXIT_CODE
+        )
+        if raw_expect_exit_code is not None:
+            expect_exit_code = int(raw_expect_exit_code)
+
+        expect_failure = processed_test_dict.get("expect_failure", DEFAULT_EXPECT_FAILURE)
+        expect_test_failure = processed_test_dict.get("expect_test_failure", DEFAULT_EXPECT_TEST_FAILURE)
+        inputs = processed_test_dict.get("inputs", {})
+    else:
+        invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
+        maxseconds = DEFAULT_TOOL_TEST_WAIT
+        exception = invalid_test_dict.get("exception", DEFAULT_EXCEPTION)
+
+    return ToolTestDescriptionDict(
+        test_index=test_index,
+        name=name,
+        error=error_in_test_definition,
+        maxseconds=maxseconds,
+        tool_id=processed_dict["tool_id"],
+        tool_version=processed_dict.get("tool_version"),
+        exception=exception,
+        num_outputs=num_outputs,
+        required_files=required_files,
+        required_data_tables=required_data_tables,
+        required_loc_files=required_loc_files,
+        command_line=command_line,
+        command_version=command_version,
+        stdout=stdout,
+        stderr=stderr,
+        outputs=outputs,
+        output_collections=output_collections,
+        expect_exit_code=expect_exit_code,
+        expect_failure=expect_failure,
+        expect_test_failure=expect_test_failure,
+        inputs=inputs,
+    )
+
+
+def _get_test_index(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> int:
+    assert "test_index" in test_dict, "Invalid processed test description, must have a 'test_index' for naming, etc.."
+    return test_dict["test_index"]
+
+
+def _get_test_name(test_dict: Union[ToolTestDict, ToolTestDescriptionDict], test_index: int) -> str:
+    name = cast(str, test_dict.get("name", f"Test-{test_index + 1}"))
+    return name
+
+
+def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified) -> ExpandedToolInputs:
+    loaded_inputs: ExpandedToolInputs = {}
+    for key, value in expanded_inputs_json.items():
+        if isinstance(value, dict) and value.get("model_class"):
+            collection_def_dict = cast(XmlTestCollectionDefDict, value)
+            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
+        else:
+            loaded_inputs[key] = value
+    return loaded_inputs
+
+
+def expanded_inputs_to_json(expanded_inputs: ExpandedToolInputs) -> ExpandedToolInputsJsonified:
+    inputs_dict: ExpandedToolInputsJsonified = {}
+    for key, value in expanded_inputs.items():
+        if hasattr(value, "to_dict"):
+            inputs_dict[key] = value.to_dict()
+        else:
+            inputs_dict[key] = value
+    return inputs_dict
 
 
 class ToolTestDescription:
@@ -1689,70 +1826,53 @@ class ToolTestDescription:
     """
 
     name: str
+    tool_id: str
+    tool_version: Optional[str]
+    test_index: int
     num_outputs: Optional[int]
     stdout: Optional[AssertionList]
     stderr: Optional[AssertionList]
     command_line: Optional[AssertionList]
     command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
+    required_files: RequiredFilesT
+    required_data_tables: RequiredDataTablesT
+    required_loc_files: RequiredLocFileT
     expect_exit_code: Optional[int]
     expect_failure: bool
     expect_test_failure: bool
     exception: Optional[str]
+    inputs: ExpandedToolInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestCollectionOutputDef]
+    maxseconds: Optional[int]
 
-    def __init__(self, processed_test_dict: ToolTestDict):
-        assert (
-            "test_index" in processed_test_dict
-        ), "Invalid processed test description, must have a 'test_index' for naming, etc.."
-        test_index = processed_test_dict["test_index"]
-        name = cast(str, processed_test_dict.get("name", f"Test-{test_index + 1}"))
-        error_in_test_definition = processed_test_dict["error"]
-        if not error_in_test_definition:
-            processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
-            maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400)
-            output_collections = processed_test_dict.get("output_collections", [])
-        else:
-            processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
-            maxseconds = DEFAULT_TOOL_TEST_WAIT
-            output_collections = []
+    @staticmethod
+    def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
+        return ToolTestDescription(adapt_tool_source_dict(processed_test_dict))
 
-        self.test_index = test_index
-        assert (
-            "tool_id" in processed_test_dict
-        ), "Invalid processed test description, must have a 'tool_id' for naming, etc.."
-        self.tool_id = processed_test_dict["tool_id"]
-        self.tool_version = processed_test_dict.get("tool_version")
-        self.name = name
-        self.maxseconds = maxseconds
-        self.required_files = cast(List[Any], processed_test_dict.get("required_files", []))
-        self.required_data_tables = cast(List[Any], processed_test_dict.get("required_data_tables", []))
-        self.required_loc_files = cast(List[str], processed_test_dict.get("required_loc_files", []))
-
-        inputs = processed_test_dict.get("inputs", {})
-        loaded_inputs = {}
-        for key, value in inputs.items():
-            if isinstance(value, dict) and value.get("model_class"):
-                loaded_inputs[key] = TestCollectionDef.from_dict(value)
-            else:
-                loaded_inputs[key] = value
-
-        self.inputs = loaded_inputs
-        self.outputs = processed_test_dict.get("outputs", [])
-        self.num_outputs = cast(Optional[int], processed_test_dict.get("num_outputs", None))
-
-        self.error = processed_test_dict.get("error", False)
-        self.exception = cast(Optional[str], processed_test_dict.get("exception", None))
-
+    def __init__(self, json_dict: ToolTestDescriptionDict):
+        self.test_index = _get_test_index(json_dict)
+        self.name = _get_test_name(json_dict, self.test_index)
+        self.error = json_dict["error"]
+        self.exception = json_dict.get("exception", DEFAULT_EXCEPTION)
+        output_collections = json_dict.get("output_collections", DEFAULT_OUTPUT_COLLECTIONS)
         self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
-        self.command_line = cast(Optional[AssertionList], processed_test_dict.get("command_line", None))
-        self.command_version = cast(Optional[AssertionList], processed_test_dict.get("command_version", None))
-        self.stdout = cast(Optional[AssertionList], processed_test_dict.get("stdout", None))
-        self.stderr = cast(Optional[AssertionList], processed_test_dict.get("stderr", None))
-        self.expect_exit_code = cast(Optional[int], processed_test_dict.get("expect_exit_code", None))
-        self.expect_failure = cast(bool, processed_test_dict.get("expect_failure", False))
-        self.expect_test_failure = cast(bool, processed_test_dict.get("expect_test_failure", False))
+        self.num_outputs = json_dict.get("num_outputs", DEFAULT_NUM_OUTPUTS)
+        self.required_files = json_dict.get("required_files", DEFAULT_REQUIRED_FILES)
+        self.required_data_tables = json_dict.get("required_data_tables", DEFAULT_REQUIRED_DATA_TABLES)
+        self.required_loc_files = json_dict.get("required_loc_files", DEFAULT_REQUIRED_LOC_FILES)
+        self.command_line = json_dict.get("command_line", DEFAULT_COMMAND_LINE)
+        self.command_version = json_dict.get("command_version", DEFAULT_COMMAND_VERSION)
+        self.stdout = json_dict.get("stdout", DEFAULT_STDOUT)
+        self.stderr = json_dict.get("stderr", DEFAULT_STDERR)
+        self.outputs = json_dict.get("outputs", DEFAULT_OUTPUTS)
+        self.expect_exit_code = json_dict.get("expect_exit_code", DEFAULT_EXPECT_EXIT_CODE)
+        self.expect_failure = json_dict.get("expect_failure", DEFAULT_EXPECT_FAILURE)
+        self.expect_test_failure = json_dict.get("expect_test_failure", DEFAULT_EXPECT_TEST_FAILURE)
+        self.inputs = expanded_inputs_from_json(json_dict.get("inputs", {}))
+        self.tool_id = json_dict["tool_id"]
+        self.tool_version = json_dict.get("tool_version")
+        self.maxseconds = json_dict.get("maxseconds")
 
     def test_data(self):
         """
@@ -1761,15 +1881,9 @@ class ToolTestDescription:
         return test_data_iter(self.required_files)
 
     def to_dict(self) -> ToolTestDescriptionDict:
-        inputs_dict = {}
-        for key, value in self.inputs.items():
-            if hasattr(value, "to_dict"):
-                inputs_dict[key] = value.to_dict()
-            else:
-                inputs_dict[key] = value
-
-        return {
-            "inputs": inputs_dict,
+        inputs = expanded_inputs_to_json(self.inputs)
+        test_description_def: ToolTestDescriptionDict = {
+            "inputs": inputs,
             "outputs": self.outputs,
             "output_collections": [_.to_dict() for _ in self.output_collections],
             "num_outputs": self.num_outputs,
@@ -1790,18 +1904,24 @@ class ToolTestDescription:
             "error": self.error,
             "exception": self.exception,
         }
+        if self.maxseconds is not None:
+            test_description_def["maxseconds"] = self.maxseconds
+        return ToolTestDescriptionDict(**test_description_def)
 
 
 def test_data_iter(required_files):
     for fname, extra in required_files:
-        data_dict = dict(
-            fname=fname,
-            metadata=extra.get("metadata", {}),
-            composite_data=extra.get("composite_data", []),
-            ftype=extra.get("ftype", DEFAULT_FTYPE),
-            dbkey=extra.get("dbkey", DEFAULT_DBKEY),
-            location=extra.get("location", None),
-        )
+        default_ftype = DEFAULT_FTYPE if extra.get("class", "File").lower() != "directory" else "directory"
+        data_dict = {
+            "fname": fname,
+            "class": extra.get("class", "File"),
+            "metadata": extra.get("metadata", {}),
+            "composite_data": extra.get("composite_data", []),
+            "ftype": extra.get("ftype", default_ftype),
+            "dbkey": extra.get("dbkey", DEFAULT_DBKEY),
+            "location": extra.get("location", None),
+            "tags": extra.get("tags", []),
+        }
         edit_attributes = extra.get("edit_attributes", [])
 
         # currently only renaming is supported
@@ -1814,3 +1934,45 @@ def test_data_iter(required_files):
                 raise Exception(f"edit_attributes type ({edit_att.get('type', None)}) is unimplemented")
 
         yield data_dict
+
+
+def compare_expected_metadata_to_api_response(metadata: dict, dataset: dict) -> None:
+    for key, value in metadata.items():
+        try:
+            dataset_value = dataset.get(key, None)
+
+            def compare(val, expected):
+                if str(val) != str(expected):
+                    raise Exception(
+                        f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
+                    )
+
+            if isinstance(dataset_value, list):
+                value = str(value).split(",")
+                if len(value) != len(dataset_value):
+                    raise Exception(
+                        f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
+                    )
+                for val, expected in zip(dataset_value, value):
+                    compare(val, expected)
+            else:
+                compare(dataset_value, value)
+        except KeyError:
+            raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
+
+
+def get_metadata_to_test(test_properties: dict) -> dict:
+    """Fetch out metadata to test from test property dict and adapt it to keys the API produces."""
+    metadata = test_properties.get("metadata", {}).copy()
+    for key in metadata.copy().keys():
+        if key not in ["name", "info", "tags", "created_from_basename"]:
+            new_key = f"metadata_{key}"
+            metadata[new_key] = metadata[key]
+            del metadata[key]
+        elif key == "info":
+            metadata["misc_info"] = metadata["info"]
+            del metadata["info"]
+    expected_file_type = test_properties.get("ftype", None)
+    if expected_file_type:
+        metadata["file_ext"] = expected_file_type
+    return metadata

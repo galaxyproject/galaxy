@@ -1,8 +1,8 @@
-# Before running this test, start nginx+webdav in Docker using following command:
-# docker run -v `pwd`/test/integration/webdav/data:/media  -e WEBDAV_USERNAME=alice -e WEBDAV_PASSWORD=secret1234 -p 7083:7083 jmchilton/webdavdev
-# Apache Docker host (shown next) doesn't work because displayname not set in response.
-# docker run -v `pwd`/test/integration/webdav:/var/lib/dav  -e AUTH_TYPE=Basic -e USERNAME=alice -e PASSWORD=secret1234  -e LOCATION=/ -p 7083:80 bytemark/webdav
+import os
 
+from sqlalchemy import select
+
+from galaxy.model import Dataset
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -108,3 +108,53 @@ class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.Inte
 
     def _assert_access_forbidden_response(self, response):
         api_asserts.assert_status_code_is(response, 403)
+
+
+class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        PosixFileSourceSetup.handle_galaxy_config_kwds(
+            config,
+            cls,
+            prefer_links=True,
+        )
+
+    def setUp(self):
+        super().setUp()
+        self._write_file_fixtures()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_links_by_default(self):
+        with self.dataset_populator.test_history() as history_id:
+            element = dict(src="url", url="gxfiles://linking_source/a")
+            target = {
+                "destination": {"type": "hdas"},
+                "elements": [element],
+            }
+            targets = [target]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
+            assert content == "a\n", content
+            stmt = select(Dataset).order_by(Dataset.create_time.desc()).limit(1)
+            dataset = self._app.model.session.execute(stmt).unique().scalar_one()
+            assert dataset.external_filename.endswith("/root/a")
+            assert os.path.exists(dataset.external_filename)
+            assert open(dataset.external_filename).read() == "a\n"
+            payload = self.dataset_populator.run_tool(
+                tool_id="cat",
+                inputs={
+                    "input1": {"src": "hda", "id": new_dataset["id"]},
+                },
+                history_id=history_id,
+            )
+            derived_dataset = payload["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            derived_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=derived_dataset)
+            assert derived_content.strip() == "a"

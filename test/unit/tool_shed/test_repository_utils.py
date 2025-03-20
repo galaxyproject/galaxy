@@ -5,6 +5,8 @@ from tool_shed.webapp.model import (
     User,
 )
 from ._util import (
+    attach_category,
+    create_category,
     repository_fixture,
     TEST_DATA_FILES,
     TestToolShedApp,
@@ -81,6 +83,27 @@ def test_upload_dry_run_ok(provides_repositories: ProvidesRepositoriesContext, n
     assert files_removed == 0
     new_tip = new_repository.tip()
     assert old_tip == new_tip
+
+
+def test_category_count(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
+    category = create_category(provides_repositories, {"name": "test_category_count_1"})
+    attach_category(provides_repositories, new_repository, category)
+
+    category = new_repository.categories[0].category
+    assert category.active_repository_count() == 1
+
+    tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
+    upload_ok, *_ = upload_tar(
+        provides_repositories,
+        new_repository.user.username,
+        new_repository,
+        tar_resource,
+        commit_message="Commit Message",
+    )
+    assert upload_ok
+
+    category = new_repository.categories[0].category
+    assert category.active_repository_count() == 1
 
 
 def test_upload_dry_run_failed(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):

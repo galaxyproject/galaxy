@@ -25,6 +25,9 @@ const modulesExcludedFromLibs = [
     "elkjs",
     "@citation-js",
     "citeproc",
+    "vega",
+    "vega-embed",
+    "vega-lite",
 ].join("|");
 
 const buildDate = new Date();

@@ -104,11 +104,11 @@ onMounted(() => {
             <h3>Create Visualization</h3>
             <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
         </template>
-        <div class="overflow-y mt-2">
+        <div>
             <LoadingSpan v-if="isLoading" message="Loading visualizations" />
             <div v-else-if="filteredPlugins.length > 0">
                 <div v-for="plugin in filteredPlugins" :key="plugin.name">
-                    <button :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
+                    <button class="plugin-item" :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
                         <div class="d-flex">
                             <div class="plugin-thumbnail mr-2">
                                 <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
@@ -143,6 +143,20 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
+@import "theme/blue.scss";
+
+.plugin-item {
+    background: none;
+    border: none;
+    text-align: left;
+    transition: none;
+    width: 100%;
+}
+
+.plugin-item:hover {
+    background: $gray-200;
+}
+
 .plugin-thumbnail {
     img {
         width: 2rem;

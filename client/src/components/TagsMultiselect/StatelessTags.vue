@@ -7,6 +7,8 @@ import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
+import { VALID_TAG_RE } from "../Tags/model";
+
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 import Tag from "./Tag.vue";
 
@@ -84,10 +86,8 @@ const slicedTags = computed(() => {
     }
 });
 
-const invalidTagRegex = /([.:\s][.:\s])|(^[.:])|([.:]$)|(^[\s]*$)/;
-
 function isValid(tag: string) {
-    return !tag.match(invalidTagRegex);
+    return tag.match(VALID_TAG_RE);
 }
 
 function onTagClicked(tag: string) {

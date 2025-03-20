@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -17,11 +16,8 @@ import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
 
-library.add(faCaretDown);
-
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array, default: null },
 });
@@ -104,6 +100,21 @@ const viewIcon = computed(() => {
     }
 });
 
+const showFavorites = computed({
+    get() {
+        return query.value.includes("#favorites");
+    },
+    set(value) {
+        if (value) {
+            if (!query.value.includes("#favorites")) {
+                query.value = `#favorites ${query.value}`.trim();
+            }
+        } else {
+            query.value = query.value.replace("#favorites", "").trim();
+        }
+    },
+});
+
 async function initializeTools() {
     try {
         await toolStore.fetchTools();
@@ -136,10 +147,17 @@ function onInsertWorkflow(workflowId: string | undefined, workflowName: string) 
 function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | undefined) {
     emit("onInsertWorkflowSteps", workflowId, workflowStepCount);
 }
+
+watch(
+    () => query.value,
+    (newQuery) => {
+        showFavorites.value = newQuery.includes("#favorites");
+    }
+);
 </script>
 
 <template>
-    <div v-if="arePanelsFetched" class="unified-panel" aria-labelledby="toolbox-heading">
+    <div v-if="arePanelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
@@ -169,13 +187,13 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                                 </Heading>
                             </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">
-                                <FontAwesomeIcon icon="caret-down" />
+                                <FontAwesomeIcon :icon="faCaretDown" />
                             </div>
                         </div>
                     </template>
                 </PanelViewMenu>
                 <div v-if="!showAdvanced" class="panel-header-buttons">
-                    <FavoritesButton :query="query" @onFavorites="(q) => (query = q)" />
+                    <FavoritesButton v-model="showFavorites" />
                 </div>
             </div>
         </div>
@@ -185,7 +203,6 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
             :panel-query.sync="query"
             :panel-view="currentPanelView"
             :show-advanced.sync="showAdvanced"
-            :editor-workflows="editorWorkflows"
             :data-managers="dataManagers"
             :module-sections="moduleSections"
             @updatePanelView="updatePanelView"

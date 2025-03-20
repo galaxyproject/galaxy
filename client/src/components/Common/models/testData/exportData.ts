@@ -1,9 +1,9 @@
-import type { components } from "@/api/schema";
+import {
+    type ExportObjectRequestMetadata,
+    type ExportObjectResultMetadata,
+    type ObjectExportTaskResponse,
+} from "@/api";
 import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
-
-type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
-type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
-type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
 const PAST_EXPORT_DATE = new Date("11 November 2022 14:48 UTC").toISOString();
 const RECENT_EXPORT_DATE = new Date().toISOString();

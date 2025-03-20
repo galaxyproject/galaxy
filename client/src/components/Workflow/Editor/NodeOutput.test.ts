@@ -4,7 +4,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import { nextTick, ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { UndoRedoStore, useUndoRedoStore } from "@/stores/undoRedoStore";
+import { type UndoRedoStore, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { type Step, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 

@@ -74,7 +74,9 @@ const localFilterText = computed({
         return props.query !== null ? props.query : "";
     },
     set: (newVal: any) => {
-        checkQuery(newVal);
+        if (newVal.trim() || props.query.trim()) {
+            checkQuery(newVal);
+        }
     },
 });
 
@@ -245,7 +247,7 @@ function onAdvancedSearch(filters: any) {
         <DelayedInput
             v-else
             class="mb-3"
-            :query="props.query"
+            :value="props.query"
             :delay="200"
             :loading="queryPending"
             :placeholder="placeholder"

@@ -5,21 +5,23 @@ import Vue, { computed, onMounted, ref } from "vue";
 import {
     browseRemoteFiles,
     fetchFileSources,
-    FileSourceBrowsingMode,
-    FilterFileSourcesOptions,
-    RemoteEntry,
+    type FileSourceBrowsingMode,
+    type FilterFileSourcesOptions,
+    type RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import {
-    ItemsProvider,
-    ItemsProviderContext,
+    type ItemsProvider,
+    type ItemsProviderContext,
     SELECTION_STATES,
     type SelectionItem,
+    type SelectionState,
 } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { USER_FILE_PREFIX } from "@/utils/upload-payload";
 
 import { Model } from "./model";
 
@@ -42,6 +44,8 @@ interface FilesDialogProps {
     requireWritable?: boolean;
     /** Optional selected item to start browsing from */
     selectedItem?: SelectionItem;
+    /** Whether the dialog is visible at the start */
+    isOpen?: boolean;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -52,6 +56,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     requireWritable: false,
     selectedItem: undefined,
+    isOpen: true,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -64,7 +69,7 @@ const errorMessage = ref<string>();
 const filter = ref();
 const items = ref<SelectionItem[]>([]);
 const itemsProvider = ref<ItemsProvider>();
-const modalShow = ref(true);
+const modalShow = ref(props.isOpen);
 const optionsShow = ref(false);
 const undoShow = ref(false);
 const hasValue = ref(false);
@@ -73,7 +78,7 @@ const showDetails = ref(true);
 const isBusy = ref(false);
 const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
-const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
+const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
 const totalItems = ref(0);
 
@@ -248,7 +253,9 @@ function load(record?: SelectionItem) {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
                     .map(fileSourcePluginToItem);
-                items.value = convertedItems;
+
+                const sortedItems = convertedItems.sort(sortPrivateFileSourcesFirst);
+                items.value = sortedItems;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = false;
@@ -292,6 +299,20 @@ function load(record?: SelectionItem) {
                 errorMessage.value = errorMessageAsString(error);
             });
     }
+}
+
+function isPrivateFileSource(item: SelectionItem): boolean {
+    return item.url.startsWith(USER_FILE_PREFIX);
+}
+
+function sortPrivateFileSourcesFirst(a: SelectionItem, b: SelectionItem): number {
+    if (isPrivateFileSource(a) && !isPrivateFileSource(b)) {
+        return -1;
+    }
+    if (!isPrivateFileSource(a) && isPrivateFileSource(b)) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -415,7 +436,7 @@ onMounted(() => {
         :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
-        :select-all-icon="selectAllIcon"
+        :select-all-variant="selectAllIcon"
         :show-select-icon="undoShow && multiple"
         :undo-show="undoShow"
         @onCancel="() => (modalShow = false)"

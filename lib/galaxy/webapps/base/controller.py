@@ -613,220 +613,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     slug_builder = SlugBuilder()
 
-    def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
-        """
-        Get a Visualization from the database by id, verifying ownership.
-        """
-        # Load workflow from database
-        try:
-            visualization = trans.sa_session.get(model.Visualization, trans.security.decode_id(id))
-        except TypeError:
-            visualization = None
-        if not visualization:
-            error("Visualization not found")
-        else:
-            return self.security_check(trans, visualization, check_ownership, check_accessible)
-
-    def get_visualization_dict(self, visualization):
-        """
-        Return a set of detailed attributes for a visualization in dictionary form.
-        The visualization's latest_revision is returned in its own sub-dictionary.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        return {
-            "model_class": "Visualization",
-            "id": visualization.id,
-            "title": visualization.title,
-            "type": visualization.type,
-            "user_id": visualization.user.id,
-            "dbkey": visualization.dbkey,
-            "slug": visualization.slug,
-            # to_dict only the latest revision (allow older to be fetched elsewhere)
-            "latest_revision": self.get_visualization_revision_dict(visualization.latest_revision),
-            "revisions": [r.id for r in visualization.revisions],
-        }
-
-    def get_visualization_revision_dict(self, revision):
-        """
-        Return a set of detailed attributes for a visualization in dictionary form.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        return {
-            "model_class": "VisualizationRevision",
-            "id": revision.id,
-            "visualization_id": revision.visualization.id,
-            "title": revision.title,
-            "dbkey": revision.dbkey,
-            "config": revision.config,
-        }
-
-    def import_visualization(self, trans, id, user=None):
-        """
-        Copy the visualization with the given id and associate the copy
-        with the given user (defaults to trans.user).
-
-        Raises `ItemAccessibilityException` if `user` is not passed and
-        the current user is anonymous, and if the visualization is not `importable`.
-        Raises `ItemDeletionException` if the visualization has been deleted.
-        """
-        # default to trans.user, error if anon
-        if not user:
-            if not trans.user:
-                raise exceptions.ItemAccessibilityException("You must be logged in to import Galaxy visualizations")
-            user = trans.user
-
-        # check accessibility
-        visualization = self.get_visualization(trans, id, check_ownership=False)
-        if not visualization.importable:
-            raise exceptions.ItemAccessibilityException(
-                "The owner of this visualization has disabled imports via this link."
-            )
-        if visualization.deleted:
-            raise exceptions.ItemDeletionException("You can't import this visualization because it has been deleted.")
-
-        # copy vis and alter title
-        # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
-        trans.sa_session.add(imported_visualization)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return imported_visualization
-
-    def create_visualization(
-        self,
-        trans,
-        type,
-        title="Untitled Visualization",
-        slug=None,
-        dbkey=None,
-        annotation=None,
-        config=None,
-        save=True,
-    ):
-        """
-        Create visualiation and first revision.
-        """
-        config = config or {}
-        visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
-        # TODO: handle this error structure better either in _create or here
-        if isinstance(visualization, dict):
-            err_dict = visualization
-            raise ValueError(err_dict["title_err"] or err_dict["slug_err"])
-
-        # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision(
-            visualization=visualization, title=title, config=config, dbkey=dbkey
-        )
-        visualization.latest_revision = revision
-
-        if save:
-            session = trans.sa_session
-            session.add(revision)
-            with transaction(session):
-                session.commit()
-
-        return visualization
-
-    def add_visualization_revision(self, trans, visualization, config, title, dbkey):
-        """
-        Adds a new `VisualizationRevision` to the given `visualization` with
-        the given parameters and set its parent visualization's `latest_revision`
-        to the new revision.
-        """
-        # precondition: only add new revision on owned vis's
-        # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(
-            visualization=visualization, title=title, dbkey=dbkey, config=config
-        )
-
-        visualization.latest_revision = revision
-        # TODO:?? does this automatically add revision to visualzation.revisions?
-        trans.sa_session.add(revision)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return revision
-
-    def save_visualization(self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None):
-        session = trans.sa_session
-
-        # Create/get visualization.
-        if not id:
-            # Create new visualization.
-            vis = self._create_visualization(trans, title, type, dbkey, slug, annotation)
-        else:
-            decoded_id = trans.security.decode_id(id)
-            vis = session.get(model.Visualization, decoded_id)
-            # TODO: security check?
-
-        # Create new VisualizationRevision that will be attached to the viz
-        vis_rev = trans.model.VisualizationRevision()
-        vis_rev.visualization = vis
-        # do NOT alter the dbkey
-        vis_rev.dbkey = vis.dbkey
-        # do alter the title and config
-        vis_rev.title = title
-
-        # -- Validate config. --
-
-        if vis.type == "trackster":
-
-            def unpack_track(track_dict):
-                """Unpack a track from its json."""
-                dataset_dict = track_dict["dataset"]
-                return {
-                    "dataset_id": trans.security.decode_id(dataset_dict["id"]),
-                    "hda_ldda": dataset_dict.get("hda_ldda", "hda"),
-                    "track_type": track_dict["track_type"],
-                    "prefs": track_dict["prefs"],
-                    "mode": track_dict["mode"],
-                    "filters": track_dict["filters"],
-                    "tool_state": track_dict["tool_state"],
-                }
-
-            def unpack_collection(collection_json):
-                """Unpack a collection from its json."""
-                unpacked_drawables = []
-                drawables = collection_json["drawables"]
-                for drawable_json in drawables:
-                    if "track_type" in drawable_json:
-                        drawable = unpack_track(drawable_json)
-                    else:
-                        drawable = unpack_collection(drawable_json)
-                    unpacked_drawables.append(drawable)
-                return {
-                    "obj_type": collection_json["obj_type"],
-                    "drawables": unpacked_drawables,
-                    "prefs": collection_json.get("prefs", []),
-                    "filters": collection_json.get("filters", None),
-                }
-
-            # TODO: unpack and validate bookmarks:
-            def unpack_bookmarks(bookmarks_json):
-                return bookmarks_json
-
-            # Unpack and validate view content.
-            view_content = unpack_collection(config["view"])
-            bookmarks = unpack_bookmarks(config["bookmarks"])
-            vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
-            # Viewport from payload
-            viewport = config.get("viewport")
-            if viewport:
-                chrom = viewport["chrom"]
-                start = viewport["start"]
-                end = viewport["end"]
-                overview = viewport["overview"]
-                vis_rev.config["viewport"] = {"chrom": chrom, "start": start, "end": end, "overview": overview}
-        else:
-            # Default action is to save the config as is with no validation.
-            vis_rev.config = config
-
-        vis.latest_revision = vis_rev
-        session.add(vis_rev)
-        with transaction(session):
-            session.commit()
-        encoded_id = trans.security.encode_id(vis.id)
-        return {"vis_id": encoded_id, "url": url_for(controller="visualization", action=vis.type, id=encoded_id)}
-
     def get_tool_def(self, trans, hda):
         """Returns definition of an interactive tool for an HDA."""
 
@@ -874,10 +660,14 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                dataset_id = track_dict["dataset_id"]
+                unencoded_id = track_dict.get("dataset_id")
+                if unencoded_id:
+                    encoded_id = trans.security.encode_id(unencoded_id)
+                else:
+                    encoded_id = track_dict["dataset"]["id"]
                 hda_ldda = track_dict.get("hda_ldda", "hda")
-                dataset_id = trans.security.encode_id(dataset_id)
-                dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
+
+                dataset = self.get_hda_or_ldda(trans, hda_ldda, encoded_id)
                 try:
                     prefs = track_dict["prefs"]
                 except KeyError:
@@ -1016,44 +806,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 )
         return data
 
-    # -- Helper functions --
-
-    def _create_visualization(self, trans, title, type, dbkey=None, slug=None, annotation=None, save=True):
-        """Create visualization but not first revision. Returns Visualization object."""
-        user = trans.get_user()
-
-        # Error checking.
-        title_err = slug_err = ""
-        if not title:
-            title_err = "visualization name is required"
-        elif slug and not managers_base.is_valid_slug(slug):
-            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif slug and slug_exists(trans.sa_session, trans.model.Visualization, user, slug, ignore_deleted=True):
-            slug_err = "visualization identifier must be unique"
-
-        if title_err or slug_err:
-            return {"title_err": title_err, "slug_err": slug_err}
-
-        # Create visualization
-        visualization = trans.model.Visualization(user=user, title=title, dbkey=dbkey, type=type)
-        if slug:
-            visualization.slug = slug
-        else:
-            self.slug_builder.create_item_slug(trans.sa_session, visualization)
-        if annotation:
-            annotation = sanitize_html(annotation)
-            # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
-            #   right now this is depending on the classes that include this mixin to have UsesAnnotations
-            self.add_item_annotation(trans.sa_session, trans.user, visualization, annotation)
-
-        if save:
-            session = trans.sa_session
-            session.add(visualization)
-            with transaction(session):
-                session.commit()
-
-        return visualization
-
     def _get_genome_data(self, trans, dataset, dbkey=None):
         """
         Returns genome-wide data for dataset if available; if not, message is returned.
@@ -1174,7 +926,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
+        workflow_contents_manager = workflows.WorkflowContentsManager(self.app, self.app.trs_proxy)
         return workflow_contents_manager.workflow_to_dict(
             trans,
             stored,
@@ -1261,7 +1013,7 @@ class SharableMixin:
 
     def _is_valid_slug(self, slug):
         """Returns true if slug is valid."""
-        return managers_base.is_valid_slug(slug)
+        return SlugBuilder.is_valid_slug(slug)
 
     @web.expose
     @web.require_login("modify Galaxy items")
@@ -1294,6 +1046,11 @@ class SharableMixin:
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display item by username and slug."""
+        # Ensure slug is in the correct format.
+        slug = slug.encode("latin1").decode("utf-8")
+        self._display_by_username_and_slug(trans, username, slug, **kwargs)
+
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         raise NotImplementedError()
 
     def get_item(self, trans, id):

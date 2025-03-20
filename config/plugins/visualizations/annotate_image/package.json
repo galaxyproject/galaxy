@@ -19,7 +19,7 @@
     },
     "scripts": {
         "build": "yarn build-css && yarn build-js",
-        "build-css": "cp 'node_modules/jquery-contextmenu/dist/jquery.contextMenu.css' 'static/'",
+        "build-css": "cp -f 'node_modules/jquery-contextmenu/dist/jquery.contextMenu.css' 'static/'",
         "build-js": "parcel build src/script.js --dist-dir static"
     }
 }

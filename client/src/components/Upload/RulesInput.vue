@@ -60,7 +60,7 @@ function eventBuild() {
     } else if (entry.selectionType == "remote_files") {
         entry.elements = uris.value;
     }
-    Galaxy.currHistoryPanel.buildCollection("rules", entry, null, true);
+    Galaxy.currHistoryPanel.buildCollectionFromRules(entry, null, true);
     emit("dismiss");
 }
 

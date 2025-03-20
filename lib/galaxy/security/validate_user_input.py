@@ -43,6 +43,11 @@ FILL_CHAR = "-"
 PASSWORD_MIN_LEN = 6
 
 
+def is_valid_email_str(email):
+    """Validates a string containing an email address and returns a boolean result."""
+    return validate_email_str(email) == ""
+
+
 def validate_email_str(email):
     """Validates a string containing an email address."""
     if not email:

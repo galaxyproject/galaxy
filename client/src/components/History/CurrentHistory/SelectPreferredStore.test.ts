@@ -4,11 +4,14 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 import { setupSelectableMock } from "../../ObjectStore/mockServices";
 
 import SelectPreferredStore from "./SelectPreferredStore.vue";
+
+const { server, http } = useServerMock();
 
 setupSelectableMock();
 
@@ -22,6 +25,11 @@ const TEST_HISTORY = {
 };
 
 async function mountComponent() {
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json({});
+        })
+    );
     const wrapper = mount(SelectPreferredStore as object, {
         propsData: { userPreferredObjectStoreId: null, history: TEST_HISTORY },
         localVue,

@@ -10,15 +10,6 @@ from typing import (
     Tuple,
 )
 
-from sqlalchemy import (
-    asc,
-    false,
-    func,
-    not_,
-    or_,
-    select,
-    true,
-)
 from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
@@ -29,10 +20,17 @@ from galaxy import exceptions
 from galaxy.managers.folders import FolderManager
 from galaxy.model import (
     Library,
-    LibraryPermissions,
     Role,
 )
 from galaxy.model.base import transaction
+from galaxy.model.db.library import (
+    get_libraries_by_name,
+    get_libraries_for_admins,
+    get_libraries_for_nonadmins,
+    get_library_ids,
+    get_library_permissions_by_role,
+)
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.util import (
     pretty_print_time_interval,
     unicodify,
@@ -60,7 +58,7 @@ class LibraryManager:
         :rtype:     galaxy.model.Library
         """
         try:
-            library = get_library(trans.sa_session, decoded_library_id)
+            library = trans.sa_session.get(Library, decoded_library_id)
         except MultipleResultsFound:
             raise exceptions.InconsistentDatabase("Multiple libraries found with the same id.")
         except NoResultFound:
@@ -280,26 +278,26 @@ class LibraryManager:
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        access_library_role_list = [
-            (access_role.name, trans.security.encode_id(access_role.id))
-            for access_role in self.get_access_roles(trans, library)
-        ]
-        modify_library_role_list = [
-            (modify_role.name, trans.security.encode_id(modify_role.id))
-            for modify_role in self.get_modify_roles(trans, library)
-        ]
-        manage_library_role_list = [
-            (manage_role.name, trans.security.encode_id(manage_role.id))
-            for manage_role in self.get_manage_roles(trans, library)
-        ]
-        add_library_item_role_list = [
-            (add_role.name, trans.security.encode_id(add_role.id)) for add_role in self.get_add_roles(trans, library)
-        ]
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+        access_roles = self.get_access_roles(trans, library)
+        modify_roles = self.get_modify_roles(trans, library)
+        manage_roles = self.get_manage_roles(trans, library)
+        add_roles = self.get_add_roles(trans, library)
+
+        def make_tuples(roles: Set):
+            tuples = []
+            for role in roles:
+                # use role name for non-private roles, and user.email from private rules
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuple = (displayed_name, trans.security.encode_id(role.id))
+                tuples.append(role_tuple)
+            return tuples
+
         return dict(
-            access_library_role_list=access_library_role_list,
-            modify_library_role_list=modify_library_role_list,
-            manage_library_role_list=manage_library_role_list,
-            add_library_item_role_list=add_library_item_role_list,
+            access_library_role_list=make_tuples(access_roles),
+            modify_library_role_list=make_tuples(modify_roles),
+            manage_library_role_list=make_tuples(manage_roles),
+            add_library_item_role_list=make_tuples(add_roles),
         )
 
     def get_access_roles(self, trans, library: Library) -> Set[Role]:
@@ -358,52 +356,8 @@ def get_containing_library_from_library_dataset(trans, library_dataset) -> Optio
     while folder.parent:
         folder = folder.parent
     # We have folder set to the library's root folder, which has the same name as the library
-    stmt = select(Library).where(Library.deleted == false()).where(Library.name == folder.name)
-    for library in trans.sa_session.scalars(stmt):
+    for library in get_libraries_by_name(trans.sa_session, folder.name):
         # Just to double-check
         if library.root_folder == folder:
             return library
     return None
-
-
-def get_library(session, library_id):
-    stmt = select(Library).where(Library.id == library_id)
-    return session.execute(stmt).scalar_one()
-
-
-def get_library_ids(session, library_access_action):
-    stmt = select(LibraryPermissions.library_id).where(LibraryPermissions.action == library_access_action).distinct()
-    return session.scalars(stmt)
-
-
-def get_library_permissions_by_role(session, role_ids):
-    stmt = select(LibraryPermissions).where(LibraryPermissions.role_id.in_(role_ids))
-    return session.scalars(stmt)
-
-
-def get_libraries_for_admins(session, deleted):
-    stmt = select(Library)
-    if deleted is None:
-        #  Flag is not specified, do not filter on it.
-        pass
-    elif deleted:
-        stmt = stmt.where(Library.deleted == true())
-    else:
-        stmt = stmt.where(Library.deleted == false())
-    stmt = stmt.order_by(asc(func.lower(Library.name)))
-    return session.scalars(stmt)
-
-
-def get_libraries_for_nonadmins(session, restricted_library_ids, accessible_restricted_library_ids):
-    stmt = (
-        select(Library)
-        .where(Library.deleted == false())
-        .where(
-            or_(
-                not_(Library.id.in_(restricted_library_ids)),
-                Library.id.in_(accessible_restricted_library_ids),
-            )
-        )
-    )
-    stmt = stmt.order_by(asc(func.lower(Library.name)))
-    return session.scalars(stmt)

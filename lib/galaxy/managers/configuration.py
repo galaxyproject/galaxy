@@ -104,8 +104,8 @@ class ConfigSerializer(base.ModelSerializer):
         self.default_view = "all"
         self.add_view("all", list(self.serializers.keys()))
 
-    def default_serializer(self, config, key):
-        return getattr(config, key, None)
+    def default_serializer(self, item, key, **context):
+        return getattr(item, key, None)
 
     def add_serializers(self):
         def _defaults_to(default) -> base.Serializer:
@@ -229,6 +229,7 @@ class ConfigSerializer(base.ModelSerializer):
             "fixed_delegated_auth": _defaults_to(False),
             "help_forum_api_url": _use_config,
             "enable_help_forum_tool_panel_integration": _use_config,
+            "llm_api_configured": lambda item, key, **context: bool(item.openai_api_key),
         }
 
 

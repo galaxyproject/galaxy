@@ -24,7 +24,7 @@ Community support is available at `Galaxy Help <https://help.galaxyproject.org/>
 Galaxy Quickstart
 =================
 
-Galaxy requires Python 3.8 . To check your Python version, run:
+Galaxy requires Python 3.8 or higher. To check your Python version, run:
 
 .. code:: console
 

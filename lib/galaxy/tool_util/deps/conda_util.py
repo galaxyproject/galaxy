@@ -425,7 +425,7 @@ class CondaTarget:
     def __init__(
         self, package: str, version: Optional[str] = None, build: Optional[str] = None, channel: Optional[str] = None
     ) -> None:
-        if SHELL_UNSAFE_PATTERN.search(package) is not None:
+        if SHELL_UNSAFE_PATTERN.search(package) is not None or not package:
             raise ValueError(f"Invalid package [{package}] encountered.")
         self.capitalized_package = package
         self.package = package.lower()

@@ -1,6 +1,8 @@
 import json
 from enum import Enum
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -101,6 +103,13 @@ class ExtraFiles(FetchBaseModel):
     )
 
 
+class FetchDatasetHash(Model):
+    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
+    hash_value: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class BaseDataElement(FetchBaseModel):
     name: Optional[CoercedStringType] = None
     dbkey: str = Field("?")
@@ -116,6 +125,10 @@ class BaseDataElement(FetchBaseModel):
     items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
     collection_type: Optional[str] = None
     MD5: Optional[str] = None
+    SHA1: Optional[str] = Field(None, alias="SHA-1")
+    SHA256: Optional[str] = Field(None, alias="SHA-256")
+    SHA512: Optional[str] = Field(None, alias="SHA-512")
+    hashes: Optional[List[FetchDatasetHash]] = None
     description: Optional[str] = None
     model_config = ConfigDict(extra="forbid")
 
@@ -170,6 +183,7 @@ class PathDataElement(BaseDataElement):
 class CompositeDataElement(BaseDataElement):
     src: Literal["composite"]
     composite: "CompositeItems"
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class CompositeItems(FetchBaseModel):

@@ -1,38 +1,28 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
-import { getCurrentUser } from "@/stores/users/queries";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
-import { UserQuotaUsageData } from "./Quota/model";
+import { type UserQuotaUsageData } from "./Quota/model/QuotaUsage";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 
-jest.mock("@/api/schema");
-jest.mock("@/stores/users/queries");
-
 const localVue = getLocalVue();
+
+const { server, http } = useServerMock();
 
 const quotaUsageClassSelector = ".quota-usage";
 const basicDiskUsageSummaryId = "#basic-disk-usage-summary";
 
-const fakeUserWithQuota = {
-    id: "fakeUser",
-    email: "fakeUserEmail",
-    tags_used: [],
-    isAnonymous: false,
+const fakeUserWithQuota = getFakeRegisteredUser({
     total_disk_usage: 1048576,
     quota_bytes: 104857600,
     quota_percent: 1,
-    quota_source_label: "Default",
-};
-
-// TODO: Replace this with a mockFetcher when #16608 is merged
-const mockGetCurrentUser = getCurrentUser as jest.Mock;
-mockGetCurrentUser.mockImplementation(() => Promise.resolve(fakeUserWithQuota));
+});
 
 const fakeQuotaUsages: UserQuotaUsageData[] = [
     {
@@ -45,15 +35,17 @@ const fakeQuotaUsages: UserQuotaUsageData[] = [
 const FAKE_TASK_ID = "fakeTaskId";
 
 async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
-    mockFetcher
-        .path("/api/configuration")
-        .method("get")
-        .mock({ data: { enable_quotas: enableQuotas } });
-    mockFetcher.path("/api/users/{user_id}/usage").method("get").mock({ data: fakeQuotaUsages });
-    mockFetcher
-        .path("/api/users/current/recalculate_disk_usage")
-        .method("put")
-        .mock({ status: 200, data: { id: FAKE_TASK_ID } });
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response.untyped(HttpResponse.json({ enable_quotas: enableQuotas }));
+        }),
+        http.get("/api/users/{user_id}", ({ response }) => {
+            return response(200).json(fakeUserWithQuota);
+        }),
+        http.get("/api/users/{user_id}/usage", ({ response }) => {
+            return response(200).json(fakeQuotaUsages);
+        })
+    );
 
     const pinia = createPinia();
     const wrapper = mount(DiskUsageSummary, {
@@ -67,6 +59,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 }
 
 describe("DiskUsageSummary.vue", () => {
+    jest.useFakeTimers();
     it("should display basic disk usage summary if quotas are NOT enabled", async () => {
         const enableQuotasInConfig = false;
         const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
@@ -102,16 +95,33 @@ describe("DiskUsageSummary.vue", () => {
                 total_disk_usage: 2097152,
             },
         ];
-        mockFetcher.path("/api/users/{user_id}/usage").method("get").mock({ data: updatedFakeQuotaUsages });
-        mockFetcher.path("/api/tasks/{task_id}/state").method("get").mock({ data: "SUCCESS" });
+        server.use(
+            http.get("/api/users/{user_id}/usage", ({ response }) => {
+                return response(200).json(updatedFakeQuotaUsages);
+            }),
+            http.put("/api/users/current/recalculate_disk_usage", ({ response }) => {
+                return response(200).json({ id: FAKE_TASK_ID, ignored: false });
+            }),
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                return response(200).json("PENDING");
+            })
+        );
         const refreshButton = wrapper.find("#refresh-disk-usage");
         await refreshButton.trigger("click");
-        const refreshingAlert = wrapper.find(".refreshing-alert");
-        expect(refreshingAlert.exists()).toBe(true);
-        // Make sure the refresh has finished before checking the quota usage
         await flushPromises();
+        expect(wrapper.find(".refreshing-alert").exists()).toBe(true);
+
+        // Make sure the refresh has finished before checking the quota usage
+        server.use(
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                return response(200).json("SUCCESS");
+            })
+        );
+        jest.runAllTimers();
+        await flushPromises();
+
         // The refreshing alert should disappear and the quota usage should be updated
-        expect(refreshingAlert.exists()).toBe(false);
+        expect(wrapper.find(".refreshing-alert").exists()).toBe(false);
         expect(quotaUsage.text()).toContain("2 MB");
     });
 });

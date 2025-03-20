@@ -15,7 +15,9 @@ GROUP_B = "group name with spaces"
 REQUIRED_GROUP_EXPRESSION = f"{GROUP_A} or '{GROUP_B}'"
 
 
-def get_posix_file_source_config(root_dir: str, roles: str, groups: str, include_test_data_dir: bool) -> str:
+def get_posix_file_source_config(
+    root_dir: str, roles: str, groups: str, include_test_data_dir: bool, prefer_links: bool = False
+) -> str:
     rval = f"""
 - type: posix
   id: posix_test
@@ -26,6 +28,17 @@ def get_posix_file_source_config(root_dir: str, roles: str, groups: str, include
   requires_roles: {roles}
   requires_groups: {groups}
 """
+    if prefer_links:
+        rval += f"""
+- type: posix
+  id: linking_source
+  label: Posix
+  doc: Files from local path to links
+  root: {root_dir}
+  writable: true
+  prefer_links: true
+"""
+
     if include_test_data_dir:
         rval += """
 - type: posix
@@ -44,9 +57,10 @@ def create_file_source_config_file_on(
     include_test_data_dir,
     required_role_expression,
     required_group_expression,
+    prefer_links: bool = False,
 ):
     file_contents = get_posix_file_source_config(
-        root_dir, required_role_expression, required_group_expression, include_test_data_dir
+        root_dir, required_role_expression, required_group_expression, include_test_data_dir, prefer_links=prefer_links
     )
     file_path = os.path.join(temp_dir, "file_sources_conf_posix.yml")
     with open(file_path, "w") as f:
@@ -67,6 +81,7 @@ class PosixFileSourceSetup:
         # Require role for access but do not require groups by default on every test to simplify them
         required_role_expression=REQUIRED_ROLE_EXPRESSION,
         required_group_expression="",
+        prefer_links: bool = False,
     ):
         temp_dir = os.path.realpath(mkdtemp())
         clazz_ = clazz_ or cls
@@ -79,6 +94,7 @@ class PosixFileSourceSetup:
             clazz_.include_test_data_dir,
             required_role_expression,
             required_group_expression,
+            prefer_links=prefer_links,
         )
         config["file_sources_config_file"] = file_sources_config_file
 

@@ -49,8 +49,7 @@ def stream_url_to_file(
     target_path: Optional[str] = None,
     file_source_opts: Optional[FilesSourceOptions] = None,
 ) -> str:
-    if file_sources is None:
-        file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
+    file_sources = ensure_file_sources(file_sources)
     file_source, rel_path = file_sources.get_file_source_path(url)
     if file_source:
         if not target_path:
@@ -60,6 +59,12 @@ def stream_url_to_file(
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")
+
+
+def ensure_file_sources(file_sources: Optional["ConfiguredFileSources"]) -> "ConfiguredFileSources":
+    if file_sources is None:
+        file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
+    return file_sources
 
 
 def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):

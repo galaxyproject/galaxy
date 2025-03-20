@@ -4,10 +4,7 @@ This module manages loading/etc of Galaxy interactive tours.
 
 import logging
 import os
-from typing import (
-    List,
-    Union,
-)
+from typing import List
 
 import yaml
 from pydantic import parse_obj_as
@@ -15,6 +12,7 @@ from pydantic import parse_obj_as
 from galaxy.exceptions import ObjectNotFound
 from galaxy.navigation.data import load_root_component
 from galaxy.util import config_directories_from_setting
+from galaxy.util.path import StrPath
 from ._interface import ToursRegistry
 from ._schema import TourList
 
@@ -61,12 +59,12 @@ def load_tour_steps(contents_dict, warn=None, resolve_components=True):
             step["title"] = title_default
 
 
-def get_tour_id_from_path(tour_path: Union[str, os.PathLike]) -> str:
+def get_tour_id_from_path(tour_path: StrPath) -> str:
     filename = os.path.basename(tour_path)
     return os.path.splitext(filename)[0]
 
 
-def load_tour_from_path(tour_path: Union[str, os.PathLike], warn=None, resolve_components=True) -> dict:
+def load_tour_from_path(tour_path: StrPath, warn=None, resolve_components=True) -> dict:
     with open(tour_path) as f:
         tour = yaml.safe_load(f)
         load_tour_steps(tour, warn=warn, resolve_components=resolve_components)
@@ -80,7 +78,7 @@ def is_yaml(filename: str) -> bool:
     return False
 
 
-def tour_paths(target_path: Union[str, os.PathLike]) -> List[str]:
+def tour_paths(target_path: StrPath) -> List[str]:
     paths = []
     if os.path.isdir(target_path):
         for filename in os.listdir(target_path):

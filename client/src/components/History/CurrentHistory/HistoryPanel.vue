@@ -81,7 +81,7 @@ const contentItemRefs = computed(() => {
 const currItemFocused = useActiveElement();
 const lastItemId = ref<string | null>(null);
 
-const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
 
 const historyStore = useHistoryStore();
@@ -141,6 +141,47 @@ const formattedSearchError = computed(() => {
         msg: err_msg,
         typeError: ValueError,
     };
+});
+
+/** Returns a string that indicates whether all the pinned histories have annotations,
+ * tags, both, or none of them.
+ * This is used to format the `DetailsLayout` header uniformly for multi-view histories.
+ */
+const detailsSummarized = computed(() => {
+    if (!props.isMultiViewItem) {
+        return undefined;
+    }
+    if (pinnedHistories.value.length === 0) {
+        return "hidden";
+    }
+
+    let annotation = false;
+    let tags = false;
+    let loaded = true;
+
+    for (const h of pinnedHistories.value) {
+        const history = storedHistories.value[h.id];
+        if (!history) {
+            loaded = false;
+            break;
+        }
+        if (history.annotation) {
+            annotation = true;
+        }
+        if (history.tags.length > 0) {
+            tags = true;
+        }
+    }
+
+    if (!loaded || (annotation && tags)) {
+        return "both";
+    } else if (annotation) {
+        return "annotation";
+    } else if (tags) {
+        return "tags";
+    } else {
+        return "none";
+    }
 });
 
 const storeFilterText = computed(() => {
@@ -428,10 +469,10 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
                     <HistoryDetails
                         :history="history"
                         :writeable="canEditHistory"
-                        :summarized="isMultiViewItem"
+                        :summarized="detailsSummarized"
                         @update:history="historyStore.updateHistory($event)" />
 
-                    <HistoryMessages :history="history" :current-user="currentUser" />
+                    <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
 
                     <HistoryCounter
                         :history="history"
@@ -444,8 +485,8 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
                         @reloadContents="reloadContents" />
 
                     <HistoryOperations
-                        v-if="canEditHistory"
                         :history="history"
+                        :editable="canEditHistory"
                         :is-multi-view-item="isMultiViewItem"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"

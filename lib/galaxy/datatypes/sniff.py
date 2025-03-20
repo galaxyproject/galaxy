@@ -17,8 +17,10 @@ from typing import (
     Callable,
     Dict,
     IO,
+    Iterable,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -44,6 +46,8 @@ except ImportError:
     pass
 import magic  # isort:skip
 
+if TYPE_CHECKING:
+    from .data import Data
 
 log = logging.getLogger(__name__)
 
@@ -689,7 +693,7 @@ def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix], auto_decom
     return filename_or_file_prefix
 
 
-def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
+def run_sniffers_raw(file_prefix: FilePrefix, sniff_order: Iterable["Data"]):
     """Run through sniffers specified by sniff_order, return None of None match."""
     fname = file_prefix.filename
     file_ext = None
@@ -718,15 +722,16 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
                 continue
         try:
             if hasattr(datatype, "sniff_prefix"):
-                if file_prefix.compressed_format and getattr(datatype, "compressed_format", None):
+                datatype_compressed_format = getattr(datatype, "compressed_format", None)
+                if file_prefix.compressed_format and datatype_compressed_format:
                     # Compare the compressed format detected
                     # to the expected.
-                    if file_prefix.compressed_format != datatype.compressed_format:
+                    if file_prefix.compressed_format != datatype_compressed_format:
                         continue
                 if datatype.sniff_prefix(file_prefix):
                     file_ext = datatype.file_ext
                     break
-            elif datatype.sniff(fname):
+            elif hasattr(datatype, "sniff") and datatype.sniff(fname):
                 file_ext = datatype.file_ext
                 break
         except Exception:

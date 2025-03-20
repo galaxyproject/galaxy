@@ -11,7 +11,8 @@ from galaxy.model.orm.now import now
 TEST_SOURCE_URI = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed"
 TEST_SOURCE_URI_BAM = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam"
 TEST_HASH_FUNCTION = "MD5"
-TEST_HASH_VALUE = "moocowpretendthisisahas"
+TEST_HASH_VALUE = "f568c29421792b1b1df4474dafae01f1"
+TEST_HASH_VALUE_BAM = "34693a376f9878cbe53166db083e0e26"
 TEST_HISTORY_NAME = "My history in a model store"
 TEST_EXTENSION = "bed"
 TEST_LIBRARY_NAME = "My cool library"
@@ -339,7 +340,7 @@ def deferred_hda_model_store_dict_bam(
     dataset_hash = dict(
         model_class="DatasetHash",
         hash_function=TEST_HASH_FUNCTION,
-        hash_value=TEST_HASH_VALUE,
+        hash_value=TEST_HASH_VALUE_BAM,
         extra_files_path=None,
     )
     dataset_source: Dict[str, Any] = dict(

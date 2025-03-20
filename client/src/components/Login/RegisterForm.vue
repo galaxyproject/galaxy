@@ -144,6 +144,7 @@ async function submit() {
                                         v-model="password"
                                         name="password"
                                         type="password"
+                                        autocomplete="new-password"
                                         required />
                                 </BFormGroup>
 
@@ -153,6 +154,7 @@ async function submit() {
                                         v-model="confirm"
                                         name="confirm"
                                         type="password"
+                                        autocomplete="new-password"
                                         required />
                                 </BFormGroup>
 

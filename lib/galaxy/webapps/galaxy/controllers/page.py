@@ -13,9 +13,9 @@ from galaxy.managers.pages import (
     PageManager,
 )
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.managers.users import get_user_by_username
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.base import transaction
+from galaxy.model.db.user import get_user_by_username
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
@@ -170,8 +170,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             raise web.httpexceptions.HTTPNotFound()
         return self.display_by_username_and_slug(trans, page.user.username, page.slug)
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display page based on a username and slug."""
 
         # Get page.

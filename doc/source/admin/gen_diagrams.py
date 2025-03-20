@@ -8,6 +8,8 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.files.templates.models import (
     AzureFileSourceConfiguration,
     AzureFileSourceTemplateConfiguration,
+    DropboxFileSourceConfiguration,
+    DropboxFileSourceTemplateConfiguration,
     FileSourceTemplate,
     FtpFileSourceConfiguration,
     FtpFileSourceTemplateConfiguration,
@@ -15,6 +17,8 @@ from galaxy.files.templates.models import (
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
+    WebdavFileSourceConfiguration,
+    WebdavFileSourceTemplateConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
@@ -47,12 +51,16 @@ class_to_diagram = {
     FileSourceTemplate: "file_source_templates",
     AzureFileSourceTemplateConfiguration: "file_source_azure_configuration_template",
     AzureFileSourceConfiguration: "file_source_azure_configuration",
+    DropboxFileSourceTemplateConfiguration: "file_source_dropbox_configuration_template",
+    DropboxFileSourceConfiguration: "file_source_dropbox_configuration",
     PosixFileSourceTemplateConfiguration: "file_source_posix_configuration_template",
     PosixFileSourceConfiguration: "file_source_posix_configuration",
     S3FSFileSourceTemplateConfiguration: "file_source_s3fs_configuration_template",
     S3FSFileSourceConfiguration: "file_source_s3fs_configuration",
     FtpFileSourceTemplateConfiguration: "file_source_ftp_configuration_template",
     FtpFileSourceConfiguration: "file_source_ftp_configuration",
+    WebdavFileSourceTemplateConfiguration: "file_source_webdav_configuration_template",
+    WebdavFileSourceConfiguration: "file_source_webdav_configuration",
 }
 
 for clazz, diagram_name in class_to_diagram.items():

@@ -38,6 +38,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
+    allow_key_error_on_empty_directories = False  # work around a bug in webdav
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         if self.required_module is None:
@@ -65,10 +66,14 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             with self._open_fs(user_context=user_context, opts=opts) as h:
                 if recursive:
                     recursive_result: List[AnyRemoteEntry] = []
-                    for p, dirs, files in h.walk(path, namespaces=["details"]):
-                        to_dict = functools.partial(self._resource_info_to_dict, p)
-                        recursive_result.extend(map(to_dict, dirs))
-                        recursive_result.extend(map(to_dict, files))
+                    try:
+                        for p, dirs, files in h.walk(path, namespaces=["details"]):
+                            to_dict = functools.partial(self._resource_info_to_dict, p)
+                            recursive_result.extend(map(to_dict, dirs))
+                            recursive_result.extend(map(to_dict, files))
+                    except KeyError:
+                        if not self.allow_key_error_on_empty_directories:
+                            raise
                     return recursive_result, len(recursive_result)
                 else:
                     page = self._to_page(limit, offset)

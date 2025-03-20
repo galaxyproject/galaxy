@@ -45,8 +45,13 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_METRIC,
     DEFAULT_PIN_LABELS,
 )
+from galaxy.tool_util.parser.yaml import to_test_assert_list
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
+from ._types import (
+    ExpandedToolInputsJsonified,
+    ToolTestDescriptionDict,
+)
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 
@@ -56,6 +61,8 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
+GetFilenameT = Optional[Callable[[str], str]]
+GetLocationT = Optional[Callable[[str], str]]
 
 
 def verify(
@@ -64,7 +71,7 @@ def verify(
     attributes: Optional[Dict[str, Any]],
     filename: Optional[str] = None,
     get_filecontent: Optional[Callable[[str], bytes]] = None,
-    get_filename: Optional[Callable[[str], str]] = None,
+    get_filename: GetFilenameT = None,
     keep_outputs_dir: Optional[str] = None,
     verify_extra_files: Optional[Callable] = None,
     mode="file",
@@ -279,7 +286,7 @@ def get_compressed_formats(attributes):
     return None if decompress else []
 
 
-def files_diff(file1, file2, attributes=None):
+def files_diff(file1: str, file2: str, attributes=None):
     """Check the contents of 2 files for differences."""
     attributes = attributes or {}
 
@@ -296,9 +303,9 @@ def files_diff(file1, file2, attributes=None):
         compressed_formats = get_compressed_formats(attributes)
         is_pdf = False
         try:
-            with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file2, compressed_formats=compressed_formats, mode="r") as fh:
                 history_data = fh.readlines()
-            with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file1, compressed_formats=compressed_formats, mode="r") as fh:
                 local_file = fh.readlines()
         except UnicodeDecodeError:
             if file1.endswith(".pdf") or file2.endswith(".pdf"):
@@ -464,8 +471,8 @@ def files_contains(file1, file2, attributes=None):
 
 
 def _singleobject_intersection_over_union(
-    mask1: "numpy.typing.NDArray",
-    mask2: "numpy.typing.NDArray",
+    mask1: "numpy.typing.NDArray[numpy.bool_]",
+    mask2: "numpy.typing.NDArray[numpy.bool_]",
 ) -> "numpy.floating":
     return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
 
@@ -504,7 +511,7 @@ def _multiobject_intersection_over_union(
 def intersection_over_union(
     mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: Optional[List[int]] = None
 ) -> "numpy.floating":
-    """Compute the intersection over union (IoU) for the objects in two masks containing lables.
+    """Compute the intersection over union (IoU) for the objects in two masks containing labels.
 
     The IoU is computed for each uniquely labeled image region (object), and the overall minimum value is returned (i.e. the worst value).
     To compute the IoU for each object, the corresponding object in the other mask needs to be determined.
@@ -585,3 +592,77 @@ def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]
     distance_eps = attributes.get("eps", DEFAULT_EPS)
     if distance > distance_eps:
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
+
+
+# TODO: After tool-util with this included is published, fefactor planemo.test._check_output
+# to use this function. There is already a comment there about breaking fewer abstractions.
+# https://github.com/galaxyproject/planemo/blob/master/planemo/test/_check_output.py
+# TODO: Also migrate the logic for checking non-dictionaries out of Planemo - this function now
+# does that check also.
+def verify_file_path_against_dict(
+    get_filename: GetFilenameT,
+    get_location: GetLocationT,
+    path: str,
+    output_content: bytes,
+    test_properties,
+    test_data_target_dir: Optional[str] = None,
+) -> None:
+    with open(path, "rb") as f:
+        output_content = f.read()
+    item_label = f"Output with path {path}"
+    verify_file_contents_against_dict(
+        get_filename, get_location, item_label, output_content, test_properties, test_data_target_dir
+    )
+
+
+def verify_file_contents_against_dict(
+    get_filename: GetFilenameT,
+    get_location: GetLocationT,
+    item_label: str,
+    output_content: bytes,
+    test_properties,
+    test_data_target_dir: Optional[str] = None,
+) -> None:
+    expected_file: Optional[str] = None
+    if isinstance(test_properties, dict):
+        # Support Galaxy-like file location (using "file") or CWL-like ("path" or "location").
+        expected_file = test_properties.get("file", None)
+        if expected_file is None:
+            expected_file = test_properties.get("path", None)
+        if expected_file is None:
+            location = test_properties.get("location")
+            if location:
+                if location.startswith(("http://", "https://")):
+                    assert get_location
+                    expected_file = get_location(location)
+                else:
+                    expected_file = location.split("file://", 1)[-1]
+
+        if "asserts" in test_properties:
+            test_properties["assert_list"] = to_test_assert_list(test_properties["asserts"])
+        verify(
+            item_label,
+            output_content,
+            attributes=test_properties,
+            filename=expected_file,
+            get_filename=get_filename,
+            keep_outputs_dir=test_data_target_dir,
+            verify_extra_files=None,
+        )
+    else:
+        output_value = json.loads(output_content.decode("utf-8"))
+        if test_properties != output_value:
+            template = "Output [%s] value [%s] does not match expected value [%s]."
+            message = template % (item_label, output_value, test_properties)
+            raise AssertionError(message)
+
+
+__all__ = [
+    "DEFAULT_TEST_DATA_RESOLVER",
+    "ExpandedToolInputsJsonified",
+    "GetFilenameT",
+    "GetLocationT",
+    "ToolTestDescriptionDict",
+    "verify",
+    "verify_file_contents_against_dict",
+]

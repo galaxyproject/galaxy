@@ -414,16 +414,14 @@ class NotificationManager:
 
     def get_user_notification_preferences(self, user: User) -> UserNotificationPreferences:
         """Gets the user's current notification preferences or the default ones if no preferences are set."""
-        current_notification_preferences = (
-            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]
-            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences
-            else None
-        )
-        try:
-            return UserNotificationPreferences.model_validate_json(current_notification_preferences)
-        except ValidationError:
-            # Gracefully return default preferences is they don't exist or get corrupted
-            return UserNotificationPreferences.default()
+        current_notification_preferences = user.preferences.get(NOTIFICATION_PREFERENCES_SECTION_NAME)
+        if current_notification_preferences:
+            try:
+                return UserNotificationPreferences.model_validate_json(current_notification_preferences)
+            except ValidationError:
+                pass
+        # Gracefully return default preferences is they don't exist or get corrupted
+        return UserNotificationPreferences.default()
 
     def update_user_notification_preferences(
         self, user: User, request: UpdateUserNotificationPreferencesRequest

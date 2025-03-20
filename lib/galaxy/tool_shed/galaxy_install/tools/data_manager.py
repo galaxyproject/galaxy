@@ -74,7 +74,7 @@ class DataManagerHandler:
         repository,
         repository_tools_tups,
     ) -> List["DataManagerInterface"]:
-        rval: List["DataManagerInterface"] = []
+        rval: List[DataManagerInterface] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}

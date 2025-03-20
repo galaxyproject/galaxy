@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faArchive,
     faBars,
+    faBurn,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -48,6 +49,7 @@ import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 library.add(
     faArchive,
     faBars,
+    faBurn,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -66,16 +68,21 @@ library.add(
 interface Props {
     histories: HistorySummary[];
     history: HistorySummary;
-    title?: string;
     historiesLoading?: boolean;
+    minimal?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    title: "Histories",
     historiesLoading: false,
+    minimal: false,
 });
 
+// modal refs
 const showSwitchModal = ref(false);
+const showDeleteModal = ref(false);
+const showPrivacyModal = ref(false);
+const showCopyModal = ref(false);
+
 const purgeHistory = ref(false);
 
 const toast = useToast();
@@ -88,6 +95,10 @@ const { totalHistoryCount } = storeToRefs(historyStore);
 
 const canEditHistory = computed(() => {
     return canMutateHistory(props.history);
+});
+
+const isDeletedNotPurged = computed(() => {
+    return props.history.deleted && !props.history.purged;
 });
 
 const historyState = computed(() => {
@@ -131,11 +142,14 @@ async function resumePausedJobs() {
 
 <template>
     <div>
-        <nav class="d-flex justify-content-between mx-3 my-2" aria-label="current history management">
-            <h2 class="m-1 h-sm">History</h2>
+        <nav
+            :class="{ 'd-flex justify-content-between mx-3 my-2': !props.minimal }"
+            aria-label="current history management">
+            <h2 v-if="!props.minimal" class="m-1 h-sm">History</h2>
 
             <BButtonGroup>
                 <BButton
+                    v-if="!props.minimal"
                     v-b-tooltip.top.hover.noninteractive
                     class="create-hist-btn"
                     data-description="create new history"
@@ -148,6 +162,7 @@ async function resumePausedJobs() {
                 </BButton>
 
                 <BButton
+                    v-if="!props.minimal"
                     v-b-tooltip.top.hover.noninteractive
                     data-description="switch to another history"
                     size="sm"
@@ -162,10 +177,11 @@ async function resumePausedJobs() {
                     v-b-tooltip.top.hover.noninteractive
                     no-caret
                     size="sm"
-                    variant="link"
+                    :variant="props.minimal ? 'outline-info' : 'link'"
                     toggle-class="text-decoration-none"
                     menu-class="history-options-button-menu"
                     title="History options"
+                    right
                     data-description="history options">
                     <template v-slot:button-content>
                         <FontAwesomeIcon fixed-width :icon="faBars" />
@@ -178,10 +194,12 @@ async function resumePausedJobs() {
                             <span>Fetching histories from server</span>
                         </div>
 
-                        <span v-else>You have {{ totalHistoryCount }} histories.</span>
+                        <span v-else-if="!props.minimal">You have {{ totalHistoryCount }} histories.</span>
+                        <span v-else>Manage History</span>
                     </BDropdownText>
 
                     <BDropdownItem
+                        v-if="!props.minimal"
                         data-description="switch to multi history view"
                         :disabled="isAnonymous"
                         :title="userTitle('Open History Multiview')"
@@ -190,7 +208,7 @@ async function resumePausedJobs() {
                         <span v-localize>Show Histories Side-by-Side</span>
                     </BDropdownItem>
 
-                    <BDropdownDivider />
+                    <BDropdownDivider v-if="!props.minimal" />
 
                     <BDropdownText v-if="!canEditHistory">
                         This history has been <span class="font-weight-bold">{{ historyState }}</span
@@ -211,19 +229,20 @@ async function resumePausedJobs() {
                     <BDropdownDivider />
 
                     <BDropdownItem
-                        v-b-modal:copy-current-history-modal
                         :disabled="isAnonymous"
-                        :title="userTitle('Copy History to a New History')">
+                        :title="userTitle('Copy History to a New History')"
+                        @click="showCopyModal = !showCopyModal">
                         <FontAwesomeIcon fixed-width :icon="faCopy" class="mr-1" />
                         <span v-localize>Copy this History</span>
                     </BDropdownItem>
 
                     <BDropdownItem
-                        v-b-modal:delete-history-modal
                         :disabled="!canEditHistory"
-                        :title="localize('Permanently Delete History')">
-                        <FontAwesomeIcon fixed-width :icon="faTrash" class="mr-1" />
-                        <span v-localize>Delete this History</span>
+                        :title="localize(isDeletedNotPurged ? 'Permanently Delete History' : 'Delete History')"
+                        @click="showDeleteModal = !showDeleteModal">
+                        <FontAwesomeIcon fixed-width :icon="isDeletedNotPurged ? faBurn : faTrash" class="mr-1" />
+                        <span v-if="isDeletedNotPurged" v-localize>Permanently Delete History</span>
+                        <span v-else v-localize>Delete this History</span>
                     </BDropdownItem>
 
                     <BDropdownItem
@@ -287,9 +306,9 @@ async function resumePausedJobs() {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        v-b-modal:history-privacy-modal
                         :disabled="isAnonymous || !canEditHistory"
-                        :title="userTitle('Make this History Private')">
+                        :title="userTitle('Make this History Private')"
+                        @click="showPrivacyModal = !showPrivacyModal">
                         <FontAwesomeIcon fixed-width :icon="faLock" class="mr-1" />
                         <span v-localize>Make Private</span>
                     </BDropdownItem>
@@ -298,6 +317,7 @@ async function resumePausedJobs() {
         </nav>
 
         <SelectorModal
+            v-if="!props.minimal"
             v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
@@ -305,13 +325,19 @@ async function resumePausedJobs() {
             :show-modal.sync="showSwitchModal"
             @selectHistory="historyStore.setCurrentHistory($event.id)" />
 
-        <CopyModal id="copy-current-history-modal" :history="history" />
+        <CopyModal :history="history" :show-modal.sync="showCopyModal" />
 
         <BModal
-            id="history-privacy-modal"
+            v-model="showPrivacyModal"
             title="Make History Private"
             title-tag="h2"
             @ok="historyStore.secureHistory(history)">
+            <h4>
+                History:
+                <b>
+                    <i>{{ history.name }}</i>
+                </b>
+            </h4>
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
@@ -320,15 +346,15 @@ async function resumePausedJobs() {
         </BModal>
 
         <BModal
-            id="delete-history-modal"
-            title="Delete History?"
+            v-model="showDeleteModal"
+            :title="isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?'"
             title-tag="h2"
             @ok="onDelete"
-            @show="purgeHistory = false">
+            @show="purgeHistory = isDeletedNotPurged">
             <p v-localize>
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
-            <BFormCheckbox id="purge-history" v-model="purgeHistory">
+            <BFormCheckbox id="purge-history" v-model="purgeHistory" :disabled="isDeletedNotPurged">
                 <span v-localize>Yes, permanently delete this history.</span>
             </BFormCheckbox>
         </BModal>

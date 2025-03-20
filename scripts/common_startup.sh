@@ -34,7 +34,6 @@ done
 SAMPLES="
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/shared/ucsc/manual_builds.txt.sample
-    static/welcome.html.sample
 "
 
 RMFILES="

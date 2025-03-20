@@ -6,7 +6,13 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
-import { DataOutput, Step, Steps, type TerminalSource, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import {
+    type DataOutput,
+    type Step,
+    type Steps,
+    type TerminalSource,
+    useWorkflowStepStore,
+} from "@/stores/workflowStepStore";
 
 import { advancedSteps, simpleSteps } from "../test_fixtures";
 import {
@@ -35,6 +41,7 @@ function useStores(id = "mock-workflow") {
     const undoRedoStore = useUndoRedoStore(id);
 
     return {
+        workflowId: id,
         connectionStore,
         stateStore,
         stepStore,

@@ -11,7 +11,8 @@ interface Props {
     maxLength?: number;
     /** The text to summarize */
     description: string;
-    /** If `true`, doesn't let unexpanded text go beyond height of one line */
+    /** If `true`, doesn't let unexpanded text go beyond height of one line
+     * and ignores `maxLength` */
     oneLineSummary?: boolean;
     /** If `true`, doesn't show expand/collapse buttons */
     noExpand?: boolean;
@@ -25,8 +26,17 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const showDetails = ref(false);
+const refOneLineSummary = ref<HTMLElement | null>(null);
 
-const textTooLong = computed(() => props.description.length > props.maxLength);
+const textTooLong = computed(() => {
+    if (!props.oneLineSummary) {
+        return props.description.length > props.maxLength;
+    } else if (refOneLineSummary.value) {
+        return refOneLineSummary.value.scrollWidth > refOneLineSummary.value.clientWidth;
+    } else {
+        return false;
+    }
+});
 const text = computed(() =>
     textTooLong.value && !showDetails.value
         ? props.description.slice(0, Math.round(props.maxLength - props.maxLength / 2)) + "..."
@@ -35,8 +45,12 @@ const text = computed(() =>
 </script>
 
 <template>
-    <div>
-        <component :is="props.component" v-if="props.oneLineSummary" class="one-line-summary">
+    <div :class="{ 'd-flex': props.oneLineSummary && !noExpand }">
+        <component
+            :is="props.component"
+            v-if="props.oneLineSummary"
+            ref="refOneLineSummary"
+            :class="{ 'one-line-summary': !showDetails }">
             {{ props.description }}
         </component>
         <span v-else>{{ text }}</span>

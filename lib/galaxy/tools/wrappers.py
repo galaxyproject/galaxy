@@ -19,7 +19,6 @@ from typing import (
     Union,
 )
 
-from packaging.version import Version
 from typing_extensions import TypeAlias
 
 from galaxy.model import (
@@ -33,7 +32,10 @@ from galaxy.model import (
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.tools.parameters.basic import BooleanToolParameter
+from galaxy.tools.parameters.basic import (
+    BooleanToolParameter,
+    TextToolParameter,
+)
 from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
@@ -126,15 +128,9 @@ class InputValueWrapper(ToolParameterValueWrapper):
         profile: Optional[float] = None,
     ) -> None:
         self.input = input
-        if (
-            value is None
-            and input.type == "text"
-            and input.optional
-            and input.optionality_inferred
-            and (profile is None or Version(str(profile)) < Version("23.0"))
-        ):
+        if value is None and input.type == "text":
             # Tools with old profile versions may treat an optional text parameter as `""`
-            value = ""
+            value = cast(TextToolParameter, input).wrapper_default
         self.value = value
         self._other_values: Dict[str, str] = other_values or {}
 
@@ -460,6 +456,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def is_collection(self) -> bool:
         return False
 
+    @property
+    def is_deferred(self) -> bool:
+        return self.unsanitized.has_deferred_data
+
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
         if not self.datatypes_registry:
@@ -475,6 +475,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         return self.dataset.datatype.matches_any(datatypes)
 
     def __str__(self) -> str:
+        return self._path_or_uri()
+
+    def _path_or_uri(self) -> str:
+        if self.is_deferred:
+            return self.unsanitized.deferred_source_uri or ""
         if self.false_path is not None:
             return self.false_path
         else:
@@ -806,6 +811,8 @@ class ElementIdentifierMapper:
             self.identifier_key_dict = {}
 
     def identifier(self, dataset_value: str, input_values: Dict[str, str]) -> Optional[str]:
+        if isinstance(dataset_value, list):
+            raise TypeError(f"Expected {dataset_value} to be hashable")
         element_identifier = None
         if identifier_key := self.identifier_key_dict.get(dataset_value, None):
             element_identifier = input_values.get(identifier_key, None)

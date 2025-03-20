@@ -185,7 +185,7 @@ Adding additional Galaxy dependencies
 -------------------------------------
 
 New packages can be added to Galaxy, or the versions of existing packages can be
-updated, using `poetry`_ and `Wheelforge`_.
+updated, using `uv`_ and `Wheelforge`_.
 
 If wheels already exist on PyPI for all platforms and Python versions supported
 by Galaxy, you can skip to step 3 in the process below.
@@ -195,11 +195,13 @@ by Galaxy, you can skip to step 3 in the process below.
 
 2. Submit a pull request to `Wheelforge`_.
 
-3. Add the new dependency to the `[tool.poetry.dependencies]` (or to `[tool.poetry.group.dev.dependencies]` if only needed for Galaxy development) section of `pyproject.toml` .
-4. Run `make update-dependencies` to update the requirements file in `lib/galaxy/dependencies`_.
+3. Add the new dependency to the ``dependencies`` list in the ``[project]``
+   section (or to ``dev`` list in the ``[dependency-groups]`` section if only
+   needed for Galaxy development) of `pyproject.toml`_ .
+4. Run ``make update-dependencies`` to update the requirements files in `lib/galaxy/dependencies`_.
 5. Submit a pull request to Galaxy with your changes.
 
-.. _poetry: https://python-poetry.org/
+.. _uv: https://docs.astral.sh/uv/
 .. _Wheelforge: https://github.com/galaxyproject/wheelforge/
-.. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
+.. _pyproject.toml: https://github.com/galaxyproject/galaxy/blob/dev/pyproject.toml
 .. _lib/galaxy/dependencies: https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/dependencies

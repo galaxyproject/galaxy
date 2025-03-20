@@ -8,7 +8,7 @@ import RepositoryCreation from "@/components/RepositoryCreation.vue"
 
 const query = graphql(`
     query recentlyCreatedRepositories {
-        relayRepositories(first: 10, sort: UPDATE_TIME_DESC) {
+        relayRepositories(first: 10, sort: CREATE_TIME_DESC) {
             edges {
                 node {
                     ...RepositoryCreationItem

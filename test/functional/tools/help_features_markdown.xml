@@ -1,0 +1,75 @@
+<tool id="help_features_markdown" name="help_features_markdown" version="1.0.0">
+    <command>
+        cp '$input.file_name' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help format="markdown"><![CDATA[
+----
+
+Static path images
+
+![Zipping operation](gxstatic://images/tools/collection_ops/zip.svg)
+
+----
+
+Markdown can also reference help terms like [map over](gxhelp://galaxy.collections.mapOver),
+[command line](gxhelp://unix.commandLine), [standard error](gxhelp://unix.stderr), and
+[the FASTA file format](gxhelp://galaxy.datatypes.extensions.fasta).
+
+-----
+
+Markdown extensions for tables should work...
+
+
+| this | is | a | table |
+|------|----|---|-------|
+| 1 | 2 | 3 | 4 |
+
+Some more examples from https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables
+
+| Command | Description |
+| --- | --- |
+| `git status` | List all *new or modified* files |
+| `git diff` | Show file differences that **haven't been** staged |
+
+
+| Left-aligned | Center-aligned | Right-aligned |
+| :---         |     :---:      |          ---: |
+| git status   | git status     | git status    |
+| git diff     | git diff       | git diff      |
+
+-----
+
+
+Text styles 
+
+**This is bold text**
+
+_This text is italicized_
+
+~~This was mistaken text~~
+
+**This text is _extremely_ important**
+
+***All this text is important***
+
+----
+
+It would be easy to turn on sub script but we haven't yet.
+
+This is a <sub>subscript</sub> text
+
+----
+
+Text that is not a quote
+
+> Text that is a quote
+
+Well... that does render with a block quote tag in Galaxy 24.2 but it isn't formatted at all.
+]]></help>
+</tool>

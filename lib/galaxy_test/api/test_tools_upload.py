@@ -1,12 +1,17 @@
 import json
 import os
+import tempfile
 import urllib.parse
+from base64 import b64encode
+from typing import cast
 
 import pytest
 from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
+from galaxy.util.compression_utils import decompress_bytes_to_directory
+from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.unittest_utils import (
     skip_if_github_down,
     skip_if_site_down,
@@ -24,6 +29,17 @@ from galaxy_test.base.populators import (
     stage_inputs,
 )
 from ._framework import ApiTestCase
+
+B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
+URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
+
+EXPECTED_TAR_CONTENTS = {
+    "testdir": "Directory",
+    "testdir/c": "Directory",
+    "testdir/a": "File",
+    "testdir/b": "File",
+    "testdir/c/d": "File",
+}
 
 
 class TestToolsUpload(ApiTestCase):
@@ -238,6 +254,7 @@ class TestToolsUpload(ApiTestCase):
                 "class": "File",
                 "format": "txt",
                 "path": "test-data/simple_line_no_newline.txt",
+                "hashes": [{"hash_function": "SHA-1", "hash_value": "f030155d3459c233efd37e13bc1061c1dc744ebf"}],
             }
         }
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
@@ -245,6 +262,8 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline.
         assert content == "This is a line of text.\n"
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, content_id=dataset["id"])
+        assert dataset["hashes"][0]["hash_value"] == "f030155d3459c233efd37e13bc1061c1dc744ebf"
 
     def test_stage_object(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
@@ -600,18 +619,11 @@ class TestToolsUpload(ApiTestCase):
         assert content.strip() == "Test123"
         extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
         assert len(extra_files) == 5, extra_files
-        expected_contents = {
-            "testdir": "Directory",
-            "testdir/c": "Directory",
-            "testdir/a": "File",
-            "testdir/b": "File",
-            "testdir/c/d": "File",
-        }
         found_files = set()
         for extra_file in extra_files:
             path = extra_file["path"]
-            assert path in expected_contents
-            assert extra_file["class"] == expected_contents[path]
+            assert path in EXPECTED_TAR_CONTENTS
+            assert extra_file["class"] == EXPECTED_TAR_CONTENTS[path]
             found_files.add(path)
 
         assert len(found_files) == 5, found_files
@@ -634,6 +646,75 @@ class TestToolsUpload(ApiTestCase):
             dataset = run_response.json()["outputs"][0]
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
             assert details["state"] == "error"
+
+    def test_upload_tar_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir.tar")
+        expected_size = os.path.getsize(testdir)
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "tar"
+        assert details["file_size"] == expected_size
+        content = cast(
+            bytes, self.dataset_populator.get_history_dataset_content(history_id, dataset=details, type="bytes")
+        )
+        # Make sure we got the expected content size.
+        assert len(content) == expected_size
+
+        # Make sure we get the expected contents.
+        dir_path = decompress_bytes_to_directory(content)
+        assert dir_path.endswith("testdir")
+        for path, entry_class in EXPECTED_TAR_CONTENTS.items():
+            path = os.path.join(dir_path, os.path.pardir, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
+
+        # Make sure the hash of the content matches the hash of the original file.
+        expected_hash = md5_hash_file(testdir)
+        assert expected_hash is not None
+        self._assert_content_matches_hash(content, expected_hash)
+
+    def _assert_content_matches_hash(self, content: bytes, expected_hash: str):
+        with tempfile.NamedTemporaryFile("wb") as temp:
+            temp.write(content)
+            temp.flush()
+            actual_hash = md5_hash_file(temp.name)
+            assert actual_hash == expected_hash
+
+    def test_upload_zip_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir1.zip")
+        expected_size = os.path.getsize(testdir)
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "zip"
+        assert details["file_size"] == expected_size
+        content = cast(
+            bytes, self.dataset_populator.get_history_dataset_content(history_id, dataset=details, type="bytes")
+        )
+        # Make sure we got the expected content size.
+        assert len(content) == expected_size
+
+        # Make sure we get the expected contents.
+        dir_path = decompress_bytes_to_directory(content)
+        assert dir_path.endswith("testdir1")
+        EXPECTED_ZIP_CONTENTS = {
+            "file1": "File",
+            "file2": "File",
+            "dir1/": "Directory",
+            "dir1/file3": "File",
+        }
+        for path, entry_class in EXPECTED_ZIP_CONTENTS.items():
+            path = os.path.join(dir_path, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
+
+        # Make sure the hash of the content matches the hash of the original file.
+        expected_hash = md5_hash_file(testdir)
+        assert expected_hash is not None
+        self._assert_content_matches_hash(content, expected_hash)
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
@@ -926,6 +1007,61 @@ class TestToolsUpload(ApiTestCase):
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
         assert terminal_validated_state == "ok", terminal_validated_state
+
+    def test_upload_and_validate_hash_valid(self):
+        with self.dataset_populator.test_history() as history_id:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {"hash_function": "SHA-1", "hash_value": "65e9d53484d28eef5447bc06fe2d754d1090975a"}
+                            ],
+                        },
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            fetch_response = self.dataset_populator.fetch(payload)
+            self._assert_status_code_is(fetch_response, 200)
+            # history ok implies the dataset upload work
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+    def test_upload_and_validate_hash_invalid(self):
+        with self.dataset_populator.test_history() as history_id:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [{"hash_function": "SHA-1", "hash_value": "invalidhash"}],
+                        },
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            fetch_response = self.dataset_populator.fetch(payload, assert_ok=True, wait=False)
+            self._assert_status_code_is(fetch_response, 200)
+            outputs = fetch_response.json()["outputs"]
+            new_dataset = outputs[0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset=new_dataset, assert_ok=False
+            )
+            assert dataset_details["state"] == "error"
 
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(

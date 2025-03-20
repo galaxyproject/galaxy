@@ -4,7 +4,7 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
-import { ConcreteObjectStoreModel } from "@/api";
+import { type ConcreteObjectStoreModel } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelect from "./ObjectStoreSelect.vue";

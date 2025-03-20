@@ -37,9 +37,6 @@
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                <span v-localize>Build Dataset Pair</span>
-            </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
                 <span v-localize>Build List of Dataset Pairs</span>
             </b-dropdown-item>
@@ -102,7 +99,7 @@
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
                     :items="dbkeys"
-                    :current-item-id="selectedDbKey"
+                    :current-item="selectedDbKey"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
         </b-modal>
@@ -119,7 +116,7 @@
                     collection-name="Data Types"
                     :loading="loadingDatatypes"
                     :items="datatypes"
-                    :current-item-id="selectedDatatype"
+                    :current-item="selectedDatatype"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -141,11 +138,20 @@
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
         </b-modal>
+        <CollectionCreatorModal
+            v-if="collectionModalType"
+            :history-id="history.id"
+            :collection-type="collectionModalType"
+            :filter-text="filterText"
+            :selected-items="collectionSelection"
+            :show-modal.sync="collectionModalShow"
+            hide-modal-on-create
+            default-hide-source-items
+            @created-collection="createdCollection" />
     </section>
 </template>
 
 <script>
-import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { HistoryFilters } from "components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
@@ -158,15 +164,20 @@ import {
     undeleteSelectedContent,
     unhideSelectedContent,
 } from "components/History/model/crud";
-import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
+import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
+
+import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
+
+import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
 
 export default {
     components: {
+        CollectionCreatorModal,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
@@ -187,8 +198,11 @@ export default {
     },
     data: function () {
         return {
-            selectedDbKey: "?",
-            selectedDatatype: "auto",
+            collectionModalShow: false,
+            collectionModalType: null,
+            collectionSelection: undefined,
+            selectedDbKey: { id: "?", text: "unspecified (?)" },
+            selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
         };
     },
@@ -308,12 +322,12 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         changeDbkeyOfSelected() {
-            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey });
-            this.selectedDbKey = "?";
+            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey.id });
+            this.selectedDbKey = { id: "?" };
         },
         changeDatatypeOfSelected() {
-            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype });
-            this.selectedDatatype = "auto";
+            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype.id });
+            this.selectedDatatype = { id: "auto", text: "Auto-detect" };
         },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
@@ -355,38 +369,33 @@ export default {
             this.$emit("operation-error", { errorMessage, result });
         },
         onSelectedDbKey(dbkey) {
-            this.selectedDbKey = dbkey.id;
+            this.selectedDbKey = dbkey;
         },
         onSelectedDatatype(datatype) {
-            this.selectedDatatype = datatype.id;
+            this.selectedDatatype = datatype;
         },
 
         // collection creation, fires up a modal
-        async buildDatasetList() {
-            await this.buildNewCollection("list");
+        buildDatasetList() {
+            this.collectionModalType = "list";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.collectionModalShow = true;
         },
-        async buildDatasetListAll() {
-            let allContents = [];
-            const filters = HistoryFilters.getQueryDict(this.filterText);
-
-            allContents = await getHistoryContent(this.history.id, filters, "dataset");
-
-            this.buildNewCollection("list", allContents);
+        buildDatasetListAll() {
+            this.collectionModalType = "list";
+            this.collectionSelection = undefined;
+            this.collectionModalShow = true;
         },
-        async buildDatasetPair() {
-            await this.buildNewCollection("paired");
+        buildListOfPairs() {
+            this.collectionModalType = "list:paired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.collectionModalShow = true;
         },
-        async buildListOfPairs() {
-            await this.buildNewCollection("list:paired");
+        createdCollection(collection) {
+            this.$emit("reset-selection");
         },
         async buildCollectionFromRules() {
-            await this.buildNewCollection("rules");
-        },
-        async buildNewCollection(collectionType, contents) {
-            if (contents === undefined) {
-                contents = this.contentSelection;
-            }
-            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id);
+            const modalResult = await buildRuleCollectionModal(this.contentSelection, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

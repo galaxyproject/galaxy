@@ -57,7 +57,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
 
         # assert 'user import folder was not created' warning
-        self.components.libraries.folder.toast_warning.wait_for_visible()
+        self.components.libraries.folder.alert_not_exists_user_import_dir.wait_for_visible()
 
     @selenium_test
     def test_user_library_dataset_permissions(self):

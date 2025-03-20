@@ -13,8 +13,11 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js" css="script.css"/>
-    <groups>
+    <requirements>
+        <requirement type="npm" version="0.0.3" package="@galaxyproject/venn"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tracks>
         <input>
             <label>Provide a label</label>
             <name>key</name>
@@ -28,5 +31,5 @@
             <type>data_column</type>
             <is_label>true</is_label>
         </input>
-    </groups>
+    </tracks>
 </visualization>

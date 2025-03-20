@@ -177,7 +177,11 @@ class PSAAuthnz(IdentityProvider):
         user_authnz_token.set_extra_data(extra_data)
 
     def refresh(self, trans, user_authnz_token):
-        if not user_authnz_token or not user_authnz_token.extra_data:
+        if (
+            not user_authnz_token
+            or not user_authnz_token.extra_data
+            or "refresh_token" not in user_authnz_token.extra_data
+        ):
             return False
         # refresh tokens if they reached their half lifetime
         if "expires" in user_authnz_token.extra_data:
@@ -197,7 +201,7 @@ class PSAAuthnz(IdentityProvider):
             return True
         return False
 
-    def authenticate(self, trans):
+    def authenticate(self, trans, idphint=None):
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
@@ -228,7 +232,7 @@ class PSAAuthnz(IdentityProvider):
 
         return redirect_url, self.config.get("user", None)
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name("DISCONNECT_REDIRECT_URL")] = (
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
@@ -300,19 +304,6 @@ class Strategy(BaseStrategy):
 
     def render_html(self, tpl=None, html=None, context=None):
         raise NotImplementedError("Not implemented.")
-
-    def start(self):
-        self.clean_partial_pipeline()
-        if self.backend.uses_redirect():
-            return self.redirect(self.backend.auth_url())
-        else:
-            return self.html(self.backend.auth_html())
-
-    def complete(self, *args, **kwargs):
-        return self.backend.auth_complete(*args, **kwargs)
-
-    def continue_pipeline(self, *args, **kwargs):
-        return self.backend.continue_pipeline(*args, **kwargs)
 
 
 class Storage:

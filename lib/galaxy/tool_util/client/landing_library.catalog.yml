@@ -1,0 +1,21 @@
+# Catalog of artifacts that the landing script can generate landing URLs for against
+# the target Galaxy.
+simple_workflow:
+  # Encoded ID for a workflow to target - if workflow_target_type is stored_workflow this
+  # will always be the latest version of that workflow and stored workflow ID should be provided.
+  # If instead workflow_target_type is workflow - this is a particular version of a workflow and
+  # the workflow ID should be provided.
+  workflow_id: f2db41e1fa331b3e
+  workflow_target_type: stored_workflow
+  # request state provides prepopulated parameters for this workflow or stored workflow when the
+  # user navigates to the landing URL.
+  request_state:
+    myinput:
+      src: url
+      url: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+      ext: txt
+int_workflow:
+  workflow_id: f597429621d6eb2b
+  workflow_target_type: stored_workflow
+  request_state:
+    int_input: 8

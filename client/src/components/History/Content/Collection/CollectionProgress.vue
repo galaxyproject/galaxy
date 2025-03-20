@@ -2,7 +2,7 @@
 at components/JobStates/CollectionJobStates but it relies on the backbone data
 model, so probably has to go eventually.-->
 <script setup lang="ts">
-import { JobStateSummary } from "./JobStateSummary";
+import { type JobStateSummary } from "./JobStateSummary";
 
 interface Props {
     summary: JobStateSummary;

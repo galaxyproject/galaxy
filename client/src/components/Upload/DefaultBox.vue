@@ -8,10 +8,10 @@ import Vue, { computed, ref } from "vue";
 
 import { UploadQueue } from "@/utils/upload-queue.js";
 
-import { collectionBuilder } from "./builders.js";
 import { defaultModel } from "./model.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
+import CollectionCreatorModal from "../Collections/CollectionCreatorModal.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -68,10 +68,20 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    disableFooter: {
+        type: Boolean,
+        default: false,
+    },
+    emitUploaded: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-const emit = defineEmits(["dismiss", "progress"]);
+const emit = defineEmits(["dismiss", "progress", "uploaded"]);
 
+const collectionModalShow = ref(false);
+const collectionSelection = ref([]);
 const collectionType = ref("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
@@ -147,8 +157,28 @@ function eventAnnounce(index, file) {
 }
 
 /** Populates collection builder with uploaded files */
-function eventBuild() {
-    collectionBuilder(historyId, collectionType.value, uploadValues.value);
+async function eventBuild(openModal = false) {
+    try {
+        collectionSelection.value = [];
+        uploadValues.value.forEach((model) => {
+            const outputs = model.outputs;
+            if (outputs) {
+                Object.entries(outputs).forEach((output) => {
+                    const outputDetails = output[1];
+                    collectionSelection.value.push(outputDetails);
+                });
+            } else {
+                console.debug("Warning, upload response does not contain outputs.", model);
+            }
+        });
+        if (openModal) {
+            collectionModalShow.value = true;
+        } else {
+            emit("uploaded", collectionSelection.value);
+        }
+    } catch (err) {
+        console.error(err);
+    }
     counterRunning.value = 0;
     eventReset();
     emit("dismiss");
@@ -369,8 +399,8 @@ defineExpose({
                     :file-name="uploadItem.fileName"
                     :file-size="uploadItem.fileSize"
                     :info="uploadItem.info"
-                    :list-extensions="isCollection ? null : listExtensions"
-                    :list-db-keys="isCollection ? null : listDbKeys"
+                    :list-extensions="!isCollection && listExtensions.length > 1 ? listExtensions : null"
+                    :list-db-keys="!isCollection && listDbKeys.length > 1 ? listDbKeys : null"
                     :percentage="uploadItem.percentage"
                     :space-to-tab="uploadItem.spaceToTab"
                     :status="uploadItem.status"
@@ -387,7 +417,7 @@ defineExpose({
             </div>
             <input ref="uploadFile" type="file" :multiple="multiple" @change="addFiles($event.target.files)" />
         </UploadBox>
-        <div class="upload-footer text-center">
+        <div v-if="!disableFooter" class="upload-footer text-center">
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
             <UploadSelect
                 v-if="isCollection"
@@ -416,6 +446,7 @@ defineExpose({
                 placeholder="Select Reference"
                 @input="updateDbKey" />
         </div>
+        <slot name="footer" />
         <div class="upload-buttons d-flex justify-content-end">
             <BButton id="btn-local" :disabled="!enableSources" @click="uploadFile.click()">
                 <FontAwesomeIcon icon="fa-laptop" />
@@ -443,8 +474,20 @@ defineExpose({
                 :disabled="!enableBuild"
                 title="Build"
                 :variant="enableBuild ? 'primary' : null"
-                @click="eventBuild">
+                @click="() => eventBuild(true)">
                 <span v-localize>Build</span>
+            </BButton>
+            <BButton
+                v-if="emitUploaded"
+                id="btn-emit"
+                :disabled="!enableBuild"
+                title="Use Uploaded Files"
+                :variant="enableBuild ? 'primary' : null"
+                @click="() => eventBuild(false)">
+                <slot name="emit-btn-txt">
+                    <span v-localize>Use Uploaded</span>
+                </slot>
+                ({{ counterSuccess }})
             </BButton>
             <BButton id="btn-stop" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
@@ -457,5 +500,12 @@ defineExpose({
                 <span v-else v-localize>Close</span>
             </BButton>
         </div>
+        <CollectionCreatorModal
+            v-if="isCollection && historyId"
+            :history-id="historyId"
+            :collection-type="collectionType"
+            :selected-items="collectionSelection"
+            :show-modal.sync="collectionModalShow"
+            default-hide-source-items />
     </div>
 </template>

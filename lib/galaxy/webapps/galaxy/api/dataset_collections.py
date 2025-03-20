@@ -5,6 +5,8 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
+    status,
 )
 from typing_extensions import Annotated
 
@@ -68,6 +70,7 @@ class FastAPIDatasetCollections:
     @router.post(
         "/api/dataset_collections/{id}/copy",
         summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def copy(
         self,
@@ -76,6 +79,7 @@ class FastAPIDatasetCollections:
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
         self.service.copy(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         "/api/dataset_collections/{id}/attributes",

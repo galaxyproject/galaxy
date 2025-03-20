@@ -356,7 +356,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
             "type": "example",
             "dbkey": "hg17",
         }
-        response = self._post("visualizations", data=create_payload).json()
+        response = self._post("visualizations", data=create_payload, json=True).json()
         visualization_id = response["id"]
         payload = {"user_ids": user_ids}
         sharing_response = self._put(f"visualizations/{visualization_id}/share_with_users", data=payload, json=True)

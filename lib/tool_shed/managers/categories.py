@@ -59,9 +59,7 @@ class CategoryManager:
 
     def to_dict(self, category: Category) -> Dict[str, Any]:
         category_dict = category.to_dict(view="collection", value_mapper=get_value_mapper(self.app))
-        category_dict["repositories"] = self.app.repository_registry.viewable_repositories_and_suites_by_category.get(
-            category.name, 0
-        )
+        category_dict["repositories"] = category.active_repository_count()
         category_dict["url"] = web.url_for(
             controller="categories", action="show", id=self.app.security.encode_id(category.id)
         )

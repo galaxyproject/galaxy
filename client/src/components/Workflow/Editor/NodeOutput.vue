@@ -11,7 +11,17 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
-import { computed, ComputedRef, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
+import {
+    computed,
+    type ComputedRef,
+    nextTick,
+    onBeforeUnmount,
+    type Ref,
+    ref,
+    toRefs,
+    type UnwrapRef,
+    watch,
+} from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";

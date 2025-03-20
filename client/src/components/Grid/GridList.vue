@@ -7,7 +7,14 @@ import { BAlert, BButton, BCard, BFormCheckbox, BOverlay, BPagination } from "bo
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import {
+    type BatchOperation,
+    type FieldEntry,
+    type FieldHandler,
+    type GridConfig,
+    type Operation,
+    type RowData,
+} from "./configs/types";
 
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";

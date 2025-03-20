@@ -8,6 +8,7 @@ import { computed } from "vue";
 import type { SharedItemNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
@@ -20,10 +21,6 @@ interface Props {
 const props = defineProps<Props>();
 
 const notificationsStore = useNotificationsStore();
-
-function capitalizeFirstLetter(string: string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
 
 const content = computed(() => props.notification.content);
 

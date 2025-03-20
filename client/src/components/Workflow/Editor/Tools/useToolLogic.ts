@@ -2,7 +2,7 @@ import simplify from "simplify-js";
 import { ref, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { BaseWorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { type BaseWorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 

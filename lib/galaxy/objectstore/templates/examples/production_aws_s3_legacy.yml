@@ -1,4 +1,5 @@
 - id: aws_s3_legacy
+  version: 0
   name: Amazon Web Services S3 Storage (Legacy)
   description: |
     Amazon's Simple Storage Service (S3) is Amazon's primary cloud storage service.
@@ -10,7 +11,7 @@
       help: |
         A security credential for interacting with AWS services can be created from your
         AWS web console. Creating an "Access Key" creates a pair of keys used to identify
-        and authenticate access to your AWS account - the first part of the pair  is 
+        and authenticate access to your AWS account - the first part of the pair  is
         "Access Key ID" and should be entered here. The second part of your key is the secret
         part called the "Secret Access Key". Place that in the secure part of this form below.
     bucket:

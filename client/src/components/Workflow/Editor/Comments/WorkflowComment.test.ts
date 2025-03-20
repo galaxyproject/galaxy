@@ -3,8 +3,8 @@ import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { nextTick } from "vue";
 
-import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
-import type { TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { type LazyUndoRedoAction, type UndoRedoAction } from "@/stores/undoRedoStore";
+import { type TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
 import MarkdownComment from "./MarkdownComment.vue";
 import TextComment from "./TextComment.vue";

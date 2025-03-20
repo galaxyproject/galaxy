@@ -7,6 +7,8 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
+import GalaxyWizard from "components/GalaxyWizard";
+import HelpTerm from "components/Help/HelpTerm";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryView from "components/History/HistoryView";
@@ -16,6 +18,8 @@ import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
+import ToolLanding from "components/Landing/ToolLanding";
+import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
@@ -24,10 +28,9 @@ import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
 import { APIKey } from "components/User/APIKey";
-import { CloudAuth } from "components/User/CloudAuth";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import { NotificationsPreferences } from "components/User/Notifications";
+import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
@@ -37,11 +40,11 @@ import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import TrsImport from "components/Workflow/Import/TrsImport";
 import TrsSearch from "components/Workflow/Import/TrsSearch";
 import InvocationReport from "components/Workflow/InvocationReport";
+import WorkflowList from "components/Workflow/List/WorkflowList";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
-import WorkflowList from "components/Workflow/WorkflowList";
 import Analysis from "entry/analysis/modules/Analysis";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Home from "entry/analysis/modules/Home";
@@ -59,6 +62,7 @@ import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateI
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
+import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -89,10 +93,14 @@ Vue.use(VueRouter);
 patchRouterPush(VueRouter);
 
 // redirect anon users
-function redirectAnon() {
+function redirectAnon(redirect = "") {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy.user || !Galaxy.user.id) {
-        return "/login/start";
+        if (redirect !== "") {
+            return redirect;
+        } else {
+            return "/login/start";
+        }
     }
 }
 
@@ -193,6 +201,11 @@ export function getRouter(Galaxy) {
                         component: AboutGalaxy,
                     },
                     {
+                        path: "help/terms/:term",
+                        component: HelpTerm,
+                        props: true,
+                    },
+                    {
                         path: "carbon_emissions_calculations",
                         component: CarbonEmissionsCalculations,
                     },
@@ -226,6 +239,7 @@ export function getRouter(Galaxy) {
                         component: CenterFrame,
                         props: (route) => ({
                             src: `/datasets/${route.params.datasetId}/display/?preview=True`,
+                            isPreview: true,
                         }),
                     },
                     {
@@ -314,7 +328,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/histories/list_published"),
                     },
                     {
                         path: "histories/list_shared",
@@ -384,6 +398,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_instances/create",
                         component: CreateUserFileSource,
+                        props: (route) => {
+                            return {
+                                error: route.params.error,
+                            };
+                        },
                     },
                     {
                         path: "file_source_instances/index",
@@ -405,7 +424,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_templates/:templateId/new",
                         component: CreateFileSourceInstance,
-                        props: true,
+                        props: (route) => ({
+                            templateId: route.params.templateId,
+                            uuid: route.query.uuid,
+                        }),
                     },
                     {
                         path: "pages/create",
@@ -447,7 +469,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/pages/list_published"),
                     },
                     {
                         path: "pages/list_published",
@@ -468,6 +490,10 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
+                        path: "wizard",
+                        component: GalaxyWizard,
+                    },
+                    {
                         path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
@@ -486,6 +512,21 @@ export function getRouter(Galaxy) {
                         component: ToolsJson,
                     },
                     {
+                        path: "tool_landings/:uuid",
+                        component: ToolLanding,
+                        props: true,
+                    },
+                    {
+                        path: "workflow_landings/:uuid",
+                        component: WorkflowLanding,
+                        props: (route) => ({
+                            uuid: route.params.uuid,
+                            public: route.query.public.toLowerCase() === "true",
+                            secret: route.query.client_secret,
+                        }),
+                        beforeEnter: requireAuth,
+                    },
+                    {
                         path: "user",
                         component: UserPreferences,
                         props: {
@@ -497,11 +538,6 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/api_key",
                         component: APIKey,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "user/cloud_auth",
-                        component: CloudAuth,
                         redirect: redirectAnon(),
                     },
                     {
@@ -628,13 +664,12 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.params.invocationId,
                             isFullPage: true,
-                            fromPanel: Boolean(route.query.from_panel),
                         }),
                     },
                     {
                         path: "workflows/list",
                         component: WorkflowList,
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/workflows/list_published"),
                     },
                     {
                         path: "workflows/list_published",

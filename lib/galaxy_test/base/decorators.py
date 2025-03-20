@@ -67,6 +67,14 @@ def _wrap_method_with_galaxy_requirement(method, tag: KnownRequirementT):
     return wrapped_method
 
 
+def requires_tool_id(tool_id: str):
+
+    def method_wrapper(method):
+        return pytest.mark.requires_tool_id(tool_id)(method)
+
+    return method_wrapper
+
+
 def requires_new_history(method):
     return _wrap_method_with_galaxy_requirement(method, "new_history")
 

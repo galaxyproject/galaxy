@@ -1,7 +1,7 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 import { bytesToString } from "@/utils/utils";
 
-import type { CleanableItem } from "./CleanupOperation";
+import { type CleanableItem } from "./CleanupOperation";
 
 export type StorageItemsCleanupResult = components["schemas"]["StorageItemsCleanupResult"];
 

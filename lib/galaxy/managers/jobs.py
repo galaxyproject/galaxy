@@ -4,6 +4,7 @@ from datetime import (
     date,
     datetime,
 )
+from pathlib import Path
 from typing import (
     Any,
     cast,
@@ -33,6 +34,7 @@ from typing_extensions import TypedDict
 
 from galaxy import model
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -43,7 +45,10 @@ from galaxy.job_metrics import (
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
@@ -51,11 +56,13 @@ from galaxy.model import (
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
+    JobMetricNumeric,
     JobParameter,
     User,
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowStep,
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
@@ -70,10 +77,15 @@ from galaxy.schema.schema import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.tools._types import (
+    ToolStateDumpedToJsonInternalT,
+    ToolStateJobInstancePopulatedT,
+)
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
     listify,
+    string_as_bool_or_none,
 )
 from galaxy.util.search import (
     FilteredTerm,
@@ -82,6 +94,13 @@ from galaxy.util.search import (
 )
 
 log = logging.getLogger(__name__)
+
+JobStateT = str
+JobStatesT = Union[JobStateT, List[JobStateT]]
+
+
+STDOUT_LOCATION = "outputs/tool_stdout"
+STDERR_LOCATION = "outputs/tool_stderr"
 
 
 class JobLock(BaseModel):
@@ -284,6 +303,47 @@ class JobManager:
         trans.sa_session.refresh(job)
         return job
 
+    def get_job_console_output(
+        self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+    ):
+        if job is None:
+            raise ObjectNotFound()
+
+        # Check job destination params to see if stdout reporting is enabled
+        dest_params = job.destination_params
+        if not string_as_bool_or_none(dest_params.get("live_tool_output_reporting", False)):
+            raise ConfigDoesNotAllowException()
+
+        # If stdout_length and stdout_position are good values, then load standard out and add it to status
+        console_output = {}
+        console_output["state"] = job.state
+        if job.state == job.states.RUNNING:
+            working_directory = trans.app.object_store.get_filename(
+                job, base_dir="job_work", dir_only=True, obj_dir=True
+            )
+            if stdout_length > -1 and stdout_position > -1:
+                try:
+                    stdout_path = Path(working_directory) / STDOUT_LOCATION
+                    stdout_file = open(stdout_path)
+                    stdout_file.seek(stdout_position)
+                    console_output["stdout"] = stdout_file.read(stdout_length)
+                except Exception as e:
+                    log.error("Could not read STDOUT: %s", e)
+                    console_output["stdout"] = ""
+            if stderr_length > -1 and stderr_position > -1:
+                try:
+                    stderr_path = Path(working_directory) / STDERR_LOCATION
+                    stderr_file = open(stderr_path)
+                    stderr_file.seek(stderr_position)
+                    console_output["stderr"] = stderr_file.read(stderr_length)
+                except Exception as e:
+                    log.error("Could not read STDERR: %s", e)
+                    console_output["stderr"] = ""
+        else:
+            console_output["stdout"] = job.tool_stdout
+            console_output["stderr"] = job.tool_stderr
+        return console_output
+
     def stop(self, job, message=None):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database, message)
@@ -313,7 +373,15 @@ class JobSearch:
         self.ldda_manager = ldda_manager
         self.decode_id = id_encoding_helper.decode_id
 
-    def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state="ok"):
+    def by_tool_input(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_id: str,
+        tool_version: Optional[str],
+        param: ToolStateJobInstancePopulatedT,
+        param_dump: ToolStateDumpedToJsonInternalT,
+        job_state: Optional[JobStatesT] = "ok",
+    ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -360,7 +428,14 @@ class JobSearch:
         )
 
     def __search(
-        self, tool_id, tool_version, user, input_data, job_state=None, param_dump=None, wildcard_param_dump=None
+        self,
+        tool_id: str,
+        tool_version: Optional[str],
+        user: model.User,
+        input_data,
+        job_state: Optional[JobStatesT],
+        param_dump: ToolStateDumpedToJsonInternalT,
+        wildcard_param_dump=None,
     ):
         search_timer = ExecutionTimer()
 
@@ -469,13 +544,22 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
-    def _build_job_subquery(self, tool_id, user_id, tool_version, job_state, wildcard_param_dump):
+    def _build_job_subquery(
+        self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
+    ):
         """Build subquery that selects a job with correct job parameters."""
-        stmt = select(model.Job.id).where(
-            and_(
-                model.Job.tool_id == tool_id,
-                model.Job.user_id == user_id,
-                model.Job.copied_from_job_id.is_(None),  # Always pick original job
+        stmt = (
+            select(model.Job.id)
+            .join(model.History, model.Job.history_id == model.History.id)
+            .where(
+                and_(
+                    model.Job.tool_id == tool_id,
+                    or_(
+                        model.Job.user_id == user_id,
+                        model.History.published == true(),
+                    ),
+                    model.Job.copied_from_job_id.is_(None),  # Always pick original job
+                )
             )
         )
         if tool_version:
@@ -707,6 +791,43 @@ def invocation_job_source_iter(sa_session, invocation_id):
             yield ("ImplicitCollectionJobs", row[1], row[2])
 
 
+def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+    single_job_stmnt = (
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        .join(Job, JobMetricNumeric.job_id == Job.id)
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id, WorkflowInvocationStep.job_id == Job.id
+            ),
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+    )
+    collection_job_stmnt = (
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        .join(Job, JobMetricNumeric.job_id == Job.id)
+        .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+        .join(
+            ImplicitCollectionJobs,
+            ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+        )
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id,
+                WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
+            ),
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+    )
+    # should be sa_session.execute(single_job_stmnt.union(collection_job_stmnt)).all() but that returns
+    # columns instead of the job metrics ORM instance.
+    return sorted(
+        (*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()),
+        key=lambda row: row[0],
+    )
+
+
 def fetch_job_states(sa_session, job_source_ids, job_source_types):
     assert len(job_source_ids) == len(job_source_types)
     job_ids = set()
@@ -889,6 +1010,10 @@ def summarize_job_metrics(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    return summarize_metrics(trans, job.metrics)
+
+
+def summarize_metrics(trans: ProvidesUserContext, job_metrics):
     safety_level = Safety.SAFE
     if trans.user_is_admin:
         safety_level = Safety.UNSAFE
@@ -900,7 +1025,7 @@ def summarize_job_metrics(trans, job):
             m.metric_value,
             m.plugin,
         )
-        for m in job.metrics
+        for m in job_metrics
     ]
     dictifiable_metrics = trans.app.job_metrics.dictifiable_metrics(raw_metrics, safety_level)
     return [d.dict() for d in dictifiable_metrics]
@@ -964,7 +1089,11 @@ def summarize_job_parameters(trans, job: Job):
                         is_valid = False
                     if is_valid:
                         rval.append(
-                            dict(text=input.test_param.label, depth=depth, value=input.cases[current_case].value)
+                            dict(
+                                text=input.test_param.label or input.test_param.name,
+                                depth=depth,
+                                value=input.cases[current_case].value,
+                            )
                         )
                         rval.extend(
                             inputs_recursive(

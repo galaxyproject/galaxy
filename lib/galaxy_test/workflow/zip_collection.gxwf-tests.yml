@@ -1,0 +1,10 @@
+- doc: | 
+    Test simple use of __ZIP_COLLECTION__ in a workflow.
+  job:
+    test_input_1: "samp1\t10.0\nsamp2\t20.0\n"
+    test_input_2: "samp1\t20.0\nsamp2\t40.0\n"
+  outputs:
+    out:
+      asserts:
+      - that: has_text
+        text: "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0"

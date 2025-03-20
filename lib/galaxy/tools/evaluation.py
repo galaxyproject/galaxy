@@ -12,7 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
+    TYPE_CHECKING,
 )
 
 from packaging.version import Version
@@ -20,6 +20,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.deferred import (
     materialize_collection_input,
@@ -71,6 +72,9 @@ from galaxy.util.template import (
 from galaxy.util.tree_dict import TreeDict
 from galaxy.work.context import WorkRequestContext
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
 log = logging.getLogger(__name__)
 
 
@@ -90,18 +94,27 @@ class ToolErrorLog:
 global_tool_errors = ToolErrorLog()
 
 
-def global_tool_logs(func, config_file, action_str):
+class ToolTemplatingException(Exception):
+
+    def __init__(self, *args: object, tool_id: Optional[str], tool_version: str, is_latest: bool) -> None:
+        super().__init__(*args)
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.is_latest = is_latest
+
+
+def global_tool_logs(func, config_file: str, action_str: str, tool: "Tool"):
     try:
         return func()
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
-        raise e
-
-
-DeferrableObjectsT = Union[
-    model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
-]
+        raise ToolTemplatingException(
+            f"Error occurred while {action_str.lower()} for tool '{tool.id}'",
+            tool_id=tool.id,
+            tool_version=tool.version,
+            is_latest=tool.is_latest_version,
+        ) from e
 
 
 class ToolEvaluator:
@@ -150,6 +163,7 @@ class ToolEvaluator:
 
         # materialize deferred datasets
         materialized_objects = self._materialize_objects(deferred_objects, self.local_working_directory)
+        self.compute_environment.materialized_objects = materialized_objects
 
         # replace materialized objects back into tool input parameters
         self._replaced_deferred_objects(inp_data, incoming, materialized_objects)
@@ -317,7 +331,8 @@ class ToolEvaluator:
         deferred_objects: Dict[str, DeferrableObjectsT] = {}
         for key, value in input_datasets.items():
             if value is not None and value.state == model.Dataset.states.DEFERRED:
-                deferred_objects[key] = value
+                if self._should_materialize_deferred_input(key, value):
+                    deferred_objects[key] = value
 
         def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
             if (
@@ -329,6 +344,19 @@ class ToolEvaluator:
         visit_input_values(self.tool.inputs, incoming, find_deferred_collections)
 
         return deferred_objects
+
+    def _should_materialize_deferred_input(self, input_name: str, input_value: DeferrableObjectsT) -> bool:
+        """
+        We can skip materializing some deferred datasets if the input can work with URIs that are prefixed
+        with a known prefix set in `allow_uri_if_protocol`.
+        """
+        deferred_input = self.tool.inputs.get(input_name)
+        if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
+            source_uri = input_value.deferred_source_uri or ""
+            for prefix in deferred_input.allow_uri_if_protocol:
+                if prefix == "*" or source_uri.startswith(prefix):
+                    return False
+        return True
 
     def __walk_inputs(self, inputs, input_values, func):
         def do_walk(inputs, input_values):
@@ -602,13 +630,18 @@ class ToolEvaluator:
         """
         config_file = self.tool.config_file
         global_tool_logs(
-            self._create_interactivetools_entry_points, config_file, "Building Interactive Tool Entry Points"
+            self._create_interactivetools_entry_points, config_file, "Building Interactive Tool Entry Points", self.tool
         )
-        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
-        global_tool_logs(self._build_param_file, config_file, "Building Param File")
-        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
-        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
-        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        global_tool_logs(
+            self._build_config_files,
+            config_file,
+            "Building Config Files",
+            self.tool,
+        )
+        global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
         return (
             self.command_line,
             self.version_command_line,
@@ -857,7 +890,7 @@ class PartialToolEvaluator(ToolEvaluator):
 
     def build(self):
         config_file = self.tool.config_file
-        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
         return (
             self.command_line,
             self.version_command_line,
@@ -878,10 +911,10 @@ class RemoteToolEvaluator(ToolEvaluator):
 
     def build(self):
         config_file = self.tool.config_file
-        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
-        global_tool_logs(self._build_param_file, config_file, "Building Param File")
-        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
-        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files", self.tool)
+        global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
         return (
             self.command_line,
             self.version_command_line,

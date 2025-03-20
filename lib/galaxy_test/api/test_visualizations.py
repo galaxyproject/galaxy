@@ -1,7 +1,4 @@
-import json
 import uuid
-
-from requests import put
 
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
@@ -89,7 +86,7 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
     def test_update_title(self):
         viz_id, viz = self._create_viz()
         update_url = self._api_url(f"visualizations/{viz_id}", use_key=True)
-        response = put(update_url, {"title": "New Name"})
+        response = self._put(update_url, {"title": "New Name"}, json=True)
         self._assert_status_code_is(response, 200)
         updated_viz = self._show_viz(viz_id)
         assert updated_viz["title"] == "New Name"
@@ -114,12 +111,10 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         config = (
             config
             if config is not None
-            else json.dumps(
-                {
-                    "x": 10,
-                    "y": 12,
-                }
-            )
+            else {
+                "x": 10,
+                "y": 12,
+            }
         )
         create_payload = {
             "title": title,
@@ -129,7 +124,7 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
             "annotation": "this is a test of the emergency visualization system",
             "config": config,
         }
-        response = self._post("visualizations", data=create_payload)
+        response = self._post("visualizations", data=create_payload, json=True)
         return response
 
     def _publish_viz(self, id):

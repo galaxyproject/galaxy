@@ -12,7 +12,10 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="dist/ngl.js"/>
+    <requirements>
+        <requirement type="npm" version="0.0.11" package="@galaxyproject/ngl"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
         <input>
             <label>Quality</label>

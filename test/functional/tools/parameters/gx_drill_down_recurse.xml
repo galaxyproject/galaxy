@@ -1,0 +1,32 @@
+<tool id="gx_drill_down_recurse" name="gx_drill_down_recurse" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo "parameter: $parameter" > '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="drill_down" hierarchy="recurse">
+            <expand macro="drill_down_static_options" />
+        </param>
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="parameter" value="bba"/>
+            <expand macro="assert_output">
+                <has_line line="parameter: bba"/>
+            </expand>
+        </test>
+        <!-- recurse only works properly with multiple=true...
+        <test>
+            <param name="parameter" value="ab"/>
+            <expand macro="assert_output">
+                <has_line line="parameter: aba,abb"/>
+            </expand>
+        </test>
+        -->
+    </tests>
+    <help>
+    </help>
+</tool>

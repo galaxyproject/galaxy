@@ -72,7 +72,7 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
                     usage = quota_source_usage.disk_usage
         return usage
 
-    def is_over_quota(self, app, job, job_destination):
+    def is_over_quota(self, app, job):
         """Return True if the user or history is over quota for specified job.
 
         job_destination unused currently but an important future application will
@@ -102,7 +102,7 @@ class NoQuotaAgent(QuotaAgent):
     ) -> Optional[int]:
         return None
 
-    def is_over_quota(self, app, job, job_destination):
+    def is_over_quota(self, app, job):
         return False
 
 
@@ -378,16 +378,12 @@ WHERE default_quota_association.type = :default_type
             with transaction(self.sa_session):
                 self.sa_session.commit()
 
-    def is_over_quota(self, app, job, job_destination):
+    def is_over_quota(self, app, job):
         if is_user_object_store(job.object_store_id):
             return False  # User object stores are not subject to quotas
-        if job_destination is not None:
-            object_store_id = job_destination.params.get("object_store_id", None)
-            object_store = app.object_store
-            quota_source_map = object_store.get_quota_source_map()
-            quota_source_label = quota_source_map.get_quota_source_info(object_store_id).label
-        else:
-            quota_source_label = None
+        object_store = app.object_store
+        quota_source_map = object_store.get_quota_source_map()
+        quota_source_label = quota_source_map.get_quota_source_info(job.object_store_id).label
         quota = self.get_quota(job.user, quota_source_label=quota_source_label)
         if quota is not None:
             try:

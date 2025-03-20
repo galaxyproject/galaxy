@@ -42,7 +42,7 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
      * Starts watching the resource by polling the server continuously.
      */
     function startWatchingResource() {
-        stopWatchingResource();
+        stopWatcher();
         tryWatchResource();
     }
 
@@ -50,6 +50,10 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
      * Stops continuously watching the resource.
      */
     function stopWatchingResource() {
+        stopWatcher();
+    }
+
+    function stopWatcher() {
         if (watchTimeout) {
             clearTimeout(watchTimeout);
             watchTimeout = null;
@@ -90,5 +94,6 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
 
     return {
         startWatchingResource,
+        stopWatchingResource,
     };
 }

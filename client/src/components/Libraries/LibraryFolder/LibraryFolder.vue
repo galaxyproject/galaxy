@@ -1,9 +1,11 @@
 <template>
     <div>
         <FolderTopBar
+            :search-text="searchText"
+            :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
             :include-deleted.sync="includeDeleted"
-            :folder_id="currentFolderId"
+            :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
             :unselected="unselected"
@@ -285,6 +287,7 @@ Vue.use(BootstrapVue);
 
 function initialFolderState() {
     return {
+        canAddLibraryItem: false,
         selected: [],
         unselected: [],
         expandedMessage: [],
@@ -381,12 +384,13 @@ export default {
                     this.sortBy,
                     this.sortDesc,
                     this.perPage,
-                    (this.currentPage - 1) * this.perPage,
+                    (this.currentPage ? this.currentPage - 1 : 0) * this.perPage,
                     this.searchText
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
+                    this.canAddLibraryItem = response.metadata.can_add_library_item;
                     this.total_rows = response.metadata.total_rows;
                     if (this.isAllSelectedMode) {
                         this.selected = [];

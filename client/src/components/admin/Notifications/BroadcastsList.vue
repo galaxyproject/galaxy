@@ -8,7 +8,7 @@ import { useRouter } from "vue-router/composables";
 
 import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
-import { BroadcastNotification } from "@/stores/broadcastsStore";
+import { type BroadcastNotification } from "@/stores/broadcastsStore";
 
 import BroadcastCard from "./BroadcastCard.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -53,7 +53,7 @@ function onEdit(item: BroadcastNotification) {
 async function onForceExpire(item: BroadcastNotification) {
     await updateBroadcast(item.id, { expiration_time: new Date().toISOString().slice(0, 23) });
     await loadBroadcastsList(true);
-    Toast.info("Broadcast marked as expired and will be removed from the database in the next cleanup cycle.");
+    Toast.info("Broadcast marked as expired. It will be removed from the database in the next cleanup cycle.");
 }
 
 function onGoToLink(link: string) {

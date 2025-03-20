@@ -74,23 +74,30 @@ export class TracksterUI extends Backbone.Model {
             },
             bookmarks: bookmarks,
         };
-
-        // Make call to save visualization.
-        return $.ajax({
-            url: `${getAppRoot()}visualization/save`,
-            type: "POST",
+        const request = {
             dataType: "json",
-            data: {
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify({
                 id: this.view.vis_id,
                 title: this.view.config.get_value("name"),
                 dbkey: this.view.dbkey,
                 type: "trackster",
-                vis_json: JSON.stringify(viz_config),
-            },
-        })
+                config: viz_config,
+            }),
+        };
+        if (!this.view.vis_id) {
+            request.url = `${getAppRoot()}api/visualizations`;
+            request.type = "POST";
+        } else {
+            request.url = `${getAppRoot()}api/visualizations/${this.view.vis_id}`;
+            request.type = "PUT";
+        }
+
+        // Make call to save visualization.
+        return $.ajax(request)
             .success((vis_info) => {
                 Galaxy.modal.hide();
-                this.view.vis_id = vis_info.vis_id;
+                this.view.vis_id = vis_info.id;
                 this.view.has_changes = false;
 
                 // Needed to set URL when first saving a visualization.

@@ -2,7 +2,7 @@
 import { BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { WorkflowLabel } from "./labels";
+import { type WorkflowLabel } from "./labels";
 
 import LabelSelector from "./LabelSelector.vue";
 

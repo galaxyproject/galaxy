@@ -1,41 +1,27 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-import { hasHelp as hasHelpText, help as helpText } from "./terms";
-
-import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
+import HelpPopover from "./HelpPopover.vue";
 
 interface Props {
     uri: string;
     text: string;
+    forTitle?: boolean;
 }
 
-const props = defineProps<Props>();
-
-const hasHelp = computed<boolean>(() => {
-    return hasHelpText(props.uri);
-});
-
-const help = computed<string>(() => {
-    return helpText(props.uri) as string;
+withDefaults(defineProps<Props>(), {
+    forTitle: false,
 });
 </script>
 
 <template>
     <span>
-        <b-popover
-            v-if="hasHelp"
+        <HelpPopover
             :target="
                 () => {
                     return $refs.helpTarget;
                 }
             "
-            triggers="hover"
-            placement="bottom">
-            <ConfigurationMarkdown :markdown="help" :admin="true" />
-        </b-popover>
-        <span v-if="hasHelp" ref="helpTarget" class="help-text">{{ text }}</span>
-        <span v-else>{{ text }}</span>
+            :term="uri" />
+        <span ref="helpTarget" class="help-text" :class="{ 'title-help-text': forTitle }">{{ text }}</span>
     </span>
 </template>
 
@@ -44,5 +30,8 @@ const help = computed<string>(() => {
 .help-text {
     text-decoration-line: underline;
     text-decoration-style: dashed;
+}
+.title-help-text {
+    text-decoration-thickness: 1px;
 }
 </style>
