@@ -264,7 +264,7 @@ async function onExecute() {
                             <WorkflowStorageConfiguration
                                 v-if="isConfigLoaded && config.object_store_allows_id_selection"
                                 :split-object-store="splitObjectStore"
-                                :invocation-preferred-object-store-id="preferredObjectStoreId"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
                                 :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
                                 @updated="onStorageUpdate">
                             </WorkflowStorageConfiguration>
