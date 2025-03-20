@@ -17,7 +17,6 @@ const styleBase = path.join(scriptsBase, "style");
 const modulesExcludedFromLibs = [
     "jspdf",
     "canvg",
-    "prismjs",
     "html2canvas",
     "handsontable",
     "pikaday",
