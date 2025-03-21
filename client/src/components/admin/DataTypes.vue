@@ -1,6 +1,6 @@
 <template>
     <div aria-labelledby="data-types-heading">
-        <h1 id="data-types-heading" class="h-lg">Data Types</h1>
+        <h1 id="data-types-heading" class="h-lg">数据类型</h1>
         <Message :message="message" :status="status" />
         <BaseGrid
             v-if="status !== 'error'"
@@ -9,9 +9,9 @@
             :rows="dataTypes"
             :is-loaded="isDataLoaded">
             <template v-slot:title>
-                <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
+                <p>当前数据类型注册包含 {{ dataTypes.length }} 个数据类型。</p>
                 <input id="showAllColumns" v-model="showAllColumns" type="checkbox" />
-                <label for="showAllColumns">Show all columns</label>
+                <label for="showAllColumns">显示所有列</label>
             </template>
         </BaseGrid>
     </div>
@@ -93,10 +93,10 @@ export default {
         // Predefined columns with pretty headers (entries are optional)
         prettyColumns() {
             return [
-                { text: "Extension", dataIndex: "extension" },
-                { text: "Type", dataIndex: "type" },
-                { text: "MIME Type", dataIndex: "mimetype" },
-                { text: "Display in Upload", dataIndex: "display_in_upload" },
+                { text: "扩展名", dataIndex: "extension" },
+                { text: "类型", dataIndex: "type" },
+                { text: "MIME 类型", dataIndex: "mimetype" },
+                { text: "在上传中显示", dataIndex: "display_in_upload" },
             ];
         },
     },

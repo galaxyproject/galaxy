@@ -14,9 +14,9 @@ export class Services {
             const response = await axios.get(url);
             const newWorkflow = response.data;
             const currentOwner = workflow.owner;
-            let newName = `Copy of ${workflow.name}`;
+            let newName = `${workflow.name}的副本`;
             if (currentOwner != Galaxy.user.attributes.username) {
-                newName += ` shared by user ${currentOwner}`;
+                newName += `（由用户${currentOwner}共享）`;
             }
             newWorkflow.name = newName;
             const createUrl = withPrefix("/api/workflows");
@@ -28,7 +28,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
-
+    
     async createWorkflow(workflow) {
         const url = withPrefix("/api/workflows");
         try {

@@ -65,9 +65,9 @@ function getTabClass(job: JobDetails) {
 
 <template>
     <BAlert v-if="initialLoading" variant="info" show>
-        <LoadingSpan message="Loading Jobs" />
+        <LoadingSpan message="加载任务" />
     </BAlert>
-    <BAlert v-else-if="!jobsDetails || !jobCount" variant="info" show> No jobs found for this step. </BAlert>
+    <BAlert v-else-if="!jobsDetails || !jobCount" variant="info" show> 找不到此步骤的任务。 </BAlert>
     <div v-else-if="jobCount === 1 && firstJob">
         <JobDetailsDisplayed :job="firstJob" />
     </div>
@@ -75,7 +75,7 @@ function getTabClass(job: JobDetails) {
         <BTab
             v-for="job in jobsDetails"
             :key="job.id"
-            data-description="workflow invocation job"
+            data-description="工作流调用任务"
             :title-item-class="getTabClass(job)"
             title-link-class="w-100">
             <template v-slot:title>

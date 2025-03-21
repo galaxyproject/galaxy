@@ -1,59 +1,57 @@
 <template>
     <div aria-labelledby="jobs-title">
-        <h1 id="jobs-title" class="h-lg">Jobs</h1>
+        <h1 id="jobs-title" class="h-lg">作业</h1>
         <b-alert v-if="message" :variant="status" show>
             {{ message }}
         </b-alert>
-        <Heading h2 size="md" separator>Job Lock</Heading>
+        <Heading h2 size="md" separator>作业锁定</Heading>
         <JobLock />
-        <Heading h2 size="md" separator>Job Overview</Heading>
+        <Heading h2 size="md" separator>作业概览</Heading>
         <p>
-            Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
-            completed jobs (in 'error' or 'ok' states).
+            以下是未完成的作业（处于“新建”，“排队”，“运行”或“上传”状态）以及最近完成的作业（处于“错误”或“正常”状态）。
         </p>
         <p>
-            You may choose to stop some of the displayed jobs and provide the user with a message. Your stop message
-            will be displayed to the user as: "This job was stopped by an administrator:
-            <strong>&lt;YOUR MESSAGE&gt;</strong>
-            For more information or help, report this error".
+            您可以选择停止显示的某些作业，并向用户提供消息。您的停止消息将显示给用户： “此作业已由管理员停止：
+            <strong>&lt;您的消息&gt;</strong>
+            如需更多信息或帮助，请报告此错误”。
         </p>
         <b-row>
             <b-col class="col-sm-4">
-                <b-form-group description="Select whether or not to use the cutoff below.">
+                <b-form-group description="选择是否使用下面的截止时间。">
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
-                        {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
+                        {{ showAllRunning ? "显示所有未完成的作业" : "查询应用了时间截止" }}
                     </b-form-checkbox>
                 </b-form-group>
                 <b-form name="jobs" @submit.prevent="onRefresh">
                     <b-form-group
                         v-show="!showAllRunning"
                         id="cutoff"
-                        label="Cutoff in minutes"
-                        description="Display jobs that had their state updated in the given time period.">
+                        label="分钟为单位的截止时间"
+                        description="显示在给定时间段内状态已更新的作业。">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
                         </b-input-group>
                     </b-form-group>
                 </b-form>
-                <b-form-group description="Use strings or regular expressions to search jobs.">
+                <b-form-group description="使用字符串或正则表达式来搜索作业。">
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </b-form-group>
             </b-col>
         </b-row>
         <transition name="fade">
             <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
-                <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                <b-form-group label="停止选中的作业" description="停止消息将显示给用户">
                     <b-input-group>
-                        <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
+                        <b-form-input id="stop-message" v-model="stopMessage" placeholder="停止消息" required>
                         </b-form-input>
                         <b-input-group-append>
-                            <b-btn type="submit">Submit</b-btn>
+                            <b-btn type="submit">提交</b-btn>
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
             </b-form>
         </transition>
-        <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
+        <h3 class="mb-0 h-sm">未完成的作业</h3>
         <JobsTable
             v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
@@ -78,7 +76,7 @@
         </JobsTable>
 
         <template v-if="!showAllRunning">
-            <h3 class="mb-0 h-sm">Finished Jobs</h3>
+            <h3 class="mb-0 h-sm">已完成的作业</h3>
             <JobsTable
                 :table-caption="finishedTableCaption"
                 :fields="finishedJobFields"
@@ -114,27 +112,26 @@ function cancelJob(jobId, message) {
 }
 
 const helpHtml = `<div>
-<p>This textbox box can be used to filter the jobs displayed.
+<p>此文本框可用于过滤显示的作业。</p>
 
-<p>Text entered here will be searched against job user, tool ID, job runner, and handler. Additionally,
-advanced filtering tags can be used to refine the search more precisely. Tags are of the form
-<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
-For instance to search just for jobs with <code>cat1</code> in the tool name, <code>tool:cat1</code> can be used.
-Notice by default the search is not case-sensitive.
+<p>在此输入的文本将搜索作业用户、工具 ID、作业执行器和处理程序。此外，您还可以使用高级过滤标签来更精确地细化搜索。标签格式为
+<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> 或 <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>。
+例如，要搜索工具名称中包含 <code>cat1</code> 的作业，可以使用 <code>tool:cat1</code>。
+默认情况下，搜索不区分大小写。</p>
 
-<p>If the quoted version of tag is used, the search is case sensitive and only full matches will be
-returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</code> tool exactly.</p>
+<p>如果使用了标签的引用版本，搜索将区分大小写，并且仅返回完全匹配的结果。所以 <code>tool:'cat1'</code> 将仅显示来自
+<code>cat1</code> 工具的作业。</p>
 
-<p>The available tags are:
+<p>可用的标签包括：
 <dl>
     <dt><code>user</code></dt>
-    <dd>This filters the job index to contain only jobs executed by matching user(s). You may also just click on a user in the list of jobs to filter on that exact user using this directly.</dd>
+    <dd>此标签用于过滤作业索引，仅显示由匹配的用户执行的作业。您还可以直接点击作业列表中的用户来过滤该用户的作业。</dd>
     <dt><code>handler</code></dt>
-    <dd>This filters the job index to contain only jobs executed on matching handler(s).  You may also just click on a handler in the list of jobs to filter on that exact user using this directly.</dd>
+    <dd>此标签用于过滤作业索引，仅显示由匹配的处理程序执行的作业。您还可以直接点击作业列表中的处理程序来过滤该处理程序的作业。</dd>
     <dt><code>runner</code></dt>
-    <dd>This filters the job index to contain only jobs executed on matching job runner(s).  You may also just click on a runner in the list of jobs to filter on that exact user using this directly.</dd>
+    <dd>此标签用于过滤作业索引，仅显示由匹配的作业执行器执行的作业。您还可以直接点击作业列表中的执行器来过滤该执行器的作业。</dd>
     <dt><code>tool</code></dt>
-    <dd>This filters the job index to contain only jobs from the matching tool(s).  You may also just click on a tool in the list of jobs to filter on that exact user using this directly.</dd>
+    <dd>此标签用于过滤作业索引，仅显示来自匹配工具的作业。您还可以直接点击作业列表中的工具来过滤该工具的作业。</dd>
 </dl>
 </div>
 `;
@@ -148,11 +145,11 @@ export default {
             finishedJobs: [],
             unfinishedJobs: [],
             jobsItemsModel: [],
-            finishedJobFields: [...commonJobFields, { key: "update_time", label: "Finished", sortable: true }],
+            finishedJobFields: [...commonJobFields, { key: "update_time", label: "已完成", sortable: true }],
             unfinishedJobFields: [
                 { key: "selected", label: "" },
                 ...commonJobFields,
-                { key: "update_time", label: "Last Update", sortable: true },
+                { key: "update_time", label: "最后更新", sortable: true },
             ],
             selectedStopJobIds: [],
             selectedJobId: null,
@@ -165,26 +162,26 @@ export default {
             busy: true,
             cutoffMin: 5,
             showAllRunning: false,
-            titleSearch: `search jobs`,
+            titleSearch: `搜索作业`,
             helpHtml: helpHtml,
         };
     },
     computed: {
         finishedTableCaption() {
-            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
+            return `这些作业已在过去 ${this.cutoffMin} 分钟内完成。`;
         },
         runningTableCaption() {
-            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+            return `这些作业未完成，并且在过去 ${this.cutoffMin} 分钟内更新了状态。对于当前运行的作业，“最后更新”列应显示目前的运行时间。`;
         },
         finishedNoJobsMessage() {
-            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
+            return `当前截止时间 ${this.cutoffMin} 分钟内没有已完成的作业。`;
         },
         runningNoJobsMessage() {
-            let message = `There are no unfinished jobs`;
+            let message = `没有未完成的作业` ;
             if (!this.showAllRunning) {
-                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
+                message += `，当前截止时间为 ${this.cutoffMin} 分钟`;
             }
-            message += ".";
+            message += "。";
             return message;
         },
     },

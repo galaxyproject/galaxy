@@ -19,11 +19,11 @@ const emit = defineEmits<{
 <template>
     <div class="actions vertically-spaced d-flex justify-content-between">
         <BButton tabindex="-1" @click="emit('clicked-cancel')">
-            {{ localize("Cancel") }}
+            {{ localize("取消") }}
         </BButton>
 
         <BButton class="create-collection" variant="primary" :disabled="!validInput" @click="emit('clicked-create')">
-            {{ localize("Create " + shortWhatIsBeingCreated) }}
+            {{ localize("创建 " + shortWhatIsBeingCreated) }}
         </BButton>
     </div>
 </template>

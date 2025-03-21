@@ -45,7 +45,7 @@ function routeToPath() {
     <BButton
         id="workflow-run-button"
         v-b-tooltip.hover.top.html.noninteractive
-        :title="title ?? 'Run workflow'"
+        :title="title ?? '运行工作流'"
         :data-workflow-run="id"
         :variant="variant"
         size="sm"
@@ -55,6 +55,6 @@ function routeToPath() {
         @click="routeToPath">
         <FontAwesomeIcon :icon="faPlay" fixed-width />
 
-        <span v-if="full" v-localize>Run</span>
+        <span v-if="full" v-localize>运行</span>
     </BButton>
 </template>

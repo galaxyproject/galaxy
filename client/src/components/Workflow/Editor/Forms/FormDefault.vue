@@ -5,7 +5,7 @@
                 v-if="isSubworkflow"
                 v-b-tooltip.hover
                 role="button"
-                title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
+                title="编辑此子工作流。之后您需要升级此工作流步骤。"
                 variant="link"
                 size="sm"
                 class="float-right py-0 px-1"
@@ -16,7 +16,7 @@
                 v-if="isSubworkflow"
                 v-b-tooltip.hover
                 role="button"
-                title="Upgrade this Workflow Step to latest Subworkflow version."
+                title="将此工作流步骤升级到最新的子工作流版本。"
                 variant="link"
                 size="sm"
                 class="float-right py-0 px-1"
@@ -28,16 +28,16 @@
             <FormElement
                 id="__label"
                 :value="label"
-                title="Label"
-                help="Add a step label."
+                title="标签"
+                help="添加步骤标签。"
                 :error="uniqueErrorLabel ?? undefined"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
                 :value="annotation"
-                title="Step Annotation"
+                title="步骤注释"
                 :area="true"
-                help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+                help="为此步骤添加注释或备注。查看工作流时可以看到这些注释。"
                 @input="onAnnotation" />
             <FormConditional
                 v-if="isSubworkflow"

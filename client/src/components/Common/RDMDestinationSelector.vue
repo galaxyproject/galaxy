@@ -44,13 +44,13 @@ const canCreateRecord = computed(() => Boolean(sourceUri.value) && Boolean(recor
 
 const errorCreatingRecord = ref<string>();
 
-const repositoryRecordDescription = computed(() => localize(`Select a repository to export ${props.what} to.`));
+const repositoryRecordDescription = computed(() => localize(`选择一个存储库以导出 ${props.what} 到那里。`));
 
-const recordNameDescription = computed(() => localize("Give the new record a name or title."));
+const recordNameDescription = computed(() => localize("为新记录指定一个名称或标题。"));
 
-const recordNamePlaceholder = computed(() => localize("Record name"));
+const recordNamePlaceholder = computed(() => localize("记录名称"));
 
-const uniqueSourceId = computed(() => props.fileSource?.id ?? "any");
+const uniqueSourceId = computed(() => props.fileSource?.id ?? "任何");
 const fileSourceAsItem = computed(() => (props.fileSource ? fileSourcePluginToItem(props.fileSource) : undefined));
 
 watch(
@@ -100,17 +100,17 @@ defineExpose({
 <template>
     <div>
         <p>
-            Your {{ what }} needs to be uploaded to an existing <i>draft</i> record. You will need to create a
-            <b>new record</b> or select an existing <b>draft record</b> and then export your {{ what }} to it.
+            您的 {{ what }} 需要上传到现有的 <i>草稿</i> 记录中。您需要创建一个
+            <b>新记录</b> 或选择一个现有的 <b>草稿记录</b>，然后将您的 {{ what }} 导出到其中。
         </p>
 
         <BFormRadioGroup v-model="exportChoice" class="export-radio-group">
             <BFormRadio :id="`radio-new-${uniqueSourceId}`" v-localize name="exportChoice" value="new">
-                Export to new record
+                导出到新记录
             </BFormRadio>
 
             <BFormRadio :id="`radio-existing-${uniqueSourceId}`" v-localize name="exportChoice" value="existing">
-                Export to existing draft record
+                导出到现有的草稿记录
             </BFormRadio>
         </BFormRadioGroup>
 
@@ -119,12 +119,11 @@ defineExpose({
                 <BCard>
                     <p>
                         <b>{{ newEntry.name }}</b>
-                        <span v-localize> draft record has been created in the repository.</span>
+                        <span v-localize> 草稿记录已经在存储库中创建。</span>
                     </p>
 
                     <div v-if="newEntry.external_link">
-                        You can preview the record in the repository, further edit its metadata and decide when to
-                        publish it at
+                        您可以在存储库中预览记录，进一步编辑其元数据并决定何时发布，链接地址为
                         <ExternalLink :href="newEntry.external_link">
                             <b>{{ newEntry.external_link }}</b>
                         </ExternalLink>
@@ -159,7 +158,7 @@ defineExpose({
                 </BFormGroup>
 
                 <p v-localize>
-                    You need to create the new record in a repository before exporting the {{ props.what }} to it.
+                    您需要在存储库中创建新记录，然后才能将 {{ props.what }} 导出到其中。
                 </p>
 
                 <BAlert
@@ -168,7 +167,7 @@ defineExpose({
                     show
                     dismissible
                     @dismissed="errorCreatingRecord = undefined">
-                    An error occurred while creating the record:
+                    创建记录时发生错误：
                     {{ errorCreatingRecord }}
                 </BAlert>
 
@@ -178,7 +177,7 @@ defineExpose({
                     variant="primary"
                     :disabled="!canCreateRecord"
                     @click.prevent="onCreateRecord">
-                    Create new record
+                    创建新记录
                 </BButton>
             </div>
         </div>

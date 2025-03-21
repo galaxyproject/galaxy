@@ -58,7 +58,7 @@ const stepLabel = computed(() => {
 
         <span v-if="props.graphStep">
             <span v-if="isWorkflowInput(props.workflowStep.type)">
-                <i>workflow input</i>
+                <i>工作流输入</i>
                 <FontAwesomeIcon class="ml-1" :icon="faSignInAlt" />
             </span>
             <span v-else-if="props.graphStep.state">

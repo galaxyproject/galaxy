@@ -44,10 +44,10 @@ function hasError(field: string) {
 
 function localPlaceholder(comp: "gt" | "lt") {
     if (comp == "gt") {
-        const field = isDateType.value ? "after" : "greater than";
+        const field = isDateType.value ? "之后" : "大于";
         return `${field} ${props.filter.placeholder}`;
     } else {
-        const field = isDateType.value ? "before" : "lower than";
+        const field = isDateType.value ? "之前" : "小于";
         return `${field} ${props.filter.placeholder}`;
     }
 }
@@ -83,10 +83,10 @@ watch(
 
 <template>
     <div>
-        <small>Filter by {{ props.filter.placeholder }}:</small>
+        <small>按 {{ props.filter.placeholder }} 过滤：</small>
 
         <BInputGroup>
-            <!---------------------------- GREATER THAN ---------------------------->
+            <!---------------------------- 大于 ---------------------------->
             <BFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameGt}`"
                 v-model="localValueGt"
@@ -103,7 +103,7 @@ watch(
             </BInputGroupAppend>
             <!--------------------------------------------------------------------->
 
-            <!---------------------------- LESSER THAN ---------------------------->
+            <!---------------------------- 小于 ---------------------------->
             <BFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameLt}`"
                 v-model="localValueLt"
@@ -119,6 +119,7 @@ watch(
                 <BFormDatepicker v-model="localValueLt" reset-button button-only size="sm" :disabled="props.disabled" />
             </BInputGroupAppend>
             <!--------------------------------------------------------------------->
+
         </BInputGroup>
     </div>
 </template>

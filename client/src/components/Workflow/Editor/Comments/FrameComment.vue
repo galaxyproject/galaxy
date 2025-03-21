@@ -296,19 +296,19 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
-                title="Fit to content"
+                title="适应内容"
                 @click="onFitToContent">
                 <FontAwesomeIcon icon="fa-compress-alt" class="prevent-zoom" />
             </BButton>
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
-                title="Color"
+                title="颜色"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
             </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
+            <BButton class="button prevent-zoom" variant="dark" title="删除注释" @click="() => emit('remove')">
                 <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>

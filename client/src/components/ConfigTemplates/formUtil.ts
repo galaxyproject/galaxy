@@ -23,20 +23,20 @@ export interface FormEntry {
 export function metadataFormEntryName(what: string): FormEntry {
     return {
         name: "_meta_name",
-        label: "Name",
+        label: "名称",
         type: "text",
         optional: false,
-        help: `Label this new ${what} with a name.`,
+        help: `为这个新的 ${what} 起个名字。`,
     };
 }
 
 export function metadataFormEntryDescription(what: string): FormEntry {
     return {
         name: "_meta_description",
-        label: "Description",
+        label: "描述",
         optional: true,
         type: "textarea",
-        help: `Provide some notes to yourself about this ${what} - perhaps to remind you how it is configured, where it stores the data, etc..`,
+        help: `为这个 ${what} 提供一些备注 - 也许是提醒你它是如何配置的，数据存储的位置等等。`,
     };
 }
 
@@ -76,7 +76,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
             ...common_fields,
         };
     } else {
-        throw Error("Invalid template form input type found.");
+        throw Error("发现无效的模板表单输入类型.");
     }
 }
 

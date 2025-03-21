@@ -118,7 +118,7 @@ export default {
             }
         },
         handleError(err) {
-            Toast.error(`Failed to generate download: ${err}`);
+            Toast.error(`未能生成下载链接: ${err}`);
             this.waiting = false;
         },
         clearTimeout() {

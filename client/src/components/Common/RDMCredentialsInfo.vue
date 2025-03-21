@@ -14,26 +14,25 @@ const props = withDefaults(defineProps<Props>(), {
     isPrivateFileSource: undefined,
 });
 
-const repositoryName = props.selectedRepository?.label ?? "the selected repository";
+const repositoryName = props.selectedRepository?.label ?? "选择的存储库";
 </script>
 
 <template>
     <BAlert show variant="info">
-        If you haven't done it yet, you may need to setup your credentials for {{ repositoryName }}
+        如果您还没有这样做，您可能需要为 {{ repositoryName }} 设置您的凭据
 
         <span v-if="isPrivateFileSource && selectedRepository">
-            in your
+            在您的
             <RouterLink :to="`/file_source_instances/${selectedRepository.id}/edit`" target="_blank">
-                Remote File Source settings
+                远程文件源设置
             </RouterLink>
         </span>
         <span v-else>
             <span v-if="!isPrivateFileSource">
-                in your <RouterLink to="/user/information" target="_blank">preferences page</RouterLink>
+                在您的 <RouterLink to="/user/information" target="_blank">偏好设置页面</RouterLink>
             </span>
-            or in your <RouterLink to="/file_sources/index" target="_blank"> remote file sources </RouterLink> section
+            或在您的 <RouterLink to="/file_sources/index" target="_blank">远程文件源</RouterLink> 部分
         </span>
-        to be able to export. You can also define some default options for the export in those settings, like the public
-        name you want to associate with your records.
+        以便能够导出。您还可以在这些设置中定义一些导出的默认选项，例如您希望与记录关联的公开名称。
     </BAlert>
 </template>

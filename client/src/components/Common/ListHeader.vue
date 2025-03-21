@@ -69,37 +69,37 @@ defineExpose({
                     :checked="allSelected"
                     :indeterminate="indeterminateSelected"
                     @change="emit('select-all')">
-                    Select all
+                    全选
                 </BFormCheckbox>
             </slot>
         </div>
 
         <div class="list-header-filters">
             <div v-if="showSortOptions">
-                Sort by:
+                排序方式:
                 <BButtonGroup>
                     <BButton
                         id="sortby-name"
                         v-b-tooltip.hover
                         size="sm"
-                        :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
+                        :title="sortDesc ? '按名称升序排序' : '按名称降序排序'"
                         :pressed="sortBy === 'name'"
                         variant="outline-primary"
                         @click="onSort('name')">
                         <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                        Name
+                        名称
                     </BButton>
 
                     <BButton
                         id="sortby-update-time"
                         v-b-tooltip.hover
                         size="sm"
-                        :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
+                        :title="sortDesc ? '按更新时间升序排序' : '按更新时间降序排序'"
                         :pressed="sortBy === 'update_time'"
                         variant="outline-primary"
                         @click="onSort('update_time')">
                         <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                        Update time
+                        更新时间
                     </BButton>
                 </BButtonGroup>
             </div>
@@ -108,12 +108,12 @@ defineExpose({
         </div>
 
         <div v-if="showViewToggle">
-            Display:
+            显示方式:
             <BButtonGroup>
                 <BButton
                     id="view-grid"
                     v-b-tooltip
-                    title="Grid view"
+                    title="网格视图"
                     size="sm"
                     :pressed="currentListViewMode === 'grid'"
                     variant="outline-primary"
@@ -124,7 +124,7 @@ defineExpose({
                 <BButton
                     id="view-list"
                     v-b-tooltip
-                    title="List view"
+                    title="列表视图"
                     size="sm"
                     :pressed="currentListViewMode === 'list'"
                     variant="outline-primary"

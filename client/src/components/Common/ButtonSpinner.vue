@@ -32,7 +32,7 @@ withDefaults(defineProps<Props>(), {
         disabled
         :size="size"
         variant="info"
-        title="Please Wait..."
+        title="请等待..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
         <FontAwesomeIcon :icon="faSpinner" fixed-width spin />
         <span v-if="title" class="ml-1">{{ title }}</span>

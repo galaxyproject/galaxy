@@ -60,7 +60,7 @@ async function onImport() {
         const wf = await copyWorkflow(workflow.value.id, workflow.value.owner);
         importedWorkflow.value = wf;
     } catch (error) {
-        importErrorMessage.value = errorMessageAsString(error, "Failed to import workflow");
+        importErrorMessage.value = errorMessageAsString(error, "未能导入工作流");
     } finally {
         workflowImportedAttempted.value = true;
     }
@@ -72,11 +72,11 @@ function getWorkflowName(): string {
 
 const workflowImportTitle = computed(() => {
     if (isAnonymous.value) {
-        return localize("Login to import this workflow");
+        return localize("登录以导入此工作流");
     } else if (workflowImportedAttempted.value) {
-        return localize("Workflow imported");
+        return localize("工作流已导入");
     } else {
-        return localize("Import this workflow");
+        return localize("导入此工作流");
     }
 });
 </script>
@@ -88,10 +88,9 @@ const workflowImportTitle = computed(() => {
         </BAlert>
         <BAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
             <span>
-                Workflow <b>{{ importedWorkflow.name }}</b> imported successfully.
+                工作流 <b>{{ importedWorkflow.name }}</b> 导入成功。
             </span>
-            <RouterLink to="/workflows/list">Click here</RouterLink> to view the imported workflow in the workflows
-            list.
+            <RouterLink to="/workflows/list">点击此处</RouterLink> 在工作流列表中查看已导入的工作流。
         </BAlert>
 
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
@@ -102,8 +101,8 @@ const workflowImportTitle = computed(() => {
                     <div class="flex-grow-1" data-description="workflow heading">
                         <div>
                             <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                            <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
-                            <span>(Version: {{ workflow.version + 1 }})</span>
+                            <b> {{ props.invocation ? "已调用的" : "" }}工作流：{{ getWorkflowName() }} </b>
+                            <span>(版本：{{ workflow.version + 1 }})</span>
                         </div>
                     </div>
                     <BButtonGroup>
@@ -113,8 +112,8 @@ const workflowImportTitle = computed(() => {
                             size="sm"
                             :title="
                                 !workflow.deleted
-                                    ? `<b>Edit</b><br>${getWorkflowName()}`
-                                    : 'This workflow has been deleted.'
+                                    ? `<b>编辑</b><br>${getWorkflowName()}`
+                                    : '此工作流已被删除。'
                             "
                             variant="link"
                             :disabled="workflow.deleted"
@@ -142,7 +141,7 @@ const workflowImportTitle = computed(() => {
                         :wait="runWaiting"
                         :disabled="runDisabled"
                         size="sm"
-                        title="Run Workflow"
+                        title="运行工作流"
                         @onClick="emit('on-execute')" />
                     <WorkflowRunButton
                         v-else
@@ -151,8 +150,8 @@ const workflowImportTitle = computed(() => {
                         variant="link"
                         :title="
                             !workflow.deleted
-                                ? `<b>Rerun</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
+                                ? `<b>重新运行</b><br>${getWorkflowName()}`
+                                : '此工作流已被删除。'
                         "
                         :disabled="workflow.deleted"
                         force
@@ -161,11 +160,11 @@ const workflowImportTitle = computed(() => {
                 </div>
             </div>
             <div v-if="props.success" class="donemessagelarge">
-                Successfully invoked workflow
+                成功调用工作流
                 <b>{{ getWorkflowName() }}</b>
             </div>
             <BAlert v-else-if="loading" variant="info" show>
-                <LoadingSpan message="Loading workflow details" />
+                <LoadingSpan message="正在加载工作流详情" />
             </BAlert>
         </div>
     </div>

@@ -36,11 +36,11 @@ const fileLink = computed(() => {
 
 const linkLabel = computed(() => {
     if (pathDestination.value?.isDirectory) {
-        return `Path: ${props.path} is a directory!`;
+        return `路径: ${props.path} 是一个目录!`;
     }
 
     if (!fileLink.value) {
-        return `Path: ${props.path} was not found!`;
+        return `路径: ${props.path} 未找到!`;
     }
 
     if (props.label && props.label !== "undefined") {
@@ -49,7 +49,7 @@ const linkLabel = computed(() => {
     return `${props.historyDatasetId}`;
 });
 
-const linkTitle = computed(() => `Download ${dataset.value?.name ?? props.historyDatasetId}`);
+const linkTitle = computed(() => `下载 ${dataset.value?.name ?? props.historyDatasetId}`);
 </script>
 
 <template>

@@ -74,7 +74,7 @@ const PopupMenu = Backbone.View.extend({
 
     _templateOptions: function (options) {
         if (!options.length) {
-            return '<div class="dropdown-header">(no options)</div>';
+            return '<div class="dropdown-header">(无选项)</div>';
         }
         return _.map(options, (option) => {
             if (option.divider) {

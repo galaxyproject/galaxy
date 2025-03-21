@@ -38,9 +38,9 @@ const emit = defineEmits<{
     (e: "onCopyDownloadLink", record: ExportRecord): void;
 }>();
 
-const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
+const title = computed(() => (props.record.isReady ? `已导出` : `导出已开始`));
 const preparingMessage = computed(
-    () => `Preparing export. This may take some time depending on the size of your ${props.objectType}`
+    () => `正在准备导出。根据您的 ${props.objectType} 的大小，可能需要一些时间。`
 );
 
 async function reimportObject() {
@@ -67,7 +67,7 @@ function onMessageDismissed() {
         </Heading>
 
         <p v-if="!props.record.isPreparing">
-            Format: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
+            格式: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
         </p>
 
         <span v-if="props.record.isPreparing">
@@ -78,40 +78,39 @@ function onMessageDismissed() {
                 <FontAwesomeIcon
                     :icon="faExclamationCircle"
                     class="text-danger record-failed-icon"
-                    title="Export failed" />
+                    title="导出失败" />
 
                 <span>
-                    Something failed during this export. Please try again and if the problem persist contact your
-                    administrator.
+                    导出过程中出现问题。请重试，如果问题仍然存在，请联系管理员。
                 </span>
 
                 <BAlert show variant="danger">{{ props.record.errorMessage }}</BAlert>
             </div>
-            <div v-else-if="props.record.isUpToDate" title="Up to date">
+            <div v-else-if="props.record.isUpToDate" title="最新">
                 <FontAwesomeIcon :icon="faCheckCircle" class="text-success record-up-to-date-icon" />
-                <span> This export record contains the latest changes of the {{ props.objectType }}. </span>
+                <span> 该导出记录包含最新的 {{ props.objectType }} 更改。 </span>
             </div>
             <div v-else>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning record-outdated-icon" />
                 <span>
-                    This export is outdated and contains the changes of this {{ props.objectType }} from
-                    {{ props.record.elapsedTime }}.
+                    该导出已经过时，包含 {{ props.objectType }} 的变更数据，时间为
+                    {{ props.record.elapsedTime }}。
                 </span>
             </div>
 
             <p v-if="props.record.canExpire" class="mt-3">
                 <span v-if="props.record.hasExpired">
                     <FontAwesomeIcon :icon="faClock" class="text-danger record-expired-icon" />
-                    This download link has expired.
+                    此下载链接已过期。
                 </span>
                 <span v-else>
                     <FontAwesomeIcon :icon="faClock" class="text-warning record-expiration-warning-icon" />
-                    This download link expires {{ props.record.expirationElapsedTime }}.
+                    此下载链接将在 {{ props.record.expirationElapsedTime }} 后过期。
                 </span>
             </p>
 
             <div v-if="props.record.isReady">
-                <p class="mt-3">You can do the following actions with this {{ props.objectType }} export:</p>
+                <p class="mt-3">您可以对这个 {{ props.objectType }} 导出执行以下操作：</p>
 
                 <BAlert
                     v-if="props.actionMessage !== undefined"
@@ -128,12 +127,12 @@ function onMessageDismissed() {
                         class="record-download-btn"
                         variant="primary"
                         @click="downloadObject">
-                        Download
+                        下载
                     </BButton>
 
                     <BButton
                         v-if="props.record.canDownload"
-                        title="Copy Download Link"
+                        title="复制下载链接"
                         size="sm"
                         variant="link"
                         @click.stop="copyDownloadLink">
@@ -145,7 +144,7 @@ function onMessageDismissed() {
                         class="record-reimport-btn"
                         variant="primary"
                         @click="reimportObject">
-                        Reimport
+                        重新导入
                     </BButton>
                 </div>
             </div>

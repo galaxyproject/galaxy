@@ -19,12 +19,12 @@ const fields = [
     },
     {
         key: "edamFormatLabel",
-        label: "EDAM Format",
+        label: "EDAM 格式",
         sortable: true,
     },
     {
         key: "edamDataLabel",
-        label: "EDAM Data",
+        label: "EDAM 数据",
         sortable: true,
     },
 ];
@@ -34,12 +34,11 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
 
 <template>
     <div>
-        <h1>Datatypes</h1>
+        <h1>数据类型</h1>
         <p>
-            All Datatypes supported by this Galaxy instance. Hover over an item for more information. These extensions
-            can be filtered by in the History, by expanding "search datasets".
+            本 Galaxy 实例支持的所有数据类型。将鼠标悬停在项目上查看更多信息。这些扩展可以在历史记录中进行过滤，通过展开“搜索数据集”。
         </p>
-        <DelayedInput placeholder="filter extensions" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
+        <DelayedInput placeholder="过滤扩展" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
         <b-table striped small sort-icon-left sort-by="extension" :items="filteredDatatypes" :fields="fields">
             <template v-slot:cell(extension)="row">
                 <a

@@ -25,7 +25,7 @@ const emit = defineEmits<{
             has-actions
             @element-is-discarded="emit('element-is-discarded', element)" />
         <div v-else class="collection-element alert-info">
-            <i>{{ localize("No dataset selected") }}</i>
+            <i>{{ localize("未选择数据集") }}</i>
         </div>
     </span>
 </template>

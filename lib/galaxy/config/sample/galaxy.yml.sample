@@ -2113,7 +2113,7 @@ galaxy:
   # Admin section of the server, and will have access to create users,
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
-  #admin_users: null
+  admin_users: conrain@cau.edu.cn
 
   # Force everyone to log in (disable anonymous access).
   #require_login: false

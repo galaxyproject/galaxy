@@ -22,7 +22,7 @@ import {
 } from "./collectionTypeDescription";
 
 export const NO_COLLECTION_TYPE_INFORMATION_MESSAGE =
-    "No collection type or collection type source defined - this is fine but may lead to less intuitive connection logic.";
+    "未定义集合类型或集合类型源 - 这很好，但可能导致连接逻辑不够直观.";
 
 export class ConnectionAcceptable {
     reason: string | null;
@@ -96,7 +96,7 @@ class Terminal extends EventEmitter {
             .action()
             .onRun(() => this.makeConnection(other))
             .onUndo(() => this.dropConnection(other))
-            .setName("connect steps")
+            .setName("连接步骤")
             .apply();
     }
     makeConnection(other: Terminal | Connection) {
@@ -108,7 +108,7 @@ class Terminal extends EventEmitter {
             .action()
             .onRun(() => this.dropConnection(other))
             .onUndo(() => this.makeConnection(other))
-            .setName("disconnect steps")
+            .setName("取消连接步骤")
             .apply();
     }
     dropConnection(other: Terminal | Connection) {
@@ -229,12 +229,12 @@ class BaseInputTerminal extends Terminal {
 
     canAccept(outputTerminal: BaseOutputTerminal) {
         if (this.stepId == outputTerminal.stepId) {
-            return new ConnectionAcceptable(false, "Cannot connect output to input of same step.");
+            return new ConnectionAcceptable(false, "不能将输出连接到同一步骤的输入。");
         }
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
                 false,
-                "Input already filled with another connection, delete it before connecting another output."
+                "输入已被另一个连接填充，删除它后再连接其他输出。"
             );
         } else {
             return this.attachable(outputTerminal);
@@ -273,7 +273,7 @@ class BaseInputTerminal extends Terminal {
                     });
                 }
             } else {
-                console.error(`Invalid step. Could not fine step with id ${stepId} in store.`);
+                console.error(`无效步骤。无法在存储中找到 id 为 ${stepId} 的步骤.`);
             }
         });
     }
@@ -316,7 +316,7 @@ class BaseInputTerminal extends Terminal {
             const step = this.stores.stepStore.getStep(outputTerminal.stepId);
 
             if (!step) {
-                console.error(`Invalid step. Could not find step with id ${outputTerminal.stepId} in store.`);
+                console.error(`无效步骤。无法在存储中找到 id 为 ${outputTerminal.stepId} 的步骤.`);
                 return false;
             }
 
@@ -344,13 +344,13 @@ class BaseInputTerminal extends Terminal {
         // other is a non-collection output...
 
         if (other instanceof OutputParameterTerminal) {
-            return new ConnectionAcceptable(false, "Cannot connect workflow parameter to data input.");
+            return new ConnectionAcceptable(false, "无法将工作流程参数与数据输入连接起来.");
         }
         return producesAcceptableDatatype(this.datatypesMapper, this.datatypes, other.datatypes);
     }
     _producesAcceptableDatatypeAndOptionalness(other: BaseOutputTerminal) {
         if (!this.optional && !this.multiple && other.optional) {
-            return new ConnectionAcceptable(false, "Cannot connect an optional output to a non-optional input");
+            return new ConnectionAcceptable(false, "不能将可选输出连接到非可选输入");
         }
         return this._producesAcceptableDatatype(other);
     }
@@ -443,7 +443,7 @@ export class InvalidInputTerminal extends BaseInputTerminal {
     }
 
     attachable(_terminal: BaseOutputTerminal) {
-        return new ConnectionAcceptable(false, "Cannot attach to invalid input. Disconnect this input.");
+        return new ConnectionAcceptable(false, "无法连接无效输入。断开此输入.");
     }
 }
 
@@ -465,13 +465,13 @@ export class InputTerminal extends BaseInputTerminal {
                 if (this.connected() && !this._collectionAttached()) {
                     return new ConnectionAcceptable(
                         false,
-                        "Cannot attach collections to data parameters with individual data inputs already attached."
+                        "无法将集合附加到已附加单个数据输入的数据参数上."
                     );
                 }
                 if (otherCollectionType.collectionType && otherCollectionType.collectionType.endsWith("paired")) {
                     return new ConnectionAcceptable(
                         false,
-                        "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+                        "不能将配对输入附加到多个数据参数上，只有列表可以这样处理."
                     );
                 }
             }
@@ -495,18 +495,18 @@ export class InputTerminal extends BaseInputTerminal {
                         if (this.hasConnectedMappedInputTerminals()) {
                             return new ConnectionAcceptable(
                                 false,
-                                "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+                                "无法用输出集合类型映射此输入 - 其他输入的集合类型映射不兼容。断开输入（可能还有输出）并重试."
                             );
                         } else {
                             return new ConnectionAcceptable(
                                 false,
-                                "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+                                "无法用输出集合类型映射此输入 - 此步骤已定义输出，限制了此工具的映射。断开输出并重试."
                             );
                         }
                     } else {
                         return new ConnectionAcceptable(
                             false,
-                            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry."
+                            "无法用输出集合类型映射此输入 - 此工具的输出已映射到此输入。断开输出并重试."
                         );
                     }
                 }
@@ -515,7 +515,7 @@ export class InputTerminal extends BaseInputTerminal {
             if (this.localMapOver.isCollection) {
                 return new ConnectionAcceptable(
                     false,
-                    "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+                    "无法将非收集输出连接到映射结束的输入，考虑断开输入和输出连接以重置此输入的映射."
                 );
             }
         }
@@ -555,18 +555,18 @@ export class InputParameterTerminal extends BaseInputTerminal {
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
         if (!this.optional && other.optional) {
-            return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
+            return new ConnectionAcceptable(false, `无法将可选输出附加到必填参数上`);
         }
         const canAccept = effectiveThisType === effectiveOtherType;
         if (!this.multiple && other.multiple) {
             return new ConnectionAcceptable(
                 false,
-                `This output parameter represents multiple values but input only accepts a single value`
+                `该输出参数代表多个值，但输入只接受一个值`
             );
         }
         return new ConnectionAcceptable(
             canAccept,
-            canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
+            canAccept ? null : `无法为 ${effectiveThisType} 输入附加 ${effectiveOtherType} 参数`
         );
     }
 }
@@ -629,12 +629,12 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 if (this.hasConnectedMappedInputTerminals()) {
                     return new ConnectionAcceptable(
                         false,
-                        "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+                        "无法用输出集合类型映射此输入 - 其他输入的集合类型映射不兼容。断开输入（可能还有输出）并重试."
                     );
                 } else {
                     return new ConnectionAcceptable(
                         false,
-                        "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+                        "无法用输出集合类型映射此输入 - 此步骤已定义输出，限制了此工具的映射。断开输出并重试."
                     );
                 }
             } else if (this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))) {
@@ -647,14 +647,14 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 } else {
                     return new ConnectionAcceptable(
                         false,
-                        "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+                        "无法用输出集合类型映射此输入 - 此步骤已定义输出，限制了此工具的映射。断开输出并重试."
                     );
                 }
             } else {
-                return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
+                return new ConnectionAcceptable(false, "附件的收集类型不兼容.");
             }
         } else {
-            return new ConnectionAcceptable(false, "Cannot attach a data output to a collection input.");
+            return new ConnectionAcceptable(false, "无法将数据输出附加到集合输入.");
         }
     }
 }
@@ -682,7 +682,7 @@ class BaseOutputTerminal extends Terminal {
     getConnectedTerminals(): InputTerminalsAndInvalid[] {
         return this.connections.map((connection) => {
             const inputStep = this.stores.stepStore.getStep(connection.input.stepId);
-            assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
+            assertDefined(inputStep, `无效步骤。无法在存储中找到 id 为 ${connection.input.stepId} 的步骤.`);
 
             const extraStepInput = this.stores.stepStore.getStepExtraInputs(inputStep.id);
             const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
@@ -775,7 +775,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         if (connection) {
             const outputStep = this.stores.stepStore.getStep(connection.output.stepId);
             const inputStep = this.stores.stepStore.getStep(this.stepId);
-            assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
+            assertDefined(inputStep, `无效步骤。无法在存储中找到 id 为 ${connection.input.stepId} 的步骤.`);
 
             if (outputStep) {
                 const stepOutput = outputStep.outputs.find((output) => output.name == connection.output.name);
@@ -852,7 +852,7 @@ export class InvalidOutputTerminal extends BaseOutputTerminal {
     }
 
     canAccept() {
-        return new ConnectionAcceptable(false, "Can't connect to invalid terminal.");
+        return new ConnectionAcceptable(false, "无法连接到无效终端.");
     }
 }
 
@@ -888,16 +888,16 @@ export function producesAcceptableDatatype(
     if (invalidDatatypes.length) {
         return new ConnectionAcceptable(
             false,
-            `Effective output data type(s) [${invalidDatatypes.join(
+            `有效输出数据类型 [${invalidDatatypes.join(
                 ", "
-            )}] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.`
+            )}] 未知。此工具目前无法在该 Galaxy 服务器上运行，请联系管理员。`
         );
     }
     return new ConnectionAcceptable(
         false,
-        `Effective output data type(s) [${otherDatatypes.join(
+        `有效输出数据类型 [${otherDatatypes.join(
             ", "
-        )}] do not appear to match input type(s) [${inputDatatypes.join(", ")}].`
+        )}] 似乎与输入类型 [${inputDatatypes.join(", ")}] 不匹配。`
     );
 }
 

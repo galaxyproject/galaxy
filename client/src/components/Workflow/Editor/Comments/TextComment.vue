@@ -101,7 +101,7 @@ function increaseFontSize() {
 }
 
 const increaseFontSizeTitle = computed(() =>
-    canIncreaseFontSize.value ? `Increase font size to ${fontSize.value + 1}` : "Maximum font size"
+    canIncreaseFontSize.value ? `将字体大小增加到 ${fontSize.value + 1}` : "最大字体大小"
 );
 
 function decreaseFontSize() {
@@ -111,7 +111,7 @@ function decreaseFontSize() {
 }
 
 const decreaseFontSizeTitle = computed(() =>
-    canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size"
+    canDecreaseFontSize.value ? `将字体大小减小到 ${fontSize.value - 1}` : "最小字体大小"
 );
 
 function onRootClick() {
@@ -220,7 +220,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
             <BButton
                 class="button font-weight-bold prevent-zoom"
                 variant="outline-primary"
-                :title="props.comment.data.bold ? 'Reset bold' : 'Make bold'"
+                :title="props.comment.data.bold ? '取消粗体' : '设为粗体'"
                 :pressed="props.comment.data.bold"
                 @click="toggleBold">
                 B
@@ -228,7 +228,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
             <BButton
                 class="button font-italic prevent-zoom"
                 variant="outline-primary"
-                :title="props.comment.data.italic ? 'Reset italic' : 'Make italic'"
+                :title="props.comment.data.italic ? '取消斜体' : '设为斜体'"
                 :pressed="props.comment.data.italic"
                 @click="toggleItalic">
                 I
@@ -236,7 +236,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
-                title="Color"
+                title="颜色"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
@@ -255,7 +255,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 @click="increaseFontSize">
                 <FontAwesomeIcon :icon="['gxd', 'textLarger']" class="prevent-zoom" />
             </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
+            <BButton class="button prevent-zoom" variant="dark" title="删除注释" @click="() => emit('remove')">
                 <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>

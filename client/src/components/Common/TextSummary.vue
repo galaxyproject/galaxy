@@ -71,20 +71,21 @@ const text = computed(() =>
             v-b-tooltip.hover
             class="text-summary-expand-button"
             :class="{ 'text-summary-expand-float': !props.showExpandText && props.isHtml }"
-            :title="showDetails ? 'Show less' : 'Show more'"
+            :title="showDetails ? '显示更少' : '显示更多'"
             role="button"
             tabindex="0"
             @keyup.enter="showDetails = !showDetails"
             @click="showDetails = !showDetails">
             <template v-if="showExpandText">
-                <template v-if="showDetails">Show less</template>
-                <template v-else>Show more</template>
+                <template v-if="showDetails">显示更少</template>
+                <template v-else>显示更多</template>
             </template>
 
             <FontAwesomeIcon :icon="showDetails ? 'chevron-up' : 'chevron-down'" />
         </span>
     </div>
 </template>
+
 
 <style scoped lang="scss">
 @import "theme/blue.scss";

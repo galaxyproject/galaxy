@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
     value: "",
     delay: 1000,
     loading: false,
-    placeholder: "Enter your search term here.",
+    placeholder: "输入你要搜索的内容.",
     showAdvanced: false,
     enableAdvanced: false,
 });
@@ -36,8 +36,8 @@ const emit = defineEmits<{
 
 const queryInput = ref<string>();
 const queryTimer = ref<ReturnType<typeof setTimeout> | null>(null);
-const titleClear = ref("Clear Search (esc)");
-const titleAdvanced = ref("Toggle Advanced Search");
+const titleClear = ref("清除搜索 (esc)");
+const titleAdvanced = ref("切换高级搜索");
 const toolInput = ref<HTMLInputElement | null>(null);
 
 function clearTimer() {
@@ -93,7 +93,7 @@ watchImmediate(
             size="sm"
             autocomplete="off"
             :placeholder="placeholder"
-            data-description="filter text input"
+            data-description="过滤文本输入框"
             @keydown.esc="clearBox" />
 
         <BInputGroupAppend>
@@ -105,7 +105,7 @@ watchImmediate(
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
                 :title="localize(titleAdvanced)"
-                data-description="toggle advanced search"
+                data-description="切换高级搜索"
                 @click="onToggle">
                 <FontAwesomeIcon v-if="showAdvanced" fixed-width :icon="faAngleDoubleUp" />
                 <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleDown" />
@@ -117,7 +117,7 @@ watchImmediate(
                 class="search-clear"
                 size="sm"
                 :title="localize(titleClear)"
-                data-description="reset query"
+                data-description="重置查询"
                 @click="clearBox">
                 <FontAwesomeIcon v-if="loading" fixed-width :icon="faSpinner" spin />
                 <FontAwesomeIcon v-else fixed-width :icon="faTimes" />

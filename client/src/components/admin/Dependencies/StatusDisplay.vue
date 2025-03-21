@@ -3,35 +3,35 @@
         <span v-if="status.dependency_type" :title="title">
             <b>
                 <span class="fa fa-check text-success"></span>{{ status.dependency_type }}
-                <span v-if="mergedMultiple">(merged)</span>
+                <span v-if="mergedMultiple">(合并)</span>
             </b>
             <span v-if="!compact">{{ description }} <DisplayRaw :object="status" /></span>
         </span>
-        <b v-else> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
+        <b v-else> <span class="fa fa-times text-danger"></span><i>未解析</i> </b>
     </span>
 </template>
 <script>
 import DisplayRaw from "./DisplayRaw";
 
 const DESCRIPTIONS = {
-    conda: "The Conda package manager will be used for resolution. ",
-    galaxy_package: "A manually configured Galaxy package directory will be used for resolution. ",
-    tool_shed_packages: "Legacy Tool Shed package installations will be used for resolution. ",
-    docker: "Resolution of dependencies is assumed to be handled by specified Docker container. ",
-    singularity: "Resolution of dependencies is assumed to be handled by specified Singularity container. ",
+    conda: "将使用 Conda 包管理器进行解析。 ",
+    galaxy_package: "将使用手动配置的 Galaxy 包目录进行解析。 ",
+    tool_shed_packages: "将使用旧版 Tool Shed 包安装进行解析。 ",
+    docker: "假设由指定的 Docker 容器处理依赖关系解析。 ",
+    singularity: "假设由指定的 Singularity 容器处理依赖关系解析。 ",
 };
 
 function describeRequirement(status) {
     const exact = status.exact;
     let prefix;
     if (exact) {
-        prefix = "This dependency is assumed to exactly match the requirement ";
+        prefix = "此依赖项假定完全匹配要求 ";
     } else {
-        prefix = "Ignoring version information this dependency is assumed to match the requirement ";
+        prefix = "忽略版本信息，假定此依赖项匹配要求 ";
     }
     let requirement = status.name || "";
     if (status.version) {
-        requirement += ` at version ${status.version}`;
+        requirement += `，版本为 ${status.version}`;
     }
     return `${prefix}${requirement}. `;
 }
@@ -65,9 +65,9 @@ export default {
             const dependencyType = this.status.dependency_type;
             let resolutionDescription =
                 DESCRIPTIONS[dependencyType] ||
-                `The dependency resolver ${dependencyType} will be used for resolution.`;
+                `将使用依赖解析器 ${dependencyType} 进行解析。`;
             if (dependencyType == "conda") {
-                resolutionDescription += `The Conda environment found at ${this.status.environment_path} will be used for resolution. `;
+                resolutionDescription += `将使用位于 ${this.status.environment_path} 的 Conda 环境进行解析。 `;
             }
             if (this.mergedMultiple) {
                 for (const status of this.allStatuses) {

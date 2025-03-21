@@ -91,18 +91,18 @@ const jobId = computed(() => "job_id" in props.invocationMessage && props.invoca
 const HdaId = computed(() => "hda_id" in props.invocationMessage && props.invocationMessage.hda_id);
 const HdcaId = computed(() => "hdca_id" in props.invocationMessage && props.invocationMessage.hdca_id);
 
-const cancelFragment = "Invocation scheduling cancelled because";
-const failFragment = "Invocation scheduling failed because ";
+const cancelFragment = "工作流调用安排已取消，因为";
+const failFragment = "工作流调用安排失败，因为 ";
 const stepDescription = computed(() => {
     const messageLevel = level[props.invocationMessage.reason];
     if (messageLevel === "warning") {
-        return "This step caused a warning";
+        return "此步骤引发了一个警告";
     } else if (messageLevel === "cancel") {
-        return "This step canceled the invocation";
+        return "此步骤取消了调用";
     } else if (messageLevel === "error") {
-        return "This step failed the invocation";
+        return "此步骤导致调用失败";
     } else {
-        throw Error("Unknown message level");
+        throw Error("未知的消息级别");
     }
 });
 
@@ -110,65 +110,63 @@ const infoString = computed(() => {
     const invocationMessage = props.invocationMessage;
     const reason = invocationMessage.reason;
     if (reason === "user_request") {
-        return `${cancelFragment} user requested cancellation.`;
+        return `${cancelFragment} 用户请求取消。`;
     } else if (reason === "history_deleted") {
-        return `${cancelFragment} the history of the invocation was deleted.`;
+        return `${cancelFragment} 调用的历史记录已被删除。`;
     } else if (reason === "cancelled_on_review") {
-        return `${cancelFragment} the invocation was paused at step ${
+        return `${cancelFragment} 工作流在步骤 ${
             invocationMessage.workflow_step_id + 1
-        } and not approved.`;
+        } 被暂停，未被批准。`;
     } else if (reason === "collection_failed") {
-        return `${failFragment} step ${
+        return `${failFragment} 步骤 ${
             invocationMessage.workflow_step_id + 1
-        } requires a dataset collection created by step ${
+        } 需要步骤 ${
             invocationMessage.dependent_workflow_step_id + 1
-        }, but dataset collection entered a failed state.`;
+        } 创建的数据集集合，但数据集集合进入了失败状态。`;
     } else if (reason === "dataset_failed") {
         if (
             invocationMessage.dependent_workflow_step_id !== null &&
             invocationMessage.dependent_workflow_step_id !== undefined
         ) {
-            return `${failFragment} step ${invocationMessage.workflow_step_id + 1} requires a dataset created by step ${
+            return `${failFragment} 步骤 ${invocationMessage.workflow_step_id + 1} 需要步骤 ${
                 invocationMessage.dependent_workflow_step_id + 1
-            }, but dataset entered a failed state.`;
+            } 创建的数据集，但数据集进入了失败状态。`;
         } else {
-            return `${failFragment} step ${
+            return `${failFragment} 步骤 ${
                 invocationMessage.workflow_step_id + 1
-            } requires a dataset, but dataset entered a failed state.`;
+            } 需要一个数据集，但数据集进入了失败状态。`;
         }
     } else if (reason === "job_failed") {
-        return `${failFragment} step ${invocationMessage.workflow_step_id + 1} depends on job(s) created in step ${
+        return `${failFragment} 步骤 ${invocationMessage.workflow_step_id + 1} 依赖于在步骤 ${
             invocationMessage.dependent_workflow_step_id + 1
-        }, but a job for that step failed.`;
+        } 中创建的作业，但该步骤的作业失败了。`;
     } else if (reason === "output_not_found") {
-        return `${failFragment} step ${invocationMessage.workflow_step_id + 1} depends on output '${
-            invocationMessage.output_name
-        }' of step ${
+        return `${failFragment} 步骤 ${invocationMessage.workflow_step_id + 1} 依赖于步骤 ${
             invocationMessage.dependent_workflow_step_id + 1
-        }, but this step did not produce an output of that name.`;
+        } 的输出 '${invocationMessage.output_name}'，但该步骤没有生成该名称的输出。`;
     } else if (reason === "expression_evaluation_failed") {
-        return `${failFragment} step ${
+        return `${failFragment} 步骤 ${
             invocationMessage.workflow_step_id + 1
-        } contains an expression that could not be evaluated.`;
+        } 包含无法计算的表达式。`;
     } else if (reason === "when_not_boolean") {
-        return `${failFragment} step ${
+        return `${failFragment} 步骤 ${
             invocationMessage.workflow_step_id + 1
-        } is a conditional step and the result of the when expression is not a boolean type.`;
+        } 是一个条件步骤，且 when 表达式的结果不是布尔类型。`;
     } else if (reason === "unexpected_failure") {
         let atStep = "";
         if (invocationMessage.workflow_step_id !== null && invocationMessage.workflow_step_id !== undefined) {
-            atStep = ` at step ${invocationMessage.workflow_step_id + 1}`;
+            atStep = ` 在步骤 ${invocationMessage.workflow_step_id + 1}`;
         }
         if (invocationMessage.details) {
-            return `${failFragment} an unexpected failure occurred${atStep}: '${invocationMessage.details}'`;
+            return `${failFragment} 发生了一个意外失败${atStep}: '${invocationMessage.details}'`;
         }
-        return `${failFragment} an unexpected failure occurred${atStep}.`;
+        return `${failFragment} 发生了一个意外失败${atStep}。`;
     } else if (reason === "workflow_output_not_found") {
-        return `Defined workflow output '${invocationMessage.output_name}' was not found in step ${
+        return `定义的工作流输出 '${invocationMessage.output_name}' 在步骤 ${
             invocationMessage.workflow_step_id + 1
-        }.`;
+        } 中未找到。`;
     } else if (reason === "workflow_parameter_invalid") {
-        return `Workflow parameter on step ${invocationMessage.workflow_step_id + 1} failed validation: ${
+        return `步骤 ${invocationMessage.workflow_step_id + 1} 的工作流参数未通过验证: ${
             invocationMessage.details
         }`;
     } else {
@@ -183,7 +181,7 @@ const infoString = computed(() => {
             {{ infoString }}
         </div>
         <div v-if="dependentWorkflowStep">
-            Problem occurred at this step:
+            此步骤出现问题：
             <WorkflowInvocationStep
                 :invocation="invocation"
                 :workflow="workflow"
@@ -197,15 +195,15 @@ const infoString = computed(() => {
                 :workflow-step="workflowStep"></WorkflowInvocationStep>
         </div>
         <div v-if="HdaId">
-            This dataset failed:
+            此数据集失败：
             <GenericHistoryItem :item-id="HdaId" item-src="hda" />
         </div>
         <div v-if="HdcaId">
-            This dataset collection failed:
+            此数据集集合失败：
             <GenericHistoryItem :item-id="HdcaId" item-src="hdca" />
         </div>
         <div v-if="jobId">
-            This job failed:
+            此任务失败：
             <JobInformation :job_id="jobId" />
         </div>
     </div>

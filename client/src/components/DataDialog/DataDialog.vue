@@ -160,7 +160,7 @@ function load(url: string = "") {
         .then((incoming) => {
             if (props.library && urlTracker.atRoot()) {
                 incoming.unshift({
-                    label: "Data Libraries",
+                    label: "数据仓库",
                     url: `${getAppRoot()}api/libraries`,
                 });
             }
@@ -207,7 +207,7 @@ watch(
         <template v-slot:buttons>
             <BButton v-if="allowUpload" size="sm" @click="onUpload">
                 <Icon :icon="faUpload" />
-                Upload
+                上传
             </BButton>
         </template>
     </SelectionDialog>

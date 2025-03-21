@@ -1,6 +1,6 @@
 <template>
     <div aria-labelledby="data-tables-heading">
-        <h1 id="data-tables-heading" class="h-lg">Data Tables</h1>
+        <h1 id="data-tables-heading" class="h-lg">数据表</h1>
         <message :message="message" :status="status"></message>
         <component
             :is="currentView"

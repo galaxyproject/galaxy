@@ -116,7 +116,7 @@ const style = computed(() => ({
         @focusout="hoverDraggable = false"
         @keydown.left="onKeyLeft"
         @keydown.right="onKeyRight">
-        <span class="sr-only"> Resizable drag handle </span>
+        <span class="sr-only"> 可调整大小的拖动句柄 </span>
     </button>
 </template>
 

@@ -13,5 +13,5 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <BButton variant="link" @click="emit('click')">I know what I am doing, force {{ action.toLowerCase() }}.</BButton>
+    <BButton variant="link" @click="emit('click')">我知道自己在做什么，强制 {{ action.toLowerCase() }}。</BButton>
 </template>

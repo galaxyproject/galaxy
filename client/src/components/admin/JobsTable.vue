@@ -95,7 +95,7 @@ export default {
         },
         noItemsMessage: {
             type: String,
-            default: "No jobs to display.",
+            default: "没有作业可展示.",
         },
         value: {},
     },

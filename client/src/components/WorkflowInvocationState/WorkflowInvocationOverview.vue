@@ -33,10 +33,10 @@ const uniqueMessages = computed(() => {
 <template>
     <div class="mb-3 workflow-invocation-state-component">
         <BAlert v-if="isSubworkflow" variant="secondary" show>
-            This subworkflow is
-            <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />.
-            <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
-            to view this subworkflow in graph view.
+            此子工作流状态为
+            <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />。
+            <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> 点击这里 </ExternalLink>
+            以图形视图查看此子工作流。
         </BAlert>
         <div v-if="uniqueMessages.length" class="d-flex align-items-center">
             <InvocationMessage
@@ -47,9 +47,9 @@ const uniqueMessages = computed(() => {
                 :invocation="invocation">
             </InvocationMessage>
         </div>
-        <!-- Once the workflow for the invocation has been loaded, display the graph -->
+        <!-- 一旦工作流调用已加载，显示图形视图 -->
         <BAlert v-if="loading" variant="info" show>
-            <LoadingSpan message="Loading workflow..." />
+            <LoadingSpan message="加载工作流..." />
         </BAlert>
         <BAlert v-else-if="error" variant="danger" show>
             {{ error }}
@@ -57,13 +57,13 @@ const uniqueMessages = computed(() => {
         <div v-else-if="workflow && !isSubworkflow">
             <InvocationGraph
                 class="mt-1"
-                data-description="workflow invocation graph"
+                data-description="工作流调用图"
                 :invocation="invocation"
                 :workflow="workflow"
                 :is-terminal="invocationAndJobTerminal"
                 :is-full-page="isFullPage"
                 :show-minimap="isFullPage" />
         </div>
-        <BAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </BAlert>
+        <BAlert v-else-if="!workflow" variant="info" show> 未找到该调用的工作流。 </BAlert>
     </div>
 </template>

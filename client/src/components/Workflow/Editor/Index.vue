@@ -322,14 +322,14 @@ export default {
             }
         }
 
-        const name = ref("Unnamed Workflow");
+        const name = ref("未命名工作流");
         const setNameActionHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (name.value = value),
             showAttributes,
-            "set workflow name"
+            "设置工作流名称"
         );
-        /** user set name. queues an undo/redo action */
+        /** 用户设置名称，排队撤销/重做操作 */
         function setName(newName) {
             if (name.value !== newName) {
                 setNameActionHandler.set(name.value, newName);
@@ -343,9 +343,9 @@ export default {
             undoRedoStore,
             (value) => (license.value = value),
             showAttributes,
-            "set license"
+            "设置许可协议"
         );
-        /** user set license. queues an undo/redo action */
+        /** 用户设置许可协议，排队撤销/重做操作 */
         function setLicense(newLicense) {
             if (license.value !== newLicense) {
                 setLicenseHandler.set(license.value, newLicense);
@@ -357,9 +357,9 @@ export default {
             undoRedoStore,
             (value) => (creator.value = value),
             showAttributes,
-            "set creator"
+            "设置创建者"
         );
-        /** user set creator. queues an undo/redo action */
+        /** 用户设置创建者，排队撤销/重做操作 */
         function setCreator(newCreator) {
             setCreatorHandler.set(creator.value, newCreator);
         }
@@ -369,9 +369,9 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify short description"
+            "修改简短描述"
         );
-        /** user set annotation. queues an undo/redo action */
+        /** 用户设置简短描述，排队撤销/重做操作 */
         function setAnnotation(newAnnotation) {
             if (annotation.value !== newAnnotation) {
                 setAnnotationHandler.set(annotation.value, newAnnotation);
@@ -383,7 +383,7 @@ export default {
             undoRedoStore,
             (value) => (readme.value = value),
             showAttributes,
-            "modify readme"
+            "修改自述文件"
         );
         function setReadme(newReadme) {
             if (readme.value !== newReadme) {
@@ -396,7 +396,7 @@ export default {
             undoRedoStore,
             (value) => (help.value = value),
             showAttributes,
-            "modify help"
+            "修改帮助信息"
         );
         function setHelp(newHelp) {
             if (help.value !== newHelp) {
@@ -409,7 +409,7 @@ export default {
             undoRedoStore,
             (value) => (logoUrl.value = value),
             showAttributes,
-            "modify logo url"
+            "修改Logo地址"
         );
         function setLogoUrl(newLogoUrl) {
             if (logoUrl.value !== newLogoUrl) {
@@ -431,7 +431,7 @@ export default {
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
             showAttributes,
-            "change tags"
+            "修改标签"
         );
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
@@ -512,8 +512,8 @@ export default {
 
         const saveWorkflowTitle = computed(() =>
             hasInvalidConnections.value
-                ? "Workflow has invalid connections, review and remove invalid connections"
-                : "Save Workflow"
+                ? "工作流存在无效连接，请检查并移除无效连接"
+                : "保存工作流"
         );
 
         useActivityLogic(
@@ -676,19 +676,19 @@ export default {
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
-                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
+                    "您的工作流已进行更改，必须保存这些更改后才能执行请求的操作。是否保存更改并继续？"
                 );
                 if (r == false) {
                     return;
                 }
-                this.onWorkflowMessage("Saving workflow...", "progress");
+                this.onWorkflowMessage("正在保存工作流...", "progress");
                 return saveWorkflow(this)
                     .then((data) => {
                         this.refactorActions = actions;
                     })
                     .catch((response) => {
-                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...", response, {
-                            Ok: () => {
+                        this.onWorkflowError("保存工作流失败，无法应用请求的更改...", response, {
+                            确定: () => {
                                 this.hideModal();
                             },
                         });
@@ -773,7 +773,7 @@ export default {
                 this.copyIntoWorkflow(workflowId);
             } else {
                 const confirmed = await ConfirmDialog.confirm(
-                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+                    `警告：这将把 ${stepCount} 个新步骤添加到当前工作流中。您可能想考虑使用子工作流。`
                 );
                 if (confirmed) {
                     this.copyIntoWorkflow(workflowId);
@@ -793,14 +793,14 @@ export default {
             try {
                 const newSaveAsWf = { ...this, name: rename_name, annotation: rename_annotation };
                 const { id, name, number_of_steps } = await this.services.createWorkflow(newSaveAsWf);
-                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
+                const message = `已创建新工作流 '${name}'，包含 ${number_of_steps} 个步骤。`;
                 this.hasChanges = false;
                 await this.routeToWorkflow(id);
                 Toast.success(message);
             } catch (e) {
-                const errorHeading = `Saving workflow as '${rename_name}' failed`;
-                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
-                    Ok: () => {
+                const errorHeading = `将工作流保存为 '${rename_name}' 失败`;
+                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "请联系管理员。", {
+                    确定: () => {
                         this.hideModal();
                     },
                 });
@@ -816,10 +816,10 @@ export default {
         async saveOrCreate() {
             if (this.hasInvalidConnections) {
                 const confirmed = await this.confirm(
-                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    `工作流存在无效的连接。您可以保存工作流，但它可能无法正常运行。`,
                     {
                         id: "save-workflow-confirmation",
-                        okTitle: "Save Workflow",
+                        okTitle: "保存工作流",
                     }
                 );
 
@@ -887,17 +887,17 @@ export default {
             }
             try {
                 const { id, name, number_of_steps } = await this.services.createWorkflow(this);
-                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
+                const message = `已创建新工作流 '${name}'，包含 ${number_of_steps} 个步骤。`;
                 this.hasChanges = false;
                 this.$emit("skipNextReload");
                 await this.routeToWorkflow(id);
                 Toast.success(message);
             } catch (e) {
                 this.onWorkflowError(
-                    "Creating workflow failed",
-                    errorMessageAsString(e) || "Please contact an administrator.",
+                    "创建工作流失败",
+                    errorMessageAsString(e) || "请联系管理员。",
                     {
-                        Ok: () => {
+                        确定: () => {
                             this.hideModal();
                         },
                     }
@@ -906,7 +906,7 @@ export default {
         },
         nameValidate() {
             if (!this.name) {
-                Toast.error("Please provide a name for your workflow.");
+                Toast.error("请为你的工作流提供名称.");
                 this.showAttributes();
                 return false;
             }
@@ -975,7 +975,7 @@ export default {
             if (!this.nameValidate()) {
                 return;
             }
-            !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
+            !hideProgress && this.onWorkflowMessage("正在保存工作流...", "progress");
             return saveWorkflow(this)
                 .then((data) => {
                     getVersions(this.id).then((versions) => {
@@ -984,8 +984,8 @@ export default {
                     });
                 })
                 .catch((response) => {
-                    this.onWorkflowError("Saving workflow failed...", response, {
-                        Ok: () => {
+                    this.onWorkflowError("保存工作流失败...", response, {
+                        确定: () => {
                             this.hideModal();
                         },
                     });
@@ -995,7 +995,7 @@ export default {
             if (version != this.version) {
                 if (this.hasChanges) {
                     const r = window.confirm(
-                        "There are unsaved changes to your workflow which will be lost. Continue ?"
+                        "工作流程中未保存的更改将丢失。继续？"
                     );
                     if (r == false) {
                         return;
@@ -1072,14 +1072,14 @@ export default {
         async _loadCurrent(id, version) {
             if (!this.isNewTempWorkflow) {
                 await this.resetStores();
-                this.onWorkflowMessage("Loading workflow...", "progress");
+                this.onWorkflowMessage("加载工作流...", "progress");
 
                 try {
                     const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {
-                    this.onWorkflowError("Loading workflow failed...", e);
+                    this.onWorkflowError("加载工作流失败...", e);
                 }
 
                 await until(() => this.datatypesMapperLoading).toBe(false);

@@ -20,13 +20,13 @@ function relocate(objectStoreId: string) {
     emit("relocate", objectStoreId);
 }
 
-const fromWhat = "This dataset location is";
-const toWhat = "This dataset will be relocated to";
+const fromWhat = "该数据集的位置是";
+const toWhat = "该数据集将被重新定位到";
 </script>
 
 <template>
     <div>
-        <p>Currently the dataset is located in:</p>
+        <p>当前数据集位于：</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 :key="fromObjectStore.object_store_id"
@@ -36,7 +36,7 @@ const toWhat = "This dataset will be relocated to";
                 :object-store="fromObjectStore"
                 @click="emit('closeModal')" />
         </b-button-group>
-        <p class="relocate-to">Select new storage location for the dataset:</p>
+        <p class="relocate-to">请选择数据集的新存储位置：</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in targetObjectStores"

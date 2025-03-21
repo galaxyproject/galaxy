@@ -29,8 +29,8 @@ onMounted(async () => {
 <template>
     <b-form-group>
         <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" :disabled="jobLockUpdating" switch size="lg">
-            Job dispatching is currently
-            <strong>{{ jobLock ? "locked" : "unlocked" }}</strong>
+            作业调度当前是
+            <strong>{{ jobLock ? "锁定" : "解锁" }}</strong>
         </b-form-checkbox>
     </b-form-group>
 </template>

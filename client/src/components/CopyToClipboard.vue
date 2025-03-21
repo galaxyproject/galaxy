@@ -25,7 +25,7 @@ export default {
         },
         title: {
             type: String,
-            default: "copy to clipboard",
+            default: "复制到剪贴板",
             required: false,
         },
     },

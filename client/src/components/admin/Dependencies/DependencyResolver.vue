@@ -2,24 +2,21 @@
     <span class="dependency-resolver">
         <span v-if="dependencyResolver">
             <span v-if="dependencyResolver.resolver_type == 'conda'">
-                A Conda dependency resolver was used with prefix <tt>{{ dependencyResolver.prefix }}</tt> and channels
-                <tt>{{ dependencyResolver.ensure_channels }}</tt
-                >.
+                使用了 Conda 依赖解析器，前缀为 <tt>{{ dependencyResolver.prefix }}</tt>，并且使用了以下channel
+                <tt>{{ dependencyResolver.ensure_channels }}</tt>
                 <span v-if="dependencyResolver.use_local">
-                    Local Conda packages are enabled for this resolver (this is not best practice for production but may
-                    be useful for development).
+                    启用了本地 Conda 包（这对于生产环境并不是最佳实践，但对于开发环境可能很有用）。
                 </span>
                 <span v-else>
-                    Local Conda packages are disabled for this resolver (this is best practice for production).
+                    禁用了本地 Conda 包（这是生产环境中的最佳实践）。
                 </span>
             </span>
             <span v-else>
-                A dependency resolver of type {{ dependencyResolver.resolver_type }} was used to resolve these
-                dependencies.
+                使用了类型为 {{ dependencyResolver.resolver_type }} 的依赖解析器来解析这些依赖。
             </span>
             <DisplayRaw :object="dependencyResolver" />
         </span>
-        <span v-else> no dependency resolver </span>
+        <span v-else>没有依赖解析器</span>
     </span>
 </template>
 <script>

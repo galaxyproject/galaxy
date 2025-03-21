@@ -66,23 +66,22 @@ watch(props, fetch, { immediate: true });
 
 <template>
     <div>
-        <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
+        <h2 v-if="includeTitle" class="h-md">数据集存储</h2>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
         <LoadingSpan v-else-if="storageInfo == null"> </LoadingSpan>
         <div v-else-if="discarded">
-            <p>This dataset has been discarded and its files are not available to Galaxy.</p>
+            <p>该数据集已被丢弃，文件不可用于 Galaxy。</p>
         </div>
         <div v-else-if="deferred">
             <p>
-                This dataset is remote and deferred. The dataset's files are not available to Galaxy.
+                该数据集是远程的并且已延迟。数据集的文件不可用于 Galaxy。
                 <span v-if="sourceUri">
-                    This dataset will be downloaded from <b class="deferred-dataset-source-uri">{{ sourceUri }}</b> when
-                    jobs use this dataset.
+                    当作业使用此数据集时，数据集将从 <b class="deferred-dataset-source-uri">{{ sourceUri }}</b> 下载。
                 </span>
             </p>
         </div>
         <div v-else>
-            <DescribeObjectStore what="This dataset is stored in" :storage-info="storageInfo" />
+            <DescribeObjectStore what="该数据集存储在" :storage-info="storageInfo" />
         </div>
         <RelocateLink
             v-if="storageInfo"

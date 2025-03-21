@@ -23,12 +23,12 @@
                     v-slot="{ result: stepDetails, loading }"
                     auto-refresh>
                     <div style="min-width: 1">
-                        <LoadingSpan v-if="loading" :message="`Loading invocation step details`"> </LoadingSpan>
+                        <LoadingSpan v-if="loading" :message="`加载调用步骤详情`"> </LoadingSpan>
                         <div v-else>
                             <div
                                 v-if="!isDataStep && Object.values(stepDetails.outputs).length > 0"
                                 class="invocation-step-output-details">
-                                <Heading size="md" separator>Output Datasets</Heading>
+                                <Heading size="md" separator>输出数据集</Heading>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
                                     <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
@@ -37,7 +37,7 @@
                             <div
                                 v-if="!isDataStep && Object.values(stepDetails.output_collections).length > 0"
                                 class="invocation-step-output-collection-details">
-                                <Heading size="md" separator>Output Dataset Collections</Heading>
+                                <Heading size="md" separator>输出数据集集合</Heading>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
                                     <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
@@ -50,7 +50,7 @@
                                     :open="inGraphView">
                                     <Heading size="md" separator>{{ jobStepHeading(stepDetails) }}</Heading>
                                     <JobStep v-if="stepDetails.jobs?.length" class="mt-1" :jobs="stepDetails.jobs" />
-                                    <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
+                                    <b-alert v-else v-localize variant="info" show>此步骤没有任务</b-alert>
                                 </div>
                                 <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
@@ -66,9 +66,9 @@
                                     :item-src="invocation.inputs[workflowStep.id].src" />
                                 <div v-else-if="workflowStepType == 'subworkflow'">
                                     <div v-if="!stepDetails.subworkflow_invocation_id">
-                                        Workflow invocation for this step is not yet scheduled.
+                                        此步骤的工作流调用尚未安排。
                                         <br />
-                                        This step consumes outputs from these steps:
+                                        该步骤消耗以下步骤的输出：
                                         <ul v-if="workflowStep">
                                             <li
                                                 v-for="stepInput in Object.values(workflowStep.input_steps)"
@@ -88,9 +88,9 @@
                 </InvocationStepProvider>
                 <LoadingSpan
                     v-else
-                    :message="`This invocation has not been scheduled yet, step information is unavailable`">
-                    <!-- Probably a subworkflow invocation, could walk back to parent and show
-                         why step is not scheduled, but that's not necessary for a first pass, I think
+                    :message="`此调用尚未安排，步骤信息不可用`">
+                    <!-- 可能是子工作流调用，可能需要回到父工作流并显示步骤未安排的原因，
+                         但我认为对于第一次的实现来说，这不是必需的
                     -->
                 </LoadingSpan>
             </div>
@@ -190,11 +190,11 @@ export default {
         },
         jobStepHeading(stepDetails) {
             if (stepDetails.jobs?.length > 1) {
-                return "Jobs (Click on any job to view its details)";
+                return "任务（点击任何任务查看其详情）";
             } else if (stepDetails.jobs?.length === 1) {
-                return "Job";
+                return "任务";
             } else {
-                return "No jobs";
+                return "没有任务";
             }
         },
         toggleStep() {

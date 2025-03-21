@@ -14,51 +14,52 @@ export type FileSourceTypesDetail = Record<FileSourceTypes, { icon: IconDefiniti
 export const templateTypes: FileSourceTypesDetail = {
     azure: {
         icon: faCloud,
-        message: "This is a remote file source plugin based on the Azure service.",
+        message: "基于 Azure 服务的远程文件源插件。",
     },
     dropbox: {
         icon: faDropbox,
-        message: "This is a file source plugin that connects with the commercial Dropbox service.",
+        message: "与商业 Dropbox 服务连接的文件源插件。",
     },
     ftp: {
         icon: faNetworkWired,
-        message: "This is a remote file source plugin based on the FTP protocol.",
+        message: "基于 FTP 协议的远程文件源插件。",
     },
     googledrive: {
         icon: faGoogleDrive,
-        message: "This is a file source plugin that connects with the commercial Google Drive service.",
+        message: "与商业 Google Drive 服务连接的文件源插件。",
     },
     onedata: {
         icon: faNetworkWired,
-        message: "This is a remote file source plugin based on the Onedata service.",
+        message: "基于 Onedata 服务的远程文件源插件。",
     },
     posix: {
         icon: faFolderTree,
         message:
-            "This is a simple path based file source that assumes the all the relevant paths are already mounted on the Galaxy server and target worker nodes.",
+            "基于路径的简单文件源，假定所有相关路径已经在服务器和目标工作节点上挂载。",
     },
     s3fs: {
         icon: faAws,
         message:
-            "This is a remote file source plugin based on the Amazon Simple Storage Service (S3) interface. The AWS interface has become an industry standard and many storage vendors support it and use it to expose 'object' based storage.",
+            "基于 Amazon Simple Storage Service (S3) 接口的远程文件源插件。AWS 接口已成为行业标准，许多存储供应商支持并使用它来提供基于 '对象' 的存储。",
     },
     webdav: {
         icon: faNetworkWired,
-        message: "This is a remote file source plugin based on the WebDAV protocol.",
+        message: "基于 WebDAV 协议的远程文件源插件。",
     },
     elabftw: {
         icon: faNetworkWired,
-        message: "This is a remote file source that connects with an eLabFTW instance.",
+        message: "与 eLabFTW 实例连接的远程文件源。",
     },
     inveniordm: {
         icon: faNetworkWired,
-        message: "This is a remote file source that connects with an InvenioRDM instance.",
+        message: "与 InvenioRDM 实例连接的远程文件源。",
     },
     zenodo: {
         icon: faNetworkWired,
-        message: "This is a remote file source that connects with the Zenodo instance.",
+        message: "与 Zenodo 实例连接的远程文件源。",
     },
 };
+
 
 export const FileSourcesValidFilters = {
     name: {

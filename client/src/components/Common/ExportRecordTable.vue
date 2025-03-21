@@ -28,17 +28,17 @@ const emit = defineEmits<{
 }>();
 
 const fields = [
-    { key: "elapsedTime", label: "Exported" },
-    { key: "format", label: "Format" },
-    { key: "expires", label: "Expires" },
-    { key: "isUpToDate", label: "Up to date", class: "text-center" },
-    { key: "isReady", label: "Ready", class: "text-center" },
-    { key: "actions", label: "Actions" },
+    { key: "elapsedTime", label: "已导出" },
+    { key: "format", label: "格式" },
+    { key: "expires", label: "过期时间" },
+    { key: "isUpToDate", label: "最新", class: "text-center" },
+    { key: "isReady", label: "已准备好", class: "text-center" },
+    { key: "actions", label: "操作" },
 ];
 
 const isExpanded = ref(false);
 
-const title = computed(() => (isExpanded.value ? `Hide old export records` : `Show old export records`));
+const title = computed(() => (isExpanded.value ? `隐藏旧的导出记录` : `显示旧的导出记录`));
 
 async function reimportObject(record: ExportRecord) {
     emit("onReimport", record);
@@ -75,13 +75,13 @@ function copyDownloadLink(record: ExportRecord) {
                     </template>
 
                     <template v-slot:cell(expires)="row">
-                        <span v-if="row.item.hasExpired">Expired</span>
+                        <span v-if="row.item.hasExpired">已过期</span>
 
                         <span v-else-if="row.item.expirationDate" :title="row.item.expirationDate">
                             {{ row.item.expirationElapsedTime }}
                         </span>
 
-                        <span v-else>No</span>
+                        <span v-else>没有</span>
                     </template>
 
                     <template v-slot:cell(isUpToDate)="row">
@@ -89,12 +89,12 @@ function copyDownloadLink(record: ExportRecord) {
                             v-if="row.item.isUpToDate"
                             :icon="faCheckCircle"
                             class="text-success"
-                            title="This export record contains the latest changes." />
+                            title="此导出记录包含最新更改。" />
                         <FontAwesomeIcon
                             v-else
                             :icon="faExclamationCircle"
                             class="text-danger"
-                            title="This export record is outdated. Please consider generating a new export if you need the latest changes." />
+                            title="此导出记录已过时。如果您需要最新的更改，请考虑生成新的导出。" />
                     </template>
 
                     <template v-slot:cell(isReady)="row">
@@ -102,39 +102,39 @@ function copyDownloadLink(record: ExportRecord) {
                             v-if="row.item.isReady"
                             :icon="faCheckCircle"
                             class="text-success"
-                            title="Ready to download or import." />
+                            title="已准备好下载或导入。" />
                         <FontAwesomeIcon
                             v-else-if="row.item.isPreparing"
                             :icon="faSpinner"
                             spin
                             class="text-info"
-                            title="Exporting in progress..." />
+                            title="导出处理中..." />
                         <FontAwesomeIcon
                             v-else-if="row.item.hasExpired"
                             :icon="faExclamationCircle"
                             class="text-danger"
-                            title="The export has expired." />
+                            title="该导出已过期。" />
                         <FontAwesomeIcon
                             v-else
                             :icon="faExclamationCircle"
                             class="text-danger"
-                            title="The export failed." />
+                            title="导出失败。" />
                     </template>
 
                     <template v-slot:cell(actions)="row">
-                        <BButtonToolbar aria-label="Actions">
+                        <BButtonToolbar aria-label="操作">
                             <BButtonGroup>
                                 <BButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canDownload"
-                                    title="Download"
+                                    title="下载"
                                     @click="downloadObject(row.item)">
                                     <FontAwesomeIcon :icon="faDownload" />
                                 </BButton>
 
                                 <BButton
                                     v-if="row.item.canDownload"
-                                    title="Copy Download Link"
+                                    title="复制下载链接"
                                     @click.stop="copyDownloadLink(row.item)">
                                     <FontAwesomeIcon :icon="faLink" />
                                 </BButton>
@@ -142,7 +142,7 @@ function copyDownloadLink(record: ExportRecord) {
                                 <BButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canReimport"
-                                    title="Reimport"
+                                    title="重新导入"
                                     @click="reimportObject(row.item)">
                                     <FontAwesomeIcon :icon="faFileImport" />
                                 </BButton>

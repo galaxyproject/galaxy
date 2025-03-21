@@ -47,7 +47,7 @@ const infoMessage = ref("");
 const successMessage = ref("");
 const attributesInputs = ref<{ name: string; label: string; type: string; value: any }[]>([]);
 
-/** Used to track if there has been a change in the collection, and rerenders `FormDisplay` */
+/** 用于跟踪集合是否发生变化，并重新渲染 `FormDisplay` */
 const collectionChangeKey = ref(0);
 
 const attributesData = computed(() => {
@@ -96,7 +96,7 @@ watch(
             attributesInputs.value = [
                 {
                     name: "name",
-                    label: "Name",
+                    label: "名称",
                     type: "text",
                     value: newVal.name,
                 },
@@ -111,11 +111,11 @@ function updateInfoMessage(strMessage: string) {
     successMessage.value = "";
 }
 
-// TODO: Replace with actual datatype type
+// TODO: 替换为实际的 datatype 类型
 async function clickedSave(attribute: string, newValue: any) {
     if (attribute !== "dbkey") {
-        // TODO: extend this to other attributes that could be changed
-        console.error(`Changing ${attribute} not implemented`);
+        // TODO: 扩展此功能以支持其他可以更改的属性
+        console.error(`更改 ${attribute} 未实现`);
         return;
     }
 
@@ -126,11 +126,11 @@ async function clickedSave(attribute: string, newValue: any) {
         body: { dbkey: dbKey },
     });
     if (error) {
-        errorMessage.value = errorMessageAsString(error, `Changing ${attribute} failed.`);
+        errorMessage.value = errorMessageAsString(error, `更改 ${attribute} 失败。`);
     }
 }
 
-// TODO: Replace with actual datatype type
+// TODO: 替换为实际的 datatype 类型
 async function clickedConvert(selectedConverter: any) {
     const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
     const data = {
@@ -142,16 +142,16 @@ async function clickedConvert(selectedConverter: any) {
 
     try {
         await axios.post(url, data).catch(handleError);
-        successMessage.value = "Conversion started successfully.";
+        successMessage.value = "转换成功开始。";
     } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "Conversion failed.");
+        errorMessage.value = errorMessageAsString(err, "转换失败。");
     }
 }
 
-// TODO: Replace with actual datatype type
+// TODO: 替换为实际的 datatype 类型
 async function clickedDatatypeChange(selectedDatatype: any) {
     if (!currentHistoryId.value) {
-        errorMessage.value = "No current history selected.";
+        errorMessage.value = "没有选定当前历史记录。";
         return;
     }
 
@@ -173,14 +173,14 @@ async function clickedDatatypeChange(selectedDatatype: any) {
     });
 
     if (error) {
-        errorMessage.value = errorMessageAsString(error, "Datatype change failed.");
+        errorMessage.value = errorMessageAsString(error, "数据类型更改失败。");
         return;
     }
-    successMessage.value = "Datatype changed successfully.";
+    successMessage.value = "数据类型更改成功。";
 }
 
 function handleError(err: any) {
-    errorMessage.value = errorMessageAsString(err, "Datatype conversion failed.");
+    errorMessage.value = errorMessageAsString(err, "数据类型转换失败。");
 
     if (err?.data?.stderr) {
         jobError.value = err.data;
@@ -205,9 +205,9 @@ async function saveAttrs() {
         try {
             await updateContentFields(collection.value, updatedAttrs);
 
-            successMessage.value = "Attributes updated successfully.";
+            successMessage.value = "属性更新成功。";
         } catch (err) {
-            errorMessage.value = errorMessageAsString(err, "Unable to update attributes.");
+            errorMessage.value = errorMessageAsString(err, "无法更新属性。");
         }
     }
 }
@@ -216,7 +216,7 @@ async function saveAttrs() {
 <template>
     <div aria-labelledby="collection-edit-view-heading">
         <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
-            {{ localize("Edit Collection Attributes") }}
+            {{ localize("编辑集合属性") }}
         </Heading>
 
         <BAlert v-if="infoMessage" show variant="info" dismissible>
@@ -234,7 +234,7 @@ async function saveAttrs() {
             <BTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faBars" class="mr-1" />
-                    {{ localize("Attributes") }}
+                    {{ localize("属性") }}
                 </template>
 
                 <FormDisplay
@@ -246,7 +246,7 @@ async function saveAttrs() {
                 <div class="mt-2">
                     <BButton id="dataset-attributes-default-save" variant="primary" @click="saveAttrs">
                         <FontAwesomeIcon :icon="faSave" class="mr-1" />
-                        {{ localize("Save") }}
+                        {{ localize("保存") }}
                     </BButton>
                 </div>
             </BTab>
@@ -254,17 +254,17 @@ async function saveAttrs() {
                 title-link-class="collection-edit-change-genome-nav"
                 @click="
                     updateInfoMessage(
-                        'This will create a new collection in your History. Your quota will not increase.'
+                        '这将创建一个新的集合到您的历史记录。您的配额不会增加。'
                     )
                 ">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faTable" class="mr-1" />
-                    {{ localize("Database/Build") }}
+                    {{ localize("数据库/构建") }}
                 </template>
 
                 <DbKeyProvider v-slot="{ item, loading }">
                     <div v-if="loading">
-                        <BSpinner label="Loading Database/Builds..." />
+                        <BSpinner label="加载数据库/构建..." />
                     </div>
                     <div v-else>
                         <DatabaseEditTab
@@ -280,10 +280,10 @@ async function saveAttrs() {
                 <BTab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
-                    @click="updateInfoMessage('This will create a new collection in your History.')">
+                    @click="updateInfoMessage('这将创建一个新的集合到您的历史记录。')">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faCog" class="mr-1" />
-                        {{ localize("Convert") }}
+                        {{ localize("转换") }}
                     </template>
 
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
@@ -295,17 +295,17 @@ async function saveAttrs() {
                 title-link-class="collection-edit-change-datatype-nav"
                 @click="
                     updateInfoMessage(
-                        'This operation might take a short while, depending on the size of your collection.'
+                        '此操作可能需要一段时间，具体取决于您的集合大小。'
                     )
                 ">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faDatabase" class="mr-1" />
-                    {{ localize("Datatypes") }}
+                    {{ localize("数据类型") }}
                 </template>
 
                 <DatatypesProvider v-slot="{ item, loading }">
                     <div v-if="loading">
-                        <LoadingSpan message="Loading Datatypes" />
+                        <LoadingSpan message="加载数据类型" />
                     </div>
                     <div v-else>
                         <ChangeDatatypeTab

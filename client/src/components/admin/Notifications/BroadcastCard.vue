@@ -53,23 +53,21 @@ const notificationVariant = computed(() => {
         default:
             return notification.value.variant;
     }
-});
-
-const publicationTimePrefix = computed(() => {
+});const publicationTimePrefix = computed(() => {
     if (hasBeenPublished.value) {
-        return "Published";
+        return "已发布";
     }
-    return "Scheduled to be published";
+    return "计划发布";
 });
 
 const expirationTimePrefix = computed(() => {
     if (notification.value.expiration_time) {
         if (hasExpired.value) {
-            return "Expired";
+            return "已过期";
         }
-        return "Expires";
+        return "将过期";
     }
-    return "Does not expire";
+    return "不会过期";
 });
 
 function onEditClick() {
@@ -78,8 +76,8 @@ function onEditClick() {
 
 async function onForceExpirationClick() {
     const confirmed = await confirm(
-        "Are you sure you want to expire this broadcast? It will be automatically deleted on the next cleanup cycle.",
-        "Expire broadcast"
+        "您确定要使此广播过期吗？它将在下一个清理周期中自动删除。",
+        "使广播过期"
     );
     if (confirmed) {
         emit("expire", notification.value);

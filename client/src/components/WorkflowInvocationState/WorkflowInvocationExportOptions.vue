@@ -25,7 +25,7 @@ defineProps({
             This is temporal fix and should be dropped once Celery is the default task system in Galaxy.
             The task-based plugin system above should be used instead.
         -->
-        <BCard title="BioCompute Object Export" class="export-plugin-card">
+        <BCard title="生物计算对象导出" class="export-plugin-card">
             <BioComputeObjectExportCard :invocation-id="invocationId" />
         </BCard>
     </div>

@@ -36,11 +36,11 @@ type CreateTestUrl = "/api/object_store_instances/test" | "/api/file_source_inst
 type CreateUrl = "/api/object_store_instances" | "/api/file_source_instances";
 
 export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
-    what: string,
-    template: Ref<T>,
-    uuid: Ref<string | undefined>,
-    testUrl: CreateTestUrl,
-    createUrl: CreateUrl,
+    what: string, 
+    template: Ref<T>, 
+    uuid: Ref<string | undefined>, 
+    testUrl: CreateTestUrl, 
+    createUrl: CreateUrl, 
     onCreate: (result: R) => unknown
 ) {
     const error = ref<string | null>(null);
@@ -58,14 +58,14 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
                 body: payload,
             });
             if (testRequestError) {
-                error.value = "Failed to verify configuration: " + errorMessageAsString(testRequestError);
+                error.value = "验证配置失败: " + errorMessageAsString(testRequestError);
                 return;
             } else {
                 pluginStatus = data;
                 testResults.value = pluginStatus;
             }
         } catch (e) {
-            error.value = "Failed to verify configuration: " + errorMessageAsString(e);
+            error.value = "验证配置失败: " + errorMessageAsString(e);
             return;
         } finally {
             testRunning.value = false;
@@ -96,8 +96,8 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
         return createTemplateForm(template.value, what);
     });
 
-    const submitTitle = "Create";
-    const loadingMessage = `Loading ${what} template and instance information`;
+    const submitTitle = "创建";
+    const loadingMessage = `加载 ${what} 模板和实例信息`;
 
     return {
         ActionSummary,
@@ -165,7 +165,7 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
     const { goToIndex } = useRouting();
 
     async function onUpdate(objectStore: R) {
-        const message = `Updated ${what} ${objectStore.name}`;
+        const message = `${what} ${objectStore.name} 已更新`;
         goToIndex({ message });
     }
 
@@ -180,8 +180,8 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
 
     const error = ref<string | null>(null);
     const hasSecrets = computed(() => instance.value?.secrets && instance.value?.secrets.length > 0);
-    const submitTitle = "Update Settings";
-    const loadingMessage = `Loading ${what} template and instance information`;
+    const submitTitle = "更新设置";
+    const loadingMessage = `加载 ${what} 模板和实例信息`;
 
     async function onSubmit(formData: any) {
         if (template.value && instance.value) {
@@ -280,7 +280,7 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     const { goToIndex } = useRouting();
 
     async function onUpgrade(objectStore: R) {
-        const message = `Upgraded ${what} ${objectStore.name}`;
+        const message = `${what} ${objectStore.name} 已升级`;
         goToIndex({ message });
     }
 
@@ -288,8 +288,8 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     const { testRunning, testResults } = useConfigurationTesting();
     const showForceActionButton = ref<boolean>(false);
 
-    const submitTitle = "Upgrade Configuration";
-    const loadingMessage = `Loading latest ${what} template and instance information`;
+    const submitTitle = "升级配置";
+    const loadingMessage = `加载最新的 ${what} 模板和实例信息`;
 
     const inputs = computed<Array<FormEntry> | undefined>(() => {
         const realizedInstance = instance.value;

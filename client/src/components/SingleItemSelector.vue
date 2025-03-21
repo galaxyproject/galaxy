@@ -75,7 +75,7 @@ export default {
     computed: {
         /** @return {String} */
         loadingMessage() {
-            return `Loading ${this.collectionName}...`;
+            return `加载 ${this.collectionName} 中...`;
         },
     },
     watch: {

@@ -19,7 +19,7 @@ const props = defineProps<Props>();
 
 const showEdit = ref<boolean>(false);
 const secretValue = ref<string>("");
-const editTitle = computed(() => `Edit ${props.label}`);
+const editTitle = computed(() => `编辑 ${props.label}`);
 const helpHtml = computed(() => markup(props.help, true));
 
 function onClick() {

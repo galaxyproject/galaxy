@@ -23,7 +23,7 @@ defineProps<Pros>();
 const router = useRouter();
 
 const workflowAnnotation = ref("");
-const workflowName = ref("Unnamed workflow");
+const workflowName = ref("未命名工作流");
 const workflowNameInput = ref<HTMLInputElement | null>(null);
 
 async function onCreate() {
@@ -36,43 +36,43 @@ async function onCreate() {
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
 
-        Toast.error(error.response?.data.err_msg ?? "Failed to create workflow");
+        Toast.error(error.response?.data.err_msg ?? "不能创建工作流");
     }
 }
 </script>
 
 <template>
     <div>
-        <Heading v-if="!showHeading" h1 separator size="xl">Create workflow</Heading>
+        <Heading v-if="!showHeading" h1 separator size="xl">创建工作流</Heading>
 
-        <label for="workflow-name-input" class="font-weight-bold"> Workflow name </label>
+        <label for="workflow-name-input" class="font-weight-bold">工作流名称</label>
         <BFormInput
             id="workflow-name-input"
             ref="workflowNameInput"
             v-model="workflowName"
             class="mb-2"
             type="text"
-            placeholder="Enter workflow name"
-            description="Workflow name"
+            placeholder="输入工作流名称"
+            description="工作流名称"
             @keyup.enter="() => onCreate()" />
 
-        <label for="workflow-annotation-input" class="font-weight-bold"> Workflow annotation </label>
+        <label for="workflow-annotation-input" class="font-weight-bold">工作流注释</label>
         <BFormInput
             id="workflow-annotation-input"
             v-model="workflowAnnotation"
             class="mb-2"
             type="text"
-            placeholder="Enter workflow annotation">
+            placeholder="输入工作流注释">
         </BFormInput>
 
         <div class="float-right">
             <AsyncButton
                 variant="primary"
                 :icon="faCheck"
-                title="Create workflow"
+                title="创建工作流"
                 :disabled="workflowName.length === 0"
                 :action="() => onCreate()">
-                Create
+                创建
             </AsyncButton>
         </div>
     </div>

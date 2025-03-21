@@ -24,7 +24,7 @@ function searchInput(parentNode, options) {
     var defaults = {
         initialVal: "",
         name: "search",
-        placeholder: "search",
+        placeholder: "搜索",
         classes: "",
         onclear: function () {},
         onfirstsearch: null,
@@ -108,7 +108,7 @@ function searchInput(parentNode, options) {
     // a button for clearing the search bar, placed on the right hand side
     function $clearBtn() {
         return $(
-            ['<span class="search-clear fa fa-times-circle" ', 'title="', _l("clear search (esc)"), '"></span>'].join(
+            ['<span class="search-clear fa fa-times-circle" ', 'title="', _l("清除搜索 (esc)"), '"></span>'].join(
                 ""
             )
         )
@@ -128,18 +128,18 @@ function searchInput(parentNode, options) {
                 'data-placement="bottom" ',
                 'data-content="',
                 _l(
-                    "<p>You can use advanced searches here using keywords and syntax like <em>name=mydataset</em> or <em>state=error</em>."
+                    "<p>Y您可以在这里使用关键字和语法进行高级搜索，例如 <em>name=mydataset</em> or <em>state=error</em>."
                 ),
                 "<br/>",
                 _l(
-                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, state, and history_content_type</em>."
+                    "支持的关键字有 <em>name, format, database, annotation, description, info, tag, hid, state, 和 history_content_type</em>."
                 ),
                 "<br/>",
-                _l("To learn more visit "),
+                _l("要了解更多信息，请访问 "),
                 "<a href='https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/history/tutorial.html#basic-searching' target='_blank'>",
-                _l("the Training Material"),
+                _l("训练材料"),
                 '.</a></p>" title="',
-                _l("Search tips"),
+                _l("搜索技巧"),
                 '"></a>',
             ].join("")
         )
@@ -170,7 +170,7 @@ function searchInput(parentNode, options) {
     // a button for clearing the search bar, placed on the right hand side
     function $loadingIndicator() {
         return $(
-            ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></span>'].join("")
+            ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("加载中..."), '"></span>'].join("")
         )
             .hide()
             .tooltip({ placement: "bottom" });

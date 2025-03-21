@@ -30,7 +30,7 @@ watch(show, () => {
 </script>
 
 <template>
-    <BModal v-model="show" title="Configuration Test Summary" hide-footer>
+    <BModal v-model="show" title="配置测试总结" hide-footer>
         <BAlert v-if="error" variant="danger" show dismissible>
             {{ error || "" }}
         </BAlert>

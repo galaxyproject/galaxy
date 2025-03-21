@@ -1,41 +1,39 @@
 <template>
     <div>
         <div v-if="workflow">
-            <h1 class="mb-4 h-lg">Workflow Export of `{{ workflow.name }}`</h1>
+            <h1 class="mb-4 h-lg">导出工作流 `{{ workflow.name }}`</h1>
             <div v-if="workflow.importable && workflow.slug">
                 <a :href="importUrl">{{ importUrl }}</a>
                 <div>
                     <small>
-                        Use this URL to import the workflows directly into another Galaxy server. You can copy it into
-                        the input field titled when importing a workflow.
+                        使用此URL可直接将工作流导入到另一个Galaxy服务器。您可以将其复制到导入工作流时的输入字段中。
                     </small>
                 </div>
                 <hr />
             </div>
             <b-alert v-else variant="info" show>
-                This workflow is not accessible. Please use the sharing option to "Make Workflow Accessible and Publish"
-                to obtain a URL for importing to another Galaxy.
+                此工作流不可访问。请使用共享选项"使工作流可访问并发布"以获取可导入到其他Galaxy的URL。
             </b-alert>
-            <a :href="downloadUrl">Download Workflow</a>
+            <a :href="downloadUrl">下载工作流</a>
             <div>
                 <small class="text-muted">
-                    Downloads a file which can be saved or imported into another Galaxy server.
+                    下载可保存或导入到其他Galaxy服务器的文件。
                 </small>
             </div>
             <hr />
-            <a :href="svgUrl">Create Image</a>
+            <a :href="svgUrl">创建图像</a>
             <div>
-                <small class="text-muted"> Download an image of the workflow in SVG format. </small>
+                <small class="text-muted">以SVG格式下载工作流图像。</small>
             </div>
         </div>
         <b-alert v-else-if="!!error" variant="danger" show>
             <span>
-                {{ error }}. Click
-                <router-link class="require-login-link" to="/login/start">here</router-link>
-                to login.
+                {{ error }}。点击
+                <router-link class="require-login-link" to="/login/start">此处</router-link>
+                登录。
             </span>
         </b-alert>
-        <LoadingSpan v-else message="Loading workflow" />
+        <LoadingSpan v-else message="正在加载工作流" />
     </div>
 </template>
 <script>
@@ -93,7 +91,7 @@ export default {
                     this.error = null;
                 })
                 .catch((message) => {
-                    this.error = message || "Loading workflow failed.";
+                    this.error = message || "加载工具流失败.";
                 });
         },
     },

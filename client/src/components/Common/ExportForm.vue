@@ -28,11 +28,11 @@ const name = ref<string>("");
 
 const canExport = computed(() => name.value.length > 0 && directory.value.length > 0);
 
-const directoryDescription = computed(() => localize(`Select a 'remote files' directory to export ${props.what} to.`));
+const directoryDescription = computed(() => localize(`选择一个“远程文件”目录以导出 ${props.what} 到该目录.`));
 
-const nameDescription = computed(() => localize("Give the exported file a name."));
+const nameDescription = computed(() => localize("为导出的文件命名。"));
 
-const namePlaceholder = computed(() => localize("Name"));
+const namePlaceholder = computed(() => localize("名称"));
 
 const doExport = () => {
     emit("export", directory.value, name.value);
@@ -66,7 +66,7 @@ const doExport = () => {
                     variant="primary"
                     :disabled="!canExport"
                     @click.prevent="doExport">
-                    Export
+                    导出
                 </BButton>
             </BCol>
         </BRow>

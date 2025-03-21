@@ -41,7 +41,7 @@ const emit = defineEmits<{
                 @keypress="router.push(routeUpgrade)"
                 @click.prevent="router.push(routeUpgrade)">
                 <FontAwesomeIcon :icon="faArrowUp" />
-                <span v-localize>Upgrade</span>
+                <span v-localize>升级</span>
             </button>
             <button
                 class="dropdown-item"
@@ -49,15 +49,15 @@ const emit = defineEmits<{
                 @keypress="router.push(routeEdit)"
                 @click.prevent="router.push(routeEdit)">
                 <FontAwesomeIcon :icon="faEdit" />
-                <span v-localize>Edit configuration</span>
+                <span v-localize>编辑配置</span>
             </button>
             <button class="dropdown-item" @keypress="emit('test')" @click.prevent="emit('test')">
                 <FontAwesomeIcon :icon="faStethoscope" />
-                <span v-localize>Test instance</span>
+                <span v-localize>测试实例</span>
             </button>
             <button class="dropdown-item" @keypress="emit('remove')" @click.prevent="emit('remove')">
                 <FontAwesomeIcon :icon="faTrash" />
-                <span v-localize>Remove instance</span>
+                <span v-localize>移除实例</span>
             </button>
         </div>
     </div>

@@ -17,20 +17,20 @@ export function getWorkflowInputs(): WorkflowInput[] {
     return [
         {
             moduleId: "data_input",
-            title: "Input Dataset",
-            description: "Single dataset input",
+            title: "输入数据集",
+            description: "单个数据集输入",
             icon: faFile,
         },
         {
             moduleId: "data_collection_input",
-            title: "Input Dataset Collection",
-            description: "Input for a collection of datasets",
+            title: "输入数据集集合",
+            description: "数据集集合的输入",
             icon: faFolder,
         },
         {
             moduleId: "parameter_input",
-            title: "Text Input",
-            description: "Text parameter used for workflow logic",
+            title: "文本输入",
+            description: "用于工作流逻辑的文本参数",
             icon: faPencilAlt,
             stateOverwrites: {
                 parameter_type: "text",
@@ -39,8 +39,8 @@ export function getWorkflowInputs(): WorkflowInput[] {
         {
             id: "parameter_input_integer",
             moduleId: "parameter_input",
-            title: "Integer Input",
-            description: "Whole number parameter used for workflow logic",
+            title: "整数输入",
+            description: "用于工作流逻辑的整数参数",
             icon: faPencilAlt,
             stateOverwrites: {
                 parameter_type: "integer",
@@ -49,8 +49,8 @@ export function getWorkflowInputs(): WorkflowInput[] {
         {
             id: "parameter_input_float",
             moduleId: "parameter_input",
-            title: "Float Input",
-            description: "Imprecise decimal number parameter used for workflow logic",
+            title: "浮点数输入",
+            description: "用于工作流逻辑的不精确小数参数",
             icon: faPencilAlt,
             stateOverwrites: {
                 parameter_type: "float",
@@ -59,8 +59,8 @@ export function getWorkflowInputs(): WorkflowInput[] {
         {
             id: "parameter_input_boolean",
             moduleId: "parameter_input",
-            title: "Boolean Input",
-            description: "True / False parameter used for workflow logic",
+            title: "布尔输入",
+            description: "用于工作流逻辑的真/假参数",
             icon: faPencilAlt,
             stateOverwrites: {
                 parameter_type: "boolean",
@@ -69,8 +69,8 @@ export function getWorkflowInputs(): WorkflowInput[] {
         {
             id: "parameter_input_color",
             moduleId: "parameter_input",
-            title: "Color Input",
-            description: "Color parameter used for workflow logic",
+            title: "颜色输入",
+            description: "用于工作流逻辑的颜色参数",
             icon: faPencilAlt,
             stateOverwrites: {
                 parameter_type: "color",
@@ -79,8 +79,8 @@ export function getWorkflowInputs(): WorkflowInput[] {
         {
             id: "parameter_input_directory_uri",
             moduleId: "parameter_input",
-            title: "Directory Input",
-            description: "Directory parameter used for workflow logic",
+            title: "目录输入",
+            description: "用于工作流逻辑的目录参数",
             icon: faPencilAlt,
             stateOverwrites: {
                 parameter_type: "directory_uri",

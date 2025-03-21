@@ -56,7 +56,7 @@ export default {
         },
         attributeLink: {
             type: String,
-            default: "Edit Workflow Attributes",
+            default: "编辑工作流属性",
         },
         successMessage: {
             type: String,

@@ -5,7 +5,7 @@
         :error="error"
         :title="title"
         type="text"
-        help="Provide a short, unique name to describe this output."
+        help="提供一个简短、唯一的名称来描述此输出。"
         @input="onInput" />
 </template>
 
@@ -34,7 +34,7 @@ const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowSto
 
 const error: Ref<string | undefined> = ref(undefined);
 const id = computed(() => `__label__${props.name}`);
-const title = computed(() => (props.showDetails ? `Label for: '${props.name}'` : "Label"));
+const title = computed(() => (props.showDetails ? `标签用于: '${props.name}'` : "标签"));
 const label = computed(() => {
     if (props.step.workflow_outputs?.length) {
         const workflowOutput = props.step.workflow_outputs.find(
@@ -81,7 +81,7 @@ function onInput(newLabel: string | undefined | null) {
         setOutputLabel(props.step, newWorkflowOutputs, oldLabel, newLabel);
         error.value = undefined;
     } else if (existingWorkflowOutput.stepId !== props.step.id) {
-        error.value = `Duplicate output label '${newLabel}' will be ignored.`;
+        error.value = `重复的输出标签 '${newLabel}' 将被忽略。`;
     }
 }
 </script>

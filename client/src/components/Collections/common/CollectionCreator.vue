@@ -134,7 +134,7 @@ watch(
             </div>
         </span>
         <BTabs v-else v-model="currentTab" fill justified>
-            <BTab class="collection-creator" :title="localize('Create Collection')">
+            <BTab class="collection-creator" :title="localize('创建集合')">
                 <div v-if="props.noItems">
                     <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
                 </div>
@@ -173,7 +173,7 @@ watch(
             <BTab>
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
-                    <span>{{ localize("Upload Files to Add to Collection") }}</span>
+                    <span>{{ localize("上传文件以添加到集合") }}</span>
                 </template>
                 <DefaultBox
                     v-if="uploadReady && configOptions"
@@ -192,13 +192,14 @@ watch(
                     </template>
                     <template v-slot:emit-btn-txt>
                         <FontAwesomeIcon :icon="faPlus" fixed-width />
-                        {{ localize("Add Uploaded") }}
+                        {{ localize("添加已上传文件") }}
                     </template>
                 </DefaultBox>
             </BTab>
         </BTabs>
     </span>
 </template>
+
 
 <style lang="scss">
 $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";

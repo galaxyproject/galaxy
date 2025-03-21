@@ -31,7 +31,7 @@
                     variant="primary"
                     size="sm"
                     aria-label="clone node"
-                    title="Duplicate"
+                    title="复制"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
                 </b-button>
@@ -42,7 +42,7 @@
                     variant="primary"
                     size="sm"
                     aria-label="destroy node"
-                    title="Remove"
+                    title="移除"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
                 </b-button>
@@ -52,7 +52,7 @@
                     class="node-recommendations py-0"
                     variant="primary"
                     size="sm"
-                    aria-label="tool recommendations">
+                    aria-label="工具推荐">
                     <i class="fa fa-arrow-right" />
                 </b-button>
                 <b-popover
@@ -71,12 +71,12 @@
                 </b-popover>
             </b-button-group>
             <i :class="iconClass" />
-            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
+            <span v-if="step.when" v-b-tooltip.hover title="此步骤为条件执行。">
                 <FontAwesomeIcon icon="fa-code-branch" />
             </span>
             <span
                 v-b-tooltip.hover
-                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                title="步骤在工作流运行表单中的索引。步骤按距离窗口左上角的顺序排列；输入步骤优先。"
                 >{{ step.id + 1 }}:
             </span>
             <span class="node-title">{{ title }}</span>

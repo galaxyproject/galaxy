@@ -38,13 +38,13 @@ const DEFAULT_FILTER: keyof typeof COMMON_FILTERS = "illumina";
 const MATCH_PERCENTAGE = 0.99;
 
 // Titles and help text
-const CHOOSE_FILTER_TITLE = localize("Choose from common filters");
-const FILTER_TEXT_PLACEHOLDER = localize("Filter text");
-const FILTER_TEXT_TITLE = localize("Use this box to filter elements, using simple matching or regular expressions.");
-const ERROR_TEXT = localize("There was a problem creating the collection.");
-const INVALID_HEADER = localize("The following selections could not be included due to problems:");
-const ALL_INVALID_ELEMENTS_PART_ONE = localize("At least two elements are needed for the collection. You may need to");
-const CANCEL_TEXT = localize("Cancel");
+const CHOOSE_FILTER_TITLE = localize("选择常用过滤器");
+const FILTER_TEXT_PLACEHOLDER = localize("过滤文本");
+const FILTER_TEXT_TITLE = localize("使用此框过滤元素，支持简单匹配或正则表达式。");
+const ERROR_TEXT = localize("创建集合时出现问题。");
+const INVALID_HEADER = localize("以下选择因问题无法包含：");
+const ALL_INVALID_ELEMENTS_PART_ONE = localize("此集合需要至少两个元素。您可能需要");
+const CANCEL_TEXT = localize("取消");
 
 interface Props {
     historyId: string;
@@ -63,10 +63,10 @@ const emit = defineEmits<{
 }>();
 
 // Titles and help text computed
-const noElementsHeader = props.fromSelection ? localize("No elements selected") : localize("No elements available");
+const noElementsHeader = props.fromSelection ? localize("未选择任何元素") : localize("没有可用元素");
 const allInvalidElementsPartTwo = props.fromSelection
-    ? localize("and reselect new elements.")
-    : localize("and change your current history or upload valid datasets for this collection.");
+    ? localize("并重新选择新元素。")
+    : localize("并更改您的当前历史记录或上传有效的数据集以用于此集合。");
 
 // Flags
 const state = ref<"build" | "error" | "duplicates">("build");
@@ -129,19 +129,19 @@ const autoPairButton = computed(() => {
     if (!canAutoPair.value) {
         variant = "secondary";
         icon = faLink;
-        text = localize("Specify simple filters to divide datasets into forward and reverse reads for pairing.");
+        text = localize("指定简单过滤器，将数据集分为正向和反向读取以进行配对。");
     } else if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
         variant = "primary";
         icon = faExclamationCircle;
-        text = localize("Click to auto-pair datasets based on the current filters");
+        text = localize("点击根据当前过滤器自动配对数据集");
     } else if (pairableElements.value.length > 0) {
         variant = "secondary";
         icon = faLink;
-        text = localize("Auto-pair possible based on current filters");
+        text = localize("根据当前过滤器，自动配对可用");
     } else {
         variant = "secondary";
         icon = faLink;
-        text = localize("Click to attempt auto-pairing datasets");
+        text = localize("点击尝试自动配对数据集");
     }
     return { variant, icon, text };
 });
@@ -287,25 +287,27 @@ function _validateElements() {
     return workingElements.value;
 }
 
-function _isElementInvalid(element: HistoryItemSummary) {
+function _isElementInvalid(element: HistoryItemSummary): string | null {
     if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
-    }
-    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
-    if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
-    }
-    if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
+        return localize("集合不允许这样操作");
     }
 
-    // is the element's extension not a subtype of any of the required extensions?
+    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
+
+    if (!validState) {
+        return localize("发生错误, 处于已暂停或无法访问");
+    }
+
+    if (element.deleted || element.purged) {
+        return localize("已被删除或清除");
+    }
+
     if (
         filterExtensions.value &&
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize(`has an invalid format: ${element.extension}`);
+        return localize(`格式无效: ${element.extension}`);
     }
     return null;
 }
@@ -749,11 +751,11 @@ async function clickedCreate(collectionName: string) {
 
     let confirmed = false;
     if (!atLeastOnePair.value) {
-        confirmed = await confirm("Are you sure you want to create a list with no pairs?", {
-            title: "Create an empty list of pairs",
-            okTitle: "Create",
-            okVariant: "primary",
-        });
+        confirmed = await confirm(localize("您确定要创建一个没有配对的列表吗？"), {
+                title: localize("创建一个空的配对列表"),
+                okTitle: localize("创建"),
+                okVariant: "primary",
+            });
     }
 
     if (state.value == "build" && (atLeastOnePair.value || confirmed)) {
@@ -835,12 +837,12 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
 
             <div v-if="!atLeastOnePair">
                 <BAlert show variant="warning" dismissible @dismissed="atLeastOnePair = true">
-                    {{ localize("At least one pair is needed for the list of pairs.") }}
+                    {{ localize("至少需要一对数据集才能创建配对列表。") }}
                     <span v-if="fromSelection">
                         <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                            {{ localize("Cancel") }}
+                            {{ localize("取消") }}
                         </a>
-                        {{ localize("and reselect new elements.") }}
+                        {{ localize("并重新选择新元素。") }}
                     </span>
                 </BAlert>
             </div>
@@ -849,7 +851,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 <BAlert show variant="danger" dismissible @dismissed="autoPairsPossible = true">
                     {{
                         localize(
-                            "Could not automatically create any pairs from the given dataset names. You may want to choose or enter different filters and try auto-pairing again."
+                            "无法从给定的数据集名称自动创建任何配对。您可能需要选择或输入不同的过滤器并重新尝试自动配对。"
                         )
                     }}
                     <span v-if="fromSelection">
@@ -864,12 +866,12 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
             <div v-if="state == 'duplicates'">
                 <BAlert show variant="danger">
                     {{
-                        localize("Collections cannot have duplicated names. The following list names are duplicated: ")
+                        localize("集合不能有重复的名称。以下配对名称重复：")
                     }}
                     <ul>
                         <li v-for="name in duplicatePairNames" :key="name">{{ name }}</li>
                     </ul>
-                    {{ localize("Please fix these duplicates and try again.") }}
+                    {{ localize("请修复这些重复项并重试。") }}
                 </BAlert>
             </div>
 
@@ -894,129 +896,129 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         {{
                             localize(
                                 [
-                                    "This interface allows you to build a new Galaxy list of pairs. List of pairs are an ordered list of ",
-                                    "individual dataset paired together in their own paired collection (often forward and reverse reads). ",
-                                    "These lists can be passed to tools and workflows in order to have analyses done on each member of ",
-                                    "the entire group. This interface allows you to create such a list of paired datasets, choose which datasets are paired, ",
-                                    "and re-order the final collection.",
+                                    "此界面允许您创建一个新的 Galaxy 配对列表。配对列表是一个有序的列表，包含",
+                                    "一对数据集，它们被配对在自己的配对集合中（通常是正向和反向读取）。",
+                                    "这些列表可以传递给工具和工作流，以便对整个组中的每个成员进行分析。",
+                                    "此界面允许您创建配对数据集列表，选择要配对的数据集，",
+                                    "并重新排序最终的集合。",
                                 ].join("")
                             )
                         }}
                     </p>
                     <p>
-                        {{ localize("Unpaired datasets are shown in the") }}
+                        {{ localize("未配对的数据集显示在") }}
                         <i data-target=".unpaired-columns">
-                            {{ localize("unpaired section") }}
+                            {{ localize("未配对部分") }}
                         </i>
                         {{ "." }}
-                        {{ localize("Paired datasets are shown in the") }}
+                        {{ localize("已配对的数据集显示在") }}
                         <i data-target=".paired-columns">
-                            {{ localize("paired section") }}
+                            {{ localize("配对部分") }}
                         </i>
                         {{ "." }}
                     </p>
                     <ul>
                         {{
-                            localize("To pair datasets, you can:")
+                            localize("要配对数据集，您可以：")
                         }}
                         <li>
-                            {{ localize("Click a dataset in the") }}
+                            {{ localize("点击") }}
                             <i data-target=".forward-column">
-                                {{ localize("forward column") }}
+                                {{ localize("正向列") }}
                             </i>
-                            {{ localize("to select it then click a dataset in the") }}
+                            {{ localize("中的数据集以选择它，然后点击") }}
                             <i data-target=".reverse-column">
-                                {{ localize("reverse column") }}
+                                {{ localize("反向列") }}
                             </i>
                         </li>
                         <li>
                             {{
                                 localize(
-                                    "Click one of the Pair these datasets buttons in the middle column to pair the datasets in a particular row."
+                                    "点击中间列的配对按钮，将数据集配对到特定的行。"
                                 )
                             }}
                         </li>
                         <li>
-                            {{ localize("Click") }}
+                            {{ localize("点击") }}
                             <i data-target=".autopair-link">
-                                {{ localize("Auto-pair") }}
+                                {{ localize("自动配对") }}
                             </i>
-                            {{ localize("to have your datasets automatically paired based on name.") }}
+                            {{ localize("根据名称自动配对您的数据集。") }}
                         </li>
                     </ul>
                     <ul>
                         {{
-                            localize("You can filter what is shown in the unpaired sections by:")
+                            localize("您可以通过以下方式筛选未配对部分显示的内容：")
                         }}
                         <li>
-                            {{ localize("Entering partial dataset names in either the ") }}
+                            {{ localize("在") }}
                             <i data-target=".forward-unpaired-filter input">
-                                {{ localize("forward filter") }}
+                                {{ localize("正向筛选器") }}
                             </i>
-                            {{ localize("or ") }}
+                            {{ localize("或") }}
                             <i data-target=".reverse-unpaired-filter input">
-                                {{ localize("reverse filter") }}
+                                {{ localize("反向筛选器") }}
                             </i>
-                            {{ "." }}
+                            {{ localize("中输入部分数据集名称。") }}
                         </li>
                         <li>
                             {{
                                 localize(
-                                    "Choosing from a list of preset filters by clicking the arrow beside the filter input."
+                                    "通过点击筛选输入框旁的箭头，从预设的筛选器列表中选择。"
                                 )
                             }}
                         </li>
                         <li>
-                            {{ localize("Entering regular expressions to match dataset names. See:") }}
+                            {{ localize("输入正则表达式以匹配数据集名称。请参阅：") }}
                             <a
                                 href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
                                 target="_blank">
-                                {{ localize("MDN's JavaScript Regular Expression Tutorial") }}</a
+                                {{ localize("MDN JavaScript 正则表达式教程") }}</a
                             >
-                            {{ localize("Note: forward slashes (\\) are not needed.") }}
+                            {{ localize("注意：正斜杠（\\）不需要。") }}
                         </li>
                         <li>
-                            {{ localize("Clearing the filters by clicking the ") }}
+                            {{ localize("点击") }}
                             <i data-target=".clear-filters-link">
-                                {{ localize("Clear filters link") }}
+                                {{ localize("清除筛选器链接") }}
                             </i>
-                            {{ "." }}
+                            {{ localize("以清除筛选器。") }}
                         </li>
                     </ul>
                     <p>
-                        {{ localize("To unpair individual dataset pairs, click the ") }}
+                        {{ localize("要取消配对单个数据集配对，点击") }}
                         <i data-target=".unpair-btn">
-                            {{ localize("unpair buttons (") }}
+                            {{ localize("取消配对按钮（") }}
                             <span class="fa fa-unlink"></span>
                             {{ ")" }}
                         </i>
-                        {{ localize("Click the") }}
+                        {{ localize("点击") }}
                         <i data-target=".unpair-all-link">
-                            {{ localize("Unpair all") }}
+                            {{ localize("取消配对所有") }}
                         </i>
-                        {{ localize("link to unpair all pairs.") }}
+                        {{ localize("链接以取消所有配对。") }}
                     </p>
                     <p>
                         {{
                             localize(
-                                'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the'
+                                '您可以通过切换'
                             )
                         }}
                         <i data-target=".remove-extensions-prompt">
-                            {{ localize("Remove file extensions from pair names?") }}
+                            {{ localize("从配对名称中移除文件扩展名？") }}
                         </i>
-                        {{ localize("control.") }}
+                        {{ localize("控件来包括或移除文件扩展名（例如“.fastq”）。") }}
                     </p>
                     <p>
-                        {{ localize("Once your collection is complete, enter a") }}
+                        {{ localize("一旦您的集合完成，请输入一个") }}
                         <i data-target=".collection-name">
-                            {{ localize("name") }}
+                            {{ localize("名称") }}
                         </i>
-                        {{ localize("and click ") }}
+                        {{ localize("并点击") }}
                         <i data-target=".create-collection">
-                            {{ localize("Create list or pairs") }}
+                            {{ localize("创建列表或配对") }}
                         </i>
-                        {{ localize(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
+                        {{ localize(".（注意：您不必配对所有未配对的数据集即可完成。）") }}
                     </p>
                 </template>
                 <template v-slot:middle-content>
@@ -1034,11 +1036,11 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         <BAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
-                                    "No elements in your history are valid for this collection. You may need to switch to a different history."
+                                    "您的历史记录中没有有效的元素用于此集合。您可能需要切换到不同的历史记录。"
                                 )
                             }}
                             <span v-if="extensions?.length">
-                                {{ localize("The following format(s) are required for this collection: ") }}
+                                {{ localize("此集合所需的格式：") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
@@ -1085,9 +1087,9 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                 class="d-flex justify-content-between align-items-center unselectable"
                                 role="button"
                                 @click="showPairingSection = !showPairingSection">
-                                <Heading size="sm">Pairing</Heading>
+                                <Heading size="sm">配对</Heading>
                                 <i class="text-muted">
-                                    {{ localize("Click to hide/show datasets to pair") }}
+                                    {{ localize("点击以隐藏/显示配对数据集") }}
                                     <FontAwesomeIcon
                                         :icon="showPairingSection ? faAngleUp : faAngleDown"
                                         size="lg"
@@ -1101,10 +1103,10 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                             <div class="column-title">
                                                 <span class="title">
                                                     {{ numOfUnpairedForwardElements }}
-                                                    {{ localize("unpaired forward") }}
+                                                    {{ localize("未配对正向") }}
                                                 </span>
                                                 <span class="title-info unpaired-info">
-                                                    {{ numOfFilteredOutForwardElements }} {{ localize("filtered out") }}
+                                                    {{ numOfFilteredOutForwardElements }} {{ localize("已筛除") }}
                                                 </span>
                                             </div>
                                             <div
@@ -1158,7 +1160,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                                 :variant="hasFilter ? 'danger' : 'secondary'"
                                                 @click="clickClearFilters">
                                                 <FontAwesomeIcon :icon="faTimes" fixed-width />
-                                                {{ localize("Clear Filters") }}
+                                                {{ localize("清除筛选器") }}
                                             </BButton>
                                             <BButton
                                                 class="autopair-link"
@@ -1168,7 +1170,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                                 :variant="autoPairButton.variant"
                                                 @click="clickAutopair">
                                                 <FontAwesomeIcon :icon="autoPairButton.icon" fixed-width />
-                                                {{ localize("Auto-pair") }}
+                                                {{ localize("自动配对") }}
                                             </BButton>
                                         </BButtonGroup>
                                     </div>
@@ -1177,11 +1179,11 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                             <div class="column-title">
                                                 <span class="title">
                                                     {{ numOfUnpairedReverseElements }}
-                                                    {{ localize("unpaired reverse") }}
+                                                    {{ localize("未配对反向") }}
                                                 </span>
                                                 <span class="title-info unpaired-info">
                                                     {{ numOfFilteredOutReverseElements }}
-                                                    {{ localize("filtered out") }}</span
+                                                    {{ localize("已筛除") }}</span
                                                 >
                                             </div>
                                             <div
@@ -1230,7 +1232,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                 <div class="pairing-split-child">
                                     <div v-if="noUnpairedElementsDisplayed">
                                         <BAlert show variant="warning">
-                                            {{ localize("No datasets were found matching the current filters.") }}
+                                            {{ localize("未找到与当前筛选器匹配的数据集。") }}
                                         </BAlert>
                                     </div>
                                     <div class="unpaired-columns flex-column-container scroll-container flex-row">
@@ -1263,7 +1265,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                                         _pair(pairableElement.forward, pairableElement.reverse)
                                                     "
                                                     @click="_pair(pairableElement.forward, pairableElement.reverse)">
-                                                    {{ localize("Pair these datasets") }}
+                                                    {{ localize("配对这些数据集") }}
                                                 </li>
                                             </ol>
                                         </div>
@@ -1290,7 +1292,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             <div class="pairing-split-child">
                                 <div class="column-header">
                                     <div class="column-title paired-column-title" data-description="number of pairs">
-                                        <span class="title"> {{ numOfPairs }} {{ localize("pairs") }}</span>
+                                        <span class="title"> {{ numOfPairs }} {{ localize("对") }}</span>
                                     </div>
                                     <BButton
                                         v-if="generatedPairs.length > 0"
@@ -1298,7 +1300,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                         size="sm"
                                         @click.stop="unpairAll">
                                         <FontAwesomeIcon :icon="faUnlink" fixed-width />
-                                        {{ localize("Unpair all") }}
+                                        {{ localize("取消配对所有") }}
                                     </BButton>
                                 </div>
                                 <div class="paired-columns flex-column-container scroll-container flex-row">

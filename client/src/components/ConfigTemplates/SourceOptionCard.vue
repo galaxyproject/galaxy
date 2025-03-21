@@ -69,7 +69,7 @@ function markdownToHTML(text: string) {
                 variant="outline-primary"
                 class="source-option-card-select-button"
                 :class="{ 'source-option-card-select-button-grid': props.gridView }"
-                title="Select this option to create a new instance"
+                title="选择此选项可创建新实例"
                 :to="props.selectRoute">
                 Select
             </BButton>

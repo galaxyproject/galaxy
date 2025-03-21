@@ -21,7 +21,7 @@ const props = defineProps<Props>();
                     v-if="item.to"
                     :key="index"
                     v-b-tooltip.hover.bottom.noninteractive
-                    :title="`Go back to ${localize(item.title)}`"
+                    :title="`回到 ${localize(item.title)}`"
                     :to="item.to"
                     class="breadcrumb-heading-header-active">
                     {{ localize(item.title) }}

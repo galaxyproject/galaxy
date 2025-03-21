@@ -156,7 +156,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 @move="onMove"
                 @pan-by="(p) => emit('pan-by', p)" />
 
-            <label :for="textAreaId" class="sr-only">Markdown Input</label>
+            <label :for="textAreaId" class="sr-only">Markdown 输入</label>
             <textarea
                 :id="textAreaId"
                 ref="markdownTextarea"
@@ -177,7 +177,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
             </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
+            <BButton class="button prevent-zoom" variant="dark" title="删除评论" @click="() => emit('remove')">
                 <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>

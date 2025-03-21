@@ -39,9 +39,9 @@ const isNewRecord = ref(true);
 
 const canExport = computed(() => Boolean(recordUri.value) && Boolean(fileName.value));
 
-const nameDescription = computed(() => localize("Give the exported file a name."));
+const nameDescription = computed(() => localize("为导出的文件命名。"));
 
-const namePlaceholder = computed(() => localize("File name"));
+const namePlaceholder = computed(() => localize("文件名"));
 
 function doExport() {
     emit("export", recordUri.value, fileName.value);
@@ -78,7 +78,7 @@ function onRecordSelected(selectedRecordUri: string) {
 
         <div v-if="isNewRecord">
             <p v-localize class="mt-3">
-                Please use the button below to upload the exported {{ props.what }} to the record.
+                请使用下面的按钮将导出的 {{ props.what }} 上传到该记录。
             </p>
 
             <BButton
@@ -88,7 +88,7 @@ function onRecordSelected(selectedRecordUri: string) {
                 variant="primary"
                 :disabled="!canExport"
                 @click.prevent="doExport">
-                Export to this record
+                导出到此记录
             </BButton>
         </div>
         <div v-else>
@@ -99,7 +99,7 @@ function onRecordSelected(selectedRecordUri: string) {
                 variant="primary"
                 :disabled="!canExport"
                 @click.prevent="doExport">
-                Export to existing record
+                导出到现有记录
             </BButton>
         </div>
     </div>

@@ -45,11 +45,11 @@ const props = withDefaults(
         activityBarId: "default",
         specialActivities: () => [],
         showAdmin: true,
-        optionsTitle: "More",
-        optionsHeading: "Additional Activities",
+        optionsTitle: "更多",
+        optionsHeading: "额外活动",
         optionsIcon: () => faEllipsisH,
-        optionsSearchPlaceholder: "Search Activities",
-        optionsTooltip: "View additional activities",
+        optionsSearchPlaceholder: "搜索活动",
+        optionsTooltip: "访问额外活动",
         initialActivity: undefined,
         hidePanel: false,
     }
@@ -276,7 +276,7 @@ defineExpose({
                     :activity-bar-id="props.activityBarId"
                     :icon="faBell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
-                    title="Notifications"
+                    title="信息"
                     @click="toggleSidebar('notifications')" />
                 <ActivityItem
                     id="settings"
@@ -292,8 +292,8 @@ defineExpose({
                     :activity-bar-id="props.activityBarId"
                     :icon="faUserCog"
                     :is-active="isActiveSideBar('admin')"
-                    title="Admin"
-                    tooltip="Administer this Galaxy"
+                    title="管理"
+                    tooltip="管理平台"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
                 <template v-for="activity in props.specialActivities">

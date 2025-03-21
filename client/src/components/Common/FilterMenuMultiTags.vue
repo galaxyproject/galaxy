@@ -44,12 +44,12 @@ watch(
 
 <template>
     <div>
-        <small>Filter by {{ props.filter.placeholder }}:</small>
+        <small>按 {{ props.filter.placeholder }} 过滤：</small>
 
         <BInputGroup :id="`${identifier}-advanced-filter-${props.name}`">
             <StatelessTags
                 :value="localValue"
-                :placeholder="`any ${props.filter.placeholder}`"
+                :placeholder="`任何 ${props.filter.placeholder}`"
                 @input="(tags) => (localValue = tags)" />
         </BInputGroup>
     </div>

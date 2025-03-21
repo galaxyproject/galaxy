@@ -18,14 +18,14 @@ import DisplayRaw from "./DisplayRaw";
 
 export const DESCRIPTION = {
     explicit:
-        "This explicit container resolver looks for containers annotated as part of the tool description - independent of tool requirements and Galaxy configuration.",
-    mulled: "The mulled container resolver fetches pre-built Docker containers based on hashing a tool's requirements.",
+        "这个显式容器解析器会查找标注为工具描述部分的容器——独立于工具需求和配置。",
+    mulled: "mulled容器解析器根据工具需求的哈希值获取预构建的Docker容器。",
     mulled_singularity:
-        "The mulled_singularity container resolver fetches pre-built Singularity containers based on hashing a tool requirements.",
+        "mulled_singularity容器解析器根据工具需求的哈希值获取预构建的Singularity容器。",
     cached_mulled:
-        "The cached_mulled container resolver finds mulled containers cached on the Galaxy server and discovered with `docker images`.",
+        "cached_mulled容器解析器在服务器上查找已缓存的mulled容器，并通过`docker images`命令发现它们。",
     cached_mulled_singularity:
-        "The cached_mulled_singularity container resolver finds mulled containers cached in a directory mounted by the Galaxy server.",
+        "cached_mulled_singularity容器解析器在由服务器挂载的目录中查找已缓存的mulled容器。",
     build_mulled: "",
     build_mulled_cached: "",
 };
@@ -46,7 +46,7 @@ export default {
             return this.compact ? this.description : "";
         },
         description: function () {
-            const description = DESCRIPTION[this.resolverType] || `Container resolver of type ${this.resolverType}.`;
+            const description = DESCRIPTION[this.resolverType] || `类型为 ${this.resolverType} 的容器解析器。`;
             return `${description}`;
         },
         resolverType: function () {

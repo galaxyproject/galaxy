@@ -32,10 +32,10 @@ export default {
             return this.compact ? this.description : "";
         },
         description: function () {
-            return `This is a ${this.containerDescription.type} container. ${this.shellDescription}`;
+            return `这是一个 ${this.containerDescription.type} 容器。${this.shellDescription}`;
         },
         shellDescription: function () {
-            return `This container uses shell [${this.containerDescription.shell}].`;
+            return `该容器使用 [${this.containerDescription.shell}] shell.`;
         },
         identifier: function () {
             return this.containerDescription && this.containerDescription.identifier;

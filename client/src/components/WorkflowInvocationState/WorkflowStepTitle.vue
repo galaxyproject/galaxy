@@ -36,25 +36,25 @@ const toolName = computed(() => {
 const title = computed(() => {
     const oneBasedStepIndex = props.stepIndex + 1;
     if (props.stepLabel) {
-        return `Step ${oneBasedStepIndex}: ${props.stepLabel}`;
+        return `步骤 ${oneBasedStepIndex}：${props.stepLabel}`;
     }
     const workflowStepType = props.stepType;
     switch (workflowStepType) {
         case "tool":
-            return `Step ${oneBasedStepIndex}: ${toolName.value}`;
+            return `步骤 ${oneBasedStepIndex}：${toolName.value}`;
         case "subworkflow": {
             const subworkflow = subWorkflow.value;
-            const label = subworkflow ? subworkflow.name : "Subworkflow";
-            return `Step ${oneBasedStepIndex}: ${label}`;
+            const label = subworkflow ? subworkflow.name : "子工作流";
+            return `步骤 ${oneBasedStepIndex}：${label}`;
         }
         case "parameter_input":
-            return `Step ${oneBasedStepIndex}: Parameter input`;
+            return `步骤 ${oneBasedStepIndex}：参数输入`;
         case "data_input":
-            return `Step ${oneBasedStepIndex}: Data input`;
+            return `步骤 ${oneBasedStepIndex}：数据输入`;
         case "data_collection_input":
-            return `Step ${oneBasedStepIndex}: Data collection input`;
+            return `步骤 ${oneBasedStepIndex}：数据集输入`;
         default:
-            return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
+            return `步骤 ${oneBasedStepIndex}：未知步骤类型 '${workflowStepType}'`;
     }
 });
 const hoverError = ref("");
@@ -68,7 +68,7 @@ async function initStores() {
         try {
             await workflowStore.fetchWorkflowForInstanceId(props.stepSubworkflowId);
         } catch (e) {
-            hoverError.value = errorMessageAsString(e, "Error fetching subworkflow");
+            hoverError.value = errorMessageAsString(e, "获取子工作流程错误");
         }
     }
 }

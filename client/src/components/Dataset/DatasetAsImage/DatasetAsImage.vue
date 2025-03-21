@@ -39,9 +39,9 @@ const isImage = computedAsync(async () => {
 <template>
     <div v-if="imageUrl" class="w-100">
         <BAlert v-if="!isImage" variant="warning" show>
-            This dataset does not appear to be an image: {{ imageUrl }}.
+            该数据集似乎不是图片: {{ imageUrl }}。
         </BAlert>
         <BImg v-else :src="imageUrl" fluid />
     </div>
-    <BAlert v-else variant="warning" show>Image not found: {{ imageUrl }}.</BAlert>
+    <BAlert v-else variant="warning" show>未找到图片: {{ imageUrl }}。</BAlert>
 </template>

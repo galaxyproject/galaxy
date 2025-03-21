@@ -65,12 +65,12 @@ const workflowTags = computed(() => {
                 <i v-if="timeElapsed" data-description="workflow annotation time info">
                     <FontAwesomeIcon :icon="faClock" class="mr-1" />
                     <span v-localize>
-                        {{ props.invocationUpdateTime ? "invoked" : "edited" }}
+                        {{ props.invocationUpdateTime ? "已调用" : "已编辑" }}
                     </span>
                     <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
                 <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />History:
+                    <FontAwesomeIcon :icon="faHdd" />历史记录：
                     <SwitchToHistoryLink :history-id="props.historyId" />
                     <BBadge
                         v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.historyId"
@@ -78,7 +78,7 @@ const workflowTags = computed(() => {
                         data-description="new history badge"
                         role="button"
                         variant="info"
-                        title="Results generated in a new history. Click on history name to switch to that history.">
+                        title="结果已生成到新的历史记录中。点击历史记录名称可切换到该历史记录。">
                         <FontAwesomeIcon :icon="faExclamation" />
                     </BBadge>
                 </span>

@@ -20,31 +20,32 @@ function clickForHelp() {
                 class="more-help"
                 href="javascript:void(0);"
                 role="button"
-                :title="localize('Expand or Close Help')"
+                :title="localize('展开或关闭帮助')"
                 @click="clickForHelp">
                 <div v-if="!isExpanded">
                     <FontAwesomeIcon :icon="faChevronDown" />
-                    <span class="sr-only">{{ localize("Expand Help") }}</span>
+                    <span class="sr-only">{{ localize("展开帮助") }}</span>
                 </div>
                 <div v-else>
                     <FontAwesomeIcon :icon="faChevronUp" />
-                    <span class="sr-only">{{ localize("Close Help") }}</span>
+                    <span class="sr-only">{{ localize("关闭帮助") }}</span>
                 </div>
             </a>
 
             <div class="help-content">
-                <!-- each collection that extends this will add their own help content -->
+                <!-- 每个扩展此组件的集合将添加他们自己的帮助内容 -->
                 <slot></slot>
 
                 <a
                     class="more-help"
                     href="javascript:void(0);"
                     role="button"
-                    :title="localize('Expand or Close Help')"
+                    :title="localize('展开或关闭帮助')"
                     @click="clickForHelp">
-                    <span class="sr-only">{{ localize("Expand Help") }}</span>
+                    <span class="sr-only">{{ localize("展开帮助") }}</span>
                 </a>
             </div>
         </div>
     </div>
 </template>
+

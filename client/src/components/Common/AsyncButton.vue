@@ -28,7 +28,7 @@ const props = withDefaults(defineProps<Props>(), {
     title: "",
     size: "md",
     variant: "link",
-    loadingTitle: "Loading...",
+    loadingTitle: "加载中...",
 });
 
 const loading = ref(false);

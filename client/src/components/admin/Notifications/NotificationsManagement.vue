@@ -23,12 +23,12 @@ function goToCreateNewBroadcast() {
 <template>
     <div aria-labelledby="notifications-managements">
         <Heading id="notifications-title" h1 separator inline class="flex-grow-1">
-            Notifications and Broadcasts
+            通知和广播
         </Heading>
 
         <p>
-            As an admin, you can send individual notifications to users (groups or roles), or display
-            <i>broadcast notifications</i> to all users (even anonymous users).
+            作为管理员，您可以向用户（组或角色）发送单独的通知，或者向所有用户（甚至匿名用户）显示
+            <i>广播通知</i>。
         </p>
 
         <div v-if="isConfigLoaded && config.enable_notification_system">
@@ -39,7 +39,7 @@ function goToCreateNewBroadcast() {
                     variant="outline-primary"
                     @click="goToCreateNewNotification">
                     <FontAwesomeIcon icon="plus" />
-                    Send new notification
+                    发送新通知
                 </BButton>
 
                 <BButton
@@ -48,15 +48,15 @@ function goToCreateNewBroadcast() {
                     variant="outline-primary"
                     @click="goToCreateNewBroadcast">
                     <FontAwesomeIcon icon="plus" />
-                    Create new broadcast
+                    创建新广播
                 </BButton>
             </div>
 
             <BroadcastsList class="mt-2" />
         </div>
         <BAlert v-else variant="warning" show>
-            The notification system is disabled. To enable it, set the
-            <code>enable_notification_system</code> option to <code>true</code> in the Galaxy configuration file.
+            通知系统已禁用。要启用它，请在 Galaxy 配置文件中将
+            <code>enable_notification_system</code> 选项设置为 <code>true</code>。
         </BAlert>
     </div>
 </template>

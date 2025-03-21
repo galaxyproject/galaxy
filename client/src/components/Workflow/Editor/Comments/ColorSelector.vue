@@ -20,7 +20,7 @@ function onClickColor(color: WorkflowCommentColor) {
     <div class="comment-color-selector">
         <button
             class="color-button prevent-zoom"
-            title="No Color"
+            title="无颜色"
             data-color="none"
             :class="{ selected: props.color === 'none' }"
             @click="() => onClickColor('none')"></button>
@@ -29,7 +29,7 @@ function onClickColor(color: WorkflowCommentColor) {
             :key="name"
             class="color-button prevent-zoom"
             :data-color="name"
-            :title="`Color ${name}`"
+            :title="`颜色 ${name}`"
             :class="{ selected: props.color === name }"
             :style="{
                 '--color': hex,

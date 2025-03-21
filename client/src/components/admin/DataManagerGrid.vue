@@ -3,14 +3,15 @@
         <thead>
             <tr>
                 <th :colspan="dataManagerColumns.length" style="font-size: 120%">
-                    Data Manager: {{ dataManagerTableName }}
+                    数据管理器: {{ dataManagerTableName }}
                     <a
                         class="icon-btn"
                         href="javascript:void(0)"
-                        :title="`Reload ${dataManagerTableName} tool data table`"
+                        :title="`重新加载 ${dataManagerTableName} 工具数据表`"
                         @click="handleReloadButtonClick"
-                        ><span class="fa fa-sync"></span
-                    ></a>
+                    >
+                        <span class="fa fa-sync"></span>
+                    </a>
                 </th>
             </tr>
             <tr>

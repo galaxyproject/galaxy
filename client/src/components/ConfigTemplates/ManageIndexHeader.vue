@@ -18,7 +18,7 @@ const props = defineProps<Props>();
 
 const createUrl = props.createRoute;
 
-const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user" }, { title: props.header }]);
+const breadcrumbItems = computed(() => [{ title: "用户偏好", to: "/user" }, { title: props.header }]);
 </script>
 
 <template>
@@ -28,12 +28,12 @@ const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user"
                 <BButton
                     :id="`create-button-${header.toLowerCase().replace(/ /g, '-')}`"
                     v-b-tooltip.hover.noninteractive
-                    title="Create new file source"
+                    title="创建新的文件源"
                     size="sm"
                     variant="outline-primary"
                     :to="createUrl">
                     <FontAwesomeIcon :icon="faPlus" />
-                    {{ localize("Create") }}
+                    {{ localize("创建") }}
                 </BButton>
             </div>
         </BreadcrumbHeading>

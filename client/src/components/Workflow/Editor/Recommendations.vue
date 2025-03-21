@@ -3,13 +3,11 @@
         <div class="header-background">
             <h2 class="h-sm">{{ popoverHeaderText }}</h2>
         </div>
-        <LoadingSpan v-if="showLoading" message="Loading recommendations" />
+        <LoadingSpan v-if="showLoading" message="加载推荐" />
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
                 <i class="fa mr-1 fa-wrench"></i>
-                <a :id="tool.id" href="#" title="Open tool" @click="$emit('onCreate', tool.id, tool.name, $event)">{{
-                    tool.name
-                }}</a>
+                <a :id="tool.id" href="#" title="打开工具" @click="$emit('onCreate', tool.id, tool.name, $event)">{{ tool.name }}</a>
             </div>
         </div>
         <div v-else-if="isDeprecated">{{ deprecatedMessage }}</div>
@@ -49,8 +47,8 @@ export default {
         return {
             compatibleTools: [],
             isDeprecated: false,
-            popoverHeaderText: _l("Tool recommendations"),
-            noRecommendationsMessage: _l("No tool recommendations"),
+            popoverHeaderText: _l("工具推荐"),
+            noRecommendationsMessage: _l("无工具推荐"),
             deprecatedMessage: "",
             showLoading: true,
         };

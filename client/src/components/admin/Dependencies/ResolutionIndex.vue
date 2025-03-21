@@ -2,12 +2,12 @@
     <dependency-index-wrapper
         :error="error"
         :loading="loading"
-        loading-message="Loading tool requirement resolution information">
+        loading-message="正在加载工具需求解析信息">
         <template v-slot:header>
             <b-row class="m-1">
                 <b-form inline>
-                    <b>Resolution:</b>
-                    <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
+                    <b>解析:</b>
+                    <label class="mr-sm-2" for="manage-resolver-type">使用以下类型的解析器</label>
                     <b-form-select
                         id="manage-resolver-type"
                         v-model="resolverType"
@@ -17,15 +17,15 @@
             </b-row>
             <b-row class="m-1">
                 <b-form inline>
-                    <b>Filter:</b>
-                    <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
+                    <b>筛选:</b>
+                    <label class="mr-sm-2" for="manage-filter-resolution">解析状态</label>
                     <b-form-select
                         id="manage-filter-resolution"
                         v-model="filterResolution"
                         class="mb-2 mr-sm-2 mb-sm-0">
-                        <option :value="null">*any*</option>
-                        <option value="unresolved">Unresolved</option>
-                        <option value="resolved">Resolved</option>
+                        <option :value="null">*任意*</option>
+                        <option value="unresolved">未解析</option>
+                        <option value="resolved">已解析</option>
                     </b-form-select>
                 </b-form>
             </b-row>
@@ -62,26 +62,27 @@
                 <b-button class="m-1" @click="installSelected">
                     <span class="fa fa-plus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
-                    Install
+                    安装
                 </b-button>
                 <b-button class="m-1" @click="uninstallSelected">
                     <span class="fa fa-minus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
-                    Uninstall
+                    卸载
                 </b-button>
                 <b-button v-if="!expandToolIds" class="m-1" @click="setExpandToolIds(true)">
                     <span class="fa fa-chevron-down" />
-                    Expand Tools
+                    展开工具
                 </b-button>
                 <b-button v-if="expandToolIds" class="m-1" @click="setExpandToolIds(false)">
                     <span class="fa fa-chevron-up" />
-                    Group by Requirements
+                    按需求分组
                 </b-button>
             </b-row>
         </template>
     </dependency-index-wrapper>
 </template>
 <script>
+
 import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
 import Vue from "vue";

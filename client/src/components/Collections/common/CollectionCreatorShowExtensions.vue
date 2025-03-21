@@ -26,12 +26,12 @@ defineProps<Props>();
                     :uri="`galaxy.collections.collectionBuilder.${
                         upload ? 'requiredUploadExtensions' : 'filteredExtensions'
                     }`"
-                    :text="localize(`${upload ? 'Required' : 'Filtered'} format(s):`)" />
+                    :text="localize(`${upload ? '必需' : '筛选'}格式：`)" />
                 <strong>{{ orList(extensions) }}</strong>
             </div>
             <strong>
                 <i>
-                    <HelpText uri="galaxy.datasets.formatVsDatatypeVsExtension" :text="localize('format?')" />
+                    <HelpText uri="galaxy.datasets.formatVsDatatypeVsExtension" :text="localize('格式？')" />
                 </i>
             </strong>
         </BAlert>

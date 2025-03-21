@@ -19,7 +19,7 @@ var User = Backbone.Model.extend(
          */
         defaults: /** @lends User.prototype */ {
             id: null,
-            username: `(${_l("anonymous user")})`,
+            username: `(${_l("匿名用户")})`,
             email: "",
             total_disk_usage: 0,
             nice_total_disk_usage: "",

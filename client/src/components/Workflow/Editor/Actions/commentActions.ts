@@ -9,9 +9,9 @@ import type {
 
 function getCommentName(comment: { color: WorkflowCommentColor; type: WorkflowCommentType }) {
     if (comment.color !== "none") {
-        return `${comment.color} ${comment.type} comment`;
+        return `${comment.color} ${comment.type} 注释`;
     } else {
-        return `${comment.type} comment`;
+        return `${comment.type} 注释`;
     }
 }
 
@@ -32,7 +32,7 @@ class CommentAction extends UndoRedoAction {
 
 export class AddCommentAction extends CommentAction {
     get name() {
-        return `add ${this.commentName}`;
+        return `添加${this.commentName}`;
     }
 
     undo() {
@@ -46,7 +46,7 @@ export class AddCommentAction extends CommentAction {
 
 export class DeleteCommentAction extends CommentAction {
     get name() {
-        return `delete ${this.commentName}`;
+        return `删除${this.commentName}`;
     }
 
     run() {
@@ -75,7 +75,7 @@ export class ChangeColorAction extends UndoRedoAction {
     }
 
     get name() {
-        return `change ${this.type} comment color to ${this.toColor}`;
+        return `将${this.type}注释颜色更改为${this.toColor}`;
     }
 
     run() {
@@ -119,7 +119,7 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends LazyUndoR
     }
 
     get name() {
-        return `change ${this.commentName}`;
+        return `更改${this.commentName}`;
     }
 
     updateData(data: WorkflowComment[K]) {
@@ -149,23 +149,23 @@ export class LazyChangeDataAction extends LazyMutateCommentAction<"data"> {
         type FormatData = { bold?: true; italic?: true };
 
         if ((this.startData as TitleData).title !== (this.endData as TitleData).title) {
-            return `edit title of ${this.commentName}`;
+            return `编辑${this.commentName}的标题`;
         }
 
         if ((this.startData as TextData).text !== (this.endData as TextData).text) {
-            return `edit text of ${this.commentName}`;
+            return `编辑${this.commentName}的文本`;
         }
 
         if ((this.startData as SizeData).size !== (this.endData as SizeData).size) {
-            return `change text size of ${this.commentName}`;
+            return `更改${this.commentName}的文本大小`;
         }
 
         if ((this.startData as FormatData).bold !== (this.endData as FormatData).bold) {
-            return `toggle bold of ${this.commentName}`;
+            return `切换${this.commentName}的粗体`;
         }
 
         if ((this.startData as FormatData).italic !== (this.endData as FormatData).italic) {
-            return `toggle italic of ${this.commentName}`;
+            return `切换${this.commentName}的斜体`;
         }
 
         return super.name;
@@ -179,7 +179,7 @@ export class LazyChangePositionAction extends LazyMutateCommentAction<"position"
     }
 
     get name() {
-        return `move ${this.commentName}`;
+        return `移动${this.commentName}`;
     }
 }
 
@@ -190,7 +190,7 @@ export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
     }
 
     get name() {
-        return `resize ${this.commentName}`;
+        return `调整${this.commentName}大小`;
     }
 }
 
@@ -211,9 +211,9 @@ export class ToggleCommentSelectedAction extends UndoRedoAction {
 
     get name() {
         if (this.toggleTo === true) {
-            return `add ${this.type} comment to selection`;
+            return `将${this.type}注释添加到选择`;
         } else {
-            return `remove ${this.type} comment from selection`;
+            return `从选择中移除${this.type}注释`;
         }
     }
 
@@ -239,7 +239,7 @@ export class RemoveAllFreehandCommentsAction extends UndoRedoAction {
     }
 
     get name() {
-        return "remove all freehand comments";
+        return "移除所有手绘注释";
     }
 
     run() {

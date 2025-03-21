@@ -16,11 +16,11 @@ export async function copyWorkflow(id: string, currentOwner?: string, version?: 
     }
     const { data: workflowData } = await axios.get(withPrefix(path));
 
-    workflowData.name = `Copy of ${workflowData.name}`;
+    workflowData.name = `副本：${workflowData.name}`;
     const userStore = useUserStore();
 
     if (!userStore.matchesCurrentUsername(currentOwner)) {
-        workflowData.name += ` shared by user ${currentOwner}`;
+        workflowData.name += ` 由用户 ${currentOwner} 分享`;
     }
 
     const { data } = await axios.post(withPrefix("/api/workflows"), { workflow: workflowData });

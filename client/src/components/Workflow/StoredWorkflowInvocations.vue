@@ -43,9 +43,9 @@ onMounted(async () => {
             name: workflow.name,
         }" />
     <BAlert v-else-if="loading" variant="info" show>
-        <LoadingSpan message="Loading invocations for workflow" />
+        <LoadingSpan message="正在加载工作流的调用记录" />
     </BAlert>
     <BAlert v-else variant="danger" show>
-        <p>Failed to load stored workflow with ID: {{ props.storedWorkflowId }}</p>
+        <p>无法加载ID为以下的存储工作流：{{ props.storedWorkflowId }}</p>
     </BAlert>
 </template>

@@ -46,7 +46,7 @@ function clickDiscard() {
         <span class="d-flex flex-gapx-1">
             <span v-if="element.hid">{{ element.hid }}:</span>
             <strong>
-                <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
+                <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('重命名')" />
                 <span v-else>{{ elementName }}</span>
             </strong>
             <i v-if="!hideExtension && element.extension"> ({{ element.extension }}) </i>
@@ -54,12 +54,12 @@ function clickDiscard() {
 
         <div v-if="hasActions" class="float-right">
             <i v-if="!selected" class="mr-2">
-                <FontAwesomeIcon :icon="faCheck" class="text-success" /> Added to collection
+                <FontAwesomeIcon :icon="faCheck" class="text-success" /> 已加入集合
             </i>
             <i v-else class="text-secondary">Selected</i>
-            <button class="btn-sm" :title="localize('Remove this dataset from the list')" @click="clickDiscard">
+            <button class="btn-sm" :title="localize('从列表中删除数据集')" @click="clickDiscard">
                 <FontAwesomeIcon :icon="faMinus" fixed-width />
-                {{ localize("Remove") }}
+                {{ localize("删除") }}
             </button>
         </div>
     </div>

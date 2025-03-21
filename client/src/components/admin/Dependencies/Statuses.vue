@@ -1,6 +1,6 @@
 <template>
     <span class="dependency-statuses">
-        <b v-if="statuses.length == 0"> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
+        <b v-if="statuses.length == 0"> <span class="fa fa-times text-danger"></span><i>未解析</i> </b>
         <span v-else-if="merged">
             <StatusDisplay :status="statuses[0]" :all-statuses="statuses" />
         </span>

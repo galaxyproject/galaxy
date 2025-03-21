@@ -38,10 +38,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     taskId: undefined,
     enableAutoDownload: false,
-    inProgressMessage: `Task is in progress. Please wait...`,
-    completedMessage: "Task completed successfully.",
-    failedMessage: "Task failed.",
-    requestFailedMessage: "Request failed.",
+    inProgressMessage: `任务正在进行中，请稍候...`,
+    completedMessage: "任务已成功完成。",
+    failedMessage: "任务失败。",
+    requestFailedMessage: "请求失败。",
 });
 
 const emit = defineEmits<{
@@ -116,7 +116,7 @@ function dismissAlert() {
 <template>
     <div v-if="hasMonitoringData" class="progress-monitor-alert">
         <BAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
-            The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
+            {{ monitorRequest.action }} 任务已 <b>过期</b>，结果不再可用。
         </BAlert>
         <BAlert v-else-if="isRunning" variant="info" show>
             <b>{{ inProgressMessage }}</b>
@@ -126,24 +126,24 @@ function dismissAlert() {
             <span>{{ completedMessage }}</span>
 
             <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
-                <b>Download here</b>
+                <b>在此下载</b>
             </BLink>
 
             <span v-if="remoteUri">
-                The result should be available at
+                结果应在以下位置可用：
                 <b><FileSourceNameSpan :uri="remoteUri" :show-full-uri="true" /></b>
             </span>
 
             <br />
 
             <span v-if="expirationDate">
-                This result will <b>expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" /></b>
+                此结果将 <b>过期 <UtcDate :date="expirationDate.toISOString()" mode="elapsed" /></b>
             </span>
         </BAlert>
         <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>
             <span v-if="failureReason">
-                Reason: <b>{{ failureReason }}</b>
+                原因：<b>{{ failureReason }}</b>
             </span>
         </BAlert>
         <BAlert v-else-if="requestHasFailed" variant="danger" show dismissible @dismissed="dismissAlert">

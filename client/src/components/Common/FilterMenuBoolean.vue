@@ -25,13 +25,13 @@ const isCheckbox = computed(() => boolType.value === "is" && props.view === "com
 const options =
     boolType.value == "default"
         ? [
-              { text: "Any", value: "any" },
-              { text: "Yes", value: true },
-              { text: "No", value: false },
+              { text: "任何", value: "any" },
+              { text: "是", value: true },
+              { text: "否", value: false },
           ]
         : [
-              { text: "Yes", value: true },
-              { text: "No", value: "any" },
+              { text: "是", value: true },
+              { text: "否", value: "any" },
           ];
 
 const emit = defineEmits<{
@@ -43,10 +43,10 @@ const emit = defineEmits<{
 const value = computed({
     get: () => {
         const value = props.filters[props.name];
-        return value !== undefined ? value : "any";
+        return value !== undefined ? value : "任何";
     },
     set: (newVal) => {
-        const value = newVal !== null ? newVal : "any";
+        const value = newVal !== null ? newVal : "任何";
         emit("change", props.name, value);
     },
 });
@@ -57,7 +57,7 @@ const value = computed({
     <div :class="{ 'd-flex': isCheckbox }" @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
         <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
 
-        <div v-if="isCheckbox" :data-description="`filter ${props.name}`">
+        <div v-if="isCheckbox" :data-description="`筛选 ${props.name}`">
             <BFormCheckbox v-model="value" />
         </div>
         <BFormGroup v-else class="m-0">
@@ -66,7 +66,7 @@ const value = computed({
                 :options="options"
                 size="sm"
                 buttons
-                :data-description="`filter ${props.name}`" />
+                :data-description="`筛选 ${props.name}`" />
         </BFormGroup>
     </div>
 </template>

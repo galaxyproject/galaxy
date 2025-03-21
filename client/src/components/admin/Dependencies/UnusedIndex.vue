@@ -2,7 +2,7 @@
     <DependencyIndexWrapper
         :loading="loading"
         :error="error"
-        loading-message="Loading tool dependency resolver information">
+        loading-message="正在加载工具依赖解析器信息">
         <template v-slot:body>
             <b-table id="unused-paths-table" striped :fields="fields" :items="items">
                 <template v-slot:cell(selected)="data">
@@ -12,7 +12,7 @@
         </template>
         <template v-slot:actions>
             <div>
-                <b-button @click="deleteSelected"> Delete Selected Environments </b-button>
+                <b-button @click="deleteSelected"> 删除选中的环境 </b-button>
             </div>
         </template>
     </DependencyIndexWrapper>

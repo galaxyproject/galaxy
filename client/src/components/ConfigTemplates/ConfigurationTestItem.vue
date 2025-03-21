@@ -14,7 +14,7 @@ defineProps<Props>();
 
 <template>
     <BListGroupItem href="#" class="d-flex align-items-center">
-        <BSpinner v-if="status == undefined" class="mr-3" label="Testing...."></BSpinner>
+        <BSpinner v-if="status == undefined" class="mr-3" label="测试中...."></BSpinner>
         <FontAwesomeIcon v-else-if="status?.state == 'ok'" class="mr-3 text-success" :icon="faCheckSquare" size="lg" />
         <FontAwesomeIcon v-else-if="status?.state == 'not_ok'" class="mr-3 text-warning" :icon="faTimes" size="lg" />
         <FontAwesomeIcon v-else-if="status?.state == 'unknown'" class="mr-3 text-info" :icon="faSquare" size="lg" />

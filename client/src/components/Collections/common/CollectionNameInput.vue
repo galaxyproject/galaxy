@@ -33,13 +33,13 @@ watch(name, (newValue) => {
 <template>
     <BFormGroup
         class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
-        :label="localize('Name:')"
+        :label="localize('名称：')"
         label-for="collection-name">
         <BFormInput
             id="collection-name"
             v-model="name"
             class="collection-name"
-            :placeholder="localize('Enter a name for your new ' + shortWhatIsBeingCreated)"
+            :placeholder="localize('请输入您的新' + shortWhatIsBeingCreated + '的名称')"
             size="sm"
             required
             :state="!name ? false : null" />

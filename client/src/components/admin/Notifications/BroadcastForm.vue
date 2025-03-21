@@ -29,9 +29,9 @@ const router = useRouter();
 
 const title = computed(() => {
     if (props.id) {
-        return "Edit Broadcast";
+        return "编辑广播";
     } else {
-        return "New Broadcast";
+        return "新建广播";
     }
 });
 
@@ -93,10 +93,10 @@ async function createOrUpdateBroadcast() {
     try {
         if (props.id) {
             await updateBroadcast(props.id, broadcastData.value);
-            Toast.success("Broadcast updated");
+            Toast.success("广播已更新");
         } else {
             await createBroadcast(broadcastData.value);
-            Toast.success("Broadcast created");
+            Toast.success("广播已创建");
         }
     } catch (error: any) {
         Toast.error(errorMessageAsString(error));
@@ -148,57 +148,56 @@ if (props.id) {
         <Heading h1 separator inline class="flex-grow-1"> {{ title }} </Heading>
 
         <BAlert v-if="loading" show>
-            <LoadingSpan message="Loading broadcast" />
+            <LoadingSpan message="加载广播" />
         </BAlert>
 
         <div v-else>
             <BAlert v-if="props.id && broadcastPublished" id="broadcast-published-warning" variant="warning" show>
-                This broadcast has already been published. Some users may have already seen it and changing it now will
-                not affect them.
+                该广播已经发布。一些用户可能已经看到了它，修改此广播将不会影响这些用户。
             </BAlert>
 
             <FormElement
                 id="broadcast-subject"
                 v-model="broadcastData.content.subject"
                 type="text"
-                title="Subject"
+                title="主题"
                 :optional="false"
-                help="This will be displayed in the broadcast banner. It should be short and to the point."
-                placeholder="Enter subject"
+                help="此内容将显示在广播横幅中，应该简短明确。"
+                placeholder="请输入主题"
                 required />
 
             <FormElement
                 id="broadcast-variant"
                 v-model="broadcastData.variant"
                 type="select"
-                title="Variant"
+                title="变体"
                 :optional="false"
-                help="This will determine the position and the icon of the broadcast banner. Urgent broadcasts will be displayed at the top of the page otherwise they will be displayed at the bottom."
-                :options="[
-                    ['Info', 'info'],
-                    ['Warning', 'warning'],
-                    ['Urgent', 'urgent'],
+                help="此设置将决定广播横幅的位置和图标。紧急广播会显示在页面顶部，否则会显示在底部。"
+                :options="[ 
+                    ['信息', 'info'],
+                    ['警告', 'warning'],
+                    ['紧急', 'urgent']
                 ]" />
 
             <FormElement
                 id="broadcast-message"
                 v-model="broadcastData.content.message"
                 type="text"
-                title="Message"
+                title="消息"
                 :optional="false"
-                help="The message can be written in markdown."
-                placeholder="Enter message"
+                help="消息内容可以使用 markdown 格式。"
+                placeholder="请输入消息"
                 required
                 area />
 
-            <BFormGroup id="broadcast-action-link-group" label="Action Links" label-for="broadcast-action-link">
+            <BFormGroup id="broadcast-action-link-group" label="操作链接" label-for="broadcast-action-link">
                 <BRow v-for="(actionLink, index) in broadcastData.content.action_links" :key="index" class="my-2">
                     <BCol cols="auto">
                         <BFormInput
                             :id="`broadcast-action-link-name-${index}`"
                             v-model="actionLink.action_name"
                             type="text"
-                            placeholder="Enter action name"
+                            placeholder="请输入操作名称"
                             required />
                     </BCol>
                     <BCol>
@@ -206,14 +205,14 @@ if (props.id) {
                             :id="`broadcast-action-link-link-${index}`"
                             v-model="actionLink.link"
                             type="url"
-                            placeholder="Enter action link"
+                            placeholder="请输入操作链接"
                             required />
                     </BCol>
                     <BCol cols="auto">
                         <BButton
                             :id="`delete-action-link-${index}}`"
                             v-b-tooltip.hover.bottom
-                            title="Delete action link"
+                            title="删除操作链接"
                             variant="error-outline"
                             role="button"
                             @click="
@@ -229,12 +228,12 @@ if (props.id) {
 
                 <BButton
                     id="create-action-link"
-                    title="Add new action link"
+                    title="添加新操作链接"
                     variant="outline-primary"
                     role="button"
                     @click="addActionLink">
                     <FontAwesomeIcon icon="plus" />
-                    Add action link
+                    添加操作链接
                 </BButton>
             </BFormGroup>
 
@@ -242,25 +241,25 @@ if (props.id) {
                 <BCol>
                     <BFormGroup
                         id="broadcast-publication-time-group"
-                        label="Publication Time (local time)"
+                        label="发布时间（本地时间）"
                         label-for="broadcast-publication-time"
-                        description="The broadcast will be displayed from this time onwards. Default is the time of creation.">
+                        description="该广播将在此时间后显示。默认为创建时间。">
                         <GDateTime id="broadcast-publication-time" v-model="publicationDate" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
                     <BFormGroup
                         id="broadcast-expiration-time-group"
-                        label="Expiration Time (local time)"
+                        label="过期时间（本地时间）"
                         label-for="broadcast-expiration-time"
-                        description="The broadcast will not be displayed and will be deleted from the database after this time. Default is 6 months from the creation time.">
+                        description="广播将在此时间后停止显示，并从数据库中删除。默认为创建时间后的6个月。">
                         <GDateTime id="broadcast-expiration-time" v-model="expirationDate" />
                     </BFormGroup>
                 </BCol>
             </BRow>
 
             <BRow align-v="center" class="m-1">
-                <Heading size="md"> Preview </Heading>
+                <Heading size="md"> 预览 </Heading>
             </BRow>
 
             <BroadcastContainer :options="{ broadcast: broadcastData, previewMode: true }" />
@@ -269,13 +268,13 @@ if (props.id) {
                 <AsyncButton
                     id="broadcast-submit"
                     icon="save"
-                    :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
+                    :title="!requiredFieldsFilled ? '请填写所有必填字段' : ''"
                     variant="primary"
                     size="md"
                     :disabled="!requiredFieldsFilled"
                     :action="createOrUpdateBroadcast">
-                    <span v-if="props.id" v-localize> Update Broadcast </span>
-                    <span v-else v-localize> Create Broadcast </span>
+                    <span v-if="props.id" v-localize> 更新广播 </span>
+                    <span v-else v-localize> 创建广播 </span>
                 </AsyncButton>
             </BRow>
         </div>

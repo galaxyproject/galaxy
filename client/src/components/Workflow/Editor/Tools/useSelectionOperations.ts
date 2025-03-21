@@ -10,20 +10,20 @@ export function useSelectionOperations() {
     const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
     const selectedCountText = computed(() => {
-        const stepWord = selectedStepsCount.value > 1 ? "steps" : "step";
-        const commentWord = selectedCommentsCount.value > 1 ? "comments" : "comment";
-        let text = "selected ";
+        const stepWord = selectedStepsCount.value > 1 ? "步骤" : "步骤";
+        const commentWord = selectedCommentsCount.value > 1 ? "注释" : "注释";
+        let text = "已选择 ";
 
         if (selectedStepsCount.value > 0) {
-            text += `${selectedStepsCount.value} ${stepWord}`;
+            text += `${selectedStepsCount.value} 个${stepWord}`;
 
             if (selectedCommentsCount.value > 0) {
-                text += " and ";
+                text += " 和 ";
             }
         }
 
         if (selectedCommentsCount.value > 0) {
-            text += `${selectedCommentsCount.value} ${commentWord}`;
+            text += `${selectedCommentsCount.value} 个${commentWord}`;
         }
 
         return text;

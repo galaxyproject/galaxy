@@ -20,7 +20,7 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
     onUndoRedo?: () => void;
 
     get name() {
-        return this.internalName ?? `modify step ${this.stepLabel}`;
+        return this.internalName ?? `修改步骤 ${this.stepLabel}`;
     }
 
     set name(name: string | undefined) {
@@ -74,14 +74,14 @@ function onLabelSet(
     if (markdown !== newMarkdown) {
         classInstance.stateStore.report.markdown = newMarkdown;
         classInstance.success(
-            `${classInstance.labelTypeTitle} label updated from "${from}" to "${to}" in workflow report.`
+            `${classInstance.labelTypeTitle} 标签已从 "${from}" 更新为 "${to}" 在工作流报告中。`
         );
     }
 }
 
 export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
     labelType: "input" | "step";
-    labelTypeTitle: "Input" | "Step";
+    labelTypeTitle: "输入" | "步骤";
     stateStore: WorkflowStateStore;
     success;
 
@@ -100,7 +100,7 @@ export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
         const stepType = step.type;
         const isInput = ["data_input", "data_collection_input", "parameter_input"].indexOf(stepType) >= 0;
         this.labelType = isInput ? "input" : "step";
-        this.labelTypeTitle = isInput ? "Input" : "Step";
+        this.labelTypeTitle = isInput ? "输入" : "步骤";
         this.stateStore = stateStore;
         this.success = useToast().success;
     }
@@ -126,7 +126,7 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
     toLabel;
     stateStore;
     labelType = "output" as const;
-    labelTypeTitle = "Output" as const;
+    labelTypeTitle = "输出" as const;
 
     constructor(
         stepStore: WorkflowStepStore,
@@ -173,7 +173,7 @@ export class UpdateStepAction extends UndoRedoAction {
     onUndoRedo?: () => void;
 
     get name() {
-        return this.internalName ?? `modify step ${this.stepLabel}`;
+        return this.internalName ?? `修改步骤 ${this.stepLabel}`;
     }
 
     set name(name: string | undefined) {
@@ -266,7 +266,7 @@ export class InsertStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `insert ${this.stepData.name}`;
+        return `插入 ${this.stepData.name}`;
     }
 
     stepDataToTuple() {
@@ -321,7 +321,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `remove step "${this.step.id} ${this.step.label ?? this.step.name}"`;
+        return `移除步骤 "${this.step.id} ${this.step.label ?? this.step.name}"`;
     }
 
     run() {
@@ -357,7 +357,7 @@ export class CopyStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `duplicate step "${this.stepLabel}"`;
+        return `复制步骤 "${this.stepLabel}"`;
     }
 
     run() {
@@ -393,9 +393,9 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
 
     get name() {
         if (this.toggleTo === true) {
-            return `add step ${this.stepLabel} to selection`;
+            return `将步骤 ${this.stepLabel} 添加到选择`;
         } else {
-            return `remove step ${this.stepLabel} from selection`;
+            return `从选择中移除步骤 ${this.stepLabel}`;
         }
     }
 
@@ -442,7 +442,7 @@ export class AutoLayoutAction extends UndoRedoAction {
     }
 
     get name() {
-        return "auto layout";
+        return "自动布局";
     }
 
     private mapPositionsToStore(positions: Positions) {
@@ -592,7 +592,7 @@ export function useStepActions(
             step,
             key: "position",
             value: position,
-            name: `move step "${step.id + 1}: ${step.label ?? step.name}"`,
+            name: `移动步骤 "${step.id + 1}: ${step.label ?? step.name}"`,
         });
     }
 
@@ -601,7 +601,7 @@ export function useStepActions(
             step,
             key: "annotation",
             value: annotation,
-            name: `edit annotation of step "${step.id + 1}: ${step.label ?? step.name}"`,
+            name: `编辑步骤 "${step.id + 1}: ${step.label ?? step.name}" 的注释`,
         });
     }
 
@@ -618,7 +618,7 @@ export function useStepActions(
             step,
             key: "workflow_outputs",
             value: workflowOutputs,
-            name: `edit output label of step "${step.id + 1}: ${step.label ?? step.name}"`,
+            name: `编辑步骤 "${step.id + 1}: ${step.label ?? step.name}" 的输出标签`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,
@@ -631,7 +631,7 @@ export function useStepActions(
             step,
             key: "label",
             value: label,
-            name: `change label of step ${step.id + 1} to "${label}"`,
+            name: `将步骤 ${step.id + 1} 的标签更改为 "${label}"`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,

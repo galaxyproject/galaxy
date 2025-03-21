@@ -8,7 +8,7 @@ export function useUniqueLabelError(
 ) {
     const error = ref<string | null>(null);
     if (label && workflowStateStore.workflowOutputs[label]) {
-        error.value = `Duplicate label ${label}. Please fix this before saving the workflow.`;
+        error.value = `重复的标签 ${label}。请在保存工作流之前修复此问题。`;
     }
     return error;
 }

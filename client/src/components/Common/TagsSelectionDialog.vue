@@ -10,7 +10,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    title: "Select tags to add",
+    title: "选择要添加的标签",
     initialTags: () => [],
 });
 

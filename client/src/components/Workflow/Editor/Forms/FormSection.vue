@@ -3,16 +3,16 @@
         <FormElement
             :id="emailActionKey"
             :value="emailActionValue"
-            title="Email notification"
+            title="电子邮件通知"
             type="boolean"
-            help="An email notification will be sent when the job has completed."
+            help="作业完成后将发送电子邮件通知。"
             @input="onInput" />
         <FormElement
             :id="deleteActionKey"
             :value="deleteActionValue"
-            title="Output cleanup"
+            title="输出清理"
             type="boolean"
-            help="Upon completion of this step, delete unchecked outputs from completed workflow steps if they are no longer required as inputs."
+            help="此步骤完成后，如果已完成工作流步骤中的未选中输出不再作为输入需要，则将其删除。"
             @input="onInput" />
         <FormOutput
             v-for="(output, index) in outputs"

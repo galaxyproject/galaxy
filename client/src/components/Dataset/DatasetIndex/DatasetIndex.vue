@@ -36,11 +36,11 @@ const directoryContent = computed(() => {
 
 const errorMessage = computed(() => {
     if (!pathDestination.value) {
-        return `Dataset is not composite!`;
+        return `数据集不是复合型的!`;
     }
 
     if (pathDestination.value.fileLink) {
-        return `is not a directory!`;
+        return `不是目录!`;
     }
 
     if (pathDestination.value.isDirectory) {
@@ -48,7 +48,7 @@ const errorMessage = computed(() => {
     } else if (props.path === undefined || props.path === "undefined") {
         return undefined;
     } else {
-        return `is not found!`;
+        return `未找到!`;
     }
 });
 
@@ -68,7 +68,7 @@ const fields = [
     },
     {
         key: "class",
-        label: "Type",
+        label: "类型",
         sortable: true,
     },
 ];

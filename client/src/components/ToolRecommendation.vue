@@ -1,15 +1,13 @@
 <template>
     <div aria-labelledby="tool-recommendation-heading">
         <div v-if="!deprecated && showMessage" class="infomessagelarge">
-            <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
-            You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
-            tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
-            learning analysis on workflows. Therefore, tools at the top may be more useful than the ones at the bottom.
-            Please click on one of the following/recommended tools to open its definition.
+            <h2 id="tool-recommendation-heading" class="h-sm">工具推荐</h2>
+            您使用了 {{ getToolId }} 工具。为了进一步分析，您可以尝试使用以下推荐的工具。推荐的工具按其在工作流中的机器学习分析得分从高到低排序。因此，位于顶部的工具可能比底部的工具更有用。
+            请点击以下推荐工具之一以查看其定义。
         </div>
         <div v-else-if="deprecated" class="warningmessagelarge">
-            <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
-            You have used {{ getToolId }} tool. {{ deprecatedMessage }}
+            <h2 id="tool-recommendation-heading" class="h-sm">工具已弃用</h2>
+            您使用了 {{ getToolId }} 工具。{{ deprecatedMessage }}
         </div>
         <div id="tool-recommendation" class="ui-tool-recommendation"></div>
     </div>

@@ -1,74 +1,69 @@
 <template>
-    <ActivityPanel title="Best Practices Review">
+    <ActivityPanel title="最佳实践审核">
         <template v-if="showRefactor" v-slot:header>
-            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
+            <button class="refactor-button ui-link" @click="onRefactor">尝试自动修复问题。</button>
         </template>
         <LintSection
             :okay="checkAnnotation"
-            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
-                    understand the purpose and usage of the workflow."
+            success-message="此工作流有简短的描述。理想情况下，这有助于工作流的执行者理解工作流的目的和使用方法。"
             :warning-message="bestPracticeWarningAnnotation"
-            attribute-link="Describe your Workflow."
+            attribute-link="描述您的工作流。"
             @onClick="onAttributes('annotation')" />
         <LintSection
             :okay="checkAnnotationLength"
             :success-message="annotationLengthSuccessMessage"
             :warning-message="bestPracticeWarningAnnotationLength"
-            attribute-link="Shorten your Workflow Description."
+            attribute-link="缩短您的工作流描述。"
             @onClick="onAttributes('annotation')" />
         <LintSection
             :okay="checkReadme"
-            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
+            success-message="此工作流有一个自述文件。理想情况下，这有助于研究人员理解工作流的目的、限制和使用方法。"
             :warning-message="bestPracticeWarningReadme"
-            attribute-link="Provider Readme for your Workflow."
+            attribute-link="为您的工作流提供自述文件。"
             @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
-            success-message="This workflow defines creator information."
+            success-message="此工作流定义了创建者信息。"
             :warning-message="bestPracticeWarningCreator"
-            attribute-link="Provide Creator Details."
+            attribute-link="提供创建者详细信息。"
             @onClick="onAttributes('creator')" />
         <LintSection
             :okay="checkLicense"
-            success-message="This workflow defines a license."
+            success-message="此工作流定义了许可证。"
             :warning-message="bestPracticeWarningLicense"
-            attribute-link="Specify a License."
+            attribute-link="指定许可证。"
             @onClick="onAttributes('license')" />
         <LintSection
-            success-message="Workflow parameters are using formal input parameters."
-            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
-                formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
-                and executing the workflow via the API more robust:"
+            success-message="工作流参数使用正式输入参数。"
+            warning-message="此工作流使用了旧版工作流参数，应替换为正式工作流输入。正式输入参数使得跟踪工作流的来源、在子工作流中的使用以及通过 API 执行工作流更为健壮："
             :warning-items="warningUntypedParameters"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUntypedParameter" />
         <LintSection
-            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
-            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
-                make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
+            success-message="所有工作流步骤的非可选输入都已连接到正式输入参数。"
+            warning-message="一些非可选输入未连接到正式工作流输入。正式输入参数使得跟踪工作流的来源、在子工作流中的使用以及通过 API 执行工作流更为健壮："
             :warning-items="warningDisconnectedInputs"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixDisconnectedInput" />
         <LintSection
-            success-message="All workflow inputs have labels and annotations."
-            warning-message="Some workflow inputs are missing labels and/or annotations:"
+            success-message="所有工作流输入都有标签和注释。"
+            warning-message="一些工作流输入缺少标签和/或注释："
             :warning-items="warningMissingMetadata"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="openAndFocus" />
         <LintSection
-            success-message="This workflow has outputs and they all have valid labels."
-            warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
-                    unchecked in the workflow editor to mark them as no longer being a workflow output:"
+            success-message="此工作流有输出，且所有输出都有有效的标签。"
+            warning-message="以下工作流输出没有标签，应为其分配有用的标签，或在工作流编辑器中取消勾选，标记它们不再是工作流输出："
             :warning-items="warningUnlabeledOutputs"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUnlabeledOutputs" />
         <div v-if="!hasActiveOutputs">
             <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
-            <span>This workflow has no labeled outputs, please select and label at least one output.</span>
+            <span>此工作流没有标记的输出，请选择并标记至少一个输出。</span>
         </div>
     </ActivityPanel>
 </template>
@@ -174,9 +169,9 @@ export default {
         },
         annotationLengthSuccessMessage() {
             if (this.annotation) {
-                return "This workflow has a short description of appropriate length.";
+                return "此工作流有一个适当长度的简短描述。";
             } else {
-                return "This workflow does not have a short description.";
+                return "此工作流没有简短描述。";
             }
         },
         checkReadme() {
@@ -222,7 +217,7 @@ export default {
         onFixUntypedParameter(item) {
             if (
                 confirm(
-                    "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?"
+                    "此问题可以通过创建一个明确的参数输入步骤自动修复。您想继续吗？"
                 )
             ) {
                 this.$emit("onRefactor", [fixUntypedParameter(item)]);
@@ -233,7 +228,7 @@ export default {
         onFixDisconnectedInput(item) {
             if (
                 confirm(
-                    "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?"
+                    "此问题可以通过创建一个明确的数据输入步骤自动修复。您想继续吗？"
                 )
             ) {
                 this.$emit("onRefactor", [fixDisconnectedInput(item)]);
@@ -244,7 +239,7 @@ export default {
         onFixUnlabeledOutputs(item) {
             if (
                 confirm(
-                    "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?"
+                    "此问题可以通过移除所有未标记的工作流输出自动修复。您想继续吗？"
                 )
             ) {
                 this.$emit("onRefactor", [fixUnlabeledOutputs()]);

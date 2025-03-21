@@ -113,13 +113,13 @@ function _elementsSetUp() {
         if (element) {
             inListElements.value.push(element);
         } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} 和 ${NOT_VALID_ELEMENT_MSG}`;
             invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+            Toast.error(invalidMsg, localize("无效的元素"));
         } else {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("已从集合中移除")}`;
             invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+            Toast.error(invalidMsg, localize("无效的元素"));
         }
     });
 
@@ -157,26 +157,25 @@ function _validateElements() {
 /** describe what is wrong with a particular element if anything */
 function _isElementInvalid(element: HistoryItemSummary): string | null {
     if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
+        return localize("集合不允许这样操作");
     }
 
     var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
 
     if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
+        return localize("发生错误, 处于已暂停或无法访问");
     }
 
     if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
+        return localize("已被删除或清除");
     }
 
-    // is the element's extension not a subtype of any of the required extensions?
     if (
         filterExtensions.value &&
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize(`has an invalid format: ${element.extension}`);
+        return localize(`格式无效: ${element.extension}`);
     }
     return null;
 }
@@ -262,9 +261,9 @@ async function clickedCreate(collectionName: string) {
 
     let confirmed = false;
     if (!atLeastOneElement.value) {
-        confirmed = await confirm("Are you sure you want to create a list with no datasets?", {
-            title: "Create an empty list",
-            okTitle: "Create",
+        confirmed = await confirm(localize("您确定要创建一个没有数据集的列表吗？"), {
+            title: localize("创建一个空列表"),
+            okTitle: localize("创建"),
             okVariant: "primary",
         });
     }
@@ -345,16 +344,16 @@ function addUploadedFiles(files: HDASummary[]) {
         if (file && !returnedElements.value.find((e) => e.id === file.id)) {
             returnedElements.value.push(file);
         } else if (problem) {
-            invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
+            invalidElements.value.push("上传的项: " + f.name + "  " + problem);
             Toast.error(
-                localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
-                localize("Uploaded item is invalid")
+                localize(`数据集 ${f.hid}: ${f.name} ${problem}，这是一个无效元素，无法添加到此集合`),
+                localize("上传的项无效")
             );
         } else {
-            invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
+            invalidElements.value.push("上传的项: " + f.name + " 无法添加到集合");
             Toast.error(
-                localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
-                localize("Uploaded item is invalid")
+                localize(`数据集 ${f.hid}: ${f.name} 无法添加到集合`),
+                localize("上传的项无效")
             );
         }
     });
@@ -395,13 +394,13 @@ function selectionAsHdaSummary(value: any): HDASummary {
     <div class="list-collection-creator">
         <div v-if="!showDuplicateError && state == 'error'">
             <BAlert show variant="danger">
-                {{ localize("There was a problem creating the collection.") }}
+                {{ localize("创建集合时出现问题。") }}
             </BAlert>
         </div>
         <div v-else>
             <div v-if="fromSelection && returnInvalidElementsLength">
                 <BAlert show variant="warning" dismissible>
-                    {{ localize("The following selections could not be included due to problems:") }}
+                    {{ localize("以下选择因下列原因无法包含：") }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
                             {{ problem }}
@@ -412,12 +411,12 @@ function selectionAsHdaSummary(value: any): HDASummary {
 
             <div v-if="!atLeastOneElement">
                 <BAlert show variant="warning" dismissible @dismissed="atLeastOneElement = true">
-                    {{ localize("At least one element is needed for the list.") }}
+                    {{ localize("至少需要一个元素来创建列表。") }}
                     <span v-if="fromSelection">
                         <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                            {{ localize("Cancel") }}
+                            {{ localize("取消") }}
                         </a>
-                        {{ localize("and reselect new elements.") }}
+                        {{ localize("并重新选择新元素。") }}
                     </span>
                 </BAlert>
             </div>
@@ -425,12 +424,12 @@ function selectionAsHdaSummary(value: any): HDASummary {
             <div v-if="showDuplicateError">
                 <BAlert show variant="danger">
                     {{
-                        localize("Collections cannot have duplicated names. The following list names are duplicated: ")
+                        localize("集合不能有重复的名称。以下列表名称是重复的：")
                     }}
                     <ol>
                         <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
                     </ol>
-                    {{ localize("Please fix these duplicates and try again.") }}
+                    {{ localize("请修复这些重复项并重试。") }}
                 </BAlert>
             </div>
 
@@ -452,12 +451,12 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         {{
                             localize(
                                 [
-                                    "This interface allows you to build a new Galaxy list of datasets. ",
-                                    "A list is a type of Galaxy dataset collection that is a permanent, ordered list of datasets that can be passed to tools ",
-                                    "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
-                                    "you to create and re-order a list of datasets. The datasets in a Galaxy collection have an identifier that is preserved accross ",
-                                    "tool executions and serves as a form of sample tracking - setting the name in this form will pick the identifier for that element ",
-                                    "of the list but will not change the dataset's actual name in Galaxy.",
+                                    "此界面允许您创建一个新的 Galaxy 数据集列表。",
+                                    "列表是 Galaxy 数据集集合的一种类型，是一个永久的、有序的数据集列表，可以传递给工具",
+                                    "和工作流，以便对整个组的每个成员进行分析。此界面允许",
+                                    "您创建和重新排序数据集列表。Galaxy 集合中的数据集有一个标识符，该标识符在",
+                                    "工具执行过程中保留，并作为样本追踪的形式 - 设置此名称将为该元素",
+                                    "列表中的标识符，但不会更改数据集在 Galaxy 中的实际名称。",
                                 ].join("")
                             )
                         }}
@@ -465,120 +464,119 @@ function selectionAsHdaSummary(value: any): HDASummary {
 
                     <ul>
                         <li v-if="!fromSelection">
-                            Move datsets from the "Unselected" column to the "Selected" column below to compose the list
-                            in the intended order and with the intended datasets.
+                            将数据集从“未选择”列移动到下面的“已选择”列，以按照预期顺序和数据集组成列表。
                         </li>
                         <li v-if="!fromSelection">
-                            The filter textbox can be used to rapidly find the datasets of interest by name.
+                            可以使用过滤框快速按名称查找感兴趣的数据集。
                         </li>
                         <li>
-                            {{ localize("Change the identifier of elements in the list by clicking on") }}
+                            {{ localize("通过点击") }}
                             <i data-target=".collection-element .name">
-                                {{ localize("the existing name") }}
+                                {{ localize("现有名称") }}
                             </i>
-                            {{ localize(".") }}
+                            {{ localize("来更改列表中元素的标识符。") }}
                         </li>
 
                         <li>
-                            {{ localize("Discard elements from the final created list by clicking on the ") }}
+                            {{ localize("通过点击") }}
                             <i v-if="fromSelection" data-target=".collection-element .discard">
-                                {{ localize("Remove") }}
+                                {{ localize("删除") }}
                             </i>
                             <i v-else data-target=".collection-element .discard">
-                                {{ localize("discard") }}
+                                {{ localize("丢弃") }}
                             </i>
-                            {{ localize("button.") }}
+                            {{ localize("按钮从最终创建的列表中删除元素。") }}
                         </li>
 
                         <li v-if="fromSelection">
                             {{
                                 localize(
-                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
+                                    "通过点击和拖动元素来重新排序列表。点击它们以选择多个元素"
                                 )
                             }}
                             <i data-target=".collection-element">
-                                {{ localize("them") }}
+                                {{ localize("它们") }}
                             </i>
                             {{
                                 localize(
-                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                                    "，然后您可以通过拖动整个组来移动选中的元素。再次点击或点击"
                                 )
                             }}
                             <i data-target=".clear-selected">
-                                {{ localize("Clear selected") }}
+                                {{ localize("清除选中项") }}
                             </i>
-                            {{ localize("link.") }}
+                            {{ localize("来取消选择。") }}
                         </li>
 
                         <li v-if="fromSelection">
-                            {{ localize("Click ") }}
+                            {{ localize("点击") }}
                             <i data-target=".reset">
                                 <FontAwesomeIcon :icon="faUndo" />
                             </i>
-                            {{ localize("to begin again as if you had just opened the interface.") }}
+                            {{ localize("重新开始，就像刚刚打开界面一样。") }}
                         </li>
 
                         <li v-if="fromSelection">
-                            {{ localize("Click ") }}
+                            {{ localize("点击") }}
                             <i data-target=".sort-items">
                                 <FontAwesomeIcon :icon="faSortAlphaDown" />
                             </i>
-                            {{ localize("to sort datasets alphabetically.") }}
+                            {{ localize("按字母顺序对数据集进行排序。") }}
                         </li>
 
                         <li>
-                            {{ localize("Click the") }}
+                            {{ localize("点击") }}
                             <i data-target=".cancel-create">
-                                {{ localize("Cancel") }}
+                                {{ localize("取消") }}
                             </i>
-                            {{ localize("button to exit the interface.") }}
+                            {{ localize("按钮退出界面。") }}
                         </li>
                     </ul>
 
                     <br />
 
                     <p>
-                        {{ localize("Once your collection is complete, enter a ") }}
+                        {{ localize("一旦您的集合完成，请输入一个") }}
                         <i data-target=".collection-name">
-                            {{ localize("name") }}
+                            {{ localize("名称") }}
                         </i>
-                        {{ localize("and click") }}
+                        {{ localize("并点击") }}
                         <i data-target=".create-collection">
-                            {{ localize("Create list") }}
+                            {{ localize("创建列表") }}
                         </i>
-                        {{ localize(".") }}
+                        {{ localize("。") }}
                     </p>
                 </template>
 
                 <template v-slot:middle-content>
                     <BAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
-                        {{ localize("The selected datasets have mixed formats.") }}
-                        {{ localize("You can still create the list but generally") }}
-                        {{ localize("dataset lists should contain datasets of the same type.") }}
+                        {{ localize("所选数据集格式混合。") }}
+                        {{ localize("您仍然可以创建列表，但通常来说") }}
+                        {{ localize("数据集列表应包含相同类型的数据集。") }}
                         <HelpText
                             uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
-                            :text="localize('Why?')" />
+                            :text="localize('为什么？')" />
                     </BAlert>
                     <div v-if="noInitialElements">
                         <BAlert show variant="warning" dismissible>
-                            {{ localize("No datasets were selected") }}
-                            {{ localize("At least one element is needed for the collection. You may need to") }}
+                            {{ localize("未选择任何数据集") }}
+                            {{ localize("至少需要一个元素用于集合。您可能需要") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                                {{ localize("cancel") }}
+                                {{ localize("取消") }}
                             </a>
-                            {{ localize("and reselect new elements, or upload datasets.") }}
+                            {{ localize("并重新选择新元素，或上传数据集。") }}
                         </BAlert>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
                         <BAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
-                                    "No elements in your history are valid for this list. \
-                                    You may need to switch to a different history or upload valid datasets."
+                                    "您的历史记录中没有有效的元素用于此列表。\
+                                    您可能需要切换到不同的历史记录或上传有效的数据集。"
                                 )
                             }}
                             <div v-if="extensions?.length">
-                                {{ localize("The following format(s) are required for this list: ") }}
+                                {{ localize("此列表所需的格式如下：") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
@@ -587,17 +585,17 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             </div>
                         </BAlert>
                         <BAlert v-else show variant="warning" dismissible>
-                            {{ localize("The following selections could not be included due to problems:") }}
+                            {{ localize("以下选择因问题无法包含：") }}
                             <ul>
                                 <li v-for="problem in returnInvalidElements" :key="problem">
                                     {{ problem }}
                                 </li>
                             </ul>
-                            {{ localize("At least one element is needed for the collection. You may need to") }}
+                            {{ localize("至少需要一个元素用于集合。您可能需要") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                                {{ localize("cancel") }}
+                                {{ localize("取消") }}
                             </a>
-                            {{ localize("and reselect new elements, or upload valid datasets.") }}
+                            {{ localize("并重新选择新元素，或上传有效的数据集。") }}
                         </BAlert>
                     </div>
                     <div v-else-if="fromSelection">
@@ -605,15 +603,15 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             <div>
                                 <BButton
                                     class="reset"
-                                    :title="localize('Reset to original state')"
+                                    :title="localize('重置为初始状态')"
                                     size="sm"
                                     @click="reset">
                                     <FontAwesomeIcon :icon="faUndo" fixed-width />
-                                    {{ localize("Reset") }}
+                                    {{ localize("重置") }}
                                 </BButton>
                                 <BButton
                                     class="sort-items"
-                                    :title="localize('Sort datasets by name')"
+                                    :title="localize('按名称排序数据集')"
                                     size="sm"
                                     @click="sortByName">
                                     <FontAwesomeIcon :icon="faSortAlphaDown" />
@@ -621,39 +619,39 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             </div>
 
                             <div class="center-text">
-                                <u>{{ workingElements.length }}</u> {{ localize("elements in list") }}
+                                <u>{{ workingElements.length }}</u> {{ localize("列表中的元素") }}
                             </div>
 
                             <div>
                                 <span v-if="atLeastOneDatasetIsSelected"
-                                    >{{ localize("For selection") }} ({{ selectedDatasetElements.length }}):</span
+                                    >{{ localize("选择的数据集") }} ({{ selectedDatasetElements.length }}):</span
                                 >
                                 <BButtonGroup class="" size="sm">
                                     <BButton
                                         v-if="atLeastOneDatasetIsSelected"
-                                        :title="localize('Remove selected datasets from the list')"
+                                        :title="localize('从列表中删除选中的数据集')"
                                         @click="clickRemoveSelected">
                                         <FontAwesomeIcon :icon="faMinus" fixed-width />
-                                        {{ localize("Remove") }}
+                                        {{ localize("删除") }}
                                     </BButton>
                                     <BButton
                                         v-if="
                                             !atLeastOneDatasetIsSelected ||
                                             selectedDatasetElements.length < workingElements.length
                                         "
-                                        :title="localize('Select all datasets')"
+                                        :title="localize('选择所有数据集')"
                                         size="sm"
                                         @click="clickSelectAll">
                                         <FontAwesomeIcon :icon="faSquare" fixed-width />
-                                        {{ localize("Select all") }}
+                                        {{ localize("选择所有") }}
                                     </BButton>
                                     <BButton
                                         v-if="atLeastOneDatasetIsSelected"
                                         class="clear-selected"
-                                        :title="localize('De-select all selected datasets')"
+                                        :title="localize('取消选择所有选中的数据集')"
                                         @click="clickClearAll">
                                         <FontAwesomeIcon :icon="faTimes" fixed-width />
-                                        {{ localize("Clear") }}
+                                        {{ localize("清除") }}
                                     </BButton>
                                 </BButtonGroup>
                             </div>
@@ -661,9 +659,9 @@ function selectionAsHdaSummary(value: any): HDASummary {
 
                         <div v-if="noMoreValidDatasets">
                             <BAlert show variant="warning">
-                                {{ localize("No elements left. Would you like to") }}
+                                {{ localize("没有剩余的有效元素。您是否希望") }}
                                 <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
-                                    {{ localize("start over") }}
+                                    {{ localize("重新开始") }}
                                 </a>
                                 ?
                             </BAlert>
@@ -690,7 +688,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         v-else
                         v-model="inListElements"
                         maintain-selection-order
-                        :placeholder="localize('Filter datasets by name')"
+                        :placeholder="localize('按名称筛选数据集')"
                         :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
                         <template v-slot:label-area="{ value }">
                             <DatasetCollectionElementView

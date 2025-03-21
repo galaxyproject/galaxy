@@ -42,26 +42,26 @@ onMounted(initCounts);
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
         <BBadge v-if="count != undefined && count === 0" pill>
-            <span>never run</span>
+            <span>从未运行</span>
         </BBadge>
         <BBadge
             v-else-if="count != undefined && count > 0"
             v-b-tooltip.hover.noninteractive
             pill
-            :title="localize('View workflow invocations')"
+            :title="localize('查看工作流调用')"
             class="outline-badge cursor-pointer"
             :to="`/workflows/${props.workflow.id}/invocations`">
             <FontAwesomeIcon :icon="faList" fixed-width />
 
             <span>
-                workflow runs:
+                工作流运行次数：
                 {{ count }}
             </span>
         </BBadge>
         <BButton
             v-else
             v-b-tooltip.hover.noninteractive
-            :title="localize('View workflow invocations')"
+            :title="localize('查看工作流调用')"
             class="inline-icon-button"
             variant="link"
             size="sm"

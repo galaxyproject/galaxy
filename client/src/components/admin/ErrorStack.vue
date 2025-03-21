@@ -1,7 +1,7 @@
 <template>
     <div>
         <b-alert :show="messageVisible" variant="danger"> {{ messageText }} </b-alert>
-        <b-alert :show="infoVisible" variant="info"> No errors available. </b-alert>
+        <b-alert :show="infoVisible" variant="info"> 无错误. </b-alert>
         <b-table v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
     </div>
 </template>
@@ -41,7 +41,7 @@ export default {
             })
             .catch((e) => {
                 const message = e && e.response && e.response.data && e.response.data.err_msg;
-                this.messageText = message || "Request failed for an unknown reason.";
+                this.messageText = message || "请求错误，因未知错误.";
             });
     },
 };

@@ -149,7 +149,7 @@ const steps = computed<[string, WizardStep][]>(() => {
                 <div class="step-body">
                     <slot>
                         <p>
-                            Missing body for step <b>{{ props.use.current.value.label }}</b>
+                            缺少步骤的主体 <b>{{ props.use.current.value.label }}</b>
                         </p>
                     </slot>
                 </div>

@@ -2,8 +2,8 @@
     <b-card>
         <div class="row">
             <div class="col">
-                <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
-                <span v-else>Tools</span>
+                <span v-if="singleTool || resolution.tool_ids.length == 1">工具</span>
+                <span v-else>工具列表</span>
             </div>
             <div class="col-8">
                 <div v-if="singleTool">
@@ -15,19 +15,19 @@
             </div>
         </div>
         <div class="row">
-            <div class="col">Requirements</div>
+            <div class="col">需求</div>
             <div class="col-8">
                 <Requirements :requirements="resolution.requirements" />
             </div>
         </div>
         <div class="row">
-            <div class="col">Status Display</div>
+            <div class="col">状态展示</div>
             <div class="col-8">
                 <StatusDisplay :status="resolution.status" :compact="false" />
             </div>
         </div>
         <div class="row">
-            <div class="col">Container</div>
+            <div class="col">容器</div>
             <div class="col-8">
                 <ContainerDescription
                     :container-description="resolution.status.container_description"
@@ -35,13 +35,14 @@
             </div>
         </div>
         <div class="row">
-            <div class="col">Container Resolver</div>
+            <div class="col">容器解析器</div>
             <div class="col-8">
                 <ContainerResolver :container-resolver="resolution.status.container_resolver" :compact="false" />
             </div>
         </div>
     </b-card>
 </template>
+
 
 <script>
 import ContainerDescription from "./ContainerDescription";

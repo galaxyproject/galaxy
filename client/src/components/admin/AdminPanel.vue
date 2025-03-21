@@ -18,103 +18,103 @@ const adminProperties = computed(() => {
 const sections = computed(() => {
     return [
         {
-            title: "Server",
+            title: "服务器",
             items: [
                 {
                     id: "admin-link-datatypes",
-                    title: "Data Types",
+                    title: "数据类型",
                     route: "/admin/data_types",
                 },
                 {
                     id: "admin-link-data-tables",
-                    title: "Data Tables",
+                    title: "数据表",
                     route: "/admin/data_tables",
                 },
                 {
                     id: "admin-link-display-applications",
-                    title: "Display Applications",
+                    title: "显示应用程序",
                     route: "/admin/display_applications",
                 },
                 {
                     id: "admin-link-jobs",
-                    title: "Jobs",
+                    title: "作业",
                     route: "/admin/jobs",
                 },
                 {
                     id: "admin-link-invocations",
-                    title: "Workflow Invocations",
+                    title: "工作流调用",
                     route: "/admin/invocations",
                 },
                 {
                     id: "admin-link-local-data",
-                    title: "Local Data",
+                    title: "本地数据",
                     route: "/admin/data_manager",
                 },
                 {
                     id: "admin-link-notifications",
-                    title: "Notifications and Broadcasts",
+                    title: "通知和广播",
                     route: "/admin/notifications",
                 },
             ],
         },
         {
-            title: "User Management",
+            title: "用户管理",
             items: [
                 {
                     id: "admin-link-users",
-                    title: "Users",
+                    title: "用户",
                     route: "/admin/users",
                 },
                 {
                     id: "admin-link-quotas",
-                    title: "Quotas",
+                    title: "配额",
                     route: "/admin/quotas",
                     disabled: !adminProperties.value.enableQuotas,
                 },
                 {
                     id: "admin-link-groups",
-                    title: "Groups",
+                    title: "用户组",
                     route: "/admin/groups",
                 },
                 {
                     id: "admin-link-roles",
-                    title: "Roles",
+                    title: "角色",
                     route: "/admin/roles",
                 },
                 {
                     id: "admin-link-forms",
-                    title: "Forms",
+                    title: "表单",
                     route: "/admin/forms",
                 },
             ],
         },
         {
-            title: "Tool Management",
+            title: "工具管理",
             items: [
                 {
                     id: "admin-link-toolshed",
-                    title: "Install and Uninstall",
+                    title: "安装和卸载",
                     route: "/admin/toolshed",
                     disabled: !adminProperties.value.isToolshedInstalled,
                 },
                 {
                     id: "admin-link-metadata",
-                    title: "Manage Metadata",
+                    title: "管理元数据",
                     route: "/admin/reset_metadata",
                 },
                 {
                     id: "admin-link-allowlist",
-                    title: "Manage Allowlist",
+                    title: "管理白名单",
                     route: "/admin/sanitize_allow",
                 },
                 {
                     id: "admin-link-manage-dependencies",
-                    title: "Manage Dependencies",
+                    title: "管理依赖项",
                     route: "/admin/toolbox_dependencies",
                 },
                 {
                     id: "admin-link-error-stack",
-                    title: "View Error Logs",
+                    title: "查看错误日志",
                     route: "/admin/error_stack",
                 },
             ],
@@ -124,9 +124,9 @@ const sections = computed(() => {
 </script>
 
 <template>
-    <ActivityPanel v-if="isConfigLoaded" title="Administration" go-to-all-title="Admin Home" href="/admin">
+    <ActivityPanel v-if="isConfigLoaded" title="管理" go-to-all-title="管理员主页" href="/admin">
         <template v-slot:header>
-            <h3>Galaxy Version {{ adminProperties.versionMajor }}</h3>
+            <h3>Galaxy 版本 {{ adminProperties.versionMajor }}</h3>
         </template>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

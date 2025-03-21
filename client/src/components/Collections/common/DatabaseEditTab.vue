@@ -29,24 +29,24 @@ onMounted(() => {
 <template>
     <div>
         <div>
-            <span class="float-left h-sm">Change Database/Build of all elements in collection</span>
+            <span class="float-left h-sm">更改集合中所有元素的数据库/构建</span>
 
             <div class="text-right">
                 <button
                     class="save-dbkey-edit btn btn-primary"
                     :disabled="selectedGenome?.id == databaseKeyFromElements"
                     @click="clickedSave">
-                    {{ localize("Save") }}
+                    {{ localize("保存") }}
                 </button>
             </div>
         </div>
 
-        <b>{{ localize("Database/Build") }}: </b>
+        <b>{{ localize("数据库/构建") }}: </b>
 
         <Multiselect
             v-model="selectedGenome"
             class="database-dropdown"
-            deselect-label="Can't remove this value"
+            deselect-label="无法移除此值"
             track-by="id"
             label="text"
             :options="genomes"

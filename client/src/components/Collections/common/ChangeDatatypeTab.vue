@@ -37,22 +37,22 @@ function clickedSave() {
 <template>
     <div>
         <div>
-            <span class="float-left h-sm">Change Datatype/Extension of all elements in collection</span>
+            <span class="float-left h-sm">更改集合中所有元素的数据类型/扩展</span>
 
             <div class="text-right">
                 <button class="save-datatype-edit btn btn-primary" :disabled="!enableSave" @click="clickedSave">
-                    {{ localize("Save") }}
+                    {{ localize("保存") }}
                 </button>
             </div>
         </div>
 
-        <b>{{ localize("New Type") }}: </b>
+        <b>{{ localize("新类型") }}: </b>
 
         <Multiselect
             v-if="hasSelectedDatatype"
             v-model="selectedDatatype"
             class="datatype-dropdown"
-            deselect-label="Can't remove this value"
+            deselect-label="无法移除此值"
             track-by="id"
             label="text"
             :options="datatypes"
@@ -62,3 +62,4 @@ function clickedSave() {
         </Multiselect>
     </div>
 </template>
+

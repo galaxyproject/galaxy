@@ -17,9 +17,9 @@ const name = computed(() => {
     const dragData = eventStore.getDragData();
     if (multipleDragData.value) {
         const count = Object.keys(dragData).length;
-        return `${count} items`;
+        return `${count} 个项目`;
     }
-    return dragData?.name ?? "Draggable";
+    return dragData?.name ?? "可拖动项";
 });
 </script>
 

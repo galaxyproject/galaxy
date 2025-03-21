@@ -129,19 +129,17 @@ const extensionInTitle = computed<string>(() => {
 
 const modalTitle = computed(() => {
     if (props.collectionType === "list") {
-        return localize(`Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} datasets`);
+        return localize(`创建一个${fromSelection.value ? "已选择" : ""} ${extensionInTitle.value} 数据集的列表`);
     } else if (props.collectionType === "list:paired") {
         return localize(
-            `Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} paired datasets`
+            `创建一个${fromSelection.value ? "已选择" : ""} ${extensionInTitle.value} 配对数据集的列表`
         );
     } else if (props.collectionType === "paired") {
         return localize(
-            `Create a ${extensionInTitle.value} paired dataset collection ${
-                fromSelection.value ? "from selected items" : ""
-            }`
+            `创建一个${extensionInTitle.value} 配对数据集集合${fromSelection.value ? " 从已选择项" : ""}`
         );
     } else {
-        return localize("Create a collection");
+        return localize("创建一个集合");
     }
 });
 
@@ -283,34 +281,34 @@ function resetCreator() {
             </Heading>
         </template>
         <BAlert v-if="isFetchingItems && !initialFetch" variant="info" show>
-            <LoadingSpan :message="localize('Loading items')" />
+            <LoadingSpan :message="localize('加载条目中...')" />
         </BAlert>
         <BAlert v-else-if="!fromSelection && historyItemsError" variant="danger" show>
             {{ historyItemsError }}
         </BAlert>
         <BAlert v-else-if="creatingCollection" variant="info" show>
-            <LoadingSpan :message="localize('Creating collection')" />
+            <LoadingSpan :message="localize('创建集合中...')" />
         </BAlert>
         <BAlert v-else-if="createCollectionError" variant="danger" show>
             {{ createCollectionError }}
             <BLink class="text-decoration-none" @click.stop.prevent="resetCreator">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
-                {{ localize("Try again") }}
+                {{ localize("再试一次") }}
             </BLink>
         </BAlert>
         <div v-else-if="createdCollection">
             <BAlert v-if="!createdCollectionInReadyState" variant="info" show>
-                <LoadingSpan :message="localize('Waiting for collection to be ready')" />
+                <LoadingSpan :message="localize('等待集合准备完毕')" />
             </BAlert>
             <template v-else>
                 <BAlert variant="success" show>
                     <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
-                    {{ localize("Collection created successfully.") }}
-                    {{ localize("It might still not be a valid input based on individual element properties.") }}
-                    {{ localize("Expand the collection to see its individual elements.") }}
+                    {{ localize("集合创建成功。") }}
+                    {{ localize("基于各个元素的属性，它可能仍然不是有效的输入。") }}
+                    {{ localize("展开集合以查看其单个元素。") }}
                     <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetCreator">
                         <FontAwesomeIcon :icon="faUndo" fixed-width />
-                        {{ localize("Create another collection") }}
+                        {{ localize("创建另一个集合") }}
                     </BLink>
                 </BAlert>
 

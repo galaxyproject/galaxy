@@ -1,26 +1,26 @@
 <template>
     <div>
         <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <Alert v-if="viewOnly" message="未实现" variant="dark" />
+        <Alert v-else-if="loading" message="等待数据" variant="info" />
         <div v-else-if="dataManagers && !dataManagers.length">
             <Alert variant="primary">
-                <span class="alert-heading h-sm">None installed</span>
-                You do not currently have any Data Managers installed.
+                <span class="alert-heading h-sm">无安装</span>
+                您当前没有安装任何数据管理器。
             </Alert>
         </div>
         <div v-else-if="dataManagers && dataTables">
             <b-container fluid>
                 <b-row>
                     <b-col md="6">
-                        <b-form-group description="Search for strings or regular expressions">
+                        <b-form-group description="搜索字符串或正则表达式">
                             <b-input-group>
                                 <b-form-input
                                     v-model="filter"
-                                    placeholder="Type to Search"
+                                    placeholder="输入进行搜索"
                                     @keyup.esc.native="filter = ''" />
                                 <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                    <b-btn :disabled="!filter" @click="filter = ''">清除 (esc)</b-btn>
                                 </b-input-group-append>
                             </b-input-group>
                         </b-form-group>
@@ -28,7 +28,7 @@
                 </b-row>
             </b-container>
             <b-card-group columns>
-                <b-card id="data-managers-card" no-body header="Installed Data Managers">
+                <b-card id="data-managers-card" no-body header="已安装的数据管理器">
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
                             <b-button-group vertical>
@@ -48,13 +48,13 @@
                                         name: 'DataManagerJobs',
                                         params: { id: encodeURIComponent(dataManager['id']) },
                                     }">
-                                    Jobs
+                                    作业
                                 </b-button>
                             </b-button-group>
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
-                <b-card no-body header="Tool Data Tables">
+                <b-card no-body header="工具数据表">
                     <b-list-group flush>
                         <b-list-group-item
                             v-for="(dataTable, index) in dataTablesFiltered"

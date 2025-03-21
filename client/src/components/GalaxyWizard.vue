@@ -32,15 +32,15 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewline
 async function submitQuery() {
     busy.value = true;
     if (query.value === "") {
-        errorMessage.value = "There is no context to provide a response.";
+        errorMessage.value = "没有上下文，无法提供响应。";
         busy.value = false;
         return;
     }
     /**
-     * Note: We are using a POST request here, which at the backend checks if a response exists
-     * for the given job_id and returns it if it does. If it doesn't, it will create a new response.
-     * Curious whether this is better done by using a separate GET and then a POST?
-     * TODO: Remove this comment after discussion.
+     * 注意：这里我们使用的是 POST 请求，后端会检查是否已存在该 job_id 的响应，
+     * 如果存在，则返回该响应；如果不存在，则创建一个新的响应。
+     * 好奇是否更适合使用单独的 GET 进行检查，再使用 POST 发送请求？
+     * TODO：讨论后删除此注释。
      */
     const { data, error } = await GalaxyApi().POST("/api/chat", {
         params: {
@@ -52,16 +52,17 @@ async function submitQuery() {
         },
     });
     if (error) {
-        errorMessage.value = errorMessageAsString(error, "Failed to get response from the server.");
+        errorMessage.value = errorMessageAsString(error, "无法从服务器获取响应。");
     } else {
         queryResponse.value = data;
     }
     busy.value = false;
 }
-/** Send feedback to the server **/
+
+/** 向服务器发送反馈 **/
 async function sendFeedback(value: "up" | "down") {
     feedback.value = value;
-    // up is 1 and down is 0
+    // “赞” 反馈值为 1，“踩” 反馈值为 0
     const feedbackValue = value === "up" ? 1 : 0;
     const { error } = await GalaxyApi().PUT("/api/chat/{job_id}/feedback", {
         params: {
@@ -70,28 +71,28 @@ async function sendFeedback(value: "up" | "down") {
         },
     });
     if (error) {
-        errorMessage.value = errorMessageAsString(error, "Failed to send feedback to the server.");
+        errorMessage.value = errorMessageAsString(error, "无法向服务器发送反馈。");
     }
 }
 </script>
 
 <template>
     <div>
-        <!-- <Heading v-if="props.view == 'wizard'" inline h2>Ask the wizard</Heading>
+        <!-- <Heading v-if="props.view == 'wizard'" inline h2>请教向导</Heading>
         <div :class="props.view == 'wizard' && 'mt-2'">
             <b-input
                 v-if="props.query == ''"
                 id="wizardinput"
                 v-model="query"
                 style="width: 100%"
-                placeholder="What's the difference in fasta and fastq files?"
+                placeholder="FASTA 文件和 FASTQ 文件有什么区别？"
                 @keyup.enter="submitQuery" /> -->
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
         <BButton v-else-if="!queryResponse" class="w-100" variant="info" :disabled="busy" @click="submitQuery">
-            <span v-if="!busy"> Let our Help Wizard Figure it out! </span>
-            <LoadingSpan v-else message="Thinking" />
+            <span v-if="!busy"> 让我们的帮助向导来解答！ </span>
+            <LoadingSpan v-else message="思考中..." />
         </BButton>
         <div :class="props.view == 'wizard' && 'mt-4'">
             <div v-if="busy">
@@ -104,7 +105,7 @@ async function sendFeedback(value: "up" | "down") {
 
             <div v-if="queryResponse" class="feedback-buttons mt-2">
                 <hr class="w-100" />
-                <h4>Was this answer helpful?</h4>
+                <h4>这个答案有帮助吗？</h4>
                 <BButton
                     variant="success"
                     :disabled="feedback !== null"
@@ -119,8 +120,8 @@ async function sendFeedback(value: "up" | "down") {
                     @click="sendFeedback('down')">
                     <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
                 </BButton>
-                <i v-if="!feedback">This feedback helps us improve our responses.</i>
-                <i v-else>Thank you for your feedback!</i>
+                <i v-if="!feedback">您的反馈有助于我们改进回答。</i>
+                <i v-else>感谢您的反馈！</i>
             </div>
         </div>
     </div>

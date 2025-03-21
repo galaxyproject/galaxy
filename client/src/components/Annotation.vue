@@ -6,8 +6,8 @@
         class="annotation"
         tag-name="p"
         :value="annotation"
-        :title="'Edit annotation...' | localize"
-        :placeholder="'Edit annotation...' | localize">
+        :title="'编辑注释...' | localize"
+        :placeholder="'编辑注释...' | localize">
         <DebouncedInput v-slot="inputScope" v-model="annotation" :delay="1000">
             <b-form-textarea
                 size="sm"

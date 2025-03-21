@@ -5,8 +5,8 @@
     <b-card v-else>
         <div class="row">
             <div class="col">
-                <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
-                <span v-else>Tools</span>
+                <span v-if="singleTool || resolution.tool_ids.length == 1">工具</span>
+                <span v-else>工具集</span>
             </div>
             <div class="col-8">
                 <div v-if="singleTool">
@@ -18,23 +18,23 @@
             </div>
         </div>
         <div v-if="resolution.status.length == 0" class="row">
-            <i><b>No requirements to resolve, no explicit dependency resolution configured.</b></i>
+            <i><b>没有需要解决的需求，未配置显式的依赖解析。</b></i>
         </div>
         <span v-else-if="!separateDetails">
             <div class="row">
-                <div class="col">Requirements</div>
+                <div class="col">需求</div>
                 <div class="col-8">
                     <Requirements :requirements="resolution.requirements" />
                 </div>
             </div>
             <div class="row">
-                <div class="col">Status</div>
+                <div class="col">状态</div>
                 <div class="col-8">
                     <StatusDisplay :status="resolution.status[0]" :compact="false" :all-statuses="resolution.status" />
                 </div>
             </div>
             <div class="row">
-                <div class="col">Dependency Resolver</div>
+                <div class="col">依赖解析器</div>
                 <div class="col-8">
                     <DependencyResolver :dependency-resolver="resolution.status[0].dependency_resolver" />
                 </div>
@@ -48,13 +48,13 @@
                     </div>
                     <div class="col">
                         <div class="row">
-                            <div class="col">Status</div>
+                            <div class="col">状态</div>
                             <div class="col">
                                 <StatusDisplay :status="resolution.status[index]" :compact="false" />
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col">Dependency Resolver</div>
+                            <div class="col">依赖解析器</div>
                             <div class="col">
                                 <DependencyResolver
                                     :dependency-resolver="resolution.status[index].dependency_resolver" />

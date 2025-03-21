@@ -3,8 +3,8 @@
         <b-breadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
         <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <Alert v-if="viewOnly" message="未实现" variant="dark" />
+        <Alert v-else-if="loading" message="等待数据" variant="info" />
         <b-container v-else-if="dataManager">
             <b-row>
                 <b-col>
@@ -18,7 +18,7 @@
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
-                                        <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
+                                        <b-button v-b-tooltip.hover title="重新运行" :href="runUrl">
                                             <span class="fa fa-redo" />
                                         </b-button>
                                     </b-col>
@@ -37,7 +37,7 @@
                                                 <b-col cols="auto">
                                                     <b-button
                                                         v-b-tooltip.hover
-                                                        title="View complete info"
+                                                        title="查看完整信息"
                                                         :href="hdaInfo[i]['infoUrl']"
                                                         target="galaxy_main">
                                                         <span class="fa fa-info-circle" />
@@ -61,7 +61,7 @@
                                 hover
                                 striped>
                                 <template v-slot:table-caption>
-                                    Data Table: <b>{{ output[0] }}</b>
+                                    数据表格: <b>{{ output[0] }}</b>
                                 </template>
                             </b-table>
                         </b-card>
@@ -99,10 +99,10 @@ export default {
             errorMessages: [],
             fields: [
                 { key: "created" },
-                { key: "fileSize", label: "Filesize" },
+                { key: "fileSize", label: "文件大小" },
                 {
                     key: "fileName",
-                    label: "Full path",
+                    label: "完整路径",
                     tdClass: "table-cell-break-word",
                 },
             ],
@@ -116,7 +116,7 @@ export default {
         breadcrumbItems() {
             return [
                 {
-                    text: "Data Managers",
+                    text: "数据管理器",
                     to: { name: "DataManager" },
                 },
                 {
@@ -125,7 +125,7 @@ export default {
                     target: "_blank",
                 },
                 {
-                    text: "Jobs",
+                    text: "作业",
                     to: {
                         name: "DataManagerJobs",
                         params: { id: this.dataManager["id"] },

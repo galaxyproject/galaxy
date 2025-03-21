@@ -3,7 +3,7 @@
         <span v-if="toolIds.length == 1">
             <ToolDisplay :tool-id="toolIds[0]" />
         </span>
-        <span v-else-if="compact"> {{ toolIds.length }} tools </span>
+        <span v-else-if="compact"> {{ toolIds.length }} 个工具 </span>
         <div v-for="(toolId, index) in toolIds" v-else :key="index">
             <ToolDisplay :tool-id="toolId" />
         </div>

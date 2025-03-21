@@ -47,7 +47,7 @@ export class LazySetValueAction<T> extends LazyUndoRedoAction {
     }
 
     get name() {
-        return this.internalName ?? "modify workflow";
+        return this.internalName ?? "修改工作流";
     }
 
     set name(name: string | undefined) {
@@ -120,7 +120,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     }
 
     get name() {
-        return `Copy ${this.data.name} into workflow`;
+        return `复制 ${this.data.name} 到工作流`;
     }
 
     run() {
@@ -167,7 +167,7 @@ export class LazyMoveMultipleAction extends LazyUndoRedoAction {
     private positionTo;
 
     get name() {
-        return "move multiple nodes";
+        return "移动多个节点";
     }
 
     constructor(
@@ -242,7 +242,11 @@ function getCountName(count: number, type: "comment" | "step") {
     if (count === 0) {
         return null;
     } else {
-        return `${count} ${count === 1 ? type : `${type}s`}`;
+        if (type === "comment") {
+            return `${count} ${count === 1 ? "条注释" : "条注释"}`;
+        } else {
+            return `${count} ${count === 1 ? "个步骤" : "个步骤"}`;
+        }
     }
 }
 
@@ -251,7 +255,7 @@ function getCombinedCountName(stepCount: number, commentCount: number) {
     const commentName = getCountName(commentCount, "comment");
 
     if (stepName && commentName) {
-        return `${stepName} and ${commentName}`;
+        return `${stepName} 和 ${commentName}`;
     } else {
         return (stepName ?? commentName) as string;
     }
@@ -275,7 +279,7 @@ export class ClearSelectionAction extends UndoRedoAction {
     }
 
     get name() {
-        return "clear selection";
+        return "清除选择";
     }
 
     run() {
@@ -319,7 +323,7 @@ export class AddToSelectionAction extends ModifySelectionAction {
 
     get name() {
         const combinedCountName = getCombinedCountName(this.selection.steps.length, this.selection.comments.length);
-        return `add ${combinedCountName} to selection`;
+        return `将${combinedCountName}添加到选择`;
     }
 }
 
@@ -328,7 +332,7 @@ export class RemoveFromSelectionAction extends ModifySelectionAction {
 
     get name() {
         const combinedCountName = getCombinedCountName(this.selection.steps.length, this.selection.comments.length);
-        return `remove ${combinedCountName} from selection`;
+        return `从选择中移除${combinedCountName}`;
     }
 }
 
@@ -356,7 +360,7 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
     }
 
     get name() {
-        return "duplicate selection";
+        return "复制选择";
     }
 }
 
@@ -385,7 +389,7 @@ export class DeleteSelectionAction extends UndoRedoAction {
     }
 
     get name() {
-        return "delete selection";
+        return "移除选择";
     }
 
     get commentIds() {

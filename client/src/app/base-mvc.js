@@ -12,7 +12,7 @@ var SessionStorageModel = Backbone.Model.extend({
         // check for sessionStorage and error if no id is provided
         this._checkEnabledSessionStorage();
         if (!initialAttrs.id) {
-            throw new Error("SessionStorageModel requires an id in the initial attributes");
+            throw new Error("SessionStorageModel 在初始属性中需要一个 id");
         }
         this.id = initialAttrs.id;
 
@@ -34,7 +34,7 @@ var SessionStorageModel = Backbone.Model.extend({
         try {
             return window.sessionStorage.length >= 0;
         } catch (err) {
-            alert("Please enable cookies in your browser for this Galaxy site");
+            alert("请在浏览器中启用 cookies，以便使用网站");
             return false;
         }
     },

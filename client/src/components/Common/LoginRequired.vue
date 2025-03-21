@@ -15,6 +15,6 @@ const userStore = useUserStore();
 <template>
     <BPopover v-if="userStore.isAnonymous" :target="target" triggers="hover focus" placement="bottom">
         <template v-slot:title> {{ title }} </template>
-        Please <a :href="withPrefix('/login')">log in or register</a> to use this feature.
+        请 <a :href="withPrefix('/login')">登录或注册</a> 以使用此功能。
     </BPopover>
 </template>

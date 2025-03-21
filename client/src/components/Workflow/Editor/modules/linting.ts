@@ -16,15 +16,15 @@ interface LintState {
 }
 
 export const bestPracticeWarningAnnotation =
-    "This workflow does not provide a short description. Providing a short description helps workflow executors understand the purpose and usage of the workflow.";
+    "此工作流没有提供简短描述。提供简短描述有助于工作流执行者理解工作流的目的和用法。";
 export const bestPracticeWarningAnnotationLength =
-    "This workflow includes a very long short description. The best practice is to break up long descriptions of a workflow into readme and help text and keep the short description field a relatively brief description of the workflow appropriate for displaying in lists of workflows.";
+    "此工作流包含非常长的简短描述。最佳实践是将工作流的长描述分解为自述文件和帮助文本，保持简短描述字段相对简洁，适合在工作流列表中显示。";
 export const bestPracticeWarningCreator =
-    "This workflow does not specify creator(s). This is important metadata for workflows that will be published and/or shared to help workflow executors know how to cite the workflow authors.";
+    "此工作流未指定创建者。这对于将要发布和/或共享的工作流来说是重要的元数据，有助于工作流执行者了解如何引用工作流作者。";
 export const bestPracticeWarningLicense =
-    "This workflow does not specify a license. This is important metadata for workflows that will be published and/or shared to help workflow executors understand how it may be used.";
+    "此工作流未指定许可证。这对于将要发布和/或共享的工作流来说是重要的元数据，有助于工作流执行者了解如何使用它。";
 export const bestPracticeWarningReadme =
-    "This workflow does not provide a readme. Providing a detailed readme helps workflow executors understand the details, purpose, and limitations of the workflow.";
+    "此工作流没有提供自述文件。提供详细的自述文件有助于工作流执行者了解工作流的细节、目的和限制。";
 
 export function getDisconnectedInputs(
     steps: Steps = {},
@@ -62,11 +62,11 @@ export function getMissingMetadata(steps: Steps) {
             const noLabel = !step.label;
             let warningLabel = null;
             if (noLabel && noAnnotation) {
-                warningLabel = "Missing a label and annotation";
+                warningLabel = "缺少标签和注释";
             } else if (noLabel) {
-                warningLabel = "Missing a label";
+                warningLabel = "缺少标签";
             } else if (noAnnotation) {
-                warningLabel = "Missing an annotation";
+                warningLabel = "缺少注释";
             }
             if (warningLabel) {
                 inputs.push({
@@ -110,7 +110,7 @@ export function getUntypedParameters(untypedParameters: UntypedParameters) {
         untypedParameters.parameters.forEach((parameter) => {
             try {
                 const parameterReference = parameter.references[0];
-                assertDefined(parameterReference, `Parameter references for ${parameter.name} are empty.`);
+                assertDefined(parameterReference, `${parameter.name} 的参数引用为空.`);
 
                 // TODO: Not sure this is right, but I think this may have been broken previously?
                 const stepLabel =

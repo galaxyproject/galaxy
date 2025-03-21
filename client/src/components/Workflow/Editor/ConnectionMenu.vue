@@ -2,7 +2,7 @@
     <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
         <template v-if="allElements.length === 0">
             <b-list-group-item ref="menuItem" tabindex="0" role="menuitem">
-                No compatible input found in workflow
+                在工作流中未找到兼容的输入
             </b-list-group-item>
         </template>
         <template v-else>
@@ -16,7 +16,7 @@
                 @click="toggleConnection(input)"
                 @keyup.enter="toggleConnection(input)"
                 @focus="activeElement = index">
-                {{ input.connected ? "Disconnect from" : "Connect to" }} {{ input.inputLabel }}
+                {{ input.connected ? "断开连接" : "连接到" }} {{ input.inputLabel }}
             </b-list-group-item>
         </template>
     </b-list-group>
@@ -90,7 +90,7 @@ function decrement() {
 function terminalToInputObject(terminal: InputTerminalsAndInvalid, connected: boolean): InputObject {
     const step = stepStore.getStep(terminal.stepId);
     assertDefined(step);
-    const inputLabel = `${terminal.name} in step ${step.id + 1}: ${step.label}`;
+    const inputLabel = `${terminal.name} 在步骤 ${step.id + 1}: ${step.label}`;
     return { stepId: step.id, inputName: terminal.name, inputLabel, connected };
 }
 

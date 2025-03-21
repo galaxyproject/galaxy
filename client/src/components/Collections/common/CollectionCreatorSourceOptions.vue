@@ -42,14 +42,14 @@ watch(localHideSourceItems, (newValue) => {
             switch
             :checked="extensionsToggle"
             @input="emit('remove-extensions-toggle')">
-            {{ localize("Remove file extensions?") }}
+            {{ localize("移除文件扩展名？") }}
         </BFormCheckbox>
 
         <div data-description="hide original elements">
             <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
                 <HelpText
                     uri="galaxy.collections.collectionBuilder.hideOriginalElements"
-                    :text="localize('Hide original elements')" />
+                    :text="localize('隐藏原始元素')" />
             </BFormCheckbox>
         </div>
     </BFormGroup>

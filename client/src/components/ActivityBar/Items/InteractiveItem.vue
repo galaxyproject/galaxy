@@ -28,8 +28,8 @@ const emit = defineEmits<{
 
 const tooltip = computed(() =>
     totalCount.value === 1
-        ? "You currently have 1 active interactive tool"
-        : `You currently have ${totalCount.value} active interactive tools`
+        ? "您当前有一个正在使用的互动工具"
+        : `您当前有 ${totalCount.value} 个正在使用的互动工具`
 );
 </script>
 

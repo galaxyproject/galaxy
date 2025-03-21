@@ -137,17 +137,17 @@ async function sendNewNotification() {
         return;
     }
 
-    Toast.success("Notification sent");
+    Toast.success("通知已发送");
     router.push("/admin/notifications");
 }
 </script>
 
 <template>
     <div>
-        <Heading h1 separator inline class="flex-grow-1"> New Notification </Heading>
+        <Heading h1 separator inline class="flex-grow-1"> 新通知 </Heading>
 
         <BAlert v-if="loading" show>
-            <LoadingSpan message="Loading notification" />
+            <LoadingSpan message="加载通知" />
         </BAlert>
 
         <div v-else>
@@ -155,20 +155,20 @@ async function sendNewNotification() {
                 id="notification-subject"
                 v-model="notificationData.notification.content.subject"
                 type="text"
-                title="Subject"
+                title="主题"
                 :optional="false"
-                help="This will be the subject of the notification"
-                placeholder="Enter subject"
+                help="这将是通知的主题"
+                placeholder="请输入主题"
                 required />
 
             <FormElement
                 id="notification-message"
                 v-model="notificationData.notification.content.message"
                 type="text"
-                title="Message"
+                title="消息"
                 :optional="false"
-                help="The message can be written in markdown."
-                placeholder="Enter message"
+                help="消息可以使用 markdown 格式编写。"
+                placeholder="请输入消息"
                 required
                 area />
 
@@ -176,19 +176,18 @@ async function sendNewNotification() {
                 id="notification-variant"
                 v-model="notificationData.notification.variant"
                 type="select"
-                title="Variant"
+                title="变体"
                 :optional="false"
-                help="This measures the urgency of the notification and will affect the color of the notification."
-                :options="[
-                    ['Info', 'info'],
-                    ['Warning', 'warning'],
-                    ['Urgent', 'urgent'],
+                help="此选项衡量通知的紧急性，并将影响通知的颜色。"
+                :options="[ 
+                    ['信息', 'info'],
+                    ['警告', 'warning'],
+                    ['紧急', 'urgent'],
                 ]" />
 
             <BAlert :show="isUrgent" variant="warning">
                 <span v-localize>
-                    Urgent notifications will ignore the user's notification preferences and will be sent to all
-                    available channels. Please use this option sparingly and only for critical notifications.
+                    紧急通知将忽略用户的通知偏好，并会发送到所有可用的频道。请谨慎使用此选项，仅用于关键通知。
                 </span>
             </BAlert>
 
@@ -196,8 +195,8 @@ async function sendNewNotification() {
                 id="notification-recipients-user-ids"
                 v-model="notificationData.recipients.user_ids"
                 type="select"
-                title="User recipients"
-                help="The users that will receive the notification"
+                title="用户接收者"
+                help="将接收通知的用户"
                 multiple
                 :options="users" />
 
@@ -205,8 +204,8 @@ async function sendNewNotification() {
                 id="notification-recipients-role-ids"
                 v-model="notificationData.recipients.role_ids"
                 type="select"
-                title="Role recipients"
-                help="The roles that will receive the notification"
+                title="角色接收者"
+                help="将接收通知的角色"
                 multiple
                 :options="roles" />
 
@@ -214,8 +213,8 @@ async function sendNewNotification() {
                 id="notification-recipients-group-ids"
                 v-model="notificationData.recipients.group_ids"
                 type="select"
-                title="Group recipients"
-                help="The groups that will receive the notification"
+                title="组接收者"
+                help="将接收通知的组"
                 multiple
                 :options="groups" />
 
@@ -223,25 +222,25 @@ async function sendNewNotification() {
                 <BCol>
                     <BFormGroup
                         id="notification-publication-time-group"
-                        label="Publication Time (local time)"
+                        label="发布时间（本地时间）"
                         label-for="notification-publication-time"
-                        description="The notification will be displayed after this time. Default is the current time.">
+                        description="通知将在此时间之后显示。默认为当前时间。">
                         <GDateTime id="notification-publication-time" v-model="publicationDate" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
                     <BFormGroup
                         id="notification-expiration-time-group"
-                        label="Expiration Time (local time)"
+                        label="过期时间（本地时间）"
                         label-for="notification-expiration-time"
-                        description="The notification will be deleted from the database after this time. Default is 6 months from the creation time.">
+                        description="通知将在此时间之后从数据库中删除。默认为创建时间后的6个月。">
                         <GDateTime id="notification-expiration-time" v-model="expirationDate" />
                     </BFormGroup>
                 </BCol>
             </BRow>
 
             <BRow align-v="center" class="m-1">
-                <Heading size="md"> Preview </Heading>
+                <Heading size="md"> 预览 </Heading>
             </BRow>
 
             <BCard class="my-2">
@@ -251,8 +250,7 @@ async function sendNewNotification() {
             <BAlert show variant="info">
                 <FontAwesomeIcon class="mr-2" :icon="faInfoCircle" />
                 <span v-localize>
-                    Once you send the notification, it will be sent to all the recipients and cannot be edited or
-                    deleted.
+                    一旦发送通知，它将发送给所有接收者，并且无法编辑或删除。
                 </span>
             </BAlert>
 
@@ -260,12 +258,12 @@ async function sendNewNotification() {
                 <AsyncButton
                     id="notification-submit"
                     icon="save"
-                    :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
+                    :title="!requiredFieldsFilled ? '请填写所有必填字段' : ''"
                     variant="primary"
                     size="md"
                     :disabled="!requiredFieldsFilled"
                     :action="sendNewNotification">
-                    <span v-localize> Send Notification </span>
+                    <span v-localize> 发送通知 </span>
                 </AsyncButton>
             </BRow>
         </div>

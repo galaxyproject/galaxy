@@ -2,7 +2,7 @@
     <BaseList
         :fields="fields"
         icon="fa fa-trash-o"
-        tooltip="Reset"
+        tooltip="重置"
         plural="metadata entries"
         success="successful"
         :getter="getter"
@@ -19,10 +19,10 @@ export default {
     data() {
         return {
             fields: [
-                { key: "execute", label: "Reset" },
-                { key: "name", label: "Metadata", sortable: true },
+                { key: "execute", label: "重置" },
+                { key: "name", label: "元数据", sortable: true },
                 { key: "owner", sortable: true },
-                { key: "ctx_rev", label: "Revision" },
+                { key: "ctx_rev", label: "修订" },
             ],
             getter: getInstalledRepositories,
             setter: resetRepositoryMetadata,

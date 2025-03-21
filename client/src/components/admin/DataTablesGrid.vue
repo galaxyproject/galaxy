@@ -1,6 +1,6 @@
 <template>
     <base-grid id="data-tables-grid" :is-loaded="isLoaded" :columns="columns">
-        <template v-slot:title> Current data table registry contains {{ rows.length }} data tables </template>
+        <template v-slot:title> 当前数据表注册包含 {{ rows.length }} 个数据表 </template>
         <template v-slot:rows>
             <template v-for="row in rows">
                 <tr :key="row.id">
@@ -37,10 +37,10 @@ export default {
     data() {
         return {
             columns: [
-                { text: "Name", dataIndex: "name" },
-                { text: "Filename", dataIndex: "filename" },
-                { text: "Tool data path", dataIndex: "tool_data_path" },
-                { text: "Errors", dataIndex: "errors" },
+                { text: "名称", dataIndex: "name" },
+                { text: "文件名", dataIndex: "filename" },
+                { text: "工具数据路径", dataIndex: "tool_data_path" },
+                { text: "错误", dataIndex: "errors" },
             ],
         };
     },

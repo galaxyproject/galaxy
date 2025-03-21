@@ -19,7 +19,7 @@ function LoadingIndicator($where, options) {
             '<div class="loading-indicator">',
             '<div class="loading-indicator-text">',
             '<span class="fa fa-spinner fa-spin fa-lg"></span>',
-            '<span class="loading-indicator-message">loading...</span>',
+            '<span class="loading-indicator-message">加载中...</span>',
             "</div>",
             "</div>",
         ].join("\n");
@@ -63,7 +63,7 @@ function LoadingIndicator($where, options) {
     }
 
     self.show = (msg, speed, callback) => {
-        msg = msg || "loading...";
+        msg = msg || "加载中...";
         speed = speed || "fast";
         // remove previous
         $where.parent().find(".loading-indicator").remove();

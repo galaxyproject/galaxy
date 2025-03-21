@@ -23,7 +23,7 @@ defineProps<Props>();
             <span :data-description="errorDataDescription">
                 {{ error }}
             </span>
-            <BButton variant="link" @click="showTestResults = true">View configuration test status.</BButton>
+            <BButton variant="link" @click="showTestResults = true">查看配置测试状态.</BButton>
         </BAlert>
     </div>
 </template>

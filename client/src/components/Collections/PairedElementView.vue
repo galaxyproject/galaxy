@@ -41,7 +41,7 @@ watch(elementName, () => {
 
             <span class="pair-name-column flex-column">
                 <span class="pair-name">
-                    <ClickToEdit v-model="elementName" :title="localize('Click to rename')" />
+                    <ClickToEdit v-model="elementName" :title="localize('重命名')" />
                 </span>
             </span>
 
@@ -52,7 +52,7 @@ watch(elementName, () => {
         </div>
 
         <BButton class="unpair-btn" variant="link" @click="emit('onUnpair')">
-            <FontAwesomeIcon :icon="faUnlink" :title="localize('Unpair')" />
+            <FontAwesomeIcon :icon="faUnlink" :title="localize('取消配对')" />
         </BButton>
     </li>
 </template>

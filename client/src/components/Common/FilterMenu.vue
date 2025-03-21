@@ -59,8 +59,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    name: "Menu",
-    placeholder: "search for items",
+    name: "菜单",
+    placeholder: "搜索项目",
     debounceDelay: 500,
     filterText: "",
     menuType: "linked",
@@ -84,7 +84,7 @@ const identifier = kebabCase(props.name);
 const advancedMenu = ref<HTMLElement | null>(null);
 const delayedInputField = ref<InstanceType<typeof DelayedInput> | null>(null);
 const toggleMenuButton = computed(() => {
-    const element = delayedInputField.value?.$el.querySelector(`[data-description='toggle advanced search']`);
+    const element = delayedInputField.value?.$el.querySelector(`[data-description='切换高级搜索']`);
     return element;
 });
 
@@ -223,8 +223,8 @@ function updateFilterText(newFilterText: string) {
             aria-haspopup="true"
             size="sm"
             :pressed="props.showAdvanced"
-            title="Toggle Advanced Search"
-            data-description="wide toggle advanced search"
+            title="切换高级搜索"
+            data-description="宽切换高级搜索"
             @click="onToggle">
             <FontAwesomeIcon fixed-width :icon="faAngleDoubleUp" />
         </BButton>
@@ -238,7 +238,7 @@ function updateFilterText(newFilterText: string) {
             :show.sync="localAdvancedToggle"
             :target="toggleMenuButton"
             placement="bottomleft"
-            data-description="advanced filters"
+            data-description="高级筛选"
             @hidden="onPopoverHidden"
             @shown="onPopoverShown">
             <span ref="advancedMenu">
@@ -330,18 +330,18 @@ function updateFilterText(newFilterText: string) {
                     class="mr-1"
                     size="sm"
                     variant="primary"
-                    data-description="apply filters"
+                    data-description="应用筛选"
                     @click="onSearch">
                     <FontAwesomeIcon :icon="faSearch" />
 
-                    <span v-localize>Search</span>
+                    <span v-localize>搜索</span>
                 </BButton>
 
-                <BButton v-if="props.hasHelp" title="Search Help" size="sm" @click="showHelp = true">
+                <BButton v-if="props.hasHelp" title="搜索帮助" size="sm" @click="showHelp = true">
                     <FontAwesomeIcon :icon="faQuestion" />
                 </BButton>
 
-                <BModal v-if="props.hasHelp" v-model="showHelp" :title="`${props.name} Advanced Search Help`" ok-only>
+                <BModal v-if="props.hasHelp" v-model="showHelp" :title="`${props.name} 高级搜索帮助`" ok-only>
                     <!-- Slot for Menu help section -->
                     <slot name="menu-help-text"></slot>
                 </BModal>

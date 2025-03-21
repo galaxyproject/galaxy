@@ -78,11 +78,11 @@ const tabsDisabled = computed(
 const disabledTabTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete any disabled tabs will become available.`;
+        return `此工作流当前未被安排。当前状态为 ${state}。一旦工作流完全安排并且任务完成，所有禁用的标签将变为可用。`;
     } else if (runningCount.value != 0) {
-        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed any disabled tabs will become available.`;
+        return `工作流调用仍包含 ${runningCount.value} 个正在运行的任务。一旦这些任务完成，所有禁用的标签将变为可用。`;
     } else {
-        return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
+        return "此工作流的步骤仍在运行。一旦完成，所有禁用的标签将变为可用。";
     }
 });
 
@@ -171,11 +171,11 @@ const newCount = computed<number>(() => {
 });
 
 const jobStatesStr = computed(() => {
-    let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
+    let jobStr = `${numTerminal(jobStatesSummary.value) || 0} 个任务已完成，共 ${jobCount.value} 个任务`;
     if (!invocationSchedulingTerminal.value) {
-        jobStr += " (total number of jobs will change until all steps fully scheduled)";
+        jobStr += " （直到所有步骤完全安排，任务总数将发生变化）";
     }
-    return `${jobStr}.`;
+    return `${jobStr}。`;
 });
 
 watch(
@@ -243,7 +243,7 @@ async function onCancel() {
 </script>
 
 <template>
-    <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
+    <div v-if="invocation" class="d-flex flex-column w-100" data-description="工作流调用状态">
         <WorkflowNavigationTitle
             v-if="props.isFullPage"
             :invocation="invocation"
@@ -253,15 +253,15 @@ async function onCancel() {
                 <BButton
                     v-if="!invocationAndJobTerminal"
                     v-b-tooltip.noninteractive.hover
-                    title="Cancel scheduling of workflow invocation"
-                    data-description="header cancel invocation button"
+                    title="取消安排工作流调用"
+                    data-description="标题取消调用按钮"
                     size="sm"
                     class="text-decoration-none"
                     variant="link"
                     :disabled="cancellingInvocation || invocationState == 'cancelling'"
                     @click="onCancel">
                     <FontAwesomeIcon :icon="faSquare" fixed-width />
-                    Cancel
+                    取消
                 </BButton>
             </template>
         </WorkflowNavigationTitle>
@@ -275,17 +275,17 @@ async function onCancel() {
                 <div class="progress-bars mx-1">
                     <ProgressBar
                         v-if="!stepCount"
-                        note="Loading step state summary..."
+                        note="加载步骤状态汇总..."
                         :loading="true"
                         class="steps-progress" />
                     <ProgressBar
                         v-else-if="invocationState == 'cancelled'"
-                        note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+                        note="调用安排已取消 - 预期的任务和输出可能未生成。"
                         :error-count="1"
                         class="steps-progress" />
                     <ProgressBar
                         v-else-if="invocationState == 'failed'"
-                        note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+                        note="调用安排失败 - Galaxy 管理员可能在日志中提供更多细节。"
                         :error-count="1"
                         class="steps-progress" />
                     <ProgressBar
@@ -311,7 +311,7 @@ async function onCancel() {
             ref="invocationTabs"
             class="mt-1 d-flex flex-column overflow-auto"
             :content-class="['overflow-auto', isScrollable ? 'pr-2' : '']">
-            <BTab key="0" title="Overview" active>
+            <BTab key="0" title="概览" active>
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
@@ -319,7 +319,7 @@ async function onCancel() {
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :is-subworkflow="isSubworkflow" />
             </BTab>
-            <BTab v-if="!isSubworkflow" title="Steps" lazy>
+            <BTab v-if="!isSubworkflow" title="步骤" lazy>
                 <WorkflowInvocationSteps
                     v-if="invocation && storeId"
                     :invocation="invocation"
@@ -327,24 +327,24 @@ async function onCancel() {
                     :is-full-page="props.isFullPage" />
             </BTab>
             <WorkflowInvocationInputOutputTabs :invocation="invocation" />
-            <!-- <BTab title="Workflow Overview">
-                <p>TODO: Insert readonly version of workflow editor here</p>
+            <!-- <BTab title="工作流概览">
+                <p>TODO: 在此插入工作流编辑器的只读版本</p>
             </BTab> -->
             <BTab
                 v-if="!props.isSubworkflow"
-                title="Report"
+                title="报告"
                 title-item-class="invocation-report-tab"
                 :disabled="tabsDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
-            <BTab title="Export" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
+            <BTab title="导出" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
             </BTab>
-            <BTab title="Metrics" :lazy="true">
+            <BTab title="指标" :lazy="true">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
             <template v-slot:tabs-end>
@@ -361,12 +361,12 @@ async function onCancel() {
                         v-if="!props.isFullPage && !invocationAndJobTerminal"
                         v-b-tooltip.noninteractive.hover
                         class="my-1"
-                        title="Cancel scheduling of workflow invocation"
-                        data-description="cancel invocation button"
+                        title="取消安排工作流调用"
+                        data-description="取消调用按钮"
                         size="sm"
                         @click="onCancel">
                         <FontAwesomeIcon :icon="faTimes" fixed-width />
-                        Cancel Workflow
+                        取消工作流
                     </BButton>
                 </div>
             </template>
@@ -376,10 +376,10 @@ async function onCancel() {
         {{ errorMessage }}
     </BAlert>
     <BAlert v-else-if="!invocationLoaded" variant="info" show>
-        <LoadingSpan message="Loading invocation" />
+        <LoadingSpan message="加载调用中" />
     </BAlert>
     <BAlert v-else variant="info" show>
-        <span v-localize>Invocation not found.</span>
+        <span v-localize>未找到调用。</span>
     </BAlert>
 </template>
 

@@ -34,8 +34,8 @@ function onSkipBoolean(value: boolean) {
     <FormElement
         id="__conditional"
         :value="conditionalDefined"
-        title="Conditionally skip step?"
-        help="Set to true and connect a boolean parameter that determines whether the step should run. The step runs if the parameter value is true and will be skipped if the parameter value is false"
+        title="是否有条件地跳过步骤？"
+        help="设置为真并连接一个布尔参数，该参数决定是否应该运行该步骤。如果参数值为真，则步骤运行；如果参数值为假，则步骤将被跳过"
         type="boolean"
         @input="onSkipBoolean"></FormElement>
     <!-- We don't seem to have a disabled text field

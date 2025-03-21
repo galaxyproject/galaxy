@@ -8,15 +8,15 @@ import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 
 <template>
     <section>
-        <h1 class="h-lg">Import workflow</h1>
+        <h1 class="h-lg">导入工作流</h1>
         <BTabs fill>
-            <BTab title-link-class="workflow-import-file-link" title="Archived file or url" active>
+            <BTab title-link-class="workflow-import-file-link" title="归档文件或网址" active>
                 <FromFileOrUrl />
             </BTab>
 
-            <BTab title-link-class="workflow-import-trs-search-link" title="GA4GH servers">
+            <BTab title-link-class="workflow-import-trs-search-link" title="GA4GH 服务器">
                 <div class="mt-4">
-                    <h2 class="h-sm">Import a Workflow from Configured GA4GH Tool Registry Servers (e.g. Dockstore)</h2>
+                    <h2 class="h-sm">从已配置的 GA4GH 工具注册服务器导入工作流（例如 Dockstore）</h2>
 
                     <TrsSearch />
                 </div>
@@ -24,7 +24,7 @@ import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 
             <BTab title-link-class="workflow-import-trs-id-link" title="TRS ID">
                 <div class="mt-4">
-                    <h2 class="h-sm">Import from a TRS ID</h2>
+                    <h2 class="h-sm">从 TRS ID 导入</h2>
 
                     <TrsImport />
                 </div>

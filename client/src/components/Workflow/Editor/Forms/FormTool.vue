@@ -14,32 +14,32 @@
             <FormElement
                 id="__label"
                 :value="label"
-                title="Label"
-                help="Add a step label."
+                title="标签"
+                help="添加步骤标签。"
                 :error="uniqueErrorLabel"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
                 :value="annotation"
-                title="Step Annotation"
+                title="步骤注释"
                 :area="true"
-                help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+                help="为此步骤添加注释或备注。查看工作流时可以看到这些注释。"
                 @input="onAnnotation" />
             <FormConditional :step="step" @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
             <div class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                <Heading h2 separator bold size="sm"> 工具参数 </Heading>
                 <FormDisplay
                     :id="id"
                     :key="formKey"
                     :inputs="inputs"
                     :errors="errors"
-                    text-enable="Set in Advance"
-                    text-disable="Set at Runtime"
+                    text-enable="提前设置"
+                    text-disable="运行时设置"
                     :workflow-building-mode="true"
                     @onChange="onChange" />
             </div>
             <div class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                <Heading h2 separator bold size="sm"> 附加选项 </Heading>
                 <FormSection
                     :id="stepId"
                     :key="formKey"
@@ -201,7 +201,7 @@ export default {
             this.$emit("onChangePostJobActions", this.stepId, postJobActions);
         },
         onChangeVersion(newVersion) {
-            this.messageText = `Now you are using '${this.configForm.name}' version ${newVersion}.`;
+            this.messageText = `现在你在使用 '${this.configForm.name}' 版本 ${newVersion}.`;
             this.postChanges(newVersion);
         },
         onUpdateFavorites(user, newFavorites) {

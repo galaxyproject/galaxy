@@ -6,68 +6,68 @@
                 :id="actionNames.RenameDatasetAction__newname"
                 :value="formData[actionNames.RenameDatasetAction__newname]"
                 :help="renameHelp"
-                title="Rename dataset"
+                title="重命名数据集"
                 type="text"
                 @input="onInput" />
             <FormDatatype
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
                 :datatypes="datatypes"
-                title="Change datatype"
-                help="This action will change the datatype of the output to the indicated datatype."
+                title="更改数据类型"
+                help="此操作将把输出的数据类型更改为指定的数据类型。"
                 @onChange="onDatatype" />
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
                 :value="formData[actionNames.TagDatasetAction__tags]"
-                :attributes="{ placeholder: 'Enter Tags' }"
-                title="Add Tags"
+                :attributes="{ placeholder: '输入标签' }"
+                title="添加标签"
                 type="tags"
-                help="This action will set tags for the dataset."
+                help="此操作将为数据集设置标签。"
                 @input="onInput" />
             <FormElement
                 :id="actionNames.RemoveTagDatasetAction__tags"
                 :value="formData[actionNames.RemoveTagDatasetAction__tags]"
-                :attributes="{ placeholder: 'Enter Tags' }"
-                title="Remove Tags"
+                :attributes="{ placeholder: '输入标签' }"
+                title="删除标签"
                 type="tags"
-                help="This action will remove tags for the dataset."
+                help="此操作将删除数据集的标签。"
                 @input="onInput" />
-            <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumn">
+            <FormCard title="分配列" collapsible :expanded.sync="expandedColumn">
                 <template v-slot:body>
                     <FormElement
                         :id="actionNames.ColumnSetAction__chromCol"
                         :value="formData[actionNames.ColumnSetAction__chromCol]"
-                        title="Chrom column"
+                        title="染色体列"
                         type="integer"
-                        help="This action will set the chromosome column."
+                        help="此操作将设置染色体列。"
                         @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__startCol"
                         :value="formData[actionNames.ColumnSetAction__startCol]"
-                        title="Start column"
+                        title="起始列"
                         type="integer"
-                        help="This action will set the start column."
+                        help="此操作将设置起始列。"
                         @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__endCol"
                         :value="formData[actionNames.ColumnSetAction__endCol]"
-                        title="End column"
+                        title="结束列"
                         type="integer"
-                        help="This action will set the end column."
+                        help="此操作将设置结束列。"
                         @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__strandCol"
                         :value="formData[actionNames.ColumnSetAction__strandCol]"
-                        title="Strand column"
+                        title="链列"
                         type="integer"
-                        help="This action will set the strand column."
+                        help="此操作将设置链列。"
                         @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__nameCol"
                         :value="formData[actionNames.ColumnSetAction__nameCol]"
-                        title="Name column"
+                        title="名称列"
                         type="integer"
-                        help="This action will set the name column."
+                        help="此操作将设置名称列。"
                         @input="onInput" />
                 </template>
             </FormCard>
@@ -151,8 +151,8 @@ export default {
         },
         renameHelp() {
             /* TODO: FormElement should provide a slot for custom help templating instead. */
-            const helpLink = `<a href="${this.renameHelpUrl}">here</a>`;
-            const helpSection = `This action will rename the output dataset. Click ${helpLink} for more information. Valid input variables are:`;
+            const helpLink = `<a href="${this.renameHelpUrl}">此处</a>`;
+            const helpSection = `此操作将重命名输出数据集。点击${helpLink}获取更多信息。有效的输入变量包括：`;
             let helpLabels = "";
             for (const input of this.inputs) {
                 const name = input.name.replace(/\|/g, ".");

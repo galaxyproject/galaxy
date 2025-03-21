@@ -27,15 +27,15 @@ const datatypeExtensions = computed(() => {
     }
     extensions.sort((a, b) => (a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0));
     extensions.unshift({
-        0: "Sequences",
+        0: "序列",
         1: "Sequences",
     });
     extensions.unshift({
-        0: "Roadmaps",
+        0: "路线图",
         1: "Roadmaps",
     });
     extensions.unshift({
-        0: "Leave unchanged",
+        0: "保持不变",
         1: "",
     });
     return extensions;

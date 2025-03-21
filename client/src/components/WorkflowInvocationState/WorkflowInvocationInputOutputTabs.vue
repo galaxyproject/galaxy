@@ -20,9 +20,9 @@ function dataInputStepLabel(key: number, input: HasSrc) {
     let label = invocationStep && invocationStep.workflow_step_label;
     if (!label) {
         if (input.src === "hda" || input.src === "ldda") {
-            label = "Input dataset";
+            label = "输入数据集";
         } else if (input.src === "hdca") {
-            label = "Input dataset collection";
+            label = "输入数据集集合";
         }
     }
     return label;
@@ -30,22 +30,22 @@ function dataInputStepLabel(key: number, input: HasSrc) {
 </script>
 <template>
     <span v-if="invocation">
-        <BTab v-if="Object.keys(invocation.input_step_parameters).length" title="Parameters" lazy>
+        <BTab v-if="Object.keys(invocation.input_step_parameters).length" title="参数" lazy>
             <ParameterStep :parameters="Object.values(invocation.input_step_parameters)" />
         </BTab>
-        <BTab v-if="Object.keys(invocation.inputs).length" title="Inputs" lazy>
+        <BTab v-if="Object.keys(invocation.inputs).length" title="输入" lazy>
             <div v-for="(input, key) in invocation.inputs" :key="input.id" :data-label="dataInputStepLabel(key, input)">
                 <b>{{ dataInputStepLabel(key, input) }}</b>
                 <GenericHistoryItem :item-id="input.id" :item-src="input.src" />
             </div>
         </BTab>
-        <BTab v-if="Object.keys(invocation.outputs).length" title="Outputs" lazy>
+        <BTab v-if="Object.keys(invocation.outputs).length" title="输出" lazy>
             <div v-for="(output, key) in invocation.outputs" :key="output.id">
                 <b>{{ key }}:</b>
                 <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
             </div>
         </BTab>
-        <BTab v-if="Object.keys(invocation.output_collections).length" title="Output Collections" lazy>
+        <BTab v-if="Object.keys(invocation.output_collections).length" title="输出集合" lazy>
             <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                 <b>{{ key }}:</b>
                 <GenericHistoryItem :item-id="output.id" :item-src="output.src" />

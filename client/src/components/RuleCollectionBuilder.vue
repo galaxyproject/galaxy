@@ -1,27 +1,19 @@
 <template>
     <StateDiv v-if="state == 'build'" class="rule-collection-builder">
-        <!-- Different instructions if building up from individual datasets vs.
-        initial data import.-->
-        <RuleModalHeader v-if="ruleView == 'source'"
-            >Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced
-            setting.</RuleModalHeader
-        >
-        <RuleModalHeader v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
-            Use this form to describe rules for building collection(s) from the specified datasets.
-            <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
-            structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
+        <!-- 如果是从单独的数据集构建与初始化数据导入时的不同说明-->
+        <RuleModalHeader v-if="ruleView == 'source'">
+            以下是应用于表格数据的原始JSON规则描述。这是一个高级设置。
         </RuleModalHeader>
-        <!-- This modality allows importing individual datasets, multiple collections,
-        and requires a data source - note that.-->
+        <RuleModalHeader v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
+            使用此表单描述如何从指定数据集中构建集合。<b>确保至少指定一列作为列表标识符</b> —— 指定更多列以创建嵌套列表结构。指定一列作为“集合名称”以将数据集分组到多个集合中。
+        </RuleModalHeader>
+        <!-- 该模态允许导入单个数据集、多个集合，并且需要数据源 - 请注意。-->
         <RuleModalHeader v-else-if="importType == 'datasets'">
-            Use this form to describe rules for import datasets. At least one column should be defined to a source to
-            fetch data from (URLs, FTP files, etc...).
+            使用此表单描述导入数据集的规则。至少需要定义一列作为数据源来获取数据（URL、FTP文件等）。
         </RuleModalHeader>
         <RuleModalHeader v-else>
-            Use this form to describe rules for import datasets. At least one column should be defined to a source to
-            fetch data from (URLs, FTP files, etc...).
-            <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
-            structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
+            使用此表单描述导入数据集的规则。至少需要定义一列作为数据源来获取数据（URL、FTP文件等）。
+            <b>确保至少指定一列作为列表标识符</b> —— 指定更多列以创建嵌套列表结构。指定一列作为“集合名称”以将数据集分组到多个集合中。
         </RuleModalHeader>
         <b-alert v-if="validityErrorMessages.length != 0" class="alert-area" show variant="warning" dismissible>
             {{ validityErrorHeader }}
@@ -37,7 +29,7 @@
         </RuleModalMiddle>
 
         <RuleModalMiddle v-else>
-            <!-- column-headers -->
+            <!-- 列头 -->
             <div
                 v-if="ruleView == 'normal'"
                 class="rule-builder-body vertically-spaced"
@@ -58,7 +50,7 @@
                             <ColumnSelector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input v-model="addSortingNumeric" type="checkbox" />
-                                {{ l("Numeric sorting.") }}
+                                {{ l("数字排序") }}
                             </label>
                         </RuleComponent>
                         <RuleComponent
@@ -74,7 +66,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
-                                {{ l("Starting from") }}
+                                {{ l("从") }}
                                 <input v-model="addColumnRownumStart" type="number" min="0" />
                             </label>
                         </RuleComponent>
@@ -83,9 +75,8 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
-                                {{ l("For") }}
+                                {{ l("为") }}
                                 <select v-model="addColumnMetadataValue">
-                                    <!-- eslint-disable-next-line vue/require-v-for-key -->
                                     <option v-for="(col, index) in metadataOptions" :value="index">{{ col }}</option>
                                 </select>
                             </label>
@@ -95,11 +86,11 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
-                                {{ l("Value") }}
+                                {{ l("值") }}
                                 <input v-model="addColumnGroupTagValueValue" type="text" />
                             </label>
                             <label>
-                                {{ l("Default") }}
+                                {{ l("默认值") }}
                                 <input v-model="addColumnGroupTagValueDefault" type="text" />
                             </label>
                         </RuleComponent>
@@ -109,27 +100,24 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
                             <label>
-                                <input v-model="addColumnRegexType" type="radio" value="global" />Create column matching
-                                expression.
+                                <input v-model="addColumnRegexType" type="radio" value="global" />创建匹配表达式的列。
                             </label>
                             <br />
                             <label>
-                                <input v-model="addColumnRegexType" type="radio" value="groups" />Create columns
-                                matching expression groups.
+                                <input v-model="addColumnRegexType" type="radio" value="groups" />创建匹配表达式组的列。
                             </label>
                             <br />
                             <label>
-                                <input v-model="addColumnRegexType" type="radio" value="replacement" />Create column
-                                from expression replacement.
+                                <input v-model="addColumnRegexType" type="radio" value="replacement" />创建基于表达式替换的列。
                             </label>
                             <br />
                             <RegularExpressionInput :target.sync="addColumnRegexExpression" />
                             <label v-if="addColumnRegexType == 'groups'">
-                                {{ l("Number of Groups") }}
+                                {{ l("组数") }}
                                 <input v-model="addColumnRegexGroupCount" type="number" min="1" />
                             </label>
                             <label v-if="addColumnRegexType == 'replacement'">
-                                {{ l("Replacement Expression") }}
+                                {{ l("替换表达式") }}
                                 <input v-model="addColumnRegexReplacement" type="text" class="rule-replacement" />
                             </label>
                         </RuleComponent>
@@ -151,14 +139,14 @@
                             <ColumnSelector :target.sync="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <select v-model="addColumnSubstrType">
-                                    <option value="keep_prefix">Keep only prefix specified.</option>
-                                    <option value="drop_prefix">Strip off prefix specified.</option>
-                                    <option value="keep_suffix">Keep only suffix specified.</option>
-                                    <option value="drop_suffix">Strip off suffix specified.</option>
+                                    <option value="keep_prefix">仅保留指定的前缀。</option>
+                                    <option value="drop_prefix">去掉指定的前缀。</option>
+                                    <option value="keep_suffix">仅保留指定的后缀。</option>
+                                    <option value="drop_suffix">去掉指定的后缀。</option>
                                 </select>
                             </label>
                             <label>
-                                {{ l("Prefix or suffix length") }}
+                                {{ l("前缀或后缀长度") }}
                                 <input v-model="addColumnSubstrLength" type="number" min="0" />
                             </label>
                         </RuleComponent>
@@ -167,7 +155,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
-                                {{ l("Value") }}
+                                {{ l("值") }}
                                 <input v-model="addColumnValue" type="text" />
                             </label>
                         </RuleComponent>
@@ -186,12 +174,12 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector
                                 :target.sync="splitColumnsTargets0"
-                                label="Odd Row Column(s)"
+                                label="奇数行列"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true" />
                             <ColumnSelector
                                 :target.sync="splitColumnsTargets1"
-                                label="Even Row Column(s)"
+                                label="偶数行列"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true" />
                         </RuleComponent>
@@ -201,11 +189,11 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector
                                 :target.sync="swapColumnsTarget0"
-                                label="Swap Column"
+                                label="交换列"
                                 :col-headers="activeRuleColHeaders" />
                             <ColumnSelector
                                 :target.sync="swapColumnsTarget1"
-                                label="With Column"
+                                label="与列"
                                 :col-headers="activeRuleColHeaders" />
                         </RuleComponent>
                         <RuleComponent
@@ -216,7 +204,7 @@
                             <RegularExpressionInput :target.sync="addFilterRegexExpression" />
                             <label v-b-tooltip.hover :title="titleInvertFilterRegex">
                                 <input v-model="addFilterRegexInvert" type="checkbox" />
-                                {{ l("Invert filter.") }}
+                                {{ l("反转过滤") }}
                             </label>
                         </RuleComponent>
                         <RuleComponent
@@ -227,7 +215,7 @@
                             <input v-model="addFilterMatchesValue" type="text" />
                             <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterMatchesInvert" type="checkbox" />
-                                {{ l("Invert filter.") }}
+                                {{ l("反转过滤") }}
                             </label>
                         </RuleComponent>
                         <RuleComponent
@@ -236,12 +224,12 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterCompareTarget" :col-headers="activeRuleColHeaders" />
                             <label>
-                                Filter out rows
+                                过滤出行
                                 <select v-model="addFilterCompareType">
-                                    <option value="less_than">{{ l("less than") }}</option>
-                                    <option value="less_than_equal">{{ l("less than or equal to") }}</option>
-                                    <option value="greater_than">{{ l("greater than") }}</option>
-                                    <option value="greater_than_equal">{{ l("greater than or equal to") }}</option>
+                                    <option value="less_than">{{ l("小于") }}</option>
+                                    <option value="less_than_equal">{{ l("小于或等于") }}</option>
+                                    <option value="greater_than">{{ l("大于") }}</option>
+                                    <option value="greater_than_equal">{{ l("大于或等于") }}</option>
                                 </select>
                             </label>
                             <input v-model="addFilterCompareValue" type="text" />
@@ -251,19 +239,19 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
-                                Filter which rows?
+                                过滤哪一行？
                                 <select v-model="addFilterCountWhich">
-                                    <option value="first">first</option>
-                                    <option value="last">last</option>
+                                    <option value="first">第一行</option>
+                                    <option value="last">最后一行</option>
                                 </select>
                             </label>
                             <label>
-                                Filter how many rows?
+                                过滤多少行？
                                 <input v-model="addFilterCountN" type="number" />
                             </label>
                             <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterCountInvert" type="checkbox" />
-                                {{ l("Invert filter.") }}
+                                {{ l("反转过滤") }}
                             </label>
                         </RuleComponent>
                         <RuleComponent
@@ -273,7 +261,7 @@
                             <ColumnSelector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input v-model="addFilterEmptyInvert" type="checkbox" />
-                                {{ l("Invert filter.") }}
+                                {{ l("反转过滤") }}
                             </label>
                         </RuleComponent>
                         <div v-if="displayRuleType == 'mapping'">
@@ -302,7 +290,7 @@
                                     class="dropdown-toggle btn btn-primary mr-1"
                                     data-toggle="dropdown">
                                     <span class="fa fa-plus rule-add-mapping"></span>
-                                    {{ "Add Definition" }}
+                                    {{ "添加定义" }}
                                     <span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -323,13 +311,13 @@
                                     :title="titleApplyColumnDefinitions"
                                     class="rule-mapping-ok"
                                     @click="displayRuleType = null"
-                                    >{{ l("Apply") }}</b-button
+                                    >{{ l("应用") }}</b-button
                                 >
                             </div>
                         </div>
                         <div v-if="displayRuleType == null" class="rule-summary">
                             <span class="title">
-                                {{ l("Rules") }}
+                                {{ l("规则") }}
                                 <span
                                     v-b-tooltip.hover
                                     class="fa fa-wrench rule-builder-view-source"
@@ -341,10 +329,9 @@
                                     @update-rules="restoreRules" />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
-                                Rows contain differing numbers of columns, there was likely a problem parsing your data.
+                                行包含不同数量的列，可能在解析数据时遇到问题。
                             </div>
                             <ol class="rules">
-                                <!-- Example at the end of https://vuejs.org/v2/guide/list.html -->
                                 <RuleDisplay
                                     v-for="(rule, index) in rules"
                                     :key="index"
@@ -364,10 +351,8 @@
                                     @mouseover.native="map.columns.forEach((col) => highlightColumn(col))"
                                     @mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))" />
                                 <div v-if="mapping.length == 0">
-                                    One or more column definitions must be specified. These are required to specify how
-                                    to build collections and datasets from rows and columns of the table.
-                                    <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">Click here</a> to
-                                    manage column definitions.
+                                    必须指定一个或多个列定义。这些是指定如何从表格的行和列构建集合和数据集的必需项。
+                                    <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">点击这里</a>以管理列定义。
                                 </div>
                             </ol>
                             <div class="rules-buttons btn-group">
@@ -379,7 +364,7 @@
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
                                         data-toggle="dropdown">
                                         <span class="fa fa-plus"></span>
-                                        {{ l("Rules") }}
+                                        {{ l("规则") }}
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -390,9 +375,7 @@
                                         <a
                                             href="javascript:void(0)"
                                             class="dropdown-item rule-link rule-link-mapping"
-                                            @click="displayRuleType = 'mapping'"
-                                            >Add / Modify Column Definitions</a
-                                        >
+                                            @click="displayRuleType = 'mapping'">添加 / 修改列定义</a>
                                     </div>
                                 </div>
                                 <div class="dropup">
@@ -403,7 +386,7 @@
                                         class="rule-menu-filter-button primary-button dropdown-toggle"
                                         data-toggle="dropdown">
                                         <span class="fa fa-plus"></span>
-                                        {{ l("Filter") }}
+                                        {{ l("筛选") }}
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -422,7 +405,7 @@
                                         class="rule-menu-column-button primary-button dropdown-toggle"
                                         data-toggle="dropdown">
                                         <span class="fa fa-plus"></span>
-                                        {{ l("Column") }}
+                                        {{ l("列") }}
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -448,7 +431,7 @@
                         </div>
                     </div>
                 </div>
-                <!--  flex-column column -->
+                <!--  flex-column列 -->
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
@@ -463,22 +446,22 @@
         </RuleModalMiddle>
         <RuleModalFooter v-if="ruleView == 'source'">
             <b-button v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">{{
-                l("Cancel")
+                l("取消")
             }}</b-button>
             <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">{{
-                l("Reset")
+                l("重置")
             }}</b-button>
             <b-button v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">{{
-                l("Apply")
+                l("应用")
             }}</b-button>
         </RuleModalFooter>
         <RuleModalFooter v-else-if="ruleView == 'normal'">
             <template v-slot:inputs>
                 <div class="rule-footer-inputs">
-                    <label v-if="elementsType == 'datasets'">{{ l("Hide original elements") }}:</label>
+                    <label v-if="elementsType == 'datasets'">{{ l("隐藏原始元素") }}:</label>
                     <input v-if="elementsType == 'datasets'" v-model="hideSourceItems" type="checkbox" />
                     <div v-if="extension && showFileTypeSelector" class="rule-footer-extension-group">
-                        <label>{{ l("Type") }}:</label>
+                        <label>{{ l("类型") }}:</label>
                         <Select2 v-model="extension" name="extension" class="extension-select">
                             <option v-for="col in extensions" :key="col.id" :value="col['id']">
                                 {{ col["text"] }}
@@ -486,12 +469,12 @@
                         </Select2>
                     </div>
                     <div v-if="genome && showGenomeSelector" class="rule-footer-genome-group">
-                        <label>{{ l("Genome") }}:</label>
+                        <label>{{ l("基因组") }}:</label>
                         <Select2 v-model="genome" class="genome-select">
                             <option v-for="col in genomes" :key="col.id" :value="col['id']">{{ col["text"] }}</option>
                         </Select2>
                     </div>
-                    <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
+                    <label v-if="showAddNameTag">{{ l("为名称添加标签") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
                     <div v-if="showCollectionNameInput" class="rule-footer-name-group">
                         <b-input
@@ -500,7 +483,7 @@
                             class="collection-name"
                             :placeholder="namePlaceholder"
                             :title="namePlaceholder" />
-                        <label>{{ l("Name") }}:</label>
+                        <label>{{ l("名称") }}:</label>
                     </div>
                 </div>
             </template>
@@ -510,12 +493,12 @@
                     class="creator-cancel-btn rule-btn-cancel"
                     tabindex="-1"
                     @click="cancel"
-                    >{{ l("Cancel") }}</b-button
+                    >{{ l("取消") }}</b-button
                 >
 
                 <TooltipOnHover class="menu-option" :title="titleReset">
                     <b-button class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">{{
-                        l("Reset")
+                        l("重置")
                     }}</b-button>
                 </TooltipOnHover>
                 <TooltipOnHover class="menu-option" :disabled="!validInput" :title="titleFinish">
@@ -534,33 +517,33 @@
         <RuleModalHeader v-if="importType == 'datasets'">
             {{
                 l(
-                    "Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete."
+                    "数据集已提交给Galaxy进行创建，创建完成后此对话框将关闭。您可以随时关闭此对话框，但无法收到数据集创建的错误通知，数据集创建完成后，可能需要手动刷新历史记录以查看新数据集。"
                 )
             }}
         </RuleModalHeader>
         <RuleModalHeader v-else-if="importType == 'collections'">
             {{
                 l(
-                    "Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete."
+                    "Galaxy正在等待集合创建完成，此对话框将在完成时关闭。您可以随时关闭此对话框，但无法收到集合创建的错误通知，集合创建完成后，可能需要手动刷新历史记录以查看新集合。"
                 )
             }}
         </RuleModalHeader>
         <RuleModalFooter>
-            <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</b-button>
+            <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("关闭") }}</b-button>
         </RuleModalFooter>
     </StateDiv>
     <StateDiv v-else-if="state == 'error'" class="rule-collection-builder">
-        <!-- TODO: steal styling from paired collection builder warning... -->
-        <RuleModalHeader>A problem was encountered.</RuleModalHeader>
+        <!-- TODO: 从配对集合构建警告样式... -->
+        <RuleModalHeader>遇到问题。</RuleModalHeader>
         <RuleModalMiddle>
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
         <RuleModalFooter>
             <b-button v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
-                l("Close")
+                l("关闭")
             }}</b-button>
             <b-button v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{
-                l("Okay")
+                l("确定")
             }}</b-button>
         </RuleModalFooter>
     </StateDiv>
@@ -753,26 +736,26 @@ export default {
             errorMessage: "",
             jaggedData: false,
             waitingJobState: "new",
-            titleReset: _l("Undo all reordering and discards"),
+            titleReset: _l("撤销所有重新排序和丢弃操作"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
+                "默认情况下，列将按字典顺序排序。如果列为数字值且应按数字排序，请勾选此选项"
             ),
-            titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
-            titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
-            titleInvertFilterMatches: _l("Remove rows matching supplied value"),
+            titleInvertFilterRegex: _l("移除不符合指定正则表达式的行"),
+            titleInvertFilterEmpty: _l("移除指定列中非空值的行"),
+            titleInvertFilterMatches: _l("移除与提供的值匹配的行"),
             titleViewSource: _l(
-                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
+                "高级选项：查看或编辑应用于此表格数据的规则的JSON表示"
             ),
-            titleSourceCancel: _l("Stop editing rules and dismiss changes"),
-            titleSourceReset: _l("Reset text area to current set of rules"),
-            titleSourceApply: _l("Apply changes to rule source and return to rule preview"),
-            titleRulesMenu: _l("General rules to apply"),
-            titleFilterMenu: _l("Rules that filter rows from the data"),
-            titleColumMenu: _l("Rules that generate new columns"),
-            titleRemoveMapping: _l("Remove column definition assignment"),
-            titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
-            titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
-            namePlaceholder: _l("Enter a name for your new collection"),
+            titleSourceCancel: _l("停止编辑规则并取消更改"),
+            titleSourceReset: _l("将文本区域重置为当前的规则集"),
+            titleSourceApply: _l("应用更改到规则源并返回规则预览"),
+            titleRulesMenu: _l("应用的一般规则"),
+            titleFilterMenu: _l("过滤数据行的规则"),
+            titleColumMenu: _l("生成新列的规则"),
+            titleRemoveMapping: _l("移除列定义分配"),
+            titleApplyColumnDefinitions: _l("应用这些列定义并返回规则预览"),
+            titleErrorOkay: _l("忽略此错误并返回规则构建器，以便尝试新规则"),
+            namePlaceholder: _l("输入新集合的名称"),
             activeRuleIndex: null,
             addColumnRegexTarget: 0,
             addColumnBasenameTarget: 0,
@@ -820,7 +803,7 @@ export default {
             hideSourceItems: this.defaultHideSourceItems,
             addNameTag: false,
             orientation: orientation,
-            validityErrorHeader: _l("These issues must be resolved to proceed:"),
+            validityErrorHeader: _l("必须解决以下问题才能继续："),
         };
     },
     computed: {
@@ -853,29 +836,29 @@ export default {
         },
         titleFinish() {
             if (this.validityErrorMessages.length != 0) {
-                return _l("Button is disabled due to validation errors. Please see alerts above.");
+                return _l("由于验证错误，按钮已禁用。请查看上方的警告。");
             } else if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
-                return _l("Create new collection from specified rules and datasets");
+                return _l("从指定的规则和数据集创建新集合");
             } else if (this.elementsType == "collection_contents") {
-                return _l("Save rules and return to tool form");
+                return _l("保存规则并返回工具表单");
             } else {
-                return _l("Upload collection using specified rules");
+                return _l("使用指定的规则上传集合");
             }
         },
         titleCancel() {
             if (this.importType == "datasets") {
-                return _l("Close this modal and do not upload any datasets");
+                return _l("关闭此模态窗口，不上传任何数据集");
             } else {
-                return _l("Close this modal and do not create any collections");
+                return _l("关闭此模态窗口，不创建任何集合");
             }
         },
         finishButtonTitle() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
-                return _l("Create");
+                return _l("创建");
             } else if (this.elementsType == "collection_contents") {
-                return _l("Save");
+                return _l("保存");
             } else {
-                return _l("Upload");
+                return _l("上传");
             }
         },
         hasActiveMappingEdit() {
@@ -967,30 +950,30 @@ export default {
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
                 } else {
-                    // give a bunch of different options if not constrained with given input
+                    // 如果没有约束输入，提供一些不同的选项
                     collectionType = "list:list:list:paired";
                 }
                 const collectionTypeRanks = collectionType.split(":");
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
                     if (collectionTypeRank == "list") {
-                        // TODO: drop the numeral at the end if only flat list
-                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                        // TODO: 如果是平面列表，则去掉结尾的数字
+                        metadataOptions["identifier" + index] = _l("列表标识符 ") + (parseInt(index) + 1);
                     } else {
-                        metadataOptions["identifier" + index] = _l("Paired Identifier");
+                        metadataOptions["identifier" + index] = _l("配对标识符");
                     }
                 }
-                metadataOptions["tags"] = _l("Tags");
+                metadataOptions["tags"] = _l("标签");
             } else if (this.elementsType == "ftp") {
-                metadataOptions["path"] = _l("Path");
+                metadataOptions["path"] = _l("路径");
             } else if (this.elementsType == "remote_files") {
                 metadataOptions["url"] = _l("URL");
-                metadataOptions["url_deferred"] = _l("URL (deferred)");
+                metadataOptions["url_deferred"] = _l("URL（延迟）");
             } else if (this.elementsType == "library_datasets") {
-                metadataOptions["name"] = _l("Name");
+                metadataOptions["name"] = _l("名称");
             } else if (this.elementsType == "datasets") {
-                metadataOptions["hid"] = _l("History ID (hid)");
-                metadataOptions["name"] = _l("Name");
+                metadataOptions["hid"] = _l("历史ID（hid）");
+                metadataOptions["name"] = _l("名称");
             } else {
                 metadataOptions = null;
             }
@@ -1085,19 +1068,19 @@ export default {
         validityErrorMessages() {
             const messages = [];
             if (!this.validName) {
-                messages.push("Name the collection.");
+                messages.push("请为集合命名。");
             }
             if (!this.validRules) {
-                messages.push("There is an error with one of your rules.");
+                messages.push("您的规则中存在错误。");
             }
             if (!this.validOnlyOnePath) {
-                messages.push("Only specify either an FTP Path or a URL.");
+                messages.push("只能指定一个FTP路径或URL。");
             }
             if (!this.validSourceColumn) {
-                messages.push("Specify a source column (either FTP Path or URL).");
+                messages.push("请指定源列（FTP路径或URL）。");
             }
             if (!this.validIdentifierColumns) {
-                messages.push("Specify a column as a list identifier.");
+                messages.push("请指定一列作为列表标识符。");
             }
             return messages;
         },
@@ -1159,15 +1142,14 @@ export default {
                 }
             }
         },
-    },
-    created() {
+    },created() {
         if (this.elementsType !== "collection_contents") {
             let columnCount = null;
             if (this.elementsType == "datasets") {
                 for (const element of this.initialElements) {
                     if (element.history_content_type == "dataset_collection") {
                         this.errorMessage =
-                            "This component can only be used with datasets, you have specified one or more collections.";
+                            "此组件只能用于数据集，您指定了一个或多个集合。";
                         this.state = "error";
                     }
                 }
@@ -1184,24 +1166,24 @@ export default {
                 }
             }
 
-            // TODO: provider...
+            // TODO: 提供者...
             UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION)
                 .then((extensions) => {
                     this.extensions = extensions;
                     this.extension = UploadUtils.DEFAULT_EXTENSION;
                 })
                 .catch((err) => {
-                    console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+                    console.log("RuleCollectionBuilder 中出错，无法加载数据类型", err);
                 });
 
-            // TODO: provider...
+            // TODO: 提供者...
             UploadUtils.getUploadDbKeys(UploadUtils.DEFAULT_DBKEY)
                 .then((dbKeys) => {
                     this.genomes = dbKeys;
                     this.genome = UploadUtils.DEFAULT_DBKEY;
                 })
                 .catch((err) => {
-                    console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+                    console.log("RuleCollectionBuilder 中出错，无法加载基因组", err);
                 });
         }
     },
@@ -1287,7 +1269,7 @@ export default {
             try {
                 asJson = JSON.parse(this.ruleSource);
             } catch (error) {
-                this.ruleSourceError = "Problem parsing your rules.";
+                this.ruleSourceError = "解析规则时出现了问题.";
                 return;
             }
             this.updateFromSource(asJson);
@@ -1344,7 +1326,7 @@ export default {
                 } else if (ERROR_STATES.indexOf(state) !== -1) {
                     this.state = "error";
                     this.errorMessage =
-                        "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
+                        "运行上传任务时遇到未知错误，这可能是服务器问题或上传定义问题.";
                     this.doFullJobCheck(jobId);
                 } else {
                     startWatchingHistory();
@@ -1360,12 +1342,12 @@ export default {
             const handleJobShow = (jobResponse) => {
                 const stderr = jobResponse.data.stderr;
                 if (stderr) {
-                    let errorMessage = "An error was encountered while running your upload job. ";
+                    let errorMessage = "在运行上传作业时遇到错误。";
                     if (stderr.indexOf("binary file contains inappropriate content") > -1) {
                         errorMessage +=
-                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
+                            "问题可能是批量上传器无法像普通上传器那样自动解压您的文件，请指定正确的扩展名或上传已解压的数据。";
                     }
-                    errorMessage += "Upload job completed with standard error: " + stderr;
+                    errorMessage += "上传作业已完成，但有标准错误输出：" + stderr;
                     this.errorMessage = errorMessage;
                 }
             };
@@ -1378,7 +1360,7 @@ export default {
                 this.errorMessage = errorMessageAsString(error);
             } else {
                 console.log(error);
-                this.errorMessage = "Unknown error encountered: " + error;
+                this.errorMessage = "未知错误发生: " + error;
             }
         },
         swapOrientation() {
@@ -1407,7 +1389,7 @@ export default {
             };
             var arrayOfColumns = this.mapping.flatMap((m) => m.columns);
             if (arrayOfColumns.some((m) => m >= this.colHeaders.length)) {
-                this.errorMessage = "You have undefined columns in your rules.";
+                this.errorMessage = "您的规则中有未定义的列.";
                 this.state = "error";
                 return;
             }
@@ -1491,7 +1473,7 @@ export default {
             const data = this.hotData.data;
             const identifierColumns = this.identifierColumns();
             if (identifierColumns.length < 1) {
-                console.log("Error but this shouldn't have happened, create button should have been disabled.");
+                console.log("错误，但不应该出现这种情况，创建按钮应该被禁用.");
                 return;
             }
 
@@ -1547,7 +1529,7 @@ export default {
                                 } else {
                                     this.state = "error";
                                     this.errorMessage =
-                                        "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                        "检测到未知的配对状态指示符——仅允许使用 F, R, 1, 2, R1, R2, forward 或 reverse。";
                                     return;
                                 }
                             }
@@ -1555,8 +1537,7 @@ export default {
                             elementsAtDepth.push(element);
                             if (identifiersAtDepth.indexOf(identifier) >= 0) {
                                 this.state = "error";
-                                this.errorMessage =
-                                    "Duplicate identifiers detected, collection identifiers must be unique.";
+                                this.errorMessage = "检测到重复的标识符，集合标识符必须唯一。";
                                 return;
                             }
                             identifiersAtDepth.push(identifier);

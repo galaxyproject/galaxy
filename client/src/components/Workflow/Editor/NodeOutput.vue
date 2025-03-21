@@ -116,9 +116,9 @@ const isVisible = computed(() => {
 
 const visibleHint = computed(() => {
     if (isVisible.value) {
-        return `Output will be visible in history. Click to hide output.`;
+        return `输出将在历史记录中可见。点击隐藏输出。`;
     } else {
-        return `Output will be hidden in history. Click to make output visible.`;
+        return `输出将在历史记录中隐藏。点击使输出可见。`;
     }
 });
 const label = computed(() => {
@@ -284,19 +284,19 @@ function collectionTypeToDescription(collectionTypeDescription: CollectionTypeDe
         collectionTypeDescription.isCollection &&
         collectionTypeDescription.collectionType
     ) {
-        // we'll give a prettier label to the must common nested lists
+        // 我们将为最常见的嵌套列表提供更漂亮的标签
         switch (collectionTypeDescription.collectionType) {
             case "list:paired": {
-                collectionDescription = "list of pairs dataset collection";
+                collectionDescription = "成对列表的数据集集合";
                 break;
             }
             case "list:list": {
-                collectionDescription = "list of lists dataset collection";
+                collectionDescription = "嵌套列表的数据集集合";
                 break;
             }
             default: {
                 if (collectionTypeDescription.rank > 1) {
-                    collectionDescription = `dataset collection with ${collectionTypeDescription.rank} levels of nesting`;
+                    collectionDescription = `具有 ${collectionTypeDescription.rank} 层嵌套的数据集集合`;
                 }
                 break;
             }
@@ -309,14 +309,14 @@ const outputDetails = computed(() => {
     let collectionType = "collectionType" in terminal.value && terminal.value.collectionType;
     const outputType =
         collectionType && collectionType.isCollection && collectionType.collectionType
-            ? `output is ${collectionTypeToDescription(collectionType)}`
-            : `output is  ${terminal.value.optional ? "optional " : ""}${terminal.value.type || "dataset"}`;
+            ? `输出是 ${collectionTypeToDescription(collectionType)}`
+            : `输出是  ${terminal.value.optional ? "可选的 " : ""}${terminal.value.type || "数据集"}`;
     if (isMultiple.value) {
         if (!collectionType) {
             collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
         }
         const effectiveOutputType = terminal.value.mapOver.append(collectionType);
-        return `${outputType} and mapped-over to produce a ${collectionTypeToDescription(effectiveOutputType)} `;
+        return `${outputType}并被映射以生成一个 ${collectionTypeToDescription(effectiveOutputType)} `;
     }
     return outputType;
 });
@@ -334,7 +334,7 @@ const labelClass = computed(() => {
 });
 
 const labelToolTipTitle = computed(() => {
-    return `Output label '${workflowOutput.value?.label}' is not unique`;
+    return `输出标签 '${workflowOutput.value?.label}' 不是唯一的`;
 });
 
 onBeforeUnmount(() => {
@@ -359,7 +359,7 @@ const removeTagsAction = computed(() => {
                     v-b-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
                     :class="{ 'mark-terminal-active': workflowOutput }"
-                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    title="选中的输出将成为主要工作流输出，并可作为子工作流输出使用。"
                     @click="onToggleActive">
                     <FontAwesomeIcon v-if="workflowOutput" fixed-width icon="fa-check-square" />
                     <FontAwesomeIcon v-else fixed-width icon="far fa-square" />
@@ -391,7 +391,7 @@ const removeTagsAction = computed(() => {
                 v-if="addTagsAction.length > 0"
                 v-b-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
-                title="These tags will be added to the output dataset">
+                title="这些标签将添加到输出数据集中">
                 <FontAwesomeIcon icon="fa-plus" class="mr-1" />
                 <StatelessTags disabled no-padding :value="addTagsAction" />
             </div>
@@ -400,7 +400,7 @@ const removeTagsAction = computed(() => {
                 v-if="removeTagsAction.length > 0"
                 v-b-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
-                title="These tags will be removed from the output dataset">
+                title="这些标签将从输出数据集中移除">
                 <FontAwesomeIcon icon="fa-minus" class="mr-1" />
                 <StatelessTags disabled no-padding :value="removeTagsAction" />
             </div>
@@ -426,7 +426,7 @@ const removeTagsAction = computed(() => {
             @move="onMove">
             <button
                 class="connection-menu-button"
-                :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
+                :aria-label="`连接输出 ${output.name} 到输入。按空格键查看可用输入列表`"
                 @click="toggleChildComponent"></button>
 
             <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />

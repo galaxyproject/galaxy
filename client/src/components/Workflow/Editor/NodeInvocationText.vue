@@ -31,7 +31,7 @@ function textHtml(value: string): string {
                         :spin="iconClasses[key]?.spin"
                         size="sm"
                         class="mr-1" />
-                    {{ value }} job{{ value > 1 ? "s" : "" }} {{ statePlaceholders[key] || key }}.
+                    {{ value }} 个作业{{ value > 1 ? "s" : "" }} {{ statePlaceholders[key] || key }}。
                 </span>
             </div>
         </div>
@@ -53,10 +53,10 @@ function textHtml(value: string): string {
             <span
                 v-else-if="props.invocationStep.nodeText !== undefined"
                 v-html="textHtml(props.invocationStep.nodeText)" />
-            <span v-else>This is an input</span>
+            <span v-else>这是一个输入</span>
         </div>
-        <div v-else-if="props.invocationStep.type === 'subworkflow'">This is a subworkflow.</div>
-        <div v-else>This step has no jobs as of yet.</div>
+        <div v-else-if="props.invocationStep.type === 'subworkflow'">这是一个子工作流。</div>
+        <div v-else>此步骤尚无作业。</div>
     </div>
 </template>
 

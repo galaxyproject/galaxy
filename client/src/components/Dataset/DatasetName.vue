@@ -21,7 +21,7 @@ const emit = defineEmits<{
 }>();
 
 const getName = computed(() => {
-    return props.item.name || "Unavailable";
+    return props.item.name || "不可用";
 });
 const isError = computed(() => {
     return props.item.state === "error";
@@ -48,13 +48,13 @@ function copyDataset() {
                 v-b-tooltip.hover
                 :icon="faTimesCircle"
                 class="dataset-icon error text-danger"
-                title="An error occurred for this dataset." />
+                title="此数据集发生了错误。" />
             <FontAwesomeIcon
                 v-else-if="isPaused"
                 v-b-tooltip.hover
                 :icon="faPause"
                 class="dataset-icon pause text-info"
-                title="The creation of this dataset has been paused." />
+                title="该数据集的创建已暂停。" />
             <FontAwesomeIcon v-else :icon="faCaretDown" class="dataset-icon" />
 
             <span class="name">{{ getName }}</span>
@@ -64,7 +64,7 @@ function copyDataset() {
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
                 <FontAwesomeIcon :icon="faCopy" class="mr-1" />
 
-                <span>Copy to current History</span>
+                <span>复制到当前历史记录</span>
             </a>
         </div>
     </div>

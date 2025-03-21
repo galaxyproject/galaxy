@@ -26,8 +26,8 @@ const jobMetrics = ref<components["schemas"]["WorkflowJobMetric"][]>();
 const fetchError = ref<string>();
 
 const attributeToLabel = {
-    tool_id: "Tool ID",
-    step_id: "Step",
+    tool_id: "工具 ID",
+    step_id: "步骤",
 };
 
 async function fetchMetrics() {
@@ -148,7 +148,7 @@ function metricToSpecData(
             x: itemToX(item),
             job_id: item.job_id,
             step_index: item.step_index,
-            tooltip: "click to view job",
+            tooltip: "点击以查看作业",
         };
     });
     return {
@@ -210,14 +210,13 @@ function transformTime(time: number): number {
 const allocatedCoreTime: ComputedRef<DerivedMetric[]> = computed(() => {
     return computeAllocatedCoreTime(jobMetrics.value);
 });
-
 const wallclock: ComputedRef<boxplotData> = computed(() => {
-    const title = `Runtime (in ${timingInTitles.value})`;
+    const title = `运行时间（单位：${timingInTitles.value}）`;
     return metricToSpecData(jobMetrics.value, "runtime_seconds", title, "galaxy.jobs.metrics.walltime", transformTime);
 });
 
 const wallclockAggregate: ComputedRef<barChartData> = computed(() => {
-    const title = `Runtime (in ${timingInTitles.value})`;
+    const title = `运行时间（单位：${timingInTitles.value}）`;
     return metricToAggregateData(
         jobMetrics.value,
         "runtime_seconds",
@@ -228,7 +227,7 @@ const wallclockAggregate: ComputedRef<barChartData> = computed(() => {
 });
 
 const allocatedCoreTimeSpec: ComputedRef<boxplotData> = computed(() => {
-    const title = `Allocated Core Time (in ${timingInTitles.value})`;
+    const title = `分配的核心时间（单位：${timingInTitles.value}）`;
     return metricToSpecData(
         allocatedCoreTime.value as AnyMetric[],
         "allocated_core_time",
@@ -239,7 +238,7 @@ const allocatedCoreTimeSpec: ComputedRef<boxplotData> = computed(() => {
 });
 
 const allocatedCoreTimeAggregate: ComputedRef<barChartData> = computed(() => {
-    const title = `Allocated Core Time (in ${timingInTitles.value})`;
+    const title = `分配的核心时间（单位：${timingInTitles.value}）`;
     return metricToAggregateData(
         allocatedCoreTime.value as AnyMetric[],
         "allocated_core_time",
@@ -250,18 +249,18 @@ const allocatedCoreTimeAggregate: ComputedRef<barChartData> = computed(() => {
 });
 
 const coresAllocated: ComputedRef<boxplotData> = computed(() => {
-    return metricToSpecData(jobMetrics.value, "galaxy_slots", "Cores Allocated", "galaxy.jobs.metrics.cores");
+    return metricToSpecData(jobMetrics.value, "galaxy_slots", "分配的核心数", "galaxy.jobs.metrics.cores");
 });
 
 const memoryAllocated: ComputedRef<boxplotData> = computed(() => {
-    return metricToSpecData(jobMetrics.value, "galaxy_memory_mb", "Memory Allocated (in MB)");
+    return metricToSpecData(jobMetrics.value, "galaxy_memory_mb", "分配的内存（单位：MB）");
 });
 
 const peakMemory: ComputedRef<boxplotData> = computed(() => {
     return metricToSpecData(
         jobMetrics.value,
         "memory.peak",
-        "Max memory usage recorded (in MB)",
+        "记录的最大内存使用（单位：MB）",
         undefined,
         (v) => v / 1024 ** 2
     );
@@ -270,7 +269,7 @@ const peakMemory: ComputedRef<boxplotData> = computed(() => {
 function itemToBarChartSpec(item: barChartData) {
     const spec: VisualizationSpec = {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-        description: "Aggregate data.",
+        description: "聚合数据.",
         data: {
             values: item.values!,
         },
@@ -306,7 +305,7 @@ function itemToBarChartSpec(item: barChartData) {
 function itemToSpec(item: boxplotData) {
     const spec: VisualizationSpec = {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-        description: "A boxplot with jittered points.",
+        description: "带抖动点的箱形图.",
         data: {
             values: item.values!,
         },
@@ -394,45 +393,45 @@ const groupByInTitles = computed(() => {
 <template>
     <div>
         <BAlert v-if="props.notTerminal" variant="warning" show>
-            <LoadingSpan message="Metrics will update and change as the workflow progresses." />
+            <LoadingSpan message="指标将在工作流进展过程中更新和变化。" />
         </BAlert>
         <BContainer>
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>
-                    <b-dropdown right :text="'Timing: ' + timingInTitles">
+                    <b-dropdown right :text="'时间单位: ' + timingInTitles">
                         <b-dropdown-item @click="timing = 'seconds'">
-                            {{ capitalizeFirstLetter("seconds") }}
+                            {{ capitalizeFirstLetter("秒") }}
                         </b-dropdown-item>
                         <b-dropdown-item @click="timing = 'minutes'">
-                            {{ capitalizeFirstLetter("minutes") }}
+                            {{ capitalizeFirstLetter("分钟") }}
                         </b-dropdown-item>
                         <b-dropdown-item @click="timing = 'hours'">
-                            {{ capitalizeFirstLetter("hours") }}
+                            {{ capitalizeFirstLetter("小时") }}
                         </b-dropdown-item>
                     </b-dropdown>
-                    <b-dropdown right :text="'Group By: ' + groupByInTitles">
-                        <b-dropdown-item @click="groupBy = 'tool_id'">Tool</b-dropdown-item>
-                        <b-dropdown-item @click="groupBy = 'step_id'">Workflow Step</b-dropdown-item>
+                    <b-dropdown right :text="'分组方式: ' + groupByInTitles">
+                        <b-dropdown-item @click="groupBy = 'tool_id'">工具</b-dropdown-item>
+                        <b-dropdown-item @click="groupBy = 'step_id'">工作流步骤</b-dropdown-item>
                     </b-dropdown>
                 </BButtonGroup>
             </BRow>
             <BRow>
                 <BCol v-if="wallclockAggregate && wallclockAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
-                        Aggregate
-                        <HelpText :for-title="true" uri="galaxy.jobs.metrics.walltime" text="Runtime Time" /> (in
+                        汇总
+                        <HelpText :for-title="true" uri="galaxy.jobs.metrics.walltime" text="运行时间" /> (单位：
                         {{ timingInTitles }})
                     </h2>
                     <VegaWrapper :spec="itemToBarChartSpec(wallclockAggregate)" :fill-width="false" />
                 </BCol>
                 <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
-                        Aggregate
+                        汇总
                         <HelpText
                             :for-title="true"
                             uri="galaxy.jobs.metrics.allocated_core_time"
-                            text="Allocated Core Time" />
-                        (in {{ timingInTitles }})
+                            text="分配的核心时间" />
+                        (单位：{{ timingInTitles }})
                     </h2>
                     <VegaWrapper :spec="itemToBarChartSpec(allocatedCoreTimeAggregate)" :fill-width="false" />
                 </BCol>

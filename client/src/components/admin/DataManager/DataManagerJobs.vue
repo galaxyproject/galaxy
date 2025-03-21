@@ -2,21 +2,21 @@
     <div>
         <b-breadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-        <Alert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
+        <Alert v-if="viewOnly" message="未实现" variant="dark" />
+        <Alert v-else-if="loading" message="等待数据" variant="info" />
+        <Alert v-else-if="jobs && !jobs.length" message="此数据管理器没有任何作业。" variant="primary" />
         <div v-else-if="jobs">
             <b-container fluid class="mb-3">
                 <b-row>
                     <b-col md="6">
-                        <b-form-group description="Search for strings or regular expressions">
+                        <b-form-group description="搜索字符串或正则表达式">
                             <b-input-group>
                                 <b-form-input
                                     v-model="filter"
-                                    placeholder="Type to Search"
+                                    placeholder="输入进行搜索"
                                     @keyup.esc.native="filter = ''" />
                                 <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                    <b-btn :disabled="!filter" @click="filter = ''">清除 (esc)</b-btn>
                                 </b-input-group-append>
                             </b-input-group>
                         </b-form-group>
@@ -25,7 +25,7 @@
                 <b-row>
                     <b-col>
                         <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
-                            {{ showCommandLine ? "Hide" : "Show" }} Command Line
+                            {{ showCommandLine ? "隐藏" : "显示" }} 命令行
                         </b-button>
                     </b-col>
                 </b-row>
@@ -46,7 +46,7 @@
                         <b-button
                             :id="'job-' + jobs[row.index]['encId']"
                             v-b-tooltip.hover
-                            title="View Info"
+                            title="查看信息"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
                             <span class="fa fa-info-circle" />
                         </b-button>
@@ -54,16 +54,16 @@
                             v-if="!showCommandLine"
                             :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
-                            {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
+                            {{ row.detailsShowing ? "隐藏" : "显示" }} 命令行
                         </b-button>
                     </b-button-group>
                 </template>
                 <template v-slot:row-details="row">
                     <b-card>
-                        <h2 class="h-text">Command Line</h2>
+                        <h2 class="h-text">命令行</h2>
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
                         <template v-slot:footer>
-                            <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
+                            <b-button class="mt-3" @click="row.toggleDetails">隐藏信息</b-button>
                         </template>
                     </b-card>
                 </template>
@@ -93,13 +93,13 @@ export default {
             dataManager: [],
             jobs: [],
             fields: [
-                { key: "id", label: "Job ID", sortable: true },
+                { key: "id", label: "作业ID", sortable: true },
                 { key: "user" },
-                { key: "updateTime", label: "Last Update", sortable: true },
+                { key: "updateTime", label: "最后更新", sortable: true },
                 { key: "state" },
                 { key: "actions" },
-                { key: "jobRunnerName", label: "Job Runner" },
-                { key: "jobRunnerExternalId", label: "PID/Cluster ID", sortable: true },
+                { key: "jobRunnerName", label: "作业执行者" },
+                { key: "jobRunnerExternalId", label: "PID/集群ID", sortable: true },
             ],
             showCommandLine: true,
             filter: "",
@@ -113,7 +113,7 @@ export default {
         breadcrumbItems() {
             return [
                 {
-                    text: "Data Managers",
+                    text: "数据管理器",
                     to: { name: "DataManager" },
                 },
                 {
@@ -122,7 +122,7 @@ export default {
                     target: "_blank",
                 },
                 {
-                    text: "Jobs",
+                    text: "作业",
                     active: true,
                 },
             ];

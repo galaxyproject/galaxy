@@ -48,7 +48,7 @@ function onChange(value: FilterType) {
 
 <template>
     <div v-if="hasSelectableObjectStores">
-        <small>Filter by storage source:</small>
+        <small>按存储源过滤：</small>
         <FilterObjectStoreLink :object-stores="selectableObjectStores || []" :value="localValue" @change="onChange" />
     </div>
 </template>

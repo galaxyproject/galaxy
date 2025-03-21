@@ -14,12 +14,12 @@ const emit = defineEmits<{
     (e: "select", value: string | null): void;
 }>();
 
-const toWhat = "Datasets will be filtered to those stored in";
+const toWhat = "数据集将被筛选为存储在";
 </script>
 
 <template>
     <div>
-        <p>Select a storage source to filter by</p>
+        <p>选择存储源进行筛选</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in objectStores"

@@ -82,16 +82,16 @@ function executeActivity(activity: Activity) {
                         <span>
                             <FontAwesomeIcon class="mr-1" :icon="activity.icon" />
                             <span v-localize class="font-weight-bold">{{
-                                activity.title || "No title available"
+                                activity.title || "无标题"
                             }}</span>
                         </span>
                         <div>
                             <BButton
                                 v-if="activity.mutable"
                                 v-b-tooltip.hover
-                                data-description="delete activity"
+                                data-description="删除活动"
                                 size="sm"
-                                title="Delete Activity"
+                                title="删除活动"
                                 variant="link"
                                 @click.stop="onRemove(activity)">
                                 <FontAwesomeIcon :icon="faTrash" fa-fw />
@@ -100,7 +100,7 @@ function executeActivity(activity: Activity) {
                                 v-if="activity.visible"
                                 v-b-tooltip.hover
                                 size="sm"
-                                title="Hide in Activity Bar"
+                                title="在活动栏中隐藏"
                                 variant="link"
                                 @click.stop="onFavorite(activity)">
                                 <FontAwesomeIcon :icon="faStar" fa-fw />
@@ -109,7 +109,7 @@ function executeActivity(activity: Activity) {
                                 v-else
                                 v-b-tooltip.hover
                                 size="sm"
-                                title="Show in Activity Bar"
+                                title="在活动栏中展示"
                                 variant="link"
                                 @click.stop="onFavorite(activity)">
                                 <FontAwesomeIcon :icon="faStarRegular" fa-fw />
@@ -118,12 +118,12 @@ function executeActivity(activity: Activity) {
                     </span>
                 </div>
                 <div v-localize class="text-muted">
-                    {{ activity.description || "No description available" }}
+                    {{ activity.description || "无描述" }}
                 </div>
             </button>
         </div>
         <div v-else>
-            <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
+            <b-alert v-localize class="py-1 px-2" show> 未找到匹配的活动. </b-alert>
         </div>
     </div>
 </template>

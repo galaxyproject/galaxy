@@ -87,7 +87,7 @@ function revertToOriginal() {
             size="sm"
             @click.prevent.stop="editable = false">
             <FontAwesomeIcon :icon="faSave" />
-            <span class="sr-only">Save changes</span>
+            <span class="sr-only">保存修改</span>
         </BButton>
     </div>
 

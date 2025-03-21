@@ -2,9 +2,9 @@
     <div>
         <message :message="message" :status="status"></message>
         <b-tabs>
-            <b-tab title="Toolshed Tools">
+            <b-tab title="工具仓库工具">
                 <b-tabs>
-                    <b-tab title="HTML Sanitized">
+                    <b-tab title="HTML 精简">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="toolshedColumns">
                             <template v-slot:rows>
                                 <template v-for="(row, blockedIdx) in toolshedBlocked">
@@ -30,7 +30,7 @@
                             </template>
                         </base-grid>
                     </b-tab>
-                    <b-tab title="HTML Rendered">
+                    <b-tab title="HTML 渲染">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, allowedIdx) in toolshedAllowed">
@@ -40,17 +40,17 @@
                                                 {{ row.tool_name }}
                                             </span>
                                             <span v-else>
-                                                <i>Not installed</i>
+                                                <i>未安装</i>
                                             </span>
                                         </td>
                                         <td>
                                             <template v-for="(part, part_idx) in row.tool_id">
-                                                <template v-if="part_idx > 0">/</template
-                                                ><span :key="part_idx">{{ part }}</span>
+                                                <template v-if="part_idx > 0">/</template>
+                                                <span :key="part_idx">{{ part }}</span>
                                             </template>
                                         </td>
                                         <td>
-                                            <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                                            <button @click="sanitizeHTML(row.ids.allowed)">清理 HTML</button>
                                         </td>
                                     </tr>
                                 </template>
@@ -59,9 +59,9 @@
                     </b-tab>
                 </b-tabs>
             </b-tab>
-            <b-tab title="Local Tools">
+            <b-tab title="本地工具">
                 <b-tabs>
-                    <b-tab title="HTML Sanitized">
+                    <b-tab title="HTML 已清理">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localBlockedIdx) in localBlocked">
@@ -69,14 +69,14 @@
                                         <td>{{ row.tool_name }}</td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
-                                            <button @click="allowHTML(row.ids.full)">Render HTML</button>
+                                            <button @click="allowHTML(row.ids.full)">渲染 HTML</button>
                                         </td>
                                     </tr>
                                 </template>
                             </template>
                         </base-grid>
                     </b-tab>
-                    <b-tab title="HTML Rendered">
+                    <b-tab title="HTML 渲染">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localAllowedIdx) in localAllowed">
@@ -86,12 +86,12 @@
                                                 {{ row.tool_name }}
                                             </span>
                                             <span v-else>
-                                                <i>Not installed</i>
+                                                <i>未安装</i>
                                             </span>
                                         </td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
-                                            <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                                            <button @click="sanitizeHTML(row.ids.allowed)">清理 HTML</button>
                                         </td>
                                     </tr>
                                 </template>
@@ -124,17 +124,17 @@ export default {
             toolshedAllowed: [],
             toolshedBlocked: [],
             columns: [
-                { text: "Tool Name", dataIndex: "tool_name" },
-                { text: "Tool ID", dataIndex: "tool_id" },
-                { text: "Action", dataIndex: "action" },
+                { text: "工具名称", dataIndex: "tool_name" },
+                { text: "工具 ID", dataIndex: "tool_id" },
+                { text: "操作", dataIndex: "action" },
             ],
             toolshedColumns: [
-                { text: "Tool Name", dataIndex: "tool_name" },
-                { text: "Toolshed" },
-                { text: "Owner" },
-                { text: "Repository" },
-                { text: "Tool" },
-                { text: "Version" },
+                { text: "工具名称", dataIndex: "tool_name" },
+                { text: "工具仓库" },
+                { text: "所有者" },
+                { text: "仓库" },
+                { text: "工具" },
+                { text: "版本" },
             ],
             message: "",
             status: "",

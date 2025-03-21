@@ -90,7 +90,7 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
 
     const stepsWithRect = Object.entries(steps).map(([stepId, step]) => {
         const position = stateStore.stepPosition[step.id];
-        assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
+        assertDefined(position, `工作流状态存储中未发现步骤id为 ${step.id} 的步骤位置`);
 
         return {
             id: stepId,
@@ -217,7 +217,7 @@ function stepToElkStep(
     });
 
     const position = stateStore.stepPosition[step.id];
-    assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
+    assertDefined(position, `工作流状态存储中未发现步骤id为 ${step.id} 的步骤位置`);
 
     const outputs = Object.values(step.outputs).map((output, index) => {
         return {

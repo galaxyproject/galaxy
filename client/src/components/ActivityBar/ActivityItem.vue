@@ -87,7 +87,7 @@ const meta = computed(() => store.metaForId(props.id));
                         }" />
                 </span>
                 <div class="nav-icon">
-                    <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
+                    <span v-if="indicator > 0" class="nav-indicator" data-description="活动指示器">
                         {{ Math.min(indicator, 99) }}
                     </span>
                     <FontAwesomeIcon :icon="icon" />
@@ -97,7 +97,7 @@ const meta = computed(() => store.metaForId(props.id));
         </template>
         <div class="text-center px-2 py-1">
             <small v-if="tooltip">{{ localize(tooltip) }}</small>
-            <small v-else>No tooltip available for this item</small>
+            <small v-else>此项没有可用的提示信息</small>
             <div v-if="options" class="nav-options p-1">
                 <router-link v-for="(option, index) in options" :key="index" :to="option.value">
                     <b-button size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">

@@ -70,7 +70,7 @@ const objectDatalist = computed<DatalistItem[]>(() => {
 
 // help modal button refs
 const helpToggle = ref(false);
-const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
+const modalTitle = `${capitalize(props.filter.placeholder)} 帮助`;
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
     if (!props.disabled) {
@@ -123,7 +123,7 @@ const dropDownText = computed<string>(() => {
             return objectMatch.text;
         }
     }
-    return "(any)";
+    return "(任何)";
 });
 
 function setValue(val: FilterValue) {
@@ -133,7 +133,7 @@ function setValue(val: FilterValue) {
 
 <template>
     <div v-if="datalist || hasMultipleQuotaSources">
-        <small>Filter by {{ props.filter.placeholder }}:</small>
+        <small>通过 {{ props.filter.placeholder }} 筛选:</small>
         <BInputGroup :id="`${identifier}-advanced-filter-${props.name}`" class="flex-nowrap">
             <BDropdown
                 :text="dropDownText"
@@ -144,7 +144,7 @@ function setValue(val: FilterValue) {
                 boundary="window"
                 :disabled="props.disabled"
                 :toggle-class="props.error ? 'text-danger' : ''">
-                <BDropdownItem href="#" @click="setValue(undefined)"><i>(any)</i></BDropdownItem>
+                <BDropdownItem href="#" @click="setValue(undefined)"><i>(任何)</i></BDropdownItem>
 
                 <span v-if="stringDatalist.length > 0">
                     <BDropdownItem

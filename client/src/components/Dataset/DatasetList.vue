@@ -47,7 +47,7 @@ const fields = ref([
         sortable: true,
     },
     {
-        label: "Updated",
+        label: "更新",
         key: "update_time",
         sortable: true,
     },
@@ -187,7 +187,7 @@ onMounted(() => {
             {{ message }}
         </BAlert>
 
-        <DelayedInput class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
+        <DelayedInput class="m-1 mb-3" placeholder="搜索数据集" @change="onQuery" />
 
         <BTable
             id="dataset-table"
@@ -219,12 +219,12 @@ onMounted(() => {
             </template>
         </BTable>
 
-        <LoadingSpan v-if="loading" message="Loading datasets" />
+        <LoadingSpan v-if="loading" message="加载数据集" />
 
         <BAlert v-if="showNotFound" variant="info" show>
-            No matching entries found for: <span class="font-weight-bold">{{ query }}</span>
+            未找到匹配的条目：<span class="font-weight-bold">{{ query }}</span>
         </BAlert>
 
-        <BAlert v-if="showNotAvailable" variant="info" show> No datasets found. </BAlert>
+        <BAlert v-if="showNotAvailable" variant="info" show> 没有找到数据集。 </BAlert>
     </div>
 </template>

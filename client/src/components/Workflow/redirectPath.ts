@@ -10,9 +10,9 @@ export function getRedirectOnImportPath(
         return { path: "/workflows/run", query: { id: response.id } };
     } else {
         if (response.status === "error") {
-            Toast.error(response.message ?? "Import Failed");
+            Toast.error(response.message ?? "导入失败");
         } else {
-            Toast.success(response.message ?? "Import Successful");
+            Toast.success(response.message ?? "导入成功");
         }
 
         return {

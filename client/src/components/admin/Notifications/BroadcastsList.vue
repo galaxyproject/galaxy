@@ -53,7 +53,7 @@ function onEdit(item: BroadcastNotification) {
 async function onForceExpire(item: BroadcastNotification) {
     await updateBroadcast(item.id, { expiration_time: new Date().toISOString().slice(0, 23) });
     await loadBroadcastsList(true);
-    Toast.info("Broadcast marked as expired. It will be removed from the database in the next cleanup cycle.");
+    Toast.info("广播已标记为过期。它将在下一个清理周期中从数据库中删除。");
 }
 
 function onGoToLink(link: string) {
@@ -85,53 +85,50 @@ loadBroadcastsList();
 
 <template>
     <div>
-        <Heading h2 class="mb-2"> Broadcasts list </Heading>
+        <Heading h2 class="mb-2"> 广播列表 </Heading>
         <p v-localize class="mb-2">
-            Broadcasts are notifications that are displayed to all users. They can be scheduled to be published at a
-            specific time and can be set to expire at a specific time. They can also be marked as urgent to make them
-            stand out.
+            广播是显示给所有用户的通知。它们可以安排在特定时间发布，也可以设置在特定时间过期。广播还可以标记为紧急，以使其更突出。
         </p>
         <p class="mb-2">
-            <b>NOTE:</b> Expired broadcasts are completely removed from the database in a periodic cleanup process. The
-            cleanup interval is defined in the Galaxy configuration file under the
-            <code>expired_notifications_cleanup_interval</code> key.
+            <b>注意：</b> 过期的广播将在定期清理过程中从数据库中完全删除。清理间隔在 Galaxy 配置文件中的 
+            <code>expired_notifications_cleanup_interval</code> 键下定义。
         </p>
 
         <div class="list-operations mb-2">
             <BRow class="align-items-center" no-gutters>
                 <BCol class="ml-2">
                     <BRow align-h="start" align-v="center">
-                        <span class="mx-2"> Filters: </span>
+                        <span class="mx-2"> 筛选器: </span>
                         <BButtonGroup>
                             <BButton
                                 id="show-active-filter-button"
                                 size="sm"
                                 :pressed="showActive"
-                                title="Show active broadcasts"
+                                title="显示活跃广播"
                                 variant="outline-primary"
                                 @click="showActive = !showActive">
                                 <FontAwesomeIcon :icon="faCheck" />
-                                Active
+                                活跃
                             </BButton>
                             <BButton
                                 id="show-scheduled-filter-button"
                                 size="sm"
                                 :pressed="showScheduled"
-                                title="Show scheduled broadcasts"
+                                title="显示计划广播"
                                 variant="outline-primary"
                                 @click="showScheduled = !showScheduled">
                                 <FontAwesomeIcon :icon="faClock" />
-                                Scheduled
+                                计划
                             </BButton>
                             <BButton
                                 id="show-expired-filter-button"
                                 size="sm"
                                 :pressed="showExpired"
-                                title="Show expired broadcasts"
+                                title="显示过期广播"
                                 variant="outline-primary"
                                 @click="showExpired = !showExpired">
                                 <FontAwesomeIcon :icon="faHourglassHalf" />
-                                Expired
+                                过期
                             </BButton>
                         </BButtonGroup>
                     </BRow>
@@ -143,7 +140,7 @@ loadBroadcastsList();
                             size="sm"
                             :disabled="loading || overlay"
                             variant="outline-primary"
-                            title="Refresh broadcasts"
+                            title="刷新广播"
                             @click="loadBroadcastsList">
                             <FontAwesomeIcon :icon="faRedo" />
                         </BButton>
@@ -153,12 +150,11 @@ loadBroadcastsList();
         </div>
 
         <BAlert v-if="loading" variant="info" show>
-            <LoadingSpan message="Loading broadcasts" />
+            <LoadingSpan message="加载广播" />
         </BAlert>
 
         <BAlert v-else-if="filteredBroadcasts.length === 0" id="empty-broadcast-list-alert" variant="info" show>
-            There are no broadcast notifications to show. Use the button above to create a new broadcast notification or
-            change the filters.
+            没有要显示的广播通知。请使用上面的按钮创建新的广播通知或更改筛选器。
         </BAlert>
         <BOverlay v-else :show="overlay" rounded="sm">
             <BroadcastCard

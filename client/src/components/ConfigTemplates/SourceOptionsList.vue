@@ -64,22 +64,22 @@ function getOptionType(type: string) {
 
         <div class="source-options-list-search">
             <Heading h2 size="sm">
-                Select {{ title }} to create new sources. These options are configured by your Galaxy administrator.
+                选择 {{ title }} 来创建新来源。这些选项由您的 Galaxy 管理员配置。
             </Heading>
 
-            <BFormInput v-model="filterText" :placeholder="`Search ${title}`" />
+            <BFormInput v-model="filterText" :placeholder="`搜索 ${title}`" />
 
             <ListHeader :list-id="listId" show-view-toggle />
         </div>
 
         <BAlert v-if="loading" variant="info" show>
-            <LoadingSpan message="Loading options" />
+            <LoadingSpan message="加载选项中" />
         </BAlert>
         <BAlert v-else-if="!filterText && filteredTemplates.length === 0" variant="info" show>
-            No options found.
+            未找到选项。
         </BAlert>
         <BAlert v-else-if="filterText && filteredTemplates.length === 0" variant="info" show>
-            No options found matching <span class="font-weight-bold">{{ filterText }}</span>
+            未找到与 <span class="font-weight-bold">{{ filterText }}</span> 匹配的选项。
         </BAlert>
         <div v-else class="source-options-list-cards">
             <SourceOptionCard

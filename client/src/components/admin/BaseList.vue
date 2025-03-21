@@ -2,7 +2,7 @@
     <div>
         <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
         <div v-if="itemsVisible" class="card-header">
-            There are {{ itemsLength }}
+            当前有 {{ itemsLength }}
             <b-button
                 size="sm"
                 :disabled="busy"
@@ -11,7 +11,7 @@
                 @click.prevent="executeAll()">
                 <span :class="icon" />
             </b-button>
-            {{ plural }} available.
+            {{ plural }} 可用。
         </div>
         <b-table v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
@@ -72,7 +72,7 @@ export default {
     },
     computed: {
         tooltipAll: function () {
-            return `${this.tooltip} all`;
+            return `${this.tooltip} 全部`;
         },
         itemsIndex: function () {
             return this.items.reduce((r, v) => {
@@ -100,7 +100,7 @@ export default {
                 this.items = response.data;
                 if (!this.itemsVisible) {
                     this.messageVariant = "warning";
-                    this.messageText = `No ${this.plural} available.`;
+                    this.messageText = `没有可用的 ${this.plural}。`;
                 }
             })
             .catch((e) => {
@@ -114,7 +114,7 @@ export default {
         execute: function (ids) {
             this.busy = true;
             this.messageVariant = "warning";
-            this.messageText = "Executing request. Please wait...";
+            this.messageText = "正在执行请求，请稍候...";
             this._highlightRows(this.itemsAll, "default");
             this.setter(ids)
                 .then((response) => {
@@ -144,7 +144,7 @@ export default {
         },
         _errorMessage: function (e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
-            this.messageText = message || "Request failed for an unknown reason.";
+            this.messageText = message || "请求失败，原因不明。";
             this.messageVariant = "danger";
         },
     },

@@ -55,9 +55,9 @@ const { toolbarVisible } = storeToRefs(toolbarStore);
 
 const snapButtonTitle = computed(() => {
     if (snapActive.value) {
-        return "Deactivate snapping (Ctrl + 2)";
+        return "关闭吸附功能 (Ctrl + 2)";
     } else {
-        return "Activate snapping (Ctrl + 2)";
+        return "激活吸附功能 (Ctrl + 2)";
     }
 });
 
@@ -143,9 +143,9 @@ whenever(ctrl_9!, () => autoLayout());
 
 const toggleVisibilityButtonTitle = computed(() => {
     if (toolbarVisible.value) {
-        return "hide Toolbar";
+        return "隐藏工具栏";
     } else {
-        return "show Toolbar";
+        return "显示工具栏";
     }
 });
 
@@ -165,7 +165,7 @@ function autoLayout() {
                         v-b-tooltip.hover.noninteractive.right
                         class="button"
                         data-tool="pointer"
-                        title="Pointer Tool (Ctrl + 1)"
+                        title="指针工具 (Ctrl + 1)"
                         :pressed="currentTool === 'pointer'"
                         variant="outline-primary"
                         @click="onClickPointer">
@@ -187,7 +187,7 @@ function autoLayout() {
                         v-b-tooltip.hover.noninteractive.right
                         class="button font-weight-bold"
                         data-tool="text_comment"
-                        title="Text comment (Ctrl + 3)"
+                        title="文本注释 (Ctrl + 3)"
                         :pressed="currentTool === 'textComment'"
                         variant="outline-primary"
                         @click="() => onCommentToolClick('textComment')">
@@ -197,7 +197,7 @@ function autoLayout() {
                         v-b-tooltip.hover.noninteractive.right
                         class="button"
                         data-tool="markdown_comment"
-                        title="Markdown comment (Ctrl + 4)"
+                        title="Markdown注释 (Ctrl + 4)"
                         :pressed="currentTool === 'markdownComment'"
                         variant="outline-primary"
                         @click="() => onCommentToolClick('markdownComment')">
@@ -207,7 +207,7 @@ function autoLayout() {
                         v-b-tooltip.hover.noninteractive.right
                         class="button"
                         data-tool="frame_comment"
-                        title="Frame comment (Ctrl + 5)"
+                        title="框架注释 (Ctrl + 5)"
                         :pressed="currentTool === 'frameComment'"
                         variant="outline-primary"
                         @click="() => onCommentToolClick('frameComment')">
@@ -218,7 +218,7 @@ function autoLayout() {
                 <BButtonGroup vertical>
                     <BButton
                         v-b-tooltip.hover.noninteractive.right
-                        title="Freehand Pen (Ctrl + 6)"
+                        title="自由绘制笔 (Ctrl + 6)"
                         data-tool="freehand_pen"
                         :pressed="currentTool === 'freehandComment'"
                         class="button"
@@ -228,7 +228,7 @@ function autoLayout() {
                     </BButton>
                     <BButton
                         v-b-tooltip.hover.noninteractive.right
-                        title="Freehand Eraser (Ctrl + 7)"
+                        title="自由绘制橡皮擦 (Ctrl + 7)"
                         data-tool="freehand_eraser"
                         :pressed="currentTool === 'freehandEraser'"
                         class="button"
@@ -240,7 +240,7 @@ function autoLayout() {
 
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
-                    title="Box Select (Ctrl + 8)"
+                    title="框选工具 (Ctrl + 8)"
                     data-tool="box_select"
                     :pressed="currentTool === 'boxSelect'"
                     class="button"
@@ -252,7 +252,7 @@ function autoLayout() {
                 <BButton
                     id="auto-layout-button"
                     v-b-tooltip.hover.noninteractive.right
-                    title="Auto Layout (Ctrl + 9)"
+                    title="自动布局 (Ctrl + 9)"
                     data-tool="auto_layout"
                     class="button"
                     variant="outline-primary"
@@ -276,14 +276,14 @@ function autoLayout() {
                 <span>{{ selectedCountText }}</span>
 
                 <BButtonGroup>
-                    <BButton class="button" title="clear selection" @click="deselectAll">
-                        Clear <FontAwesomeIcon icon="fa-times" />
+                    <BButton class="button" title="清除选择" @click="deselectAll">
+                        清除 <FontAwesomeIcon icon="fa-times" />
                     </BButton>
-                    <BButton class="button" title="duplicate selected" @click="duplicateSelection">
-                        Duplicate <FontAwesomeIcon icon="fa-clone" />
+                    <BButton class="button" title="复制所选" @click="duplicateSelection">
+                        复制 <FontAwesomeIcon icon="fa-clone" />
                     </BButton>
-                    <BButton class="button" title="delete selected" @click="deleteSelection">
-                        Delete <FontAwesomeIcon icon="fa-trash" />
+                    <BButton class="button" title="删除所选" @click="deleteSelection">
+                        删除 <FontAwesomeIcon icon="fa-trash" />
                     </BButton>
                 </BButtonGroup>
             </div>
@@ -295,8 +295,8 @@ function autoLayout() {
                 "
                 class="option wide">
                 <label :for="snappingDistanceId" class="flex-label">
-                    <span class="font-weight-bold">Snapping Distance</span>
-                    {{ toolbarStore.snapDistance }} pixels
+                    <span class="font-weight-bold">吸附距离</span>
+                    {{ toolbarStore.snapDistance }} 像素
                 </label>
                 <BFormInput
                     :id="snappingDistanceId"
@@ -315,14 +315,14 @@ function autoLayout() {
                         variant="outline-primary"
                         class="button font-weight-bold"
                         data-option="toggle-bold">
-                        Bold
+                        粗体
                     </BButton>
                     <BButton
                         :pressed.sync="commentOptions.italic"
                         variant="outline-primary"
                         class="button font-italic"
                         data-option="toggle-italic">
-                        Italic
+                        斜体
                     </BButton>
                 </BButtonGroup>
             </div>
@@ -338,7 +338,7 @@ function autoLayout() {
 
             <div v-if="toolbarStore.currentTool === 'textComment'" class="option small">
                 <label :for="fontSizeId" class="flex-label">
-                    <span class="font-weight-bold">Text Size</span>
+                    <span class="font-weight-bold">文本大小</span>
                     {{ commentOptions.textSize }}00%
                 </label>
                 <BFormInput
@@ -353,8 +353,8 @@ function autoLayout() {
 
             <div v-if="toolbarStore.currentTool === 'freehandComment'" class="option small">
                 <label :for="thicknessId" class="flex-label">
-                    <span class="font-weight-bold">Size</span>
-                    {{ commentOptions.lineThickness }} pixels
+                    <span class="font-weight-bold">大小</span>
+                    {{ commentOptions.lineThickness }} 像素
                 </label>
                 <BFormInput
                     :id="thicknessId"
@@ -368,7 +368,7 @@ function autoLayout() {
 
             <div v-if="toolbarStore.currentTool === 'freehandComment'" class="option small">
                 <label :for="smoothingId" class="flex-label">
-                    <span class="font-weight-bold">Smoothing</span>
+                    <span class="font-weight-bold">平滑度</span>
                     {{ commentOptions.smoothing }}
                 </label>
                 <BFormInput
@@ -385,9 +385,9 @@ function autoLayout() {
                 <BButton
                     class="button"
                     data-option="remove-freehand"
-                    title="Remove all freehand comments"
+                    title="删除所有自由绘制注释"
                     @click="onRemoveAllFreehand">
-                    Remove all
+                    删除全部
                 </BButton>
             </div>
 
@@ -398,18 +398,18 @@ function autoLayout() {
                         class="button"
                         data-option="select-mode-add"
                         variant="outline-primary"
-                        title="add items to selection"
+                        title="添加项目到选择"
                         @click="toolbarStore.boxSelectMode = 'add'">
-                        Add to selection
+                        添加到选择
                     </BButton>
                     <BButton
                         :pressed="toolbarStore.boxSelectMode === 'remove'"
                         class="button"
                         data-option="select-mode-remove"
                         variant="outline-primary"
-                        title="remove items from selection"
+                        title="从选择中移除项目"
                         @click="toolbarStore.boxSelectMode = 'remove'">
-                        Remove from selection
+                        从选择中移除
                     </BButton>
                 </BButtonGroup>
             </div>

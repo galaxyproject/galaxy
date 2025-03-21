@@ -40,18 +40,18 @@ const selectionText = computed(() => {
     if (props.value) {
         return getObjectStoreNameById(props.value);
     } else {
-        return "(any)";
+        return "(任何)";
     }
 });
 </script>
 
 <template>
     <span class="filter-objectstore-link">
-        <SelectModal v-model="showModal" title="Select Storage Source">
+        <SelectModal v-model="showModal" title="选择存储源">
             <ObjectStoreSelect :object-stores="objectStores" @select="onSelect" />
         </SelectModal>
         <b-link href="#" @click="showModal = true">{{ selectionText }}</b-link>
-        <span v-if="value" v-b-tooltip.hover title="Remove Filter">
+        <span v-if="value" v-b-tooltip.hover title="移除过滤器">
             <FontAwesomeIcon icon="times" @click="onSelect(undefined)" />
         </span>
     </span>

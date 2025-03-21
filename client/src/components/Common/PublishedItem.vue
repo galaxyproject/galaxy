@@ -24,25 +24,22 @@ interface Props {
 const props = defineProps<Props>();
 
 const modelTitle = computed(() => {
-    const modelClass = props.item?.model_class ?? "Item";
+    const modelClass = props.item?.model_class ?? "项目";
     if (modelClass == "StoredWorkflow") {
-        return "Workflow";
+        return "工作流";
     }
     return modelClass;
 });
 
 const plural = computed(() => {
-    if (modelTitle.value === "History") {
-        return "Histories";
-    }
-    return `${modelTitle.value}s`;
+    return `历史记录`;
 });
 
 const owner = computed(() => {
     if (props.item?.author_deleted) {
-        return "Archived author";
+        return "已归档的作者";
     }
-    return props.item?.owner ?? props.item?.username ?? "Unavailable";
+    return props.item?.owner ?? props.item?.username ?? "不可用";
 });
 
 const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item?.email_hash}?d=identicon`);
@@ -61,33 +58,33 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 
         <FlexPanel side="right">
             <div v-if="modelTitle" class="m-3">
-                <h1 class="h-sm">About this {{ modelTitle }}</h1>
+                <h1 class="h-sm">关于这个 {{ modelTitle }}</h1>
 
                 <h2 class="h-md text-break">{{ props.item?.title ?? props.item?.name }}</h2>
 
-                <img :src="gravatarSource" alt="user avatar" />
+                <img :src="gravatarSource" alt="用户头像" />
 
                 <StatelessTags v-if="props.item?.tags" class="tags mt-2" :value="props.item.tags" disabled />
 
                 <br />
 
-                <h2 class="h-sm">Author</h2>
+                <h2 class="h-sm">作者</h2>
 
                 <div>{{ owner }}</div>
 
                 <hr />
 
-                <h2 class="h-sm">Related Pages</h2>
+                <h2 class="h-sm">相关页面</h2>
 
                 <div>
-                    <router-link :to="urlAll">All published {{ plural }}</router-link>
+                    <router-link :to="urlAll">所有发布的 {{ plural }}</router-link>
                 </div>
 
                 <div v-if="!props.item?.author_deleted">
-                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
+                    <router-link :to="publishedByUser"> 发布的 {{ plural }} 由 {{ owner }}</router-link>
                 </div>
             </div>
-            <LoadingSpan v-else message="Loading item details" />
+            <LoadingSpan v-else message="加载项目信息" />
 
             <div class="flex-fill" />
         </FlexPanel>

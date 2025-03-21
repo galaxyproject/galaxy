@@ -72,7 +72,7 @@ watch(
 
 <template>
     <div>
-        <small>Filter by {{ props.filter.placeholder }}:</small>
+        <small>按 {{ props.filter.placeholder }} 过滤：</small>
 
         <BInputGroup>
             <BFormInput
@@ -83,7 +83,7 @@ watch(
                 class="mw-100"
                 size="sm"
                 :state="props.error ? false : null"
-                :placeholder="`any ${props.filter.placeholder}`"
+                :placeholder="`任何 ${props.filter.placeholder}`"
                 :disabled="props.disabled"
                 :list="props.filter.datalist ? `${identifier}-${props.name}-selectList` : null"
                 @keyup.enter="emit('on-enter')"
@@ -94,7 +94,7 @@ watch(
                 :id="`${identifier}-${props.name}-selectList`"
                 :options="props.filter.datalist" />
 
-            <!-- append Help Modal for filter if included or/and datepciker if type: Date -->
+            <!-- 如果包含帮助模态框或日期选择器（如果类型为 Date），则附加 -->
             <BInputGroupAppend>
                 <BButton v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
                     <FontAwesomeIcon :icon="faQuestion" />
@@ -110,7 +110,7 @@ watch(
             </BInputGroupAppend>
         </BInputGroup>
 
-        <!-- if a filter has help component, place it within a modal -->
+        <!-- 如果过滤器有帮助组件，将其放入模态框 -->
         <span v-if="props.filter.helpInfo">
             <BModal v-model="helpToggle" :title="modalTitle" ok-only>
                 <component

@@ -9,10 +9,10 @@ const emit = defineEmits<{
 </script>
 <template>
     <BAlert variant="info" show>
-        {{ localize("No items available to create a collection.") }}
-        {{ localize("Exit and change your current history, or") }}
+        {{ localize("没有可用项来创建集合。") }}
+        {{ localize("退出并更改当前历史记录，或者") }}
         <BLink class="text-decoration-none" @click.stop.prevent="emit('click-upload')">
-            {{ localize("Upload some datasets.") }}
+            {{ localize("上传一些数据集。") }}
         </BLink>
     </BAlert>
 </template>

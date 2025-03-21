@@ -56,7 +56,7 @@ export default {
                 this.invocationMarkdown = response.invocation_markdown;
             })
             .catch((error) => {
-                Toast.error(`Failed to load invocation markdown: ${error}`);
+                Toast.error(`未能加载调用过程markdown: ${error}`);
             });
     },
     methods: {

@@ -70,7 +70,7 @@ function close() {
                     class="heading-button"
                     variant="link"
                     size="md"
-                    title="maximize"
+                    title="最大化"
                     @click="inspectorStore.setMaximized(props.step, true)">
                     <ArrowLeftFromLine absolute-stroke-width :size="17" />
                 </BButton>
@@ -79,7 +79,7 @@ function close() {
                     class="heading-button"
                     variant="link"
                     size="md"
-                    title="minimize"
+                    title="最小化"
                     @click="inspectorStore.setMaximized(props.step, false)">
                     <ArrowRightToLine absolute-stroke-width :size="17" />
                 </BButton>
@@ -89,20 +89,20 @@ function close() {
                         <FontAwesomeIcon :icon="faCog" fixed-width />
                     </template>
 
-                    <BDropdownForm form-class="px-2" title="remember size for all steps using this tool">
+                    <BDropdownForm form-class="px-2" title="记住使用此工具的所有步骤的大小">
                         <BFormCheckbox
                             :checked="inspectorStore.isStored(props.step)"
                             @input="(v) => inspectorStore.setStored(props.step, v)">
-                            remember size
+                            记住大小
                         </BFormCheckbox>
                     </BDropdownForm>
 
                     <BDropdownItemButton @click="inspectorStore.clearAllStored">
-                        reset all stored sizes
+                        重置所有已存储的大小
                     </BDropdownItemButton>
                 </BDropdown>
 
-                <BButton class="heading-button" variant="link" size="md" title="close" @click="close">
+                <BButton class="heading-button" variant="link" size="md" title="关闭" @click="close">
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
                 </BButton>
             </BButtonGroup>

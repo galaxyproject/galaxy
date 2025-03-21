@@ -2,18 +2,18 @@
     <dependency-index-wrapper
         :error="error"
         :loading="loading"
-        loading-message="Loading container resolution information">
+        loading-message="正在加载容器解析信息">
         <template v-slot:header>
             <b-row class="m-1">
                 <b-form inline>
-                    <b>Resolution:</b>
-                    <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
+                    <b>解析方式：</b>
+                    <label class="mr-sm-2" for="manage-container-type">选择容器类型</label>
                     <b-form-select
                         id="manage-container-type"
                         v-model="containerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions"></b-form-select>
-                    <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
+                    <label class="mr-sm-2" for="manage-resolver-type">选择解析器类型</label>
                     <b-form-select
                         id="manage-resolver-type"
                         v-model="resolverType"
@@ -23,18 +23,18 @@
             </b-row>
             <b-row class="m-1">
                 <b-form inline>
-                    <b>Filter:</b>
-                    <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
+                    <b>筛选：</b>
+                    <label class="mr-sm-2" for="manage-filter-resolution">解析状态</label>
                     <b-form-select
                         id="manage-filter-resolution"
                         v-model="filterResolution"
                         class="mb-2 mr-sm-2 mb-sm-0">
-                        <option :value="null">*any*</option>
-                        <option value="unresolved">Unresolved</option>
-                        <option value="resolved">Resolved</option>
+                        <option :value="null">*任何*</option>
+                        <option value="unresolved">未解析</option>
+                        <option value="resolved">已解析</option>
                     </b-form-select>
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type"
-                        >Containers of type</label
+                        >容器类型</label
                     >
                     <b-form-select
                         v-if="filterResolution != 'unresolved'"
@@ -43,7 +43,7 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions"></b-form-select>
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type"
-                        >Resolvers of type</label
+                        >解析器类型</label
                     >
                     <b-form-select
                         v-if="filterResolution != 'unresolved'"
@@ -57,9 +57,8 @@
         <template v-slot:actions>
             <b-row class="m-1">
                 <b-button class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
-                    <!-- v-bind:disabled="!hasSelection"  -->
                     <span class="fa fa-plus" />
-                    Attempt Build
+                    尝试构建
                 </b-button>
             </b-row>
         </template>
@@ -103,7 +102,7 @@ import DependencyIndexMixin from "./DependencyIndexMixin";
 Vue.use(BootstrapVue);
 
 const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
-RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
+RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*任何*" });
 
 export default {
     components: { ContainerResolutionDetails },
@@ -115,14 +114,14 @@ export default {
             fields: [
                 { key: "selected", label: "" },
                 { key: "tool" },
-                { key: "requirement", label: "Requirements" },
+                { key: "requirement", label: "需求" },
                 { key: "resolution" },
                 { key: "resolver" },
                 { key: "container" },
             ],
             containerType: null,
             containerTypeOptions: [
-                { value: null, text: "*any*" },
+                { value: null, text: "*任何*" },
                 { value: "docker", text: "Docker" },
                 { value: "singularity", text: "Singularity" },
             ],

@@ -2,11 +2,11 @@
     <div>
         <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" status="info" />
+        <Alert v-if="viewOnly" message="未实现" variant="dark" />
+        <Alert v-else-if="loading" message="等待数据" status="info" />
         <Alert
             v-else-if="dataTable && !dataTable['data'].length"
-            message="There are currently no entries in this tool data table."
+            message="当前工具数据表中没有任何条目."
             variant="primary" />
         <b-container v-else-if="dataTable">
             <b-row>
@@ -66,15 +66,15 @@ export default {
     },
     computed: {
         dataTableName() {
-            return this.dataTable && this.dataTable.name ? this.dataTable.name : "null";
+            return this.dataTable && this.dataTable.name ? this.dataTable.name : "空";
         },
         buttonLabel() {
-            return `Reload ${this.dataTableName} tool data table`;
+            return `重新加载 ${this.dataTableName} 工具数据表`;
         },
         breadcrumbItems() {
             return [
                 {
-                    text: "Tool Data Tables",
+                    text: "工具数据表",
                     to: "/admin/data_manager",
                 },
                 {

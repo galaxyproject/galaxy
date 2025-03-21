@@ -40,7 +40,7 @@ watch(props, () => {
 
 <template>
     <div>
-        <LoadingSpan v-if="loading" message="Loading permission information" />
+        <LoadingSpan v-if="loading" message="加载权限信息" />
         <div v-else-if="simplePermissions && !selectedAdvancedForm">
             <div class="ui-portlet-section">
                 <div class="portlet-header">
@@ -54,11 +54,11 @@ watch(props, () => {
                 <div class="portlet-content">
                     <div class="mb-3 mt-3">
                         <BFormCheckbox v-model="checkedInForm" name="check-button" switch @change="change">
-                            Make new datasets private
+                            使新数据集为私有
                         </BFormCheckbox>
                     </div>
 
-                    <a href="#" @click="selectedAdvancedForm = true">Show advanced options.</a>
+                    <a href="#" @click="selectedAdvancedForm = true">显示高级选项。</a>
                 </div>
             </div>
         </div>

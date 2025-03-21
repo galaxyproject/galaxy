@@ -102,7 +102,7 @@ export function useToolLogic() {
                     },
                 }),
                 pointer: () => {
-                    throw new Error("Tool logic should not be active when pointer tool is selected");
+                    throw new Error("选择指针工具时，工具逻辑不应处于活动状态");
                 },
             });
 

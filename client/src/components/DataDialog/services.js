@@ -12,7 +12,7 @@ export class Services {
                     resolve(items);
                 })
                 .catch((e) => {
-                    let errorMessage = "Request failed.";
+                    let errorMessage = "请求错误.";
                     if (e.response) {
                         errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
                     }

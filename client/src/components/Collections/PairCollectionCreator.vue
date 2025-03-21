@@ -152,13 +152,13 @@ function _elementsSetUp() {
         if (element) {
             inListElements.value[key as keyof SelectedDatasetPair] = element;
         } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} 和 ${NOT_VALID_ELEMENT_MSG}`;
             invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+            Toast.error(invalidMsg, localize("不合法元素"));
         } else {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("已经从集合中删除")}`;
             invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+            Toast.error(invalidMsg, localize("不合法元素"));
         }
     }
 
@@ -196,28 +196,27 @@ function _validateElements() {
 }
 
 /** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary) {
+function _isElementInvalid(element: HistoryItemSummary): string | null {
     if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
+        return localize("集合不允许这样操作");
     }
 
     var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
 
     if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
+        return localize("发生错误, 处于已暂停或无法访问");
     }
 
     if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
+        return localize("已被删除或清除");
     }
 
-    // is the element's extension not a subtype of any of the required extensions?
     if (
         filterExtensions.value &&
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize(`has an invalid format: ${element.extension}`);
+        return localize(`格式无效: ${element.extension}`);
     }
     return null;
 }
@@ -268,9 +267,9 @@ function addUploadedFiles(files: HDASummary[]) {
         if (element) {
             const problem = _isElementInvalid(element);
             if (problem) {
-                const invalidMsg = `${element.hid}: ${element.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                const invalidMsg = `${element.hid}: ${element.name} ${problem} 和 ${NOT_VALID_ELEMENT_MSG}`;
                 invalidElements.value.push(invalidMsg);
-                Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+                Toast.error(invalidMsg, localize("上传的项目对无效"));
             } else if (!props.fromSelection) {
                 if (inListElements.value.forward === undefined) {
                     inListElements.value.forward = element;
@@ -284,8 +283,8 @@ function addUploadedFiles(files: HDASummary[]) {
     });
     if (alreadyPopulated && files.length > 0) {
         Toast.info(
-            localize("Forward and reverse datasets already selected. Uploaded files are available for replacement."),
-            localize("Uploads Available for Replacement")
+            localize("正向和反向数据集已选择。上传的文件可以替换。"),
+            localize("可替换的上传文件")
         );
     }
 }
@@ -390,13 +389,13 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
     <div class="pair-collection-creator">
         <div v-if="state == 'error'">
             <BAlert show variant="danger">
-                {{ localize("Galaxy could not be reached and may be updating.  Try again in a few minutes.") }}
+                {{ localize("无法连接到 Galaxy，可能正在更新。请稍后再试。") }}
             </BAlert>
         </div>
         <div v-else>
             <div v-if="fromSelection && invalidElements.length">
                 <BAlert show variant="warning" dismissible>
-                    {{ localize("The following selections could not be included due to problems:") }}
+                    {{ localize("以下选择因问题无法包含：") }}
                     <ul>
                         <li v-for="problem in invalidElements" :key="problem">
                             {{ problem }}
@@ -420,76 +419,69 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 @clicked-create="clickedCreate"
                 @remove-extensions-toggle="removeExtensionsToggle">
                 <template v-slot:help-content>
-                    <!-- TODO: Update help content for case where `fromSelection` is false -->
                     <p>
                         {{
                             localize(
                                 [
-                                    "Pair collections are permanent collections containing two datasets: one forward and one reverse. ",
-                                    "Often these are forward and reverse reads. The pair collections can be passed to tools and workflows in ",
-                                    "order to have analyses done on both datasets. This interface allows you to create a pair, name it, and ",
-                                    "swap which is forward and which reverse.",
-                                ].join("")
+                                    "配对集合是包含两个数据集的永久集合：一个正向数据集和一个反向数据集。",
+                                    "通常这些是正向和反向读取。配对集合可以传递给工具和工作流，以便对这两个数据集进行分析。",
+                                    "此界面允许您创建配对、命名它，并交换正向数据集和反向数据集的角色。",
+                                ].join(" ")
                             )
                         }}
                     </p>
 
                     <ul>
                         <li>
-                            {{ localize("Click the ") }}
+                            {{ localize("点击 ") }}
                             <i data-target=".swap">
-                                {{ localize("Swap") }}
+                                {{ localize("交换") }}
                             </i>
-                            {{
-                                localize(
-                                    "link to make your forward dataset the reverse and the reverse dataset forward"
-                                )
-                            }}
+                            {{ localize("链接，将正向数据集变为反向数据集，反向数据集变为正向数据集。") }}
                         </li>
 
                         <li>
-                            {{ localize("Click the ") }}
+                            {{ localize("点击 ") }}
                             <i data-target=".cancel-create">
-                                {{ localize("Cancel") }}
+                                {{ localize("取消") }}
                             </i>
-                            {{ localize("button to exit the interface.") }}
+                            {{ localize("按钮退出界面。") }}
                         </li>
                     </ul>
 
                     <br />
 
                     <p>
-                        {{ localize("Once your collection is complete, enter a ") }}
-                        <i data-target=".collection-name"> {{ localize("name") }}</i>
-                        {{ localize("and click ") }}
+                        {{ localize("一旦您的集合完成，请输入一个") }}
+                        <i data-target=".collection-name"> {{ localize("名称") }}</i>
+                        {{ localize("并点击 ") }}
                         <i data-target=".create-collection">
-                            {{ localize("Create dataset pair") }}
+                            {{ localize("创建数据集配对") }}
                         </i>
-                        {{ localize(".") }}
+                        {{ localize("。") }}
                     </p>
                 </template>
 
                 <template v-slot:middle-content>
                     <div v-if="noElementsSelected">
                         <BAlert show variant="warning" dismissible>
-                            {{ localize("No datasets were selected.") }}
-                            {{ localize("Exactly two elements needed for the collection. You may need to") }}
+                            {{ localize("未选择任何数据集。") }}
+                            {{ localize("此集合需要恰好两个元素。您可能需要") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                                {{ localize("cancel") }}
+                                {{ localize("取消") }}
                             </a>
-                            {{ localize("and reselect new elements, or upload datasets.") }}
+                            {{ localize("并重新选择新元素，或上传数据集。") }}
                         </BAlert>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
                         <BAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
-                                    "No elements in your history are valid for this pair. \
-                                    You may need to switch to a different history or upload valid datasets."
+                                    "您的历史记录中没有有效的元素用于此配对。您可能需要切换到不同的历史记录或上传有效的数据集。"
                                 )
                             }}
                             <div v-if="extensions?.length">
-                                {{ localize("The following formats are required for this pair: ") }}
+                                {{ localize("此配对需要以下格式：") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
@@ -498,17 +490,17 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             </div>
                         </BAlert>
                         <BAlert v-else show variant="warning" dismissible>
-                            {{ localize("The following selections could not be included due to problems:") }}
+                            {{ localize("以下选择因问题无法包含：") }}
                             <ul>
                                 <li v-for="problem in invalidElements" :key="problem">
                                     {{ problem }}
                                 </li>
                             </ul>
-                            {{ localize("Exactly two elements needed for the collection. You may need to") }}
+                            {{ localize("此集合需要恰好两个元素。您可能需要") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                                {{ localize("cancel") }}
+                                {{ localize("取消") }}
                             </a>
-                            {{ localize("and reselect new elements, or upload datasets.") }}
+                            {{ localize("并重新选择新元素，或上传数据集。") }}
                         </BAlert>
                     </div>
                     <div v-else>
@@ -518,37 +510,36 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     class="swap"
                                     size="sm"
                                     :disabled="!exactlyTwoValidElements"
-                                    :title="localize('Swap forward and reverse datasets')"
+                                    :title="localize('交换正向和反向数据集')"
                                     @click="swapButton">
                                     <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
-                                    {{ localize("Swap") }}
+                                    {{ localize("交换") }}
                                 </BButton>
                             </div>
                             <div class="flex-grow-1">
                                 <BAlert v-if="!exactlyTwoValidElements" show variant="warning">
-                                    {{ localize("Exactly two elements are needed for the pair.") }}
+                                    {{ localize("需要恰好两个元素来进行配对。") }}
                                     <span v-if="fromSelection">
                                         <a
                                             class="cancel-text"
                                             href="javascript:void(0)"
                                             role="button"
                                             @click="emit('on-cancel')">
-                                            {{ localize("Cancel") }}
+                                            {{ localize("取消") }}
                                         </a>
-                                        {{ localize("and reselect new elements.") }}
+                                        {{ localize("并重新选择新元素。") }}
                                     </span>
                                 </BAlert>
                                 <BAlert v-else-if="pairHasMixedExtensions" show variant="warning">
-                                    {{ localize("The selected datasets have mixed formats.") }}
-                                    {{ localize("You can still create the pair but generally") }}
-                                    {{ localize("dataset pairs should contain datasets of the same type.") }}
+                                    {{ localize("所选数据集具有不同格式。") }}
+                                    {{ localize("您仍然可以创建配对，但通常配对数据集应包含相同类型的数据集。") }}
                                     <HelpText
                                         uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
-                                        :text="localize('Why?')" />
+                                        :text="localize('为什么？')" />
                                 </BAlert>
                                 <BAlert v-else show variant="success">
-                                    {{ localize("The Dataset Pair is ready to be created.") }}
-                                    {{ localize("Provide a name and click the button below to create the pair.") }}
+                                    {{ localize("数据集配对已准备好创建。") }}
+                                    {{ localize("提供一个名称并点击下面的按钮来创建配对。") }}
                                 </BAlert>
                             </div>
                         </div>
@@ -563,16 +554,16 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     has-actions
                                     @element-is-discarded="removeElement(dataset)" />
                                 <div v-else class="collection-element alert-info">
-                                    <i>{{ localize("No dataset selected") }}</i>
+                                    <i>{{ localize("未选择数据集") }}</i>
                                 </div>
                             </div>
                         </div>
 
                         <div v-if="!fromSelection">
-                            <DelayedInput v-model="filterText" placeholder="search datasets" :delay="800" />
+                            <DelayedInput v-model="filterText" placeholder="搜索数据集" :delay="800" />
                             <strong>
                                 {{
-                                    localize("Manually select a forward and reverse dataset to create a dataset pair:")
+                                    localize("手动选择一个正向数据集和一个反向数据集来创建数据集配对：")
                                 }}
                             </strong>
                             <div
@@ -594,7 +585,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                 </div>
                             </div>
                             <BAlert v-else show variant="info">
-                                {{ localize(`No datasets found${filterText ? " matching '" + filterText + "'" : ""}`) }}
+                                {{ localize(`未找到匹配的数据集${filterText ? "，匹配 '" + filterText + "'" : ""}`) }}
                             </BAlert>
                         </div>
                     </div>
