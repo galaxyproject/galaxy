@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { FormParameterValue } from "@/components/Form/parameterTypes";
 import type { Step } from "@/stores/workflowStepStore";
 
 import FormElement from "@/components/Form/FormElement.vue";
@@ -16,7 +17,7 @@ const conditionalDefined = computed(() => {
     return Boolean(props.step.when);
 });
 
-function onSkipBoolean(value: boolean) {
+function onSkipBoolean(value: FormParameterValue) {
     if (props.step.when && value === false) {
         emit("onUpdateStep", props.step.id, { when: undefined });
     } else if (value === true && !props.step.when) {
