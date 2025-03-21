@@ -297,12 +297,7 @@ function onAlert(value: string | undefined) {
                 :options="attrs.options"
                 :optional="attrs.optional"
                 :multiple="attrs.multiple" />
-            <FormDataUri
-                v-else-if="isUriDataField"
-                :id="id"
-                v-model="currentValue"
-                :value="attrs.value"
-                :multiple="attrs.multiple" />
+            <FormDataUri v-else-if="isUriDataField" :id="id" v-model="currentValue" :multiple="attrs.multiple" />
             <FormData
                 v-else-if="['data', 'data_collection'].includes(props.type)"
                 :id="id"
