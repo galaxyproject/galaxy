@@ -7,6 +7,7 @@ import {
     faSignature,
     faTrash,
     faTrashRestore,
+    faUpload,
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
@@ -62,8 +63,16 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
  */
 const actions: ActionArray = [
     {
-        title: "Import New History",
+        title: "Create",
         icon: faPlus,
+        handler: () => {
+            const historyStore = useHistoryStore();
+            historyStore.createNewHistory();
+        },
+    },
+    {
+        title: "Import",
+        icon: faUpload,
         handler: () => {
             emit("/histories/import");
         },
