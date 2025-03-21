@@ -140,7 +140,7 @@ def parse_config_xml(config_xml):
 class RucioBroker:
     def __init__(self, rucio_object_store):
         self._temp_file_name = None
-        self.rucio_config_created = False
+        self.rucio_config_path: Optional[str] = None
         self.config = rucio_object_store.rucio_config
         self.extra_dirs = rucio_object_store.extra_dirs
         self.upload_scheme = self.config["upload_scheme"]
@@ -153,11 +153,11 @@ class RucioBroker:
         rucio.common.utils.PREFERRED_CHECKSUM = "md5"
 
     def get_rucio_client(self):
-        if not self.rucio_config_created:
+        if not self.rucio_config_path:
             temp_directory = self.extra_dirs["temp"]
-            rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
+            self.rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
             key_for_pass = "password"
-            with open(rucio_config_path, "w") as f:
+            with open(self.rucio_config_path, "w") as f:
                 f.write("[client]\n")
                 f.write(f"rucio_host = {self.config['host']}\n")
                 f.write(f"auth_host = {self.config['auth_host']}\n")
@@ -165,8 +165,9 @@ class RucioBroker:
                 f.write(f"auth_type = {self.config['auth_type']}\n")
                 f.write(f"username = {self.config['username']}\n")
                 f.write(f"{key_for_pass} = {self.config[key_for_pass]}\n")
-            os.environ["RUCIO_CONFIG"] = rucio_config_path
-            self.rucio_config_created = True
+        # We may have crossed a forkpool boundary. No harm setting the env var again.
+        # Fixes rucio integration tests
+        os.environ["RUCIO_CONFIG"] = self.rucio_config_path
         client = Client(
             rucio_host=self.config["host"],
             auth_host=self.config["auth_host"],
