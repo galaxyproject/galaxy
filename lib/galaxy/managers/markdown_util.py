@@ -83,15 +83,15 @@ ENCODED_ID_PATTERN = re.compile(
 )
 
 # Matches blocks of various types
-ANY_FENCED_BLOCK = re.compile(r"^```\s*[^\s]+\n\s*(.*?)^```", re.MULTILINE | re.DOTALL)
 GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE | re.DOTALL)
+VISUALIZATION_FENCED_BLOCK = re.compile(r"^```\s*visualization+\n\s*(.*?)^```", re.MULTILINE | re.DOTALL)
 
 # Match invocation ids in json blocks
 INVOCATION_ID_JSON_PATTERN = re.compile(r'("invocation_id"\s*:\s*)"([^"]*)"')
 
 
 def process_invocation_ids(f, workflow_markdown: str) -> str:
-    """Finds all invocation ids in JSONs inside ```ANY ... ``` blocks and applies f to them."""
+    """Finds all invocation ids in JSONs inside visualization blocks and applies f to them."""
 
     def replace_invocation_id(match):
         """Replaces only the invocation_id value while preserving the JSON structure."""
@@ -104,7 +104,7 @@ def process_invocation_ids(f, workflow_markdown: str) -> str:
         block_content = block_match.group(0)
         return re.sub(INVOCATION_ID_JSON_PATTERN, replace_invocation_id, block_content)
 
-    return re.sub(ANY_FENCED_BLOCK, process_block, workflow_markdown)
+    return re.sub(VISUALIZATION_FENCED_BLOCK, process_block, workflow_markdown)
 
 
 def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
