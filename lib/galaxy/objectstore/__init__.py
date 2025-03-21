@@ -943,8 +943,6 @@ class DiskObjectStore(ConcreteObjectStore):
             obj_dir=obj_dir,
         )
 
-    # TODO: rename to _disk_path or something like that to avoid conflicts with
-    # children that'll use the local_extra_dirs decorator, e.g. S3
     def _construct_path(
         self,
         obj,
@@ -1963,24 +1961,6 @@ def concrete_object_store(
         config_dict=object_store_configuration.model_dump(),
         **objectstore_constructor_kwds,
     )
-
-
-def local_extra_dirs(func):
-    """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
-
-    def wraps(self, *args, **kwargs):
-        if kwargs.get("base_dir", None) is None:
-            return func(self, *args, **kwargs)
-        else:
-            for c in self.__class__.__mro__:
-                if c.__name__ == "DiskObjectStore":
-                    return getattr(c, func.__name__)(self, *args, **kwargs)
-            raise Exception(
-                f"Could not call DiskObjectStore's {func.__name__} method, does your "
-                "Object Store plugin inherit from DiskObjectStore?"
-            )
-
-    return wraps
 
 
 def config_to_dict(config):
