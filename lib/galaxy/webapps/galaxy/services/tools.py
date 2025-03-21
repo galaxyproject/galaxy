@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import tempfile
 from json import dumps
@@ -10,6 +11,7 @@ from typing import (
     Union,
 )
 
+from fastapi.responses import FileResponse
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -36,6 +38,7 @@ from galaxy.schema.fetch_data import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -325,3 +328,19 @@ class ToolsService(ServiceBase):
                 if tool and tool.allow_user_access(trans.user):
                     detected_versions.append(tool.version)
         return detected_versions
+
+    def get_tool_icon(self, trans, tool_id, tool_version=None):
+        tool = self._get_tool(trans, tool_id, tool_version)
+        if tool and tool.icon:
+            icon_file_path = tool.icon
+            if icon_file_path and tool.tool_dir:
+                # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
+                if not safe_contains(tool.tool_dir, icon_file_path):
+                    raise Exception(
+                        f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
+                    )
+                file_path = os.path.join(tool.tool_dir, icon_file_path)
+                if not os.path.exists(file_path):
+                    raise exceptions.ObjectNotFound(f"Could not find icon for tool '{tool_id}'.")
+                return FileResponse(file_path)
+        return None

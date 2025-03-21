@@ -109,6 +109,13 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             response.headers["X-Frame-Options"] = x_frame_options
             return response
 
+        @app.middleware("http")
+        async def add_icon_cache_control_header(request: Request, call_next):
+            response = await call_next(request)
+            if request.url.path.endswith("/icon"):
+                response.headers["Cache-Control"] = "public, max-age=86400"
+            return response
+
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
 
