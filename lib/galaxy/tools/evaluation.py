@@ -287,8 +287,9 @@ class ToolEvaluator:
                 and bool(structured_app.vault)
                 and bool(structured_app.model.session)
             ):
+                sa_session = cast(galaxy_scoped_session, structured_app.model.session)
                 user_credentials_configurator = UserCredentialsConfigurator(
-                    structured_app.vault, structured_app.model.session, self.job.user, self.environment_variables
+                    structured_app.vault, sa_session, self.job.user, self.environment_variables
                 )
                 user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
         else:
