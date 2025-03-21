@@ -89,6 +89,7 @@ GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE | re
 # Match invocation ids in json blocks
 INVOCATION_ID_JSON_PATTERN = re.compile(r'("invocation_id"\s*:\s*)"([^"]*)"')
 
+
 def process_invocation_ids(f, workflow_markdown: str) -> str:
     """Finds all invocation ids in JSONs inside ```ANY ... ``` blocks and applies f to them."""
 
