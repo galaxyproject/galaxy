@@ -270,6 +270,7 @@ const variant = computed(() => {
  */
 function clearHighlighting(timeout = 1000) {
     setTimeout(() => {
+        $emit("alert", undefined);
         currentHighlighting.value = null;
     }, timeout);
 }
@@ -543,6 +544,7 @@ function canAcceptSrc(element: HistoryOrCollectionItem) {
             if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
                 return true;
             } else {
+                // TODO: On the rebase against dev, use `COLLECTION_TYPE_TO_LABEL[collectionType]`
                 $emit(
                     "alert",
                     `${collectionType} dataset collection is not a valid input for ${orList(
@@ -599,8 +601,7 @@ function onDragEnter(evt: MouseEvent) {
                 $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
             } else if (!canAcceptSrc(item)) {
                 highlightingState = "warning";
-                const { historyContentType } = getSrcAndContentType(item);
-                $emit("alert", `${historyContentType} is not an acceptable input type for this parameter.`);
+                // `canAcceptSrc` already alerts if false so no need to alert again
             }
             currentHighlighting.value = highlightingState;
             dragTarget.value = evt.target;
@@ -623,7 +624,6 @@ function onDrop() {
         } else {
             currentHighlighting.value = "warning";
         }
-        $emit("alert", undefined);
         dragData.value = [];
         clearHighlighting();
     }
