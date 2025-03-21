@@ -27,8 +27,22 @@ const props = defineProps({
         <b-dropdown-item v-b-modal.tool-source-viewer>
             <FontAwesomeIcon icon="far fa-eye" /><span v-localize>View Tool source</span>
         </b-dropdown-item>
-        <b-modal id="tool-source-viewer" :title="`Tool Source for ${props.toolId}`" size="lg" ok-only ok-title="Close">
+        <b-modal
+            id="tool-source-viewer"
+            modal-class="tool-source-modal"
+            :title="`Tool Source for ${props.toolId}`"
+            ok-only
+            ok-title="Close">
             <ToolSource :tool-id="props.toolId" />
         </b-modal>
     </div>
 </template>
+
+<style lang="scss">
+#tool-source-viewer {
+    .modal-dialog {
+        width: 85%;
+        max-width: 100%;
+    }
+}
+</style>
