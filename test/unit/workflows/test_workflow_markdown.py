@@ -137,11 +137,19 @@ def test_populating_invocation_json():
 }
 """
     galaxy_markdown = populate_markdown(workflow_markdown_0)
-    assert '\n```visualization\n{\n    "invocation_id": "44",\n    "other_key": "other_value"\n}\n```\n' in galaxy_markdown
+    assert (
+        '\n```visualization\n{\n    "invocation_id": "44",\n    "other_key": "other_value"\n}\n```\n' in galaxy_markdown
+    )
     galaxy_markdown = populate_markdown(workflow_markdown_1)
-    assert '\n```visualization\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
+    assert (
+        '\n```visualization\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n'
+        in galaxy_markdown
+    )
     galaxy_markdown = populate_markdown(workflow_markdown_2)
-    assert '\n```visualization\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
+    assert (
+        '\n```visualization\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n'
+        in galaxy_markdown
+    )
     galaxy_markdown = populate_markdown(workflow_markdown_3)
     assert '\n{\n    "invocation_id": ""\n}\n' in galaxy_markdown
 
