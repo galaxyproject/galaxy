@@ -1731,9 +1731,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         """
         return self.external_output_metadata
 
-    def get_session_id(self):
-        return self.session_id
-
     def get_user_id(self):
         return self.user_id
 
@@ -2463,11 +2460,6 @@ class Task(Base, JobLike, RepresentById):
         """
         # TODO: Merge into get_runner_external_id.
         return self.task_runner_external_id
-
-    def get_session_id(self):
-        # The Job's galaxy session is equal to the Job's session, so the
-        # Job's session is the same as the Task's session.
-        return self.get_job().get_session_id()
 
     def set_id(self, id):
         # This is defined in the SQL Alchemy's mapper and not here.
