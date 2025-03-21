@@ -103,7 +103,7 @@ history_dataset_as_image(output=output_label)
 
 def test_populating_invocation_json():
     workflow_markdown_0 = """
-```any
+```visualization
 {
     "invocation_id": "",
     "other_key": "other_value"
@@ -112,7 +112,7 @@ def test_populating_invocation_json():
 """
 
     workflow_markdown_1 = """
-```any
+```visualization
 {
     "nested_structure": {
         "invocation_id": ""
@@ -122,7 +122,7 @@ def test_populating_invocation_json():
 """
 
     workflow_markdown_2 = """
-```any
+```visualization
 {
     "nested_structure": {
         "invocation_id": "REPLACE"
@@ -137,11 +137,11 @@ def test_populating_invocation_json():
 }
 """
     galaxy_markdown = populate_markdown(workflow_markdown_0)
-    assert '\n```any\n{\n    "invocation_id": "44",\n    "other_key": "other_value"\n}\n```\n' in galaxy_markdown
+    assert '\n```visualization\n{\n    "invocation_id": "44",\n    "other_key": "other_value"\n}\n```\n' in galaxy_markdown
     galaxy_markdown = populate_markdown(workflow_markdown_1)
-    assert '\n```any\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
+    assert '\n```visualization\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
     galaxy_markdown = populate_markdown(workflow_markdown_2)
-    assert '\n```any\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
+    assert '\n```visualization\n{\n    "nested_structure": {\n        "invocation_id": "44"\n    }\n}\n```\n' in galaxy_markdown
     galaxy_markdown = populate_markdown(workflow_markdown_3)
     assert '\n{\n    "invocation_id": ""\n}\n' in galaxy_markdown
 
