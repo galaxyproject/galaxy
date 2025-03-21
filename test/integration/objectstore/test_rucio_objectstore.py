@@ -28,7 +28,12 @@ TEST_TOOL_IDS = [
 
 
 class TestRucioObjectStoreIntegration(BaseRucioObjectStoreIntegrationTestCase):
-    pass
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = False
+        config["metadata_strategy"] = "directory"
 
 
 instance = integration_util.integration_module_instance(TestRucioObjectStoreIntegration)
