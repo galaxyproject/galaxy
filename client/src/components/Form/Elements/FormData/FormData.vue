@@ -15,7 +15,7 @@ import {
 } from "@/api";
 import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import { COLLECTION_TYPE_TO_LABEL, type CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -273,6 +273,7 @@ const usingSimpleSelect = computed(
  */
 function clearHighlighting(timeout = 1000) {
     setTimeout(() => {
+        $emit("alert", undefined);
         currentHighlighting.value = null;
     }, timeout);
 }
@@ -556,7 +557,7 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
             } else {
                 $emit(
                     "alert",
-                    `${collectionType} dataset collection is not a valid input for ${orList(
+                    `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
                         props.collectionTypes
                     )} type dataset collection parameter.`
                 );
@@ -603,7 +604,7 @@ function onDragEnter(evt: DragEvent) {
                     $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
                 } else if (!canAcceptSrc(historyContentType, collectionType)) {
                     highlightingState = "warning";
-                    $emit("alert", `${historyContentType} is not an acceptable input type for this parameter.`);
+                    // `canAcceptSrc` already alerts if false so no need to alert again
                 }
             }
         }
@@ -646,7 +647,6 @@ function onDrop(e: DragEvent) {
         } else {
             currentHighlighting.value = "warning";
         }
-        $emit("alert", undefined);
         dragData.value = [];
         clearHighlighting();
     } else if (props.workflowRun && e.dataTransfer?.files?.length) {
@@ -700,8 +700,8 @@ const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
 
 function collectionTypeToText(collectionType: string): string {
-    if (collectionType == "list:paired") {
-        return "list of pairs";
+    if (COLLECTION_TYPE_TO_LABEL[collectionType]) {
+        return COLLECTION_TYPE_TO_LABEL[collectionType].toLowerCase();
     } else {
         return collectionType;
     }
