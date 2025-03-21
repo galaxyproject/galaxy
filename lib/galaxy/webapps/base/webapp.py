@@ -921,6 +921,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Gets or creates a default history and associates it with the current
         session.
         """
+        assert self.galaxy_session
 
         # Just return the current history if one exists and is not deleted.
         history = self.galaxy_session.current_history
