@@ -8,7 +8,7 @@
     <command><![CDATA[
 python '$__tool_directory__/export_remote.py'
     --file-sources '$file_sources'
-    --directory-uri '$d_uri'
+    --inputs '$inputs'
     --files-to-export '$files_to_export'
     #if $include_metadata_files:
         --export-metadata-files $include_metadata_files
@@ -17,6 +17,7 @@ python '$__tool_directory__/export_remote.py'
     ]]></command>
     <configfiles>
         <file_sources name="file_sources"/>
+        <inputs name="inputs" />
         <configfile name="files_to_export">#import json
 #from galaxy.util import filesystem_safe_string
 #if $export_type.export_type_selector == "datasets_auto":
