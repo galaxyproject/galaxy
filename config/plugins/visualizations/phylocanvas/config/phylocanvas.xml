@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Phylogenetic Tree Visualization" embeddable="true">
-    <description>A performant, reusable, and extensible tree visualisation from the Centre for Genomic Pathogen Surveillance at https://www.phylocanvas.gl</description>
+<visualization name="Phylogenetic Tree" embeddable="true">
+    <description>Phylogenetic Tree Viewer from https://www.phylocanvas.gl</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
