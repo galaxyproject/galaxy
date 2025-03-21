@@ -907,7 +907,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return history
 
     def set_history(self, history):
-        if history and not history.deleted:
+        if history and not history.deleted and self.galaxy_session:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
         self.sa_session.commit()
