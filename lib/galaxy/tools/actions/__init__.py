@@ -634,10 +634,11 @@ class DefaultToolAction(ToolAction):
                         current_element_identifiers = element_identifiers
                         current_collection_type = output.structure.collection_type
                         assert current_collection_type
-                        # TODO: replace following line with formal abstractions for doing this.
-                        current_collection_type = ":".join(current_collection_type.split(":")[1:])
 
                         for parent_id in output_part_def.parent_ids or []:
+                            # Get subcollection type
+                            # TODO: replace following line with formal abstractions for doing this.
+                            current_collection_type = current_collection_type.partition(":")[2]
                             name_to_index = {
                                 value["name"]: index for (index, value) in enumerate(current_element_identifiers)
                             }
