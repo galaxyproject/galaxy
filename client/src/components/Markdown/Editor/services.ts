@@ -23,7 +23,6 @@ export async function getVisualizations(): Promise<Array<TemplateEntry>> {
                 name: "visualization",
                 configure: true,
                 content: `{ "visualization_name": "${v.name}", "visualization_title": "${v.html}" }`,
-                // "dataset_url": "http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/newick.nwk"
             },
         }));
     } catch (e) {
