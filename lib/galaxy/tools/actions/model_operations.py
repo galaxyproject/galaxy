@@ -115,7 +115,7 @@ class ModelOperationToolAction(DefaultToolAction):
         #
         # Create job.
         #
-        job, galaxy_session = self._new_job_for_session(trans, tool, history)
+        job, _ = self._new_job_for_session(trans, tool, history)
         self._produce_outputs(
             trans,
             tool,
