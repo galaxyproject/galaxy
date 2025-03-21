@@ -309,6 +309,7 @@ export function canMutateHistory(history: AnyHistory): boolean {
 
 export type DatasetHash = components["schemas"]["DatasetHash"];
 
+export type DatasetSource = components["schemas"]["DatasetSource"];
 export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
 
 /**

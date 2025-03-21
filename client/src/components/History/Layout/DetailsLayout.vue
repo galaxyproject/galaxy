@@ -46,12 +46,12 @@ const editing = ref(false);
 const textSelected = ref(false);
 const localProps = ref<{ name: string; annotation: string | null; tags: string[] }>({
     name: "",
-    annotation: "",
+    annotation: null,
     tags: [],
 });
 
 const clickToEditName = computed({
-    get: () => props.name,
+    get: () => props.name ?? "",
     set: (newName) => {
         if (newName && newName !== props.name) {
             emit("save", { name: newName.trim() });
@@ -95,9 +95,9 @@ function onToggle() {
     editing.value = !editing.value;
 
     localProps.value = {
-        name: props.name,
-        annotation: props.annotation,
-        tags: props.tags,
+        name: props.name ?? "",
+        annotation: props.annotation ?? null,
+        tags: props.tags ?? [],
     };
 
     if (nameRef.value) {
