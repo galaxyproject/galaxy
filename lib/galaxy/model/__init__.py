@@ -1516,7 +1516,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     tool_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
     exit_code: Mapped[Optional[int]]
     traceback: Mapped[Optional[str]] = mapped_column(TEXT)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     job_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     job_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
@@ -7763,7 +7763,7 @@ class Event(Base, RepresentById):
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     message: Mapped[Optional[str]] = mapped_column(TrimmedString(1024))
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
     tool_id: Mapped[Optional[str]] = mapped_column(String(255))
 
     history: Mapped[Optional["History"]] = relationship()
@@ -7822,7 +7822,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="CASCADE"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship(back_populates="histories")
     history: Mapped[Optional["History"]] = relationship(back_populates="galaxy_sessions")
@@ -11587,7 +11587,7 @@ class UserAction(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
     action: Mapped[Optional[str]] = mapped_column(Unicode(255))
     context: Mapped[Optional[str]] = mapped_column(Unicode(512))
     params: Mapped[Optional[str]] = mapped_column(Unicode(1024))
