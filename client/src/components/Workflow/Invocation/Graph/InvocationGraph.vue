@@ -173,13 +173,13 @@ function stepClicked(nodeId: number | null) {
 <template>
     <div>
         <BAlert v-if="initialLoading" show variant="info">
-            <LoadingSpan message="Loading Invocation Graph" />
+            <LoadingSpan message="正在加载工作流调用图" />
         </BAlert>
         <div v-else-if="errored">
             <BAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </BAlert>
-            <BAlert v-else show variant="danger"> Unknown Error </BAlert>
+            <BAlert v-else show variant="danger"> 未知错误 </BAlert>
         </div>
         <div v-else-if="steps && datatypesMapper">
             <div class="d-flex">
@@ -212,17 +212,17 @@ function stepClicked(nodeId: number | null) {
                             :workflow-step="activeStepFor(activeNodeId)"
                             :graph-step="steps[activeNodeId]"
                             :invocation-step="props.invocation.steps[activeNodeId]" />
-                        <span v-else>No Step Selected</span>
+                        <span v-else>未选择步骤</span>
                     </Heading>
                     <div class="d-flex flex-gapx-1">
                         <BButton
                             v-if="activeNodeId !== null"
-                            title="Scroll to Step"
+                            title="滚动到步骤"
                             size="sm"
                             @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </BButton>
-                        <BButton v-if="activeNodeId !== null" title="Hide Step" size="sm" @click="activeNodeId = null">
+                        <BButton v-if="activeNodeId !== null" title="隐藏步骤" size="sm" @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </div>
@@ -238,7 +238,7 @@ function stepClicked(nodeId: number | null) {
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
                         expanded />
-                    <BAlert v-else show>Click on a step in the invocation to view its details here.</BAlert>
+                    <BAlert v-else show>点击工作流调用中的步骤以在此处查看其详细信息。</BAlert>
                 </BCardBody>
             </BCard>
         </div>

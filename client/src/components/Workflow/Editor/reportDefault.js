@@ -1,17 +1,17 @@
 export default `
-# Workflow Execution Report
+# 工作流执行报告
 
-## Workflow Inputs
+## 工作流输入
 \`\`\`galaxy
 invocation_inputs()
 \`\`\`
 
-## Workflow Outputs
+## 工作流输出
 \`\`\`galaxy
 invocation_outputs()
 \`\`\`
 
-## Workflow
+## 工作流
 \`\`\`galaxy
 workflow_display()
 \`\`\`

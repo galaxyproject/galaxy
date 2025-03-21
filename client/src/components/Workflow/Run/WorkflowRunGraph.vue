@@ -50,10 +50,10 @@ try {
         {{ errorMessage }}
     </BAlert>
     <BAlert v-else-if="datatypesMapperLoading || loading" variant="info" show>
-        <LoadingSpan message="Loading workflow" />
+        <LoadingSpan message="正在加载工作流" />
     </BAlert>
     <div v-else-if="datatypesMapper && !loading" class="d-flex flex-column">
-        <Heading h2 separator bold size="sm"> Graph </Heading>
+        <Heading h2 separator bold size="sm">图表</Heading>
         <BCard class="workflow-preview mx-1 flex-grow-1">
             <WorkflowGraph
                 v-if="steps"

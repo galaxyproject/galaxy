@@ -27,9 +27,9 @@ type TrsSearchData = {
 };
 
 const fields = [
-    { key: "name", label: "Name" },
-    { key: "description", label: "Description" },
-    { key: "organization", label: "Organization" },
+    { key: "name", label: "名称" },
+    { key: "description", label: "描述" },
+    { key: "organization", label: "组织" },
 ];
 
 const query = ref("");
@@ -49,7 +49,7 @@ const itemsComputed = computed(() => {
 });
 
 const searchHelp = computed(() => {
-    return "Search by workflow description. Tags (key:value) can be used to also search by metadata - for instance name:example. Available tags include organization and name.";
+    return "通过工作流描述进行搜索。可以使用标签（键:值）来搜索元数据 - 例如 name:example。可用标签包括组织和名称。";
 });
 
 const services = new Services();
@@ -105,7 +105,7 @@ const router = useRouter();
 
 async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
     if (!trsId || !toolIdToImport) {
-        errorMessage.value = "Import Failed. Unknown Id";
+        errorMessage.value = "导入失败。未知ID";
         return;
     }
 
@@ -118,7 +118,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
         router.push(path);
     } catch (e) {
-        errorMessage.value = (e as string) || "Import failed for an unknown reason.";
+        errorMessage.value = (e as string) || "导入因未知原因失败。";
     }
 
     importing.value = false;
@@ -126,13 +126,13 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 </script>
 
 <template>
-    <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <BCard class="workflow-import-trs-search" title="GA4GH 工具注册服务器 (TRS) 工作流搜索">
         <BAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
         </BAlert>
 
         <div class="mb-3">
-            <b>TRS Server:</b>
+            <b>TRS 服务器:</b>
 
             <TrsServerSelection
                 :trs-selection="trsSelection"
@@ -146,8 +146,8 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                     id="trs-search-query"
                     v-model="query"
                     debounce="500"
-                    placeholder="search query"
-                    data-description="filter text input"
+                    placeholder="搜索查询"
+                    data-description="过滤文本输入"
                     @keyup.esc="query = ''" />
 
                 <BInputGroupAppend>
@@ -155,12 +155,12 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                         v-b-tooltip
                         placement="bottom"
                         size="sm"
-                        data-description="show help toggle"
+                        data-description="显示帮助开关"
                         :title="searchHelp">
                         <FontAwesomeIcon :icon="faQuestion" />
                     </BButton>
 
-                    <BButton size="sm" title="clear search" @click="query = ''">
+                    <BButton size="sm" title="清空搜索" @click="query = ''">
                         <FontAwesomeIcon :icon="faTimes" />
                     </BButton>
                 </BInputGroupAppend>
@@ -169,11 +169,11 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
         <div>
             <BAlert v-if="loading" variant="info" show>
-                <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
+                <LoadingSpan :message="`正在搜索 ${query}，这可能需要一些时间 - 请耐心等待`" />
             </BAlert>
-            <BAlert v-else-if="!query" variant="info" show> Enter search query to begin search. </BAlert>
+            <BAlert v-else-if="!query" variant="info" show> 输入搜索查询以开始搜索。 </BAlert>
             <BAlert v-else-if="results.length == 0" variant="info" show>
-                No search results found, refine your search.
+                未找到搜索结果，请完善您的搜索条件。
             </BAlert>
             <BTable
                 v-else
@@ -187,7 +187,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 <template v-slot:row-details="row">
                     <BCard>
                         <BAlert v-if="importing" variant="info" show>
-                            <LoadingSpan message="Importing workflow" />
+                            <LoadingSpan message="正在导入工作流" />
                         </BAlert>
 
                         <TrsTool

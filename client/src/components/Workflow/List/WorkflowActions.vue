@@ -89,8 +89,8 @@ const dockstoreUrl = computed(() => {
                 v-b-tooltip.hover.noninteractive
                 class="workflow-bookmark-button-add inline-icon-button"
                 variant="link"
-                title="Add to bookmarks"
-                tooltip="Add to bookmarks. This workflow will appear in the left tool panel."
+                title="添加到书签"
+                tooltip="添加到书签。此工作流将显示在左侧工具面板中。"
                 size="sm"
                 @click="toggleBookmark(true)">
                 <FontAwesomeIcon v-if="!bookmarkLoading" :icon="farStar" fixed-width />
@@ -101,7 +101,7 @@ const dockstoreUrl = computed(() => {
                 v-b-tooltip.hover.noninteractive
                 class="workflow-bookmark-button-remove inline-icon-button"
                 variant="link"
-                title="Remove bookmark"
+                title="移除书签"
                 size="sm"
                 @click="toggleBookmark(false)">
                 <FontAwesomeIcon v-if="!bookmarkLoading" :icon="faStar" fixed-width />
@@ -114,7 +114,7 @@ const dockstoreUrl = computed(() => {
                 right
                 no-caret
                 class="workflow-actions-dropdown"
-                title="Workflow actions"
+                title="工作流操作"
                 toggle-class="inline-icon-button"
                 variant="link"
                 @show="() => emit('dropdown', true)"
@@ -124,84 +124,84 @@ const dockstoreUrl = computed(() => {
                 </template>
 
                 <template v-if="props.editor">
-                    <BDropdownItem :to="runPath" title="Run workflow" size="sm" variant="link">
+                    <BDropdownItem :to="runPath" title="运行工作流" size="sm" variant="link">
                         <FontAwesomeIcon :icon="faPlay" fixed-width />
-                        Run
+                        运行
                     </BDropdownItem>
 
                     <BDropdownItem
                         v-if="props.workflow.published"
                         size="sm"
-                        title="Copy link to workflow"
+                        title="复制工作流链接"
                         @click="copyPublicLink">
                         <FontAwesomeIcon :icon="faLink" fixed-width />
-                        Link to Workflow
+                        工作流链接
                     </BDropdownItem>
 
-                    <BDropdownItem v-if="!isAnonymous && !shared" size="sm" title="Copy workflow" @click="copyWorkflow">
+                    <BDropdownItem v-if="!isAnonymous && !shared" size="sm" title="复制工作流" @click="copyWorkflow">
                         <FontAwesomeIcon :icon="faCopy" fixed-width />
-                        Copy
+                        复制
                     </BDropdownItem>
 
                     <BDropdownItem
                         size="sm"
-                        title="Download workflow in .ga format"
+                        title="以.ga格式下载工作流"
                         target="_blank"
                         :href="downloadUrl">
                         <FontAwesomeIcon :icon="faDownload" fixed-width />
-                        Download
+                        下载
                     </BDropdownItem>
 
                     <BDropdownItem
                         v-if="!isAnonymous && !shared"
                         size="sm"
-                        title="Share"
+                        title="分享"
                         :to="`/workflows/sharing?id=${workflow.id}`">
                         <FontAwesomeIcon :icon="faShareAlt" fixed-width />
-                        Share
+                        分享
                     </BDropdownItem>
                 </template>
 
                 <BDropdownItem
                     v-if="!isAnonymous && !shared && !props.workflow.deleted && !props.current"
                     class="workflow-delete-button"
-                    title="Delete workflow"
+                    title="删除工作流"
                     size="sm"
                     @click="deleteWorkflow">
                     <FontAwesomeIcon :icon="faTrash" fixed-width />
-                    Delete
+                    删除
                 </BDropdownItem>
 
                 <BDropdownItem
                     v-if="sourceType.includes('trs')"
                     class="source-trs-button"
-                    :title="`View on ${props.workflow.source_metadata?.trs_server}`"
+                    :title="`在 ${props.workflow.source_metadata?.trs_server} 上查看`"
                     size="sm"
                     :href="dockstoreUrl"
                     target="_blank">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                    View on Dockstore
+                    在Dockstore上查看
                 </BDropdownItem>
 
                 <BDropdownItem
                     v-if="sourceType == 'url'"
                     class="workflow-view-external-link-button"
-                    title="View external link"
+                    title="查看外部链接"
                     size="sm"
                     :href="props.workflow.source_metadata?.url"
                     target="_blank">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                    View external link
+                    查看外部链接
                 </BDropdownItem>
 
                 <BDropdownItem
                     v-if="!props.workflow.deleted"
                     class="workflow-export-button"
-                    title="Export"
+                    title="导出"
                     size="sm"
                     :to="`/workflows/export?id=${props.workflow.id}`">
                     <FontAwesomeIcon :icon="faFileExport" fixed-width />
-                    Export
+                    导出
                 </BDropdownItem>
             </BDropdown>
         </BButtonGroup>

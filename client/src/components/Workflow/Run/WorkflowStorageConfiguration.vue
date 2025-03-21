@@ -28,7 +28,7 @@
         <WorkflowTargetPreferredObjectStorePopover
             v-if="splitObjectStore"
             target="workflow-storage-indicator-intermediate"
-            title-suffix=" (Intermediate Datasets)"
+            title-suffix=" (中间数据集)"
             :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
@@ -83,16 +83,16 @@ export default {
         ...mapState(useConfigStore, ["config"]),
         preferredOrEmptyString() {
             if (this.config?.object_store_always_respect_user_selection) {
-                return "";
+            return "";
             } else {
-                return "Preferred";
+            return "首选";
             }
         },
         primaryModalTitle() {
-            return `Invocation ${this.preferredOrEmptyString} Storage Location`;
+            return `工作流${this.preferredOrEmptyString}存储位置`;
         },
         intermediateModalTitle() {
-            return `Invocation ${this.preferredOrEmptyString} Storage Location (Intermediate Datasets)`;
+            return `工作流${this.preferredOrEmptyString}存储位置（中间数据集）`;
         },
         suffixPrimary() {
             if (this.splitObjectStore) {

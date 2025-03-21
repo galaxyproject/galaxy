@@ -25,9 +25,9 @@ export function useWorkflowActions(workflow: Ref<AnyWorkflow>, refreshCallback: 
                 show_in_tool_panel: checked,
             });
 
-            toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
+            toast.info(`工作流${checked ? "已添加到" : "已从"}收藏夹${checked ? "" : "中移除"}`);
         } catch (error) {
-            toast.error("Failed to update workflow bookmark status");
+            toast.error("更新工作流收藏状态失败");
         } finally {
             refreshCallback();
             bookmarkLoading.value = false;
@@ -37,16 +37,16 @@ export function useWorkflowActions(workflow: Ref<AnyWorkflow>, refreshCallback: 
     const { confirm } = useConfirmDialog();
 
     const deleteWorkflow = async () => {
-        const confirmed = await confirm("Are you sure you want to delete this workflow?", {
-            title: "Delete workflow",
-            okTitle: "Delete",
+        const confirmed = await confirm("您确定要删除这个工作流吗？", {
+            title: "删除工作流",
+            okTitle: "删除",
             okVariant: "danger",
         });
 
         if (confirmed) {
             await deleteWorkflowService(workflow.value.id);
             refreshCallback();
-            toast.info("Workflow deleted");
+            toast.info("工作流已删除");
         }
     };
 
@@ -60,16 +60,16 @@ export function useWorkflowActions(workflow: Ref<AnyWorkflow>, refreshCallback: 
 
     function copyPublicLink() {
         copy(fullLink.value);
-        toast.success("Link to workflow copied");
+        toast.success("工作流链接已复制");
     }
 
     async function copyWorkflow() {
-        const confirmed = await confirm("Are you sure you want to make a copy of this workflow?", "Copy workflow");
+        const confirmed = await confirm("您确定要复制这个工作流吗？", "复制工作流");
 
         if (confirmed) {
             await copyWorkflowService(workflow.value.id, workflow.value.owner);
             refreshCallback();
-            toast.success("Workflow copied");
+            toast.success("工作流已复制");
         }
     }
 
@@ -79,7 +79,7 @@ export function useWorkflowActions(workflow: Ref<AnyWorkflow>, refreshCallback: 
 
     async function importWorkflow() {
         await copyWorkflowService(workflow.value.id, workflow.value.owner);
-        toast.success("Workflow imported successfully");
+        toast.success("工作流导入成功");
     }
 
     return {

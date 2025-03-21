@@ -46,7 +46,7 @@ const userOwned = computed(() => {
 
 const owner = computed(() => {
     if (props.workflowInfo?.creator_deleted) {
-        return "Archived author";
+        return "已归档作者";
     }
     return props.workflowInfo.owner;
 });
@@ -55,31 +55,31 @@ const owner = computed(() => {
 <template>
     <aside class="workflow-information">
         <hgroup>
-            <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
+            <Heading h2 size="xl" class="mb-0">关于此工作流</Heading>
             <span class="ml-2">
-                <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
+                <span data-description="workflow name"> {{ workflowInfo.name }} </span> - 版本
                 {{ workflowInfo.version }}
             </span>
         </hgroup>
 
         <div class="workflow-info-box">
             <hgroup class="mb-2">
-                <Heading h3 size="md" class="mb-0">Author</Heading>
+                <Heading h3 size="md" class="mb-0">作者</Heading>
                 <span class="ml-2">{{ owner }}</span>
             </hgroup>
 
-            <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
+            <img alt="用户头像" :src="gravatarSource" class="mb-2" />
 
             <RouterLink
                 v-if="!props.workflowInfo?.creator_deleted"
                 :to="publishedByUser"
                 :target="props.embedded ? '_blank' : ''">
-                All published Workflows by {{ workflowInfo.owner }}
+                查看 {{ workflowInfo.owner }} 的所有已发布工作流
             </RouterLink>
         </div>
 
         <div v-if="workflowInfo?.creator" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Creators</Heading>
+            <Heading h3 size="md" class="mb-0">创建者</Heading>
 
             <ul class="list-unstyled mb-0">
                 <li v-for="(creator, index) in workflowInfo.creator" :key="index">
@@ -91,47 +91,47 @@ const owner = computed(() => {
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Description</Heading>
+            <Heading h3 size="md" class="mb-0">描述</Heading>
 
             <p v-if="workflowInfo.annotation" class="mb-0">
                 {{ workflowInfo.annotation }}
             </p>
-            <p v-else class="mb-0">This Workflow has no description.</p>
+            <p v-else class="mb-0">此工作流没有描述。</p>
         </div>
 
         <div v-if="workflowInfo?.tags" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Tags</Heading>
+            <Heading h3 size="md" class="mb-0">标签</Heading>
 
             <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">License</Heading>
+            <Heading h3 size="md" class="mb-0">许可证</Heading>
 
             <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
-            <span v-else>No License specified</span>
+            <span v-else>未指定许可证</span>
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Last Updated</Heading>
+            <Heading h3 size="md" class="mb-0">最后更新</Heading>
 
             <UtcDate :date="workflowInfo.update_time" mode="pretty" />
         </div>
 
         <div v-if="!props.embedded && (workflowInfo.published || userOwned)" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Sharing</Heading>
+            <Heading h3 size="md" class="mb-0">分享</Heading>
 
             <span v-if="workflowInfo.published">
-                Use the following link to share preview of this workflow:
+                使用以下链接分享此工作流预览：
 
                 <a :href="fullLink" target="_blank">{{ fullLink }}</a>
-                <CopyToClipboard message="Link copied to clipboard" :text="fullLink" title="Copy link" />. Manage
-                sharing settings <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">here</RouterLink>.
+                <CopyToClipboard message="链接已复制到剪贴板" :text="fullLink" title="复制链接" />。在
+                <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">此处</RouterLink>管理分享设置。
             </span>
 
             <span v-else-if="userOwned">
-                This workflow is not published and cannot be shared.
-                <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">Publish this workflow</RouterLink>
+                此工作流未发布，无法分享。
+                <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">发布此工作流</RouterLink>
             </span>
         </div>
     </aside>

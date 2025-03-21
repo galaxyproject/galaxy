@@ -36,18 +36,18 @@ function onZoomReset() {
             :disabled="isMinZoom(props.zoomLevel)"
             role="button"
             class="fa fa-minus"
-            title="Zoom Out"
+            title="缩小"
             size="sm"
-            aria-label="Zoom Out"
+            aria-label="缩小"
             @click="onZoomOut" />
         <b-button
             v-b-tooltip.hover
             role="button"
             class="zoom-reset"
             variant="light"
-            title="Reset Zoom Level"
+            title="重置缩放级别"
             size="sm"
-            aria-label="Reset Zoom Level"
+            aria-label="重置缩放级别"
             @click="onZoomReset">
             {{ zoomPercentage }}%
         </b-button>
@@ -55,9 +55,9 @@ function onZoomReset() {
             :disabled="isMaxZoom(props.zoomLevel)"
             role="button"
             class="fa fa-plus"
-            title="Zoom In"
+            title="放大"
             size="sm"
-            aria-label="Zoom In"
+            aria-label="放大"
             @click="onZoomIn" />
     </span>
 </template>

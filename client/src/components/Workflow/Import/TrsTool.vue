@@ -27,22 +27,22 @@ function importVersion(version: TrsToolVersion) {
 <template>
     <div>
         <div>
-            <b>Name:</b>
+            <b>名称:</b>
 
             <span>{{ props.trsTool.name }}</span>
         </div>
         <div>
-            <b>Description:</b>
+            <b>描述:</b>
 
             <span>{{ props.trsTool.description }}</span>
         </div>
         <div>
-            <b>Organization</b>
+            <b>组织</b>
 
             <span>{{ props.trsTool.organization }}</span>
         </div>
         <div>
-            <b>Versions</b>
+            <b>版本</b>
 
             <ul>
                 <li v-for="version in props.trsTool.versions" :key="version.id">

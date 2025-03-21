@@ -19,16 +19,16 @@ const { isAnonymous } = storeToRefs(userStore);
 
 const createButtonTitle = computed(() => {
     if (isAnonymous.value) {
-        return "Log in to create workflow";
+        return "登录以创建工作流";
     } else {
-        return "Create new workflow";
+        return "创建新工作流";
     }
 });
 const importButtonTitle = computed(() => {
     if (isAnonymous.value) {
-        return "Log in to import workflow";
+        return "登录以导入工作流";
     } else {
-        return "Import workflow from URL or file";
+        return "从URL或文件导入工作流";
     }
 });
 
@@ -53,7 +53,7 @@ function navigateToOldCreate() {
                 :disabled="isAnonymous"
                 @click="navigateToOldCreate">
                 <FontAwesomeIcon :icon="faPlus" />
-                Create
+                创建
             </BButton>
 
             <BButton
@@ -65,7 +65,7 @@ function navigateToOldCreate() {
                 :disabled="isAnonymous"
                 @click="navigateToImport">
                 <FontAwesomeIcon :icon="faUpload" />
-                Import
+                导入
             </BButton>
         </div>
     </div>

@@ -2,50 +2,49 @@
     <div v-if="currentUser && currentHistoryId" class="workflow-expanded-form">
         <BAlert v-if="!canRunOnHistory" variant="warning" show>
             <span v-localize>
-                The workflow cannot run because the current history is immutable. Please select a different history or
-                send the results to a new one.
+                工作流无法运行，因为当前历史记录不可更改。请选择其他历史记录或将结果发送到新的历史记录中。
             </span>
         </BAlert>
         <div class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
+            <b>工作流: {{ model.name }}</b> <i>(版本: {{ model.runData.version + 1 }})</i>
             <div class="float-right d-flex flex-gapx-1">
                 <b-button
                     v-if="!disableSimpleForm"
                     v-b-tooltip.hover.noninteractive
                     variant="link"
                     class="text-decoration-none"
-                    title="Use simplified run form instead"
+                    title="使用简化运行表单"
                     @click="$emit('showSimple')">
-                    <span class="fas fa-arrow-left" /> Simple Form
+                    <span class="fas fa-arrow-left" /> 简化表单
                 </b-button>
                 <ButtonSpinner
                     id="run-workflow"
-                    title="Run Workflow"
+                    title="运行工作流"
                     :disabled="!canRunOnHistory"
                     :wait="showExecuting"
                     @onClick="onExecute" />
             </div>
         </div>
-        <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
+        <FormCard v-if="wpInputsAvailable" title="工作流参数">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
             </template>
         </FormCard>
-        <FormCard title="History Options">
+        <FormCard title="历史记录选项">
             <template v-slot:body>
                 <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
             </template>
         </FormCard>
-        <FormCard v-if="reuseAllowed(currentUser)" title="Job re-use Options">
+        <FormCard v-if="reuseAllowed(currentUser)" title="作业重用选项">
             <template v-slot:body>
                 <FormElement
                     v-model="useCachedJobs"
-                    title="Attempt to re-use jobs with identical parameters?"
-                    help="This may skip executing jobs that you have already run."
+                    title="尝试重用具有相同参数的作业？"
+                    help="这可能会跳过执行您已经运行过的作业。"
                     type="boolean" />
             </template>
         </FormCard>
-        <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
+        <FormCard v-if="resourceInputsAvailable" title="工作流资源选项">
             <template v-slot:body>
                 <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
             </template>
@@ -126,7 +125,7 @@ export default {
                     name: "new_history",
                     test_param: {
                         name: "check",
-                        label: "Send results to a new history",
+                        label: "将结果发送到新的历史记录",
                         type: "boolean",
                         value: "false",
                         help: "",
@@ -137,7 +136,7 @@ export default {
                             inputs: [
                                 {
                                     name: "name",
-                                    label: "History name",
+                                    label: "历史记录名称",
                                     type: "text",
                                     value: this.model.name,
                                 },

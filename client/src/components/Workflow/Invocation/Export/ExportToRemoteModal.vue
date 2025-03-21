@@ -19,7 +19,7 @@ const emit = defineEmits<{
     (e: "onExportToFileSource", exportDirectory: string, fileName: string): void;
 }>();
 
-const title = computed(() => `Export ${props.exportPlugin.title} to remote file source`);
+const title = computed(() => `导出${props.exportPlugin.title}到远程文件源`);
 
 /** Opens the modal dialog. */
 function showModal() {
@@ -40,6 +40,6 @@ defineExpose({ showModal, hideModal });
 
 <template>
     <BModal ref="modal" :title="title" title-tag="h2" centered hide-footer>
-        <ExportForm what="workflow invocation" @export="doExport" />
+        <ExportForm what="工作流调用" @export="doExport" />
     </BModal>
 </template>

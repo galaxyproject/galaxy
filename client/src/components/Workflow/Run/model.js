@@ -30,7 +30,7 @@ export class WorkflowRunModel {
                 title += ` - ${step.annotation}`;
             }
             if (step.step_version) {
-                title += ` (Galaxy Version ${step.step_version})`;
+                title += ` (Galaxy 版本 ${step.step_version})`;
             }
             step = Object.assign(
                 {
@@ -83,7 +83,7 @@ export class WorkflowRunModel {
                         input.connected = true;
                         input.type = "hidden";
                         input.help = input.step_linked ? `${input.help}, ` : "";
-                        input.help += `Connected to '${connection.output_name}' from Step ${parseInt(i) + 1}`;
+                        input.help += `连接到 '${connection.output_name}' 从步骤 ${parseInt(i) + 1}`;
                         input.step_linked = input.step_linked || [];
                         input.step_linked.push({ index: step.index, step_type: step.step_type });
                     }

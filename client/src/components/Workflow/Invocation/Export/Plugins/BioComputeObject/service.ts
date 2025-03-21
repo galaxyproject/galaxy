@@ -24,9 +24,9 @@ export async function saveInvocationBCOToDatabase(invocationId: string, inputDat
     try {
         const bcoContent = await generateBcoContent(invocationId);
         await sendBco(bcoContent, inputData);
-        Toast.success(`Invocation successfully sent to: ${inputData.serverBaseUrl}`);
+        Toast.success(`调用成功发送到: ${inputData.serverBaseUrl}`);
     } catch (err) {
-        Toast.error(errorMessageAsString(err), "Error sending BioCompute Object to BCODB");
+        Toast.error(errorMessageAsString(err), "向 BCODB 发送 BioCompute 对象时出错");
     }
 }
 
@@ -49,7 +49,7 @@ async function generateBcoContent(invocationId: string) {
         maxRetries -= 1;
     }
     if (!pollingResponse.data) {
-        throw Error("Timeout waiting for BioCompute Object export result!");
+        throw Error("等待 BioCompute 对象导出结果超时!");
     } else {
         const resultResponse = await axios.get(resultUrl);
         return resultResponse.data;

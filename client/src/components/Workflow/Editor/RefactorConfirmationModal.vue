@@ -1,5 +1,5 @@
 <template>
-    <BModal v-model="show" :title="title" scrollable ok-title="Save" @ok="executeRefactoring">
+    <BModal v-model="show" :title="title" scrollable ok-title="保存" @ok="executeRefactoring">
         <div class="workflow-refactor-modal">
             {{ message }}
             <ul>
@@ -33,11 +33,11 @@ export default {
         },
         title: {
             type: String,
-            default: "Issues reworking this workflow",
+            default: "重新处理此工作流的问题",
         },
         message: {
             type: String,
-            default: "Please review the following potential issues...",
+            default: "请查看以下潜在问题...",
         },
     },
     data() {
@@ -62,13 +62,13 @@ export default {
     },
     methods: {
         dryRun() {
-            this.$emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
+            this.$emit("onWorkflowMessage", "预检查请求的工作流更改（干运行）...", "progress");
             refactor(this.workflowId, this.refactorActions, true) // dry run
                 .then(this.onDryRunResponse)
                 .catch(this.onError);
         },
         onError(response) {
-            this.$emit("onWorkflowError", "Reworking workflow failed...", response);
+            this.$emit("onWorkflowError", "重新处理工作流失败...", response);
         },
         onDryRunResponse(data) {
             let anyRequireConfirmation = false;
@@ -86,7 +86,7 @@ export default {
         },
         executeRefactoring() {
             this.show = false;
-            this.$emit("onWorkflowMessage", "Applying requested workflow changes...", "progress");
+            this.$emit("onWorkflowMessage", "应用请求的工作流更改...", "progress");
             refactor(this.workflowId, this.refactorActions)
                 .then((data) => {
                     this.$emit("onRefactor", data);

@@ -199,15 +199,13 @@ async function onExecute() {
     }
 }
 </script>
-
 <template>
     <div :class="{ 'd-flex flex-column h-100': showGraph }">
         <div v-if="!showGraph" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showGraph }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
-                    The workflow cannot run because the current history is immutable. Please select a different history
-                    or send the results to a new one using the run settings ⚙️
+                    工作流无法运行，因为当前历史记录不可变。请选择其他历史记录或使用运行设置 ⚙️ 将结果发送到新的历史记录
                 </span>
             </BAlert>
             <WorkflowNavigationTitle
@@ -219,7 +217,7 @@ async function onExecute() {
                     <BButton
                         v-b-tooltip.hover.noninteractive.html
                         size="sm"
-                        :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                        :title="!showGraph ? '显示工作流图' : '隐藏工作流图'"
                         variant="link"
                         :pressed="showGraph"
                         @click="showGraph = !showGraph">
@@ -230,7 +228,7 @@ async function onExecute() {
                         id="dropdown-form"
                         ref="dropdown"
                         class="workflow-run-settings"
-                        title="Workflow Run Settings"
+                        title="工作流运行设置"
                         size="sm"
                         variant="link"
                         no-caret>
@@ -239,22 +237,22 @@ async function onExecute() {
                         </template>
                         <BDropdownForm>
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
-                                Send results to a new history
+                                将结果发送到新的历史记录
                             </BFormCheckbox>
                             <BFormCheckbox
                                 v-if="reuseAllowed(currentUser)"
                                 v-model="useCachedJobs"
-                                title="This may skip executing jobs that you have already run.">
-                                Attempt to re-use jobs with identical parameters?
+                                title="这可能会跳过执行具有相同参数的已运行任务。">
+                                尝试重用具有相同参数的任务？
                             </BFormCheckbox>
                             <BFormCheckbox
                                 v-if="isConfigLoaded && config.object_store_allows_id_selection"
                                 v-model="splitObjectStore">
-                                Send outputs and intermediate to different storage locations?
+                                将输出和中间结果发送到不同的存储位置？
                             </BFormCheckbox>
                             <!-- Options to default one way or the other, disable if admins want, etc.. -->
                             <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
-                                Expand to full workflow form.
+                                展开为完整工作流表单
                             </BFormCheckbox>
                             <WorkflowStorageConfiguration
                                 v-if="isConfigLoaded && config.object_store_allows_id_selection"
@@ -277,7 +275,7 @@ async function onExecute() {
                     :class="showGraph ? 'w-50 flex-grow-1' : 'w-100'"
                     :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
                     <div v-if="showGraph" class="ui-form-header-underlay sticky-top" />
-                    <Heading v-if="showGraph" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
+                    <Heading v-if="showGraph" class="sticky-top" h2 separator bold size="sm"> 参数 </Heading>
                     <FormDisplay
                         :inputs="formInputs"
                         :allow-empty-value-on-required-input="true"

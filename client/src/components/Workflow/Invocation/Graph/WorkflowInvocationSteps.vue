@@ -42,7 +42,7 @@ const expandInvocationInputs = ref(oneOrNoInput.value);
 
 <template>
     <BAlert v-if="loading" variant="info" show>
-        <LoadingSpan message="Loading workflow" />
+        <LoadingSpan message="正在加载工作流" />
     </BAlert>
     <BAlert v-else-if="error" variant="danger" show>
         {{ error }}
@@ -60,7 +60,7 @@ const expandInvocationInputs = ref(oneOrNoInput.value);
                     <FontAwesomeIcon class="portlet-title-icon" :icon="faSignInAlt" />
                 </span>
                 <span class="portlet-title-text">
-                    <u v-localize class="step-title ml-2">Workflow Inputs</u>
+                    <u v-localize class="step-title ml-2">工作流输入</u>
                 </span>
                 <FontAwesomeIcon class="float-right" :icon="expandInvocationInputs ? faChevronUp : faChevronDown" />
             </div>
@@ -76,5 +76,5 @@ const expandInvocationInputs = ref(oneOrNoInput.value);
                 :graph-step="graphSteps[step.id]" />
         </div>
     </div>
-    <BAlert v-else variant="info" show> There are no steps to display. </BAlert>
+    <BAlert v-else variant="info" show>没有可显示的步骤。</BAlert>
 </template>

@@ -1,12 +1,12 @@
 <template>
-    <BModal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
+    <BModal v-model="show" :title="title" scrollable ok-only ok-title="继续">
         <div class="state-upgrade-modal">
             {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">
                 <li v-for="(stateMessage, index) in stateMessages" :key="index">
                     <b>
                         <i :class="iconClass(stateMessage)" />
-                        Step {{ humanIndex(stateMessage) }}: {{ nodeTitle(stateMessage) }}
+                        步骤 {{ humanIndex(stateMessage) }}: {{ nodeTitle(stateMessage) }}
                     </b>
                     <ul class="workflow-state-upgrade-step-details">
                         <li v-for="(detail, detailIndex) in stateMessage.details" :key="detailIndex">
@@ -31,11 +31,11 @@ export default {
         },
         title: {
             type: String,
-            default: "Issues loading this workflow",
+            default: "加载此工作流时出现问题",
         },
         message: {
             type: String,
-            default: "Please review the following issues, possibly resulting from tool upgrades or changes.",
+            default: "请查看以下可能由工具升级或更改导致的问题。",
         },
     },
     data() {

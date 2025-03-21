@@ -80,7 +80,6 @@ async function onTagClick(tag: string) {
 
 const dropdownOpen = ref(false);
 </script>
-
 <template>
     <div
         class="workflow-card"
@@ -99,7 +98,7 @@ const dropdownOpen = ref(false);
                     v-b-tooltip.hover.noninteractive
                     :checked="props.selected"
                     class="workflow-card-select-checkbox"
-                    title="Select for bulk actions"
+                    title="选择以进行批量操作"
                     @change="emit('select', workflow)" />
 
                 <WorkflowIndicators
@@ -128,7 +127,7 @@ const dropdownOpen = ref(false);
                     <BLink
                         v-b-tooltip.hover.noninteractive
                         class="workflow-name-preview"
-                        title="Preview Workflow"
+                        title="预览工作流"
                         @click.stop.prevent="emit('preview', props.workflow.id)">
                         {{ workflow.name }}
                     </BLink>
@@ -140,7 +139,7 @@ const dropdownOpen = ref(false);
                         class="inline-icon-button workflow-rename"
                         variant="link"
                         size="sm"
-                        title="Rename"
+                        title="重命名"
                         @click="emit('rename', props.workflow.id, props.workflow.name)">
                         <FontAwesomeIcon :icon="faPen" fixed-width />
                     </BButton>

@@ -55,15 +55,15 @@ const workflowsLoaded = ref<WorkflowSummary[]>([]);
 const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
 
 const searchPlaceHolder = computed(() => {
-    let placeHolder = "Search my workflows";
+    let placeHolder = "搜索我的工作流";
 
     if (published.value) {
-        placeHolder = "Search published workflows";
+        placeHolder = "搜索已发布的工作流";
     } else if (sharedWithMe.value) {
-        placeHolder = "Search workflows shared with me";
+        placeHolder = "搜索与我共享的工作流";
     }
 
-    placeHolder += " by query or use the advanced filtering options";
+    placeHolder += " 通过查询或使用高级过滤选项";
 
     return placeHolder;
 });
@@ -78,9 +78,9 @@ const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) 
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && Boolean(filterText.value));
-const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted workflows" : "Show deleted workflows"));
+const deleteButtonTitle = computed(() => (showDeleted.value ? "隐藏已删除的工作流" : "显示已删除的工作流"));
 const bookmarkButtonTitle = computed(() =>
-    showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows"
+    showBookmarked.value ? "隐藏已收藏的工作流" : "显示已收藏的工作流"
 );
 
 const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
@@ -158,7 +158,7 @@ async function load(overlayLoading = false, silent = false) {
 
         totalWorkflows.value = totalMatches;
     } catch (e) {
-        Toast.error(`Failed to load workflows: ${e}`);
+        Toast.error(`未能加载工作流: ${e}`);
     } finally {
         overlay.value = false;
         loading.value = false;
@@ -211,11 +211,11 @@ async function onBulkDelete() {
     const hasPublished = selectedWorkflowIds.value.some((w) => w.published);
 
     const confirmed = await confirm(
-        `${hasPublished ? "Some of the selected workflows are published and will be removed from public view. " : ""}
-            Are you sure you want to delete ${totalSelected} workflows?`,
+        `${hasPublished ? "部分选中的工作流已发布，它们将从公共视图中移除。" : ""}
+            您确定要删除这${totalSelected}个工作流吗？`,
         {
-            title: "Delete workflows",
-            okTitle: "Delete workflows",
+            title: "删除工作流",
+            okTitle: "删除工作流",
             okVariant: "danger",
         }
     );
@@ -236,11 +236,11 @@ async function onBulkDelete() {
                 );
             }
 
-            Toast.success(`Deleted ${totalSelected} workflows.`);
+            Toast.success(`已删除${totalSelected}个工作流。`);
 
             selectedWorkflowIds.value = [];
         } catch (e) {
-            Toast.error(`Failed to delete some workflows.`);
+            Toast.error(`删除部分工作流失败。`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
 
@@ -254,8 +254,8 @@ async function onBulkDelete() {
 async function onBulkRestore() {
     const totalSelected = selectedWorkflowIds.value.length;
 
-    const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} workflows?`, {
-        okTitle: "Restore workflows",
+    const confirmed = await confirm(`您确定要恢复这${totalSelected}个工作流吗？`, {
+        okTitle: "恢复工作流",
         okVariant: "primary",
     });
 
@@ -275,11 +275,11 @@ async function onBulkRestore() {
                 );
             }
 
-            Toast.success(`Restored ${totalSelected} workflows.`);
+            Toast.success(`已恢复${totalSelected}个工作流。`);
 
             selectedWorkflowIds.value = [];
         } catch (e) {
-            Toast.error(`Failed to restore some workflows.`);
+            Toast.error(`恢复部分工作流失败。`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
 
@@ -313,9 +313,9 @@ async function onBulkTagsAdd(tags: string[]) {
             );
         }
 
-        Toast.success(`Added tag(s) to ${totalSelected} workflows.`);
+        Toast.success(`已为${totalSelected}个工作流添加标签。`);
     } catch (e) {
-        Toast.error(`Failed to add tag(s) to some workflows. ${e}`);
+        Toast.error(`为部分工作流添加标签失败。${e}`);
     } finally {
         bulkTagsLoading.value = false;
 
@@ -350,8 +350,8 @@ onMounted(() => {
 
             <BNav pills justified class="mb-2">
                 <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
-                    My workflows
-                    <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
+                    我的工作流
+                    <LoginRequired v-if="userStore.isAnonymous" target="my" title="管理您的工作流" />
                 </BNavItem>
 
                 <BNavItem
@@ -359,12 +359,12 @@ onMounted(() => {
                     :active="sharedWithMe"
                     :disabled="userStore.isAnonymous"
                     to="/workflows/list_shared_with_me">
-                    Workflows shared with me
-                    <LoginRequired v-if="userStore.isAnonymous" target="shared-with-me" title="Manage your workflows" />
+                    与我共享的工作流
+                    <LoginRequired v-if="userStore.isAnonymous" target="shared-with-me" title="管理您的工作流" />
                 </BNavItem>
 
                 <BNavItem id="published" :active="published" to="/workflows/list_published">
-                    Public workflows
+                    公共工作流
                 </BNavItem>
             </BNav>
 
@@ -395,7 +395,7 @@ onMounted(() => {
                 @select-all="onSelectAllWorkflows">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
-                        Filter:
+                        筛选:
                         <BButton
                             id="show-deleted"
                             v-b-tooltip.hover
@@ -405,7 +405,7 @@ onMounted(() => {
                             variant="outline-primary"
                             @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
-                            Show deleted
+                            显示已删除
                         </BButton>
 
                         <BButton
@@ -417,7 +417,7 @@ onMounted(() => {
                             variant="outline-primary"
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />
-                            Show bookmarked
+                            显示已收藏
                         </BButton>
                     </div>
                 </template>
@@ -426,21 +426,21 @@ onMounted(() => {
 
         <div v-if="loading" class="workflow-list-alert">
             <BAlert variant="info" show>
-                <LoadingSpan message="Loading workflows" />
+                <LoadingSpan message="正在加载工作流" />
             </BAlert>
         </div>
         <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
             <BAlert id="workflow-list-empty" variant="info" show>
-                No workflows found. You may create or import new workflows using the buttons above.
+                未找到工作流。您可以使用上方的按钮创建或导入新的工作流。
             </BAlert>
         </div>
         <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
             <BAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
-                No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
+                未找到匹配的工作流: <span class="font-weight-bold">{{ filterText }}</span>
             </BAlert>
 
             <BAlert v-else id="no-workflow-found-invalid" variant="danger" show>
-                <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
+                <Heading h4 inline size="sm" class="flex-grow-1 mb-2">查询中存在无效的筛选条件：</Heading>
                 <ul>
                     <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
                         <b>{{ invalidKey }}</b
@@ -448,16 +448,16 @@ onMounted(() => {
                     </li>
                 </ul>
                 <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
-                    Remove invalid filters from query
+                    从查询中移除无效筛选条件
                 </a>
-                or
+                或
                 <a
                     v-b-tooltip.noninteractive.hover
-                    title="Note that this might produce inaccurate results"
+                    title="注意，这可能会产生不准确的结果"
                     href="javascript:void(0)"
                     class="ui-link"
                     @click="filterText = `'${filterText}'`">
-                    Match the exact query provided
+                    匹配提供的精确查询
                 </a>
             </BAlert>
         </span>
@@ -481,47 +481,47 @@ onMounted(() => {
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-delete-button"
                     v-b-tooltip.hover
-                    :title="bulkDeleteOrRestoreLoading ? 'Deleting workflows' : 'Delete selected workflows'"
+                    :title="bulkDeleteOrRestoreLoading ? '正在删除工作流' : '删除选中的工作流'"
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
                     variant="primary"
                     @click="onBulkDelete">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
-                        Delete ({{ selectedWorkflowIds.length }})
+                        删除 ({{ selectedWorkflowIds.length }})
                     </span>
-                    <LoadingSpan v-else message="Deleting" />
+                    <LoadingSpan v-else message="正在删除" />
                 </BButton>
                 <BButton
                     v-else
                     id="workflow-list-footer-bulk-restore-button"
                     v-b-tooltip.hover
-                    :title="bulkDeleteOrRestoreLoading ? 'Restoring workflows' : 'Restore selected workflows'"
+                    :title="bulkDeleteOrRestoreLoading ? '正在恢复工作流' : '恢复选中的工作流'"
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
                     variant="primary"
                     @click="onBulkRestore">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
-                        Restore ({{ selectedWorkflowIds.length }})
+                        恢复 ({{ selectedWorkflowIds.length }})
                     </span>
-                    <LoadingSpan v-else message="Restoring" />
+                    <LoadingSpan v-else message="正在恢复" />
                 </BButton>
 
                 <BButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-add-tags-button"
                     v-b-tooltip.hover
-                    :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected workflows'"
+                    :title="bulkTagsLoading ? '正在添加标签' : '为选中的工作流添加标签'"
                     :disabled="bulkTagsLoading"
                     size="sm"
                     variant="primary"
                     @click="onToggleBulkTags">
                     <span v-if="!bulkTagsLoading">
                         <FontAwesomeIcon :icon="faTags" fixed-width />
-                        Add tags ({{ selectedWorkflowIds.length }})
+                        添加标签 ({{ selectedWorkflowIds.length }})
                     </span>
-                    <LoadingSpan v-else message="Adding tags" />
+                    <LoadingSpan v-else message="正在添加标签" />
                 </BButton>
             </div>
 
@@ -539,9 +539,9 @@ onMounted(() => {
 
         <TagsSelectionDialog
             v-if="showBulkAddTagsModal"
-            :title="`Add tags to ${selectedWorkflowIds.length} selected workflow${
-                selectedWorkflowIds.length > 1 ? 's' : ''
-            }`"
+            :title="`为${selectedWorkflowIds.length}个选中的工作流${
+                selectedWorkflowIds.length > 1 ? '' : ''
+            }添加标签`"
             @cancel="onToggleBulkTags"
             @ok="onBulkTagsAdd" />
     </div>

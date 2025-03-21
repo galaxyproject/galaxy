@@ -2,19 +2,17 @@
     <b-popover :target="target" triggers="hover" placement="bottomleft" boundary="window">
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
-            <p v-if="invocationPreferredObjectStoreId">Storage location has been set at the invocation level.</p>
+            <p v-if="invocationPreferredObjectStoreId">存储位置已在调用级别设置。</p>
             <ShowSelectedObjectStore
                 v-if="invocationPreferredObjectStoreId"
                 :preferred-object-store-id="invocationPreferredObjectStoreId"
-                for-what="Galaxy will default to storing this tool run's output in">
+                for-what="Galaxy 将默认存储此工具运行的输出在">
             </ShowSelectedObjectStore>
             <div v-else>
-                No selection has been made for this workflow invocation. Defaults from history, user, or Galaxy will be
-                used.
+                尚未为此工作流调用进行选择。将使用历史记录、用户或 Galaxy 的默认设置。
             </div>
             <div v-localize>
-                Change {{ preferredOrEmptyString }} storage location by clicking on the storage button in the workflow
-                run header.
+                通过点击工作流运行标题中的存储按钮更改 {{ preferredOrEmptyString }} 存储位置。
             </div>
         </div>
     </b-popover>

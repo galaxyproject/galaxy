@@ -108,7 +108,7 @@ async function loadRun() {
             // on the frontend. If these are implemented on the backend at some
             // point this restriction can be lifted.
             if (incomingModel.hasReplacementParametersInToolForm) {
-                console.log("cannot render simple workflow form - has ${} values in tool steps");
+                console.log("无法渲染简化工作流表单 - 工具步骤中存在 ${} 值");
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
             }
@@ -116,14 +116,14 @@ async function loadRun() {
             // input), we have to render the tool form steps and cannot use the
             // simplified tool form.
             if (incomingModel.hasOpenToolSteps) {
-                console.log("cannot render simple workflow form - one or more tools have disconnected runtime inputs");
+                console.log("无法渲染简化工作流表单 - 一个或多个工具具有未连接的运行时输入");
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
             }
             // Just render the whole form for resource request parameters (kind of
             // niche - I'm not sure anyone is using these currently anyway).
             if (incomingModel.hasWorkflowResourceParameters) {
-                console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
+                console.log(`无法渲染简化工作流表单 - 已配置工作流资源参数`);
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
             }
@@ -202,12 +202,12 @@ defineExpose({
 <template>
     <span>
         <BAlert v-if="workflowError" variant="danger" show>
-            <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
+            <h2 class="h-text">工作流无法执行。请解决以下问题：</h2>
             {{ workflowError }}
         </BAlert>
         <span v-else>
             <BAlert v-if="loading" variant="info" show>
-                <LoadingSpan message="Loading workflow run data" />
+                <LoadingSpan message="正在加载工作流运行数据" />
             </BAlert>
             <WorkflowRunSuccess
                 v-else-if="invocations.length > 0"
@@ -221,12 +221,11 @@ defineExpose({
                     show
                     data-description="workflow run warning">
                     <span>
-                        The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
-                        saved or some other problems have been detected. Please
+                        <b>`{{ workflowName }}`</b> 工作流可能包含自上次保存以来已更改的工具，或者检测到其他问题。请
                     </span>
-                    <RouterLink v-if="isOwner" :to="editorLink">click here to edit and review the issues</RouterLink>
-                    <BLink v-else @click="onImport">click here to import the workflow and review the issues</BLink>
-                    <span>before running this workflow.</span>
+                    <RouterLink v-if="isOwner" :to="editorLink">点击此处编辑并审查问题</RouterLink>
+                    <BLink v-else @click="onImport">点击此处导入工作流并审查问题</BLink>
+                    <span>，然后再运行此工作流。</span>
                 </BAlert>
                 <div v-else class="h-100">
                     <BAlert
@@ -235,7 +234,7 @@ defineExpose({
                         variant="danger"
                         data-description="workflow run error"
                         show>
-                        Workflow submission failed: {{ submissionError }}
+                        工作流提交失败：{{ submissionError }}
                     </BAlert>
                     <WorkflowRunFormSimple
                         v-if="fromVariant === 'simple'"

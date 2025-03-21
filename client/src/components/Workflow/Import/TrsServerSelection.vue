@@ -65,7 +65,7 @@ async function configureTrsServers() {
 
     if (trsSelectionLookup.value === null) {
         if (queryTrsServer) {
-            emit("onError", "Failed to find requested TRS server " + queryTrsServer);
+            emit("onError", "无法找到请求的 TRS 服务器 " + queryTrsServer);
         }
 
         trsSelectionLookup.value = servers[0];

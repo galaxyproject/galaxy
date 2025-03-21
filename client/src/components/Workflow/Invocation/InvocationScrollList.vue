@@ -129,7 +129,7 @@ async function loadInvocations() {
             currentPage.value += 1;
             errorMessage.value = "";
         } catch (e) {
-            errorMessage.value = `Failed to obtain invocations: ${e}`;
+            errorMessage.value = `不能获取调用过程: ${e}`;
         } finally {
             initDataLoading.value = false;
             busy.value = false;
@@ -159,18 +159,18 @@ function workflowName(workflowId: string) {
     <div :class="props.inPanel ? 'unified-panel' : 'flex-column-overflow'">
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-else-if="initDataLoading" variant="info" show>
-            <LoadingSpan message="Loading invocations" />
+            <LoadingSpan message="正在加载调用记录" />
         </BAlert>
         <BAlert v-else-if="totalInvocationCount === 0" show>
             <h4>
                 <FontAwesomeIcon :icon="faInfoCircle" />
-                <span v-localize>No invocations yet.</span>
+                <span v-localize>暂无调用记录。</span>
             </h4>
 
             <p>
-                <span v-localize>Run </span>
-                <router-link to="/workflows/list">workflows</router-link>
-                <span v-localize> to see invocations here.</span>
+                <span v-localize>运行</span>
+                <router-link to="/workflows/list">工作流</router-link>
+                <span v-localize>以在此处查看调用记录。</span>
             </p>
         </BAlert>
         <div
@@ -226,9 +226,9 @@ function workflowName(workflowId: string) {
                     </BListGroupItem>
                     <div>
                         <div v-if="allLoaded" class="list-end my-2">
-                            <span v-if="invocations.length == 1">- {{ invocations.length }} invocation loaded -</span>
+                            <span v-if="invocations.length == 1">- 已加载 {{ invocations.length }} 条调用记录 -</span>
                             <span v-else-if="invocations.length > 1">
-                                - All {{ invocations.length }} invocations loaded -
+                                - 已加载全部 {{ invocations.length }} 条调用记录 -
                             </span>
                         </div>
                         <BOverlay :show="busy" opacity="0.5" />
@@ -243,12 +243,12 @@ function workflowName(workflowId: string) {
                 v-if="!allLoaded"
                 class="mr-auto d-flex justify-content-center align-items-center"
                 :class="props.inPanel && 'mt-1'">
-                <i class="mr-1">Loaded {{ invocations.length }} out of {{ totalInvocationCount }} invocations</i>
+                <i class="mr-1">已加载 {{ invocations.length }} 条，共 {{ totalInvocationCount }} 条调用记录</i>
                 <BButton
                     v-b-tooltip.noninteractive.hover
                     data-description="load more invocations button"
                     size="sm"
-                    title="Load More"
+                    title="加载更多"
                     variant="link"
                     @click="loadInvocations()">
                     <FontAwesomeIcon :icon="faArrowDown" />

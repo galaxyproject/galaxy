@@ -36,15 +36,14 @@ const wasNewHistoryTarget =
     !!props.invocations[0]?.history_id &&
     historyStore.currentHistoryId !== props.invocations[0].history_id;
 </script>
-
 <template>
     <div>
         <div v-if="props.invocations.length > 1" class="donemessagelarge">
-            Successfully invoked workflow <b>{{ props.workflowName }}</b>
-            <em> - {{ props.invocations.length }} times</em>.
+            成功调用工作流 <b>{{ props.workflowName }}</b>
+            <em> - {{ props.invocations.length }} 次</em>。
             <span v-if="targetHistories.length > 1">
-                This workflow will generate results in multiple histories. You can observe progress in the
-                <router-link to="/histories/view_multiple">history multi-view</router-link>.
+                此工作流将在多个历史记录中生成结果。您可以在
+                <router-link to="/histories/view_multiple">历史记录多视图</router-link>中查看进度。
             </span>
         </div>
         <GridInvocation v-if="props.invocations.length > 1" :invocations-list="props.invocations" />

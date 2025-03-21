@@ -21,10 +21,10 @@ const isImportDisabled = computed(() => {
 
 const importTooltip = computed(() => {
     return isImportDisabled.value
-        ? "You must provide a workflow archive URL or file."
+        ? "您必须提供工作流归档URL或文件。"
         : sourceURL.value
-        ? "Import workflow from URL"
-        : "Import workflow from File";
+        ? "从URL导入工作流"
+        : "从文件导入工作流";
 });
 
 const hasErrorMessage = computed(() => {
@@ -70,7 +70,7 @@ async function submit(ev: SubmitEvent) {
         if (axios.isAxiosError(error)) {
             message = error.response?.data?.err_msg;
         }
-        errorMessage.value = message || "Import failed for an unknown reason.";
+        errorMessage.value = message || "导入失败，原因未知。";
     } finally {
         loading.value = false;
     }
@@ -79,20 +79,20 @@ async function submit(ev: SubmitEvent) {
 
 <template>
     <BForm class="mt-4 workflow-import-file" @submit="submit">
-        <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
+        <h2 class="h-sm">从Galaxy工作流导出URL或工作流文件导入</h2>
 
-        <BFormGroup label="Archived Workflow URL">
+        <BFormGroup label="工作流归档URL">
             <BFormInput
                 id="workflow-import-url-input"
                 v-model="sourceURL"
-                aria-label="Workflow Import URL"
+                aria-label="工作流导入URL"
                 type="url" />
-            If the workflow is accessible via a URL, enter the URL above and click Import.
+            如果工作流可通过URL访问，请在上方输入URL并点击导入。
         </BFormGroup>
 
-        <BFormGroup label="Archived Workflow File">
+        <BFormGroup label="工作流归档文件">
             <b-form-file v-model="sourceFile" :accept="acceptedWorkflowFormats" />
-            If the workflow is in a file on your computer, choose it and then click Import.
+            如果工作流在您计算机上的文件中，请选择文件然后点击导入。
         </BFormGroup>
 
         <BAlert :show="hasErrorMessage" variant="danger">
@@ -100,7 +100,7 @@ async function submit(ev: SubmitEvent) {
         </BAlert>
 
         <BAlert v-if="loading" show variant="info">
-            <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
+            <LoadingSpan message="正在加载您的工作流，这可能需要一些时间 - 请耐心等待。" />
         </BAlert>
 
         <BButton
@@ -109,7 +109,7 @@ async function submit(ev: SubmitEvent) {
             :disabled="isImportDisabled"
             :title="importTooltip"
             variant="primary">
-            Import workflow
+            导入工作流
         </BButton>
     </BForm>
 </template>

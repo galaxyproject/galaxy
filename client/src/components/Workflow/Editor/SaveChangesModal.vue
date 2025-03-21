@@ -31,15 +31,15 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
-const title = localize("You have unsaved changes. Do you want to save them before proceeding?");
+const title = localize("您有未保存的更改。是否要在继续之前保存这些更改？");
 const body = localize(
-    "Click 'Save' to save your changes and proceed, 'Don't Save' to discard them and proceed, or 'Cancel' to return to the editor."
+    "点击'保存'将保存您的更改并继续，'不保存'将丢弃更改并继续，或'取消'返回编辑器。"
 );
 
 const buttonTitles = {
-    cancel: localize("Do not run proceed and return to editor"),
-    dontSave: localize("Discard changes and proceed"),
-    save: localize("Save changes and proceed"),
+    cancel: localize("不继续操作并返回编辑器"),
+    dontSave: localize("丢弃更改并继续"),
+    save: localize("保存更改并继续"),
 };
 
 function closeModal() {
@@ -72,7 +72,7 @@ function saveChanges() {
                 :disabled="busy"
                 @click="closeModal">
                 <FontAwesomeIcon :icon="faTimes" />
-                {{ localize("Cancel") }}
+                {{ localize("取消") }}
             </BButton>
             <BButton
                 v-b-tooltip.noninteractive.hover
@@ -81,7 +81,7 @@ function saveChanges() {
                 :disabled="busy"
                 @click="dontSave">
                 <FontAwesomeIcon :icon="faTrash" />
-                {{ localize("Don't Save") }}
+                {{ localize("不保存") }}
             </BButton>
             <BButton
                 v-b-tooltip.noninteractive.hover
@@ -90,7 +90,7 @@ function saveChanges() {
                 :disabled="busy"
                 @click="saveChanges">
                 <FontAwesomeIcon :icon="faSave" />
-                {{ localize("Save") }}
+                {{ localize("保存") }}
             </BButton>
         </template>
     </BModal>

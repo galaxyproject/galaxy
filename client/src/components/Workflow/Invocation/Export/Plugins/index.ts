@@ -17,7 +17,7 @@ export const AVAILABLE_INVOCATION_EXPORT_PLUGINS = new Map<InvocationExportPlugi
 export function getInvocationExportPluginByType(pluginType: InvocationExportPluginType): InvocationExportPlugin {
     const plugin = AVAILABLE_INVOCATION_EXPORT_PLUGINS.get(pluginType);
     if (!plugin) {
-        throw new Error("Unregistered Invocation Export Plugin. Please register it first.");
+        throw new Error("未注册的调用导出插件。请先注册它。");
     }
     return plugin;
 }

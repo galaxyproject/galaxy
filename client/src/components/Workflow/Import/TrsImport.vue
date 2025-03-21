@@ -80,7 +80,7 @@ async function onToolId() {
             if (version) {
                 importVersion(trsSelection.value.id, trsTool.value!.id, version[versionField], props.isRun);
             } else {
-                Toast.warning(`Specified version: ${props.queryTrsVersionId} doesn't exist`);
+                Toast.warning(`指定的版本: ${props.queryTrsVersionId} 不存在`);
                 isAutoImport.value = false;
             }
         }
@@ -108,7 +108,7 @@ const router = useRouter();
 
 async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
     if (!trsId || !toolIdToImport) {
-        errorMessage.value = "Import Failed. Unknown Id";
+        errorMessage.value = "导入失败。未知ID";
         return;
     }
 
@@ -121,7 +121,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
         router.push(path);
     } catch (error) {
-        errorMessage.value = (error as string) || "Import failed for an unknown reason.";
+        errorMessage.value = (error as string) || "导入因未知原因失败。";
     } finally {
         importing.value = false;
     }
@@ -137,7 +137,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 
         router.push(path);
     } catch (error) {
-        errorMessage.value = (error as string) || "Import failed for an unknown reason.";
+        errorMessage.value = (error as string) || "导入因未知原因失败。";
     } finally {
         importing.value = false;
     }
@@ -146,9 +146,9 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 
 <template>
     <div class="workflow-import-trs-id">
-        <BCard v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <BCard v-if="!isAnonymous" title="GA4GH 工具注册服务器 (TRS) 工作流导入">
             <div>
-                <b>TRS Server:</b>
+                <b>TRS 服务器:</b>
 
                 <TrsServerSelection
                     :trs-selection="trsSelection"
@@ -158,7 +158,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </div>
 
             <BAlert v-if="isAutoImport && !hasErrorMessage" show variant="info">
-                <LoadingSpan message="Loading your Workflow" />
+                <LoadingSpan message="正在加载您的工作流" />
             </BAlert>
             <div v-else>
                 <div class="my-3">
@@ -168,7 +168,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                 </div>
                 <div>
                     <BAlert v-if="loading" show variant="info">
-                        <LoadingSpan :message="`Loading ${toolIdTrimmed}, this may take a while - please be patient`" />
+                        <LoadingSpan :message="`正在加载 ${toolIdTrimmed}，这可能需要一些时间 - 请耐心等待`" />
                     </BAlert>
 
                     <BAlert :show="hasErrorMessage" variant="danger">
@@ -176,7 +176,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     </BAlert>
 
                     <BAlert v-if="importing" show variant="info">
-                        <LoadingSpan message="Importing workflow" />
+                        <LoadingSpan message="正在导入工作流" />
                     </BAlert>
                 </div>
 
@@ -195,7 +195,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </div>
         </BCard>
         <BAlert v-else class="text-center my-2" show variant="danger">
-            Anonymous user cannot import workflows, please register or log in
+            匿名用户无法导入工作流，请注册或登录
         </BAlert>
     </div>
 </template>

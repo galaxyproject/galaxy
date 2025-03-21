@@ -27,9 +27,9 @@ const workflowNameInput = ref<HTMLInputElement | null>(null);
 async function onRename(newName: string) {
     try {
         await updateWorkflow(props.id, { name: newName });
-        Toast.success("Workflow renamed");
+        Toast.success("工作流重命名成功");
     } catch (e) {
-        Toast.error("Failed to rename workflow");
+        Toast.error("工作流重命名失败");
     } finally {
         emit("close");
     }
@@ -40,11 +40,11 @@ async function onRename(newName: string) {
     <BModal
         :visible="show"
         :ok-disabled="!nameModel"
-        :ok-title="localize('Rename')"
+        :ok-title="localize('重命名')"
         @ok="onRename(nameModel)"
         @hide="$emit('close')">
         <template v-slot:modal-title>
-            <Heading h2 inline size="sm"> Rename workflow: {{ localize(name) }}</Heading>
+            <Heading h2 inline size="sm"> 重命名工作流: {{ localize(name) }}</Heading>
         </template>
 
         <BForm @submit.prevent="onRename(nameModel)">
@@ -53,7 +53,7 @@ async function onRename(newName: string) {
                 ref="workflowNameInput"
                 v-model="nameModel"
                 type="text"
-                placeholder="Enter new name" />
+                placeholder="输入新名称" />
         </BForm>
     </BModal>
 </template>

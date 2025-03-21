@@ -2,16 +2,16 @@ import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Ex
 
 export const BIO_COMPUTE_OBJ_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "bco",
-    title: "BioCompute Object",
+    title: "BioCompute 对象",
     img: "https://www.biocomputeobject.org/static/media/logo.c8a91f1656efbad5d745.png",
     url: "https://biocomputeobject.org/",
     markdownDescription: `
-A BioCompute Object (BCO) is the unofficial name for a JSON object that adheres to the [IEEE-2791-2020 standard](https://standards.ieee.org/ieee/2791/7337/).
-A BCO is designed to communicate High-throughput Sequencing (HTS) analysis results, data set creation, data curation, and bioinformatics verification protocols.
+BioCompute 对象 (BCO) 是遵循 [IEEE-2791-2020 标准](https://standards.ieee.org/ieee/2791/7337/) 的 JSON 对象的非官方名称。
+BCO 旨在传达高通量测序 (HTS) 分析结果、数据集创建、数据管理和生物信息学验证协议。
 
-Learn more about [BioCompute Objects](https://biocomputeobject.org/).
+了解更多关于 [BioCompute 对象](https://biocomputeobject.org/) 的信息。
 
-Instructions for [creating a BCO using Galaxy](https://w3id.org/biocompute/tutorials/galaxy_quick_start).`,
+[使用 Galaxy 创建 BCO](https://w3id.org/biocompute/tutorials/galaxy_quick_start) 的说明。`,
     exportParams: {
         modelStoreFormat: "bco.json",
         includeFiles: false,

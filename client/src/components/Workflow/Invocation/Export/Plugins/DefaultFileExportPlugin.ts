@@ -2,8 +2,8 @@ import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Ex
 
 export const DEFAULT_FILE_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "default-file",
-    title: "Compressed File",
-    markdownDescription: `Export the invocation to a compressed File containing the invocation data in Galaxy native format.`,
+    title: "压缩文件",
+    markdownDescription: `将调用导出为包含 Galaxy 原生格式调用数据的压缩文件。`,
     exportParams: {
         modelStoreFormat: "tgz",
         includeFiles: false,

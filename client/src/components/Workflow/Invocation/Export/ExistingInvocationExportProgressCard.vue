@@ -36,7 +36,7 @@ const exportToStsRequest = computed<MonitoringRequest>(() => ({
         id: props.invocationId,
         type: "invocation",
     },
-    description: `Exporting invocation ${props.invocationId} to Short Term Storage in preparation for download`,
+    description: `正在将调用 ${props.invocationId} 导出到短期存储以准备下载`,
 }));
 
 const exportToRemoteRequest = computed<MonitoringRequest>(() => ({
@@ -47,7 +47,7 @@ const exportToRemoteRequest = computed<MonitoringRequest>(() => ({
         id: props.invocationId,
         type: "invocation",
     },
-    description: `Exporting invocation ${props.invocationId} to remote source`,
+    description: `正在将调用 ${props.invocationId} 导出到远程源`,
     remoteUri: props.exportToRemoteTargetUri,
 }));
 
@@ -78,17 +78,17 @@ defineExpose({
 
 <template>
     <BCard v-show="hasExistingStsExportData || hasExistingRemoteExportData" class="mb-2">
-        <h2>Here is your latest export request:</h2>
+        <h2>这是您最新的导出请求：</h2>
         <PersistentTaskProgressMonitorAlert
             class="sts-export-monitor"
             :monitor-request="exportToStsRequest"
             :use-monitor="useStsMonitor"
             :task-id="exportToStsRequestId"
             :enable-auto-download="true"
-            in-progress-message="Preparing your export package. Please wait..."
-            completed-message="Your export is ready! It will start downloading shortly. If it does not start automatically..."
-            failed-message="Your export has failed."
-            request-failed-message="Failed to check export progress. Try again later."
+            in-progress-message="正在准备您的导出包。请稍候..."
+            completed-message="您的导出已准备好！它将很快开始下载。如果没有自动开始..."
+            failed-message="您的导出失败了。"
+            request-failed-message="检查导出进度失败。请稍后再试。"
             @onDismiss="dismissStsExport" />
 
         <PersistentTaskProgressMonitorAlert
@@ -96,10 +96,10 @@ defineExpose({
             :monitor-request="exportToRemoteRequest"
             :use-monitor="useRemoteMonitor"
             :task-id="exportToRemoteTaskId"
-            in-progress-message="Exporting to remote source. It may take a while..."
-            completed-message="Export to remote source is complete!"
-            failed-message="Export to remote source has failed."
-            request-failed-message="Failed to check export progress. Try again later."
+            in-progress-message="正在导出到远程源。这可能需要一段时间..."
+            completed-message="导出到远程源已完成！"
+            failed-message="导出到远程源失败了。"
+            request-failed-message="检查导出进度失败。请稍后再试。"
             @onDismiss="dismissRemoteExport" />
     </BCard>
 </template>

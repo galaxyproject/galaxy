@@ -1,69 +1,62 @@
 import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
-
 export function helpHtml(activeList = "my") {
     let extra = "";
     if (activeList === "my") {
         extra = `<dt><code>is:published</code></dt>
         <dd>
-            Shows published workflows.
+            显示已发布的工作流。
         </dd>
         <dt><code>is:importable</code></dt>
         <dd>
-            Shows importable workflows (this also means they are URL generated).
+            显示可导入的工作流（这也意味着它们是通过URL生成的）。
         </dd>
         <dt><code>is:shared_with_me</code></dt>
         <dd>
-            Shows workflows shared by another user directly with you.
+            显示其他用户直接与您共享的工作流。
         </dd>
         <dt><code>is:deleted</code></dt>
-        <dd>Shows deleted workflows.</dd>`;
+        <dd>显示已删除的工作流。</dd>`;
     } else if (activeList === "shared_with_me") {
         extra = `<dt><code>user:____</code></dt>
         <dd>
-            Shows workflows owned by the given user.
+            显示由指定用户拥有的工作流。
         </dd>
         <dt><code>is:published</code></dt>
         <dd>
-            Shows published workflows.
+            显示已发布的工作流。
         </dd>`;
     } else {
         extra = `<dt><code>user:____</code></dt>
         <dd>
-            Shows workflows owned by the given user.
+            显示由指定用户拥有的工作流。
         </dd>
         <dt><code>is:shared_with_me</code></dt>
         <dd>
-            Shows workflows shared by another user directly with you.
+            显示其他用户直接与您共享的工作流。
         </dd>`;
     }
 
     const conditionalHelpHtml = `<div>
-        <p>This menu can be used to filter the workflows displayed.</p>
+        <p>此菜单可用于筛选显示的工作流。</p>
 
         <p>
-            Text entered here will be searched against workflow names and workflow
-            tags. Additionally, advanced filtering tags can be used to refine the
-            search more precisely. Filtering tags are of the form
-            <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
-            <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to
-            search just for RNAseq in the workflow name,
-            <code>name:rnsseq</code> can be used. Notice by default the search is
-            not case-sensitive. If the quoted version of tag is used, the search is
-            case sensitive and only full matches will be returned. So
-            <code>name:'RNAseq'</code> would show only workflows named exactly
-            <code>RNAseq</code>.
+            在此处输入的文本将用于搜索工作流名称和工作流标签。此外，高级筛选标签可用于更精确地细化搜索。
+            筛选标签的格式为<code>&lt;标签名称&gt;:&lt;标签值&gt;</code>或
+            <code>&lt;标签名称&gt;:'&lt;标签值&gt;'</code>。例如，要仅在工作流名称中搜索RNAseq，
+            可以使用<code>name:rnsseq</code>。请注意，默认情况下搜索不区分大小写。如果使用带引号的标签版本，
+            搜索将区分大小写，并且仅返回完全匹配项。因此<code>name:'RNAseq'</code>将只显示名称
+            恰好为<code>RNAseq</code>的工作流。
         </p>
 
-        <p>The available filtering tags are:</p>
+        <p>可用的筛选标签有：</p>
         <dl>
             <dt><code>name:____</code></dt>
             <dd>
-                Shows workflows with the given sequence of characters in their names.
+                显示名称中包含给定字符序列的工作流。
             </dd>
             <dt><code>tag:____</code></dt>
             <dd>
-                Shows workflows with the given workflow tag. You may also click
-                on a tag to filter on that tag directly.
+                显示具有给定工作流标签的工作流。您也可以直接点击标签来基于该标签进行筛选。
             </dd>
             ${extra}
         </dl>
@@ -73,10 +66,10 @@ export function helpHtml(activeList = "my") {
 
 export function getWorkflowFilters(activeList = "my") {
     const commonFilters = {
-        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        name: { placeholder: "名称", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
         tag: {
-            placeholder: "tag(s)",
+            placeholder: "标签",
             type: "MultiTags",
             handler: contains("tag", "tag", expandNameTag),
             menuItem: true,
@@ -89,35 +82,35 @@ export function getWorkflowFilters(activeList = "my") {
             {
                 ...commonFilters,
                 published: {
-                    placeholder: "Published",
+                    placeholder: "已发布",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("published", "published", toBool),
                     menuItem: true,
                 },
                 importable: {
-                    placeholder: "Importable",
+                    placeholder: "可导入",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("importable", "importable", toBool),
                     menuItem: true,
                 },
                 shared_with_me: {
-                    placeholder: "Shared with me",
+                    placeholder: "与我共享",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("shared_with_me", "shared_with_me", toBool),
                     menuItem: true,
                 },
                 deleted: {
-                    placeholder: "Deleted",
+                    placeholder: "已删除",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("deleted", "deleted", toBool),
                     menuItem: true,
                 },
                 bookmarked: {
-                    placeholder: "Bookmarked",
+                    placeholder: "已收藏",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("bookmarked", "bookmarked", toBool),
@@ -133,14 +126,14 @@ export function getWorkflowFilters(activeList = "my") {
             {
                 ...commonFilters,
                 user: {
-                    placeholder: "owner",
+                    placeholder: "所有者",
                     type: String,
                     handler: contains("user"),
                     menuItem: true,
                 },
                 u: { handler: contains("u"), menuItem: false },
                 published: {
-                    placeholder: "Published",
+                    placeholder: "已发布",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("published", "published", toBool),
@@ -156,14 +149,14 @@ export function getWorkflowFilters(activeList = "my") {
             {
                 ...commonFilters,
                 user: {
-                    placeholder: "owner",
+                    placeholder: "所有者",
                     type: String,
                     handler: contains("user"),
                     menuItem: true,
                 },
                 u: { handler: contains("u"), menuItem: false },
                 shared_with_me: {
-                    placeholder: "Shared with me",
+                    placeholder: "与我共享",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("shared_with_me", "shared_with_me", toBool),

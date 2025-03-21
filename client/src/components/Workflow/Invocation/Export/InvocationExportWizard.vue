@@ -71,15 +71,15 @@ const exportData: InvocationExportData = reactive(initializeExportData());
 const exportButtonLabel = computed(() => {
     switch (exportData.destination) {
         case "download":
-            return "Generate Download Link";
+            return "生成下载链接";
         case "remote-source":
-            return "Export to Remote Source";
+            return "导出到远程源";
         case "rdm-repository":
-            return "Export to RDM Repository";
+            return "导出到RDM仓库";
         case "bco-database":
-            return "Export to BCODB";
+            return "导出到BCODB";
         default:
-            return "Export";
+            return "导出";
     }
 });
 
@@ -93,7 +93,7 @@ const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
         (target) => target.destination === exportData.destination
     );
-    return exportDestination?.label ?? "Unknown Destination";
+    return exportDestination?.label ?? "未知目的地";
 });
 
 const exportDestinationTargets = computed(initializeExportDestinations);
@@ -118,36 +118,36 @@ const isWizardBusy = computed(() => stsMonitor.isRunning.value || taskMonitor.is
 
 const wizard = useWizard({
     "select-format": {
-        label: "Select output format",
+        label: "选择输出格式",
         instructions: computed(() => {
-            return `Select the format you would like to export the ${resource} to and click Next to continue.`;
+            return `选择您想要导出的${resource}格式，然后点击下一步继续。`;
         }),
         isValid: () => true,
         isSkippable: () => false,
     },
     "select-destination": {
-        label: "Select destination",
+        label: "选择目的地",
         instructions: computed(() => {
-            return `Select where you would like to export the ${resource} ${exportPluginTitle.value} to and click Next to continue.`;
+            return `选择您想要导出的${resource}${exportPluginTitle.value}的目的地，然后点击下一步继续。`;
         }),
         isValid: () => true,
         isSkippable: () => false,
     },
     "setup-remote": {
-        label: "Select remote source",
-        instructions: "Select remote source directory",
+        label: "选择远程源",
+        instructions: "选择远程源目录",
         isValid: () => Boolean(exportData.remoteUri),
         isSkippable: () => exportData.destination !== "remote-source",
     },
     "setup-rdm": {
-        label: "Select RDM repository",
-        instructions: "Select RDM repository and provide a draft record to export to",
+        label: "选择RDM仓库",
+        instructions: "选择RDM仓库并提供要导出的草稿记录",
         isValid: () => Boolean(exportData.remoteUri),
         isSkippable: () => exportData.destination !== "rdm-repository",
     },
     "setup-bcodb": {
-        label: "Select BCODB Server",
-        instructions: "Provide BCODB server and authentication details",
+        label: "选择BCODB服务器",
+        instructions: "提供BCODB服务器和认证详情",
         isValid: () =>
             Boolean(
                 exportData.bcoDatabase.serverBaseUrl &&
@@ -158,8 +158,8 @@ const wizard = useWizard({
         isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
     "export-summary": {
-        label: "Export",
-        instructions: "Summary",
+        label: "导出",
+        instructions: "摘要",
         isValid: () =>
             Boolean(exportData.outputFileName) ||
             exportData.destination === "download" ||
@@ -257,42 +257,42 @@ function initializeExportDestinations(): ExportDestinationInfo[] {
     const destinations: ExportDestinationInfo[] = [
         {
             destination: "download",
-            label: "Temporary Direct Download",
-            markdownDescription: `Generate a link to the export file and download it directly to your computer.
+            label: "临时直接下载",
+            markdownDescription: `生成导出文件的链接并直接下载到您的计算机。
 
-**Please note that the link will expire after 24 hours.**`,
+**请注意，链接将在24小时后过期。**`,
         },
     ];
 
     if (exportData.exportPluginFormat === "bco") {
         destinations.push({
             destination: "bco-database",
-            label: "BCO Database",
-            markdownDescription: `You can upload your ${resource} to a **BCODB** server here.
+            label: "BCO数据库",
+            markdownDescription: `您可以在此处将${resource}上传到**BCODB**服务器。
 
-Submission to the BCODB **requires that a user already has an authenticated account** at the server they wish to submit to.
-More information about how to set up an account and submit data to a BCODB server can be found [here](https://w3id.org/biocompute/tutorials/galaxy_quick_start).`,
+提交到BCODB**需要用户在他们希望提交的服务器上已经拥有经过认证的账户**。
+关于如何设置账户并向BCODB服务器提交数据的更多信息可以在[这里](https://w3id.org/biocompute/tutorials/galaxy_quick_start)找到。`,
         });
     }
 
     if (hasWritableFileSources.value) {
         destinations.push({
             destination: "remote-source",
-            label: "Remote File Source",
-            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available remote file sources here. You will be able to re-import it later as long as it remains available on the remote server.
+            label: "远程文件源",
+            markdownDescription: `如果您需要**更永久**的方式来存储${resource}，您可以直接将其导出到可用的远程文件源之一。只要它在远程服务器上仍然可用，您以后就可以重新导入它。
 
-Examples of remote sources include Amazon S3, Azure Storage, Google Drive... and other public or personal file sources that you have setup access to.`,
+远程源的例子包括亚马逊S3、Azure存储、谷歌云端硬盘...以及您已经设置访问权限的其他公共或个人文件源。`,
         });
     }
 
     if (hasWritableRDMFileSources.value) {
         destinations.push({
             destination: "rdm-repository",
-            label: "RDM Repository",
-            markdownDescription: `You can upload your ${resource} to one of the available **Research Data Management repositories** here.
-This will allow you to easily associate your ${resource} with your research project or publication.
+            label: "RDM仓库",
+            markdownDescription: `您可以在此处将${resource}上传到可用的**研究数据管理仓库**之一。
+这将使您能够轻松地将${resource}与您的研究项目或出版物相关联。
 
-Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM](https://inveniosoftware.org/products/rdm/) instances, and other public or personal repositories that you have setup access to.`,
+RDM仓库的例子包括[Zenodo](https://zenodo.org/)、[Invenio RDM](https://inveniosoftware.org/products/rdm/)实例，以及您已经设置访问权限的其他公共或个人仓库。`,
         });
     }
 
@@ -336,7 +336,7 @@ function resetWizard() {
             @onDismissRemote="exportToRemoteTaskId = undefined" />
         <GenericWizard
             class="invocation-export-wizard"
-            title="Invocation Export Wizard"
+            title="调用导出向导"
             :use="wizard"
             :submit-button-label="exportButtonLabel"
             :is-busy="isWizardBusy"
@@ -357,7 +357,7 @@ function resetWizard() {
                             <BCardImg :src="plugin.img" :alt="plugin.title" />
                             <br />
                             <ExternalLink v-if="plugin.url" :href="plugin.url">
-                                <b>Learn more</b>
+                                <b>了解更多</b>
                             </ExternalLink>
                         </div>
                         <div v-else v-html="renderMarkdown(plugin.markdownDescription)" />
@@ -386,7 +386,7 @@ function resetWizard() {
                 <BFormGroup
                     id="fieldset-directory"
                     label-for="directory"
-                    :description="`Select a 'remote files' directory to export ${resource} to.`"
+                    :description="`选择一个'远程文件'目录以导出${resource}。`"
                     class="mt-3">
                     <FilesInput
                         id="directory"
@@ -405,13 +405,12 @@ function resetWizard() {
 
             <div v-if="wizard.isCurrent('setup-bcodb')">
                 <p>
-                    To submit to a BCODB you need to already have an authenticated account. Instructions on submitting a
-                    BCO from Galaxy are available
+                    要提交到BCODB，您需要已经有一个认证账户。关于从Galaxy提交BCO的说明，请参见
                     <ExternalLink href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank">
-                        here
+                        这里
                     </ExternalLink>
                 </p>
-                <BFormGroup label-for="bcodb-server" description="BCO DB URL (example: https://biocomputeobject.org)">
+                <BFormGroup label-for="bcodb-server" description="BCO DB URL（例如：https://biocomputeobject.org）">
                     <BFormInput
                         id="bcodb-server"
                         v-model="exportData.bcoDatabase.serverBaseUrl"
@@ -421,7 +420,7 @@ function resetWizard() {
                         required />
                 </BFormGroup>
 
-                <BFormGroup label-for="bcodb-table" description="Prefix">
+                <BFormGroup label-for="bcodb-table" description="前缀">
                     <BFormInput
                         id="bcodb-table"
                         v-model="exportData.bcoDatabase.table"
@@ -431,7 +430,7 @@ function resetWizard() {
                         required />
                 </BFormGroup>
 
-                <BFormGroup label-for="bcodb-owner" description="User Name">
+                <BFormGroup label-for="bcodb-owner" description="用户名">
                     <BFormInput
                         id="bcodb-owner"
                         v-model="exportData.bcoDatabase.ownerGroup"
@@ -440,7 +439,7 @@ function resetWizard() {
                         required />
                 </BFormGroup>
 
-                <BFormGroup label-for="bcodb-authorization" description="User API Key">
+                <BFormGroup label-for="bcodb-authorization" description="用户API密钥">
                     <BFormInput
                         id="bcodb-authorization"
                         v-model="exportData.bcoDatabase.authorization"
@@ -454,27 +453,27 @@ function resetWizard() {
                 <BFormGroup
                     v-if="needsFileName"
                     label-for="exported-file-name"
-                    :description="`Give the exported file a name.`"
+                    :description="`给导出的文件命名。`"
                     class="mt-3">
                     <BFormInput
                         id="exported-file-name"
                         v-model="exportData.outputFileName"
-                        placeholder="enter file name"
+                        placeholder="输入文件名"
                         required />
                 </BFormGroup>
 
                 <BFormCheckbox v-if="canIncludeData" id="include-data" v-model="exportData.includeData" switch>
-                    Include data files in the export package.
+                    在导出包中包含数据文件。
                 </BFormCheckbox>
 
                 <br />
 
                 <div>
-                    Format <b>{{ exportPluginTitle }}</b>
+                    格式 <b>{{ exportPluginTitle }}</b>
                 </div>
 
                 <div>
-                    Destination
+                    目的地
                     <b>{{ exportDestinationSummary }}</b>
                     <b v-if="exportData.destination !== 'download' && exportData.remoteUri">
                         <FileSourceNameSpan :uri="exportData.remoteUri" class="text-primary" />

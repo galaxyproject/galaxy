@@ -81,12 +81,12 @@ const sharedWorkflow = computed(() => {
 
 const editButtonTitle = computed(() => {
     if (userStore.isAnonymous) {
-        return "Log in to edit Workflow";
+        return "登录以编辑工作流";
     } else {
         if (workflowInfo.value?.deleted) {
-            return "You cannot edit a deleted workflow. Restore it first.";
+            return "您无法编辑已删除的工作流。请先恢复它。";
         } else {
-            return "Edit Workflow";
+            return "编辑工作流";
         }
     }
 });
@@ -96,7 +96,7 @@ const workflowSteps = computed(() => (workflow.value?.steps as unknown as Steps)
 
 function logInTitle(title: string) {
     if (userStore.isAnonymous) {
-        return `Log in to ${title}`;
+        return `登录以${title}`;
     } else {
         return title;
     }
@@ -154,11 +154,11 @@ onMounted(async () => {
             <div v-if="loading">
                 <Heading h1 separator size="xl">
                     <FontAwesomeIcon :icon="faSpinner" spin />
-                    Loading Workflow
+                    正在加载工作流
                 </Heading>
             </div>
             <div v-else-if="hasError">
-                <Heading h1 separator size="xl"> Failed to load published Workflow </Heading>
+                <Heading h1 separator size="xl"> 加载已发布工作流失败 </Heading>
 
                 <BAlert show variant="danger">
                     {{ errorMessage }}
@@ -167,32 +167,32 @@ onMounted(async () => {
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div v-if="props.showHeading || props.showButtons" class="workflow-header">
                     <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
-                        <span v-if="props.showAbout"> Workflow Preview </span>
+                        <span v-if="props.showAbout"> 工作流预览 </span>
                         <span v-else> {{ workflowInfo.name }} </span>
                     </Heading>
 
                     <span v-if="props.showButtons">
                         <BButton
                             v-b-tooltip.hover.noninteractive
-                            title="Download workflow in .ga format"
+                            title="以.ga格式下载工作流"
                             variant="outline-primary"
                             size="md"
                             :href="downloadUrl">
                             <FontAwesomeIcon :icon="faDownload" />
-                            Download
+                            下载
                         </BButton>
 
                         <BButton
                             v-if="!props.embed && sharedWorkflow"
                             :href="importUrl"
                             :disabled="userStore.isAnonymous"
-                            :title="logInTitle('Import Workflow')"
+                            :title="logInTitle('导入工作流')"
                             data-description="workflow import"
                             target="_blank"
                             variant="outline-primary"
                             size="md">
                             <FontAwesomeIcon :icon="faEdit" />
-                            Import
+                            导入
                         </BButton>
 
                         <BButton
@@ -205,18 +205,18 @@ onMounted(async () => {
                             size="md"
                             :to="`/workflows/edit?id=${workflowInfo.id}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
-                            Edit
+                            编辑
                         </BButton>
 
                         <BButton
                             v-if="!props.embed"
                             :to="runUrl"
                             :disabled="userStore.isAnonymous"
-                            :title="logInTitle('Run Workflow')"
+                            :title="logInTitle('运行工作流')"
                             variant="primary"
                             size="md">
                             <FontAwesomeIcon :icon="faPlay" />
-                            Run
+                            运行
                         </BButton>
 
                         <BButton
@@ -227,7 +227,7 @@ onMounted(async () => {
                             size="md"
                             class="view-button font-weight-bold">
                             <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" />
-                            View In Galaxy
+                            在Galaxy中查看
                         </BButton>
                     </span>
                 </div>

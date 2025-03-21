@@ -48,13 +48,13 @@ const userStore = useUserStore();
 
 const publishedTitle = computed(() => {
     if (props.workflow.published && !props.publishedView) {
-        return "Published workflow" + (props.filterable ? ". Click to filter published workflows" : "");
+        return "已发布的工作流" + (props.filterable ? "。点击筛选已发布的工作流" : "");
     } else if (userStore.matchesCurrentUsername(props.workflow.owner)) {
-        return "Published by you" + (props.filterable ? ". Click to view all published workflows by you" : "");
+        return "由您发布" + (props.filterable ? "。点击查看您发布的所有工作流" : "");
     } else {
         return (
-            `Published by '${props.workflow.owner}'` +
-            (props.filterable ? `. Click to view all published workflows by '${props.workflow.owner}'` : "")
+            `由'${props.workflow.owner}'发布` +
+            (props.filterable ? `。点击查看'${props.workflow.owner}'发布的所有工作流` : "")
         );
     }
 });
@@ -77,11 +77,11 @@ const sourceType = computed(() => {
 
 const sourceTitle = computed(() => {
     if (sourceType.value.includes("trs")) {
-        return `Imported from TRS ID (version: ${props.workflow.source_metadata?.trs_version_id}). Click to copy ID`;
+        return `从TRS ID导入（版本：${props.workflow.source_metadata?.trs_version_id}）。点击复制ID`;
     } else if (sourceType.value == "url") {
-        return `Imported from ${props.workflow.source_metadata?.url}. Click to copy link`;
+        return `从${props.workflow.source_metadata?.url}导入。点击复制链接`;
     } else {
-        return `Imported from ${(props.workflow as any).source_type}`;
+        return `从${(props.workflow as any).source_type}导入`;
     }
 });
 
@@ -93,7 +93,7 @@ const creatorBadges = computed<BadgeData[] | undefined>(() => {
                     return;
                 }
                 let url: string | undefined;
-                let titleEnd = "Workflow Creator";
+                let titleEnd = "工作流创建者";
 
                 if (creator.url && isUrl(creator.url)) {
                     url = creator.url;
@@ -101,14 +101,14 @@ const creatorBadges = computed<BadgeData[] | undefined>(() => {
                 const orcidRegex = /^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
                 if (creator.identifier && orcidRegex.test(creator.identifier)) {
                     url = creator.identifier;
-                    titleEnd = "ORCID profile";
+                    titleEnd = "ORCID 个人资料";
                 }
 
                 return {
                     name: creator.name,
                     url,
                     icon: creator.class === "Organization" ? faBuilding : faUserEdit,
-                    title: `${url ? "Click to view " : ""}${titleEnd}`,
+                    title: `${url ? "点击查看" : ""}${titleEnd}`,
                     class: { "cursor-pointer": !!url, "outline-badge": !!url },
                 };
             })
@@ -124,10 +124,10 @@ const { success } = useToast();
 function onCopyLink() {
     if (sourceType.value == "url") {
         copy(props.workflow.source_metadata?.url);
-        success("URL copied");
+        success("URL已复制");
     } else if (sourceType.value.includes("trs")) {
         copy(props.workflow.source_metadata?.trs_tool_id);
-        success("TRS ID copied");
+        success("TRS ID已复制");
     }
 }
 
@@ -143,9 +143,9 @@ function onViewUserPublished() {
 
 function getStepText(steps: number) {
     if (steps === 1) {
-        return "1 step";
+        return "1 步骤";
     } else {
-        return `${steps} steps`;
+        return `${steps} 步骤`;
     }
 }
 </script>
@@ -164,7 +164,7 @@ function getStepText(steps: number) {
         <FontAwesomeIcon
             v-else-if="workflow.published"
             v-b-tooltip.noninteractive.hover
-            title="Published workflow"
+            title="已发布的工作流"
             :icon="faGlobe"
             fixed-width
             size="sm" />
@@ -189,7 +189,7 @@ function getStepText(steps: number) {
 
         <span v-if="!noEditTime" class="mr-1">
             <small>
-                edited
+                编辑于
                 <UtcDate :date="workflow.update_time" mode="elapsed" />
             </small>
         </span>
@@ -202,7 +202,7 @@ function getStepText(steps: number) {
             v-if="shared && !publishedView"
             v-b-tooltip.noninteractive.hover
             class="outline-badge cursor-pointer mx-1"
-            :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
+            :title="`'${workflow.owner}' 与你共享了此工作流。点击查看 '${workflow.owner}' 与你共享的所有工作流`"
             @click="onViewMySharedByUser">
             <FontAwesomeIcon :icon="faUsers" size="sm" fixed-width />
             <span class="font-weight-bold"> {{ workflow.owner }} </span>

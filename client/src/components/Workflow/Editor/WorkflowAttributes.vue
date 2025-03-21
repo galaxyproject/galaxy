@@ -1,10 +1,10 @@
 <template>
-    <ActivityPanel id="edit-attributes" title="Attributes" itemscope itemtype="http://schema.org/CreativeWork">
+    <ActivityPanel id="edit-attributes" title="属性" itemscope itemtype="http://schema.org/CreativeWork">
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
         <div id="workflow-name-area">
-            <b>Name</b>
+            <b>名称</b>
             <meta itemprop="name" :content="name" />
             <b-input
                 id="workflow-name"
@@ -13,7 +13,7 @@
                 @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div v-if="versionOptions.length > 0" id="workflow-version-area" class="mt-2">
-            <b>Version</b>
+            <b>版本</b>
             <b-form-select v-model="versionCurrent" @change="onVersion">
                 <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
                     {{ v.label }}
@@ -21,7 +21,7 @@
             </b-form-select>
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
-            <b>Parameters</b>
+            <b>参数</b>
             <b-list-group>
                 <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key"
                     >{{ key + 1 }}: {{ p.name }}
@@ -32,15 +32,14 @@
             id="workflow-annotation-area"
             class="mt-2"
             :class="{ 'bg-secondary': showAnnotationHightlight, 'highlight-attribute': showAnnotationHightlight }">
-            <b>Short Description</b>
+            <b>简短描述</b>
             <meta itemprop="description" :content="annotationCurrent" />
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
             <div class="form-text text-muted">
-                This short description will be visible when this workflow is viewed and should be limited to a sentence
-                or two.
+                当查看此工作流时，将显示此简短描述，建议限制在一两句话内。
             </div>
             <b-popover
                 custom-class="best-practice-popover"
@@ -49,7 +48,7 @@
                 placement="right"
                 :show.sync="showAnnotationHightlight"
                 triggers="manual"
-                title="Best Practice"
+                title="最佳实践"
                 :content="annotationBestPracticeMessage">
             </b-popover>
         </div>
@@ -57,7 +56,7 @@
             id="workflow-license-area"
             class="mt-2"
             :class="{ 'bg-secondary': showLicenseHightlight, 'highlight-attribute': showLicenseHightlight }">
-            <b>License</b>
+            <b>许可证</b>
             <LicenseSelector id="license-selector" :input-license="license" @onLicense="onLicense" />
             <b-popover
                 custom-class="best-practice-popover"
@@ -66,7 +65,7 @@
                 placement="right"
                 :show.sync="showLicenseHightlight"
                 triggers="manual"
-                title="Best Practice"
+                title="最佳实践"
                 :content="bestPracticeWarningLicense">
             </b-popover>
         </div>
@@ -74,7 +73,7 @@
             id="workflow-creator-area"
             class="mt-2"
             :class="{ 'bg-secondary': showCreatorHightlight, 'highlight-attribute': showCreatorHightlight }">
-            <b>Creator</b>
+            <b>创建者</b>
             <CreatorEditor id="creator-editor" :creators="creatorAsList" @onCreators="onCreator" />
             <b-popover
                 custom-class="best-practice-popover"
@@ -83,20 +82,20 @@
                 placement="right"
                 :show.sync="showCreatorHightlight"
                 triggers="manual"
-                title="Best Practice"
+                title="最佳实践"
                 :content="bestPracticeWarningCreator">
             </b-popover>
         </div>
         <div class="mt-2">
-            <b>Tags</b>
+            <b>标签</b>
             <StatelessTags :value="tags" @input="onTags" />
             <div class="form-text text-muted">
-                Apply tags to make it easy to search for and find items with the same tag.
+                应用标签以便于搜索和查找具有相同标签的项目。
             </div>
         </div>
         <div class="mt-2">
             <b
-                >Readme
+                >自述文件
                 <FontAwesomeIcon :icon="faEye" @click="showReadmePreview = true" />
             </b>
             <b-textarea
@@ -104,16 +103,14 @@
                 v-model="readmeCurrent"
                 @keyup="$emit('update:readmeCurrent', readmeCurrent)" />
             <div class="form-text text-muted">
-                A detailed description of what the workflow does. It is best to include descriptions of what kinds of
-                data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
+                详细描述工作流的功能。最好包括所需数据类型的描述。研究人员在寻找工作流时会看到此文本。支持 Markdown。
             </div>
         </div>
         <div class="mt-2">
-            <b>Help</b>
+            <b>帮助</b>
             <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
             <div class="form-text text-muted">
-                A detailed description of how to use the workflow and debug problems with it. Researchers running this
-                workflow will see this text. Markdown is enabled.
+                详细描述如何使用工作流及其调试方法。研究人员在运行此工作流时会看到此文本。支持 Markdown。
             </div>
         </div>
         <div class="mt-2">
@@ -123,7 +120,7 @@
                 v-model="logoUrlCurrent"
                 @keyup="$emit('update:logoUrlCurrent', logoUrlCurrent)" />
             <div class="form-text text-muted">
-                An logo image used when generating publication artifacts for your workflow. This is completely optional.
+                在生成工作流的发布物时使用的 logo 图片。这是完全可选的。
             </div>
         </div>
         <BModal v-model="showReadmePreview" hide-header centered ok-only>
@@ -157,7 +154,7 @@ import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 const bestPracticeHighlightTime = 10000;
 
 export default {
-    name: "WorkflowAttributes",
+    name: "工作流属性",
     components: {
         FontAwesomeIcon,
         StatelessTags,
