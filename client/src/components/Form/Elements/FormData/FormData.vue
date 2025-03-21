@@ -16,6 +16,7 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 import {
     type DCESummary,
     type HDAObject,
+    type HDCASummary,
     type HistoryItemSummary,
     isDatasetElement,
     isDCE,
@@ -569,7 +570,7 @@ function buildNewCollection(collectionType: string) {
     collectionModalShow.value = true;
 }
 
-function createdCollection(collection: any) {
+function createdCollection(collection: HDCASummary) {
     handleIncoming(collection);
 }
 
