@@ -21,6 +21,7 @@ type ValueWithTags = SelectValue & { tags: string[] };
 interface SelectOption {
     label: string;
     value: SelectValue;
+    id?: string;
 }
 
 const props = defineProps({
@@ -64,22 +65,29 @@ const filteredOptions = useFilterObjectArray(() => props.options, filter, ["labe
 const optionReorderThreshold = 8;
 
 const reorderedOptions = computed(() => {
-    if (filteredOptions.value.length <= optionReorderThreshold) {
-        return filteredOptions.value;
+    let result;
+    if (!props.multiple || filteredOptions.value.length <= optionReorderThreshold) {
+        result = filteredOptions.value;
     } else {
         const selectedOptions: SelectOption[] = [];
         const unselectedOptions: SelectOption[] = [];
 
         filteredOptions.value.forEach((option) => {
-            if (selectedValues.value.includes(option.value)) {
+            if (isSelected(option.value)) {
                 selectedOptions.push(option);
             } else {
                 unselectedOptions.push(option);
             }
         });
 
-        return [...unselectedOptions, ...selectedOptions];
+        result = [...unselectedOptions, ...selectedOptions];
     }
+    return result.map((option) => {
+        return {
+            ...option,
+            id: trackBy.value === "id" && isValueWithId(option.value) ? option.value.id : undefined,
+        };
+    });
 });
 
 /**
@@ -115,10 +123,24 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
 /**
+ * Tracks selected ids in case of objects with string ids
+ */
+const selectedIds = computed(() => {
+    return selectedValues.value.map((v) => (isValueWithId(v) ? v.id : undefined)).filter((v) => v !== undefined);
+});
+
+/**
+ * Whether current value(s) will be tracked by id or value
+ */
+const trackBy = computed(() => {
+    return selectedIds.value.length > 0 ? "id" : "value";
+});
+
+/**
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => props.options.filter((option: SelectOption) => isSelected(option.value)).map(getSelectOption),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -142,6 +164,16 @@ function setInitialValue(): void {
     }
 }
 
+function getSelectOption(option: SelectOption): SelectOption {
+    if (isValueWithId(option.value)) {
+        return {
+            ...option,
+            id: option.value.id,
+        };
+    }
+    return option;
+}
+
 /**
  * Watches changes in select options and adjusts initial value if necessary
  */
@@ -163,8 +195,19 @@ function isValueWithTags(item: SelectValue): item is ValueWithTags {
     return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
 }
 
+function isValueWithId(item: SelectValue): item is { id: string } {
+    return !!item && typeof item === "object" && (item as { id: string }).id !== undefined;
+}
+
 function onSearchChange(search: string): void {
     filter.value = search;
+}
+
+function isSelected(item: SelectValue): boolean {
+    if (isValueWithId(item)) {
+        return selectedIds.value.includes(item.id);
+    }
+    return selectedValues.value.includes(item);
 }
 </script>
 
@@ -185,7 +228,7 @@ function onSearchChange(search: string): void {
             :placeholder="placeholder"
             :selected-label="selectedLabel"
             :select-label="null"
-            track-by="value"
+            :track-by="trackBy"
             :internal-search="false"
             @search-change="onSearchChange"
             @open="onOpen"
@@ -200,7 +243,7 @@ function onSearchChange(search: string): void {
                             :value="option.value.tags"
                             disabled />
                     </div>
-                    <FontAwesomeIcon v-if="selectedValues.includes(option.value)" :icon="faCheckSquare" />
+                    <FontAwesomeIcon v-if="isSelected(option.value)" :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else :icon="faSquare" />
                 </div>
             </template>
