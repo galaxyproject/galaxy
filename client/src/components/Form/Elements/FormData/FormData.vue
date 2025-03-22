@@ -106,6 +106,9 @@ const restrictsExtensions = computed(() => {
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
 
+/** Update counter for keep-options, used to trigger a re-compute of `formattedOptions` */
+const keepOptionsUpdate = ref(0);
+
 /**
  * Determine whether the file dialog can be used or not
  */
@@ -167,6 +170,9 @@ const currentVariant = computed(() => {
  * Converts and populates options for the shown select field
  */
 const formattedOptions = computed(() => {
+    // When the keepOptionsUpdate value changes, this computed property is re-evaluated
+    keepOptionsUpdate.value;
+
     if (currentSource.value && currentSource.value in props.options) {
         // Map incoming values to available options
         const options = props.options[currentSource.value] || [];
@@ -377,11 +383,13 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                 const keepKey = `${newValue.id}_${newValue.src}`;
                 const existingOptions = props.options && props.options[newValue.src];
                 const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
-                if (!foundOption && !(keepKey in keepOptions)) {
+                if (!foundOption && !isInKeepOptions(keepKey, newValue)) {
                     keepOptions[keepKey] = {
                         label: `${newValue.hid || "Selected"}: ${newValue.name}`,
                         value: newValue,
                     };
+                    // this is used to trigger an update on formattedOptions
+                    keepOptionsUpdate.value++;
                 }
                 // Add new value to list
                 incomingValues.push(newValue);
@@ -455,6 +463,22 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         }
     }
     return newValue;
+}
+
+/**
+ * Check if the new value is already in the keepOptions.
+ * This doesn't only check if the value is already stored by the `keepKey`, but also if the new value
+ * has a `hid` and the existing value doesn't. This is to ensure that values with `hid` are preferred.
+ */
+function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
+    if (keepKey in keepOptions) {
+        const existingOption = keepOptions[keepKey];
+        if (!existingOption?.value || (!!newValue.hid && !existingOption.value.hid)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 /**
