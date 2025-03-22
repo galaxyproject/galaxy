@@ -1,9 +1,10 @@
 <script setup>
+import { BModal } from "bootstrap-vue";
 import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
@@ -17,7 +18,6 @@ const { config, isConfigLoaded } = useConfig();
 
 function getDefaultOptions() {
     const baseOptions = {
-        title: "Upload from Disk or Web",
         modalStatic: true,
         callback: null,
         immediateUpload: false,
@@ -68,20 +68,37 @@ watch(
 defineExpose({
     open,
 });
+
+// Handle escape key press in modal
+// (modal stays open when esc key is pressed in some child components, hence using `no-close-on-esc`)
+const uploadModal = ref(null);
+onMounted(() => {
+    uploadModal.value?.$el.addEventListener("keyup", handleKeyUp);
+});
+onBeforeUnmount(() => {
+    uploadModal.value?.$el.removeEventListener("keyup", handleKeyUp);
+});
+function handleKeyUp(event) {
+    if (event.key === "Escape") {
+        dismiss();
+    }
+}
 </script>
 
 <template>
-    <b-modal
+    <BModal
+        ref="uploadModal"
         v-model="showModal"
         :static="options.modalStatic"
         header-class="no-separator"
         modal-class="ui-modal"
         dialog-class="upload-dialog"
         body-class="upload-dialog-body"
+        no-close-on-esc
         no-enforce-focus
         hide-footer>
         <template v-slot:modal-header>
-            <h2 class="title h-sm" tabindex="0">{{ options.title }}</h2>
+            <h2 v-localize class="title h-sm" tabindex="0">Upload from Disk or Web</h2>
         </template>
         <UploadContainer
             v-if="currentHistoryId"
@@ -90,7 +107,7 @@ defineExpose({
             :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />
-    </b-modal>
+    </BModal>
 </template>
 
 <style>
