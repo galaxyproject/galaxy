@@ -36,12 +36,12 @@ function onViewItem() {
 
         <div class="my-2">
             <BButton
-                variant="outline-primary"
-                size="sm"
-                class="mx-2"
-                :title="localize(`Go to the details of this storage location`)"
-                @click="onViewItem">
-                <FontAwesomeIcon :icon="viewDetailsIcon" />
+            variant="outline-primary"
+            size="sm"
+            class="mx-2"
+            :title="localize(`查看此存储位置的详细信息`)"
+            @click="onViewItem">
+            <FontAwesomeIcon :icon="viewDetailsIcon" />
             </BButton>
         </div>
     </div>

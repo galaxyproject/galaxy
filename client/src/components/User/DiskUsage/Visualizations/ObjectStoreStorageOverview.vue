@@ -74,34 +74,34 @@ function onUndelete(datasetId: string) {
 </script>
 
 <template>
-    <OverviewPage title="Storage overview by location">
+    <OverviewPage title="按位置显示存储概览">
         <p class="text-justify">
-            Here you will find some Graphs displaying the storage taken by datasets in the storage location:
+            这里您将看到一些图表，显示存储位置中数据集所占用的存储空间：
             <b>{{ getObjectStoreNameById(objectStoreId) }}</b
-            >. You can use these graphs to identify the datasets that take the most space in this storage location.
+            >。您可以使用这些图表来识别在此存储位置中占用最多空间的数据集。
         </p>
         <WarnDeletedDatasets />
         <div v-if="isLoading" class="text-center">
-            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+            <LoadingSpan class="mt-5" :message="localize('正在加载您的存储数据。这可能需要一些时间...')" />
         </div>
         <div v-else>
             <BarChart
                 v-if="topNDatasetsBySizeData"
                 :description="
                     localize(
-                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
+                        `这些是在此历史记录中占用最多空间的${numberOfDatasetsToDisplay}个数据集。点击条形图可查看有关数据集的更多信息。`
                     )
                 "
                 v-bind="byteFormattingForChart"
                 :enable-selection="true"
                 :data="topNDatasetsBySizeData">
                 <template v-slot:title>
-                    <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
+                    <b>{{ localize(`按大小排列的前${numberOfDatasetsToDisplay}个数据集`) }}</b>
                     <b-form-select
                         v-model="numberOfDatasetsToDisplay"
                         :options="numberOfDatasetsToDisplayOptions"
                         :disabled="isLoading"
-                        title="Number of datasets to show"
+                        title="显示的数据集数量"
                         class="float-right w-auto"
                         size="sm"
                         @change="buildGraphsData()">

@@ -12,11 +12,11 @@ defineProps({
     },
     title: {
         type: String,
-        default: "Title not available.",
+        default: "标题不可用.",
     },
     description: {
         type: String,
-        default: "Description not available.",
+        default: "描述不可用.",
     },
     to: {
         type: String,

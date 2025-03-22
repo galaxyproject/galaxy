@@ -8,21 +8,21 @@ import { getDbKeys } from "@/api/dbKeys";
 
 export const AUTO_EXTENSION = {
     id: "auto",
-    text: "Auto-detect",
+    text: "自动检测",
     description:
-        "This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.",
+        "系统将尝试自动检测文件类型。如果您的文件未被正确识别为已知格式之一，很可能意味着它存在格式问题（如不同行的列数不同）。您仍然可以强制系统将数据设置为您认为应有的格式。您也可以上传压缩文件，系统将自动解压。",
 };
 export const COLLECTION_TYPES = [
-    { id: "list", text: "List" },
-    { id: "paired", text: "Pair" },
-    { id: "list:paired", text: "List of Pairs" },
+    { id: "list", text: "列表" },
+    { id: "paired", text: "配对" },
+    { id: "list:paired", text: "配对列表" },
 ];
 export const DEFAULT_DBKEY = "?";
 export const DEFAULT_EXTENSION = "auto";
-export const DEFAULT_FILE_NAME = "New File";
+export const DEFAULT_FILE_NAME = "新文件";
 export const RULES_TYPES = [
-    { id: "collections", text: "Collections" },
-    { id: "datasets", text: "Datasets" },
+    { id: "collections", text: "集合" },
+    { id: "datasets", text: "数据集" },
 ];
 
 /**

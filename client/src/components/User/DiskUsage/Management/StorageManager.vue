@@ -18,8 +18,8 @@ interface ModalDialog {
 }
 
 const breadcrumbItems = [
-    { title: "Storage Dashboard", to: "StorageDashboard" },
-    { title: "Manage your account storage", superText: "(Beta)" },
+    { title: "存储仪表盘", to: "StorageDashboard" },
+    { title: "管理您的账户存储", superText: "(测试版)" },
 ];
 
 const { config } = useConfig();
@@ -61,14 +61,15 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
 
         <b-row class="justify-content-md-center">
             <b-alert show dismissible variant="warning">
-                {{ localize("This feature is currently in Beta, if you find any issues please report them") }}
-                <b-link :href="issuesUrl" target="_blank">here</b-link>.
+            {{ localize("此功能目前处于测试阶段，如果您发现任何问题，请在") }}
+            <b-link :href="issuesUrl" target="_blank">此处</b-link>
+            {{ localize("报告。") }}
             </b-alert>
         </b-row>
         <b-row class="justify-content-md-center mb-5">
             <b-alert v-if="config?.enable_quotas" show>
-                {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
-                <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
+            {{ localize("存储管理器仅显示计入您的磁盘配额的元素。") }}
+            <b-link :href="config.quota_url" target="_blank">{{ localize("了解更多") }}</b-link>
             </b-alert>
         </b-row>
 

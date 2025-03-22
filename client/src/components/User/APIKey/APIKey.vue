@@ -33,11 +33,10 @@ getAPIKey();
 
 <template>
     <section class="api-key d-flex flex-column">
-        <h1 v-localize class="h-lg">Manage API Key</h1>
+        <h1 v-localize class="h-lg">管理API密钥</h1>
 
         <span v-localize class="mb-2">
-            An API key will allow you to access via web API. Please note that this key acts as an alternate means to
-            access your account and should be treated with the same care as your login password.
+            API密钥将允许您通过Web API进行访问。请注意，此密钥作为访问您账户的替代方式，应与登录密码一样谨慎对待。
         </span>
 
         <b-alert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
@@ -45,7 +44,7 @@ getAPIKey();
         </b-alert>
 
         <b-alert v-if="loading" class="m-2" show variant="info">
-            <LoadingSpan message="Loading API keys" />
+            <LoadingSpan message="正在加载API密钥" />
         </b-alert>
 
         <b-button
@@ -56,7 +55,7 @@ getAPIKey();
             @click.prevent="createNewAPIKey">
             <icon v-if="!createLoading" icon="plus" />
             <icon v-else icon="spinner" spin />
-            <span v-localize>Create a new key</span>
+            <span v-localize>创建新密钥</span>
         </b-button>
 
         <div v-else-if="apiKey" class="mx-2">

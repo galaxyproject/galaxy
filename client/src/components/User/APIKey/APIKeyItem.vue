@@ -37,7 +37,7 @@ const deleteKey = () => {
 </script>
 
 <template>
-    <b-card title="Current API key">
+    <b-card title="当前API密钥">
         <div class="d-flex justify-content-between w-100">
             <div class="w-100">
                 <b-input-group class="w-100">
@@ -55,27 +55,27 @@ const deleteKey = () => {
 
                     <b-input-group-append>
                         <b-input-group-text>
-                            <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
+                            <CopyToClipboard message="密钥已复制到剪贴板" :text="item.key" title="复制密钥" />
                         </b-input-group-text>
 
-                        <b-button v-b-tooltip.hover title="Show/hide key" @click="hover = !hover">
+                        <b-button v-b-tooltip.hover title="显示/隐藏密钥" @click="hover = !hover">
                             <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
                         </b-button>
 
-                        <b-button title="Delete api key" @click="toggleDeleteModal">
+                        <b-button title="删除API密钥" @click="toggleDeleteModal">
                             <icon icon="trash" />
                         </b-button>
                     </b-input-group-append>
                 </b-input-group>
                 <span class="small text-black-50">
-                    created on
+                    创建于
                     <UtcDate class="text-black-50 small" :date="item.create_time" mode="pretty" />
                 </span>
             </div>
         </div>
 
-        <b-modal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
-            <p v-localize>Are you sure you want to delete this key?</p>
+        <b-modal ref="modal" title="删除API密钥" size="md" @ok="deleteKey">
+            <p v-localize>您确定要删除此密钥吗？</p>
         </b-modal>
     </b-card>
 </template>

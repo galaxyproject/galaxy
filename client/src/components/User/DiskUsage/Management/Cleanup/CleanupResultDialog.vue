@@ -22,20 +22,20 @@ const isLoading = computed<boolean>(() => {
 });
 
 const title = computed<string>(() => {
-    let message = localize("Something went wrong...");
+    let message = localize("出现错误...");
     if (isLoading.value) {
-        message = localize("Freeing up some space...");
+        message = localize("正在释放空间...");
     } else if (props.result.isPartialSuccess) {
-        message = localize("Sorry, some items couldn't be cleared");
+        message = localize("抱歉，部分项目无法清除");
     } else if (props.result.success) {
-        message = localize("Congratulations!");
+        message = localize("恭喜！");
     }
     return message;
 });
 
 const errorFields = [
-    { key: "name", label: localize("Name") },
-    { key: "reason", label: localize("Reason") },
+    { key: "name", label: localize("名称") },
+    { key: "reason", label: localize("原因") },
 ];
 
 function openModal() {
@@ -52,23 +52,23 @@ defineExpose({
         <div class="text-center">
             <Alert
                 variant="info"
-                message="After the operation, the storage space that will be freed up will only be for the unique items. This means that some items may not free up any storage space because they are duplicates of other items." />
+                message="操作后，释放的存储空间仅针对唯一项目。这意味着某些项目可能不会释放任何存储空间，因为它们是其他项目的副本。" />
             <b-spinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
             <div v-else>
                 <b-alert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
                     {{ result.errorMessage }}
                 </b-alert>
                 <h3 v-else-if="result.success" data-test-id="success-info">
-                    You've cleared <b>{{ result.niceTotalFreeBytes }}</b>
+                    您已清除 <b>{{ result.niceTotalFreeBytes }}</b>
                 </h3>
                 <div v-else-if="result.isPartialSuccess" data-test-id="partial-success-info">
                     <h3>
-                        You've successfully cleared <b>{{ result.totalCleaned }}</b> items for a total of
-                        <b>{{ result.niceTotalFreeBytes }}</b> but...
+                        您已成功清除 <b>{{ result.totalCleaned }}</b> 个项目，共计
+                        <b>{{ result.niceTotalFreeBytes }}</b>，但是...
                     </h3>
                     <b-alert v-if="result.hasSomeErrors" show variant="warning">
                         <h3 class="mb-0">
-                            <b>{{ result.errors.length }}</b> items couldn't be cleared
+                            <b>{{ result.errors.length }}</b> 个项目无法清除
                         </h3>
                     </b-alert>
                 </div>
@@ -82,3 +82,4 @@ defineExpose({
         </div>
     </b-modal>
 </template>
+

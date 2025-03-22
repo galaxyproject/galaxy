@@ -24,9 +24,9 @@ const emit = defineEmits<{
     (event: "onConfirmCleanupSelectedItems", items: CleanableItem[]): void;
 }>();
 
-const permanentlyDeleteText = localize("Permanently delete");
-const captionText = localize("To free up account space, review and select items to be permanently deleted here.");
-const agreementText = localize("I understand that once I delete the items, they cannot be recovered.");
+const permanentlyDeleteText = localize("永久删除");
+const captionText = localize("要释放账户空间，请在此处审查并选择要永久删除的项目。");
+const agreementText = localize("我了解一旦删除这些项目，它们将无法恢复。");
 const fields = [
     {
         key: "selected",
@@ -43,7 +43,7 @@ const fields = [
         formatter: toNiceSize,
     },
     {
-        label: "Updated",
+        label: "更新时间",
         key: "update_time",
         sortable: true,
     },
@@ -80,7 +80,7 @@ const title = computed(() => {
 });
 
 const confirmationTitle = computed(() => {
-    return `Permanently delete ${selectedItemCount.value} items?`;
+    return `永久删除 ${selectedItemCount.value} 个项目？`;
 });
 
 const deleteButtonVariant = computed(() => {
@@ -88,7 +88,7 @@ const deleteButtonVariant = computed(() => {
 });
 
 const deleteItemsText = computed(() => {
-    return hasItemsSelected.value ? `${selectedItemCount.value} items` : "";
+    return hasItemsSelected.value ? `${selectedItemCount.value} 个项目` : "";
 });
 
 const confirmButtonVariant = computed(() => {

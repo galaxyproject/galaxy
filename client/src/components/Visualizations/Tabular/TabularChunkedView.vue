@@ -177,7 +177,7 @@ onMounted(() => {
         <b-table-simple hover small striped>
             <b-thead head-variant="dark">
                 <b-tr>
-                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
+                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `列 ${index + 1}` }}</b-th>
                 </b-tr>
             </b-thead>
             <b-tbody>

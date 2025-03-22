@@ -12,31 +12,31 @@ import IconCard from "@/components/IconCard.vue";
 const router = useRouter();
 
 const texts = reactive({
-    title: localize("Storage Dashboard"),
-    subtitle: localize("Here you can see an overview of your disk usage status."),
+    title: localize("存储仪表板"),
+    subtitle: localize("在这里您可以查看您的磁盘使用状态概览。"),
     freeSpace: {
-        title: localize("Is your usage more than expected?"),
+        title: localize("您的使用空间超出预期了吗？"),
         description: localize(
-            "Find out what is eating up your space and learn how to easily and safely free up some of it."
+            "找出是什么占用了您的空间，了解如何轻松安全地释放一些空间。"
         ),
         icon: "fas fa-broom fa-6x",
-        buttonText: localize("Free up disk usage"),
+        buttonText: localize("释放磁盘空间"),
     },
     explore_by_history: {
-        title: localize("Visually explore your disk usage by history"),
+        title: localize("按历史记录可视化探索您的磁盘使用情况"),
         description: localize(
-            "Want to know what histories or datasets take up the most space in your account? Here you can explore your disk usage in a visual way by history."
+            "想知道哪些历史记录或数据集在您的账户中占用最多空间？在这里，您可以按历史记录以可视化方式探索您的磁盘使用情况。"
         ),
         icon: "fas fa-chart-pie fa-6x",
-        buttonText: localize("Explore now"),
+        buttonText: localize("立即探索"),
     },
     explore_by_objectstore: {
-        title: localize("Visually explore your disk usage by storage location"),
+        title: localize("按存储位置可视化探索您的磁盘使用情况"),
         description: localize(
-            "Want to know how the space in your account is being distributed across storage locations? Here you can explore your disk usage in a visual way by where it is physically stored."
+            "想知道您账户中的空间是如何分布在各个存储位置的吗？在这里，您可以按照数据物理存储的位置以可视化方式探索您的磁盘使用情况。"
         ),
         icon: "fas fa-hdd fa-6x",
-        buttonText: localize("Explore now"),
+        buttonText: localize("立即探索"),
     },
 });
 
@@ -67,7 +67,7 @@ function goToObjectStoresOverview() {
 
         <IconCard
             class="mx-auto mb-3"
-            data-description="free space card"
+            data-description="释放空间卡片"
             :title="texts.freeSpace.title"
             :description="texts.freeSpace.description"
             :icon="texts.freeSpace.icon"
@@ -76,7 +76,7 @@ function goToObjectStoresOverview() {
 
         <IconCard
             class="mx-auto mb-3"
-            data-description="explore usage card"
+            data-description="探索使用情况卡片"
             :title="texts.explore_by_history.title"
             :description="texts.explore_by_history.description"
             :icon="texts.explore_by_history.icon"
@@ -85,7 +85,7 @@ function goToObjectStoresOverview() {
 
         <IconCard
             class="mx-auto mb-3"
-            data-description="explore object store usage card"
+            data-description="探索对象存储使用情况卡片"
             :title="texts.explore_by_objectstore.title"
             :description="texts.explore_by_objectstore.description"
             :icon="texts.explore_by_objectstore.icon"

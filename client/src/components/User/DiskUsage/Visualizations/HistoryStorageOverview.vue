@@ -85,7 +85,6 @@ function buildGraphsData() {
     );
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
 }
-
 function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
     const activeDatasetsSize = datasetsSizeSummary
         .filter((dataset) => !dataset.deleted)
@@ -96,12 +95,12 @@ function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[
     return [
         {
             id: "active",
-            label: "Active",
+            label: "活跃",
             value: activeDatasetsSize,
         },
         {
             id: "deleted",
-            label: "Deleted",
+            label: "已删除",
             value: deletedDatasetsSize,
         },
     ];
@@ -126,39 +125,39 @@ function onUndelete(datasetId: string) {
 }
 </script>
 <template>
-    <OverviewPage class="history-storage-overview" title="History Storage Overview">
+    <OverviewPage class="history-storage-overview" title="历史存储概览">
         <p class="text-justify">
-            Here you will find some Graphs displaying the storage taken by datasets in your history:
+            在这里您将看到一些展示历史中数据集存储空间的图表:
             <b>{{ getHistoryNameById(props.historyId) }}</b
-            >. You can use these graphs to identify the datasets that take the most space in your history. You can also
-            go to the
-            <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
-            the storage taken by <b>all your histories</b>.
+            >。您可以使用这些图表来识别在您历史中占用最多空间的数据集。您也可以
+            前往
+            <router-link :to="{ name: 'HistoriesOverview' }"><b>历史存储概览</b></router-link> 页面查看
+            <b>所有历史</b>占用的存储空间。
         </p>
         <WarnDeletedDatasets />
         <div v-if="isLoading" class="text-center">
-            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+            <LoadingSpan class="mt-5" :message="localize('正在加载您的存储数据。这可能需要一些时间...')" />
         </div>
         <div v-else>
             <BarChart
                 v-if="topNDatasetsBySizeData"
                 :description="
                     localize(
-                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
+                        `这是该历史中占用空间最多的 ${numberOfDatasetsToDisplay} 个数据集。点击柱状图可查看关于该数据集的更多信息。`
                     )
                 "
                 :data="topNDatasetsBySizeData"
                 :enable-selection="true"
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
-                    <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
+                    <b>{{ localize(`按大小排名前 ${numberOfDatasetsToDisplay} 的数据集`) }}</b>
                     <BInputGroup size="sm" :class="inputGroupClasses">
                         <BFormSelect
                             v-if="!isAdvanced"
                             v-model="numberOfDatasetsToDisplay"
                             :options="numberOfDatasetsToDisplayOptions"
                             :disabled="isLoading"
-                            title="Number of histories to show"
+                            title="显示的历史数量"
                             size="sm"
                             @change="buildGraphsData()">
                         </BFormSelect>
@@ -166,8 +165,8 @@ function onUndelete(datasetId: string) {
                             v-b-tooltip.hover.bottom.noninteractive
                             aria-haspopup="true"
                             size="sm"
-                            title="Toggle Advanced Filtering"
-                            data-description="wide toggle advanced filter"
+                            title="切换高级过滤"
+                            data-description="宽切换高级过滤"
                             @click="toggleAdvanced">
                             <FontAwesomeIcon :icon="isAdvanced ? faAngleDoubleUp : faAngleDoubleDown" />
                         </BButton>
@@ -178,23 +177,23 @@ function onUndelete(datasetId: string) {
                         <BForm>
                             <BFormGroup
                                 id="input-group-num-histories"
-                                label="Number of histories:"
+                                label="历史数量："
                                 label-for="input-num-histories"
-                                description="This is the maximum number of histories that will be displayed.">
+                                description="这是将显示的最大历史数量。">
                                 <BFormSelect
                                     v-model="numberOfDatasetsToDisplay"
                                     :options="numberOfDatasetsToDisplayOptions"
                                     :disabled="isLoading"
-                                    title="Number of histories to show"
+                                    title="显示的历史数量"
                                     @change="buildGraphsData()">
                                 </BFormSelect>
                             </BFormGroup>
                             <BFormGroup
                                 v-if="selectableObjectStores && hasSelectableObjectStores"
                                 id="input-group-object-store"
-                                label="Storage location:"
+                                label="存储位置："
                                 label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular storage location.">
+                                description="这将限制历史大小计算到特定存储位置。">
                                 <FilterObjectStoreLink
                                     :object-stores="selectableObjectStores"
                                     :value="objectStore"
@@ -223,10 +222,10 @@ function onUndelete(datasetId: string) {
 
             <BarChart
                 v-if="activeVsDeletedTotalSizeData"
-                :title="localize('Active vs Deleted Total Size')"
+                :title="localize('活跃与已删除总大小')"
                 :description="
                     localize(
-                        'This graph shows the total size of your datasets in this history, split between active and deleted datasets.'
+                        '此图表显示了您在此历史中数据集的总大小，分为活跃和已删除的数据集。'
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"

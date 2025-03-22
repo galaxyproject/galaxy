@@ -36,16 +36,15 @@ defineExpose({
     <div class="quota-summary">
         <div class="text-center my-5">
             <div v-if="allSourcesUnlimited">
-                <h2>You've got <b>unlimited</b> disk quota</h2>
-                <h3 v-localize class="h-sm">All your storage sources have unlimited disk space. Enjoy!</h3>
+                <h2>您拥有<b>无限</b>磁盘配额</h2>
+                <h3 v-localize class="h-sm">您的所有存储源都拥有无限磁盘空间。尽情享用吧！</h3>
             </div>
             <div v-else>
                 <h2>
-                    You've got <b> {{ niceTotalQuota }} </b> of total disk quota
+                    您拥有总计 <b>{{ niceTotalQuota }}</b> 的磁盘配额
                 </h2>
                 <h3 v-localize class="h-sm">
-                    This is the maximum disk space that you can use across all your storage sources. Unlimited storage
-                    sources are not taken into account
+                    这是您可以在所有存储源中使用的最大磁盘空间。未计入无限存储源
                 </h3>
             </div>
         </div>

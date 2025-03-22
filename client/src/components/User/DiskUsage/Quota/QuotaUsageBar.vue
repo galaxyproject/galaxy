@@ -16,8 +16,9 @@ const props = withDefaults(defineProps<QuotaUsageBarProps>(), {
     compact: false,
 });
 
-const storageSourceText = ref(localize("storage source"));
-const percentOfDiskQuotaUsedText = ref(localize("% of disk quota used"));
+const storageSourceText = ref(localize("存储来源"));
+const percentOfDiskQuotaUsedText = ref(localize("% 的磁盘配额已使用"));
+
 
 const isDefaultQuota = computed(() => {
     return props.quotaUsage.sourceLabel === DEFAULT_QUOTA_SOURCE_LABEL;

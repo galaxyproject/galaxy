@@ -39,8 +39,8 @@ const warnText = computed(() => details.value.upload_warning);
             :value="value"
             :disabled="disabled"
             :options="listExtensions"
-            what="file type"
-            placeholder="Select Type"
+            what="文件类型"
+            placeholder="选择类型"
             :warn="warnText ? true : false"
             @input="(newValue) => emit('input', newValue)" />
         <Popper v-if="warnText" placement="bottom" mode="light">

@@ -10,7 +10,7 @@ export async function getAPIKey(userId) {
         return [];
     }
     if (response.status !== 200) {
-        throw new Error("Unexpected response retrieving the API key.");
+        throw new Error("获取API密钥时出现意外响应。");
     }
     return [response.data];
 }
@@ -19,7 +19,7 @@ export async function createNewAPIKey(userId) {
     const url = getUrl(`api/users/${userId}/api_key`);
     const response = await axios.post(url);
     if (response.status !== 200) {
-        throw new Error("Create API key failure.");
+        throw new Error("创建API密钥失败。");
     }
     return response.data;
 }
@@ -28,7 +28,7 @@ export async function deleteAPIKey(userId) {
     const url = getUrl(`api/users/${userId}/api_key`);
     const response = await axios.delete(url);
     if (response.status !== 204) {
-        throw new Error("Delete API Key failure.");
+        throw new Error("删除API密钥失败。");
     }
 }
 

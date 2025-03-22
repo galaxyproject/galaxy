@@ -78,7 +78,7 @@ function onReviewItems() {
         <template v-slot:footer>
             <div v-if="!loading">
                 <BAlert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
-                    <h2 class="alert-heading h-sm">Failed to retrieve details.</h2>
+                    <h2 class="alert-heading h-sm">获取详细信息失败。</h2>
                     {{ errorMessage }}
                 </BAlert>
                 <BLink
@@ -87,10 +87,10 @@ function onReviewItems() {
                     class="card-link"
                     data-test-id="review-link"
                     @click="onReviewItems">
-                    <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
+                    <b>{{ localize("审核并清理") }} {{ summary.niceTotalSize }}</b>
                 </BLink>
                 <b v-else class="text-secondary" data-test-id="no-items-indicator">
-                    {{ localize("No items to clear") }}
+                    {{ localize("没有可清理的项目") }}
                 </b>
             </div>
         </template>

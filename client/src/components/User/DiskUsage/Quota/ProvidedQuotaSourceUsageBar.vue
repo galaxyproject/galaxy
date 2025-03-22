@@ -36,7 +36,7 @@ export default {
     },
     data() {
         return {
-            loadingMessage: "Loading storage location information",
+            loadingMessage: "正在加载存储位置信息",
         };
     },
 };

@@ -1,13 +1,10 @@
 <template>
     <section class="external-id">
         <b-alert :show="!!connectExternal" variant="info">
-            You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
-            >, to your preferred external provider.
+            您已登录。现在可以将电子邮箱为 <i>{{ userEmail }}</i> 的Galaxy用户账户与您首选的外部提供商关联。
         </b-alert>
         <b-alert :show="!!existingEmail" variant="warning">
-            Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
-            >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
-            this identity to a different account, you will need to disconnect it from this account first.
+            注意：我们发现一个与此身份邮箱 <i>{{ existingEmail }}</i> 匹配的Galaxy账户。当前账户 <i>{{ userEmail }}</i> 已关联到此外部身份。如果您希望将此身份关联到其他账户，需要先将其与当前账户断开连接。
         </b-alert>
         <header>
             <b-alert
@@ -20,33 +17,28 @@
             >
 
             <hgroup class="external-id-title">
-                <h1 class="h-lg">Manage External Identities</h1>
+                <h1 class="h-lg">管理外部身份</h1>
             </hgroup>
 
             <p>
-                Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
-                account with their 3rd party identities. For instance, if a user associates their Galaxy account with
-                their Google account, then they can log in to Galaxy either using their Galaxy username and password, or
-                their Google account. Whichever method they use they will be assuming same Galaxy user account, hence
-                having access to the same histories, workflows, datasets, libraries, etc.
+                拥有现有Galaxy用户账户（如通过Galaxy用户名和密码创建）的用户可以将其账户与第三方身份关联。例如，如果用户将其Galaxy账户与Google账户关联，那么他们可以使用Galaxy用户名和密码登录，也可以使用Google账户登录。无论使用哪种方法，他们都将使用相同的Galaxy用户账户，因此可以访问相同的历史记录、工作流、数据集、库等。
             </p>
 
             <p>
-                See more information, including a list of supported identity providers,
-                <a href="https://galaxyproject.org/authnz/use/oidc/">here</a>.
+                查看更多信息，包括支持的身份提供商列表，请点击<a href="https://galaxyproject.org/authnz/use/oidc/">这里</a>。
             </p>
         </header>
 
         <div v-if="items.length" class="external-subheading">
-            <h2 class="h-md">Connected External Identities</h2>
+            <h2 class="h-md">已连接的外部身份</h2>
             <b-button
                 v-for="item in items"
                 :key="item.email"
-                aria-label="Disconnect External Identity"
-                title="Disconnect External Identity"
+                aria-label="断开外部身份连接"
+                title="断开外部身份连接"
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
-                Disconnect {{ capitalizeAsTitle(item.provider_label) }} -
+                断开连接 {{ capitalizeAsTitle(item.provider_label) }} -
                 {{ item.email }}
             </b-button>
 
@@ -54,7 +46,7 @@
                 id="disconnectIDModal"
                 ref="deleteModal"
                 centered
-                title="Disconnect Identity?"
+                title="断开身份连接？"
                 size="sm"
                 @ok="disconnectID"
                 @cancel="doomedItem = null"></b-modal>
@@ -63,14 +55,11 @@
                 id="disconnectAndResetModal"
                 ref="deleteAndResetModal"
                 centered
-                title="Deleting last external identity"
+                title="删除最后一个外部身份"
                 @ok="disconnectAndReset"
                 @cancel="doomedItem = null">
                 <p>
-                    This is your only defined external identity. If you delete this identity, you will be logged out. To
-                    log back in you will need to use a password associated with your account, or reconnect to this third
-                    party identity. If you don't know your Galaxy user password, you can reset it or contact an
-                    administrator for help.
+                    这是您唯一定义的外部身份。如果删除此身份，您将被登出。要重新登录，您需要使用与账户关联的密码，或重新连接到此第三方身份。如果您不知道Galaxy用户密码，可以重置密码或联系管理员寻求帮助。
                 </p>
             </b-modal>
 
@@ -85,7 +74,7 @@
         </div>
 
         <div v-if="enable_oidc" class="external-subheading">
-            <h2 class="h-md">Connect Other External Identities</h2>
+            <h2 class="h-md">连接其他外部身份</h2>
             <ExternalLogin />
         </div>
     </section>
@@ -168,7 +157,7 @@ export default {
                 .then((results) => {
                     this.items = results;
                 })
-                .catch(this.setError("Unable to load connected external identities."))
+                .catch(this.setError("无法加载已连接的外部身份。"))
                 .finally(() => (this.loading = false));
         },
         onDisconnect(doomed) {
@@ -181,14 +170,12 @@ export default {
                     // User is notified to reset password to use regular Galaxy login and avoid lockout
                     this.$refs.deleteAndResetModal.show();
                     this.setError(
-                        "Before disconnecting this identity, you need to set your account password, " +
-                            "in order to avoid being locked out of your account."
+                        "在断开此身份连接之前，您需要设置账户密码，以避免被锁定在账户之外。"
                     );
                 }
             } else {
                 this.setError(
-                    "Before disconnecting this identity, you need to set your account password, " +
-                        "in order to avoid being locked out of your account."
+                    "在断开此身份连接之前，您需要设置账户密码，以避免被锁定在账户之外。"
                 );
             }
         },
@@ -200,7 +187,7 @@ export default {
                 })
                 .catch((error) => {
                     if (error.data) {
-                        this.setError("Unable to disconnect external identity.");
+                        this.setError("无法断开外部身份连接。");
                     } else {
                         this.removeItem(this.doomedItem);
                     }

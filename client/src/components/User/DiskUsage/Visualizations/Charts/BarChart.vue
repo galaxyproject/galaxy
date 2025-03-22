@@ -18,14 +18,14 @@ interface BarChartProps {
 }
 
 const props = withDefaults(defineProps<BarChartProps>(), {
-    title: "Bar Chart",
+    title: "饼状图",
     description: undefined,
     width: 720,
     height: 400,
     enableTooltips: true,
     enableSelection: false,
     labelFormatter: (dataPoint?: DataValuePoint | null) =>
-        dataPoint ? `${dataPoint.label}: ${dataPoint.value}` : "No data",
+        dataPoint ? `${dataPoint.label}: ${dataPoint.value}` : "无数据",
     valueFormatter: (value: number) => `${value}`,
 });
 
@@ -327,13 +327,12 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
                 <div ref="legend" class="legend"></div>
                 <div v-if="selectedDataPoint" class="selection-info">
                     <slot name="selection" :data="selectedDataPoint">
-                        Selected: <b>{{ selectedDataPoint.label }}</b>
+                        已选择: <b>{{ selectedDataPoint.label }}</b>
                     </slot>
                 </div>
             </div>
-        </div>
         <div v-else class="text-center">
-            <p class="text-muted">No data to display. Populate some data and come back.</p>
+            <p class="text-muted">暂无数据可显示。请添加一些数据后再来查看。</p>
         </div>
         <div v-show="showTooltip" ref="chartTooltip" class="chart-tooltip">
             <slot name="tooltip" :data="tooltipDataPoint">

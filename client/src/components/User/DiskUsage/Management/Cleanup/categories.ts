@@ -18,15 +18,15 @@ export function useCleanupCategories() {
     const cleanupCategories = ref<CleanupCategory[]>([
         {
             id: "discarded_items",
-            name: localize("Discarded Items"),
+            name: localize("已丢弃项目"),
             operations: [
                 {
                     id: "deleted_datasets",
-                    name: localize("Deleted datasets"),
+                    name: localize("已删除的数据集"),
                     description: localize(
-                        "When you delete a dataset it's not immediately removed from the disk (so you can recover it later)." +
-                            " But this means it's still taking space until you permanently delete it." +
-                            " Here you can quickly find and remove those datasets to free up some space"
+                        "当您删除数据集时，它不会立即从磁盘中移除（以便您稍后可以恢复它）。" +
+                            "但这意味着它在您永久删除之前仍然占用空间。" +
+                            "在这里，您可以快速查找并移除这些数据集以释放一些空间"
                     ),
                     fetchSummary: fetchDiscardedDatasetsSummary,
                     fetchItems: fetchDiscardedDatasets,
@@ -34,11 +34,11 @@ export function useCleanupCategories() {
                 },
                 {
                     id: "deleted_histories",
-                    name: localize("Deleted histories"),
+                    name: localize("已删除的历史"),
                     description: localize(
-                        "When you delete a history it's not immediately removed from the disk (so you can recover it later)." +
-                            " But this means it's still taking space until you permanently delete it." +
-                            " Here you can quickly find and remove those histories to free up some space"
+                        "当您删除历史时，它不会立即从磁盘中移除（以便您稍后可以恢复它）。" +
+                            "但这意味着它在您永久删除之前仍然占用空间。" +
+                            "在这里，您可以快速查找并移除这些历史以释放一些空间"
                     ),
                     fetchSummary: fetchDiscardedHistoriesSummary,
                     fetchItems: fetchDiscardedHistories,
@@ -48,15 +48,15 @@ export function useCleanupCategories() {
         },
         {
             id: "archived_items",
-            name: localize("Archived Items"),
+            name: localize("已归档项目"),
             operations: [
                 {
                     id: "archived_histories",
-                    name: localize("Archived histories"),
+                    name: localize("已归档的历史"),
                     description: localize(
-                        "Archived histories are a good way to keep some of your important but not frequently used histories out of the way." +
-                            " But they can still take up space on the disk." +
-                            " Here you can quickly find and permanently remove those histories to free up some space"
+                        "归档历史是一种将您重要但不经常使用的历史保存在一旁的好方法。" +
+                            "但它们仍然会占用磁盘上的空间。" +
+                            "在这里，您可以快速查找并永久移除这些历史以释放一些空间"
                     ),
                     fetchSummary: fetchArchivedHistoriesSummary,
                     fetchItems: fetchArchivedHistories,

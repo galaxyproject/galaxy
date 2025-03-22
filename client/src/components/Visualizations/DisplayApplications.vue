@@ -8,7 +8,8 @@
                 "
                 variant="info"
                 show>
-                You can display your dataset with the following links:
+                <!-- You can display your dataset with the following links: -->
+                你可以显示您的数据集通过下面的链接:
                 <div class="p-2">
                     <ol>
                         <li v-for="(displayApp, displayKey) in dataset.display_apps" :key="displayKey">
@@ -31,7 +32,7 @@
                         </li>
                     </ol>
                 </div>
-                <div>or select a visualization from below.</div>
+                <div>或从下面选择一个可视化.</div>
             </b-alert>
         </DatasetProvider>
     </div>

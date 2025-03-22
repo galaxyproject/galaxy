@@ -14,19 +14,19 @@ export async function disconnectIdentity(doomed) {
 
         const response = await axios.delete(url);
         if (response.status != 200) {
-            throw new Error("Delete failure.");
+            throw new Error("删除失败。");
         }
     }
 }
 
-// Memoize results (basically never changes)
+// 缓存结果（基本不会改变）
 let identityProviders;
 
 export async function getIdentityProviders() {
     const url = getUrl("authnz");
     const response = await axios.get(url);
     if (response.status != 200) {
-        throw new Error("Unable to load connected external identities");
+        throw new Error("无法加载关联的外部身份");
     }
     identityProviders = response.data;
     return identityProviders;

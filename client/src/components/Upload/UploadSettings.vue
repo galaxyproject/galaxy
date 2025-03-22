@@ -31,7 +31,7 @@ const emit = defineEmits(["input"]);
 </script>
 
 <template>
-    <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click">
+    <Popper placement="bottom" title="上传配置" mode="primary-title" trigger="click">
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>
@@ -40,18 +40,18 @@ const emit = defineEmits(["input"]);
                 <tbody>
                     <UploadOption
                         class="upload-space-to-tab"
-                        title="Convert spaces to tabs"
+                        title="将空格转换为制表符"
                         :value="spaceToTab"
                         @click="emit('input', 'spaceToTab')" />
                     <UploadOption
                         class="upload-to-posix-lines"
-                        title="Use POSIX standard"
+                        title="使用POSIX标准"
                         :value="toPosixLines"
                         @click="emit('input', 'toPosixLines')" />
                     <UploadOption
                         v-if="deferred !== null"
                         class="upload-deferred"
-                        title="Defer dataset resolution"
+                        title="延迟数据集解析"
                         :value="deferred"
                         @click="emit('input', 'deferred')" />
                 </tbody>

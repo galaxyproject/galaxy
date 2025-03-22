@@ -33,17 +33,17 @@ async function init() {
     loading.value = false;
 }
 
-const title = "Set Dataset Permissions for New Histories";
+const title = "为新历史记录设置数据集权限";
 
 const formConfig = computed(() => {
     return {
         title: title,
         id: "edit-preferences-permissions",
         description:
-            "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
+            "为其他用户授予对新创建历史记录的默认访问权限。在这里所做的更改只会影响这些设置保存后创建的历史记录。",
         url: inputsUrl.value,
         icon: "fa-users",
-        submitTitle: "Save Permissions",
+        submitTitle: "保存权限",
         redirect: "/user",
     };
 });

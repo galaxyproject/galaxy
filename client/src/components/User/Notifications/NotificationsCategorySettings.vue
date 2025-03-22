@@ -12,11 +12,11 @@ import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
 
 const categoryDescriptionMap: Record<NotificationCategory, string> = {
     message: `
-        You will receive these notifications only when your Galaxy administrators send you a message.
-        Please note that for certain critical or urgent messages, you will receive notifications even if you have disabled this channel.
+        只有当 Galaxy 管理员向您发送消息时，您才会收到这些通知。
+        请注意，对于某些关键或紧急的消息，即使您已禁用此通知渠道，您仍会收到通知。
     `,
     new_shared_item:
-        "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+        "当有人与您共享一个项目（例如历史记录、工作流、可视化等）时，您将收到这些通知。",
 };
 
 interface NotificationsCategorySettingsProps {
@@ -33,7 +33,7 @@ const emit = defineEmits<{
 }>();
 
 const isCategoryEnabled = ref(props.preferences[props.category]!.enabled);
-const checkBoxTitle = computed(() => (isCategoryEnabled.value ? "Disable notifications" : "Enable notifications"));
+const checkBoxTitle = computed(() => (isCategoryEnabled.value ? "禁用通知" : "启用通知"));
 const categoryDescription = computed(() => categoryDescriptionMap[props.category]);
 
 watch(

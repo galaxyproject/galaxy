@@ -83,7 +83,7 @@ async function updateNotificationsPreferences() {
     }
 
     notificationsPreferences.value = data.preferences;
-    Toast.success("Notifications preferences updated");
+    Toast.success("通知偏好更新成功");
 }
 
 async function onTogglePushNotifications() {
@@ -118,15 +118,15 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             size="xl"
             class="notifications-preferences-header"
             :class="headerSize">
-            Manage notifications preferences
+            管理通知首选项
         </Heading>
 
         <div v-if="config.enable_notification_system" v-localize class="notifications-preferences-description">
-            You can manage notifications channels and preferences here.
+            您可以在此处管理通知渠道和首选项。
         </div>
 
         <div v-else v-localize class="notifications-preferences-description">
-            You can manage push notifications preferences here.
+            您可以在此处管理推送通知首选项。
         </div>
 
         <BAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
@@ -134,7 +134,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
         </BAlert>
 
         <BAlert v-if="loading" class="m-2" show variant="info">
-            <LoadingSpan message="Loading notifications preferences" />
+            <LoadingSpan message="正在加载通知首选项" />
         </BAlert>
 
         <div v-else-if="showPreferences" class="notifications-preferences-body">
@@ -151,13 +151,13 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
         <div
             v-if="!loading && browserSupportsPushNotifications() && !pushNotificationsGranted"
             class="card-container push-notifications-notice">
-            Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
+            允许推送和标签通知。若要禁用，请在浏览器中撤销站点通知权限。
             <BButton
                 v-b-tooltip.hover
                 class="mx-2"
-                title="Enable push notifications"
+                title="启用推送通知"
                 @click="onTogglePushNotifications">
-                Enable push notifications
+                启用推送通知
             </BButton>
         </div>
 
@@ -167,18 +167,17 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             variant="info"
             class="my-2">
             <FontAwesomeIcon :icon="faCheckCircle" />
-            Push notifications are enabled. You can disable them by revoking the site notification privilege in your
-            browser.
+            推送通知已启用。您可以通过在浏览器中撤销站点通知权限来禁用它们。
         </BAlert>
 
         <BAlert v-else-if="!loading" show variant="warning" class="my-2">
             <FontAwesomeIcon :icon="faExclamationCircle" />
-            Push notifications are not supported by this browser. You can still receive in-app notifications.
+            此浏览器不支持推送通知。您仍然可以接收应用内通知。
         </BAlert>
 
         <div v-if="!loading && config.enable_notification_system" class="d-flex justify-content-center">
             <AsyncButton :action="updateNotificationsPreferences" :icon="faSave" variant="primary" size="md">
-                <span v-localize>Save</span>
+                <span v-localize>保存</span>
             </AsyncButton>
         </div>
     </section>

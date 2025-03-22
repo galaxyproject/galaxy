@@ -1,22 +1,22 @@
 <template>
     <b-container fluid class="p-0">
-        <h1 v-localize class="h-lg">User preferences</h1>
+        <h1 v-localize class="h-lg">用户偏好设置</h1>
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
         <p>
-            <span v-localize>You are signed in as</span>
+            <span v-localize>您已登录为</span>
             <strong id="user-preferences-current-email">{{ email }}</strong>
-            <span v-localize>and you are using</span>
+            <span v-localize>并且您正在使用</span>
             <strong>{{ diskUsage }}</strong>
-            <span v-localize>of disk space.</span>
-            <span v-localize>If this is more than expected, please visit the</span>
+            <span v-localize>的磁盘空间。</span>
+            <span v-localize>如果使用量超出预期，请访问</span>
             <router-link id="edit-preferences-cloud-auth" to="/storage">
-                <b v-localize>Storage Dashboard</b>
+                <b v-localize>存储控制面板</b>
             </router-link>
-            <span v-localize>to free up disk space.</span>
+            <span v-localize>以释放磁盘空间。</span>
             <span v-if="enableQuotas">
-                <span v-localize>Your disk quota is:</span>
+                <span v-localize>您的磁盘配额是：</span>
                 <strong>{{ diskQuota }}</strong
                 >.
             </span>
@@ -33,39 +33,39 @@
             v-if="isConfigLoaded && !config.single_user"
             id="edit-preferences-permissions"
             icon="fa-users"
-            title="Set Dataset Permissions for New Histories"
-            description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+            title="设置新历史记录的数据集权限"
+            description="为新创建的历史记录授予他人默认访问权限。这里所做的更改只会影响在存储这些设置后创建的历史记录。"
             to="/user/permissions" />
         <UserPreferencesElement
             id="edit-preferences-api-key"
             icon="fa-key"
-            title="Manage API Key"
-            description="Access your current API key or create a new one."
+            title="管理API密钥"
+            description="访问您当前的API密钥或创建一个新的密钥。"
             to="/user/api_key" />
         <UserPreferencesElement
             id="edit-preferences-notifications"
             icon="fa-bell"
-            title="Manage Notifications"
-            description="Manage your notification settings."
+            title="管理通知"
+            description="管理您的通知设置。"
             to="/user/notifications/preferences" />
         <UserPreferencesElement
             v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
             icon="fa-id-card-o"
-            title="Manage Third-Party Identities"
-            description="Connect or disconnect access to your third-party identities."
+            title="管理第三方身份"
+            description="连接或断开与第三方身份的访问。"
             to="/user/external_ids" />
         <UserPreferencesElement
             id="edit-preferences-custom-builds"
             icon="fa-cubes"
-            title="Manage Custom Builds"
-            description="Add or remove custom builds using history datasets."
+            title="管理自定义构建"
+            description="使用历史数据集添加或移除自定义构建。"
             to="/custom_builds" />
         <UserPreferencesElement
             v-if="hasThemes"
             icon="fa-palette"
-            title="Pick a Color Theme"
-            description="Click here to change the user interface color theme."
+            title="选择颜色主题"
+            description="点击此处更改用户界面颜色主题。"
             @click="toggleTheme = !toggleTheme">
             <b-collapse v-model="toggleTheme">
                 <ThemeSelector />
@@ -75,8 +75,8 @@
             v-if="isConfigLoaded && !config.single_user"
             id="edit-preferences-make-data-private"
             icon="fa-lock"
-            title="Make All Data Private"
-            description="Click here to make all data private."
+            title="将所有数据设为私有"
+            description="点击此处将所有数据设为私有。"
             @click="makeDataPrivate" />
         <UserBeaconSettings v-if="isConfigLoaded && config.enable_beacon_integration" :user-id="userId">
         </UserBeaconSettings>
@@ -90,16 +90,16 @@
             id="manage-object-stores"
             class="manage-object-stores"
             icon="fa-hdd"
-            title="Manage Your Storage Locations"
-            description="Add, remove, or update your personally configured storage locations."
+            title="管理您的存储位置"
+            description="添加、删除或更新您个人配置的存储位置。"
             to="/object_store_instances/index" />
         <UserPreferencesElement
             v-if="hasFileSourceTemplates"
             id="manage-file-sources"
             class="manage-file-sources"
             icon="fa-file"
-            title="Manage Your Remote File Sources"
-            description="Add, remove, or update your personally configured location to find files from and write files to."
+            title="管理您的远程文件源"
+            description="添加、删除或更新您个人配置的查找文件和写入文件的位置。"
             to="/file_source_instances/index" />
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
@@ -110,29 +110,29 @@
             v-if="hasLogout"
             id="edit-preferences-sign-out"
             icon="fa-sign-out"
-            title="Sign Out"
-            description="Click here to sign out of all sessions."
+            title="退出登录"
+            description="点击此处退出所有会话。"
             @click="showLogoutModal = true" />
-        <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
+        <b-modal v-model="showDataPrivateModal" title="数据集现已设为私有" title-class="font-weight-bold" ok-only>
             <span v-localize>
-                All of your histories and datasets have been made private. If you'd like to make all *future* histories
-                private please use the
+                您所有的历史记录和数据集已被设为私有。如果您希望将所有*未来*的历史记录设为私有，请使用
             </span>
-            <a :href="userPermissionsUrl">User Permissions</a>
-            <span v-localize>interface</span>.
+            <a :href="userPermissionsUrl">用户权限</a>
+            <span v-localize>界面</span>.
         </b-modal>
         <b-modal
             v-model="showLogoutModal"
-            title="Sign out"
+            title="退出登录"
             title-class="font-weight-bold"
-            ok-title="Sign out"
+            ok-title="退出登录"
             @ok="signOut">
-            <span v-localize> Do you want to continue and sign out of all active sessions? </span>
+            <span v-localize> 您确定要继续并退出所有活动会话吗？ </span>
         </b-modal>
     </b-container>
 </template>
 
 <script>
+// 脚本部分保持不变
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -254,28 +254,22 @@ export default {
                 Notification.requestPermission().then(function (permission) {
                     //If the user accepts, let's create a notification
                     if (permission === "granted") {
-                        new Notification("Notifications enabled", {
+                        new Notification("通知已启用", {
                             icon: "static/favicon.ico",
                         });
                     } else {
-                        alert("Notifications disabled, please re-enable through browser settings.");
+                        alert("通知已禁用，请通过浏览器设置重新启用。");
                     }
                 });
             } else {
-                alert("Notifications are not supported by this browser.");
+                alert("此浏览器不支持通知功能。");
             }
         },
         makeDataPrivate() {
             if (
                 confirm(
                     _l(
-                        "WARNING: This will make all datasets (excluding library datasets) for which you have " +
-                            "'management' permissions, in all of your histories " +
-                            "private (including archived and purged), and will set permissions such that all " +
-                            "of your new data in these histories is created as private.  Any " +
-                            "datasets within that are currently shared will need " +
-                            "to be re-shared or published.  Are you sure you " +
-                            "want to do this?"
+                        "警告：这将使您在所有历史记录（包括已归档和已清除的）中具有\"管理\"权限的所有数据集（不包括库数据集）变为私有，并将设置权限，使得在这些历史记录中创建的所有新数据都设为私有。任何当前共享的数据集都需要重新共享或发布。您确定要这样做吗？"
                     )
                 )
             ) {

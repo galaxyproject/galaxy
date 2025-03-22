@@ -20,14 +20,14 @@ const props = withDefaults(defineProps<RecoverableItemSizeTooltipProps>(), {
     isArchived: false,
 });
 
-const label = computed(() => props.data?.label ?? "No data");
+const label = computed(() => props.data?.label ?? "暂无数据");
 const prettySize = computed(() => bytesToString(props.data?.value ?? 0));
 </script>
 <template>
     <div>
         <div class="h-md mx-2">{{ label }}</div>
         <b class="h-md m-2">{{ prettySize }}</b>
-        <div v-if="isArchived" class="text-muted mx-2"><FontAwesomeIcon icon="archive" /> This item is archived</div>
-        <div v-if="isRecoverable" class="text-muted mx-2">Recoverable storage space</div>
+        <div v-if="isArchived" class="text-muted mx-2"><FontAwesomeIcon icon="archive" /> 此项目已归档</div>
+        <div v-if="isRecoverable" class="text-muted mx-2">可恢复的存储空间</div>
     </div>
 </template>

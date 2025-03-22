@@ -80,7 +80,6 @@ function toggleCILogon(idp: string) {
     toggleCilogon.value = !toggleCilogon.value;
     cilogonOrCustos.value = toggleCilogon.value ? idp : null;
 }
-
 async function submitOIDCLogin(idp: string) {
     loading.value = true;
 
@@ -99,7 +98,7 @@ async function submitOIDCLogin(idp: string) {
         }
     } catch (e) {
         messageVariant.value = "danger";
-        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
+        messageText.value = errorMessageAsString(e, "未知原因导致登录失败。");
     } finally {
         loading.value = false;
     }
@@ -112,7 +111,7 @@ async function submitCILogon(idp: string | null) {
 
     if (!selected.value || !idp) {
         messageVariant.value = "danger";
-        messageText.value = "Please select an institution.";
+        messageText.value = "请选择一个机构。";
         return;
     }
 
@@ -128,7 +127,7 @@ async function submitCILogon(idp: string | null) {
         }
     } catch (e) {
         messageVariant.value = "danger";
-        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
+        messageText.value = errorMessageAsString(e, "未知原因导致登录失败。");
     } finally {
         loading.value = false;
     }
@@ -162,7 +161,7 @@ async function getCILogonIdps() {
         const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
         const message = error.response?.data && error.response.data.err_msg;
-        messageText.value = message || "Failed to fetch CILogon IdPs.";
+        messageText.value = message || "无法获取CILogon身份提供商。";
     }
 }
 
@@ -192,10 +191,10 @@ function getIdpPreference() {
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="props.loginPage">
                     <!--Only Display if CILogon/Custos is configured-->
-                    <BFormGroup label="Use existing institutional login">
+                    <BFormGroup label="使用现有的机构登录">
                         <Multiselect
                             v-model="selected"
-                            placeholder="Select your institution"
+                            placeholder="选择您的机构"
                             :options="cILogonIdps"
                             label="DisplayName"
                             :deselect-label="null"
@@ -205,7 +204,7 @@ function getIdpPreference() {
 
                     <BFormGroup v-if="props.loginPage">
                         <BFormCheckbox id="remember-idp" v-model="rememberIdp">
-                            Remember institution selection
+                            记住机构选择
                         </BFormCheckbox>
                     </BFormGroup>
 
@@ -213,30 +212,30 @@ function getIdpPreference() {
                         v-if="cILogonEnabled"
                         :disabled="loading || selected === null"
                         @click="submitCILogon('cilogon')">
-                        <LoadingSpan v-if="loading" message="Signing In" />
-                        <span v-else>Sign in with Institutional Credentials*</span>
+                        <LoadingSpan v-if="loading" message="正在登录" />
+                        <span v-else>使用机构凭证登录*</span>
                     </BButton>
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                     <BButton
                         v-if="Object.prototype.hasOwnProperty.call(oIDCIdps, 'custos')"
                         :disabled="loading || selected === null"
                         @click="submitCILogon('custos')">
-                        <LoadingSpan v-if="loading" message="Signing In" />
-                        <span v-else>Sign in with Custos*</span>
+                        <LoadingSpan v-if="loading" message="正在登录" />
+                        <span v-else>使用Custos登录*</span>
                     </BButton>
                 </div>
 
                 <div v-else>
                     <BButton v-if="cILogonEnabled" @click="toggleCILogon('cilogon')">
-                        Sign in with Institutional Credentials*
+                        使用机构凭证登录*
                     </BButton>
 
-                    <BButton v-if="custosEnabled" @click="toggleCILogon('custos')">Sign in with Custos*</BButton>
+                    <BButton v-if="custosEnabled" @click="toggleCILogon('custos')">使用Custos登录*</BButton>
 
                     <BFormGroup v-if="toggleCilogon">
                         <Multiselect
                             v-model="selected"
-                            placeholder="Select your institution"
+                            placeholder="选择您的机构"
                             :options="cILogonIdps"
                             label="DisplayName"
                             :deselect-label="null"
@@ -247,17 +246,17 @@ function getIdpPreference() {
                             v-if="toggleCilogon"
                             :disabled="loading || selected === null"
                             @click="submitCILogon(cilogonOrCustos)">
-                            Login*
+                            登录*
                         </BButton>
                     </BFormGroup>
                 </div>
 
                 <p class="mt-3">
                     <small class="text-muted">
-                        * Galaxy uses CILogon via Custos to enable you to log in from this organization. By clicking
-                        'Sign In', you agree to the
-                        <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy and you agree to
-                        share your username, email address, and affiliation with CILogon, Custos, and Galaxy.
+                        * Galaxy通过Custos使用CILogon使您能够从此机构登录。点击
+                        '登录'，即表示您同意
+                        <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> 隐私政策，并且同意
+                        与CILogon、Custos和Galaxy共享您的用户名、电子邮件地址和所属机构。
                     </small>
                 </p>
             </div>
@@ -272,19 +271,20 @@ function getIdpPreference() {
                     <span v-else-if="iDPInfo['custom_button_text']">
                         <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
-                            Sign in with {{ iDPInfo["custom_button_text"] }}
+                            使用{{ iDPInfo["custom_button_text"] }}登录
                         </BButton>
                     </span>
                     <span v-else>
                         <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
-                            Sign in with
+                            使用
                             <span v-if="iDPInfo['label']">
                                 {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
                             </span>
                             <span v-else>
                                 {{ capitalizeFirstLetter(idp) }}
                             </span>
+                            登录
                         </BButton>
                     </span>
                 </div>

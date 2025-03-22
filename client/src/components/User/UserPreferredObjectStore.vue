@@ -10,7 +10,7 @@
                 ><b v-localize>{{ title }}</b></a
             >
             <div v-localize class="form-text text-muted">
-                Select a {{ preferredOrEmptyString }} storage location for the outputs of new jobs.
+                为新任务的输出选择{{ preferredOrEmptyString }}存储位置。
             </div>
             <BModal
                 id="modal-select-preferred-object-store"
@@ -69,14 +69,14 @@ export default {
         return {
             error: null,
             popoverPlacement: "left",
-            newDatasetsDescription: "New dataset outputs from tools and workflows",
+            newDatasetsDescription: "来自工具和工作流的新数据集输出",
             titleTag: "h3",
             modalSize: "sm",
             showModal: false,
             selectedObjectStoreId: this.preferredObjectStoreId,
-            galaxySelectionDefaultTitle: "Use Galaxy Defaults",
+            galaxySelectionDefaultTitle: "使用Galaxy默认设置",
             galaxySelectionDefaultDescription:
-                "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
+                "选择此项将重置Galaxy为由管理员配置的默认行为。",
         };
     },
     computed: {
@@ -85,11 +85,11 @@ export default {
             if (this.config?.object_store_always_respect_user_selection) {
                 return "";
             } else {
-                return "Preferred";
+                return "首选";
             }
         },
         title() {
-            return `${this.preferredOrEmptyString} Storage Location`;
+            return `${this.preferredOrEmptyString}存储位置`;
         },
     },
     methods: {

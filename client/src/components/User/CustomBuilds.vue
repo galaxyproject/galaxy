@@ -2,7 +2,7 @@
     <b-container>
         <b-row>
             <b-col>
-                <h1 class="h-sm">Current Custom Builds</h1>
+                <h1 class="h-sm">当前自定义基因组</h1>
             </b-col>
         </b-row>
         <b-row>
@@ -12,7 +12,7 @@
                         <a
                             v-b-tooltip.bottom.hover
                             href="javascript:void(0)"
-                            title="Delete build"
+                            title="删除基因组"
                             @click="deleteBuild(row.item.id)">
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
@@ -23,7 +23,7 @@
         <template v-if="installedBuilds.length > 0">
             <b-row class="mt-2">
                 <b-col>
-                    <h2 class="h-sm">System Installed Builds</h2>
+                    <h2 class="h-sm">系统安装的基因组</h2>
                 </b-col>
             </b-row>
             <b-row>
@@ -42,7 +42,7 @@
         </template>
         <b-row>
             <b-col>
-                <h2 class="h-sm">Add a Custom Build</h2>
+                <h2 class="h-sm">添加自定义基因组</h2>
             </b-col>
         </b-row>
         <b-row>
@@ -59,13 +59,13 @@
                     </b-alert>
 
                     <b-form @submit.prevent="save">
-                        <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
+                        <b-form-group label="名称" description="指定基因组名称，例如：仓鼠。" label-for="name">
                             <b-form-input id="name" v-model="form.name" tour_id="name" required />
                         </b-form-group>
-                        <b-form-group label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
+                        <b-form-group label="键值" description="指定基因组键值，例如：hamster_v1。" label-for="id">
                             <b-form-input id="id" v-model="form.id" tour_id="id" required />
                         </b-form-group>
-                        <b-form-group label="Definition" description="Provide the data source." label-for="type">
+                        <b-form-group label="定义" description="提供数据源。" label-for="type">
                             <b-form-select
                                 id="type"
                                 v-model="selectedDataSource"
@@ -73,14 +73,14 @@
                                 :options="dataSources"></b-form-select>
                         </b-form-group>
                         <div>
-                            <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA-file">
+                            <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA文件">
                                 <b-form-select
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
                                     :disabled="fastaFilesSelectDisabled"></b-form-select>
                             </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
-                                <b-form-file placeholder="Choose a file..." @change="readFile" />
+                            <b-form-group v-if="selectedDataSource === 'file'" label="Len文件">
+                                <b-form-file placeholder="选择文件..." @change="readFile" />
                                 <b-progress
                                     v-show="fileLoaded !== 0"
                                     animated
@@ -89,7 +89,7 @@
                                     :max="maxFileSize" />
                                 <b-form-textarea v-show="form.file" :value="form.file" />
                             </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
+                            <b-form-group v-if="selectedDataSource === 'text'" label="编辑/粘贴">
                                 <b-form-textarea id="len-file-text-area" v-model="form.text" />
                             </b-form-group>
                         </div>
@@ -99,20 +99,19 @@
                             v-b-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
-                            title="Create new build">
-                            <i class="icon fa fa-save" /> Save
+                            title="创建新基因组">
+                            <i class="icon fa fa-save" /> 保存
                         </b-button>
                     </b-form>
                 </b-card>
             </b-col>
             <b-col>
                 <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
-                    <h2 class="h-sm">FASTA format</h2>
+                    <h2 class="h-sm">FASTA格式</h2>
                     <p class="card-text">
-                        This is a multi-fasta file from your current history that provides the genome sequences for each
-                        chromosome/contig in your build.
+                        这是一个来自您当前历史记录的多FASTA文件，它为您基因组中的每个染色体/片段提供基因组序列。
                     </p>
-                    <p class="card-text">Here is a snippet from an example multi-fasta file:</p>
+                    <p class="card-text">以下是多FASTA文件的示例片段：</p>
                     <pre class="card-text">
 &gt;chr1
 ATTATATATAAGACCACAGAGAGAATATTTTGCCCGG...
@@ -124,10 +123,10 @@ GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
                     >
                 </b-card>
                 <b-card v-else class="alert-info">
-                    <h2 class="h-sm">Length Format</h2>
-                    <p class="card-text">The length format is two-column, separated by whitespace, of the form:</p>
-                    <pre class="card-text">chrom/contig   length of chrom/contig</pre>
-                    <p class="card-text">For example, the first few entries of <em>mm9.len</em> are as follows:</p>
+                    <h2 class="h-sm">长度格式</h2>
+                    <p class="card-text">长度格式由两列组成，以空格分隔，格式如下：</p>
+                    <pre class="card-text">染色体/片段   染色体/片段的长度</pre>
+                    <p class="card-text">例如，<em>mm9.len</em>的前几个条目如下：</p>
                     <pre class="card-text">
 chr1    197195432
 chr2    181748087
@@ -136,9 +135,7 @@ chr4    155630120
 chr5    152537259</pre
                     >
                     <p class="card-text">
-                        Trackster uses this information to populate the select box for chrom/contig, andto set the
-                        maximum basepair of the track browser. You may either upload a .len fileof this format (Len File
-                        option), or directly enter the information into the box (Len Entry option).
+                        Trackster使用此信息填充染色体/片段的选择框，并设置轨道浏览器的最大碱基对。您可以上传此格式的.len文件（Len文件选项），或直接在框中输入信息（Len条目选项）。
                     </p>
                 </b-card>
             </b-col>
@@ -170,9 +167,9 @@ export default {
             maxFileSize: 100,
             fileLoaded: 0,
             fields: [
-                { key: "name", label: "Name" },
-                { key: "id", label: "Key" },
-                { key: "count", label: "Number of chroms/contigs" },
+                { key: "name", label: "名称" },
+                { key: "id", label: "键值" },
+                { key: "count", label: "染色体/片段数量" },
                 { key: "action", label: "" },
             ],
             customBuilds: [],
@@ -187,9 +184,9 @@ export default {
                 text: "",
             },
             dataSources: [
-                { value: "fasta", text: "FASTA-file from history" },
-                { value: "file", text: "Len-file from disk" },
-                { value: "text", text: "Len-file by copy/paste" },
+                { value: "fasta", text: "来自历史记录的FASTA文件" },
+                { value: "file", text: "来自磁盘的Len文件" },
+                { value: "text", text: "通过复制/粘贴的Len文件" },
             ],
             selectedDataSource: "fasta",
             fastaFilesLoading: true,
@@ -268,7 +265,7 @@ export default {
                 "len|value": this.lengthValue,
             };
             if (!data.id.trim() || !data.name.trim() || !data["len|value"].trim()) {
-                this.showAlert("danger", "All inputs are required.");
+                this.showAlert("danger", "所有输入都是必需的。");
                 return false;
             }
             axios
@@ -277,13 +274,13 @@ export default {
                     if (response.data.message) {
                         this.showAlert("warning", response.data.message);
                     } else {
-                        this.showAlert("success", "Successfully added a new custom build.");
+                        this.showAlert("success", "成功添加新的自定义基因组。");
                     }
                     this.loadCustomBuilds();
                 })
                 .catch((error) => {
                     const message = error.response.data.err_msg;
-                    this.showAlert("danger", message || "Failed to create custom build.");
+                    this.showAlert("danger", message || "创建自定义基因组失败。");
                 });
         },
         deleteBuild(id) {
@@ -294,7 +291,7 @@ export default {
                 })
                 .catch((error) => {
                     const message = error.response.data.err_msg;
-                    this.showAlert("danger", message || "Failed to delete custom build.");
+                    this.showAlert("danger", message || "删除自定义基因组失败。");
                 });
         },
         readFile(event) {

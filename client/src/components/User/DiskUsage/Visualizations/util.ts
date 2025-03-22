@@ -45,22 +45,22 @@ export function useDatasetsToDisplay() {
             if (dataset && !result.deleted) {
                 dataset.deleted = result.deleted;
                 datasetsSizeSummaryMap.set(datasetId, dataset);
-                successToast(localize("Dataset undeleted successfully."));
+                successToast(localize("数据集恢复成功。"));
                 reloadData();
             }
         } catch (error) {
-            errorToast(`${error}`, localize("An error occurred while undeleting the dataset."));
+            errorToast(`${error}`, localize("恢复数据集时发生错误。"));
         }
     }
 
     async function onPermanentlyDeleteDataset(reloadData: DataReload, datasetId: string) {
         const confirmed = await confirm(
-            localize("Are you sure you want to permanently delete this dataset? This action cannot be undone."),
+            localize("您确定要永久删除此数据集吗？此操作无法撤消。"),
             {
-                title: localize("Permanently delete dataset?"),
+                title: localize("永久删除数据集？"),
                 okVariant: "danger",
-                okTitle: localize("Permanently delete"),
-                cancelTitle: localize("Cancel"),
+                okTitle: localize("永久删除"),
+                cancelTitle: localize("取消"),
             }
         );
         if (!confirmed) {
@@ -71,11 +71,11 @@ export function useDatasetsToDisplay() {
             const dataset = datasetsSizeSummaryMap.get(datasetId);
             if (dataset && result) {
                 datasetsSizeSummaryMap.delete(datasetId);
-                successToast(localize("Dataset permanently deleted successfully."));
+                successToast(localize("数据集已成功永久删除。"));
                 reloadData();
             }
         } catch (error) {
-            errorToast(`${error}`, localize("An error occurred while permanently deleting the dataset."));
+            errorToast(`${error}`, localize("永久删除数据集时发生错误。"));
         }
     }
 

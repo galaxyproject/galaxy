@@ -36,8 +36,8 @@ watch(
     }
 );
 fetch();
-const loadingMessage = "Loading storage location details";
-const forWhat = "This storage location is";
+const loadingMessage = "正在加载存储位置详情";
+const forWhat = "此存储位置是";
 </script>
 
 <template>

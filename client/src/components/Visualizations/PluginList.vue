@@ -15,7 +15,7 @@
                             <td>
                                 <img
                                     v-if="plugin.logo"
-                                    alt="ui thumbnails"
+                                    alt="界面缩略图"
                                     class="plugin-list-image"
                                     :src="absPath(plugin.logo)" />
                                 <div v-else class="plugin-list-icon fa fa-eye" />
@@ -47,8 +47,7 @@
                                     </button>
                                 </div>
                                 <div v-else v-localize class="alert alert-danger">
-                                    There is no suitable dataset in your current history which can be visualized with
-                                    this plugin.
+                                    当前历史记录中没有适合使用此插件可视化的数据集。
                                 </div>
                             </td>
                         </tr>
@@ -85,9 +84,9 @@ export default {
             name: null,
             error: null,
             fixed: false,
-            titleSearchVisualizations: _l("search visualizations"),
-            titleCreateVisualization: _l("Create Visualization"),
-            titleSelectDataset: _l("Select a dataset to visualize:"),
+            titleSearchVisualizations: _l("搜索可视化"),
+            titleCreateVisualization: _l("创建可视化"),
+            titleSelectDataset: _l("选择要可视化的数据集："),
         };
     },
     created() {
@@ -131,7 +130,7 @@ export default {
                             this.error = this._errorMessage(e);
                         });
                 } else {
-                    this.error = "This option requires an accessible history.";
+                    this.error = "此选项需要可访问的历史记录。";
                 }
             }
         },
@@ -150,7 +149,7 @@ export default {
         },
         _errorMessage(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for an unknown reason.";
+            return message || "请求因未知原因失败。";
         },
     },
 };

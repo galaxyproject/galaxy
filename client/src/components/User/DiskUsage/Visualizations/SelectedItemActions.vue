@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<SelectedItemActionsProps>(), {
 
 library.add(faArchive, faChartBar, faInfoCircle, faLocationArrow, faTrash, faUndo);
 
-const label = computed(() => props.data?.label ?? "No data");
+const label = computed(() => props.data?.label ?? "无数据");
 const prettySize = computed(() => bytesToString(props.data?.value ?? 0));
 const viewDetailsIcon = computed(() => (props.itemType === "history" ? "chart-bar" : "info-circle"));
 const canSetAsCurrent = computed(() => props.itemType === "history" && props.data.id !== currentHistoryId);
@@ -71,12 +71,11 @@ function onPermanentlyDeleteItem() {
             <b>{{ label }}</b>
         </div>
         <div class="text-muted mx-2">
-            <span v-if="isArchived"><FontAwesomeIcon icon="archive" /> This {{ itemType }} is archived.</span><br />
-            Total storage space taken: <b>{{ prettySize }}</b
+            <span v-if="isArchived"><FontAwesomeIcon icon="archive" /> 此{{ itemType === 'history' ? '历史' : '数据集' }}已归档。</span><br />
+            占用的存储空间总计: <b>{{ prettySize }}</b
             >.
             <span v-if="isRecoverable">
-                This {{ itemType }} was deleted. You can <b>undelete</b> it or <b>permanently delete</b> it to free up
-                its storage space.
+                此{{ itemType === 'history' ? '历史' : '数据集' }}已被删除。您可以<b>恢复</b>它或<b>永久删除</b>它以释放其占用的存储空间。
             </span>
         </div>
 
@@ -86,7 +85,7 @@ function onPermanentlyDeleteItem() {
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
-                :title="localize('Set this history as current')"
+                :title="localize('将此历史设为当前')"
                 @click="onSetCurrentHistory">
                 <FontAwesomeIcon icon="location-arrow" />
             </BButton>
@@ -94,7 +93,7 @@ function onPermanentlyDeleteItem() {
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
-                :title="localize(`Go to the details of this ${itemType}`)"
+                :title="localize(`查看此${itemType === 'history' ? '历史' : '数据集'}的详细信息`)"
                 @click="onViewItem">
                 <FontAwesomeIcon :icon="viewDetailsIcon" />
             </BButton>
@@ -103,7 +102,7 @@ function onPermanentlyDeleteItem() {
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
-                :title="localize(`Undelete this ${itemType}`)"
+                :title="localize(`恢复此${itemType === 'history' ? '历史' : '数据集'}`)"
                 @click="onUndeleteItem">
                 <FontAwesomeIcon icon="undo" />
             </BButton>
@@ -112,7 +111,7 @@ function onPermanentlyDeleteItem() {
                 variant="outline-danger"
                 size="sm"
                 class="mx-2"
-                :title="localize(`Permanently delete this ${itemType}`)"
+                :title="localize(`永久删除此${itemType === 'history' ? '历史' : '数据集'}`)"
                 @click="onPermanentlyDeleteItem">
                 <FontAwesomeIcon icon="trash" />
             </BButton>

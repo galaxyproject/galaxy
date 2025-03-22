@@ -23,7 +23,7 @@ const isRecalculating = ref<boolean>(false);
 
 const niceTotalDiskUsage = computed(() => {
     if (!currentUser.value || currentUser.value.isAnonymous) {
-        return "Unknown";
+        return "未知";
     }
     return bytesToString(currentUser.value.total_disk_usage, true);
 });
@@ -90,7 +90,7 @@ onMounted(async () => {
 <template>
     <div>
         <b-alert v-if="errorMessage" variant="danger" show>
-            <h2 v-localize class="alert-heading h-sm">Failed to access disk usage details.</h2>
+            <h2 v-localize class="alert-heading h-sm">无法访问磁盘使用详情。</h2>
             {{ errorMessage }}
         </b-alert>
         <b-container v-if="currentUser">
@@ -98,23 +98,23 @@ onMounted(async () => {
                 <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
             </b-row>
             <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
-                You're using <b>{{ niceTotalDiskUsage }}</b> of disk space.
+                您正在使用 <b>{{ niceTotalDiskUsage }}</b> 的磁盘空间。
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
             <button
                 id="refresh-disk-usage"
-                title="Recalculate disk usage"
+                title="重新计算磁盘使用量"
                 :disabled="isRefreshing"
                 variant="outline-secondary"
                 size="sm"
                 pill
                 @click="onRefresh">
                 <b-spinner v-if="isRefreshing" small />
-                <span v-else>Refresh</span>
+                <span v-else>刷新</span>
             </button>
             <b-alert v-if="isRefreshing" class="refreshing-alert mt-2" variant="info" show dismissible fade>
-                Recalculating disk usage... this may take some time, please check back later.
+                正在重新计算磁盘使用量...这可能需要一些时间，请稍后再查看。
             </b-alert>
         </b-container>
     </div>

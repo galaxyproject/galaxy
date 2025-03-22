@@ -586,10 +586,10 @@ def shrink_string_by_size(
 
 def pretty_print_time_interval(time=False, precise=False, utc=False):
     """
-    Get a datetime object or a int() Epoch timestamp and return a
-    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
-    'just now', etc
-    credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
+    获取一个datetime对象或一个int()类型的Epoch时间戳，返回一个
+    易读的字符串，如'一小时前'，'昨天'，'3个月前',
+    '刚刚'等
+    来源: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
     """
     if utc:
         now = datetime.utcnow()
@@ -603,7 +603,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         try:
             time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
         except ValueError:
-            # MySQL may not support microseconds precision
+            # MySQL可能不支持微秒精度
             time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
         diff = now - time
     else:
@@ -617,38 +617,38 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
     if precise:
         if day_diff == 0:
             if second_diff < 10:
-                return "just now"
+                return "刚刚"
             if second_diff < 60:
-                return str(second_diff) + " seconds ago"
+                return str(second_diff) + " 秒前"
             if second_diff < 120:
-                return "a minute ago"
+                return "一分钟前"
             if second_diff < 3600:
-                return str(second_diff / 60) + " minutes ago"
+                return str(second_diff / 60) + " 分钟前"
             if second_diff < 7200:
-                return "an hour ago"
+                return "一小时前"
             if second_diff < 86400:
-                return str(second_diff / 3600) + " hours ago"
+                return str(second_diff / 3600) + " 小时前"
         if day_diff == 1:
-            return "yesterday"
+            return "昨天"
         if day_diff < 7:
-            return str(day_diff) + " days ago"
+            return str(day_diff) + " 天前"
         if day_diff < 31:
-            return str(day_diff / 7) + " weeks ago"
+            return str(day_diff / 7) + " 周前"
         if day_diff < 365:
-            return str(day_diff / 30) + " months ago"
-        return str(day_diff / 365) + " years ago"
+            return str(day_diff / 30) + " 个月前"
+        return str(day_diff / 365) + " 年前"
     else:
         if day_diff == 0:
-            return "today"
+            return "今天"
         if day_diff == 1:
-            return "yesterday"
+            return "昨天"
         if day_diff < 7:
-            return "less than a week"
+            return "不到一周"
         if day_diff < 31:
-            return "less than a month"
+            return "不到一个月"
         if day_diff < 365:
-            return "less than a year"
-        return "a few years ago"
+            return "不到一年"
+        return "几年前"
 
 
 # characters that are valid

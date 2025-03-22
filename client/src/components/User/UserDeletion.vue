@@ -3,14 +3,14 @@
         <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
         <div class="pref-content pr-1">
             <a id="delete-account" href="javascript:void(0)"
-                ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
+                ><b v-b-modal.modal-prevent-closing v-localize>删除账户</b></a
             >
-            <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
+            <div v-localize class="form-text text-muted">删除您在此Galaxy服务器上的账户。</div>
             <b-modal
                 id="modal-prevent-closing"
                 ref="modal"
                 centered
-                title="Account Deletion"
+                title="账户删除"
                 title-tag="h2"
                 @show="resetModal"
                 @hidden="resetModal"
@@ -18,16 +18,15 @@
                 <p>
                     <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
                     <b>
-                        This action cannot be undone. Your account will be permanently deleted, along with the data
-                        contained in it.
+                        此操作无法撤销。您的账户将被永久删除，其中包含的数据也将一并删除。
                     </b>
                 </p>
                 <b-form ref="form" @submit.prevent="handleSubmit">
                     <b-form-group
                         :state="nameState"
-                        label="Enter your user email for this account as confirmation."
+                        label="请输入您的账户邮箱作为确认。"
                         label-for="Email"
-                        invalid-feedback="Incorrect email">
+                        invalid-feedback="邮箱不正确">
                         <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
                     </b-form-group>
                 </b-form>
@@ -95,7 +94,7 @@ export default {
                 } catch (e) {
                     if (e.response.status === 403) {
                         this.deleteError =
-                            "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
+                            "此实例必须配置用户删除功能才能允许用户自行删除。请联系管理员寻求帮助。";
                         return false;
                     }
                 }

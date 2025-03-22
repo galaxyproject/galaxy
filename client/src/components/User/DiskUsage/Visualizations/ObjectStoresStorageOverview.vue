@@ -48,28 +48,27 @@ function onViewObjectStore(objectStoreId: string) {
 }
 </script>
 <template>
-    <OverviewPage title="Storage overview by location">
+    <OverviewPage title="按位置存储概览">
         <p class="text-justify">
-            Here you can find various graphs displaying the storage size taken by all your histories grouped by where
-            they are physically stored.
+            在这里，您可以找到各种图表，显示所有历史记录按物理存储位置分组的存储大小。
         </p>
         <WarnDeletedHistories />
         <div v-if="isLoading" class="text-center">
-            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+            <LoadingSpan class="mt-5" :message="localize('正在加载您的存储数据。这可能需要一些时间...')" />
         </div>
         <div v-else>
             <BarChart
                 v-if="objectStoresBySizeData"
                 :description="
                     localize(
-                        `This graph displays how your Galaxy data is stored sorted into the location is stored in. Click on a bar to see more information about the storage location.`
+                        `此图表显示您的Galaxy数据是如何按存储位置分类存储的。点击柱状图可查看有关该存储位置的更多信息。`
                     )
                 "
                 :data="objectStoresBySizeData"
                 :enable-selection="true"
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
-                    <b>{{ localize(`Storage locations by Usage`) }}</b>
+                    <b>{{ localize(`按使用量排列的存储位置`) }}</b>
                 </template>
                 <template v-slot:tooltip="{ data }">
                     <ShowObjectStore v-if="data" :object-store-id="data.id" />

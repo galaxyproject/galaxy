@@ -68,17 +68,17 @@ function buildActiveVsArchivedVsDeletedTotalSizeData(historiesSizeSummary: ItemS
     return [
         {
             id: "active",
-            label: "Active",
+            label: "活跃",
             value: activeHistoriesSize,
         },
         {
             id: "archived",
-            label: "Archived",
+            label: "已归档",
             value: archivedHistoriesSize,
         },
         {
             id: "deleted",
-            label: "Deleted",
+            label: "已删除",
             value: deletedHistoriesSize,
         },
     ];
@@ -116,22 +116,22 @@ async function onUndeleteHistory(historyId: string) {
         if (history && !result.deleted) {
             history.deleted = result.deleted;
             historiesSizeSummaryMap.set(historyId, history);
-            successToast(localize("History undeleted successfully."));
+            successToast(localize("历史记录已成功恢复。"));
             buildGraphsData();
         }
     } catch (error) {
-        errorToast(`${error}`, localize("An error occurred while undeleting the history."));
+        errorToast(`${error}`, localize("恢复历史记录时发生错误。"));
     }
 }
 
 async function onPermanentlyDeleteHistory(historyId: string) {
     const confirmed = await confirm(
-        localize("Are you sure you want to permanently delete this history? This action cannot be undone."),
+        localize("您确定要永久删除此历史记录吗？此操作无法撤消。"),
         {
-            title: localize("Permanently delete history?"),
+            title: localize("永久删除历史记录？"),
             okVariant: "danger",
-            okTitle: localize("Permanently delete"),
-            cancelTitle: localize("Cancel"),
+            okTitle: localize("永久删除"),
+            cancelTitle: localize("取消"),
         }
     );
     if (!confirmed) {
@@ -142,42 +142,42 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         const history = historiesSizeSummaryMap.get(historyId);
         if (history && result.purged) {
             historiesSizeSummaryMap.delete(historyId);
-            successToast(localize("History permanently deleted successfully."));
+            successToast(localize("历史记录已成功永久删除。"));
             buildGraphsData();
         }
     } catch (error) {
-        errorToast(`${error}`, localize("An error occurred while permanently deleting the history."));
+        errorToast(`${error}`, localize("永久删除历史记录时发生错误。"));
     }
 }
 </script>
 <template>
-    <OverviewPage title="Histories Storage Overview">
+    <OverviewPage title="历史记录存储概览">
         <p class="text-justify">
-            Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
+            在此您可以查看显示<b>所有历史记录</b>占用存储空间大小的各种图表。
         </p>
         <WarnDeletedHistories />
 
         <div v-if="isLoading" class="text-center">
-            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+            <LoadingSpan class="mt-5" :message="localize('正在加载您的存储数据。这可能需要一些时间...')" />
         </div>
         <div v-else>
             <BarChart
                 v-if="topTenHistoriesBySizeData"
                 :description="
                     localize(
-                        `These are the ${numberOfHistoriesToDisplay} histories that take the most space on your storage. Click on a bar to see more information about the history.`
+                        `这是占用存储空间最多的 ${numberOfHistoriesToDisplay} 条历史记录。点击柱状图可查看有关历史记录的更多信息。`
                     )
                 "
                 :data="topTenHistoriesBySizeData"
                 :enable-selection="true"
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
-                    <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
+                    <b>{{ localize(`按大小排序的前 ${numberOfHistoriesToDisplay} 条历史记录`) }}</b>
                     <b-form-select
                         v-model="numberOfHistoriesToDisplay"
                         :options="numberOfHistoriesToDisplayOptions"
                         :disabled="isLoading"
-                        title="Number of histories to show"
+                        title="显示历史记录的数量"
                         class="float-right w-auto"
                         size="sm"
                         @change="buildGraphsData()">
@@ -205,10 +205,10 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             </BarChart>
             <BarChart
                 v-if="activeVsArchivedVsDeletedTotalSizeData"
-                :title="localize('Active vs Archived vs Deleted Total Size')"
+                :title="localize('活跃与已归档与已删除的总大小对比')"
                 :description="
                     localize(
-                        'This graph shows the total size taken by your histories, split between active, archived and deleted histories.'
+                        '此图表显示了您的历史记录占用的总大小，按活跃、已归档和已删除的历史记录进行分类。'
                     )
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"

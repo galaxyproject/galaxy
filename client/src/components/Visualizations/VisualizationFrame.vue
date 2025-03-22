@@ -36,7 +36,7 @@ const srcWithRoot = computed(() => {
         :src="srcWithRoot"
         class="center-frame"
         frameborder="0"
-        title="galaxy visualization frame"
+        title="可视化框架"
         width="100%"
         height="100%" />
 </template>
