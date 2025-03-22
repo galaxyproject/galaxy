@@ -80,7 +80,7 @@ function onInsertSteps(workflow: WorkflowSummary) {
 </script>
 
 <template>
-    <div class="workflow-card-list" :class="{ grid: props.gridView }">
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
         <WorkflowCard
             v-for="workflow in workflows"
             :key="workflow.id"
@@ -135,13 +135,6 @@ function onInsertSteps(workflow: WorkflowSummary) {
 @import "_breakpoints.scss";
 
 .workflow-card-list {
-    overflow: auto;
-    container: card-list / inline-size;
-    display: flex;
-    flex-wrap: wrap;
-
-    &.grid {
-        padding-top: 0 !important;
-    }
+    container: cards-list / inline-size;
 }
 </style>
