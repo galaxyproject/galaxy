@@ -36,7 +36,7 @@ const toWhat = "This dataset will be relocated to";
                 :object-store="fromObjectStore"
                 @click="emit('closeModal')" />
         </b-button-group>
-        <p class="relocate-to">Select new storage location for the dataset:</p>
+        <p class="relocate-to">Select new Galaxy storage for the dataset:</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in targetObjectStores"

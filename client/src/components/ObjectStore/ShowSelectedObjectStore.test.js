@@ -58,7 +58,7 @@ describe("ShowSelectedObjectStore", () => {
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContain("Loading storage location details");
+        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();
@@ -78,7 +78,7 @@ describe("ShowSelectedObjectStore", () => {
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContain("Loading storage location details");
+        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();

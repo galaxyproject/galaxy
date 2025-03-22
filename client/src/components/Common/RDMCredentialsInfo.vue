@@ -24,14 +24,14 @@ const repositoryName = props.selectedRepository?.label ?? "the selected reposito
         <span v-if="isPrivateFileSource && selectedRepository">
             in your
             <RouterLink :to="`/file_source_instances/${selectedRepository.id}/edit`" target="_blank">
-                Remote File Source settings
+                Repository settings
             </RouterLink>
         </span>
         <span v-else>
             <span v-if="!isPrivateFileSource">
                 in your <RouterLink to="/user/information" target="_blank">preferences page</RouterLink>
             </span>
-            or in your <RouterLink to="/file_sources/index" target="_blank"> remote file sources </RouterLink> section
+            or in your <RouterLink to="/file_sources/index" target="_blank"> repositories </RouterLink> section
         </span>
         to be able to export. You can also define some default options for the export in those settings, like the public
         name you want to associate with your records.

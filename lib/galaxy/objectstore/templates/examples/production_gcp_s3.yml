@@ -3,13 +3,11 @@
   version: 0
   name: Google Cloud Storage
   description: |
-    This template can be used to connect to your [Google Cloud Storage](https://cloud.google.com/storage).
-    To use these templates you will need to generate
-    [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys) - these
-    can be linked to your user or a service account. Additionally, you will need to defined
+    Connect your [Google Cloud Storage](https://cloud.google.com/storage) to enable it as Galaxy storage backend. 
+    For the setup you will need to generate [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys) - these
+    can be linked to your user or a service account. Additionally, you will need to define
     a [default Google cloud project](https://cloud.google.com/storage/docs/aws-simple-migration#defaultproj)
-    to allow Galaxy to access your Google Cloud Storage via the interfaces
-    described by this template.
+    to allow Galaxy to access your Google Cloud Storage via the interfaces described in this formular.
   variables:
     access_key:
       label: Access ID

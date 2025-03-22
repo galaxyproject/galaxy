@@ -40,7 +40,7 @@ describe("UserPreferredObjectStore.vue", () => {
         const wrapper = mountComponent();
         expect(wrapper.vm.$refs["modal"].isHidden).toBeTruthy();
         const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-        expect(el.text()).toBeLocalizationOf("Preferred Storage Location");
+        expect(el.text()).toBeLocalizationOf("Preferred Galaxy Storage");
         await el.trigger("click");
         expect(wrapper.vm.$refs["modal"].isHidden).toBeFalsy();
     });

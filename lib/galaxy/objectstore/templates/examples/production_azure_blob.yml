@@ -2,7 +2,7 @@
   version: 0
   name: Azure Blob Storage
   description: |
-    This template allows storing dataset in [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction).
+    Setup [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) to enable it as Galaxy storage backend. 
   configuration:
     type: azure_blob
     auth:

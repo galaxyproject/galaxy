@@ -36,10 +36,10 @@ const selectableAndVisibleObjectStores = computed(() => {
     }
 });
 
-const loadingObjectStoreInfoMessage = ref("Loading storage location information");
+const loadingObjectStoreInfoMessage = ref("Loading Galaxy storage information");
 const whyIsSelectionPreferredText = ref(`
-Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
-this Galaxy a different storage location may be ultimately used. After a dataset is created,
+Select a preferred Galaxy storage for new datasets. Depending on the job and workflow execution configuration of
+this Galaxy a different Galaxy storage may be ultimately used. After a dataset is created,
 click on the info icon in the history panel to view information about where it is stored. If it
 is not stored in the place you want, contact Galaxy administrator for more information.
 `);

@@ -90,15 +90,15 @@
             id="manage-object-stores"
             class="manage-object-stores"
             icon="fa-hdd"
-            title="Manage Your Storage Locations"
-            description="Add, remove, or update your personally configured storage locations."
+            title="Manage Your Galaxy Storage"
+            description="Add, remove, or update your personally configured Galaxy storage."
             to="/object_store_instances/index" />
         <UserPreferencesElement
             v-if="hasFileSourceTemplates"
             id="manage-file-sources"
             class="manage-file-sources"
             icon="fa-file"
-            title="Manage Your Remote File Sources"
+            title="Manage Your Repositories"
             description="Add, remove, or update your personally configured location to find files from and write files to."
             to="/file_source_instances/index" />
         <UserDeletion

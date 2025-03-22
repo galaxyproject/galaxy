@@ -9,7 +9,7 @@ const showErrorHelp = ref(false);
 const sharingError = ref(false);
 
 // old sharable error: Attempted to create shared output datasets in objectstore with sharing disabled
-// new sharable error: Job attempted to create sharable output datasets in a storage location with sharing disabled
+// new sharable error: Job attempted to create sharable output datasets in a Galaxy storage with sharing disabled
 const sharingErrorRex: RegExp = /with sharing disabled/g;
 const knownErrors = [{ regex: sharingErrorRex, modalRef: sharingError }];
 
@@ -40,7 +40,7 @@ function showHelp() {
         <b-modal v-if="sharingError" v-model="showErrorHelp" title="Dataset Sharing Misconfigured" ok-only>
             <p>
                 This error message indicates that your history is setup to allow sharing but your job was run in a
-                configuration to target a storage location that explicitly disables sharing.
+                configuration to target a Galaxy storage that explicitly disables sharing.
             </p>
             <p>
                 To fix this configure your history so that new datasets are private or target a different storage

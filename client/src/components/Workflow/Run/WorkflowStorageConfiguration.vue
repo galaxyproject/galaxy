@@ -89,10 +89,10 @@ export default {
             }
         },
         primaryModalTitle() {
-            return `Invocation ${this.preferredOrEmptyString} Storage Location`;
+            return `Invocation ${this.preferredOrEmptyString} Galaxy Storage`;
         },
         intermediateModalTitle() {
-            return `Invocation ${this.preferredOrEmptyString} Storage Location (Intermediate Datasets)`;
+            return `Invocation ${this.preferredOrEmptyString} Galaxy Storage (Intermediate Datasets)`;
         },
         suffixPrimary() {
             if (this.splitObjectStore) {

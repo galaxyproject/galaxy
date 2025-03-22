@@ -1,9 +1,8 @@
 - id: webdav
   version: 0
-  name: WebDAV
+  name: WebDAV (e.g. Nextcloud, Owncloud, Opencloud)
   description: |
-    The WebDAV protocol is a simple way to access files over the internet. This template
-    configuration allows you to connect to a WebDAV server.
+    The WebDAV protocol is a simple way to access files over the internet. Here, you can connect to any WebDAV server.
   variables:
     url:
       label: Server Domain (e.g. https://myowncloud.org)
