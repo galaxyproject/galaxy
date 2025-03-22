@@ -42,6 +42,7 @@ onMounted(initCounts);
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
         <BBadge v-if="count != undefined && count === 0" pill>
+            <FontAwesomeIcon :icon="faList" fixed-width />
             <span>never run</span>
         </BBadge>
         <BBadge
