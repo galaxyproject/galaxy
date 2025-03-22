@@ -5,13 +5,13 @@ adal==1.2.7
 aiobotocore==2.21.1
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
-aiohttp==3.11.13
+aiohttp==3.11.14
 aioitertools==0.12.0
 aiosignal==1.3.2
 alembic==1.15.1
 amqp==5.3.1
 annotated-types==0.7.0
-anyio==4.8.0
+anyio==4.9.0
 apispec==6.8.1
 appdirs==1.4.4
 arcp==0.2.1
@@ -93,25 +93,25 @@ kombu==5.5.0
 lagom==2.7.5
 legacy-cgi==2.6.2 ; python_full_version >= '3.13'
 limits==4.2 ; python_full_version < '3.10'
-limits==4.4 ; python_full_version >= '3.10'
+limits==4.4.1 ; python_full_version >= '3.10'
 lxml==5.3.1
 mako==1.3.9
 markdown==3.7
 markdown-it-py==3.0.0
 markupsafe==3.0.2
 mdurl==0.1.2
-mercurial==6.9.3
+mercurial==6.9.4
 mistune==3.0.2
 mrcfile==1.5.4
 msal==1.32.0
 msgpack==1.1.0
-multidict==6.1.0
+multidict==6.2.0
 mypy-extensions==1.0.0
 networkx==3.2.1 ; python_full_version < '3.10'
 networkx==3.4.2 ; python_full_version >= '3.10'
 nodeenv==1.9.1
 numpy==2.0.2 ; python_full_version < '3.10'
-numpy==2.2.3 ; python_full_version >= '3.10'
+numpy==2.2.4 ; python_full_version >= '3.10'
 oauthlib==3.2.2
 orjson==3.10.15
 oyaml==1.0
@@ -120,7 +120,7 @@ paramiko==3.5.1
 parsley==1.3
 paste==3.10.1
 pastedeploy==3.1.0
-pebble==5.1.0
+pebble==5.1.1
 pillow==11.1.0
 prompt-toolkit==3.0.50
 propcache==0.3.0
@@ -128,7 +128,7 @@ prov==1.5.1
 psutil==7.0.0
 pulsar-galaxy-lib==0.15.7
 pycparser==2.22
-pycryptodome==3.21.0
+pycryptodome==3.22.0
 pydantic==2.10.6
 pydantic-core==2.27.2
 pydantic-tes==0.1.5
@@ -169,7 +169,7 @@ ruamel-yaml==0.18.10
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.13' and platform_python_implementation == 'CPython'
 s3fs==2025.3.0
 schema-salad==8.8.20250205075315
-setuptools==76.0.0
+setuptools==77.0.3
 setuptools-scm==5.0.2
 six==1.17.0
 slowapi==0.1.9
