@@ -2,7 +2,7 @@ import EventEmitter from "events";
 
 import { type DatatypesMapperModel } from "@/components/Datatypes/model";
 import { type useWorkflowStores } from "@/composables/workflowStores";
-import { type Connection, type ConnectionId, getConnectionId } from "@/stores/workflowConnectionStore";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
 import {
     type CollectionOutput,
     type DataCollectionStepInput,
@@ -12,6 +12,7 @@ import {
     type ParameterStepInput,
     type TerminalSource,
 } from "@/stores/workflowStepStore";
+import type { Connection, ConnectionId } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
 
 import {

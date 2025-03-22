@@ -9,7 +9,8 @@ import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
-import { type Activity, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 

@@ -17,7 +17,8 @@ import { watchImmediate } from "@vueuse/core";
 import { faDiagramNext } from "font-awesome-6";
 import { computed, type Ref } from "vue";
 
-import { type Activity, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
 
 export const workflowEditorActivities = [
     {
