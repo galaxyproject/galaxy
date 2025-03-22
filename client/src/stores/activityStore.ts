@@ -5,7 +5,7 @@ import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useDebounceFn, watchImmediate } from "@vueuse/core";
 import { computed, type Ref, ref, set } from "vue";
 
-import { useHashedUserId } from "@/composables/hashedUserId";
+import { useHashedUserId } from "@/composables/hashedUserIdFromUserStore";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { ensureDefined } from "@/utils/assertions";
 
