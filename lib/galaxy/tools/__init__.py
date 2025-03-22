@@ -1412,10 +1412,9 @@ class Tool(UsesDictVisibleKeys):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
-        self.requirements = requirements
-        self.containers = containers
-        self.resource_requirements = resource_requirements
+        self.requirements, self.containers, self.resource_requirements, self.credentials = (
+            tool_source.parse_requirements()
+        )
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
@@ -2467,7 +2466,7 @@ class Tool(UsesDictVisibleKeys):
     @property
     def tool_requirements(self):
         """
-        Return all requiremens of type package
+        Return all requirements of type package
         """
         return self.requirements.packages
 
@@ -2871,6 +2870,7 @@ class Tool(UsesDictVisibleKeys):
                 "warnings": tool_warnings,
                 "versions": self.tool_versions,
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
+                "credentials": [credential.to_dict() for credential in self.credentials],
                 "errors": state_errors,
                 "tool_errors": self.tool_errors,
                 "state_inputs": state_inputs_json,
