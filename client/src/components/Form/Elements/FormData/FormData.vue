@@ -116,6 +116,13 @@ const keepOptionsUpdate = ref(0);
 const canBrowse = computed(() => variant.value && !!variant.value.find((v) => v.src === SOURCE.DATASET));
 
 /**
+ * A list of valid `src`s for the variant
+ */
+const validSrcs = computed(() => {
+    return variant.value ? variant.value.map((v) => v.src) : [];
+});
+
+/**
  * Provides the currently shown source type
  */
 const currentSource = computed(() => (currentVariant.value ? currentVariant.value.src : null));
@@ -578,7 +585,12 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
         }
     } else if (historyContentType === "dataset_collection") {
         if (props.type === "data") {
-            // collection can always be mapped over a data input ... in theory.
+            // if this input doesn't accept collections at all, return false
+            if (!validSrcs.value.includes(SOURCE.COLLECTION)) {
+                $emit("alert", "dataset collection is not a valid input for this dataset parameter.");
+                return false;
+            }
+            // otherwise, collection can always be mapped over a data input ... in theory.
             // One day we should also validate the map over model
             return true;
         }
