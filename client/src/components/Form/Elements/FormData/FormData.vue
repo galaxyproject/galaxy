@@ -18,6 +18,7 @@ import {
     type HDAObject,
     type HDCASummary,
     type HistoryItemSummary,
+    isCollectionElement,
     isDatasetElement,
     isDCE,
     isHDCA,
@@ -378,7 +379,11 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
             const incomingValues: Array<DataOption> = [];
             values.forEach((currVal) => {
                 // Map incoming objects to data option values
-                const { newSrc, datasetCollectionDataset } = getSrcAndContentType(currVal);
+                const { newSrc, datasetCollectionDataset } = getElementAttributes(currVal);
+
+                // for name, somehow even though schema says otherwise, DCESummary can return a name
+                const newName = "name" in currVal && typeof currVal.name === "string" ? currVal.name : null;
+
                 let v: HistoryOrCollectionItem | HDAObject;
                 if (datasetCollectionDataset) {
                     v = datasetCollectionDataset;
@@ -387,14 +392,13 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                 }
                 const newHid = isHistoryItem(v) ? v.hid : undefined;
                 const newId = v.id;
-                const newName = isHistoryItem(v) && v.name ? v.name : newId;
                 const newValue: DataOption = {
                     id: newId,
                     src: newSrc,
                     batch: false,
                     map_over_type: undefined,
                     hid: newHid,
-                    name: newName,
+                    name: newName || newId,
                     keep: true,
                     tags: [],
                 };
@@ -509,14 +513,16 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
  * Given an element, determine the source and content type.
  * Also returns the collection element dataset object if it exists.
  */
-function getSrcAndContentType(element: HistoryOrCollectionItem): {
+function getElementAttributes(element: HistoryOrCollectionItem): {
     historyContentType: HistoryContentType;
     newSrc: string;
     datasetCollectionDataset: HDAObject | undefined;
+    collectionType?: string;
 } {
     let historyContentType: HistoryContentType;
     let newSrc: string;
     let datasetCollectionDataset: HDAObject | undefined;
+    let collectionType: string | undefined;
     if (isDCE(element)) {
         if (isDatasetElement(element)) {
             historyContentType = "dataset";
@@ -525,9 +531,14 @@ function getSrcAndContentType(element: HistoryOrCollectionItem): {
         } else {
             historyContentType = "dataset_collection";
             newSrc = SOURCE.COLLECTION_ELEMENT;
+            // we already know it is a collection element by this point
+            if (isCollectionElement(element)) {
+                collectionType = element.object.collection_type;
+            }
         }
     } else {
         historyContentType = element.history_content_type;
+        collectionType = "collection_type" in element && element.collection_type ? element.collection_type : undefined;
         newSrc =
             "src" in element && typeof element.src === "string"
                 ? element.src
@@ -535,12 +546,12 @@ function getSrcAndContentType(element: HistoryOrCollectionItem): {
                 ? SOURCE.COLLECTION
                 : SOURCE.DATASET;
     }
-    return { historyContentType, newSrc, datasetCollectionDataset };
+    return { historyContentType, newSrc, datasetCollectionDataset, collectionType };
 }
 
 function canAcceptSrc(element: HistoryOrCollectionItem) {
-    const { historyContentType } = getSrcAndContentType(element);
-    const collectionType = "collection_type" in element && element.collection_type;
+    const { historyContentType, collectionType } = getElementAttributes(element);
+
     if (historyContentType === "dataset") {
         // HDA can only be fed into data parameters, not collection parameters
         if (props.type === "data") {
