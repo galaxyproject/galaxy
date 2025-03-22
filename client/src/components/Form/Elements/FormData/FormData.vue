@@ -13,7 +13,18 @@ import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } fro
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
-import { isDatasetElement, isDCE } from "@/api";
+import {
+    type DCESummary,
+    type HDAObject,
+    type HDCASummary,
+    type HistoryItemSummary,
+    isCollectionElement,
+    isDatasetElement,
+    isDCE,
+    isHDCA,
+    isHistoryItem,
+} from "@/api";
+import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
@@ -39,6 +50,8 @@ type SelectOption = {
     label: string;
     value: DataOption | null;
 };
+
+type HistoryOrCollectionItem = HistoryItemSummary | DCESummary;
 
 const props = withDefaults(
     defineProps<{
@@ -83,7 +96,7 @@ const currentField = ref(0);
 const currentHighlighting: Ref<string | null> = ref(null);
 
 // Drag/Drop related values
-const dragData: Ref<EventData | null> = ref(null);
+const dragData: Ref<EventData[]> = ref([]);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
 // Collection creator modal settings
@@ -102,10 +115,20 @@ const restrictsExtensions = computed(() => {
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
 
+/** Update counter for keep-options, used to trigger a re-compute of `formattedOptions` */
+const keepOptionsUpdate = ref(0);
+
 /**
  * Determine whether the file dialog can be used or not
  */
 const canBrowse = computed(() => variant.value && !!variant.value.find((v) => v.src === SOURCE.DATASET));
+
+/**
+ * A list of valid `src`s for the variant
+ */
+const validSrcs = computed(() => {
+    return variant.value ? variant.value.map((v) => v.src) : [];
+});
 
 /**
  * Provides the currently shown source type
@@ -174,6 +197,9 @@ const currentVariant = computed(() => {
  * Converts and populates options for the shown select field
  */
 const formattedOptions = computed(() => {
+    // When the keepOptionsUpdate value changes, this computed property is re-evaluated
+    keepOptionsUpdate.value;
+
     if (currentSource.value && currentSource.value in props.options) {
         // Map incoming values to available options
         const options = props.options[currentSource.value] || [];
@@ -258,6 +284,7 @@ const variant = computed(() => {
  */
 function clearHighlighting(timeout = 1000) {
     setTimeout(() => {
+        $emit("alert", undefined);
         currentHighlighting.value = null;
     }, timeout);
 }
@@ -331,49 +358,62 @@ function getSourceType(val: DataOption) {
 }
 
 /** Add values from drag/drop or data dialog sources */
-function handleIncoming(incoming: Record<string, unknown>, partial = true) {
+function handleIncoming(incoming: Record<string, unknown> | Record<string, unknown>[], partial = true) {
     if (incoming) {
         const values = Array.isArray(incoming) ? incoming : [incoming];
-        const extensions = values.map((v) => v.extension || v.elements_datatypes).filter((v) => (v ? true : false));
+
+        // ensure all incoming values are isHistoryOrCollectionItem
+        if (!values.every(isHistoryOrCollectionItem)) {
+            return false;
+        }
+
+        const extensions = Array.from(
+            new Set(
+                values
+                    .map(getExtensionsForItem)
+                    .flat()
+                    .filter((v) => v !== null && v !== undefined)
+            )
+        ) as string[];
+
         if (!canAcceptDatatype(extensions)) {
             return false;
         }
-        if (values.some((v) => !canAcceptSrc(v.history_content_type, v.collection_type))) {
+        if (values.some((v) => !canAcceptSrc(v))) {
             return false;
         }
         if (values.length > 0) {
             const incomingValues: Array<DataOption> = [];
-            values.forEach((v) => {
+            values.forEach((currVal) => {
                 // Map incoming objects to data option values
-                let newSrc;
-                if (isDCE(v)) {
-                    if (isDatasetElement(v)) {
-                        newSrc = SOURCE.DATASET;
-                        v = v.object;
-                    } else {
-                        newSrc = SOURCE.COLLECTION_ELEMENT;
-                    }
+                const { newSrc, datasetCollectionDataset } = getElementAttributes(currVal);
+
+                // for name, somehow even though schema says otherwise, DCESummary can return a name
+                const newName = "name" in currVal && typeof currVal.name === "string" ? currVal.name : null;
+
+                let v: HistoryOrCollectionItem | HDAObject;
+                if (datasetCollectionDataset) {
+                    v = datasetCollectionDataset;
                 } else {
-                    newSrc =
-                        v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
+                    v = currVal;
                 }
-                const newHid = v.hid;
+                const newHid = isHistoryItem(v) ? v.hid : undefined;
                 const newId = v.id;
-                const newName = v.name ? v.name : newId;
                 const newValue: DataOption = {
                     id: newId,
                     src: newSrc,
                     batch: false,
                     map_over_type: undefined,
                     hid: newHid,
-                    name: newName,
+                    name: newName || newId,
                     keep: true,
                     tags: [],
                 };
-                if (v.collection_type && props.collectionTypes?.length > 0) {
-                    if (!props.collectionTypes.includes(v.collection_type)) {
+                if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
+                    const itemCollectionType = v.collection_type;
+                    if (!props.collectionTypes.includes(itemCollectionType)) {
                         const mapOverType = props.collectionTypes.find((collectionType) =>
-                            v.collection_type.endsWith(collectionType)
+                            itemCollectionType.endsWith(collectionType)
                         );
                         if (!mapOverType) {
                             return false;
@@ -386,8 +426,10 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 const keepKey = `${newId}_${newSrc}`;
                 const existingOptions = props.options && props.options[newSrc];
                 const foundOption = existingOptions && existingOptions.find((option) => option.id === newId);
-                if (!foundOption && !(keepKey in keepOptions)) {
+                if (!foundOption && !isInKeepOptions(keepKey, newValue)) {
                     keepOptions[keepKey] = { label: `${newHid || "Selected"}: ${newName}`, value: newValue };
+                    // this is used to trigger an update on formattedOptions
+                    keepOptionsUpdate.value++;
                 }
                 // Add new value to list
                 incomingValues.push(newValue);
@@ -416,6 +458,22 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 }
 
 /**
+ * Check if the new value is already in the keepOptions.
+ * This doesn't only check if the value is already stored by the `keepKey`, but also if the new value
+ * has a `hid` and the existing value doesn't. This is to ensure that values with `hid` are preferred.
+ */
+function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
+    if (keepKey in keepOptions) {
+        const existingOption = keepOptions[keepKey];
+        if (!existingOption?.value || (!!newValue.hid && !existingOption.value.hid)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
  * Open file dialog
  */
 function onBrowse() {
@@ -437,6 +495,9 @@ function onBrowse() {
 }
 
 function canAcceptDatatype(itemDatatypes: string | Array<string>) {
+    // TODO: Shouldn't we enforce a datatype (at least "data") because of the case:
+    // What if the drop item is a `DCESummary`, then it has no extension (?) and we
+    // pass it as a valid item regardless of its elements' datatypes.
     if (!(props.extensions?.length > 0) || props.extensions.includes("data")) {
         return true;
     }
@@ -455,7 +516,49 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
     return true;
 }
 
-function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
+/**
+ * Given an element, determine the source and content type.
+ * Also returns the collection element dataset object if it exists.
+ */
+function getElementAttributes(element: HistoryOrCollectionItem): {
+    historyContentType: HistoryContentType;
+    newSrc: string;
+    datasetCollectionDataset: HDAObject | undefined;
+    collectionType?: string;
+} {
+    let historyContentType: HistoryContentType;
+    let newSrc: string;
+    let datasetCollectionDataset: HDAObject | undefined;
+    let collectionType: string | undefined;
+    if (isDCE(element)) {
+        if (isDatasetElement(element)) {
+            historyContentType = "dataset";
+            newSrc = SOURCE.DATASET;
+            datasetCollectionDataset = element.object;
+        } else {
+            historyContentType = "dataset_collection";
+            newSrc = SOURCE.COLLECTION_ELEMENT;
+            // we already know it is a collection element by this point
+            if (isCollectionElement(element)) {
+                collectionType = element.object.collection_type;
+            }
+        }
+    } else {
+        historyContentType = element.history_content_type;
+        collectionType = "collection_type" in element && element.collection_type ? element.collection_type : undefined;
+        newSrc =
+            "src" in element && typeof element.src === "string"
+                ? element.src
+                : historyContentType === "dataset_collection"
+                ? SOURCE.COLLECTION
+                : SOURCE.DATASET;
+    }
+    return { historyContentType, newSrc, datasetCollectionDataset, collectionType };
+}
+
+function canAcceptSrc(element: HistoryOrCollectionItem) {
+    const { historyContentType, collectionType } = getElementAttributes(element);
+
     if (historyContentType === "dataset") {
         // HDA can only be fed into data parameters, not collection parameters
         if (props.type === "data") {
@@ -466,7 +569,12 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
         }
     } else if (historyContentType === "dataset_collection") {
         if (props.type === "data") {
-            // collection can always be mapped over a data input ... in theory.
+            // if this input doesn't accept collections at all, return false
+            if (!validSrcs.value.includes(SOURCE.COLLECTION)) {
+                $emit("alert", "dataset collection is not a valid input for this dataset parameter.");
+                return false;
+            }
+            // otherwise, collection can always be mapped over a data input ... in theory.
             // One day we should also validate the map over model
             return true;
         }
@@ -483,6 +591,7 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
             if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
                 return true;
             } else {
+                // TODO: On the rebase against dev, use `COLLECTION_TYPE_TO_LABEL[collectionType]`
                 $emit(
                     "alert",
                     `${collectionType} dataset collection is not a valid input for ${orList(
@@ -510,31 +619,41 @@ function buildNewCollection(collectionType: string) {
     collectionModalShow.value = true;
 }
 
-function createdCollection(collection: any) {
+function createdCollection(collection: HDCASummary) {
     handleIncoming(collection);
+}
+
+/**
+ * Get the extension(s) for a given item
+ */
+function getExtensionsForItem(item: HistoryOrCollectionItem): string | string[] | null {
+    return "extension" in item ? item.extension : "elements_datatypes" in item ? item.elements_datatypes : null;
+}
+
+function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollectionItem {
+    return isHistoryItem(item) || isDCE(item);
 }
 
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
-    const eventData = eventStore.getDragData();
-    if (eventData) {
-        const extensions = (eventData.extension as string) || (eventData.elements_datatypes as Array<string>);
-        let highlightingState = "success";
-        if (!canAcceptDatatype(extensions)) {
-            highlightingState = "warning";
-            $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
-        } else if (
-            !canAcceptSrc(
-                eventData.history_content_type as "dataset" | "dataset_collection",
-                eventData.collection_type as string
-            )
-        ) {
-            highlightingState = "warning";
-            $emit("alert", `${eventData.history_content_type} is not an acceptable input type for this parameter.`);
+    const eventData = eventStore.getDragItems();
+    dragData.value = [];
+
+    for (const item of eventData) {
+        if (isHistoryOrCollectionItem(item)) {
+            const extensions = getExtensionsForItem(item);
+            let highlightingState = "success";
+            if (extensions && !canAcceptDatatype(extensions)) {
+                highlightingState = "warning";
+                $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
+            } else if (!canAcceptSrc(item)) {
+                highlightingState = "warning";
+                // `canAcceptSrc` already alerts if false so no need to alert again
+            }
+            currentHighlighting.value = highlightingState;
+            dragTarget.value = evt.target;
+            dragData.value.push(item);
         }
-        currentHighlighting.value = highlightingState;
-        dragTarget.value = evt.target;
-        dragData.value = eventData;
     }
 }
 
@@ -546,20 +665,13 @@ function onDragLeave(evt: MouseEvent) {
 }
 
 function onDrop() {
-    if (dragData.value) {
-        let accept = false;
-        if (eventStore.multipleDragData) {
-            accept = handleIncoming(Object.values(dragData.value) as any, false);
-        } else {
-            accept = handleIncoming(dragData.value);
-        }
-        if (accept) {
+    if (dragData.value.length) {
+        if (handleIncoming(dragData.value, dragData.value.length === 1)) {
             currentHighlighting.value = "success";
         } else {
             currentHighlighting.value = "warning";
         }
-        $emit("alert", undefined);
-        dragData.value = null;
+        dragData.value = [];
         clearHighlighting();
     }
 }
