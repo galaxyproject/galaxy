@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faEdit, faPen, faSpinner, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
 import { ref } from "vue";
@@ -17,8 +17,6 @@ import UtcDate from "@/components/UtcDate.vue";
 interface Props {
     /** Unique identifier for the card */
     id: string;
-    /** Title of the card, can be a string or an object with label, title, and handler */
-    title: Title;
     /** Array of badges to display on the card */
     badges?: CardBadge[];
     /** Indicates if the card is bookmarked */
@@ -61,8 +59,14 @@ interface Props {
     tags?: string[];
     /** Indicates if the card tags are editable */
     tagsEditable?: boolean;
+    /** Title of the card, can be a string or an object with label, title, and handler */
+    title?: Title;
     /** Array of badges to display next to the card title */
     titleBadges?: CardBadge[];
+    /** Icon to display before the card title */
+    titleIcon?: IconDefinition;
+    /** Size of the card title */
+    titleSize?: "xl" | "lg" | "md" | "sm" | "text";
     /** Timestamp of the last update to the card */
     updateTime?: string;
     /** Tooltip title for the update time */
@@ -91,8 +95,10 @@ const props = withDefaults(defineProps<Props>(), {
     tagsEditable: false,
     title: "",
     titleBadges: () => [],
+    titleIcon: undefined,
+    titleSize: "lg",
     updateTime: "",
-    updateTimeTitle: "",
+    updateTimeTitle: "Last updated",
 });
 
 const emit = defineEmits<{
@@ -124,7 +130,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
     <div
         :id="`g-card-${props.id}`"
-        class="g-card"
+        class="g-card pt-0 px-1 pb-2"
         :class="[
             { 'g-card-grid-view': gridView },
             { 'g-card-selected': selected },
@@ -133,54 +139,36 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
             containerClass,
         ]"
         @click="emit('click')">
-        <div :id="`g-card-content-${props.id}`" class="g-card-content" :class="contentClass">
+        <div
+            :id="`g-card-content-${props.id}`"
+            class="g-card-content d-flex flex-column justify-content-between h-100"
+            :class="contentClass">
             <slot>
                 <div :id="`g-card-${props.id}-header`" class="g-card-header">
-                    <div :id="`g-card-${props.id}-header-left`" class="g-card-header-left">
+                    <div
+                        v-if="selectable"
+                        :id="getElementId(props.id, 'select')"
+                        class="g-card-header-select align-content-around">
                         <slot name="select">
                             <BFormCheckbox
-                                v-if="selectable"
                                 :id="getElementId(props.id, 'select')"
                                 v-b-tooltip.hover
                                 :checked="selected"
-                                class="g-card-select"
+                                class="g-card-header-select m-0"
                                 :title="props.selectTitle || localize('Select for bulk actions')"
                                 @change="emit('select')" />
                         </slot>
+                    </div>
 
-                        <div :id="getElementId(props.id, 'indicators')" class="g-card-indicators">
-                            <slot name="indicators">
-                                <template v-for="indicator in props.indicators">
-                                    <BButton
-                                        v-if="indicator.visible && !indicator.disabled"
-                                        :id="getIndicatorId(props.id, indicator.id)"
-                                        :key="indicator.id"
-                                        v-b-tooltip.hover
-                                        class="inline-icon-button"
-                                        :title="localize(indicator.title)"
-                                        :variant="indicator.variant || 'outline-secondary'"
-                                        :size="indicator.size || 'sm'"
-                                        :to="indicator.to"
-                                        :href="indicator.href"
-                                        @click.stop="indicator.handler">
-                                        <FontAwesomeIcon v-if="indicator.icon" :icon="indicator.icon" fixed-width />
-                                        {{ localize(indicator.label) }}
-                                    </BButton>
-                                    <FontAwesomeIcon
-                                        v-else-if="indicator.visible && indicator.disabled"
-                                        :id="getIndicatorId(props.id, indicator.id)"
-                                        :key="indicator.id"
-                                        v-b-tooltip.hover
-                                        :title="localize(indicator.title)"
-                                        :icon="indicator.icon"
-                                        :size="indicator.size || 'sm'"
-                                        fixed-width />
-                                </template>
-                            </slot>
-                        </div>
-
+                    <div :id="`g-card-${props.id}-header-title`" class="g-card-header-title">
                         <slot name="title">
-                            <Heading :id="getElementId(props.id, 'title')" bold inline class="g-card-title" size="sm">
+                            <Heading
+                                :id="getElementId(props.id, 'title')"
+                                bold
+                                inline
+                                :icon="props.titleIcon"
+                                class="g-card-title d-inline"
+                                :size="props.titleSize">
                                 <BLink
                                     v-if="typeof title === 'object'"
                                     :id="getElementId(props.id, 'title-link')"
@@ -209,33 +197,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                         </slot>
                     </div>
 
-                    <div :id="getElementId(props.id, 'header-right')" class="g-card-header-right">
-                        <div :id="getElementId(props.id, 'badges')" class="g-card-badges">
-                            <slot name="badges">
-                                <template v-for="badge in props.badges">
-                                    <BBadge
-                                        v-if="badge.visible"
-                                        :id="getBadgeId(props.id, badge.id)"
-                                        :key="badge.id"
-                                        v-b-tooltip.hover.top.noninteractive
-                                        :pill="badge.type !== 'badge'"
-                                        :class="{
-                                            'outline-badge': badge.variant?.includes('outline'),
-                                            'cursor-pointer': badge.handler,
-                                        }"
-                                        :title="localize(badge.title)"
-                                        :variant="badge.variant || 'secondary'"
-                                        :to="badge.to"
-                                        @click.stop="badge.handler">
-                                        <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
-                                        {{ localize(badge.label) }}
-                                    </BBadge>
-                                </template>
-                            </slot>
-
+                    <div class="g-card-title-badges align-items-center align-self-center d-flex">
+                        <div v-if="props.updateTime" :id="`g-card-${props.id}-update-time`">
                             <BBadge
-                                v-if="props.updateTime"
-                                :id="`g-card-${props.id}-update-time`"
                                 v-b-tooltip.hover.noninteractive
                                 pill
                                 variant="secondary"
@@ -244,6 +208,91 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
                                 <UtcDate :date="props.updateTime" mode="elapsed" />
                             </BBadge>
+                        </div>
+
+                        <slot name="titleBadges">
+                            <template v-for="badge in props.titleBadges">
+                                <BBadge
+                                    v-if="badge.visible"
+                                    :id="getBadgeId(props.id, badge.id)"
+                                    :key="badge.id"
+                                    v-b-tooltip.hover
+                                    :pill="badge.type !== 'badge'"
+                                    :class="{
+                                        'outline-badge': badge.variant?.includes('outline'),
+                                        'cursor-pointer': badge.handler,
+                                        [String(badge.class)]: badge.class,
+                                    }"
+                                    :title="localize(badge.title)"
+                                    :variant="badge.variant || 'secondary'"
+                                    :to="badge.to"
+                                    @click.stop="badge.handler">
+                                    <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                    {{ localize(badge.label) }}
+                                </BBadge>
+                            </template>
+                        </slot>
+                    </div>
+
+                    <div
+                        :id="getElementId(props.id, 'badges')"
+                        class="g-card-badges align-items-center align-self-center d-flex">
+                        <slot name="badges">
+                            <template v-for="badge in props.badges">
+                                <BBadge
+                                    v-if="badge.visible"
+                                    :id="getBadgeId(props.id, badge.id)"
+                                    :key="badge.id"
+                                    v-b-tooltip.hover.top.noninteractive
+                                    :pill="badge.type !== 'badge'"
+                                    :class="{
+                                        'outline-badge': badge.variant?.includes('outline'),
+                                        'cursor-pointer': badge.handler,
+                                        [String(badge.class)]: badge.class,
+                                    }"
+                                    :title="localize(badge.title)"
+                                    :variant="badge.variant || 'secondary'"
+                                    :to="badge.to"
+                                    @click.stop="badge.handler">
+                                    <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                    {{ localize(badge.label) }}
+                                </BBadge>
+                            </template>
+                        </slot>
+                    </div>
+
+                    <div class="g-card-bookmark-actions align-content-around">
+                        <div
+                            :id="getElementId(props.id, 'indicators')"
+                            class="g-card-indicators align-items-center d-flex">
+                            <slot name="indicators">
+                                <template v-for="indicator in props.indicators">
+                                    <BButton
+                                        v-if="indicator.visible && !indicator.disabled"
+                                        :id="getIndicatorId(props.id, indicator.id)"
+                                        :key="indicator.id"
+                                        v-b-tooltip.hover
+                                        class="inline-icon-button"
+                                        :title="localize(indicator.title)"
+                                        :variant="indicator.variant || 'outline-secondary'"
+                                        :size="indicator.size || 'sm'"
+                                        :to="indicator.to"
+                                        :href="indicator.href"
+                                        @click.stop="indicator.handler">
+                                        <FontAwesomeIcon v-if="indicator.icon" :icon="indicator.icon" fixed-width />
+                                        {{ localize(indicator.label) }}
+                                    </BButton>
+                                    <FontAwesomeIcon
+                                        v-else-if="indicator.visible && indicator.disabled"
+                                        :id="getIndicatorId(props.id, indicator.id)"
+                                        :key="indicator.id"
+                                        v-b-tooltip.hover
+                                        :title="localize(indicator.title)"
+                                        :icon="indicator.icon"
+                                        :size="indicator.size || 'sm'"
+                                        fixed-width />
+                                </template>
+                            </slot>
                         </div>
 
                         <slot v-if="props.showBookmark" name="bookmark">
@@ -304,19 +353,21 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                             </BDropdown>
                         </slot>
                     </div>
+
+                    <div :id="getElementId(props.id, 'description')" class="g-card-description">
+                        <slot name="description">
+                            <TextSummary
+                                v-if="props.description"
+                                :id="getElementId(props.id, 'text-summary')"
+                                :description="props.description" />
+                        </slot>
+                    </div>
                 </div>
 
-                <div :id="getElementId(props.id, 'description')" class="g-card-description">
-                    <slot name="description">
-                        <TextSummary
-                            v-if="props.description"
-                            :id="getElementId(props.id, 'text-summary')"
-                            :description="props.description"
-                            :max-length="props.gridView ? 100 : 250" />
-                    </slot>
-                </div>
-
-                <div :id="getElementId(props.id, 'footer')" class="g-card-footer">
+                <div
+                    v-if="props.tags?.length || props.tagsEditable"
+                    :id="getElementId(props.id, 'footer')"
+                    class="g-card-footer align-items-end align-items-sm-stretch d-flex flex-sm-column justify-content-between mt-1">
                     <slot name="tags">
                         <StatelessTags
                             :id="getElementId(props.id, 'tags')"
@@ -329,7 +380,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                             @tag-click="emit('tagClick', $event)" />
                     </slot>
 
-                    <div :id="getElementId(props.id, 'actions')" class="g-card-actions">
+                    <div
+                        :id="getElementId(props.id, 'actions')"
+                        class="g-card-actions align-items-center d-flex justify-content-end">
                         <slot name="secondary-actions">
                             <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
                                 <template v-for="sa in props.secondaryActions">
@@ -350,13 +403,15 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                                             :icon="sa.icon"
                                             fixed-width
                                             :size="sa.size || undefined" />
-                                        {{ localize(sa.label) }}
+                                        <span class="g-card-secondary-action-label">
+                                            {{ localize(sa.label) }}
+                                        </span>
                                     </BButton>
                                 </template>
                             </BButtonGroup>
                         </slot>
 
-                        <div :id="getElementId(props.id, 'primary-actions')" class="g-card-primary-actions">
+                        <div :id="getElementId(props.id, 'primary-actions')" class="g-card-primary-actions d-flex">
                             <slot name="primary-actions">
                                 <template v-for="pa in props.primaryActions">
                                     <BButton
@@ -393,10 +448,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 @import "_breakpoints.scss";
 
 .g-card {
-    container: cards-list / inline-size;
+    container: g-card / inline-size;
 
     width: 100%;
-    padding: 0 0.25rem 0.5rem 0.25rem;
 
     &.g-card-grid-view {
         width: calc(100% / 3);
@@ -438,64 +492,69 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
     }
 
     .g-card-content {
-        position: relative;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
         border: 1px solid $brand-secondary;
         border-radius: 0.5rem;
         padding: 0.75rem;
 
         .g-card-header {
             display: grid;
-            position: relative;
-            align-items: start;
-            grid-template-areas:
-                "i d b"
-                "n n n"
-                "s s s";
+            gap: 0.25rem;
+            grid-template-columns: auto auto 1fr auto;
+            grid-template-rows: auto auto auto;
 
-            grid-template-columns: auto 1fr auto;
+            .g-card-header-select {
+                grid-column: 1;
+            }
 
-            .g-card-header-left {
-                grid-area: i;
-                display: flex;
+            .g-card-header-title {
+                display: grid;
+                justify-self: start;
+            }
+
+            .g-card-title-badges {
+                display: grid;
+                gap: 0.25rem;
+                grid-row: 2;
+                grid-column: 1 /3;
+                justify-self: start;
+            }
+
+            .g-card-badges {
+                grid-column: -2;
                 gap: 0.25rem;
 
-                .g-card-select {
-                    margin: 0%;
+                @container g-card (max-width: #{$breakpoint-sm}) {
+                    grid-row: 2;
+                    grid-column: 1 / -1;
+                    justify-self: end;
                 }
             }
 
-            .g-card-header-right {
-                grid-area: b;
-                display: flex;
-                gap: 0.25rem;
-                align-items: center;
+            .g-card-bookmark-actions {
+                display: grid;
+                grid-auto-flow: column;
 
-                .g-card-badges {
-                    display: flex;
-                    gap: 0.25rem;
+                @container g-card (max-width: #{$breakpoint-sm}) {
+                    justify-self: end;
                 }
             }
         }
 
-        .g-card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: end;
-            margin-top: 0.5rem;
+        .g-card-description {
+            grid-column: 1 / 6;
+        }
 
+        .g-card-footer {
             .g-card-actions {
-                grid-area: b;
-                display: flex;
                 gap: 0.25rem;
-                align-items: center;
-                justify-content: end;
+
+                .g-card-secondary-action-label {
+                    @container g-card (max-width: #{$breakpoint-sm}) {
+                        display: none;
+                    }
+                }
 
                 .g-card-primary-actions {
-                    display: flex;
                     gap: 0.25rem;
                 }
             }
