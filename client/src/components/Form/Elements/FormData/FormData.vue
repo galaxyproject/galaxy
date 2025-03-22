@@ -8,6 +8,7 @@ import {
     type DCESummary,
     type HDAObject,
     type HistoryItemSummary,
+    isCollectionElement,
     isDatasetElement,
     isDCE,
     isHDCA,
@@ -364,8 +365,7 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
         }
         if (
             values.some((v) => {
-                const { historyContentType } = getSrcAndContentType(v);
-                const collectionType = "collection_type" in v && v.collection_type ? v.collection_type : undefined;
+                const { historyContentType, collectionType } = getElementAttributes(v);
                 return !canAcceptSrc(historyContentType, collectionType);
             })
         ) {
@@ -429,7 +429,11 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
 }
 
 function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
-    const { newSrc, datasetCollectionDataset } = getSrcAndContentType(item);
+    const { newSrc, datasetCollectionDataset } = getElementAttributes(item);
+
+    // for name, somehow even though schema says otherwise, DCESummary can return a name
+    const newName = "name" in item && typeof item.name === "string" ? item.name : null;
+
     let v: HistoryOrCollectionItem | HDAObject;
     if (datasetCollectionDataset) {
         v = datasetCollectionDataset;
@@ -438,14 +442,13 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
     }
     const newHid = isHistoryItem(v) ? v.hid : undefined;
     const newId = v.id;
-    const newName = isHistoryItem(v) && v.name ? v.name : newId;
     const newValue: DataOption = {
         id: newId,
         src: newSrc,
         batch: false,
         map_over_type: undefined,
         hid: newHid,
-        name: newName,
+        name: newName || newId,
         keep: true,
         tags: [],
     };
@@ -528,14 +531,16 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
  * Given an element, determine the source and content type.
  * Also returns the collection element dataset object if it exists.
  */
-function getSrcAndContentType(element: HistoryOrCollectionItem): {
+function getElementAttributes(element: HistoryOrCollectionItem): {
     historyContentType: HistoryContentType;
     newSrc: string;
     datasetCollectionDataset: HDAObject | undefined;
+    collectionType?: string;
 } {
     let historyContentType: HistoryContentType;
     let newSrc: string;
     let datasetCollectionDataset: HDAObject | undefined;
+    let collectionType: string | undefined;
     if (isDCE(element)) {
         if (isDatasetElement(element)) {
             historyContentType = "dataset";
@@ -544,9 +549,14 @@ function getSrcAndContentType(element: HistoryOrCollectionItem): {
         } else {
             historyContentType = "dataset_collection";
             newSrc = SOURCE.COLLECTION_ELEMENT;
+            // we already know it is a collection element by this point
+            if (isCollectionElement(element)) {
+                collectionType = element.object.collection_type;
+            }
         }
     } else {
         historyContentType = element.history_content_type;
+        collectionType = "collection_type" in element && element.collection_type ? element.collection_type : undefined;
         newSrc =
             "src" in element && typeof element.src === "string"
                 ? element.src
@@ -554,7 +564,7 @@ function getSrcAndContentType(element: HistoryOrCollectionItem): {
                 ? SOURCE.COLLECTION
                 : SOURCE.DATASET;
     }
-    return { historyContentType, newSrc, datasetCollectionDataset };
+    return { historyContentType, newSrc, datasetCollectionDataset, collectionType };
 }
 
 function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
@@ -655,9 +665,7 @@ function onDragEnter(evt: DragEvent) {
         for (const item of eventData) {
             if (isHistoryOrCollectionItem(item)) {
                 const extensions = getExtensionsForItem(item);
-                const { historyContentType } = getSrcAndContentType(item);
-                const collectionType =
-                    "collection_type" in item && item.collection_type ? item.collection_type : undefined;
+                const { historyContentType, collectionType } = getElementAttributes(item);
 
                 if (extensions && !canAcceptDatatype(extensions)) {
                     highlightingState = "warning";
