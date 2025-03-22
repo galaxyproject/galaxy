@@ -36,7 +36,7 @@
                 <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
             </template>
         </FormCard>
-        <FormCard v-if="reuseAllowed(currentUser)" title="Job re-use Options">
+        <FormCard title="Job re-use Options">
             <template v-slot:body>
                 <FormElement
                     v-model="useCachedJobs"
@@ -75,7 +75,6 @@ import ButtonSpinner from "components/Common/ButtonSpinner";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
-import { allowCachedJobs } from "components/Tool/utilities";
 import { mapState } from "pinia";
 
 import { useHistoryStore } from "@/stores/historyStore";
@@ -175,9 +174,6 @@ export default {
         },
     },
     methods: {
-        reuseAllowed(user) {
-            return allowCachedJobs(user.preferences);
-        },
         getReplaceParams(inputs) {
             return getReplacements(inputs, this.stepData, this.wpData);
         },
