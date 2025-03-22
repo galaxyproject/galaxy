@@ -5,10 +5,10 @@ import { type IconDefinition } from "font-awesome-6";
 
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
+import type { CardAttributes } from "@/components/Common/GCard.types";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
-import Heading from "@/components/Common/Heading.vue";
-import TextSummary from "@/components/Common/TextSummary.vue";
+import GCard from "@/components/Common/GCard.vue";
 
 type OptionType = {
     icon: IconDefinition;
@@ -28,112 +28,40 @@ interface Props {
 
 const props = defineProps<Props>();
 
-function markdownToHTML(text: string) {
-    return markup(text ?? "", true);
-}
+const description = markup(props.sourceOption.description ?? "", true) ?? undefined;
+
+const primaryActions: CardAttributes[] = [
+    {
+        id: "select",
+        label: "Select",
+        title: "Select this option to create a new instance",
+        variant: "outline-primary",
+        to: props.selectRoute,
+        visible: true,
+    },
+];
 </script>
 
 <template>
-    <div :key="props.sourceOption.id" class="source-option-card" :class="{ 'grid-view': props.gridView }">
-        <div class="source-option-card-content">
-            <div>
-                <div class="source-option-card-header">
-                    <Heading bold size="md" class="source-option-card-header-name">
-                        {{ props.sourceOption.name }}
-
-                        <BButton
-                            v-b-tooltip.hover.noninteractive
-                            variant="outline-primary"
-                            size="lg"
-                            :title="props.optionType?.title"
-                            class="inline-icon-button">
-                            <FontAwesomeIcon :icon="props.optionType?.icon" />
-                        </BButton>
-                    </Heading>
-
-                    <slot name="badges" class="source-option-card-header-type" />
-                </div>
-
-                <TextSummary
-                    v-if="props.sourceOption.description"
-                    class="source-option-card-description"
-                    is-html
-                    show-expand-text
-                    :description="markdownToHTML(props.sourceOption.description) ?? ''"
-                    :max-length="props.gridView ? 250 : 350" />
-            </div>
-
+    <GCard
+        :id="props.sourceOption.id"
+        :title="props.sourceOption.name ?? ''"
+        :description="description"
+        :primary-actions="primaryActions"
+        :grid-view="props.gridView">
+        <template v-slot:titleActions>
             <BButton
-                :id="`select-button-${props.sourceOption.id}`"
                 v-b-tooltip.hover.noninteractive
                 variant="outline-primary"
-                class="source-option-card-select-button"
-                :class="{ 'source-option-card-select-button-grid': props.gridView }"
-                title="Select this option to create a new instance"
-                :to="props.selectRoute">
-                Select
+                size="lg"
+                :title="props.optionType?.title"
+                class="inline-icon-button">
+                <FontAwesomeIcon :icon="props.optionType?.icon" />
             </BButton>
-        </div>
-    </div>
+        </template>
+
+        <template v-slot:extra-actions>
+            <slot name="badges" />
+        </template>
+    </GCard>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-@import "_breakpoints.scss";
-
-.source-option-card {
-    width: 100%;
-
-    &.grid-view {
-        width: calc(100% / 3);
-
-        @container templates-list (max-width: #{$breakpoint-xl}) {
-            width: calc(100% / 2);
-        }
-
-        @container templates-list (max-width: #{$breakpoint-sm}) {
-            width: 100%;
-        }
-    }
-    padding: 0 0.25rem 0.5rem 0.25rem;
-
-    .source-option-card-content {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        border: 1px solid $brand-secondary;
-        border-radius: 0.5rem;
-        padding: 0.75rem;
-        height: 100%;
-
-        .source-option-card-header {
-            display: grid;
-            grid-template-areas: "name type";
-            align-items: baseline;
-            gap: 0.5rem;
-
-            .source-option-card-header-name {
-                display: block;
-            }
-        }
-
-        .source-option-card-description {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-
-            :deep p {
-                margin: 0;
-            }
-        }
-
-        .source-option-card-select-button {
-            width: fit-content;
-            margin-top: auto;
-            display: flex;
-            align-self: flex-end;
-            justify-content: center;
-        }
-    }
-}
-</style>
