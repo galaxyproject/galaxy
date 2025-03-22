@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
+import { BButton, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
@@ -98,13 +98,22 @@ function onTagClicked(tag: string) {
         <div v-if="!disabled" class="tags-edit">
             <div class="interactive-tags">
                 <Tag
-                    v-for="tag in tags"
+                    v-for="tag in trimmedTags"
                     :key="tag"
                     :option="tag"
                     :editable="true"
                     :clickable="props.clickable"
                     @deleted="onDelete"
-                    @click="onTagClicked"></Tag>
+                    @click="onTagClicked" />
+
+                <BButton
+                    v-if="slicedTags.length > 0 && !toggledOpen"
+                    :id="toggleButtonId"
+                    variant="link"
+                    class="toggle-link"
+                    @click.stop="() => (toggledOpen = true)">
+                    {{ slicedTags.length }} more...
+                </BButton>
             </div>
 
             <HeadlessMultiselect
@@ -125,7 +134,8 @@ function onTagClicked(tag: string) {
                     :option="tag"
                     :editable="false"
                     :clickable="props.clickable"
-                    @click="onTagClicked"></Tag>
+                    @click="onTagClicked" />
+
                 <BButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
@@ -135,7 +145,7 @@ function onTagClicked(tag: string) {
                     {{ slicedTags.length }} more...
                 </BButton>
 
-                <b-tooltip
+                <BTooltip
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :target="toggleButtonId"
                     custom-class="stateless-tags--tag-preview-tooltip"
@@ -146,8 +156,8 @@ function onTagClicked(tag: string) {
                         :option="tag"
                         :editable="false"
                         :clickable="props.clickable"
-                        @click="onTagClicked"></Tag>
-                </b-tooltip>
+                        @click="onTagClicked" />
+                </BTooltip>
             </div>
         </div>
     </div>
