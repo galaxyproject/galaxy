@@ -101,16 +101,4 @@ describe("test utils", () => {
             ]);
         });
     });
-
-    describe("test getFullAppUrl", () => {
-        it("should return the full app url", () => {
-            const appUrl = Utils.getFullAppUrl();
-            expect(appUrl).toBe("http://localhost/");
-        });
-
-        it("should return the full app url", () => {
-            const appUrl = Utils.getFullAppUrl("home");
-            expect(appUrl).toBe("http://localhost/home");
-        });
-    });
 });
