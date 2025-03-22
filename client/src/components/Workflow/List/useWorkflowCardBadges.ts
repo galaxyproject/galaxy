@@ -81,26 +81,6 @@ export function useWorkflowCardBadges(
 
     const workflowCardBadges = computed<CardBadge[]>(() => [
         {
-            id: "owner",
-            label: workflow.value.owner,
-            title: `'${workflow.value.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.value.owner}'`,
-            icon: faUsers,
-            type: "badge",
-            variant: "outline-secondary",
-            handler: onViewMySharedByUser,
-            visible: shared.value && !publishedView,
-        },
-        {
-            id: "owner",
-            label: workflow.value.owner,
-            title: publishedTitle.value,
-            icon: faUser,
-            type: "badge",
-            variant: "outline-secondary",
-            handler: onViewUserPublished,
-            visible: workflow.value.published && publishedView,
-        },
-        {
             id: "step-count",
             label: invocationText.value,
             title: "This workflow has never been run",
@@ -137,11 +117,35 @@ export function useWorkflowCardBadges(
         },
     ]);
 
+    const workflowCardTitleBadges = computed<CardBadge[]>(() => [
+        {
+            id: "owner-shared",
+            label: workflow.value.owner,
+            title: `'${workflow.value.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.value.owner}'`,
+            icon: faUsers,
+            type: "badge",
+            variant: "outline-secondary",
+            handler: onViewMySharedByUser,
+            visible: shared.value && !publishedView,
+        },
+        {
+            id: "owner-published",
+            label: workflow.value.owner,
+            title: publishedTitle.value,
+            icon: faUser,
+            type: "badge",
+            variant: "outline-secondary",
+            handler: onViewUserPublished,
+            visible: workflow.value.published && publishedView,
+        },
+    ]);
+
     onMounted(async () => {
         invocationCount.value = await initCounts();
     });
 
     return {
         workflowCardBadges,
+        workflowCardTitleBadges,
     };
 }
