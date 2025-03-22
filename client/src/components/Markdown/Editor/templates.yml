@@ -194,3 +194,68 @@ Galaxy:
     cell:
       name: "galaxy"
       content: "generate_galaxy_version()"
+
+Vega:
+  - title: "Bar Diagram"
+    description: "Basic bar diagram"
+    cell:
+      name: "vega"
+      content: |
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "description": "A simple bar chart with embedded data.",
+          "data": {"values": [
+            { "a": "A", "b": 1 },
+            { "a": "B", "b": 2 },
+            { "a": "C", "b": 3 }
+          ]},
+          "mark": "bar",
+          "encoding": {
+            "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},
+            "y": {"field": "b", "type": "quantitative"}
+          }
+        }
+  - title: "Line Chart"
+    description: "Basic line chart"
+    cell:
+      name: "vega"
+      content: |
+        {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "description": "A simple line chart with embedded data.",
+          "data": {"values": [
+            { "a": "A", "b": 1 },
+            { "a": "B", "b": 2 },
+            { "a": "C", "b": 3 }
+          ]},
+          "mark": "line",
+          "encoding": {
+            "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},
+            "y": {"field": "b", "type": "quantitative"}
+          }
+        }
+
+Vitessce:
+  - title: "Hello World"
+    description: "A simple vitessce example"
+    cell:
+      name: "vitessce"
+      content: |
+        {
+          "version": "1.0.16",
+          "name": "Example configuration",
+          "description": "",
+          "datasets": [],
+          "initStrategy": "auto",
+          "coordinationSpace": {},
+          "layout": [{
+            "component": "description",
+            "props": {
+                "description": "Hello, world!"
+            },
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 6
+          }]
+        }

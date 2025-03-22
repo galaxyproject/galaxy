@@ -13,7 +13,7 @@
                     <small class="my-1 mx-3 text-info">{{ title }}</small>
                 </span>
                 <CellOption
-                    v-if="name !== 'markdown'"
+                    v-if="['galaxy', 'visualization'].includes(name)"
                     title="Attach Data"
                     description="Select data for this cell"
                     :icon="faPaperclip"
