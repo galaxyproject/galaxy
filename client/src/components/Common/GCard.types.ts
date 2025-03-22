@@ -26,6 +26,7 @@ export interface CardAttributes {
     disabled?: boolean;
     to?: string;
     href?: string;
+    inline?: boolean;
     handler?: () => void;
 }
 
@@ -36,3 +37,10 @@ export type Title =
           title: string;
           handler: () => void;
       };
+
+export interface TitleIcon {
+    icon: IconDefinition;
+    class?: string;
+    title?: string;
+    size?: string;
+}
