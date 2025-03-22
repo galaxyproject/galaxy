@@ -198,14 +198,14 @@ class InteractorStagingInterface(StagingInterface):
         assert response.status_code == 200, f"Staging failed: {response.text}"
         return response.json()
 
-    def _handle_job(self, job_response: Dict[str, Any]):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         if not self.upload_async:
-            return self.galaxy_interactor.wait_for_job(
+            self.galaxy_interactor.wait_for_job(
                 job_response["id"], job_response["history_id"], maxseconds=self.maxseconds
             )
         else:
             self.job_responses.append(job_response)
-        return
+        return self.galaxy_interactor.get_job_stdio(job_response["id"])
 
     def handle_jobs(self):
         for job_response in self.job_responses:
