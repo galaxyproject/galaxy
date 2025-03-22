@@ -261,7 +261,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                         </slot>
                     </div>
 
-                    <div class="g-card-bookmark-actions align-content-around">
+                    <div class="g-card-bookmark-actions align-content-around justify-content-end">
                         <div
                             :id="getElementId(props.id, 'indicators')"
                             class="g-card-indicators align-items-center d-flex">
@@ -365,13 +365,11 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                 </div>
 
                 <div
-                    v-if="props.tags?.length || props.tagsEditable"
                     :id="getElementId(props.id, 'footer')"
-                    class="g-card-footer align-items-end align-items-sm-stretch d-flex flex-sm-column justify-content-between mt-1">
+                    class="g-card-footer align-items-end align-items-sm-stretch d-flex flex-sm-column justify-content-between">
                     <slot name="tags">
                         <StatelessTags
                             :id="getElementId(props.id, 'tags')"
-                            class="my-1"
                             :clickable="props.tagsEditable"
                             :value="props.tags"
                             :disabled="!props.tagsEditable"
@@ -525,13 +523,14 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
                 @container g-card (max-width: #{$breakpoint-sm}) {
                     grid-row: 2;
-                    grid-column: 1 / -1;
+                    grid-column: -1;
                     justify-self: end;
                 }
             }
 
             .g-card-bookmark-actions {
                 display: grid;
+                grid-column: -1;
                 grid-auto-flow: column;
 
                 @container g-card (max-width: #{$breakpoint-sm}) {
