@@ -90,7 +90,7 @@ const { workflowCardIndicators } = useWorkflowCardIndicators(
     (key, value) => emit("updateFilter", key, value)
 );
 
-const { workflowCardBadges } = useWorkflowCardBadges(
+const { workflowCardBadges, workflowCardTitleBadges } = useWorkflowCardBadges(
     computed(() => props.workflow),
     props.publishedView,
     props.filterable,
@@ -113,6 +113,7 @@ const workflowCardTitle = computed(() => {
         class="workflow-card"
         can-rename-title
         :title="workflowCardTitle"
+        :title-badges="workflowCardTitleBadges"
         :description="description || ''"
         :grid-view="props.gridView"
         :badges="workflowCardBadges"
