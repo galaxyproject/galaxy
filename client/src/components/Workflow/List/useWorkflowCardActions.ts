@@ -15,11 +15,11 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
 import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { undeleteWorkflow } from "@/api/workflows";
 import { type CardAttributes } from "@/components/Common/GCard.types";
 import {
     copyWorkflow as copyWorkflowService,
     deleteWorkflow as deleteWorkflowService,
-    undeleteWorkflow,
     updateWorkflow as updateWorkflowService,
 } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -162,7 +162,7 @@ export function useWorkflowCardActions(
             label: "Link to Workflow",
             icon: faLink,
             title: "Copy link to workflow",
-            handler: () => copyPublicLink,
+            handler: copyPublicLink,
             visible: !workflow.value.deleted && workflow.value.published,
         },
         {
@@ -170,7 +170,7 @@ export function useWorkflowCardActions(
             label: "Copy",
             icon: faCopy,
             title: "Copy workflow",
-            handler: () => copyWorkflow,
+            handler: copyWorkflow,
             visible: !workflow.value.deleted && !isAnonymous.value && !shared.value,
         },
         {
@@ -216,7 +216,7 @@ export function useWorkflowCardActions(
             label: "Restore",
             icon: faTrashRestore,
             title: "Restore",
-            handler: () => onRestore,
+            handler: onRestore,
             visible: workflow.value.deleted,
         },
         {
@@ -225,7 +225,7 @@ export function useWorkflowCardActions(
             icon: faCopy,
             title: "Copy steps into workflow",
             variant: "outline-primary",
-            handler: () => insertSteps(),
+            handler: insertSteps,
             visible: editorView && !workflow.value.deleted,
         },
         {
@@ -234,7 +234,7 @@ export function useWorkflowCardActions(
             icon: faPlusSquare,
             title: "Insert as sub-workflow",
             variant: "primary",
-            handler: () => insert(),
+            handler: insert,
             visible: editorView && !workflow.value.deleted && !current,
         },
     ];
