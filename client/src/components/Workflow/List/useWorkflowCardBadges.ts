@@ -4,15 +4,13 @@ import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { type WorkflowSummary } from "@/api/workflows";
 import { type CardBadge } from "@/components/Common/GCard.types";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
-type Workflow = StoredWorkflowDetailed;
-
 export function useWorkflowCardBadges(
-    workflow: Ref<Workflow>,
+    workflow: Ref<WorkflowSummary>,
     publishedView: boolean,
     filterable: boolean,
     hideRuns: boolean,
