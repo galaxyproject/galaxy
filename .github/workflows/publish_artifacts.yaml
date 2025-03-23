@@ -3,24 +3,46 @@ on:
     release:
       types: [released, prereleased]
 jobs:
-  build-and-publish:
+  build-and-publish-pypi:
     if: github.repository_owner == 'galaxyproject'
-    name: build-and-publish
+    name: Build and Publish to PyPI
     runs-on: ubuntu-latest
     strategy:
         matrix:
             python-version: ['3.8']
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v4
       - name: Install script dependencies
         run: pip install galaxy-release-util
-      - name: Build and publish
+      - name: Build and publish to PyPI
         run: |
           galaxy-release-util build-and-upload --no-confirm
         env:
             TWINE_USERNAME: __token__
             TWINE_PASSWORD: ${{ github.event.release.prerelease && secrets.PYPI_TEST_TOKEN || secrets.PYPI_MAIN_TOKEN }}
             TWINE_REPOSITORY_URL: ${{ github.event.release.prerelease && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+
+  build-and-publish-npm:
+    if: github.repository_owner == 'galaxyproject'
+    name: Build and Publish to NPM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'client/yarn.lock'
+          registry-url: 'https://registry.npmjs.org'
+      - name: build client
+        run: yarn && yarn build-production
+        working-directory: 'client'
+      - name: publish client
+        if: "!github.event.release.prerelease"
+        run: npm publish --provenance --access public
+        working-directory: 'client'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
