@@ -23,7 +23,7 @@ type LicenseType = {
 };
 
 interface Props {
-    inputLicense: string;
+    inputLicense: string | null;
 }
 
 const props = defineProps<Props>();
