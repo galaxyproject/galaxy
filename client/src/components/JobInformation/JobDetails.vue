@@ -1,6 +1,7 @@
 <template>
     <b-card>
         <JobInformation :job_id="id" :include-times="true">
+            <!-- only needed for admin job component -->
             <tr v-if="hasTraceback">
                 <td>Traceback</td>
                 <td>
