@@ -227,7 +227,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                         </template>
 
                         <template v-slot:extra-actions>
-                            <div v-if="props.inPanel" class="position-absolute mr-3" style="right: 0">
+                            <div v-if="props.inPanel">
                                 <FontAwesomeIcon v-if="invocation.id === currentItemId" :icon="faEye" />
                             </div>
                         </template>
