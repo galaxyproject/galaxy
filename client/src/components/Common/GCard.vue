@@ -147,214 +147,221 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
             class="g-card-content d-flex flex-column justify-content-between h-100"
             :class="contentClass">
             <slot>
-                <div>
-                    <div :id="`g-card-${props.id}-header`" class="g-card-header flex-gapy-1">
-                        <div
-                            v-if="selectable"
-                            :id="getElementId(props.id, 'select')"
-                            class="g-card-header-select align-content-around">
-                            <slot name="select">
-                                <BFormCheckbox
-                                    :id="getElementId(props.id, 'select')"
-                                    v-b-tooltip.hover
-                                    :checked="selected"
-                                    class="g-card-header-select m-0"
-                                    :title="props.selectTitle || localize('Select for bulk actions')"
-                                    @change="emit('select')" />
-                            </slot>
-                        </div>
-
-                        <div :id="`g-card-${props.id}-header-title`" class="g-card-header-title">
-                            <slot name="title">
-                                <Heading
-                                    :id="getElementId(props.id, 'title')"
-                                    bold
-                                    inline
-                                    class="g-card-title d-inline"
-                                    :size="props.titleSize">
-                                    <FontAwesomeIcon
-                                        v-if="props.titleIcon?.icon"
-                                        :icon="props.titleIcon.icon"
-                                        :class="props.titleIcon.class"
-                                        :title="props.titleIcon.title"
-                                        :size="props.titleIcon.size"
-                                        fixed-width />
-
-                                    <BLink
-                                        v-if="typeof title === 'object'"
-                                        :id="getElementId(props.id, 'title-link')"
-                                        v-b-tooltip.hover
-                                        :title="localize(title.title)"
-                                        @click.stop.prevent="title.handler">
-                                        {{ title.label }}
-                                    </BLink>
-                                    <template v-else>
-                                        <span :id="getElementId(props.id, 'title-text')">{{ title }}</span>
-                                    </template>
-
-                                    <slot name="titleActions">
-                                        <BButton
-                                            v-if="props.canRenameTitle"
-                                            :id="getElementId(props.id, 'rename')"
-                                            v-b-tooltip.hover.noninteractive
-                                            class="inline-icon-button g-card-rename"
-                                            variant="link"
-                                            :title="localize(props.renameTitle)"
-                                            @click="emit('rename')">
-                                            <FontAwesomeIcon :icon="faPen" fixed-width />
-                                        </BButton>
+                <div class="d-flex flex-column flex-gapy-1">
+                    <div
+                        :id="`g-card-${props.id}-header`"
+                        class="d-flex flex-gapy-1 flex-gapx-1 justify-content-between">
+                        <div class="d-flex flex-column">
+                            <div class="align-items-baseline d-flex">
+                                <div v-if="selectable" :id="getElementId(props.id, 'select')">
+                                    <slot name="select">
+                                        <BFormCheckbox
+                                            :id="getElementId(props.id, 'select')"
+                                            v-b-tooltip.hover
+                                            :checked="selected"
+                                            :title="props.selectTitle || localize('Select for bulk actions')"
+                                            @change="emit('select')" />
                                     </slot>
-                                </Heading>
-                            </slot>
-                        </div>
+                                </div>
 
-                        <div class="g-card-title-badges align-items-center align-self-center d-flex">
-                            <slot name="titleBadges">
-                                <template v-for="badge in props.titleBadges">
-                                    <BBadge
-                                        v-if="badge.visible"
-                                        :id="getBadgeId(props.id, badge.id)"
-                                        :key="badge.id"
-                                        v-b-tooltip.hover
-                                        :pill="badge.type !== 'badge'"
-                                        :class="{
-                                            'outline-badge': badge.variant?.includes('outline'),
-                                            'cursor-pointer': badge.handler,
-                                            [String(badge.class)]: badge.class,
-                                        }"
-                                        :title="localize(badge.title)"
-                                        :variant="badge.variant || 'secondary'"
-                                        :to="badge.to"
-                                        @click.stop="badge.handler">
-                                        <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
-                                        {{ localize(badge.label) }}
-                                    </BBadge>
-                                </template>
-                            </slot>
-                        </div>
+                                <div :id="`g-card-${props.id}-header-title`">
+                                    <slot name="title">
+                                        <Heading
+                                            :id="getElementId(props.id, 'title')"
+                                            bold
+                                            inline
+                                            class="d-inline"
+                                            :size="props.titleSize">
+                                            <FontAwesomeIcon
+                                                v-if="props.titleIcon?.icon"
+                                                :icon="props.titleIcon.icon"
+                                                :class="props.titleIcon.class"
+                                                :title="props.titleIcon.title"
+                                                :size="props.titleIcon.size"
+                                                fixed-width />
 
-                        <div
-                            :id="getElementId(props.id, 'badges')"
-                            class="g-card-badges align-items-center align-self-center d-flex flex-gapx-1">
-                            <slot name="badges">
-                                <template v-for="badge in props.badges">
-                                    <BBadge
-                                        v-if="badge.visible"
-                                        :id="getBadgeId(props.id, badge.id)"
-                                        :key="badge.id"
-                                        v-b-tooltip.hover.top.noninteractive
-                                        :pill="badge.type !== 'badge'"
-                                        :class="{
-                                            'outline-badge': badge.variant?.includes('outline'),
-                                            'cursor-pointer': badge.handler,
-                                            [String(badge.class)]: badge.class,
-                                        }"
-                                        :title="localize(badge.title)"
-                                        :variant="badge.variant || 'secondary'"
-                                        :to="badge.to"
-                                        @click.stop="badge.handler">
-                                        <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
-                                        {{ localize(badge.label) }}
-                                    </BBadge>
-                                </template>
-                            </slot>
-                        </div>
+                                            <BLink
+                                                v-if="typeof title === 'object'"
+                                                :id="getElementId(props.id, 'title-link')"
+                                                v-b-tooltip.hover
+                                                :title="localize(title.title)"
+                                                @click.stop.prevent="title.handler">
+                                                {{ title.label }}
+                                            </BLink>
+                                            <template v-else>
+                                                <span :id="getElementId(props.id, 'title-text')">{{ title }}</span>
+                                            </template>
 
-                        <div class="g-card-bookmark-actions align-content-around justify-content-end">
-                            <div
-                                :id="getElementId(props.id, 'indicators')"
-                                class="g-card-indicators align-items-center d-flex">
-                                <slot name="indicators">
-                                    <template v-for="indicator in props.indicators">
-                                        <BButton
-                                            v-if="indicator.visible && !indicator.disabled"
-                                            :id="getIndicatorId(props.id, indicator.id)"
-                                            :key="indicator.id"
+                                            <slot name="titleActions">
+                                                <BButton
+                                                    v-if="props.canRenameTitle"
+                                                    :id="getElementId(props.id, 'rename')"
+                                                    v-b-tooltip.hover.noninteractive
+                                                    class="inline-icon-button g-card-rename"
+                                                    variant="link"
+                                                    :title="localize(props.renameTitle)"
+                                                    @click="emit('rename')">
+                                                    <FontAwesomeIcon :icon="faPen" fixed-width />
+                                                </BButton>
+                                            </slot>
+                                        </Heading>
+                                    </slot>
+                                </div>
+                            </div>
+
+                            <div class="align-items-center d-flex">
+                                <slot name="titleBadges">
+                                    <template v-for="badge in props.titleBadges">
+                                        <BBadge
+                                            v-if="badge.visible"
+                                            :id="getBadgeId(props.id, badge.id)"
+                                            :key="badge.id"
                                             v-b-tooltip.hover
-                                            class="inline-icon-button"
-                                            :title="localize(indicator.title)"
-                                            :variant="indicator.variant || 'outline-secondary'"
-                                            :size="indicator.size || 'sm'"
-                                            :to="indicator.to"
-                                            :href="indicator.href"
-                                            @click.stop="indicator.handler">
-                                            <FontAwesomeIcon v-if="indicator.icon" :icon="indicator.icon" fixed-width />
-                                            {{ localize(indicator.label) }}
-                                        </BButton>
-                                        <FontAwesomeIcon
-                                            v-else-if="indicator.visible && indicator.disabled"
-                                            :id="getIndicatorId(props.id, indicator.id)"
-                                            :key="indicator.id"
-                                            v-b-tooltip.hover
-                                            :title="localize(indicator.title)"
-                                            :icon="indicator.icon"
-                                            :size="indicator.size || 'sm'"
-                                            fixed-width />
+                                            :pill="badge.type !== 'badge'"
+                                            :class="{
+                                                'outline-badge': badge.variant?.includes('outline'),
+                                                'cursor-pointer': badge.handler,
+                                                [String(badge.class)]: badge.class,
+                                            }"
+                                            :title="localize(badge.title)"
+                                            :variant="badge.variant || 'secondary'"
+                                            :to="badge.to"
+                                            @click.stop="badge.handler">
+                                            <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                            {{ localize(badge.label) }}
+                                        </BBadge>
                                     </template>
                                 </slot>
                             </div>
+                        </div>
 
-                            <slot v-if="props.showBookmark" name="bookmark">
-                                <BButton
-                                    v-if="!bookmarkLoading"
-                                    :id="getElementId(props.id, 'bookmark')"
-                                    v-b-tooltip.hover
-                                    class="inline-icon-button"
-                                    variant="link"
-                                    :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
-                                    @click="toggleBookmark">
-                                    <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
-                                </BButton>
-                                <BButton
-                                    v-else
-                                    :id="getElementId(props.id, 'bookmark-loading')"
-                                    v-b-tooltip.hover
-                                    class="inline-icon-button"
-                                    variant="link"
-                                    :title="localize('Bookmarking...')"
-                                    disabled>
-                                    <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
-                                </BButton>
-                            </slot>
+                        <div class="align-items-start d-flex flex-row-reverse flex-wrap gap-1">
+                            <div class="align-content-around justify-content-end">
+                                <slot v-if="props.showBookmark" name="bookmark">
+                                    <BButton
+                                        v-if="!bookmarkLoading"
+                                        :id="getElementId(props.id, 'bookmark')"
+                                        v-b-tooltip.hover
+                                        class="inline-icon-button"
+                                        variant="link"
+                                        :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
+                                        @click="toggleBookmark">
+                                        <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
+                                    </BButton>
+                                    <BButton
+                                        v-else
+                                        :id="getElementId(props.id, 'bookmark-loading')"
+                                        v-b-tooltip.hover
+                                        class="inline-icon-button"
+                                        variant="link"
+                                        :title="localize('Bookmarking...')"
+                                        disabled>
+                                        <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
+                                    </BButton>
+                                </slot>
 
-                            <slot name="extra-actions">
-                                <BDropdown
-                                    v-if="props.extraActions?.length && props.extraActions.some((ea) => ea.visible)"
-                                    :id="getElementId(props.id, 'extra-actions')"
-                                    v-b-tooltip.hover.noninteractive
-                                    right
-                                    no-caret
-                                    title="More options"
-                                    toggle-class="inline-icon-button"
-                                    variant="link"
-                                    @show="() => emit('dropdown', true)"
-                                    @hide="() => emit('dropdown', false)">
-                                    <template v-slot:button-content>
-                                        <FontAwesomeIcon :icon="faCaretDown" fixed-width />
-                                    </template>
+                                <slot name="extra-actions">
+                                    <BDropdown
+                                        v-if="props.extraActions?.length && props.extraActions.some((ea) => ea.visible)"
+                                        :id="getElementId(props.id, 'extra-actions')"
+                                        v-b-tooltip.hover.noninteractive
+                                        right
+                                        no-caret
+                                        title="More options"
+                                        toggle-class="inline-icon-button"
+                                        variant="link"
+                                        @show="() => emit('dropdown', true)"
+                                        @hide="() => emit('dropdown', false)">
+                                        <template v-slot:button-content>
+                                            <FontAwesomeIcon :icon="faCaretDown" fixed-width />
+                                        </template>
 
-                                    <template v-for="ea in props.extraActions">
-                                        <BDropdownItem
-                                            v-if="ea.visible"
-                                            :id="getActionId(props.id, ea.id)"
-                                            :key="ea.id"
-                                            :disabled="ea.disabled"
-                                            :variant="ea.variant || 'link'"
-                                            :to="ea.to"
-                                            :href="ea.href"
-                                            :title="ea.title"
-                                            :size="ea.size || 'sm'"
-                                            @click="ea.handler && ea.handler()">
-                                            <FontAwesomeIcon v-if="ea.icon" :icon="ea.icon" fixed-width />
-                                            {{ localize(ea.label) }}
-                                        </BDropdownItem>
-                                    </template>
-                                </BDropdown>
-                            </slot>
+                                        <template v-for="ea in props.extraActions">
+                                            <BDropdownItem
+                                                v-if="ea.visible"
+                                                :id="getActionId(props.id, ea.id)"
+                                                :key="ea.id"
+                                                :disabled="ea.disabled"
+                                                :variant="ea.variant || 'link'"
+                                                :to="ea.to"
+                                                :href="ea.href"
+                                                :title="ea.title"
+                                                :size="ea.size || 'sm'"
+                                                @click="ea.handler && ea.handler()">
+                                                <FontAwesomeIcon v-if="ea.icon" :icon="ea.icon" fixed-width />
+                                                {{ localize(ea.label) }}
+                                            </BDropdownItem>
+                                        </template>
+                                    </BDropdown>
+                                </slot>
+                            </div>
+
+                            <div class="d-flex flex-gapx-1">
+                                <div
+                                    :id="getElementId(props.id, 'badges')"
+                                    class="align-items-center align-self-center d-flex flex-gapx-1">
+                                    <slot name="badges">
+                                        <template v-for="badge in props.badges">
+                                            <BBadge
+                                                v-if="badge.visible"
+                                                :id="getBadgeId(props.id, badge.id)"
+                                                :key="badge.id"
+                                                v-b-tooltip.hover.top.noninteractive
+                                                :pill="badge.type !== 'badge'"
+                                                :class="{
+                                                    'outline-badge': badge.variant?.includes('outline'),
+                                                    'cursor-pointer': badge.handler,
+                                                    [String(badge.class)]: badge.class,
+                                                }"
+                                                :title="localize(badge.title)"
+                                                :variant="badge.variant || 'secondary'"
+                                                :to="badge.to"
+                                                @click.stop="badge.handler">
+                                                <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                                {{ localize(badge.label) }}
+                                            </BBadge>
+                                        </template>
+                                    </slot>
+                                </div>
+
+                                <div :id="getElementId(props.id, 'indicators')">
+                                    <slot name="indicators">
+                                        <template v-for="indicator in props.indicators">
+                                            <BButton
+                                                v-if="indicator.visible && !indicator.disabled"
+                                                :id="getIndicatorId(props.id, indicator.id)"
+                                                :key="indicator.id"
+                                                v-b-tooltip.hover
+                                                class="inline-icon-button"
+                                                :title="localize(indicator.title)"
+                                                :variant="indicator.variant || 'outline-secondary'"
+                                                :size="indicator.size || 'sm'"
+                                                :to="indicator.to"
+                                                :href="indicator.href"
+                                                @click.stop="indicator.handler">
+                                                <FontAwesomeIcon
+                                                    v-if="indicator.icon"
+                                                    :icon="indicator.icon"
+                                                    fixed-width />
+                                                {{ localize(indicator.label) }}
+                                            </BButton>
+                                            <FontAwesomeIcon
+                                                v-else-if="indicator.visible && indicator.disabled"
+                                                :id="getIndicatorId(props.id, indicator.id)"
+                                                :key="indicator.id"
+                                                v-b-tooltip.hover
+                                                :title="localize(indicator.title)"
+                                                :icon="indicator.icon"
+                                                :size="indicator.size || 'sm'"
+                                                fixed-width />
+                                        </template>
+                                    </slot>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div :id="getElementId(props.id, 'description')" class="g-card-description">
+                    <div :id="getElementId(props.id, 'description')">
                         <slot name="description">
                             <TextSummary
                                 v-if="props.description"
@@ -366,7 +373,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
                 <div
                     :id="getElementId(props.id, 'footer')"
-                    class="g-card-footer align-items-end align-items-sm-stretch d-flex flex-sm-column justify-content-between">
+                    class="align-items-end align-items-sm-stretch d-flex flex-sm-column justify-content-between">
                     <slot name="tags">
                         <StatelessTags
                             :id="getElementId(props.id, 'tags')"
@@ -380,12 +387,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
                     <div
                         :id="getElementId(props.id, 'actions')"
-                        class="g-card-date-actions align-items-center d-flex flex-gapy-1 flex-sm-wrap justify-content-between">
+                        class="align-items-center d-flex flex-gapy-1 flex-sm-wrap justify-content-between">
                         <slot name="update-time">
-                            <div
-                                v-if="props.updateTime"
-                                :id="`g-card-${props.id}-update-time`"
-                                class="g-card-update-time">
+                            <div v-if="props.updateTime" :id="`g-card-${props.id}-update-time`">
                                 <BBadge
                                     v-b-tooltip.hover.noninteractive
                                     pill
@@ -398,7 +402,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                             </div>
                         </slot>
 
-                        <div class="g-card-actions align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
+                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
                             <slot name="secondary-actions">
                                 <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
                                     <template v-for="sa in props.secondaryActions">
@@ -427,9 +431,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                                 </BButtonGroup>
                             </slot>
 
-                            <div
-                                :id="getElementId(props.id, 'primary-actions')"
-                                class="g-card-primary-actions d-flex flex-gapx-1">
+                            <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">
                                 <slot name="primary-actions">
                                     <template v-for="pa in props.primaryActions">
                                         <BButton
@@ -520,58 +522,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
         border-radius: 0.5rem;
         padding: 0.75rem;
 
-        .g-card-header {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            grid-template-rows: auto auto auto;
-
-            .g-card-header-select {
-                grid-column: 1;
-            }
-
-            .g-card-header-title {
-                display: grid;
-                justify-self: start;
-                grid-column: auto;
-            }
-
-            .g-card-title-badges {
-                display: grid;
-                grid-row: 2;
-                grid-column: 1 / -1;
-                justify-self: start;
-            }
-
-            .g-card-badges {
-                grid-column: -2;
-
-                @container g-card (max-width: #{$breakpoint-sm}) {
-                    grid-row: 2;
-                    grid-column: -1;
-                    justify-self: end;
-                }
-            }
-
-            .g-card-bookmark-actions {
-                display: grid;
-                grid-column: -1;
-                grid-auto-flow: column;
-
-                @container g-card (max-width: #{$breakpoint-sm}) {
-                    justify-self: end;
-                }
-            }
-        }
-
-        .g-card-footer {
-            .g-card-date-actions {
-                .g-card-actions {
-                    .g-card-secondary-action-label {
-                        @container g-card (max-width: #{$breakpoint-sm}) {
-                            display: none;
-                        }
-                    }
-                }
+        .g-card-secondary-action-label {
+            @container g-card (max-width: #{$breakpoint-sm}) {
+                display: none;
             }
         }
     }
