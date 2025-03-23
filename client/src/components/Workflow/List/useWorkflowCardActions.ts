@@ -2,6 +2,7 @@ import {
     faCopy,
     faDownload,
     faEdit,
+    faExternalLinkAlt,
     faFileExport,
     faLink,
     faPlay,
@@ -82,6 +83,25 @@ export function useWorkflowCardActions(
             } else {
                 return "Run workflow";
             }
+        }
+    });
+
+    const sourceType = computed(() => {
+        if (workflow.value.source_metadata?.url) {
+            return "url";
+        } else if (workflow.value.source_metadata?.trs_server) {
+            return `trs_${workflow.value.source_metadata?.trs_server}`;
+        } else {
+            return "";
+        }
+    });
+
+    const dockstoreUrl = computed(() => {
+        const trsId = workflow.value.source_metadata?.trs_tool_id as string | undefined;
+        if (trsId) {
+            return `https://dockstore.org/workflows${trsId.slice(9)}`;
+        } else {
+            return undefined;
         }
     });
 
@@ -206,6 +226,22 @@ export function useWorkflowCardActions(
             to: `/workflows/export?id=${workflow.value.id}`,
             visible: !workflow.value.deleted,
         },
+        {
+            id: "workflow-view-external-link",
+            label: "View external link",
+            icon: faExternalLinkAlt,
+            title: "View external link",
+            href: workflow.value.source_metadata?.url,
+            visible: sourceType.value === "url",
+        },
+        {
+            id: "workflow-view-external-link",
+            label: "View external link",
+            icon: faExternalLinkAlt,
+            title: `View on ${workflow.value.source_metadata?.trs_server}`,
+            href: dockstoreUrl.value,
+            visible: sourceType.value.includes("trs"),
+        },
     ];
 
     const workflowCardSecondaryActions: CardAttributes[] = [
@@ -227,7 +263,7 @@ export function useWorkflowCardActions(
             visible: editorView && !workflow.value.deleted,
         },
         {
-            id: "workflow-insert",
+            id: "workflow-insert-sub-workflow",
             label: "Insert",
             icon: faPlusSquare,
             title: "Insert as sub-workflow",
