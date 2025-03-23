@@ -148,7 +148,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
             :class="contentClass">
             <slot>
                 <div>
-                    <div :id="`g-card-${props.id}-header`" class="g-card-header">
+                    <div :id="`g-card-${props.id}-header`" class="g-card-header flex-gapy-1">
                         <div
                             v-if="selectable"
                             :id="getElementId(props.id, 'select')"
@@ -235,7 +235,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
                         <div
                             :id="getElementId(props.id, 'badges')"
-                            class="g-card-badges align-items-center align-self-center d-flex">
+                            class="g-card-badges align-items-center align-self-center d-flex flex-gapx-1">
                             <slot name="badges">
                                 <template v-for="badge in props.badges">
                                     <BBadge
@@ -380,7 +380,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
                     <div
                         :id="getElementId(props.id, 'actions')"
-                        class="align-items-center d-flex justify-content-between">
+                        class="g-card-date-actions align-items-center d-flex flex-gapy-1 flex-sm-wrap justify-content-between">
                         <slot name="update-time">
                             <div
                                 v-if="props.updateTime"
@@ -398,7 +398,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                             </div>
                         </slot>
 
-                        <div class="g-card-actions align-items-center d-flex justify-content-end">
+                        <div class="g-card-actions align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
                             <slot name="secondary-actions">
                                 <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
                                     <template v-for="sa in props.secondaryActions">
@@ -427,7 +427,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                                 </BButtonGroup>
                             </slot>
 
-                            <div :id="getElementId(props.id, 'primary-actions')" class="g-card-primary-actions d-flex">
+                            <div
+                                :id="getElementId(props.id, 'primary-actions')"
+                                class="g-card-primary-actions d-flex flex-gapx-1">
                                 <slot name="primary-actions">
                                     <template v-for="pa in props.primaryActions">
                                         <BButton
@@ -520,7 +522,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
         .g-card-header {
             display: grid;
-            gap: 0.25rem;
             grid-template-columns: auto 1fr auto;
             grid-template-rows: auto auto auto;
 
@@ -536,7 +537,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
             .g-card-title-badges {
                 display: grid;
-                gap: 0.25rem;
                 grid-row: 2;
                 grid-column: 1 / -1;
                 justify-self: start;
@@ -544,7 +544,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
 
             .g-card-badges {
                 grid-column: -2;
-                gap: 0.25rem;
 
                 @container g-card (max-width: #{$breakpoint-sm}) {
                     grid-row: 2;
@@ -565,17 +564,13 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
         }
 
         .g-card-footer {
-            .g-card-actions {
-                gap: 0.25rem;
-
-                .g-card-secondary-action-label {
-                    @container g-card (max-width: #{$breakpoint-sm}) {
-                        display: none;
+            .g-card-date-actions {
+                .g-card-actions {
+                    .g-card-secondary-action-label {
+                        @container g-card (max-width: #{$breakpoint-sm}) {
+                            display: none;
+                        }
                     }
-                }
-
-                .g-card-primary-actions {
-                    gap: 0.25rem;
                 }
             }
         }
