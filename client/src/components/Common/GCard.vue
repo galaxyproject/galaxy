@@ -123,10 +123,10 @@ async function toggleBookmark() {
     bookmarkLoading.value = false;
 }
 
-const getElementId = (cardId: string, element: string) => `g-card-${cardId}-${element}`;
-const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-${cardId}-indicator-${indicatorId}`;
-const getBadgeId = (cardId: string, badgeId: string) => `g-card-${cardId}-badge-${badgeId}`;
-const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-action-${actionId}`;
+const getElementId = (cardId: string, element: string) => `g-card-${element}-${cardId}`;
+const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
+const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
+const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
 </script>
 
 <template>
@@ -240,7 +240,12 @@ const getActionId = (cardId: string, actionId: string) => `g-card-${cardId}-acti
                                 <slot v-if="props.showBookmark" name="bookmark">
                                     <BButton
                                         v-if="!bookmarkLoading"
-                                        :id="getElementId(props.id, 'bookmark')"
+                                        :id="
+                                            getElementId(
+                                                props.id,
+                                                props.bookmarked ? 'bookmark-remove' : 'bookmark-add'
+                                            )
+                                        "
                                         v-b-tooltip.hover
                                         class="inline-icon-button"
                                         variant="link"
