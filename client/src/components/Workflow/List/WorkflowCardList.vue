@@ -100,8 +100,7 @@ function onInsertSteps(workflow: WorkflowSummary) {
             @rename="onRename"
             @preview="onPreview"
             @insert="onInsert(workflow)"
-            @insertSteps="onInsertSteps(workflow)">
-        </WorkflowCard>
+            @insertSteps="onInsertSteps(workflow)" />
 
         <WorkflowRename
             :id="modalOptions.rename.id"
