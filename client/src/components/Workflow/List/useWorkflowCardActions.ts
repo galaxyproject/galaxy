@@ -14,8 +14,8 @@ import {
 import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
-import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { undeleteWorkflow } from "@/api/workflows";
+import { type WorkflowSummary } from "@/api/workflows";
 import { type CardAttributes } from "@/components/Common/GCard.types";
 import {
     copyWorkflow as copyWorkflowService,
@@ -29,10 +29,8 @@ import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
 import { getFullAppUrl } from "@/utils/utils";
 
-type Workflow = StoredWorkflowDetailed;
-
 export function useWorkflowCardActions(
-    workflow: Ref<Workflow>,
+    workflow: Ref<WorkflowSummary>,
     current: boolean,
     editorView: boolean,
     refreshCallback: () => void,
