@@ -70,6 +70,8 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
+ICON_CACHE_MAX_AGE = 2592000  # 30 days
+
 
 class FormDataApiRoute(APIContentTypeRoute):
     match_content_type = "multipart/form-data"
@@ -169,7 +171,7 @@ class FetchTools:
 
         # Serve the file with caching headers
         response = PNGIconResponse(tool_icon_path)
-        response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
+        response.headers["Cache-Control"] = f"public, max-age={ICON_CACHE_MAX_AGE}, immutable"
         response.headers["ETag"] = etag
         response.headers["Last-Modified"] = last_modified
         return response
