@@ -32,10 +32,6 @@ steps:
       intro: "Hit the close button to close the upload dialog."
       postclick: true
 
-    - component: masthead.window_manager
-      intro: "Clicking this button will enable Galaxy's Window Manager mode."
-      postclick: true
-
     - component: history_panel
       intro: "This is your history. It contains our matrix being uploaded."
 
