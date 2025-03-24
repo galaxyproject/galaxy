@@ -1,6 +1,6 @@
 export type DataOption = {
     id: string;
-    hid: number;
+    hid?: number;
     is_dataset?: boolean;
     keep: boolean;
     batch: boolean;
