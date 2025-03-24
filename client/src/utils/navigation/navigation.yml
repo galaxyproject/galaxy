@@ -57,7 +57,7 @@ masthead:
     username:
       type: xpath
       selector: '//a[contains(text(), "Signed in as")]'
-    window_manager: '#enable-window-manager'
+    window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
 preferences:
@@ -168,6 +168,7 @@ history_panel:
       - '#current-history-panel #${history_content_type}-${id}'
       - '#current-history-panel [data-hid="${hid}"]'
 
+      current: '#current-history-panel'
       title: '${_} .content-title'
       hid: '${_} .hid'
       name: '${_} .name'
@@ -184,16 +185,15 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
       state_icon: '${_} .state-icon'
 
-      # Title buttons...
-      display_button: '${_} .display-btn'
-      edit_button: '${_} .edit-btn'
+      # Actions
+      alltags: '${_} .stateless-tags .tag'
       delete_button: '${_} .delete-btn'
-
-      # Action buttons...
+      display_button: '${_} .display-btn'
       download_button: '${_} .download-btn'
+      edit_button: '${_} .edit-btn'
       info_button: '${_} .params-btn'
       rerun_button: '${_} .rerun-btn'
-      alltags: '${_} .stateless-tags .tag'
+      visualize_button: '${_} .visualize-btn'
 
   # history content item
   content_item:
