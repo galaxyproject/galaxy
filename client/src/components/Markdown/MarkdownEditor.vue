@@ -23,13 +23,10 @@
                 </div>
             </div>
             <div class="unified-panel-body">
-                <TextEditor
+                <CellCode
                     v-if="editor === 'text'"
-                    :title="title"
-                    :markdown-text="markdownText"
-                    :steps="steps"
-                    :mode="mode"
-                    @update="$emit('update', $event)" />
+                    :value="markdownText"
+                    @change="$emit('update', $event)" />
                 <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
         </div>
@@ -52,8 +49,9 @@ import { ref } from "vue";
 import type { WorkflowLabel } from "./Editor/types";
 
 import CellEditor from "./Editor/CellEditor.vue";
-import TextEditor from "./Editor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
+
+const CellCode = () => import("./Editor/CellCode.vue");
 
 library.add(faQuestion);
 
