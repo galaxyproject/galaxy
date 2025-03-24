@@ -4481,8 +4481,8 @@ export interface paths {
          * Get the icon image associated with a tool
          * @description Returns the icon image associated with a tool.
          *
-         *     If the tool has no icon defined, a null response is returned.
-         *     If the tool has an icon defined, but the icon file is not found, a 404 response is returned.
+         *     The icon image is served with caching headers to allow for efficient
+         *     client-side caching. The icon image is expected to be in PNG format.
          */
         get: operations["get_icon_api_tools__tool_id__icon_get"];
         put?: never;
@@ -33038,6 +33038,13 @@ export interface operations {
                 content: {
                     "image/png": string;
                 };
+            };
+            /** @description Tool icon image has not been modified since the last request */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Tool icon file not found or not provided by the tool */
             404: {
