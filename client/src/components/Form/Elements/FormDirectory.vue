@@ -39,7 +39,7 @@
             </b-breadcrumb-item>
         </b-breadcrumb>
 
-        <div v-if="value" class="px-2">
+        <div v-if="value" class="px-2" data-description="directory full path">
             <span v-localize>Directory Path:</span>
             <code>{{ value }}</code>
         </div>
