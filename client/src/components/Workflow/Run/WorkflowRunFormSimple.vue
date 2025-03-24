@@ -63,7 +63,11 @@ const showRightPanel = ref<"help" | "graph" | null>(!showPanels.value && props.m
 const showGraph = computed(() => showRightPanel.value === "graph");
 const showHelp = computed(() => showRightPanel.value === "help");
 
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
+const { renderMarkdown } = useMarkdown({
+    openLinksInNewPage: true,
+    removeNewlinesAfterList: true,
+    increaseHeadingLevelBy: 2,
+});
 
 const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
