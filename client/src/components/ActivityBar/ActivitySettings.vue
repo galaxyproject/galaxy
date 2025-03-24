@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type Activity, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
 
 const props = defineProps<{
     activityBarId: string;
