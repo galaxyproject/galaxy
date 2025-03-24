@@ -39,7 +39,7 @@ function waitForElement(selector, resolve, reject, tries) {
                 waitForElement(selector, resolve, reject, tries - 1);
             }, delay);
         } else {
-            throw Error("Element not found.", selector);
+            throw Error(`Element not found. ${selector}`);
         }
     } else {
         resolve();
@@ -54,7 +54,7 @@ function doClick(targets) {
             if (el) {
                 el.click();
             } else {
-                throw Error("Click target not found.", selector);
+                throw Error(`Click target not found. ${selector}`);
             }
         });
     }
@@ -69,7 +69,7 @@ function doInsert(selector, value) {
             const event = new Event("input");
             el.dispatchEvent(event);
         } else {
-            throw Error("Insert target not found.", selector);
+            throw Error(`Insert target not found. ${selector}`);
         }
     }
 }

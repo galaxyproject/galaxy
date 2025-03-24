@@ -168,7 +168,6 @@ history_panel:
       - '#current-history-panel #${history_content_type}-${id}'
       - '#current-history-panel [data-hid="${hid}"]'
 
-      current: '#current-history-panel'
       title: '${_} .content-title'
       hid: '${_} .hid'
       name: '${_} .name'
