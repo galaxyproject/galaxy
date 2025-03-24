@@ -36,6 +36,13 @@
                     :labels="labels"
                     @cancel="$emit('configure')"
                     @change="handleConfigure($event)" />
+                <ConfigureVisualization
+                    v-else-if="name === 'visualization' && configure"
+                    :name="name"
+                    :content="content"
+                    :labels="labels"
+                    @cancel="$emit('configure')"
+                    @change="handleConfigure($event)" />
                 <CellCode
                     :key="name"
                     class="mt-1"
@@ -60,6 +67,7 @@ import type { WorkflowLabel } from "./types";
 import CellAction from "./CellAction.vue";
 import CellButton from "./CellButton.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
+import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const CellCode = () => import("./CellCode.vue");

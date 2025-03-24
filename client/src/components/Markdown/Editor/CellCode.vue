@@ -14,6 +14,10 @@ const props = defineProps({
         type: String,
         default: "github_light_default",
     },
+    maxLines: {
+        type: Number,
+        default: 99999,
+    },
     mode: {
         type: String,
         default: "json",
@@ -44,7 +48,7 @@ async function buildEditor() {
     aceEditor = ace.edit(editor.value, {
         highlightActiveLine: false,
         highlightGutterLine: false,
-        maxLines: 30,
+        maxLines: props.maxLines,
         minLines: 1,
         mode: modePath,
         showPrintMargin: false,

@@ -30,8 +30,9 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
 
+import { getVisualizations } from "./services";
 import cellTemplates from "./templates.yml";
 import type { CellType, TemplateEntry } from "./types";
 
@@ -46,9 +47,11 @@ defineEmits<{
 
 const buttonRef = ref();
 const query = ref("");
+const visualizations: Ref<Array<TemplateEntry>> = ref([]);
 
 const allTemplates = computed(() => {
     const result = { ...(cellTemplates as Record<string, Array<TemplateEntry>>) };
+    result["Visualization"] = visualizations.value;
     return result;
 });
 
@@ -66,6 +69,10 @@ const filteredTemplates = computed(() => {
         }
     });
     return filteredCategories;
+});
+
+onMounted(async () => {
+    visualizations.value = await getVisualizations();
 });
 </script>
 

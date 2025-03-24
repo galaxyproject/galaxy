@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="FITS Graph viewer">
+<visualization name="FITS Graph viewer" embeddable="true">
     <description>Basic plugin for fits file table visualization</description>
     <data_sources>
         <data_source>
