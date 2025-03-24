@@ -1,6 +1,7 @@
 import { computed, type Ref, ref } from "vue";
 
 import type { AnyWorkflow } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import {
     copyWorkflow as copyWorkflowService,
     deleteWorkflow as deleteWorkflowService,
@@ -10,7 +11,6 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
-import { getFullAppUrl } from "@/utils/utils";
 
 export function useWorkflowActions(workflow: Ref<AnyWorkflow>, refreshCallback: () => void) {
     const toast = useToast();

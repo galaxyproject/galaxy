@@ -5,9 +5,7 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { getGalaxyInstance } from "@/app";
 import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
-import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 
 export function stateIsTerminal(result: Record<string, any>) {
@@ -170,26 +168,6 @@ export function get(options: getOptions): void {
 }
 
 /**
- * Load a CSS file
- *
- * @param url Url of CSS file
- */
-export function cssLoadFile(url: string): void {
-    const fullUrl = getAppRoot() + url;
-    const links = document.head.getElementsByTagName("link");
-
-    if (Array.from(links).find((link) => link.href === fullUrl)) {
-        return;
-    }
-
-    const link = document.createElement("link");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    link.href = fullUrl;
-    document.head.appendChild(link);
-}
-
-/**
  * Safely merge two dictionaries
  *
  * @param options        Target dictionary
@@ -303,15 +281,6 @@ export function appendScriptStyle(data: Readonly<{ script?: string; styles?: str
         const tag = document.createElement("style");
         tag.textContent = data.styles;
         document.head.appendChild(tag);
-    }
-}
-
-export function setWindowTitle(title: string): void {
-    const Galaxy = getGalaxyInstance();
-    if (title) {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
-    } else {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
     }
 }
 
@@ -442,23 +411,7 @@ export function hasKeys(object: unknown, keys: string[]) {
     }
 }
 
-/**
- * Get the full URL path of the app
- *
- * @param path Path to append to the URL path
- * @returns Full URL path of the app
- */
-export function getFullAppUrl(path: string = ""): string {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : "";
-    const appRoot = getAppRoot();
-
-    return `${protocol}//${hostname}${port}${appRoot}${path}`;
-}
-
 export default {
-    cssLoadFile,
     get,
     merge,
     bytesToString,
@@ -471,9 +424,7 @@ export default {
     clone,
     linkify,
     appendScriptStyle,
-    setWindowTitle,
     waitForElementToBePresent,
     wait,
     mergeObjectListsById,
-    getFullAppUrl,
 };
