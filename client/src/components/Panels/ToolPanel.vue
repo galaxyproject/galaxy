@@ -73,13 +73,13 @@ const showFavorites = computed({
 
 const toolPanelHeader = computed(() => {
     if (showAdvanced.value) {
-        return localize("Advanced Tool Search");
+        return localize("高级工具搜索");
     } else if (loading.value && panelName.value) {
         return localize(panelName.value);
     } else if (currentPanelView.value !== "default" && panels.value && panels.value[currentPanelView.value]?.name) {
         return localize(panels.value[currentPanelView.value]?.name);
     } else {
-        return localize("Tools");
+        return localize("工具");
     }
 });
 
@@ -138,7 +138,6 @@ watch(
 
 initializePanel();
 </script>
-
 <template>
     <div v-if="panelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
@@ -156,7 +155,7 @@ initializePanel();
                                 <span
                                     v-if="panelIcon && !loading"
                                     :class="['fas', `fa-${panelIcon}`, 'mr-1']"
-                                    data-description="panel view header icon" />
+                                    data-description="面板视图标题图标" />
                                 <Heading
                                     id="toolbox-heading"
                                     :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
@@ -192,19 +191,19 @@ initializePanel();
             @onInsertModule="onInsertModule"
             @onInsertWorkflow="onInsertWorkflow"
             @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-        <div v-else-if="errorMessage" data-description="tool panel error message">
+        <div v-else-if="errorMessage" data-description="工具面板错误信息">
             <b-alert class="m-2" variant="danger" show>
                 {{ errorMessage }}
             </b-alert>
         </div>
         <div v-else>
             <b-badge class="alert-info w-100">
-                <LoadingSpan message="Loading Toolbox" />
+                <LoadingSpan message="正在加载工具箱" />
             </b-badge>
         </div>
     </div>
     <b-alert v-else-if="currentToolSections" class="m-2" variant="info" show>
-        <LoadingSpan message="Loading Toolbox" />
+        <LoadingSpan message="正在加载工具箱" />
     </b-alert>
 </template>
 

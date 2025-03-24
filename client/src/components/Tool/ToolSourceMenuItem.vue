@@ -25,9 +25,9 @@ const props = defineProps({
 <template>
     <div v-if="config.enable_tool_source_display || (currentUser && currentUser.is_admin)">
         <b-dropdown-item v-b-modal.tool-source-viewer>
-            <FontAwesomeIcon icon="far fa-eye" /><span v-localize>View Tool source</span>
+            <FontAwesomeIcon icon="far fa-eye" /><span v-localize>查看工具源码</span>
         </b-dropdown-item>
-        <b-modal id="tool-source-viewer" :title="`Tool Source for ${props.toolId}`" size="lg" ok-only ok-title="Close">
+        <b-modal id="tool-source-viewer" :title="`工具源码: ${props.toolId}`" size="lg" ok-only ok-title="关闭">
             <ToolSource :tool-id="props.toolId" />
         </b-modal>
     </div>

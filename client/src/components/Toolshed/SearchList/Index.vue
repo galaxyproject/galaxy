@@ -58,8 +58,8 @@ export default {
             error: null,
             tabCurrent: "true",
             tabOptions: [
-                { text: "Search All", value: true },
-                { text: "Installed Only", value: false },
+                { text: "搜索全部", value: true },
+                { text: "仅已安装", value: false },
             ],
         };
     },
@@ -76,7 +76,7 @@ export default {
             const galaxy = getGalaxyInstance();
             this.toolshedUrls = galaxy.config.tool_shed_urls;
             if (!this.toolshedUrls || this.toolshedUrls.length == 0) {
-                this.setError("Toolshed registry is empty, no servers found.");
+                this.setError("工具库注册表为空，未找到服务器。");
             } else {
                 this.toolshedUrl = this.toolshedUrls[0];
             }

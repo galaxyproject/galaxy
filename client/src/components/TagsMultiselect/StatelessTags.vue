@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
     clickable: false,
     useToggleLink: true,
     maxVisibleTags: 5,
-    placeholder: "Add Tags",
+    placeholder: "添加标签",
 });
 
 const emit = defineEmits<{
@@ -48,7 +48,7 @@ function onAddTag(tag: string) {
         userTagsStore.onNewTagSeen(newTag);
         emit("input", [...props.value, newTag]);
     } else {
-        warning(`"${newTag}" is not a valid tag.`, "Invalid Tag");
+        warning(`"${newTag}" 不是有效标签。`, "无效标签");
     }
 }
 
@@ -132,7 +132,7 @@ function onTagClicked(tag: string) {
                     variant="link"
                     class="toggle-link"
                     @click.stop="() => (toggledOpen = true)">
-                    {{ slicedTags.length }} more...
+                    {{ slicedTags.length }} 更多...
                 </BButton>
 
                 <b-tooltip

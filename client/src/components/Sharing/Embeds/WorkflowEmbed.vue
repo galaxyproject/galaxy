@@ -83,18 +83,17 @@ function onCopyOut() {
 
 const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
 </script>
-
 <template>
     <div class="workflow-embed">
         <div class="settings">
-            <BFormCheckbox v-model="settings.heading"> Show heading </BFormCheckbox>
-            <BFormCheckbox v-model="settings.about"> Show about </BFormCheckbox>
-            <BFormCheckbox v-model="settings.buttons"> Show buttons </BFormCheckbox>
-            <BFormCheckbox v-model="settings.minimap"> Show minimap </BFormCheckbox>
-            <BFormCheckbox v-model="settings.zoomControls"> Show zoom controls </BFormCheckbox>
+            <BFormCheckbox v-model="settings.heading"> 显示标题 </BFormCheckbox>
+            <BFormCheckbox v-model="settings.about"> 显示关于 </BFormCheckbox>
+            <BFormCheckbox v-model="settings.buttons"> 显示按钮 </BFormCheckbox>
+            <BFormCheckbox v-model="settings.minimap"> 显示小地图 </BFormCheckbox>
+            <BFormCheckbox v-model="settings.zoomControls"> 显示缩放控制 </BFormCheckbox>
 
             <label for="embed-position-control" class="control-label">
-                Initial position
+                初始位置
                 <div id="embed-position-control" class="position-control">
                     <label>
                         x:
@@ -115,7 +114,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             </label>
 
             <label for="embed-zoom-control" class="control-label">
-                Initial zoom
+                初始缩放
                 <ZoomControl
                     id="embed-zoom-control"
                     :zoom-level="settings.zoom"
@@ -125,13 +124,13 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
 
             <BFormCheckbox
                 v-model="settings.applyStyle"
-                title="adds a width, height, and removes the border of the iframe">
-                Add basic styling
+                title="添加iframe的宽度、高度并移除边框">
+                添加基本样式
             </BFormCheckbox>
         </div>
         <div class="preview">
             <label for="embed-code" class="w-100">
-                Embed code
+                嵌入代码
                 <BInputGroup id="embed-code">
                     <BFormInput class="embed-code-input" :value="embed" readonly />
                     <BInputGroupAppend>
@@ -147,7 +146,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                 </BInputGroup>
             </label>
 
-            <BFormCheckbox v-model="showEmbed" switch>Show embed Preview</BFormCheckbox>
+            <BFormCheckbox v-model="showEmbed" switch>显示嵌入预览</BFormCheckbox>
             <WorkflowPublished
                 v-if="showEmbedDebounced"
                 :id="props.id"

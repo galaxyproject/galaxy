@@ -55,11 +55,11 @@ const showDownload = computed(() => currentUser.value?.is_admin);
 const showLink = computed(() => Boolean(props.sharableUrl));
 
 function onCopyLink() {
-    copyLink(props.id, "Link was copied to your clipboard");
+    copyLink(props.id, "链接已复制到剪贴板");
 }
 
 function onCopyId() {
-    copyId(props.id, "Tool ID was copied to your clipboard");
+    copyId(props.id, "工具 ID 已复制到剪贴板");
 }
 
 function onDownload() {
@@ -77,9 +77,9 @@ function onLink() {
         no-caret
         right
         role="button"
-        title="Options"
+        title="选项"
         variant="link"
-        aria-label="View all Options"
+        aria-label="查看所有选项"
         class="tool-dropdown"
         size="sm">
         <template v-slot:button-content>
@@ -87,21 +87,21 @@ function onLink() {
         </template>
 
         <b-dropdown-item @click="onCopyLink">
-            <FontAwesomeIcon icon="fa-link" /><span v-localize>Copy Link</span>
+            <FontAwesomeIcon icon="fa-link" /><span v-localize>复制链接</span>
         </b-dropdown-item>
 
         <b-dropdown-item @click="onCopyId">
-            <FontAwesomeIcon icon="far fa-copy" /><span v-localize>Copy Tool ID</span>
+            <FontAwesomeIcon icon="far fa-copy" /><span v-localize>复制工具ID</span>
         </b-dropdown-item>
 
         <b-dropdown-item v-if="showDownload" @click="onDownload">
-            <FontAwesomeIcon icon="fa-download" /><span v-localize>Download</span>
+            <FontAwesomeIcon icon="fa-download" /><span v-localize>下载</span>
         </b-dropdown-item>
 
         <ToolSourceMenuItem :tool-id="id" />
 
         <b-dropdown-item v-if="showLink" @click="onLink">
-            <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
+            <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>在工具库中查看</span>
         </b-dropdown-item>
 
         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">

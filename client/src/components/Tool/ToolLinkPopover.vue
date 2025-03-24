@@ -18,7 +18,7 @@ const boundary = "window";
 
 <template>
     <b-popover v-if="toolId" :boundary="boundary" :target="target" triggers="hover">
-        Tool:
+        工具:
         <ToolLink :tool-id="toolId" :tool-version="toolVersion || 'latest'" />
     </b-popover>
 </template>

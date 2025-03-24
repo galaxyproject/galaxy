@@ -40,7 +40,7 @@ export class Services {
             const data = response.data;
             const table = Object.keys(data).map((key) => data[key]);
             if (table.length === 0) {
-                throw Error("Repository does not contain any installable revisions.");
+                throw Error("仓库不包含任何可安装的修订版本。");
             }
             table.sort((a, b) => b.numeric_revision - a.numeric_revision);
             table.forEach((x) => {
@@ -67,7 +67,7 @@ export class Services {
                 result.repository_url = `${toolshedUrl}repository?repository_id=${result.id}`;
                 return result;
             } else {
-                throw Error("Repository details not found.");
+                throw Error("未找到仓库详细信息。");
             }
         } catch (e) {
             rethrowSimple(e);

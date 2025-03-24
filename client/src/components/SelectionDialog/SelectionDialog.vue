@@ -218,7 +218,7 @@ watch(
                     <template v-slot:head(__select_icon__)="">
                         <FontAwesomeIcon
                             class="select-checkbox cursor-pointer"
-                            title="Check to select all datasets"
+                            title="勾选以选择所有数据集"
                             :icon="selectionIcon(selectAllVariant)"
                             @click="$emit('onSelectAll')" />
                     </template>
@@ -229,21 +229,21 @@ watch(
                         <div style="cursor: pointer">
                             <pre
                                 v-if="isEncoded"
-                                :title="`label-${data.item.url}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
+                                :title="`标签-${data.item.url}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
                             <span v-else>
                                 <div v-if="data.item.isLeaf">
                                     <i :class="leafIcon" />
-                                    <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
+                                    <span :title="`标签-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
                                 <div v-else @click.stop="emit('onOpen', data.item)">
                                     <FontAwesomeIcon :icon="props.folderIcon" />
-                                    <BLink :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
+                                    <BLink :title="`标签-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
                                 </div>
                             </span>
                         </div>
                     </template>
                     <template v-slot:cell(details)="data">
-                        <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
+                        <span :title="`详情-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                     </template>
                     <template v-slot:cell(tags)="data">
                         <StatelessTags v-if="data.value?.length > 0" :value="data.value" :disabled="true" />
@@ -263,23 +263,23 @@ watch(
                 </div>
                 <div v-else-if="totalItems === 0">
                     <div v-if="filter">
-                        No search results found for: <b>{{ filter }}</b
+                        未找到搜索结果: <b>{{ filter }}</b
                         >.
                     </div>
-                    <div v-else>No entries.</div>
+                    <div v-else>无条目。</div>
                 </div>
             </div>
-            <div v-else data-description="selection dialog spinner">
+            <div v-else data-description="选择对话框加载中">
                 <FontAwesomeIcon :icon="faSpinner" spin />
-                <span>Please wait...</span>
+                <span>请稍候...</span>
             </div>
         </div>
         <template v-slot:modal-footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
-                    <BButton v-if="undoShow" data-description="selection dialog undo" size="sm" @click="emit('onUndo')">
+                    <BButton v-if="undoShow" data-description="选择对话框撤销" size="sm" @click="emit('onUndo')">
                         <FontAwesomeIcon :icon="faCaretLeft" />
-                        Back
+                        返回
                     </BButton>
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
@@ -292,16 +292,16 @@ watch(
                     :total-rows="totalItems" />
                 <div>
                     <BButton
-                        data-description="selection dialog cancel"
+                        data-description="选择对话框取消"
                         size="sm"
                         variant="secondary"
                         @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="faTimes" />
-                        Cancel
+                        取消
                     </BButton>
                     <BButton
                         v-if="multiple || !fileMode"
-                        data-description="selection dialog ok"
+                        data-description="选择对话框确定"
                         size="sm"
                         variant="primary"
                         :disabled="disableOk"

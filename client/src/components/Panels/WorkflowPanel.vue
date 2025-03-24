@@ -98,7 +98,7 @@ async function load() {
         }
     } catch (e) {
         if (isCurrentFetch()) {
-            error(`Failed to load workflows: ${e}`);
+            error(`未能加载工作流: ${e}`);
         }
     } finally {
         if (isCurrentFetch()) {
@@ -150,24 +150,24 @@ function createNew(event: Event) {
 </script>
 
 <template>
-    <ActivityPanel title="Workflows">
+    <ActivityPanel title="工作流程">
         <template v-slot:header-buttons>
             <BButton
                 v-b-tooltip.hover.top.noninteractive
                 size="sm"
                 variant="link"
                 class="create-button"
-                title="Create new workflow"
+                title="创建新工作流程"
                 href="/workflows/edit"
                 @click="createNew">
                 <FontAwesomeIcon :icon="faPlus" />
             </BButton>
-            <FavoritesButton v-model="showFavorites" tooltip="Show bookmarked" />
+            <FavoritesButton v-model="showFavorites" tooltip="显示已收藏" />
         </template>
 
         <DelayedInput
             v-model="filterText"
-            placeholder="search workflows"
+            placeholder="搜索工作流程"
             :delay="800"
             :loading="loading"></DelayedInput>
 
@@ -183,11 +183,11 @@ function createNew(event: Event) {
                 @refreshList="refresh" />
 
             <div v-if="allLoaded || filterText !== ''" class="list-end">
-                <span v-if="workflows.length == 1"> - 1 workflow loaded - </span>
-                <span v-else-if="workflows.length > 1"> - All {{ workflows.length }} workflows loaded - </span>
-                <span v-else> - No workflows found - </span>
+                <span v-if="workflows.length == 1"> - 已加载1个工作流程 - </span>
+                <span v-else-if="workflows.length > 1"> - 已加载全部{{ workflows.length }}个工作流程 - </span>
+                <span v-else> - 未找到工作流程 - </span>
             </div>
-            <div v-else-if="loading" class="list-end">- loading -</div>
+            <div v-else-if="loading" class="list-end">- 加载中 -</div>
         </div>
 
         <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />

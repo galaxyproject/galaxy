@@ -6,7 +6,7 @@
                 <b-input
                     id="toolshed-repo-search"
                     v-model="queryInput"
-                    placeholder="Search Repositories"
+                    placeholder="搜索仓库"
                     @input="delayQuery"
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
@@ -50,10 +50,10 @@ export default {
             error: null,
             tabValue: true,
             tabOptions: [
-                { text: "Search All", value: true },
-                { text: "Installed Only", value: false },
+                { text: "搜索全部", value: true },
+                { text: "仅已安装", value: false },
             ],
-            titleClearSearch: _l("clear search (esc)"),
+            titleClearSearch: _l("清除搜索(esc)"),
         };
     },
     computed: {

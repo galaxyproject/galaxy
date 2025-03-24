@@ -15,18 +15,18 @@ async function getTourData(tourId) {
     return data;
 }
 
-// returns the selected element
+// 返回选中的元素
 function getElement(selector) {
     if (selector) {
         try {
             return document.querySelector(selector);
         } catch (error) {
-            throw Error(`Invalid selector. ${selector}`);
+            throw Error(`无效的选择器。${selector}`);
         }
     }
 }
 
-// wait for element
+// 等待元素出现
 function waitForElement(selector, resolve, reject, tries) {
     if (selector) {
         const el = getElement(selector);
@@ -39,14 +39,14 @@ function waitForElement(selector, resolve, reject, tries) {
                 waitForElement(selector, resolve, reject, tries - 1);
             }, delay);
         } else {
-            throw Error("Element not found.", selector);
+            throw Error("未找到元素。", selector);
         }
     } else {
         resolve();
     }
 }
 
-// performs a click event on the selected element
+// 在选中的元素上执行点击事件
 function doClick(targets) {
     if (targets) {
         targets.forEach((selector) => {
@@ -54,13 +54,13 @@ function doClick(targets) {
             if (el) {
                 el.click();
             } else {
-                throw Error("Click target not found.", selector);
+                throw Error("未找到点击目标。", selector);
             }
         });
     }
 }
 
-// insert text into the selected element
+// 将文本插入到选中的元素中
 function doInsert(selector, value) {
     if (value !== null) {
         const el = getElement(selector);
@@ -69,7 +69,7 @@ function doInsert(selector, value) {
             const event = new Event("input");
             el.dispatchEvent(event);
         } else {
-            throw Error("Insert target not found.", selector);
+            throw Error("未找到插入目标。", selector);
         }
     }
 }

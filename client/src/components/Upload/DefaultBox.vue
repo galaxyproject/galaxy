@@ -359,7 +359,6 @@ defineExpose({
     showHelper,
 });
 </script>
-
 <template>
     <div class="upload-wrapper">
         <div class="upload-header">
@@ -369,24 +368,24 @@ defineExpose({
                     <span v-else>{{ historyItemsStateInfo.message }}</span>
                 </BAlert>
             </div>
-            <div v-if="queueStopping" v-localize>Queue will pause after completing the current file...</div>
+            <div v-if="queueStopping" v-localize>队列将在完成当前文件后暂停...</div>
             <div v-else-if="counterAnnounce === 0">
                 <div v-if="!!hasBrowserSupport">&nbsp;</div>
                 <div v-else>
-                    Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.
+                    浏览器不支持拖放功能。请尝试使用 Firefox 4+、Chrome 7+、IE 10+、Opera 12+ 或 Safari 6+。
                 </div>
             </div>
             <div v-else>
                 <div v-if="!isRunning">
-                    You added {{ counterAnnounce }} file(s) to the queue. Add more files or click 'Start' to proceed.
+                    您已添加 {{ counterAnnounce }} 个文件到队列。添加更多文件或点击"开始"继续。
                 </div>
-                <div v-else>Please wait...{{ counterAnnounce }} out of {{ counterRunning }} remaining...</div>
+                <div v-else>请等待...剩余 {{ counterRunning }} 个中的 {{ counterAnnounce }} 个...</div>
             </div>
         </div>
         <UploadBox @add="addFiles">
             <div v-show="showHelper" class="upload-helper">
                 <FontAwesomeIcon class="mr-1" :icon="faCopy" />
-                <span v-localize>Drop files here</span>
+                <span v-localize>将文件拖放到此处</span>
             </div>
             <div v-show="!showHelper">
                 <DefaultRow
@@ -413,11 +412,11 @@ defineExpose({
                     v-if="uploadValues.length > lazyLoad"
                     v-localize
                     class="upload-text-message"
-                    data-description="lazyload message">
-                    Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
+                    data-description="延迟加载消息">
+                    仅显示 {{ uploadValues.length }} 个条目中的前 {{ lazyLoad }} 个。
                 </div>
             </div>
-            <label class="sr-only" for="upload-file">Uploaded File</label>
+            <label class="sr-only" for="upload-file">上传文件</label>
             <input
                 id="upload-file"
                 ref="uploadFile"
@@ -426,7 +425,7 @@ defineExpose({
                 @change="addFileFromInput($event.target)" />
         </UploadBox>
         <div v-if="!disableFooter" class="upload-footer text-center">
-            <span v-if="isCollection" class="upload-footer-title">Collection:</span>
+            <span v-if="isCollection" class="upload-footer-title">集合：</span>
             <UploadSelect
                 v-if="isCollection"
                 class="upload-footer-collection-type"
@@ -434,9 +433,9 @@ defineExpose({
                 :disabled="isRunning"
                 :options="COLLECTION_TYPES"
                 :searchable="false"
-                placeholder="Select Type"
+                placeholder="选择类型"
                 @input="updateCollectionType" />
-            <span class="upload-footer-title">Type (set all):</span>
+            <span class="upload-footer-title">类型（设置全部）：</span>
             <UploadSelectExtension
                 class="upload-footer-extension"
                 :value="extension"
@@ -444,21 +443,21 @@ defineExpose({
                 :list-extensions="listExtensions"
                 @input="updateExtension">
             </UploadSelectExtension>
-            <span class="upload-footer-title">Reference (set all):</span>
+            <span class="upload-footer-title">参考（设置全部）：</span>
             <UploadSelect
                 class="upload-footer-genome"
                 :value="dbKey"
                 :disabled="isRunning"
                 :options="listDbKeys"
                 what="reference"
-                placeholder="Select Reference"
+                placeholder="选择参考"
                 @input="updateDbKey" />
         </div>
         <slot name="footer" />
         <div class="d-flex justify-content-end flex-wrap" :class="!disableFooter && 'upload-buttons'">
             <BButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
                 <FontAwesomeIcon :icon="faLaptop" />
-                <span v-localize>Choose local file</span>
+                <span v-localize>选择本地文件</span>
             </BButton>
             <BButton
                 v-if="hasRemoteFiles"
@@ -467,43 +466,43 @@ defineExpose({
                 :disabled="!enableSources"
                 @click="eventRemoteFiles">
                 <FontAwesomeIcon :icon="faFolderOpen" />
-                <span v-localize>Choose remote files</span>
+                <span v-localize>选择远程文件</span>
             </BButton>
-            <BButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
+            <BButton id="btn-new" :size="size" title="粘贴/获取数据" :disabled="!enableSources" @click="eventCreate">
                 <FontAwesomeIcon :icon="faEdit" />
-                <span v-localize>Paste/Fetch data</span>
+                <span v-localize>粘贴/获取数据</span>
             </BButton>
             <BButton
                 id="btn-start"
                 :size="size"
                 :disabled="!enableStart"
-                title="Start"
+                title="开始"
                 :variant="enableStart ? 'primary' : null"
                 @click="eventStart">
-                <span v-localize>Start</span>
+                <span v-localize>开始</span>
             </BButton>
             <BButton
                 v-if="isCollection"
                 id="btn-build"
                 :size="size"
                 :disabled="!enableBuild"
-                title="Build"
+                title="构建"
                 :variant="enableBuild ? 'primary' : null"
                 @click="() => eventBuild(true)">
                 <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
-                <span v-localize>Build</span>
+                <span v-localize>构建</span>
             </BButton>
             <BButton
                 v-if="emitUploaded"
                 id="btn-emit"
                 :size="size"
                 :disabled="!enableBuild"
-                title="Use Uploaded Files"
+                title="使用已上传文件"
                 :variant="enableBuild ? 'primary' : null"
                 @click="() => eventBuild(false)">
                 <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
                 <slot name="emit-btn-txt">
-                    <span v-localize>Use Uploaded</span>
+                    <span v-localize>使用已上传</span>
                 </slot>
                 ({{ counterSuccess }})
             </BButton>
@@ -516,15 +515,15 @@ defineExpose({
                 :title="historyItemsStateInfo.message">
                 <FontAwesomeIcon :icon="historyItemsStateInfo.icon" :spin="historyItemsStateInfo.spin" />
             </BBadge>
-            <BButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
-                <span v-localize>Pause</span>
+            <BButton id="btn-stop" :size="size" title="暂停" :disabled="!isRunning" @click="eventStop">
+                <span v-localize>暂停</span>
             </BButton>
-            <BButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
-                <span v-localize>Reset</span>
+            <BButton id="btn-reset" :size="size" title="重置" :disabled="!enableReset" @click="eventReset">
+                <span v-localize>重置</span>
             </BButton>
-            <BButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
-                <span v-if="hasCallback" v-localize>Cancel</span>
-                <span v-else v-localize>Close</span>
+            <BButton id="btn-close" :size="size" title="关闭" @click="$emit('dismiss')">
+                <span v-if="hasCallback" v-localize>取消</span>
+                <span v-else v-localize>关闭</span>
             </BButton>
         </div>
         <CollectionCreatorIndex

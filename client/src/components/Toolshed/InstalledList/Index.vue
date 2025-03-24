@@ -2,21 +2,21 @@
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <LoadingSpan v-if="loading" message="Loading installed repositories" />
+            <LoadingSpan v-if="loading" message="正在加载已安装仓库" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
                 <div class="m-1">
                     <span class="installed-message text-muted">
-                        {{ repositories.length }} repositories installed on this instance.
+                        此实例上已安装 {{ repositories.length }} 个仓库。
                     </span>
                     <b-link class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
                             <span class="fa fa-angle-double-up" />
-                            <span>Hide installation progress.</span>
+                            <span>隐藏安装进度。</span>
                         </span>
                         <span v-else>
                             <span class="fa fa-angle-double-down" />
-                            <span>Show installation progress.</span>
+                            <span>显示安装进度。</span>
                         </span>
                     </b-link>
                 </div>
@@ -32,7 +32,7 @@
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">
-                                <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
+                                <b-badge variant="danger" class="mb-2"> 有更新版本可用！ </b-badge>
                             </div>
                             <div class="name">{{ row.item.name }}</div>
                         </b-link>
@@ -43,10 +43,9 @@
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
-                    >.
+                    未找到与 <span class="font-weight-bold">{{ filter }}</span> 匹配的条目。
                 </div>
-                <div v-if="showNotAvailable">No installed repositories found.</div>
+                <div v-if="showNotAvailable">未找到已安装的仓库。</div>
             </div>
         </div>
     </div>

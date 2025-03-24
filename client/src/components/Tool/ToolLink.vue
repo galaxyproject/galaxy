@@ -36,6 +36,6 @@ watch(
 
 <template>
     <router-link :to="toolLink">
-        <b>{{ toolName || toolId }}</b> (Galaxy Version {{ toolVersion }})
+        <b>{{ toolName || toolId }}</b> (Galaxy 版本 {{ toolVersion }})
     </router-link>
 </template>

@@ -1,38 +1,38 @@
 <template>
     <div class="infomessagelarge">
         <p v-if="entryPointsForJob(jobId).length == 0">
-            Waiting for InteractiveTool result view(s) to become available.
+            正在等待交互式工具结果视图可用。
         </p>
         <p v-else-if="entryPointsForJob(jobId).length == 1">
             <span v-if="entryPointsForJob(jobId)[0].active">
-                There is an InteractiveTool result view available,
-                <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
-                    Open
+                有一个交互式工具结果视图可用，
+                <a v-b-tooltip title="打开交互式工具" :href="entryPointsForJob(jobId)[0].target" target="_blank">
+                    打开
                     <FontAwesomeIcon icon="external-link-alt" />
                 </a>
             </span>
             <span v-else>
-                There is an InteractiveTool result view available, waiting for view to become active...
+                有一个交互式工具结果视图可用，正在等待视图激活...
             </span>
         </p>
         <div v-else>
-            There are multiple InteractiveTool result views available:
+            有多个交互式工具结果视图可用：
             <ul>
                 <li v-for="entryPoint of entryPointsForJob(jobId)" :key="entryPoint.id">
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active">
-                        <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
-                            (Open
+                        <a v-b-tooltip title="打开交互式工具" :href="entryPoint.target" target="_blank">
+                            (打开
                             <FontAwesomeIcon icon="external-link-alt" />)
                         </a>
                     </span>
-                    <span v-else> (waiting to become active...) </span>
+                    <span v-else> (等待激活中...) </span>
                 </li>
             </ul>
         </div>
 
-        You may also access all active InteractiveTools from the
-        <a :href="interactiveToolsLink">User menu</a>.
+        您也可以通过
+        <a :href="interactiveToolsLink">用户菜单</a>访问所有激活的交互式工具。
     </div>
 </template>
 

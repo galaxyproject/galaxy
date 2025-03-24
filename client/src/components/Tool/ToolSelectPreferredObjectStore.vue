@@ -12,10 +12,10 @@ const props = withDefaults(defineProps<ToolSelectProps>(), {
 });
 
 const selectedObjectStoreId = ref<String | null>(props.toolPreferredObjectStoreId);
-const newDatasetsDescription = "The default storage location for the outputs of this tool";
-const defaultOptionTitle = "Use Defaults";
+const newDatasetsDescription = "此工具输出结果的默认存储位置";
+const defaultOptionTitle = "使用默认值";
 const defaultOptionDescription =
-    "If the history has a default set, that will be used. If instead, you've set an option in your user preferences - that will be assumed to be your default selection. Finally, the Galaxy configuration will be used.";
+    "如果历史记录已设置默认值，将使用该默认值。如果您在用户首选项中设置了选项，则该选项将被视为您的默认选择。最后，将使用Galaxy配置。";
 
 const emit = defineEmits<{
     (e: "updated", id: string | null): void;

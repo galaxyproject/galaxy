@@ -341,13 +341,13 @@ whenever(isOpen, async () => {
                                 class="headless-multiselect__needs-highlight"
                                 icon="fa-times"
                                 fixed-width />
-                            <span class="sr-only">remove tag</span>
+                            <span class="sr-only">移除标签</span>
                         </template>
                         <FontAwesomeIcon v-else icon="fa-check" fixed-width />
                     </span>
                     <span v-else class="headless-multiselect__info">
                         <FontAwesomeIcon class="headless-multiselect__needs-highlight" icon="fa-plus" fixed-width />
-                        <span class="sr-only">add tag</span>
+                        <span class="sr-only">添加标签</span>
                     </span>
                 </button>
             </div>

@@ -97,21 +97,20 @@ onMounted(() => {
     getPlugins();
 });
 </script>
-
 <template>
-    <ActivityPanel title="Visualizations" go-to-all-title="Saved Visualizations" href="/visualizations/list">
+    <ActivityPanel title="可视化" go-to-all-title="已保存的可视化" href="/visualizations/list">
         <template v-slot:header>
-            <h3>Create Visualization</h3>
-            <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
+            <h3>创建可视化</h3>
+            <DelayedInput :delay="100" placeholder="搜索可视化" @change="query = $event" />
         </template>
         <div>
-            <LoadingSpan v-if="isLoading" message="Loading visualizations" />
+            <LoadingSpan v-if="isLoading" message="正在加载可视化" />
             <div v-else-if="filteredPlugins.length > 0">
                 <div v-for="plugin in filteredPlugins" :key="plugin.name">
                     <button class="plugin-item" :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
                         <div class="d-flex">
                             <div class="plugin-thumbnail mr-2">
-                                <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
+                                <img v-if="plugin.logo" alt="可视化" :src="absPath(plugin.logo)" />
                                 <icon v-else :icon="faEye" class="plugin-icon" />
                             </div>
                             <div class="text-break">
@@ -122,7 +121,7 @@ onMounted(() => {
                     </button>
                 </div>
             </div>
-            <BAlert v-else v-localize variant="info" show> No matching visualization found. </BAlert>
+            <BAlert v-else v-localize variant="info" show> 未找到匹配的可视化。 </BAlert>
         </div>
         <DataDialog
             v-if="currentHistoryId && showDataDialog"
@@ -132,11 +131,11 @@ onMounted(() => {
             :filter-by-type-ids="compatibleDatasetIdKeys"
             @onOk="createVisualization"
             @onCancel="showDataDialog = false" />
-        <BModal v-model="showNoCompatibleDatasetsModal" title="No compatible datasets found" title-tag="h2" ok-only>
+        <BModal v-model="showNoCompatibleDatasetsModal" title="未找到兼容的数据集" title-tag="h2" ok-only>
             <p v-localize>
-                No datasets found in your current history that are compatible with
-                <b>{{ currentPlugin?.name ?? "this visualization" }}</b
-                >. Please upload a compatible dataset or select a different visualization.
+                在您当前的历史记录中未找到与
+                <b>{{ currentPlugin?.name ?? "此可视化" }}</b>
+                兼容的数据集。请上传一个兼容的数据集或选择不同的可视化。
             </p>
         </BModal>
     </ActivityPanel>

@@ -38,12 +38,12 @@ function onQuery(newQuery: string) {
         <template v-slot:header-buttons>
             <BButton
                 v-b-tooltip.bottom.hover
-                data-description="restore factory settings"
+                data-description="恢复出厂设置"
                 size="sm"
                 variant="link"
-                title="Restore default"
+                title="恢复默认"
                 @click="confirmRestore = true">
-                <span v-localize>Reset</span>
+                <span v-localize>重置</span>
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
             </BButton>
         </template>
@@ -53,10 +53,10 @@ function onQuery(newQuery: string) {
             @activityClicked="(...args) => emit('activityClicked', ...args)" />
         <BModal
             v-model="confirmRestore"
-            title="Restore Activity Bar Defaults"
+            title="恢复活动栏默认设置"
             title-tag="h2"
             @ok="activityStore.restore()">
-            <p v-localize>Are you sure you want to reset the activity bar to its default settings?</p>
+            <p v-localize>您确定要将活动栏重置为默认设置吗？</p>
         </BModal>
     </ActivityPanel>
 </template>

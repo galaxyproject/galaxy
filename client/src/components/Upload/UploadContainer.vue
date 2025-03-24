@@ -172,14 +172,13 @@ defineExpose({
 <template>
     <BAlert v-if="!canUploadToHistory" variant="warning" show>
         <span v-localize>
-            The current history is immutable and you cannot upload data to it. Please select a different history or
-            create a new one.
+            当前历史记录不可修改，您无法上传数据。请选择其他历史记录或创建一个新的。
         </span>
     </BAlert>
     <BTabs v-else-if="ready">
-        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" :active.sync="regularTabActive">
+        <BTab v-if="showRegular" title="常规" button-id="tab-title-link-regular" :active.sync="regularTabActive">
         </BTab>
-        <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
+        <BTab v-if="showComposite" id="composite" title="复合" button-id="tab-title-link-composite">
             <CompositeBox
                 :effective-extensions="effectiveExtensions"
                 :default-db-key="defaultDbKey"
@@ -192,11 +191,11 @@ defineExpose({
         </BTab>
         <BTab
             v-if="showCollection"
-            title="Collection"
+            title="集合"
             button-id="tab-title-link-collection"
             :active.sync="collectionTabActive">
         </BTab>
-        <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
+        <BTab v-if="showRules" id="rule-based" title="基于规则" button-id="tab-title-link-rule-based">
             <RulesInput
                 :file-sources-configured="fileSourcesConfigured"
                 :ftp-upload-site="currentUserId && ftpUploadSite"
@@ -224,6 +223,6 @@ defineExpose({
             v-on="$listeners" />
     </BTabs>
     <div v-else>
-        <LoadingSpan message="Loading required information from Galaxy server." />
+        <LoadingSpan message="正在从Galaxy服务器加载必要信息。" />
     </div>
 </template>

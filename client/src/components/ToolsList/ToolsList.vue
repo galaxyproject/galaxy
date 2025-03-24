@@ -80,16 +80,16 @@ function showAllTools() {
 <template>
     <section class="tools-list">
         <div class="mb-2">
-            <h1 class="h-lg">Search Results</h1>
+            <h1 class="h-lg">搜索结果</h1>
             <span v-if="itemsLoaded.length !== 0" class="row">
                 <span v-if="filterCount" class="col d-inline-block d-flex align-items-baseline flex-gapx-1">
-                    Found {{ itemsLoaded.length }} tools for
+                    找到 {{ itemsLoaded.length }} 个工具，应用
                     <b-button id="popover-filters" class="ui-link">
                         {{ filterCount }}
-                        {{ filterCount === 1 ? "filter" : "filters" }}.
+                        {{ filterCount === 1 ? "个筛选条件" : "个筛选条件" }}。
                     </b-button>
                     <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
-                        <template v-slot:title>Filters</template>
+                        <template v-slot:title>筛选条件</template>
                         <div v-for="(value, filter) in filterSettings" :key="filter">
                             <b>{{ filter }}</b
                             >: {{ value }}
@@ -97,20 +97,20 @@ function showAllTools() {
                     </b-popover>
                     <b-button variant="link" size="sm" @click.stop="showAllTools">
                         <FontAwesomeIcon icon="fa-times" />
-                        Clear filters
+                        清除筛选条件
                     </b-button>
                 </span>
                 <span v-else class="col d-inline-block">
-                    No filters applied. Please add filters to the Advanced Tool Search in the Tool Panel.
+                    未应用筛选条件。请在工具面板的高级工具搜索中添加筛选条件。
                 </span>
             </span>
         </div>
         <div ref="scrollContainer" class="overflow-auto">
             <b-alert v-if="loading" class="m-2" variant="info" show>
-                <LoadingSpan message="Loading Advanced Search Results" />
+                <LoadingSpan message="正在加载高级搜索结果" />
             </b-alert>
             <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
-                No tools found for the entered filters.
+                未找到符合所输入筛选条件的工具。
             </b-alert>
             <div v-else>
                 <ToolsListTable :tools="itemsLoaded" />

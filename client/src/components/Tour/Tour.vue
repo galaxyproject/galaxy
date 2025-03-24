@@ -1,11 +1,11 @@
 <template>
     <div class="d-flex flex-column">
-        <div v-if="historiesLoading">Evaluating requirements...</div>
+        <div v-if="historiesLoading">正在评估要求...</div>
         <b-modal
             v-else-if="errorMessage"
             id="tour-failed"
             v-model="showModal"
-            title="Tour Failed"
+            title="导览失败"
             title-class="h3"
             ok-only>
             {{ errorMessage }}
@@ -14,29 +14,29 @@
             v-else-if="loginRequired(currentUser)"
             id="tour-requirement"
             v-model="showModal"
-            title="Requires Login"
+            title="需要登录"
             title-class="h3"
             ok-only>
-            You must log in to Galaxy to use this tour.
+            您必须登录Galaxy才能使用此导览。
         </b-modal>
         <b-modal
             v-else-if="adminRequired(currentUser)"
             id="tour-requirement"
             v-model="showModal"
-            title="Requires Admin"
+            title="需要管理员权限"
             title-class="h3"
             ok-only>
-            You must be an admin user to use this tour.
+            您必须是管理员用户才能使用此导览。
         </b-modal>
         <b-modal
             v-else-if="newHistoryRequired(currentHistory)"
             id="tour-requirement"
             v-model="showModal"
-            title="Requires New History"
+            title="需要新的历史记录"
             title-class="h3"
-            ok-title="Create New History"
+            ok-title="创建新的历史记录"
             @ok="createNewHistory()">
-            This tour is designed to run on a new history, please create a new history before running it.
+            此导览需要在新的历史记录上运行，请在运行前创建新的历史记录。
         </b-modal>
         <TourStep
             v-else-if="currentHistory && currentStep && currentUser"

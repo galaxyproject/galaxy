@@ -25,12 +25,11 @@ const hasUser = computed(() => !isAnonymous.value);
 const isFavorite = computed(() => currentFavorites.value.tools?.includes(props.id));
 const showAddFavorite = computed(() => hasUser.value && !isFavorite.value);
 const showRemoveFavorite = computed(() => hasUser.value && isFavorite.value);
-
 const title = computed(() => {
     if (showAddFavorite.value) {
-        return "Add to Favorites";
+        return "添加到收藏夹";
     } else if (showRemoveFavorite.value) {
-        return "Remove from Favorites";
+        return "从收藏夹移除";
     } else {
         return null;
     }
@@ -48,10 +47,10 @@ async function onAddFavorite() {
     try {
         await userStore.addFavoriteTool(props.id);
         emit("onSetError", null);
-        ariaAlert("added to favorites");
+        ariaAlert("已添加到收藏夹");
     } catch {
-        emit("onSetError", `Failed to add '${props.id}' to favorites.`);
-        ariaAlert("failed to add to favorites");
+        emit("onSetError", `添加 '${props.id}' 到收藏夹失败。`);
+        ariaAlert("添加到收藏夹失败");
     }
 }
 
@@ -59,10 +58,10 @@ async function onRemoveFavorite() {
     try {
         await userStore.removeFavoriteTool(props.id);
         emit("onSetError", null);
-        ariaAlert("removed from favorites");
+        ariaAlert("已从收藏夹移除");
     } catch {
-        emit("onSetError", `Failed to remove '${props.id}' from favorites.`);
-        ariaAlert("failed to remove from favorites");
+        emit("onSetError", `从收藏夹移除 '${props.id}' 失败。`);
+        ariaAlert("从收藏夹移除失败");
     }
 }
 </script>

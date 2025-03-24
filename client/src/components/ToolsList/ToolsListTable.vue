@@ -20,9 +20,8 @@
             :workflow-compatible="item.is_workflow_compatible"
             :version="item.version"
             @open="() => onOpen(item)" />
-        <div>
-            <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
-            <b-overlay :show="busy" opacity="0.5" />
+        <div v-if="allLoaded" class="list-end my-2">- 搜索结果已全部显示 -</div>
+        <b-overlay :show="busy" opacity="0.5" />
         </div>
     </div>
 </template>
@@ -113,10 +112,10 @@ export default {
             const parser = new DOMParser();
             const helpDoc = parser.parseFromString(help, "text/html");
             const xpaths = [
-                "//strong[text()='What it does']/../following-sibling::*",
-                "//strong[text()='What It Does']/../following-sibling::*",
-                "//h1[text()='Synopsis']/following-sibling::*",
-                "//strong[text()='Syntax']/../following-sibling::*",
+                "//strong[text()='功能描述']/../following-sibling::*",
+                "//strong[text()='功能介绍']/../following-sibling::*",
+                "//h1[text()='概要']/following-sibling::*",
+                "//strong[text()='语法']/../following-sibling::*",
             ];
             const matches = [];
             xpaths.forEach((xpath) => {

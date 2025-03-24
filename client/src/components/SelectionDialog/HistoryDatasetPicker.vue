@@ -23,10 +23,9 @@ interface Props {
     title?: string;
     actionButtonText?: string;
 }
-
 const props = withDefaults(defineProps<Props>(), {
-    title: "Select datasets from your histories",
-    actionButtonText: "Select",
+    title: "从您的历史记录中选择数据集",
+    actionButtonText: "选择",
 });
 
 const emit = defineEmits<{
@@ -50,32 +49,31 @@ const items = ref<SelectionItem[]>([]);
 const selected = ref<SelectionItem[]>([]);
 
 const itemsProvider = ref<ItemsProvider>(historiesProvider);
-
 const searchTitle = computed(() => {
     if (datasetsVisible.value) {
-        return "datasets";
+        return "数据集";
     } else {
-        return "search histories";
+        return "搜索历史记录";
     }
 });
 const okButtonText = computed(() => {
     if (selected.value.length === 0) {
         return props.actionButtonText;
     } else {
-        return `${props.actionButtonText} ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
+        return `${props.actionButtonText} ${selected.value.length} 个数据集`;
     }
 });
 const fields = computed(() => {
     if (datasetsVisible.value) {
         return [
-            { key: "label", label: "Name", sortable: true },
-            { key: "update_time", label: "Last Updated", sortable: true },
+            { key: "label", label: "名称", sortable: true },
+            { key: "update_time", label: "最后更新", sortable: true },
         ];
     } else {
         return [
-            { key: "label", label: "History Name" },
-            { key: "size", label: "Datasets", sortable: false },
-            { key: "update_time", label: "Last Updated" },
+            { key: "label", label: "历史记录名称" },
+            { key: "size", label: "数据集", sortable: false },
+            { key: "update_time", label: "最后更新" },
         ];
     }
 });

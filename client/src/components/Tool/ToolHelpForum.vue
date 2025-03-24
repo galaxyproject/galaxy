@@ -46,10 +46,9 @@ const displayCount = 5;
 
 const displayedTopics = computed(() => topics.value.slice(0, displayCount - 1));
 const hasMore = computed(() => topics.value.length > displayCount);
-
 function blurbForTopic(topicId: number): string {
     const firstPost = posts.value.find((post) => post.topic_id === topicId);
-    return firstPost?.blurb ?? "no content";
+    return firstPost?.blurb ?? "无内容";
 }
 
 const { createNewTopicUrl, searchTopicUrl } = useHelpURLs({
@@ -63,17 +62,17 @@ const configStore = useConfigStore();
 
 <template>
     <div ref="root" class="tool-help-forum mt-2 mb-4">
-        <Heading h2 separator bold size="sm">Help Forum</Heading>
+        <Heading h2 separator bold size="sm">帮助论坛</Heading>
 
         <p v-if="helpAvailable">
-            Following questions on the
-            <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink> may be related to
-            this tool:
+            以下是在
+            <ExternalLink :href="configStore.config.help_forum_api_url">帮助论坛</ExternalLink>上可能与
+            此工具相关的问题：
         </p>
         <p v-else>
-            There are no questions on the
-            <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink>
-            about this tool.
+            在
+            <ExternalLink :href="configStore.config.help_forum_api_url">帮助论坛</ExternalLink>
+            上没有关于此工具的问题。
         </p>
 
         <BCard v-for="topic in displayedTopics" :key="topic.id" class="mb-2">
@@ -83,10 +82,10 @@ const configStore = useConfigStore();
             <p class="mb-0 mt-2">{{ blurbForTopic(topic.id) }}</p>
         </BCard>
 
-        <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">Show all...</a>
+        <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">显示全部...</a>
 
         <BButton variant="primary" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
-            <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question
+            <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> 提出新问题
         </BButton>
     </div>
 </template>

@@ -1,11 +1,10 @@
 <template>
     <div>
-        <h1 class="h-lg">Galaxy Tours</h1>
+        <h1 class="h-lg">Galaxy 导览</h1>
         <p>
-            This page presents a list of interactive tours available on this Galaxy server. Select any tour to get
-            started (and remember, you can click 'End Tour' at any time).
+            此页面展示了该 Galaxy 服务器上可用的交互式导览列表。选择任何导览开始使用（请记住，您随时可以点击"结束导览"）。
         </p>
-        <h2 class="h-sm">Tours</h2>
+        <h2 class="h-sm">导览</h2>
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <DelayedInput class="mb-3" :value="search" :placeholder="searchTours" :delay="0" @change="onSearch" />
@@ -42,7 +41,7 @@ export default {
             tours: [],
             search: "",
             error: null,
-            searchTours: _l("search tours"),
+            searchTours: _l("搜索导览"),
         };
     },
     created() {

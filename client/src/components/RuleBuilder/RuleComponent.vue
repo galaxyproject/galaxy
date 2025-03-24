@@ -23,8 +23,8 @@ export default {
     },
     data: function () {
         return {
-            applyLabel: _l("Apply"),
-            cancelLabel: _l("Cancel"),
+            applyLabel: _l("应用"),
+            cancelLabel: _l("取消"),
         };
     },
     computed: {

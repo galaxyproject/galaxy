@@ -63,7 +63,7 @@ const currentValue = computed({
         select-label=""
         selected-label=""
         track-by="id">
-        <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
+        <span slot="noResult" v-localize>未找到匹配的{{ what }}。</span>
         <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
             {{ option.text }}
         </span>

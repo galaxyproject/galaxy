@@ -169,7 +169,7 @@ defineExpose({
     <div class="upload-wrapper">
         <div class="upload-header">&nbsp;</div>
         <div class="upload-box">
-            <div v-show="showHelper" class="upload-helper">Select a composite type</div>
+            <div v-show="showHelper" class="upload-helper">选择一个复合类型</div>
             <div v-show="!showHelper">
                 <CompositeRow
                     v-for="(uploadItem, uploadIndex) in uploadItems"
@@ -191,17 +191,17 @@ defineExpose({
             </div>
         </div>
         <div class="upload-footer">
-            <span class="upload-footer-title">Composite Type:</span>
+            <span class="upload-footer-title">复合类型：</span>
             <UploadSelect
                 class="upload-footer-extension"
                 :value="null"
                 :options="listExtensions"
                 :disabled="isRunning"
-                what="file type"
+                what="文件类型"
                 @input="inputExtension" />
-            <span class="upload-footer-title">Reference:</span>
+            <span class="upload-footer-title">参考：</span>
             <UploadSelect
-                what="reference"
+                what="参考"
                 :value="dbKey"
                 :options="listDbKeys"
                 :disabled="isRunning"
@@ -211,17 +211,17 @@ defineExpose({
             <BButton
                 id="btn-start"
                 :disabled="!enableStart"
-                title="Start"
+                title="开始"
                 :variant="enableStart ? 'primary' : null"
                 @click="eventStart">
-                <span v-localize>Start</span>
+                <span v-localize>开始</span>
             </BButton>
-            <BButton id="btn-reset" title="Reset" @click="eventReset">
-                <span v-localize>Reset</span>
+            <BButton id="btn-reset" title="重置" @click="eventReset">
+                <span v-localize>重置</span>
             </BButton>
-            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
-                <span v-if="hasCallback" v-localize>Close</span>
-                <span v-else v-localize>Cancel</span>
+            <BButton id="btn-close" title="关闭" @click="$emit('dismiss')">
+                <span v-if="hasCallback" v-localize>关闭</span>
+                <span v-else v-localize>取消</span>
             </BButton>
         </div>
     </div>

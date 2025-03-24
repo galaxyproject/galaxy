@@ -4,7 +4,7 @@
             {{ error }}
         </b-alert>
         <b-card v-if="showItems" no-body class="my-2">
-            <h2 class="m-3 h-text">Currently installing...</h2>
+            <h2 class="m-3 h-text">正在安装中...</h2>
             <b-table
                 class="mx-3 mb-0"
                 sticky-header
@@ -15,7 +15,7 @@
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
                 <template v-slot:cell(status)="row">
-                    <b>Status: </b><span>{{ row.item.status }}</span>
+                    <b>状态: </b><span>{{ row.item.status }}</span>
                 </template>
                 <template v-slot:cell(actions)="row">
                     <InstallationActions
@@ -25,7 +25,7 @@
                 </template>
             </b-table>
         </b-card>
-        <b-alert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </b-alert>
+        <b-alert v-if="showEmpty" variant="info" show> 目前没有正在安装的仓库。 </b-alert>
     </div>
 </template>
 <script>
@@ -47,7 +47,7 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "status", "actions"],
+            fields: ["名称", "状态", "操作"],
         };
     },
     computed: {

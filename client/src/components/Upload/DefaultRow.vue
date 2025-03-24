@@ -103,8 +103,8 @@ function autoSelectFileInput() {
                 :value="extension"
                 :disabled="isDisabled"
                 :options="listExtensions"
-                placeholder="Select Type"
-                what="file type"
+                placeholder="选择类型"
+                what="文件类型"
                 @input="inputExtension" />
             <UploadExtension v-if="listExtensions" :extension="extension" :list-extensions="listExtensions" />
             <UploadSelect
@@ -113,8 +113,8 @@ function autoSelectFileInput() {
                 :value="dbKey"
                 :disabled="isDisabled"
                 :options="listDbKeys"
-                placeholder="Select Reference"
-                what="reference"
+                placeholder="选择参考"
+                what="参考"
                 @input="inputDbKey" />
             <UploadSettings
                 class="upload-settings"
@@ -159,7 +159,7 @@ function autoSelectFileInput() {
         </div>
         <div v-if="fileMode == 'new'">
             <div class="upload-text-message">
-                Download data from the web by entering URLs (one per line) or directly paste content.
+                可通过输入网址（每行一个）或直接粘贴内容，从网络下载数据。
             </div>
             <b-textarea
                 :value="fileContent"

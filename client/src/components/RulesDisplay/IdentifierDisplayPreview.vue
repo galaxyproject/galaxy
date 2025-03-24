@@ -1,5 +1,5 @@
 <template>
-    <li class="rule" :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</li>
+    <li class="rule" :title="help">将 {{ columnsLabel }} 设置为 {{ typeDisplay }}</li>
 </template>
 
 <script>

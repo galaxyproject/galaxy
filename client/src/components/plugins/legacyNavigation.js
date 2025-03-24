@@ -9,12 +9,12 @@ export function iframeRedirect(path, target = "galaxy_main") {
     try {
         const targetFrame = window.frames[target];
         if (!targetFrame) {
-            throw new Error(`Requested frame ${target} doesn't exist`);
+            throw new Error(`请求的框架 ${target} 不存在`);
         }
         targetFrame.location = prependPath(path);
         return true;
     } catch (err) {
-        console.warn("Failed iframe redirect", err, ...arguments);
+        console.warn("iframe重定向失败", err, ...arguments);
         throw err;
     }
 }

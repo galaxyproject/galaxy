@@ -16,7 +16,7 @@ const uninstallState = computed(() => props.status === "Installed");
 const emit = defineEmits(["onInstall", "onUninstall", "onReset"]);
 
 function onReset() {
-    if (window.confirm(`Do you want to reset this repository?`)) {
+    if (window.confirm(`您确定要重置此仓库吗？`)) {
         emit("onReset");
     }
 }
@@ -28,18 +28,18 @@ function onReset() {
             <b-spinner small></b-spinner>
         </b-button>
         <b-button v-else-if="installState" variant="primary" class="btn-sm" @click="() => emit('onInstall')">
-            Install
+            安装
         </b-button>
         <b-button v-else-if="uninstallState" variant="danger" class="btn-sm" @click="() => emit('onUninstall')">
-            Uninstall
+            卸载
         </b-button>
         <b-button
             v-else
             variant="warning"
             class="btn-sm"
-            :title="localize('Reset Broken or Stuck Installation')"
+            :title="localize('重置损坏或卡住的安装')"
             @click="onReset">
-            Reset
+            重置
         </b-button>
     </div>
 </template>

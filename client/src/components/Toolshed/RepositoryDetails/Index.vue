@@ -36,17 +36,17 @@ const repositoryWatcher = useResourceWatcher(loadInstalledRepositories, {
 const repoChecked = "fa fa-check text-success";
 const repoUnchecked = "fa fa-times text-danger";
 const repoFields = [
-    { key: "numeric_revision", label: "Revision" },
-    { key: "tools", label: "Tools and Versions" },
-    { key: "profile", label: "Requires" },
-    { key: "missing_test_components", label: "Tests" },
-    { key: "status" },
+    { key: "numeric_revision", label: "版本" },
+    { key: "tools", label: "工具和版本" },
+    { key: "profile", label: "依赖" },
+    { key: "missing_test_components", label: "测试" },
+    { key: "status", label: "状态" },
     { key: "actions", label: "", class: "toolshed-repo-actions" },
 ];
 
-const statusError = "Error";
-const statusInstalled = "Installed";
-const statusUninstalled = "Uninstalled";
+const statusError = "错误";
+const statusInstalled = "已安装";
+const statusUninstalled = "已卸载";
 
 const revisionStateMap = new Map();
 const revisionWaitStateMap = new Map();
@@ -218,12 +218,12 @@ function stopWatchingRepository() {
     <b-card>
         <div class="mb-1">{{ repo.long_description }}</div>
         <div class="mb-3">
-            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
+            <b-link :href="repo.repository_url" target="_blank">显示更多详情和依赖项。</b-link>
         </div>
         <div>
             <span v-if="loading">
                 <span class="fa fa-spinner fa-spin" />
-                <span class="loading-message">Loading repository details...</span>
+                <span class="loading-message">正在加载仓库详情...</span>
             </span>
             <div v-else>
                 <b-alert v-if="error" variant="danger" show>

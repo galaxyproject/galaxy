@@ -25,10 +25,10 @@
             </li>
             <li v-if="target.length < colHeaders.length">
                 <span v-if="!orderedEdit" class="rule-column-selector-target-add">
-                    <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
+                    <i @click="$emit('update:orderedEdit', true)">... {{ l("分配另一列") }}</i>
                 </span>
                 <span v-else class="rule-column-selector-target-select">
-                    <Select2 placeholder="Select a column" @input="handleAdd">
+                    <Select2 placeholder="选择一列" @input="handleAdd">
                         <option />
                         <!-- empty option selection for placeholder -->
                         <option v-for="(col, index) in remainingHeaders" :key="col" :value="index">{{ col }}</option>
@@ -55,7 +55,7 @@ export default {
         label: {
             required: false,
             type: String,
-            default: _l("From Column"),
+            default: _l("从列"),
         },
         help: {
             required: false,
@@ -100,7 +100,7 @@ export default {
             return remaining;
         },
         title() {
-            return _l("Select a column");
+            return _l("选择列");
         },
     },
     methods: {

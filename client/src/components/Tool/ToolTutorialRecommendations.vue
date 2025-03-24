@@ -33,33 +33,32 @@ function idForCategory(category: string) {
 function tutorialsInCategory(category: string) {
     return tutorialDetails.value.filter((tut) => tut.category === category);
 }
-
 const tutorialText = computed(() => {
     if (tutorialDetails.value.length > 1) {
-        return `There are ${tutorialDetails.value.length} tutorials available which use this tool.`;
+        return `有${tutorialDetails.value.length}个教程可用于此工具。`;
     } else {
-        return "There is 1 tutorial available which uses this tool.";
+        return "有1个教程可用于此工具。";
     }
 });
 </script>
 
 <template>
     <div v-if="trainingAvailable" class="mt-2 mb-4">
-        <Heading h2 separator bold size="sm">Tutorials</Heading>
+        <Heading h2 separator bold size="sm">教程</Heading>
 
         <p>
             {{ tutorialText }}
-            <span v-if="versionAvailable"> These tutorials include training for the current version of the tool. </span>
+            <span v-if="versionAvailable"> 这些教程包含当前版本工具的培训内容。</span>
 
             <ExternalLink v-if="allTutorialsUrl" :href="allTutorialsUrl">
-                View all tutorials referencing this tool.
+                查看所有引用此工具的教程。
             </ExternalLink>
         </p>
 
         <BButton v-b-toggle="collapseId" class="ui-link">
             <b>
-                Tutorials available in {{ trainingCategories.length }}
-                {{ trainingCategories.length > 1 ? "categories" : "category" }}
+                {{ trainingCategories.length }}个
+                {{ trainingCategories.length > 1 ? "类别" : "类别" }}的可用教程
             </b>
             <FontAwesomeIcon icon="caret-down" />
         </BButton>

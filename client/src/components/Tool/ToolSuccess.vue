@@ -27,11 +27,10 @@ if (Object.keys(responseVal.value).length === 0) {
     router.push(`/`);
 }
 </script>
-
 <template>
     <section>
         <BAlert v-if="!jobResponse" variant="info" show>
-            <LoadingSpan message="Waiting on data" />
+            <LoadingSpan message="等待数据" />
         </BAlert>
         <div v-else>
             <div v-if="jobResponse?.produces_entry_points">

@@ -21,7 +21,7 @@ export default {
                 }, {});
             })
             .catch((error) => {
-                console.error("List of all tools not loaded", error);
+                console.error("未能加载全部工具列表", error);
             });
         if (Object.keys(tools).length > 0) {
             await axios
@@ -35,7 +35,7 @@ export default {
                     document.head.appendChild(el);
                 })
                 .catch((error) => {
-                    console.error("Tool sections by id not loaded", error);
+                    console.error("未能通过ID加载工具分区", error);
                 });
         }
     },
@@ -50,8 +50,8 @@ export default {
                               ..._acc,
                               {
                                   "@type": "SoftwareApplication",
-                                  operatingSystem: "Any",
-                                  applicationCategory: "Web application",
+                                  operatingSystem: "任何系统",
+                                  applicationCategory: "网页应用程序",
                                   name: tool.name,
                                   description: tool.help || tool.description,
                                   softwareVersion: tool.version,

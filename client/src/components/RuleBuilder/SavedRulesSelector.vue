@@ -15,8 +15,9 @@
                 class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule)"
                 @click="$emit('update-rules', session.rule)"
-                >Saved rule from
+                >保存于
                 <UtcDate :date="session.dateTime" mode="elapsed" />
+                的规则
             </a>
         </div>
     </div>
@@ -43,7 +44,7 @@ export default {
     },
     data: function () {
         return {
-            savedRulesMenu: _l("Recently used rules"),
+            savedRulesMenu: _l("最近使用的规则"),
             // Get the 61 character values for ASCII 65 (A) to 126 (~), which is how handson table labels its columns
             // This ensures the handson table headers are available for passing to the display method in formatPreview
             hotHeaders: [...new Array(61).keys()].map((i) => String.fromCharCode(i + 65)),
@@ -77,7 +78,7 @@ export default {
                 if (numOfPreviewedRules == 5) {
                     return prettyString;
                 } else {
-                    prettyString += delim + "Set " + MAPPING_TARGETS[element.type].label;
+                    prettyString += delim + "设置 " + MAPPING_TARGETS[element.type].label;
                     delim = ", ";
                     numOfPreviewedRules++;
                 }

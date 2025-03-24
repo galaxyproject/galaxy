@@ -36,7 +36,7 @@ function onDrop(event) {
 
 function onDropCancel(event) {
     if (event.dataTransfer?.files?.length > 0) {
-        toast.error("Upload cancelled", "Drop file in the center to upload it");
+        toast.error("上传已取消", "请将文件拖放到中心位置以上传");
     }
 }
 
@@ -51,7 +51,7 @@ watch(isFileOverDocument, (newValue, oldValue) => {
 
 <template>
     <BModal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
-        <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload</div>
+        <div ref="modalContentElement" class="inner-content h-xl">将文件拖放到这里以上传</div>
     </BModal>
 </template>
 
