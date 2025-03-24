@@ -10,18 +10,18 @@
         <div v-else>
             <DelayedInput class="mb-3" :value="search" :placeholder="searchTours" :delay="0" @change="onSearch" />
             <div v-for="tour in tours" :key="tour.id">
-                <ul v-if="match(tour)" id="tourList" class="list-group">
-                    <li class="list-group-item">
-                        <a :href="`${root}tours/${tour.id}`"> {{ tour.name || tour.id }} </a>&nbsp;&minus;&nbsp;
-                        {{ tour.description }}
-                        <span
+                <div class="rounded border p-2 mb-2">
+                    <a v-if="match(tour)" :href="`/tours/${tour.id}`">
+                        <div class="text-primary">{{ tour.name || tour.id }}</div>
+                        <div v-html="tour.description" />
+                        <div
                             v-for="(tag, index) in tour.tags"
                             :key="index"
                             class="badge badge-primary text-capitalize mr-1">
                             {{ tag }}
-                        </span>
-                    </li>
-                </ul>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -58,6 +58,9 @@ export default {
     methods: {
         onSearch(newValue) {
             this.search = newValue;
+        },
+        onTour(tourId) {
+            window.location.href = `/tours/${tourId}`;
         },
         match(tour) {
             const query = this.search.toLowerCase();

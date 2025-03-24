@@ -40,12 +40,15 @@ steps:
       postclick: true
 
     - component: history_panel.item(hid=1,state=ok).visualize_button
-      intro: "Clicking the diagram-icon usually visualizes a dataset in the center panel."
+      intro: "Clicking the diagram-icon will visualize your dataset."
       postclick: true
 
     - component: visualization.plugin_item(id=plotly_3dsurface)
       intro: "Select the surface visualization."
       postclick: true
+
+    - element: 'iframe[id="galaxy_visualization"]'
+      intro: "This visualization is interactive."
 
     - title: "Enjoy Galaxy"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"
