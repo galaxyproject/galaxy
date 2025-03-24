@@ -23,10 +23,7 @@
                 </div>
             </div>
             <div class="unified-panel-body">
-                <CellCode
-                    v-if="editor === 'text'"
-                    :value="markdownText"
-                    @change="$emit('update', $event)" />
+                <CellCode v-if="editor === 'text'" :value="markdownText" @change="$emit('update', $event)" />
                 <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
         </div>
@@ -45,10 +42,11 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
+import type { WorkflowLabel } from "./Editor/types";
+
+import CellEditor from "./Editor/CellEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
-import type { WorkflowLabel } from "./Editor/types";
-import CellEditor from "./Editor/CellEditor.vue";
 const CellCode = () => import("./Editor/CellCode.vue");
 
 defineProps<{
