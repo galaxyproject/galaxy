@@ -9,6 +9,8 @@ import { useFilterObjectArray } from "@/composables/filter";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
+import { type DataOption, isDataOption } from "./FormData/types";
+
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 library.add(faCheckSquare, faSquare);
@@ -21,7 +23,7 @@ type ValueWithTags = SelectValue & { tags: string[] };
 interface SelectOption {
     label: string;
     value: SelectValue;
-    id?: string;
+    key?: string;
 }
 
 const props = defineProps({
@@ -82,12 +84,7 @@ const reorderedOptions = computed(() => {
 
         result = [...unselectedOptions, ...selectedOptions];
     }
-    return result.map((option) => {
-        return {
-            ...option,
-            id: trackBy.value === "id" && isValueWithId(option.value) ? option.value.id : undefined,
-        };
-    });
+    return result.map(getSelectOption);
 });
 
 /**
@@ -123,17 +120,19 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
 /**
- * Tracks selected ids in case of objects with string ids
+ * Tracks selected keys in case of form data options
  */
-const selectedIds = computed(() => {
-    return selectedValues.value.map((v) => (isValueWithId(v) ? v.id : undefined)).filter((v) => v !== undefined);
+const selectedKeys = computed(() => {
+    return selectedValues.value
+        .map((v) => (isDataOptionObject(v) ? itemUniqueKey(v) : undefined))
+        .filter((v) => v !== undefined);
 });
 
 /**
- * Whether current value(s) will be tracked by id or value
+ * Whether current value(s) will be tracked by key or value
  */
 const trackBy = computed(() => {
-    return selectedIds.value.length > 0 ? "id" : "value";
+    return selectedKeys.value.length > 0 ? "key" : "value";
 });
 
 /**
@@ -155,6 +154,10 @@ const currentValue = computed({
     },
 });
 
+function itemUniqueKey(item: DataOption): string {
+    return `${item.src}-${item.id}`;
+}
+
 /**
  * Ensures that an initial value is selected for non-optional inputs
  */
@@ -165,10 +168,10 @@ function setInitialValue(): void {
 }
 
 function getSelectOption(option: SelectOption): SelectOption {
-    if (isValueWithId(option.value)) {
+    if (isDataOptionObject(option.value)) {
         return {
             ...option,
-            id: option.value.id,
+            key: itemUniqueKey(option.value),
         };
     }
     return option;
@@ -195,8 +198,8 @@ function isValueWithTags(item: SelectValue): item is ValueWithTags {
     return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
 }
 
-function isValueWithId(item: SelectValue): item is { id: string } {
-    return !!item && typeof item === "object" && (item as { id: string }).id !== undefined;
+function isDataOptionObject(item: SelectValue): item is DataOption {
+    return !!item && typeof item === "object" && isDataOption(item);
 }
 
 function onSearchChange(search: string): void {
@@ -204,8 +207,8 @@ function onSearchChange(search: string): void {
 }
 
 function isSelected(item: SelectValue): boolean {
-    if (isValueWithId(item)) {
-        return selectedIds.value.includes(item.id);
+    if (isDataOptionObject(item)) {
+        return selectedKeys.value.includes(itemUniqueKey(item));
     }
     return selectedValues.value.includes(item);
 }
