@@ -19,7 +19,7 @@ upstream component or environment that is accessed through props and events -->
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
-            placeholder="Add Tags"
+            placeholder="添加标签"
             :add-on-key="triggerKeys"
             :validation="validation"
             @before-adding-tag="beforeAddingTag"

@@ -8,11 +8,11 @@
         <div class="description mb-1">
             {{ repo.long_description || repo.description }}
         </div>
-        <div class="revision text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
+        <div class="revision text-muted small mb-3">{{ repo.owner }} 修订版本 {{ changesetRevision }}</div>
         <b-form-group
             v-if="requiresPanel"
-            label="Target Section:"
-            description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
+            label="目标分区："
+            description="选择现有工具面板分区或创建新分区来容纳安装的工具（可选）。">
             <b-form-input v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
@@ -20,10 +20,10 @@
                 </option>
             </datalist>
         </b-form-group>
-        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
+        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} 高级设置 </b-link>
         <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
             <b-card>
-                <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
+                <b-form-group v-if="showConfig" label="工具配置：" description="选择工具配置。">
                     <b-form-radio
                         v-for="filename in toolConfigs"
                         :key="filename"
@@ -32,14 +32,14 @@
                         {{ filename }}
                     </b-form-radio>
                 </b-form-group>
-                <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
+                <b-form-group label="依赖项：" description="选择如何处理依赖项。">
                     <b-form-checkbox v-model="installResolverDependencies">
-                        Install resolvable dependencies
+                        安装可解析的依赖项
                     </b-form-checkbox>
                     <b-form-checkbox v-model="installRepositoryDependencies">
-                        Install repository dependencies
+                        安装存储库依赖项
                     </b-form-checkbox>
-                    <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
+                    <b-form-checkbox v-model="installToolDependencies"> 安装工具依赖项 </b-form-checkbox>
                 </b-form-group>
             </b-card>
         </b-collapse>
@@ -90,10 +90,10 @@ export default {
     },
     computed: {
         advancedTitle() {
-            return this.advancedShow ? "Hide" : "Show";
+            return this.advancedShow ? "隐藏" : "显示";
         },
         modalTitle() {
-            return `Installing '${this.repo.name}'`;
+            return `正在安装 '${this.repo.name}'`;
         },
         showConfig() {
             return this.toolConfigs.length > 1;

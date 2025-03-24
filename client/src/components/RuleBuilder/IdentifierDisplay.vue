@@ -1,6 +1,6 @@
 <template>
     <li class="rule">
-        <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
+        <span v-b-tooltip.hover :title="help">设置 {{ columnsLabel }} 为 {{ typeDisplay }}</span>
         <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
         <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
     </li>
@@ -35,10 +35,10 @@ export default {
             return MAPPING_TARGETS[this.type].help || "";
         },
         titleEdit() {
-            return _l("Edit column definition");
+            return _l("编辑列定义");
         },
         titleRemove() {
-            return _l("Remove this column definition");
+            return _l("删除此列定义");
         },
         columnsLabel() {
             return RuleDefs.columnDisplay(this.columns, this.colHeaders);

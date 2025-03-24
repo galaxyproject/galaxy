@@ -38,10 +38,10 @@ export default {
             return RULES[ruleType].display(this.rule, this.colHeaders);
         },
         editTitle() {
-            return _l("Edit this rule.");
+            return _l("编辑此规则。");
         },
         removeTitle() {
-            return _l("Remove this rule.");
+            return _l("删除此规则。");
         },
     },
     methods: {

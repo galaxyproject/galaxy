@@ -2,7 +2,7 @@
 export default {
     computed: {
         addAttributes() {
-            const options = [{ value: null, text: "Add attribute" }];
+            const options = [{ value: null, text: "增加属性" }];
             for (const attribute of this.attributeInfo) {
                 if (!this.show[attribute.key]) {
                     options.push({ value: attribute.key, text: "- " + attribute.placeholder });

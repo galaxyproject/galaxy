@@ -25,8 +25,8 @@ const unreadNotifications = computed(() => {
 });
 
 async function onMarkAllAsRead() {
-    const confirmed = await confirm("Are you sure you want to mark all unread notifications as read?", {
-        title: "Mark all unread notifications as read?",
+    const confirmed = await confirm("您确定要将所有未读通知标记为已读吗？", {
+        title: "将所有未读通知标记为已读？",
     });
 
     if (confirmed) {

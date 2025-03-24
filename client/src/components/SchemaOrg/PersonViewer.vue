@@ -5,7 +5,7 @@
             triggers="click blur"
             :placement="hoverPlacement"
             :target="$refs['button'] || 'works-lazily'"
-            title="Person">
+            title="个人信息">
             <b-table striped :items="items"> </b-table>
         </b-popover>
         <span v-if="name">
@@ -21,11 +21,11 @@
         <span v-else itemprop="email" :content="person.email">
             {{ email }}
         </span>
-        <a v-if="orcidLink" v-b-tooltip.hover title="View orcid.org profile" :href="orcidLink" target="_blank">
+        <a v-if="orcidLink" v-b-tooltip.hover title="查看 orcid.org 个人资料" :href="orcidLink" target="_blank">
             <link itemprop="identifier" :href="orcidLink" />
             <FontAwesomeIcon :icon="['fab', 'orcid']" />
         </a>
-        <a v-if="url" v-b-tooltip.hover title="URL" :href="url" target="_blank">
+        <a v-if="url" v-b-tooltip.hover title="网址" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon icon="external-link-alt" />
         </a>

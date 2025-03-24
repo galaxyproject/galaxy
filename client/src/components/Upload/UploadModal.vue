@@ -20,7 +20,7 @@ const { config, isConfigLoaded } = useConfig();
 
 function getDefaultOptions() {
     const baseOptions = {
-        title: "Upload from Disk or Web",
+        title: "从磁盘或网络上传",
         modalStatic: true,
         callback: null,
         immediateUpload: false,
@@ -95,7 +95,7 @@ defineExpose({
                 <h2 class="title h-sm" tabindex="0">
                     {{ options.title }}
                     <span v-if="currentHistory">
-                        to <b>{{ currentHistory.name }}</b>
+                        到 <b>{{ currentHistory.name }}</b>
                     </span>
                 </h2>
 
@@ -104,23 +104,23 @@ defineExpose({
                         <template v-slot:img>
                             <span class="text-nowrap float-right">
                                 <ExternalLink href="https://galaxy-upload.readthedocs.io/en/latest/">
-                                    Click here
+                                    点击此处
                                 </ExternalLink>
-                                to check out the
+                                查看
                                 <HelpText uri="galaxy.upload.galaxyUploadUtil" text="galaxy-upload" />
-                                util!
+                                工具！
                             </span>
                         </template>
                     </BCarouselSlide>
                     <BCarouselSlide>
                         <template v-slot:img>
                             <span class="text-nowrap float-right">
-                                More info on <HelpText uri="galaxy.upload.ruleBased" text="Rule-based" /> uploads
+                                关于<HelpText uri="galaxy.upload.ruleBased" text="基于规则" />上传的更多信息
                                 <ExternalLink
                                     href="https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/upload-rules/tutorial.html">
-                                    here
+                                    在这里
                                 </ExternalLink>
-                                .
+                                。
                             </span>
                         </template>
                     </BCarouselSlide>

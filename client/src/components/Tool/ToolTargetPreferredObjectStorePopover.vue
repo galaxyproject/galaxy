@@ -3,21 +3,18 @@
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
             <p v-if="toolPreferredObjectStoreId">
-                The {{ preferredOrEmptyString }} storage location has been set at the tool level, by default history or
-                user preferences will be used and if those are not set Galaxy will pick an administrator-configured
-                default.
+                已在工具级别设置了{{ preferredOrEmptyString }}存储位置，默认情况下将使用历史或用户偏好设置，如果这些未设置，Galaxy将选择管理员配置的默认值。
             </p>
             <ShowSelectedObjectStore
                 v-if="toolPreferredObjectStoreId"
                 :preferred-object-store-id="toolPreferredObjectStoreId"
-                for-what="Galaxy will default to storing this tool run's output in">
+                for-what="Galaxy将默认将此工具运行的输出存储在">
             </ShowSelectedObjectStore>
             <div v-else>
-                No selection has been made for this tool execution. Defaults from history, user, or Galaxy will be used.
+                未为此工具执行做出选择。将使用来自历史、用户或Galaxy的默认设置。
             </div>
             <div v-localize>
-                Change {{ preferredOrEmptyString }} storage location by clicking on the storage button in the tool
-                header.
+                通过点击工具头部的存储按钮更改{{ preferredOrEmptyString }}存储位置。
             </div>
         </div>
     </b-popover>

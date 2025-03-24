@@ -31,12 +31,12 @@ const details = computed(() => findExtension(props.listExtensions, props.extensi
         </template>
         <div class="p-2">
             <div v-if="details && details.description">
-                {{ details.description }}
-                <div v-if="details.descriptionUrl">
-                    &nbsp;(<a :href="details.descriptionUrl" target="_blank">read more</a>)
-                </div>
+            {{ details.description }}
+            <div v-if="details.descriptionUrl">
+                &nbsp;(<a :href="details.descriptionUrl" target="_blank">了解更多</a>)
             </div>
-            <div v-else>There is no description available for this file extension.</div>
+            </div>
+            <div v-else>此文件扩展名没有可用的描述信息。</div>
         </div>
     </Popper>
 </template>

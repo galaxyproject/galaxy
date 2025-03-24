@@ -76,7 +76,7 @@ const dataManagerSection = computed(() => {
     const dynamicSection: ToolSectionType = {
         model_class: "ToolSection",
         id: "__data_managers",
-        name: localize("Data Managers"),
+        name: localize("数据管理器"),
         elems: props.dataManagers as Tool[],
     };
     return dynamicSection;
@@ -189,14 +189,13 @@ function onToggle() {
     showSections.value = !showSections.value;
 }
 </script>
-
 <template>
-    <div class="unified-panel" data-description="panel toolbox">
+    <div class="unified-panel" data-description="面板工具箱">
         <div class="unified-panel-controls">
             <ToolSearch
                 :enable-advanced="!props.workflow"
                 :current-panel-view="currentPanelView"
-                :placeholder="localize('search tools')"
+                :placeholder="localize('搜索工具')"
                 :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"
                 :current-panel="localSectionsById"
@@ -213,14 +212,14 @@ function onToggle() {
                     </b-button>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
-                    <b-badge class="alert-info w-100">Search term is too short</b-badge>
+                    <b-badge class="alert-info w-100">搜索词太短</b-badge>
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
-                    <b-badge class="alert-warning w-100">No results found</b-badge>
+                    <b-badge class="alert-warning w-100">未找到结果</b-badge>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
                     <b-badge class="alert-danger w-100">
-                        Did you mean:
+                        您是否想要：
                         <i>
                             <a href="javascript:void(0)" @click="query = closestTerm">{{ closestTerm }}</a>
                         </i>

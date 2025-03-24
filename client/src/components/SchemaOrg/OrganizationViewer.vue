@@ -5,7 +5,7 @@
             triggers="click blur"
             :placement="hoverPlacement"
             :target="$refs['button'] || 'works-lazily'"
-            title="Organization">
+            title="组织">
             <b-table striped :items="items"> </b-table>
         </b-popover>
         <span v-if="name">
@@ -18,7 +18,7 @@
         <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
-        <a v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
+        <a v-if="url" v-b-tooltip.hover title="组织网址" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon icon="external-link-alt" />
         </a>

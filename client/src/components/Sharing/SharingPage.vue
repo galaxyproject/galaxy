@@ -87,7 +87,7 @@ async function onSubmitSlug(newValue: string) {
     }
 }
 
-const itemStatus = computed(() => (item.value.published ? "accessible via link and published" : "accessible via link"));
+const itemStatus = computed(() => (item.value.published ? "可通过链接访问且已发布" : "可通过链接访问"));
 const publishedUrl = computed(() => `${getAppRoot()}${props.pluralName.toLocaleLowerCase()}/list_published`);
 
 function onError(axiosError: unknown) {
@@ -225,7 +225,7 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
     <div class="sharing-page">
         <Heading h1 size="lg" separator>
             <span>
-                Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
+                分享或发布{{ modelClass }}<span v-if="ready">"{{ item.title }}"</span>
             </span>
         </Heading>
 
@@ -233,16 +233,16 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
 
         <form v-if="!hasUsername" class="d-flex flex-column flex-gapy-1" @submit.prevent="setUsername()">
             <label>
-                To make a {{ modelClass }} accessible via link or publish it, you must create a public username:
+                要使{{ modelClass }}可通过链接访问或发布，您必须创建一个公开用户名：
                 <input v-model="newUsername" class="form-control" type="text" />
             </label>
 
-            <b-button class="align-self-start" type="submit" variant="primary">Set Username</b-button>
+            <b-button class="align-self-start" type="submit" variant="primary">设置用户名</b-button>
         </form>
         <div v-else-if="ready">
             <div class="mb-3">
                 <BFormCheckbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
-                    Make {{ modelClass }} accessible
+                    使{{ modelClass }}可访问
                 </BFormCheckbox>
                 <BFormCheckbox
                     v-if="item.importable"
@@ -250,17 +250,17 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
                     class="make-publishable"
                     switch
                     @change="onPublish">
-                    Make {{ modelClass }} publicly available in
-                    <a :href="publishedUrl" target="_top">Published {{ pluralName }}</a>
+                    使{{ modelClass }}在
+                    <a :href="publishedUrl" target="_top">已发布的{{ pluralName }}</a>中公开可用
                 </BFormCheckbox>
             </div>
 
             <div v-if="item.importable" class="mb-4">
                 <div v-if="slugSet">
                     <p>
-                        This {{ modelClass }} is currently {{ itemStatus }}.
+                        此{{ modelClass }}当前{{ itemStatus }}。
                         <br />
-                        Anyone can view and import this {{ modelClass }} by visiting the following URL:
+                        任何人都可以通过访问以下URL查看并导入此{{ modelClass }}：
                     </p>
                     <EditableUrl
                         :prefix="itemUrl.prefix"
@@ -269,21 +269,20 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
                         @submit="onSubmitSlug" />
                 </div>
                 <div v-else>
-                    <p>Currently publishing {{ modelClass }}. A shareable URL will be available here momentarily.</p>
+                    <p>正在发布{{ modelClass }}。可分享的URL将很快显示在此处。</p>
                 </div>
             </div>
             <div v-else class="mb-4">
-                Access to this {{ modelClass }} is currently restricted so that only you and the users listed below can
-                access it. Note that sharing a History will also allow access to all of its datasets.
+                此{{ modelClass }}的访问权限当前受限，只有您和下面列出的用户可以访问它。请注意，共享历史记录也将允许访问其所有数据集。
             </div>
 
             <div v-if="embedable" class="mb-4">
-                <Heading h2 size="md"> Embed {{ modelClass }} </Heading>
+                <Heading h2 size="md">嵌入{{ modelClass }}</Heading>
 
                 <WorkflowEmbed v-if="props.modelClass.toLowerCase() === 'workflow'" :id="id" />
             </div>
 
-            <Heading h2 size="md"> Share {{ modelClass }} with Individual Users </Heading>
+            <Heading h2 size="md">与个人用户共享{{ modelClass }}</Heading>
 
             <UserSharing
                 ref="userSharing"

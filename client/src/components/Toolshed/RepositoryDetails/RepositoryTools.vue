@@ -5,7 +5,7 @@
                 <td :class="clsFirstColumn">
                     <a href="javascript:void(0)" role="button" @click.stop.prevent="onExpand">
                         <span class="fa fa-angle-double-up" />
-                        <span>Show less</span>
+                        <span>显示更少</span>
                     </a>
                 </td>
                 <td :class="clsSecondColumn" />
@@ -22,7 +22,7 @@
                 <td :class="clsFirstColumn">
                     <a href="javascript:void(0)" role="button" @click.stop.prevent="onExpand">
                         <span class="fa fa-angle-double-down" />
-                        <span>Show more</span>
+                        <span>显示更多</span>
                     </a>
                 </td>
                 <td :class="clsSecondColumn" />

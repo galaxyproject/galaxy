@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
         v-b-tooltip.noninteractive.hover
         class="back-to-top"
         :class="{ show: props.offset > 100 }"
-        :title="props.offset > 100 ? 'Scroll To Top' : ''"
+        :title="props.offset > 100 ? '回到顶部' : ''"
         variant="info"
         @click="$emit('click')">
         <FontAwesomeIcon icon="fa-chevron-up" />

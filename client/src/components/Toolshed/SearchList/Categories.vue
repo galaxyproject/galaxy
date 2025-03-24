@@ -1,6 +1,6 @@
 <template>
     <div>
-        <LoadingSpan v-if="loading" message="Loading categories" />
+        <LoadingSpan v-if="loading" message="正在加载分类" />
         <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
                 <b-link
@@ -39,7 +39,7 @@ export default {
         return {
             categories: [],
             fields: [
-                { key: "name", label: "Category", sortable: true },
+                { key: "name", label: "类别", sortable: true },
                 { key: "description", sortable: false },
                 { key: "repositories", sortable: true },
             ],

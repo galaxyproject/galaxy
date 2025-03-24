@@ -100,9 +100,8 @@ function onRemove(user: { email: string }) {
         sharingCandidates.value.splice(index, 1);
     }
 }
-
-const charactersThresholdWarning = "Enter at least 3 characters to see suggestions";
-const elementsNotFoundWarning = "No elements found. Consider changing the search query";
+const charactersThresholdWarning = "请输入至少3个字符以查看建议";
+const elementsNotFoundWarning = "未找到任何元素。请考虑更改搜索查询";
 
 function onCancel() {
     sharingCandidates.value = [...(props.item.users_shared_with ?? [])];
@@ -141,11 +140,10 @@ defineExpose({
     <div class="user-sharing">
         <div v-if="currentUser && isConfigLoaded">
             <p v-if="props.item.users_shared_with?.length === 0">
-                You have not shared this {{ props.modelClass }} with any users.
+                您尚未与任何用户共享此{{ props.modelClass }}。
             </p>
             <p v-else>
-                The following users will see this {{ modelClass }} in their {{ modelClass }} list and will be able to
-                view, import and run it.
+                以下用户将在他们的{{ modelClass }}列表中看到此{{ modelClass }}，并且能够查看、导入和运行它。
             </p>
 
             <div class="share_with_view">
@@ -158,7 +156,7 @@ defineExpose({
                     :max-height="exposeEmails ? 300 : 0"
                     label="email"
                     tack-by="email"
-                    placeholder="Please specify user email"
+                    placeholder="请指定用户邮箱"
                     @remove="onRemove"
                     @search-change="onSearchChanged"
                     @close="onBlur">
@@ -198,9 +196,9 @@ defineExpose({
                 </Multiselect>
 
                 <div class="share-with-card-buttons mt-2 w-100 d-flex justify-content-end flex-gapx-1">
-                    <BButton class="cancel-sharing-with" :disabled="noChanges" @click="onCancel"> Cancel </BButton>
+                    <BButton class="cancel-sharing-with" :disabled="noChanges" @click="onCancel">取消</BButton>
                     <BButton variant="primary" class="submit-sharing-with" :disabled="noChanges" @click="onSubmit">
-                        {{ currentSearch ? `Add` : `Save` }}
+                        {{ currentSearch ? `添加` : `保存` }}
                     </BButton>
                 </div>
             </div>
@@ -216,40 +214,40 @@ defineExpose({
             @cancel="onCancel"
             @close="onCancel">
             <template v-slot:modal-title>
-                <Heading inline h2 size="md"> Permissions Change Required </Heading>
+                <Heading inline h2 size="md">需要更改权限</Heading>
             </template>
 
             <BAlert variant="warning" dismissible :show="permissionsChangeRequired && canChangeCount > 0">
-                This {{ modelClass }} contains {{ canChangeCount }}
-                {{ canChangeCount === 1 ? "dataset which is" : "datasets which are" }} exclusively private to you. You
-                need to update {{ canChangeCount === 1 ? "its" : "their" }} permissions, in order to share
-                {{ canChangeCount === 1 ? "it" : "them" }}.
+                此{{ modelClass }}包含{{ canChangeCount }}个
+                {{ canChangeCount === 1 ? "数据集，它是" : "数据集，它们是" }}您专属的私有数据。
+                您需要更新{{ canChangeCount === 1 ? "它的" : "它们的" }}权限，才能共享
+                {{ canChangeCount === 1 ? "它" : "它们" }}。
             </BAlert>
 
             <BAlert variant="danger" dismissible :show="permissionsChangeRequired && cannotChangeCount > 0">
-                This {{ modelClass }} contains {{ cannotChangeCount }}
-                {{ cannotChangeCount === 1 ? "dataset" : "datasets" }} which you are not authorized to share.
+                此{{ modelClass }}包含{{ cannotChangeCount }}个
+                {{ cannotChangeCount === 1 ? "数据集" : "数据集" }}，您无权共享这些数据集。
             </BAlert>
 
             <BCard
                 border-variant="primary"
-                header="How would you like to proceed?"
+                header="您想如何处理？"
                 header-bg-variant="primary"
                 header-text-variant="white"
                 class="mb-4">
                 <BFormSelect v-model="selectedSharingOption">
-                    <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
+                    <BFormSelectOption value="make_public">将数据集设为公开</BFormSelectOption>
                     <BFormSelectOption value="make_accessible_to_shared">
-                        Make datasets private to me and users this {{ modelClass }} is shared with
+                        将数据集设为仅对我和此{{ modelClass }}的共享用户可见
                     </BFormSelectOption>
-                    <BFormSelectOption value="no_changes"> Share {{ modelClass }} anyways </BFormSelectOption>
+                    <BFormSelectOption value="no_changes">仍然共享此{{ modelClass }}</BFormSelectOption>
                 </BFormSelect>
             </BCard>
 
             <BCardGroup deck>
                 <BCard
                     v-if="canChangeCount > 0"
-                    header="The following datasets can be shared by updating their permissions">
+                    header="通过更新以下数据集的权限，可以共享这些数据集">
                     <BListGroup>
                         <BListGroupItem v-for="dataset in props.item.extra?.can_change ?? []" :key="dataset.id">
                             {{ dataset.name }}
@@ -259,7 +257,7 @@ defineExpose({
 
                 <BCard
                     v-if="cannotChangeCount > 0"
-                    header="The following datasets cannot be shared, you are not authorized to change their permissions">
+                    header="以下数据集无法共享，您无权更改它们的权限">
                     <BListGroup>
                         <BListGroupItem v-for="dataset in props.item.extra?.cannot_change ?? []" :key="dataset.id">
                             {{ dataset.name }}

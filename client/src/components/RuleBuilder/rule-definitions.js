@@ -1,18 +1,17 @@
 import pyre from "pyre-to-regexp";
 import _ from "underscore";
 import _l from "utils/localization";
-
 const NEW_COLUMN = "new";
 
 const multiColumnsToString = function (targetColumns, colHeaders) {
     if (targetColumns.length == 0) {
-        return `no columns`;
+        return `无列`;
     } else if (targetColumns.length == 1) {
-        return `column ${colHeaders[targetColumns[0]]}`;
+        return `列 ${colHeaders[targetColumns[0]]}`;
     } else {
         const targetHeaders = targetColumns.map((el) => colHeaders[el]);
         // https://stackoverflow.com/questions/16251822/array-to-comma-separated-string-and-for-last-tag-use-the-and-instead-of-comma
-        return `columns ${[targetHeaders.slice(0, -1).join(", "), targetHeaders.slice(-1)[0]].join(" and ")}`;
+        return `列 ${[targetHeaders.slice(0, -1).join("、"), targetHeaders.slice(-1)[0]].join(" 和 ")}`;
     }
 };
 
@@ -31,7 +30,7 @@ const applyRegex = function (regex, target, data, replacement, groupCount) {
     try {
         regExp = pyre(String(regex));
     } catch (error) {
-        return { error: `Invalid regular expression specified.` };
+        return { error: `指定的正则表达式无效。` };
     }
     let failedCount = 0;
     function newRow(row) {
@@ -58,7 +57,7 @@ const applyRegex = function (regex, target, data, replacement, groupCount) {
     }
     data = data.map(newRow);
     if (failedCount > 0) {
-        return { error: `${failedCount} row(s) failed to match specified regular expression.` };
+        return { error: `${failedCount} 行数据未能匹配指定的正则表达式。` };
     }
     return { data };
 };
@@ -69,9 +68,9 @@ const flatMap = (f, xs) => {
 
 const RULES = {
     add_column_basename: {
-        title: _l("Basename of Path of URL"),
+        title: _l("路径或URL的基础名称"),
         display: (rule, colHeaders) => {
-            return `Add column using basename of column ${colHeaders[rule.target_column]}`;
+            return `使用列 ${colHeaders[rule.target_column]} 的基础名称添加列`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -96,9 +95,9 @@ const RULES = {
         },
     },
     add_column_rownum: {
-        title: _l("Row Number"),
+        title: _l("行号"),
         display: (rule, colHeaders) => {
-            return `Add column for the current row number.`;
+            return `添加当前行号列。`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -124,9 +123,9 @@ const RULES = {
         },
     },
     add_column_value: {
-        title: _l("Fixed Value"),
+        title: _l("固定值"),
         display: (rule, colHeaders) => {
-            return `Add column for the constant value of ${rule.value}.`;
+            return `添加常量值 ${rule.value} 的列。`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -151,9 +150,9 @@ const RULES = {
         },
     },
     add_column_metadata: {
-        title: _l("Add Column from Metadata"),
+        title: _l("从元数据添加列"),
         display: (rule, colHeaders) => {
-            return `Add column for ${rule.value}.`;
+            return `为 ${rule.value} 添加列。`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -190,7 +189,7 @@ const RULES = {
                     return newRow;
                 };
             } else {
-                return { error: `Unknown metadata type [${ruleValue}]` };
+                return { error: `未知的元数据类型 [${ruleValue}]` };
             }
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
@@ -198,9 +197,9 @@ const RULES = {
         },
     },
     add_column_group_tag_value: {
-        title: _l("Add Column from Group Tag Value"),
+        title: _l("从组标签值添加列"),
         display: (rule, colHeaders) => {
-            return `Add column for value of group tag ${rule.value}.`;
+            return `为组标签 ${rule.value} 的值添加列。`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -239,9 +238,9 @@ const RULES = {
         },
     },
     add_column_regex: {
-        title: _l("Using a Regular Expression"),
+        title: _l("使用正则表达式"),
         display: (rule, colHeaders) => {
-            return `Add new column using ${rule.expression} applied to column ${colHeaders[rule.target_column]}`;
+            return `使用 ${rule.expression} 应用于列 ${colHeaders[rule.target_column]} 添加新列`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -292,9 +291,9 @@ const RULES = {
         },
     },
     add_column_concatenate: {
-        title: _l("Concatenate Columns"),
+        title: _l("连接列"),
         display: (rule, colHeaders) => {
-            return `Concatenate column ${colHeaders[rule.target_column_0]} and column ${
+            return `连接列 ${colHeaders[rule.target_column_0]} 和列 ${
                 colHeaders[rule.target_column_1]
             }`;
         },
@@ -325,22 +324,18 @@ const RULES = {
         },
     },
     add_column_substr: {
-        title: _l("Keep or Trim Prefix or Suffix"),
+        title: _l("保留或裁剪前缀或后缀"),
         display: (rule, colHeaders) => {
             const type = rule.substr_type;
             let display;
             if (type == "keep_prefix") {
-                display = `Keep only ${rule.length} characters from the start of column ${
-                    colHeaders[rule.target_column]
-                }`;
+                display = `仅保留列 ${colHeaders[rule.target_column]} 开始的 ${rule.length} 个字符`;
             } else if (type == "drop_prefix") {
-                display = `Remove ${rule.length} characters from the start of column ${colHeaders[rule.target_column]}`;
+                display = `从列 ${colHeaders[rule.target_column]} 开始处删除 ${rule.length} 个字符`;
             } else if (type == "keep_suffix") {
-                display = `Keep only ${rule.length} characters from the end of column ${
-                    colHeaders[rule.target_column]
-                }`;
+                display = `仅保留列 ${colHeaders[rule.target_column]} 末尾的 ${rule.length} 个字符`;
             } else {
-                display = `Remove ${rule.length} characters from the end of column ${colHeaders[rule.target_column]}`;
+                display = `从列 ${colHeaders[rule.target_column]} 末尾删除 ${rule.length} 个字符`;
             }
             return display;
         },
@@ -393,10 +388,10 @@ const RULES = {
         },
     },
     remove_columns: {
-        title: _l("Remove Column(s)"),
+        title: _l("删除列"),
         display: (rule, colHeaders) => {
             const targetColumns = rule.target_columns;
-            return `Remove ${multiColumnsToString(targetColumns, colHeaders)}`;
+            return `删除 ${multiColumnsToString(targetColumns, colHeaders)}`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -425,11 +420,9 @@ const RULES = {
         },
     },
     add_filter_regex: {
-        title: _l("Using a Regular Expression"),
+        title: _l("使用正则表达式"),
         display: (rule, colHeaders) => {
-            return `Filter rows using regular expression ${rule.expression} on column ${
-                colHeaders[rule.target_column]
-            }`;
+            return `使用列 ${colHeaders[rule.target_column]} 上的正则表达式 ${rule.expression} 过滤行`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -453,7 +446,7 @@ const RULES = {
             try {
                 regExp = pyre(regex);
             } catch (error) {
-                return { error: `Invalid regular expression specified.` };
+                return { error: `指定的正则表达式无效。` };
             }
             const target = rule.target_column;
             const invert = rule.invert;
@@ -467,18 +460,18 @@ const RULES = {
         },
     },
     add_filter_count: {
-        title: _l("First or Last N Rows"),
+        title: _l("前N行或后N行"),
         display: (rule, colHeaders) => {
             const which = rule.which;
             const invert = rule.invert;
             if (which == "first" && !invert) {
-                return `Filter out first ${rule.count} row(s).`;
+                return `过滤掉前 ${rule.count} 行。`;
             } else if (which == "first" && invert) {
-                return `Keep only first ${rule.count} row(s).`;
+                return `仅保留前 ${rule.count} 行。`;
             } else if (which == "last" && !invert) {
-                return `Filter out last ${rule.count} row(s).`;
+                return `过滤掉后 ${rule.count} 行。`;
             } else {
-                return `Keep only last ${rule.count} row(s).`;
+                return `仅保留后 ${rule.count} 行。`;
             }
         },
         init: (component, rule) => {
@@ -517,9 +510,9 @@ const RULES = {
         },
     },
     add_filter_empty: {
-        title: _l("On Emptiness"),
+        title: _l("基于空值"),
         display: (rule, colHeaders) => {
-            return `Filter rows if no value for column ${colHeaders[rule.target_column]}`;
+            return `如果列 ${colHeaders[rule.target_column]} 无值则过滤行`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -547,9 +540,9 @@ const RULES = {
         },
     },
     add_filter_matches: {
-        title: _l("Matching a Supplied Value"),
+        title: _l("匹配提供的值"),
         display: (rule, colHeaders) => {
-            return `Filter rows with value ${rule.value} for column ${colHeaders[rule.target_column]}`;
+            return `对列 ${colHeaders[rule.target_column]} 值为 ${rule.value} 的行进行过滤`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -581,11 +574,9 @@ const RULES = {
         },
     },
     add_filter_compare: {
-        title: _l("By Comparing to a Numeric Value"),
+        title: _l("通过与数值比较"),
         display: (rule, colHeaders) => {
-            return `Filter rows with value ${rule.compare_type} ${rule.value} for column ${
-                colHeaders[rule.target_column]
-            }`;
+            return `对列 ${colHeaders[rule.target_column]} 值 ${rule.compare_type} ${rule.value} 的行进行过滤`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -628,9 +619,9 @@ const RULES = {
         },
     },
     sort: {
-        title: _l("Sort"),
+        title: _l("排序"),
         display: (rule, colHeaders) => {
-            return `Sort on column ${colHeaders[rule.target_column]}`;
+            return `按列 ${colHeaders[rule.target_column]} 排序`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -681,9 +672,9 @@ const RULES = {
         },
     },
     swap_columns: {
-        title: _l("Swap Column(s)"),
+        title: _l("交换列"),
         display: (rule, colHeaders) => {
-            return `Swap ${multiColumnsToString([rule.target_column_0, rule.target_column_1], colHeaders)}`;
+            return `交换 ${multiColumnsToString([rule.target_column_0, rule.target_column_1], colHeaders)}`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -715,9 +706,9 @@ const RULES = {
         },
     },
     split_columns: {
-        title: _l("Split Column(s)"),
+        title: _l("分割列"),
         display: (rule, colHeaders) => {
-            return `Duplicate each row and split up columns`;
+            return `复制每行并分割列`;
         },
         init: (component, rule) => {
             if (!rule) {
@@ -763,88 +754,88 @@ const RULES = {
 const MAPPING_TARGETS = {
     list_identifiers: {
         multiple: true,
-        label: _l("List Identifier(s)"),
-        columnHeader: _l("List Identifier"),
+        label: _l("列表标识符"),
+        columnHeader: _l("列表标识符"),
         help: _l(
-            "This should be a short description of the replicate, sample name, condition, etc... that describes each level of the list structure."
+            "这应该是描述副本、样本名称、条件等的简短描述，用于描述列表结构的每个级别。"
         ),
         importType: "collections",
     },
     paired_identifier: {
-        label: _l("Paired-end Indicator"),
-        columnHeader: _l("Paired Indicator"),
+        label: _l("双端指示器"),
+        columnHeader: _l("配对指示器"),
         help: _l(
-            "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads."
+            "这应设置为'1'、'R1'、'forward'、'f'或'F'表示正向读取，'2'、'r'、'reverse'、'R2'、'R'或'R2'表示反向读取。"
         ),
         importType: "collections",
     },
     collection_name: {
-        label: _l("Collection Name"),
+        label: _l("集合名称"),
         help: _l(
-            "If this is set, all rows with the same collection name will be joined into a collection and it is possible to create multiple collections at once."
+            "如果设置了此项，所有具有相同集合名称的行将被合并到一个集合中，同时可以创建多个集合。"
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets"],
         importType: "collections",
     },
     name_tag: {
-        label: _l("Name Tag"),
-        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
+        label: _l("名称标签"),
+        help: _l("为导入的数据集根据指定的列值添加名称标签或哈希标签。"),
         importType: "datasets",
         modes: ["raw", "ftp"],
     },
     tags: {
         multiple: true,
-        label: _l("General Purpose Tag(s)"),
+        label: _l("通用标签"),
         help: _l(
-            "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
+            "根据指定的列值添加通用标签，使用:分隔键值对（如需要）。这些标签不会像名称和组标签那样被传播到衍生数据集。"
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
     },
     group_tags: {
         multiple: true,
-        label: _l("Group Tag(s)"),
+        label: _l("组标签"),
         help: _l(
-            "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
+            "根据指定的列值添加组标签，使用:分隔键值对。这些标签会被传播到衍生数据集，对于因子实验可能很有用。"
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
     },
     name: {
-        label: _l("Name"),
+        label: _l("名称"),
         importType: "datasets",
     },
     dbkey: {
-        label: _l("Genome"),
+        label: _l("基因组"),
         modes: ["raw", "ftp"],
     },
     file_type: {
-        label: _l("Type"),
+        label: _l("类型"),
         modes: ["raw", "ftp"],
-        help: _l("This should be the Galaxy file type corresponding to this file."),
+        help: _l("这应该是与此文件对应的Galaxy文件类型。"),
     },
     url: {
         label: _l("URL"),
         modes: ["raw"],
-        help: _l("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
+        help: _l("这应该是可以下载文件的URL（或Galaxy识别的URI）。"),
     },
     url_deferred: {
-        label: _l("Deferred URL"),
+        label: _l("延迟URL"),
         modes: ["raw"],
         help: _l(
-            "This should be a URL (or Galaxy-aware URI) th efile can be downloaded from - the file will not be downloaded until it used by a tool."
+            "这应该是可以下载文件的URL（或Galaxy识别的URI）- 文件只有在被工具使用时才会下载。"
         ),
     },
     info: {
-        label: _l("Info"),
+        label: _l("信息"),
         help: _l(
-            "Unstructured text associated with the dataset that shows up in the history panel, this is optional and can be whatever you would like."
+            "与数据集关联的非结构化文本，会显示在历史面板中，这是可选的，可以是您想要的任何内容。"
         ),
         modes: ["raw", "ftp"],
     },
     ftp_path: {
-        label: _l("FTP Path"),
+        label: _l("FTP路径"),
         modes: ["raw", "ftp"],
         help: _l(
-            "This should be the path to the target file to include relative to your FTP directory on the Galaxy server"
+            "这应该是相对于Galaxy服务器上您的FTP目录的目标文件的路径"
         ),
         requiresFtp: true,
     },
@@ -858,11 +849,11 @@ const columnDisplay = function (columns, colHeaders) {
         columnNames = [colHeaders[columns]];
     }
     if (columnNames.length == 2) {
-        return "columns " + columnNames[0] + " and " + columnNames[1];
+        return "列 " + columnNames[0] + " 和 " + columnNames[1];
     } else if (columnNames.length > 2) {
-        return "columns " + columnNames.slice(0, -1).join(", ") + ", and " + columnNames[columnNames.length - 1];
+        return "列 " + columnNames.slice(0, -1).join("、") + " 和 " + columnNames[columnNames.length - 1];
     } else {
-        return "column " + columnNames[0];
+        return "列 " + columnNames[0];
     }
 };
 
@@ -887,7 +878,7 @@ const applyRules = function (data, sources, columns, rules, headersPerRule = [])
         rule.error = null;
         rule.warn = null;
         if (hasRuleError) {
-            rule.warn = _l("Skipped due to previous errors.");
+            rule.warn = _l("由于先前的错误而跳过。");
             continue;
         }
         var ruleType = rule.type;

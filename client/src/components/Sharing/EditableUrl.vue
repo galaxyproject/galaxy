@@ -43,7 +43,7 @@ function onSubmit() {
 }
 
 const copied = ref(false);
-const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
+const clipboardTitle = computed(() => (copied.value ? "已复制！" : "复制URL"));
 
 function onCopy() {
     copy(url.value);

@@ -62,7 +62,7 @@ const formattedToolHelp = computed(() => {
                     </b-button>
                 </span>
                 <span itemprop="description">{{ props.description }}</span>
-                <span>(Galaxy Version {{ props.version }})</span>
+                <span>(Galaxy 版本 {{ props.version }})</span>
             </div>
             <div class="d-flex align-items-start">
                 <ToolFavoriteButton :id="props.id" />
@@ -74,11 +74,11 @@ const formattedToolHelp = computed(() => {
                     size="sm"
                     @click="() => emit('open')">
                     <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                    Open
+                    打开
                 </b-button>
                 <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
                     <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
-                    Open
+                    打开
                 </b-button>
             </div>
         </div>
@@ -86,22 +86,22 @@ const formattedToolHelp = computed(() => {
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
                 <span v-if="props.section" class="tag info">
-                    <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
+                    <b>分类:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
                 </span>
 
                 <span v-if="!props.local" class="tag info">
                     <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
-                    External
+                    外部
                 </span>
 
                 <span v-if="!props.workflowCompatible" class="tag warn">
                     <FontAwesomeIcon icon="fa-exclamation-triangle" />
-                    Not Workflow compatible
+                    不兼容工作流
                 </span>
 
                 <span v-if="props.owner" class="tag success">
                     <FontAwesomeIcon icon="fa-user" />
-                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
+                    <b>所有者:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
                 </span>
 
                 <span v-if="props.ontologies && props.ontologies.length > 0">
@@ -116,11 +116,11 @@ const formattedToolHelp = computed(() => {
             <div v-if="props.help" class="mt-2">
                 <b-button v-if="!showHelp" class="ui-link" @click="() => (showHelp = true)">
                     <FontAwesomeIcon icon="fa-angle-down" />
-                    Show tool help
+                    显示工具帮助
                 </b-button>
                 <b-button v-else class="ui-link" @click="() => (showHelp = false)">
                     <FontAwesomeIcon icon="fa-angle-up" />
-                    Hide tool help
+                    隐藏工具帮助
                 </b-button>
 
                 <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>

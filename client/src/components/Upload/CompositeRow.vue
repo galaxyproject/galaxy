@@ -140,7 +140,6 @@ function onDrop(evt) {
     }
 }
 </script>
-
 <template>
     <div
         :id="`upload-row-${index}`"
@@ -155,19 +154,19 @@ function onDrop(evt) {
                     :id="`upload-type-${index}`"
                     class="upload-source"
                     :disabled="isDisabled"
-                    text="Select"
+                    text="选择"
                     :variant="fileSize > 0 ? 'secondary' : 'primary'">
                     <BDropdownItem @click="uploadFile.click()">
                         <FontAwesomeIcon icon="fa-laptop" />
-                        <span v-localize>Choose local file</span>
+                        <span v-localize>选择本地文件</span>
                     </BDropdownItem>
                     <BDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
                         <FontAwesomeIcon icon="fa-folder-open" />
-                        <span v-localize>Choose remote file</span>
+                        <span v-localize>选择远程文件</span>
                     </BDropdownItem>
                     <BDropdownItem @click="inputPaste">
                         <FontAwesomeIcon icon="fa-edit" />
-                        <span v-localize>Paste/Fetch data</span>
+                        <span v-localize>粘贴/获取数据</span>
                     </BDropdownItem>
                 </BDropdown>
             </div>
@@ -206,7 +205,7 @@ function onDrop(evt) {
         </div>
         <div v-if="fileMode == 'new'">
             <div class="upload-text-message">
-                Download data from the web by entering URLs (one per line) or directly paste content.
+                通过输入URL地址（每行一个）从网络下载数据或直接粘贴内容。
             </div>
             <b-textarea
                 :value="fileContent"

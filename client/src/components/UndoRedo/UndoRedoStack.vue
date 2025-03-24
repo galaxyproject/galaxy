@@ -33,7 +33,7 @@ function updateSavedUndoActions() {
 </script>
 
 <template>
-    <ActivityPanel title="Latest Changes" class="undo-redo-stack">
+    <ActivityPanel title="最近更改" class="undo-redo-stack">
         <div class="scroll-list">
             <button
                 v-for="action in currentStore.redoActionStack"
@@ -43,7 +43,7 @@ function updateSavedUndoActions() {
                 {{ action.name }}
             </button>
 
-            <span class="state-indicator"> current state </span>
+            <span class="state-indicator"> 当前状态 </span>
 
             <button v-if="currentStore.pendingLazyAction" class="action lazy" @click="currentStore.undo">
                 {{ currentStore.pendingLazyAction.name }}
@@ -57,19 +57,19 @@ function updateSavedUndoActions() {
                 {{ action.name }}
             </button>
 
-            <span v-if="currentStore.deletedActions.length !== 0" class="state-indicator"> latest saved state </span>
+            <span v-if="currentStore.deletedActions.length !== 0" class="state-indicator"> 最近保存状态 </span>
 
             <span v-for="(action, i) in [...currentStore.deletedActions].reverse()" :key="i" class="action dead">
                 {{ action }}
             </span>
 
-            <span class="state-indicator"> start of session </span>
+            <span class="state-indicator"> 会话开始 </span>
         </div>
 
-        <span class="info"> click an action to undo/redo multiple changes </span>
+        <span class="info"> 点击一个操作可以撤销/重做多个更改 </span>
 
         <label>
-            Max saved changes
+            最大保存更改数
             <input
                 :value="savedUndoActions"
                 type="number"

@@ -6,14 +6,14 @@
     "model_class": "ToolSection",
     "version": "",
     "id": "collection_operations",
-    "name": "Collection Operations"
+    "name": "集合操作"
   },
   "liftOver": {
     "tools": ["liftOver1"],
     "model_class": "ToolSection",
     "version": "",
     "id": "liftOver",
-    "name": "Lift-Over"
+    "name": "基因组坐标转换"
   },
   "testlabel1": {
     "model_class": "ToolSectionLabel",

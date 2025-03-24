@@ -3,21 +3,21 @@
     <b-form @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
-            <span v-b-tooltip.hover title="Hide Attribute"
+            <span v-b-tooltip.hover title="隐藏属性"
                 ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
             /></span>
             <b-form-input
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
-                :placeholder="'Enter ' + attribute.placeholder + '.'"
+                :placeholder="'输入' + attribute.placeholder + '。'"
                 :type="attribute.type">
             </b-form-input>
         </div>
         <div role="group" class="form-group">
             <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
         </div>
-        <b-button type="submit" variant="primary">Save</b-button>
-        <b-button type="reset" variant="danger">Cancel</b-button>
+        <b-button type="submit" variant="primary">保存</b-button>
+        <b-button type="reset" variant="danger">取消</b-button>
     </b-form>
 </template>
 
@@ -29,15 +29,15 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ThingFormMixin from "./ThingFormMixin";
 
 const ATTRIBUTES_INFO = [
-    { key: "name", label: "Name", placeholder: "name" },
-    { key: "url", label: "URL", placeholder: "URL", type: "url" },
-    { key: "identifier", label: "Identifier", placeholder: "identifier" },
-    { key: "image", label: "Image URL", placeholder: "image URL", type: "url" },
-    { key: "address", label: "Address", placeholder: "address" },
-    { key: "email", label: "Email", placeholder: "email", type: "email" },
-    { key: "telephone", label: "Telephone", placeholder: "telephone", type: "tel" },
-    { key: "faxNumber", label: "Fax Number", placeholder: "fax number", type: "tel" },
-    { key: "alternateName", label: "Alternate Name", placeholder: "alternate name" },
+    { key: "name", label: "名称", placeholder: "名称" },
+    { key: "url", label: "网址", placeholder: "网址", type: "url" },
+    { key: "identifier", label: "标识符", placeholder: "标识符" },
+    { key: "image", label: "图片网址", placeholder: "图片网址", type: "url" },
+    { key: "address", label: "地址", placeholder: "地址" },
+    { key: "email", label: "电子邮箱", placeholder: "电子邮箱", type: "email" },
+    { key: "telephone", label: "电话", placeholder: "电话", type: "tel" },
+    { key: "faxNumber", label: "传真号码", placeholder: "传真号码", type: "tel" },
+    { key: "alternateName", label: "备用名称", placeholder: "备用名称" },
 ];
 const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
 

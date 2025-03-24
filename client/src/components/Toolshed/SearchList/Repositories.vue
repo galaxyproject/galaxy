@@ -10,9 +10,8 @@
             <template v-slot:row-details="row">
                 <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
-        </b-table>
-        <div v-if="noResultsFound" class="unavailable-message">No matching repositories found.</div>
-        <LoadingSpan v-if="pageLoading" message="Loading repositories" />
+        <div v-if="noResultsFound" class="unavailable-message">没有找到匹配的仓库。</div>
+        <LoadingSpan v-if="pageLoading" message="正在加载仓库" />
     </div>
 </template>
 <script>
@@ -52,10 +51,10 @@ export default {
         return {
             repositories: [],
             fields: [
-                { key: "name" },
-                { key: "owner", label: "Owner" },
-                { key: "times_downloaded", label: "Downloaded" },
-                { key: "last_updated", label: "Updated" },
+                { key: "name", label: "名称" },
+                { key: "owner", label: "所有者" },
+                { key: "times_downloaded", label: "下载次数" },
+                { key: "last_updated", label: "更新时间" },
             ],
             page: 1,
             pageSize: 50,

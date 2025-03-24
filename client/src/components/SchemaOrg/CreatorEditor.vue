@@ -15,7 +15,7 @@
                             class="inline-icon-button"
                             variant="link"
                             size="sm"
-                            title="Edit Creator"
+                            title="编辑创建者"
                             @click="onEdit(index)">
                             <FontAwesomeIcon icon="edit" />
                         </BButton>
@@ -24,7 +24,7 @@
                             class="inline-icon-button"
                             variant="link"
                             size="sm"
-                            title="Remove Creator"
+                            title="移除创建者"
                             @click="onRemove(index)">
                             <FontAwesomeIcon icon="times" />
                         </BButton>
@@ -34,9 +34,9 @@
         </div>
         <div>
             <i>
-                Add a new creator - either
-                <a href="#" @click.prevent="editNewPerson()">a person</a>
-                or <a href="#" @click.prevent="editNewOrganization()">an organization</a>.
+                添加新创建者 - 可以是
+                <a href="#" @click.prevent="editNewPerson()">个人</a>
+                或 <a href="#" @click.prevent="editNewOrganization()">机构</a>。
             </i>
         </div>
     </span>

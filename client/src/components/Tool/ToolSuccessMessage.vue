@@ -1,18 +1,17 @@
 <template>
     <div class="donemessagelarge">
         <p>
-            Started tool <b>{{ toolName }}</b> and successfully added {{ nJobsText }} to the queue.
+            已启动工具 <b>{{ toolName }}</b> 并成功将{{ nJobsText }}添加到队列中。
         </p>
-        <p>It produces {{ nOutputsText }}:</p>
+        <p>它产生了{{ nOutputsText }}：</p>
         <ul>
             <li v-for="item of jobResponse.outputs" :key="item.hid">
                 <b>{{ item.hid }}: {{ item.name }}</b>
             </li>
         </ul>
         <p>
-            You can check the status of queued jobs and view the resulting data by refreshing the History panel. When
-            the job has been run the status will change from 'running' to 'finished' if completed successfully or
-            'error' if problems were encountered.
+            您可以通过刷新历史面板来查看队列中作业的状态和查看结果数据。当作业运行完成后，
+            如果成功完成，状态将从"运行中"变为"已完成"；如果遇到问题，则变为"错误"。
         </p>
     </div>
 </template>
@@ -37,10 +36,10 @@ export default {
             return this.jobResponse && this.jobResponse.jobs ? this.jobResponse.jobs.length : 0;
         },
         nJobsText() {
-            return this.nJobs > 1 ? `${this.nJobs} jobs` : `1 job`;
+            return this.nJobs > 1 ? `${this.nJobs} 个作业` : `1 个作业`;
         },
         nOutputsText() {
-            return this.nOutputs > 1 ? `${this.nOutputs} outputs` : `this output`;
+            return this.nOutputs > 1 ? `${this.nOutputs} 个输出` : `此输出`;
         },
     },
 };

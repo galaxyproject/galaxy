@@ -1,6 +1,5 @@
 <template>
-    <div v-if="!loading" class="m-1 text-muted">
-        <span class="description"> {{ total }} repositories available at </span>
+    <span class="description"> 在以下地址可获取 {{ total }} 个代码库 </span>
         <span v-if="showDropdown" class="dropdown">
             <b-link
                 id="dropdownToolshedUrl"

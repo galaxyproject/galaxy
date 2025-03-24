@@ -93,9 +93,9 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
-        return "Tool Execution Preferred Storage Location";
+        return "工具执行首选存储位置";
     } else {
-        return "Tool Execution Storage Location";
+        return "工具执行存储位置";
     }
 });
 
@@ -127,7 +127,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                         <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
                     </span>
                     <span itemprop="description">{{ props.description }}</span>
-                    <span>(Galaxy Version {{ props.version }})</span>
+                    <span>(Galaxy 版本 {{ props.version }})</span>
                 </div>
                 <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                     <b-button-group class="tool-card-buttons">
@@ -185,7 +185,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 
         <div>
             <div v-if="props.options.help" class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Help </Heading>
+                <Heading h2 separator bold size="sm">帮助</Heading>
                 <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 

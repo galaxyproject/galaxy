@@ -19,8 +19,8 @@ const UNSECTIONED_SECTION = {
     // to return a section for unsectioned tools
     model_class: "ToolSection",
     id: "unsectioned",
-    name: "Unsectioned Tools",
-    description: "Tools that don't appear under any section in the unsearched panel",
+    name: "未分类工具",
+    description: "未在未搜索面板的任何部分显示的工具",
 };
 
 /** These are keys used to order/sort results in `ToolSearch`.

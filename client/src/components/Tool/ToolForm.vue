@@ -6,7 +6,7 @@
         <b-alert v-if="!showLoading && !canMutateHistory" show variant="warning">
             {{ immutableHistoryMessage }}
         </b-alert>
-        <LoadingSpan v-if="showLoading" message="Loading Tool" />
+        <LoadingSpan v-if="showLoading" message="正在加载工具" />
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
@@ -15,8 +15,7 @@
                 {{ errorMessage }}
             </b-alert>
             <b-alert v-if="submissionRequestFailed" show variant="warning">
-                The server could not complete this request. Please verify your parameter settings, retry submission and
-                contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
+                服务器无法完成此请求。请验证您的参数设置，重试提交，如果此错误仍然存在，请联系Galaxy团队。下面显示了提交数据的记录。
             </b-alert>
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
@@ -41,7 +40,7 @@
             @onChangeVersion="onChangeVersion">
             <template v-slot:body>
                 <div class="mt-2 mb-4">
-                    <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                    <Heading h2 separator bold size="sm"> 工具参数 </Heading>
                     <FormDisplay
                         :id="toolId"
                         :inputs="formConfig.inputs"
@@ -56,13 +55,13 @@
                 <div
                     v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
                     class="mt-2 mb-4">
-                    <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                    <Heading h2 separator bold size="sm"> 附加选项 </Heading>
                     <FormElement
                         v-if="emailAllowed(config, currentUser)"
                         id="send_email_notification"
                         v-model="useEmail"
-                        title="Email notification"
-                        help="Send an email notification when the job completes."
+                        title="邮件通知"
+                        help="当任务完成时发送邮件通知。"
                         type="boolean" />
                     <FormElement
                         v-if="remapAllowed"
@@ -75,21 +74,21 @@
                         v-if="reuseAllowed(currentUser)"
                         id="use_cached_job"
                         v-model="useCachedJobs"
-                        title="Attempt to re-use jobs with identical parameters?"
-                        help="This may skip executing jobs that you have already run."
+                        title="尝试复用具有相同参数的任务？"
+                        help="这可能会跳过执行您已经运行过的任务。"
                         type="boolean" />
                     <FormSelect
                         v-if="formConfig.model_class === 'DataManagerTool'"
                         id="data_manager_mode"
                         v-model="dataManagerMode"
                         :options="bundleOptions"
-                        title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+                        title="创建数据集包而不是将数据表添加到loc文件？"></FormSelect>
                 </div>
             </template>
             <template v-slot:header-buttons>
                 <ButtonSpinner
                     id="execute"
-                    title="Run Tool"
+                    title="运行工具"
                     :disabled="!canMutateHistory"
                     class="btn-sm"
                     :wait="showExecuting"
@@ -98,7 +97,7 @@
             </template>
             <template v-slot:buttons>
                 <ButtonSpinner
-                    title="Run Tool"
+                    title="运行工具"
                     class="mt-3 mb-3"
                     :disabled="!canMutateHistory"
                     :wait="showExecuting"
@@ -204,7 +203,7 @@ export default {
                 { label: "bundle", value: "bundle" },
             ],
             immutableHistoryMessage:
-                "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+                "这个历史记录不可变，你无法在其中运行工具。请切换到其他历史记录。",
         };
     },
     computed: {
@@ -222,25 +221,25 @@ export default {
         },
         tooltip() {
             if (!this.canMutateHistory) {
-                return this.immutableHistoryMessage;
+            return this.immutableHistoryMessage;
             }
-            return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
+            return `运行工具: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
         },
         remapTitle() {
             if (this.remapAllowed === "job_produced_collection_elements") {
-                return "Replace elements in collection?";
+            return "替换集合中的元素？";
             } else {
-                return "Resume dependencies from this job?";
+            return "从此任务恢复依赖关系？";
             }
         },
         remapHelp() {
             if (this.remapAllowed === "job_produced_collection_elements") {
-                return "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
+            return "此工具的上次运行失败。使用此选项可以替换在上次工具运行期间生成的数据集集合中失败的元素。";
             } else {
-                return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
+            return "此工具的上次运行失败，其他工具正在等待它成功完成。使用此选项可以用此工具运行的新输出来恢复这些工具。";
             }
         },
         initialized() {
@@ -316,12 +315,12 @@ export default {
                     this.messageShow = false;
                     if (newVersion) {
                         this.messageVariant = "success";
-                        this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
+                        this.messageText = `现在您正在使用'${data.name}'版本${data.version}，ID为'${data.id}'。`;
                     }
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    this.messageText = `Loading tool ${this.id} failed: ${error}`;
+                    this.messageText = `加载工具${this.id}失败：${error}`;
                     this.messageShow = true;
                 })
                 .finally(() => {
@@ -385,15 +384,15 @@ export default {
                         });
                         changeRoute = prevRoute === this.$route.fullPath;
                     } else {
-                        const defaultErrorTitle = "Job submission rejected.";
+                        const defaultErrorTitle = "任务提交被拒绝。";
                         this.showError = true;
                         this.showForm = true;
                         if (jobResponse?.errors) {
                             const nErrors = jobResponse.errors.length;
                             if (nJobs > 0) {
-                                this.errorTitle = `Job submission for ${nErrors} out of ${
+                                this.errorTitle = `在${
                                     nJobs + nErrors
-                                } jobs failed.`;
+                                }个任务中有${nErrors}个提交失败。`;
                             } else {
                                 this.errorTitle = defaultErrorTitle;
                             }
@@ -427,7 +426,7 @@ export default {
                     }
                     if (genericError) {
                         this.showError = true;
-                        this.errorTitle = "Job submission failed.";
+                        this.errorTitle = "任务提交失败。";
                         this.errorContent = jobDef;
                     }
                 }

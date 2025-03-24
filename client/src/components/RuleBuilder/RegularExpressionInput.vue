@@ -27,13 +27,13 @@ export default {
     },
     computed: {
         label() {
-            return _l("Regular Expression");
+            return _l("正则表达式");
         },
         title() {
-            return _l("Enter a regular expression.");
+            return _l("请输入一个正则表达式。");
         },
         popoverTitle() {
-            return _l("Regular Expressions");
+            return _l("正则表达式");
         },
     },
 };

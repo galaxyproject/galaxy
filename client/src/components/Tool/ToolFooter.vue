@@ -1,10 +1,10 @@
 <template>
     <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
-            <span v-localize class="footer-section-name">Citations</span>
+            <span v-localize class="footer-section-name">引用</span>
             <b-button
                 v-b-tooltip.hover
-                title="Copy all citations as BibTeX"
+                title="将所有引用以BibTeX格式复制"
                 style="cursor: pointer"
                 variant="link"
                 size="sm"
@@ -19,25 +19,25 @@
                 prefix="-" />
         </div>
         <div v-if="hasRequirements" class="mb-1">
-            <span v-localize class="footer-section-name">Requirements</span>
+            <span v-localize class="footer-section-name">要求</span>
             <a
                 v-b-tooltip.hover
-                title="Learn more about Galaxy Requirements"
+                title="了解更多Galaxy要求"
                 href="https://galaxyproject.org/tools/requirements/"
                 target="_blank">
-                See details <FontAwesomeIcon icon="external-link-alt" />
+                查看详情 <FontAwesomeIcon icon="external-link-alt" />
             </a>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
-                <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
+                <span v-if="requirement.version"> (版本 {{ requirement.version }}) </span>
             </div>
         </div>
         <div v-if="hasLicense" class="mb-1">
-            <span v-localize class="footer-section-name">License</span>
+            <span v-localize class="footer-section-name">许可证</span>
             <License :license-id="license" />
         </div>
         <div v-if="hasReferences" class="mb-1">
-            <span v-localize class="footer-section-name">References</span>
+            <span v-localize class="footer-section-name">参考资料</span>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
                 <template v-if="xref.reftype == 'bio.tools'">
@@ -45,18 +45,18 @@
                         >bio.tools
                         <FontAwesomeIcon
                             v-b-tooltip.hover
-                            title="Visit bio.tools reference"
+                            title="访问bio.tools参考链接"
                             icon="external-link-alt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
                         <FontAwesomeIcon
                             v-b-tooltip.hover
-                            title="Visit OpenEBench reference"
+                            title="访问OpenEBench参考链接"
                             icon="external-link-alt" /> </a
                     >)
                 </template>
                 <template v-else-if="xref.reftype == 'bioconductor'">
-                    Bioconductor Package:
+                    Bioconductor包:
                     <a :href="`https://bioconductor.org/packages/${xref.value}/`" target="_blank"
                         >{{ xref.value }} (doi:10.18129/B9.bioc.{{ xref.value }})</a
                     >
@@ -65,7 +65,7 @@
             </div>
         </div>
         <div v-if="hasCreators" class="mb-1">
-            <span class="font-weight-bold">Creators:</span>
+            <span class="font-weight-bold">创建者：</span>
             <Creators :creators="creators" />
         </div>
     </b-card>
@@ -163,7 +163,7 @@ export default {
                 const bibtex = cite.format("bibtex", {});
                 text += bibtex;
             });
-            copy(text, "Citations copied to your clipboard as BibTeX");
+            copy(text, "引用已作为BibTeX格式复制到剪贴板");
         },
     },
 };

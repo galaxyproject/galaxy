@@ -9,15 +9,15 @@
         <div v-if="step.content" class="tour-content" v-html="step.content" />
         <div class="tour-buttons">
             <div v-if="isLast">
-                <button class="tour-button tour-end" @click.prevent="$emit('end')">Close</button>
+                <button class="tour-button tour-end" @click.prevent="$emit('end')">关闭</button>
             </div>
             <div v-else-if="isPlaying">
-                <button class="tour-button tour-stop" @click.prevent="$emit('play', false)">Stop</button>
+                <button class="tour-button tour-stop" @click.prevent="$emit('play', false)">停止</button>
             </div>
             <div v-else>
-                <button class="tour-button tour-end" @click.prevent="$emit('end')">Cancel</button>
-                <button class="tour-button tour-play" @click.prevent="$emit('play', true)">Play</button>
-                <button class="tour-button tour-next" @click.prevent="$emit('next')">Continue</button>
+                <button class="tour-button tour-end" @click.prevent="$emit('end')">取消</button>
+                <button class="tour-button tour-play" @click.prevent="$emit('play', true)">播放</button>
+                <button class="tour-button tour-next" @click.prevent="$emit('next')">继续</button>
             </div>
         </div>
         <div v-if="targetElement" class="tour-arrow" data-popper-arrow />

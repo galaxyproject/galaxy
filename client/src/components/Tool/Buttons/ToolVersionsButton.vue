@@ -27,9 +27,9 @@ const availableVersions = computed(() => [...props.versions].reverse());
         no-caret
         right
         role="button"
-        title="Versions"
+        title="版本"
         variant="link"
-        aria-label="Select Versions"
+        aria-label="选择版本"
         class="tool-versions"
         size="sm">
         <template v-slot:button-content>
@@ -41,9 +41,9 @@ const availableVersions = computed(() => [...props.versions].reverse());
             :active="v === props.version"
             @click="() => emit('onChangeVersion', v)">
             <span v-if="v !== props.version">
-                <FontAwesomeIcon icon="fas fa-cube" /> <span v-localize>Switch to</span> {{ v }}
+                <FontAwesomeIcon icon="fas fa-cube" /> <span v-localize>切换至</span> {{ v }}
             </span>
-            <span v-else> <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }} </span>
+            <span v-else> <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>已选择</span> {{ v }} </span>
         </b-dropdown-item>
     </b-dropdown>
 </template>
