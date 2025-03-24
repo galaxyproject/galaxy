@@ -57,7 +57,7 @@ loadTours();
             <DelayedInput class="mb-3" :value="searchQuery" placeholder="search tours" :delay="0" @change="onSearch" />
             <div v-for="tour in tours" :key="tour.id">
                 <div class="rounded border p-2 mb-2">
-                    <a v-if="match(tour)" :href="withPrefix(`/tours/${tour.id}`)">
+                    <a v-if="match(tour)" :href="withPrefix(`/tours/${tour.id}`)" data-description="tour link">
                         <div class="text-primary">{{ tour.name || tour.id }}</div>
                         <div v-html="tour.description" />
                         <div
