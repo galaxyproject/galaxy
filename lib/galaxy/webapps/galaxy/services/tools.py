@@ -11,7 +11,6 @@ from typing import (
     Union,
 )
 
-from fastapi.responses import FileResponse
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -329,7 +328,7 @@ class ToolsService(ServiceBase):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def get_tool_icon(self, trans, tool_id, tool_version=None):
+    def get_tool_icon_path(self, trans, tool_id, tool_version=None) -> Optional[str]:
         tool = self._get_tool(trans, tool_id, tool_version)
         if tool and tool.icon:
             icon_file_path = tool.icon
@@ -340,7 +339,6 @@ class ToolsService(ServiceBase):
                         f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
                     )
                 file_path = os.path.join(tool.tool_dir, icon_file_path)
-                if not os.path.exists(file_path):
-                    raise exceptions.ObjectNotFound(f"Could not find icon for tool '{tool_id}'.")
-                return FileResponse(file_path)
+                if os.path.exists(file_path):
+                    return file_path
         return None
