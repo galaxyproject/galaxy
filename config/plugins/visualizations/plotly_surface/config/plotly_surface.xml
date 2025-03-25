@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="3D Surface Plot" embeddable="true">
-    <description>3D Surface Plot from http://plotly.com</description>
+<visualization name="Surface Plot" embeddable="true">
+    <description>Surface Plot from http://plotly.com</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -15,7 +15,7 @@
     </params>
     <entry_point entry_point_type="script" src="../../plotly/static/dist/index.js" css="../../plotly/static/dist/index.css" />
     <specs>
-        <variant>3dsurface</variant>
+        <variant>surface</variant>
     </specs>
     <tests>
         <test>

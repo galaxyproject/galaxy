@@ -43,7 +43,7 @@ steps:
       intro: "Clicking the diagram-icon will visualize your dataset."
       postclick: true
 
-    - component: visualization.plugin_item(id=plotly_3dsurface)
+    - component: visualization.plugin_item(id=plotly_surface)
       intro: "Select the surface visualization."
       postclick: true
 
