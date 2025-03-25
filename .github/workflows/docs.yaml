@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

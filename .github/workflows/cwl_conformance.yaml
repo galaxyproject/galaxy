@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'packages/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
 concurrency:
