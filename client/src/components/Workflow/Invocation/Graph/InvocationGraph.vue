@@ -200,39 +200,26 @@ function stepClicked(nodeId: number | null) {
                     </BCard>
                 </div>
             </div>
-            <BCard ref="stepCard" class="mt-2" no-body>
+            <BCard v-if="activeNodeId !== null" ref="stepCard" class="mt-2" no-body>
                 <BCardHeader
                     class="d-flex justify-content-between align-items-center px-3 py-2"
                     :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
                     <WorkflowInvocationStepHeader
-                        v-if="activeNodeId !== null"
                         class="w-100 pr-2"
                         :workflow-step="activeStepFor(activeNodeId)"
                         :graph-step="steps[activeNodeId]"
                         :invocation-step="props.invocation.steps[activeNodeId]" />
-                    <span v-else>No Step Selected</span>
                     <div class="d-flex flex-gapx-1">
-                        <BButton
-                            v-if="activeNodeId !== null"
-                            title="Scroll to Step"
-                            size="sm"
-                            variant="link"
-                            @click="scrollStepToView()">
+                        <BButton title="Scroll to Step" size="sm" variant="link" @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </BButton>
-                        <BButton
-                            v-if="activeNodeId !== null"
-                            title="Hide Step"
-                            size="sm"
-                            variant="link"
-                            @click="activeNodeId = null">
+                        <BButton title="Hide Step" size="sm" variant="link" @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </div>
                 </BCardHeader>
                 <BCardBody>
                     <WorkflowInvocationStep
-                        v-if="activeNodeId !== null"
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
@@ -241,9 +228,9 @@ function stepClicked(nodeId: number | null) {
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
                         expanded />
-                    <BAlert v-else show>Click on a step in the invocation to view its details here.</BAlert>
                 </BCardBody>
             </BCard>
+            <BAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</BAlert>
         </div>
     </div>
 </template>
