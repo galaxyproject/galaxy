@@ -216,10 +216,16 @@ function stepClicked(nodeId: number | null) {
                             v-if="activeNodeId !== null"
                             title="Scroll to Step"
                             size="sm"
+                            variant="link"
                             @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </BButton>
-                        <BButton v-if="activeNodeId !== null" title="Hide Step" size="sm" @click="activeNodeId = null">
+                        <BButton
+                            v-if="activeNodeId !== null"
+                            title="Hide Step"
+                            size="sm"
+                            variant="link"
+                            @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </div>
