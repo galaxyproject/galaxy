@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
 import type { ImportableZipContents, ZipContentFile } from "@/composables/zipExplorer";
+import { useUserStore } from "@/stores/userStore";
 
 interface Props {
     zipContents: ImportableZipContents;
@@ -13,6 +16,9 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "update:selectedItems", value: ZipContentFile[]): void;
 }>();
+
+const userStore = useUserStore();
+const { isAnonymous } = storeToRefs(userStore);
 
 const localSelectedItems = ref<ZipContentFile[]>(props.selectedItems);
 
@@ -29,24 +35,31 @@ function toggleSelection(item: ZipContentFile) {
 
 <template>
     <div class="zip-file-selector">
-        <h2>Contents</h2>
-
         <div v-if="props.zipContents.workflows.length > 0">
-            <strong>Workflows</strong>
+            <h3>Workflows</h3>
+            <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
             <ul>
                 <li v-for="workflow in props.zipContents.workflows" :key="workflow.path">
-                    <input type="checkbox" :value="workflow" @change="toggleSelection(workflow)" />
-                    {{ workflow.name }}
+                    <label v-b-tooltip.hover title="Select this workflow to import">
+                        <input
+                            type="checkbox"
+                            :value="workflow"
+                            :disabled="isAnonymous"
+                            @change="toggleSelection(workflow)" />
+                        {{ workflow.name }}
+                    </label>
                 </li>
             </ul>
         </div>
 
         <div v-if="props.zipContents.files.length > 0">
-            <strong>Files</strong>
+            <h3>Files</h3>
             <ul>
                 <li v-for="dataset in props.zipContents.files" :key="dataset.path">
-                    <input type="checkbox" :value="dataset" @change="toggleSelection(dataset)" />
-                    {{ dataset.name }} <span class="text-muted">({{ dataset.type }})</span>
+                    <label v-b-tooltip.hover title="Select this file to import">
+                        <input type="checkbox" :value="dataset" @change="toggleSelection(dataset)" />
+                        {{ dataset.name }}
+                    </label>
                 </li>
             </ul>
         </div>
