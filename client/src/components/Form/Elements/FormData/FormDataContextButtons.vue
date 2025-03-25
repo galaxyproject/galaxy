@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEye, faPlus, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
@@ -59,8 +60,13 @@ function createCollectionType(colType: string) {
                 v-b-tooltip.hover.bottom
                 :pressed="props.currentField === index"
                 :title="v.tooltip"
+                :style="v.icon === faFolder && v.multiple ? 'padding-bottom: 2px' : ''"
                 @click="emit('set-current-field', index)">
-                <FontAwesomeIcon :icon="['far', v.icon]" />
+                <span v-if="v.icon === faFolder && v.multiple" style="position: relative; display: inline-block">
+                    <FontAwesomeIcon :icon="faFolder" size="sm" style="position: absolute; left: 2px" />
+                    <FontAwesomeIcon :icon="faFolder" size="sm" />
+                </span>
+                <FontAwesomeIcon v-else :icon="v.icon" />
             </BButton>
             <BButton
                 v-if="props.canBrowse && !props.workflowRun"
