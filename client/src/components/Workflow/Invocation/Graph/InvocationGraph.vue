@@ -64,6 +64,7 @@ const initialLoading = ref(true);
 const errored = ref(false);
 const errorMessage = ref("");
 const pollTimeout = ref<any>(null);
+const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
@@ -182,9 +183,13 @@ function stepClicked(nodeId: number | null) {
         </div>
         <div v-else-if="steps && datatypesMapper">
             <div class="d-flex">
-                <div class="position-relative w-100">
+                <!-- eslint-disable-next-line vuejs-accessibility/mouse-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+                <div
+                    class="position-relative w-100"
+                    @mouseover="showSideOverlay = true"
+                    @mouseleave="showSideOverlay = false">
                     <BCard no-body>
-                        <div v-if="activeNodeId !== null" class="overlay overlay-left" />
+                        <div v-if="activeNodeId !== null && showSideOverlay" class="overlay overlay-left" />
                         <WorkflowGraph
                             ref="workflowGraph"
                             class="invocation-graph"
@@ -198,7 +203,7 @@ function stepClicked(nodeId: number | null) {
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
-                        <div v-if="activeNodeId !== null" class="overlay overlay-right" />
+                        <div v-if="activeNodeId !== null && showSideOverlay" class="overlay overlay-right" />
                     </BCard>
                 </div>
             </div>
