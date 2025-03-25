@@ -9,7 +9,7 @@ import {
 } from "ro-crate-zip-explorer";
 import { computed, ref } from "vue";
 
-import { withPrefix } from "@/utils/redirect";
+import { getFullAppUrl } from "@/app/utils";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 const zipExplorer = ref<ROCrateZipExplorer>();
@@ -64,7 +64,7 @@ export function useZipExplorer() {
                 const extractUrl = toExtractUrl(zipUrl, entry);
                 if (isWorkflowFile(file)) {
                     try {
-                        await axios.post(withPrefix("/api/workflows"), { archive_source: extractUrl });
+                        await axios.post(getFullAppUrl("/api/workflows"), { archive_source: extractUrl });
                     } catch (e) {
                         rethrowSimple(e);
                     }
@@ -103,7 +103,7 @@ export function useZipExplorer() {
                 targets: [target],
             };
             try {
-                await axios.post(withPrefix("/api/tools/fetch"), payload);
+                await axios.post(getFullAppUrl("/api/tools/fetch"), payload);
             } catch (e) {
                 rethrowSimple(e);
             }
@@ -192,11 +192,7 @@ export function useZipExplorer() {
      * To avoid CORS issues, we proxy the URL through the Galaxy server.
      */
     function getProxiedUrl(url: string) {
-        // TODO: this is probably not the right way to get the fully qualified URL,
-        // but withPrefix() only returns "/" here.
-        // const proxyUrl = withPrefix(`/api/proxy?url=${encodeURIComponent(url)}`);
-        const siteRootUrl = window.location.origin;
-        const proxyUrl = `${siteRootUrl}/api/proxy?url=${encodeURIComponent(url)}`;
+        const proxyUrl = getFullAppUrl(`/api/proxy?url=${encodeURIComponent(url)}`);
         return proxyUrl;
     }
 
