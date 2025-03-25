@@ -23,6 +23,7 @@ import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
+import ToolReport from "components/Tool/ToolReport";
 import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
@@ -235,6 +236,11 @@ export function getRouter(Galaxy) {
                             src: `/datasets/${route.params.datasetId}/display/?preview=True`,
                             isPreview: true,
                         }),
+                    },
+                    {
+                        path: "datasets/:datasetId/report",
+                        component: ToolReport,
+                        props: true,
                     },
                     {
                         // legacy route, potentially used by 3rd parties

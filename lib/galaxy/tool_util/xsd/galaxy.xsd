@@ -6143,6 +6143,78 @@ on Human (hg18)``.
 </outputs>
 ```
 
+### Markdown Outputs
+
+Tools can produce Markdown reports enhanced with the Galaxy Markdown syntax. This
+allows using Markdown directives to provide rich displays of tool inputs and outputs.
+
+```
+<outputs>
+    <data format="tool_markdown" name="output_report" label="Report for Analysis" />
+</outputs>
+```
+
+For an overview of standard Markdown visit the [commonmark.org tutorial](https://commonmark.org/help/tutorial/).
+
+The Galaxy extensions to Markdown are represented as code blocks, these blocks start with the line
+
+
+    ```galaxy
+
+and end with the line
+
+    ```
+
+and have a command (or directive) with arguments between these lines. These arguments reference parts of your tool's job such as
+inputs and outputs by label.
+
+#### History Contents Commands
+
+These commands reference a dataset or dataset collection. For instance, the following examples would display
+the dataset collection metadata and would embed a dataset into the document as an image.
+
+These elements are referenced by input or output labels for the tool.
+
+Example:
+
+    ```galaxy
+    history_dataset_collection_display(output=mapped_bams)
+    ```
+
+Example:
+
+    ```galaxy
+    history_dataset_as_image(output=normalized_result_plot)
+    ```
+
+$directive_list:history_dataset_display,history_dataset_collection_display,history_dataset_as_image,history_dataset_as_table,history_dataset_peek,history_dataset_info
+
+#### Job Commands
+
+These commands implicitly reference the Galaxy job associated with the tool execution.
+
+Example:
+
+    ```galaxy
+    tool_stdout()
+    ```
+
+$directive_list:tool_stderr,tool_stdout,job_metrics,job_parameters
+
+#### Example Tools
+
+A few potential paradigms for build reports for tools have examples included.
+[markdown_report_simple.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_simple.xml)
+demonstrates simply linking to the other outputs of a tool and builds the document
+itself with a Galaxy ``configfile``. [markdown_report_extra_files.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_extra_files.xml)
+builds the report with a configfile just like that first example but demonstrates
+copying data and images into the ``extra_files`` directory of the report. This variant
+is useful if the number or types of files being produced is variable or if it is important
+the outputs linked in the reports are not stand-alone outputs of the tool. Finally,
+[markdown_report_from_script.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_from_script.xml)
+demonstrates you don't need to build the file in Galaxy's XML - you can build it with
+a wrapper script or standalone application.
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
