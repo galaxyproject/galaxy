@@ -9,7 +9,6 @@ import { type WorkflowLabel } from "./Editor/types";
 import { getHistories, getInvocations, getJobs, getWorkflows } from "./services";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
-import MarkdownVisualization from "./MarkdownVisualization.vue";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
 import BasicSelectionDialog from "@/components/SelectionDialog/BasicSelectionDialog.vue";
 import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
