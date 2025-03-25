@@ -236,38 +236,43 @@ function toggleRuntimeSettings() {
                 <!-- Runtime Settings Panel -->
                 <div
                     v-if="showRuntimeSettingsPanel"
-                    class="workflow-runtime-settings-panel px-2 pt-2">
-                    <div class="d-flex flex-wrap">
-                        <div class="mr-4 mb-2">
+                    class="workflow-runtime-settings-panel p-2">
+                    <div class="d-flex flex-wrap align-items-center">
+                        <div class="mr-4">
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
                                 Send results to a new history
                             </BFormCheckbox>
                         </div>
-                        <div class="mr-4 mb-2">
+                        <div class="mr-4">
                             <BFormCheckbox
                                 v-model="useCachedJobs"
                                 title="This may skip executing jobs that you have already run.">
                                 Attempt to re-use jobs with identical parameters?
                             </BFormCheckbox>
                         </div>
-                        <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4 mb-2">
-                            <BFormCheckbox v-model="splitObjectStore">
+                        <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4">
+                            <BFormCheckbox v-model="splitObjectStore" class="mr-4">
                                 Send outputs and intermediate to different storage locations?
                             </BFormCheckbox>
+                            <WorkflowStorageConfiguration
+                                :split-object-store="splitObjectStore"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                @updated="onStorageUpdate">
+                            </WorkflowStorageConfiguration>
                         </div>
-                        <div class="mr-4 mb-2">
-                            <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
-                                Expand to full workflow form.
-                            </BFormCheckbox>
+                        <div class="mr-4">
+                            <BButton
+                                v-b-tooltip.hover.noninteractive
+                                variant="link"
+                                size="sm"
+                                class="text-decoration-none"
+                                title="Switch to full workflow form"
+                                @click="$emit('showAdvanced')">
+                                Expand to full workflow form <span class="fas fa-arrow-right" />
+                            </BButton>
                         </div>
                     </div>
-                    <WorkflowStorageConfiguration
-                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        :split-object-store="splitObjectStore"
-                        :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                        :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                        @updated="onStorageUpdate">
-                    </WorkflowStorageConfiguration>
                 </div>
             </div>
         </div>
