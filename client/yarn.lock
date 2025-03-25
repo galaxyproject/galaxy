@@ -9916,10 +9916,10 @@ rimraf@^3.0.2:
   dependencies:
     glob "^7.1.3"
 
-ro-crate-zip-explorer@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.2.0.tgz#ee6ebac943605ad473bf2f9d40daf4412867c7f3"
-  integrity sha512-mENLxCcwnRy228lujg0RLkvadd7D1TWQyj+0pC7VMBvcjPUeOK+p6Fnpntcp2iIh/RXDElJVJ1hlZ3No8tQRUA==
+ro-crate-zip-explorer@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.2.1.tgz#0c9e29bbd5ec3c3b1ebf3af56af1bb72111d63e1"
+  integrity sha512-SQx4NhbFcz1P14HYZXfB0yzor86IhSSXLTIeGXzBpJ36BnWMkxagIvv6PypcTNqHaeCtwX1ixo6k7suoVjxjMw==
   dependencies:
     jszip "^3.10.1"
     pako "^2.1.0"
