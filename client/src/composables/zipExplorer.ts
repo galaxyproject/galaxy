@@ -21,6 +21,7 @@ export function useZipExplorer() {
 
     const isRoCrate = computed(() => zipExplorer.value?.hasCrate);
     const isGalaxyExport = computed(() => zipArchive.value?.findFileByName("export_attrs.txt") !== undefined);
+    const isZipArchiveAvailable = computed(() => zipArchive.value !== undefined);
 
     async function openZip(zipSource: File | string) {
         if (typeof zipSource === "string") {
@@ -126,30 +127,33 @@ export function useZipExplorer() {
         zipExplorerError.value = undefined;
     }
 
-    function getImportableZipContents(): ImportableZipContents {
+    function getImportableZipContents(): ImportableZipContents | undefined {
+        if (!zipArchive.value) {
+            return undefined;
+        }
+
         const workflows: ZipContentFile[] = [];
         const files: ZipContentFile[] = [];
-        if (zipArchive.value) {
-            for (const entry of zipArchive.value.entries) {
-                if (shouldSkipZipEntry(entry)) {
-                    continue;
-                }
-                const baseFile = {
-                    name: getEntryName(entry),
-                    path: entry.path,
-                };
+        for (const entry of zipArchive.value.entries) {
+            if (shouldSkipZipEntry(entry)) {
+                continue;
+            }
 
-                if (isGalaxyWorkflow(entry)) {
-                    workflows.push({
-                        ...baseFile,
-                        type: "workflow",
-                    });
-                } else {
-                    files.push({
-                        ...baseFile,
-                        type: "file",
-                    });
-                }
+            const baseFile = {
+                name: getEntryName(entry),
+                path: entry.path,
+            };
+
+            if (isGalaxyWorkflow(entry)) {
+                workflows.push({
+                    ...baseFile,
+                    type: "workflow",
+                });
+            } else {
+                files.push({
+                    ...baseFile,
+                    type: "file",
+                });
             }
         }
         return { workflows, files };
@@ -203,6 +207,7 @@ export function useZipExplorer() {
         isLoading,
         isRoCrate,
         isGalaxyExport,
+        isZipArchiveAvailable,
         openZip,
         reset,
         isValidUrl,
@@ -242,7 +247,7 @@ export interface ZipContentFile {
     type: "workflow" | "file";
 }
 
-interface ImportableZipContents {
+export interface ImportableZipContents {
     workflows: ZipContentFile[];
     files: ZipContentFile[];
 }
