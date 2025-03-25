@@ -1095,6 +1095,70 @@ def resolve_invocation_markdown(trans, workflow_markdown):
     return workflow_markdown
 
 
+def resolve_job_markdown(trans, job, job_markdown):
+    """Resolve job objects to convert tool markdown to 'internal' representation.
+
+    Replace references to abstract workflow parts with actual galaxy object IDs corresponding
+    to the actual executed workflow. For instance:
+
+        convert output=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+        convert input=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+        convert argument-less job directives to job
+    """
+    io_dicts = job.io_dicts()
+
+    def _remap(container, line):
+        if container == "history_link":
+            return (f"history_link(history_id={job.history.id})\n", False)
+        elif container == "tool_stdout":
+            return (f"tool_stdout(job_id={job.id})\n", False)
+        elif container == "tool_stderr":
+            return (f"tool_stderr(job_id={job.id})\n", False)
+        elif container == "job_parameters":
+            return (f"job_parameters(job_id={job.id})\n", False)
+        elif container == "job_metrics":
+            return (f"job_metrics(job_id={job.id})\n", False)
+        ref_object_type = None
+        output_match = re.search(OUTPUT_LABEL_PATTERN, line)
+        input_match = re.search(INPUT_LABEL_PATTERN, line)
+
+        def find_non_empty_group(match):
+            for group in match.groups():
+                if group:
+                    return group
+
+        target_match: Optional[Match]
+        ref_object: Optional[Any]
+        if output_match:
+            target_match = output_match
+            name = find_non_empty_group(target_match)
+            if name in io_dicts.out_data:
+                ref_object = io_dicts.out_data[name]
+            elif name in io_dicts.out_collections:
+                ref_object = io_dicts.out_collections[name]
+            else:
+                raise Exception("Unknown exception")
+        elif input_match:
+            target_match = input_match
+            name = find_non_empty_group(target_match)
+            ref_object = io_dicts.inp_data[name]
+        else:
+            target_match = None
+            ref_object = None
+        if ref_object:
+            assert target_match  # tell type system, this is set when ref_object is set
+            if ref_object_type is None:
+                if ref_object.history_content_type == "dataset":
+                    ref_object_type = "history_dataset"
+                else:
+                    ref_object_type = "history_dataset_collection"
+            line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
+        return (line, False)
+
+    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, job_markdown)
+    return galaxy_markdown
+
+
 def _remap_galaxy_markdown_containers(func, markdown):
     new_markdown = markdown
 

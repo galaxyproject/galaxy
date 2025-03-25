@@ -132,7 +132,8 @@ Galaxy Version {{ config.version_major }}</pre
                 :dataset-id="args.history_target_id || args.history_dataset_id"
                 :footer="args.footer"
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
-                :title="args.title" />
+                :title="args.title"
+                :path="path" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
                 :collection-id="args.history_target_id || args.history_dataset_collection_id" />

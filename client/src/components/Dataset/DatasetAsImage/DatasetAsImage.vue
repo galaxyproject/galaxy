@@ -15,9 +15,9 @@ const { datasetPathDestination } = useDatasetPathDestination();
 
 const props = defineProps<Props>();
 
-const pathDestination = computed<PathDestination | null>(() =>
-    datasetPathDestination.value(props.historyDatasetId, props.path)
-);
+const pathDestination = computedAsync<PathDestination | null>(async () => {
+    return await datasetPathDestination.value(props.historyDatasetId, props.path);
+}, null);
 
 const imageUrl = computed(() => {
     if (props.path === undefined || props.path === "undefined") {
