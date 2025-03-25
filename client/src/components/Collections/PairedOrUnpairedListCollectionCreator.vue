@@ -198,19 +198,33 @@ function onIdentifierChange(e: NewValueParams) {
 }
 
 function checkForDuplicates(refresh: boolean) {
+    const isNested = isNestedList.value;
+
+    function identifierKey(item: RowT): string {
+        // duplicate checking for nested collections is trickier - need to check combination
+        // of keys is unique instead.
+        if (isNested) {
+            return `${item.outerIdentifier ?? ""}:${item.identifier}`;
+        } else {
+            return item.identifier;
+        }
+    }
+
     const isDuplicate: Record<string, boolean> = {};
     let anyDuplicated = false;
     for (const item of rowData.value) {
-        if (item.identifier in isDuplicate) {
-            isDuplicate[item.identifier] = true;
+        const identifier = identifierKey(item);
+        if (identifier in isDuplicate) {
+            isDuplicate[identifier] = true;
             anyDuplicated = true;
         } else {
-            isDuplicate[item.identifier] = false;
+            isDuplicate[identifier] = false;
         }
     }
     for (const item of rowData.value) {
+        const identifier = identifierKey(item);
         if (item.status == "ok" || item.status == "duplicate") {
-            item.status = isDuplicate[item.identifier] ? "duplicate" : "ok";
+            item.status = isDuplicate[identifier] ? "duplicate" : "ok";
         }
     }
     if (refresh) {

@@ -218,6 +218,10 @@ function onRuleState(newRuleState: boolean) {
         <div v-if="collectionCreated">
             <BAlert variant="success"> Collection created and it has been added to your history. </BAlert>
         </div>
+        <div v-else-if="!selectedItems">Loading...</div>
+        <div v-else-if="selectedItems.length == 0">
+            <p>Select datasets from history panel to use the Galaxy list building wizard.</p>
+        </div>
         <GenericWizard v-else :use="wizard" :is-busy="isBusy" :submit-button-label="buildButtonLabel" @submit="submit">
             <div v-if="wizard.isCurrent('which-builder')">
                 <WhichBuilder :initial-advanced="initialAdvanced" :value="whichBuilder" @onChange="setWhichBuilder" />
