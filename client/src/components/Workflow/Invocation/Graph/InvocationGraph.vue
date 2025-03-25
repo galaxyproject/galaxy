@@ -253,7 +253,8 @@ function stepClicked(nodeId: number | null) {
 .overlay {
     bottom: 0;
     width: 1.5rem;
-    background: rgba(200, 200, 200, 0.2);
+    background: $gray-200;
+    opacity: 0.5;
     &.overlay-left {
         z-index: 1;
     }
