@@ -1758,6 +1758,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self.change_state(model.Job.states.QUEUED, flush=False, job=job)
         elif not self.queue_with_limit(job, self.job_destination):
             return False
+        job.update_output_states(self.app.application_stack.supports_skip_locked())
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
         # Now that we have the object store id, check if we are over the limit
