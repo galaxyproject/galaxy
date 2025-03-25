@@ -184,6 +184,7 @@ function stepClicked(nodeId: number | null) {
             <div class="d-flex">
                 <div class="position-relative w-100">
                     <BCard no-body>
+                        <div v-if="activeNodeId !== null" class="overlay overlay-left" />
                         <WorkflowGraph
                             ref="workflowGraph"
                             class="invocation-graph"
@@ -197,6 +198,7 @@ function stepClicked(nodeId: number | null) {
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
+                        <div v-if="activeNodeId !== null" class="overlay overlay-right" />
                     </BCard>
                 </div>
             </div>
@@ -245,6 +247,19 @@ function stepClicked(nodeId: number | null) {
 .portlet-header {
     &:hover {
         opacity: 0.8;
+    }
+}
+
+.overlay {
+    bottom: 0;
+    width: 1.5rem;
+    background: rgba(200, 200, 200, 0.2);
+    &.overlay-left {
+        z-index: 1;
+    }
+    &.overlay-right {
+        left: auto;
+        right: 0;
     }
 }
 
