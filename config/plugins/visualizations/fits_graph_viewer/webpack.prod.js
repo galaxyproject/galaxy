@@ -4,6 +4,6 @@ module.exports = {
     mode: 'production',
     entry: './src/index.js',
     output: {
-        filename: 'fits_graph_viewer.js'
+        filename: 'script.js'
     },
 };
