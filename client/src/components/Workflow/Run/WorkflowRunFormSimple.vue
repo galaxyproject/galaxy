@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -57,10 +57,8 @@ const splitObjectStore = ref(false);
 const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
-// TODO: Once we add readme/help to the right side of the form, we can default the unified `showRightPanel`
-//       (panel that toggles between readme/help or graph) to `true` if the readme/help exists, and if no
-//       readme/help exists, it will be `false`.
 const showGraph = ref(!showPanels.value);
+const showRuntimeSettingsPanel = ref(false);
 
 const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
@@ -191,6 +189,10 @@ async function onExecute() {
         waitingForRequest.value = false;
     }
 }
+
+function toggleRuntimeSettings() {
+    showRuntimeSettingsPanel.value = !showRuntimeSettingsPanel.value;
+}
 </script>
 
 <template>
@@ -218,47 +220,52 @@ async function onExecute() {
                         @click="showGraph = !showGraph">
                         <FontAwesomeIcon :icon="faSitemap" fixed-width />
                     </BButton>
-                    <BDropdown
-                        id="dropdown-form"
-                        ref="dropdown"
+                    <BButton
                         v-b-tooltip.hover.noninteractive
-                        class="workflow-run-settings"
-                        title="Workflow Run Settings"
                         size="sm"
+                        title="Workflow Run Settings"
                         variant="link"
-                        no-caret>
-                        <template v-slot:button-content>
-                            <span class="fa fa-cog" />
-                        </template>
-                        <BDropdownForm>
-                            <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
-                                Send results to a new history
-                            </BFormCheckbox>
-                            <BFormCheckbox
-                                v-model="useCachedJobs"
-                                title="This may skip executing jobs that you have already run.">
-                                Attempt to re-use jobs with identical parameters?
-                            </BFormCheckbox>
-                            <BFormCheckbox
-                                v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                                v-model="splitObjectStore">
-                                Send outputs and intermediate to different storage locations?
-                            </BFormCheckbox>
-                            <!-- Options to default one way or the other, disable if admins want, etc.. -->
-                            <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
-                                Expand to full workflow form.
-                            </BFormCheckbox>
-                            <WorkflowStorageConfiguration
-                                v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                                :split-object-store="splitObjectStore"
-                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                                @updated="onStorageUpdate">
-                            </WorkflowStorageConfiguration>
-                        </BDropdownForm>
-                    </BDropdown>
+                        :pressed="showRuntimeSettingsPanel"
+                        @click="toggleRuntimeSettings">
+                        <span class="fa fa-cog" />
+                    </BButton>
                 </template>
             </WorkflowNavigationTitle>
+            
+            <!-- Runtime Settings Panel -->
+            <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-3 border rounded mb-2">
+                <div class="d-flex flex-wrap">
+                    <div class="mr-4 mb-2">
+                        <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                            Send results to a new history
+                        </BFormCheckbox>
+                    </div>
+                    <div class="mr-4 mb-2">
+                        <BFormCheckbox
+                            v-model="useCachedJobs"
+                            title="This may skip executing jobs that you have already run.">
+                            Attempt to re-use jobs with identical parameters?
+                        </BFormCheckbox>
+                    </div>
+                    <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4 mb-2">
+                        <BFormCheckbox v-model="splitObjectStore">
+                            Send outputs and intermediate to different storage locations?
+                        </BFormCheckbox>
+                    </div>
+                    <div class="mr-4 mb-2">
+                        <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
+                            Expand to full workflow form.
+                        </BFormCheckbox>
+                    </div>
+                </div>
+                <WorkflowStorageConfiguration
+                    v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                    :split-object-store="splitObjectStore"
+                    :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                    :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                    @updated="onStorageUpdate">
+                </WorkflowStorageConfiguration>
+            </div>
         </div>
 
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
@@ -299,3 +306,10 @@ async function onExecute() {
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+.workflow-runtime-settings-panel {
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+</style>
