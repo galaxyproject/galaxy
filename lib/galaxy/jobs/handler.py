@@ -514,6 +514,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 pass
         # Ensure that we get new job counts on each iteration
         self.__clear_job_count()
+        self.__cache_total_job_count_per_destination()
+        self.__cache_user_job_count_per_destination()
+        self.__cache_user_job_count()
         # Check resubmit jobs first so that limits of new jobs will still be enforced
         for job in resubmit_jobs:
             log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
@@ -819,7 +822,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         self.total_job_count_per_destination = None
 
     def get_user_job_count(self, user_id):
-        self.__cache_user_job_count()
         # This could have been incremented by a previous job dispatched on this iteration, even if we're not caching
         rval = self.user_job_count.get(user_id, 0)
         if not self.app.config.cache_user_job_count:
@@ -860,7 +862,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.user_job_count = {}
 
     def get_user_job_count_per_destination(self, user_id):
-        self.__cache_user_job_count_per_destination()
         cached = self.user_job_count_per_destination.get(user_id, {})
         if self.app.config.cache_user_job_count:
             rval = cached
@@ -1001,7 +1002,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 self.total_job_count_per_destination[row["destination_id"]] = row["job_count"]
 
     def get_total_job_count_per_destination(self):
-        self.__cache_total_job_count_per_destination()
         # Always use caching (at worst a job will have to wait one iteration,
         # and this would be more fair anyway as it ensures FIFO scheduling,
         # insofar as FIFO would be fair...)
