@@ -5,13 +5,11 @@ import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox, BOverlay } fr
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { allowCachedJobs } from "@/components/Tool/utilities";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -48,7 +46,6 @@ const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
 const { activeNodeId } = storeToRefs(stateStore);
 
 const { config, isConfigLoaded } = useConfig(true);
-const { currentUser } = storeToRefs(useUserStore());
 const { showPanels } = usePanels();
 
 const formData = ref<Record<string, any>>({});
@@ -130,14 +127,6 @@ function onValidation(validation: [string, string] | null) {
     } else {
         stepValidation.value = null;
     }
-}
-
-function reuseAllowed(user: any) {
-    return user && allowCachedJobs(user.preferences);
-}
-
-function showRuntimeSettings(user: any) {
-    return props.targetHistory && (props.targetHistory.indexOf("prefer") >= 0 || (user && reuseAllowed(user)));
 }
 
 function onChange(data: any) {
@@ -230,7 +219,6 @@ async function onExecute() {
                         <FontAwesomeIcon :icon="faSitemap" fixed-width />
                     </BButton>
                     <BDropdown
-                        v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
                         ref="dropdown"
                         v-b-tooltip.hover.noninteractive
@@ -247,7 +235,6 @@ async function onExecute() {
                                 Send results to a new history
                             </BFormCheckbox>
                             <BFormCheckbox
-                                v-if="reuseAllowed(currentUser)"
                                 v-model="useCachedJobs"
                                 title="This may skip executing jobs that you have already run.">
                                 Attempt to re-use jobs with identical parameters?
