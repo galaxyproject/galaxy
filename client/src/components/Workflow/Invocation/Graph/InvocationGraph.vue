@@ -218,7 +218,7 @@ function stepClicked(nodeId: number | null) {
                         </BButton>
                     </div>
                 </BCardHeader>
-                <BCardBody>
+                <BCardBody body-class="p-2">
                     <WorkflowInvocationStep
                         ref="loadedJobInfo"
                         :key="activeNodeId"
