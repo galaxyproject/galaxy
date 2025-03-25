@@ -9,7 +9,6 @@ import { type WorkflowLabel } from "./Editor/types";
 import { getHistories, getInvocations, getJobs, getWorkflows } from "./services";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
-import MarkdownVisualization from "./MarkdownVisualization.vue";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
 import BasicSelectionDialog from "@/components/SelectionDialog/BasicSelectionDialog.vue";
 import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
@@ -75,7 +74,6 @@ const selectorConfig = {
 };
 
 const selectedShow = ref(false);
-const visualizationShow = ref(false);
 const workflowShow = ref(false);
 const historyShow = ref(false);
 const jobShow = ref(false);
@@ -123,11 +121,6 @@ function onWorkflow(response: ObjectReference) {
     emit("onInsert", `${props.argumentName}(workflow_id=${response.id})`);
 }
 
-function onVisualization(response: string) {
-    visualizationShow.value = false;
-    emit("onInsert", response);
-}
-
 function onOk(selectedLabel: WorkflowLabel | undefined) {
     const argumentType = props.argumentType ?? "";
     const defaultLabelType: string =
@@ -171,7 +164,6 @@ function onCancel() {
     dataCollectionShow.value = false;
     selectedShow.value = false;
     workflowShow.value = false;
-    visualizationShow.value = false;
     jobShow.value = false;
     invocationShow.value = false;
     dataShow.value = false;
@@ -206,8 +198,6 @@ if (props.argumentType == "workflow_id") {
     } else {
         jobShow.value = true;
     }
-} else if (props.argumentType == "visualization_id") {
-    visualizationShow.value = true;
 }
 </script>
 
@@ -220,15 +210,6 @@ if (props.argumentType == "workflow_id") {
             :labels="effectiveLabels"
             :label-title="selectedLabelTitle"
             @onOk="onOk"
-            @onCancel="onCancel" />
-        <MarkdownVisualization
-            v-else-if="visualizationShow && currentHistoryId !== null"
-            :argument-name="argumentName"
-            :argument-payload="argumentPayload"
-            :labels="effectiveLabels"
-            :use-labels="hasLabels"
-            :history="currentHistoryId"
-            @onOk="onVisualization"
             @onCancel="onCancel" />
         <DataDialog
             v-else-if="dataShow && currentHistoryId !== null"

@@ -25,10 +25,8 @@
 </template>
 
 <script>
-import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
 import { fromSteps } from "@/components/Workflow/Editor/modules/labels";
@@ -96,7 +94,6 @@ export default {
             selectedType: null,
             selectedShow: false,
             selectedPayload: null,
-            visualizationIndex: {},
             error: null,
             historySection: {
                 title: "History",
@@ -285,9 +282,6 @@ export default {
                 case "onInvocationId":
                     this.onInvocationId(item.id);
                     break;
-                case "onVisualizationId":
-                    this.onVisualizationId(item.id);
-                    break;
                 default:
                     this.onNoParameter(item.id);
             }
@@ -301,12 +295,6 @@ export default {
         },
         onNoParameter(argumentName) {
             this.onInsert(`${argumentName}()`);
-        },
-        onVisualizationId(argumentName) {
-            this.selectedArgumentName = argumentName;
-            this.selectedType = "visualization_id";
-            this.selectedPayload = this.visualizationIndex[argumentName];
-            this.selectedShow = true;
         },
         onHistoryId(argumentName) {
             this.selectedArgumentName = argumentName;
