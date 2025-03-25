@@ -107,9 +107,4 @@
             <value>false</value>
         </input>
     </settings>
-    <tests>
-        <test>
-            <dataset_url>http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/newick.nwk</dataset_url>
-        </test>
-    </tests>
 </visualization>

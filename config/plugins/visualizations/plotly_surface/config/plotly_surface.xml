@@ -17,9 +17,4 @@
     <specs>
         <variant>surface</variant>
     </specs>
-    <tests>
-        <test>
-            <dataset_url>http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/matrix_generator_for_pc_and_lda_output.tabular</dataset_url>
-        </test>
-    </tests>
 </visualization>
