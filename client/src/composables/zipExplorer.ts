@@ -44,7 +44,7 @@ export function useZipExplorer() {
         }
     }
 
-    async function importArtifacts(filesToImport: ZipContentFile[], historyId?: string) {
+    async function importArtifacts(filesToImport: ZipContentFile[], historyId: string | null) {
         if (!zipArchive.value) {
             throw new Error("No ZIP archive loaded. You must call openZip() first.");
         }
@@ -78,7 +78,7 @@ export function useZipExplorer() {
             }
 
             if (!historyId) {
-                throw new Error("No history ID provided for uploading files");
+                throw new Error("There is no history available to upload the selected files.");
             }
 
             const elements = toUploadToHistory.map((entry) => {

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { type ImportableZipContents, useZipExplorer, type ZipContentFile } from "@/composables/zipExplorer";
+import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
@@ -10,24 +12,28 @@ import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
 const { getImportableZipContents, importArtifacts, isZipArchiveAvailable } = useZipExplorer();
 
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
 const isWizardBusy = ref<boolean>(false);
 const errorMessage = ref<string>();
 
-interface ImportData {
-    filesToImport: ZipContentFile[];
-}
-
 const importableZipContents = ref<ImportableZipContents>();
 
-const importData = reactive<ImportData>({
-    filesToImport: [],
-});
+const filesToImport = ref<ZipContentFile[]>([]);
 
 const wizard = useWizard({
     "select-items": {
         label: "Select items to import",
         instructions: computed(() => {
-            return `Review the contents of the Zip file and select the items you wish to import.`;
+            return `Review the contents of the Zip archive and select the items you wish to extract and import:`;
+        }),
+        isValid: () => isAnythingSelected(),
+        isSkippable: () => false,
+    },
+    "import-summary": {
+        label: "Summary",
+        instructions: computed(() => {
+            return `Review your selections before starting the import process:`;
         }),
         isValid: () => true,
         isSkippable: () => false,
@@ -37,12 +43,20 @@ const wizard = useWizard({
 async function importItems() {
     isWizardBusy.value = true;
     try {
-        await importArtifacts(importData.filesToImport);
+        await importArtifacts(filesToImport.value, currentHistoryId.value);
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     } finally {
         isWizardBusy.value = false;
     }
+}
+
+function isAnythingSelected() {
+    return filesToImport.value.length > 0;
+}
+
+function onSelectionUpdate(selectedItems: ZipContentFile[]) {
+    filesToImport.value = selectedItems;
 }
 
 watch(
@@ -60,6 +74,10 @@ watch(
 
 <template>
     <div>
+        <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
+            {{ errorMessage }}
+        </BAlert>
+
         <GenericWizard
             v-if="importableZipContents"
             class="zip-import-wizard"
@@ -71,17 +89,23 @@ watch(
             <div v-if="wizard.isCurrent('select-items')">
                 <ZipFileSelector
                     :zip-contents="importableZipContents"
-                    :selected-items="importData.filesToImport"
-                    @update:selectedItems="importData.filesToImport = $event" />
+                    :selected-items="filesToImport"
+                    @update:selectedItems="onSelectionUpdate" />
+            </div>
+            <div v-else-if="wizard.isCurrent('import-summary')">
+                <div>
+                    <h3>Selected items</h3>
+                    <ul>
+                        <li v-for="item in filesToImport" :key="item.path">
+                            {{ item.name }} <span class="text-muted">({{ item.type }})</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </GenericWizard>
         <BAlert v-else variant="warning" show>
-            There is no Zip archive currently open for import. Please go to Upload and select `Import from Zip` to start
-            the import process.
-        </BAlert>
-
-        <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
-            {{ errorMessage }}
+            There is no Zip archive currently open for import. Please go to <b>Upload</b> and select
+            <b>Import from Zip</b> to start the import process.
         </BAlert>
     </div>
 </template>
