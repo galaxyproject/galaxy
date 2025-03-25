@@ -205,66 +205,70 @@ function toggleRuntimeSettings() {
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <WorkflowNavigationTitle
-                :workflow-id="model.runData.workflow_id"
-                :run-disabled="hasValidationErrors || !canRunOnHistory"
-                :run-waiting="waitingForRequest"
-                @on-execute="onExecute">
-                <template v-slot:workflow-title-actions>
-                    <BButton
-                        v-b-tooltip.hover.noninteractive.html
-                        size="sm"
-                        :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
-                        variant="link"
-                        :pressed="showGraph"
-                        @click="showGraph = !showGraph">
-                        <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                    </BButton>
-                    <BButton
-                        v-b-tooltip.hover.noninteractive
-                        size="sm"
-                        title="Workflow Run Settings"
-                        variant="link"
-                        :pressed="showRuntimeSettingsPanel"
-                        @click="toggleRuntimeSettings">
-                        <span class="fa fa-cog" />
-                    </BButton>
-                </template>
-            </WorkflowNavigationTitle>
-            
-            <!-- Runtime Settings Panel -->
-            <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-3 border rounded mb-2">
-                <div class="d-flex flex-wrap">
-                    <div class="mr-4 mb-2">
-                        <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
-                            Send results to a new history
-                        </BFormCheckbox>
+            <div class="mb-2">
+                <WorkflowNavigationTitle
+                    :workflow-id="model.runData.workflow_id"
+                    :run-disabled="hasValidationErrors || !canRunOnHistory"
+                    :run-waiting="waitingForRequest"
+                    @on-execute="onExecute">
+                    <template v-slot:workflow-title-actions>
+                        <BButton
+                            v-b-tooltip.hover.noninteractive.html
+                            size="sm"
+                            :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                            variant="link"
+                            :pressed="showGraph"
+                            @click="showGraph = !showGraph">
+                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                        </BButton>
+                        <BButton
+                            v-b-tooltip.hover.noninteractive
+                            size="sm"
+                            title="Workflow Run Settings"
+                            variant="link"
+                            :pressed="showRuntimeSettingsPanel"
+                            @click="toggleRuntimeSettings">
+                            <span class="fa fa-cog" />
+                        </BButton>
+                    </template>
+                </WorkflowNavigationTitle>
+
+                <!-- Runtime Settings Panel -->
+                <div
+                    v-if="showRuntimeSettingsPanel"
+                    class="workflow-runtime-settings-panel px-2 pt-2">
+                    <div class="d-flex flex-wrap">
+                        <div class="mr-4 mb-2">
+                            <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                                Send results to a new history
+                            </BFormCheckbox>
+                        </div>
+                        <div class="mr-4 mb-2">
+                            <BFormCheckbox
+                                v-model="useCachedJobs"
+                                title="This may skip executing jobs that you have already run.">
+                                Attempt to re-use jobs with identical parameters?
+                            </BFormCheckbox>
+                        </div>
+                        <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4 mb-2">
+                            <BFormCheckbox v-model="splitObjectStore">
+                                Send outputs and intermediate to different storage locations?
+                            </BFormCheckbox>
+                        </div>
+                        <div class="mr-4 mb-2">
+                            <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
+                                Expand to full workflow form.
+                            </BFormCheckbox>
+                        </div>
                     </div>
-                    <div class="mr-4 mb-2">
-                        <BFormCheckbox
-                            v-model="useCachedJobs"
-                            title="This may skip executing jobs that you have already run.">
-                            Attempt to re-use jobs with identical parameters?
-                        </BFormCheckbox>
-                    </div>
-                    <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4 mb-2">
-                        <BFormCheckbox v-model="splitObjectStore">
-                            Send outputs and intermediate to different storage locations?
-                        </BFormCheckbox>
-                    </div>
-                    <div class="mr-4 mb-2">
-                        <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
-                            Expand to full workflow form.
-                        </BFormCheckbox>
-                    </div>
+                    <WorkflowStorageConfiguration
+                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                        :split-object-store="splitObjectStore"
+                        :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                        :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                        @updated="onStorageUpdate">
+                    </WorkflowStorageConfiguration>
                 </div>
-                <WorkflowStorageConfiguration
-                    v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                    :split-object-store="splitObjectStore"
-                    :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                    :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                    @updated="onStorageUpdate">
-                </WorkflowStorageConfiguration>
             </div>
         </div>
 
@@ -310,6 +314,26 @@ function toggleRuntimeSettings() {
 <style scoped lang="scss">
 .workflow-runtime-settings-panel {
     background-color: #f8f9fa;
-    transition: all 0.3s ease;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0 0 0.25rem 0.25rem;
+    transition: all 0.2s ease-in-out;
+    opacity: 1;
+    transform-origin: top;
+    animation: slideDown 0.2s ease-in-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: scaleY(0);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+        max-height: 100px;
+    }
 }
 </style>
