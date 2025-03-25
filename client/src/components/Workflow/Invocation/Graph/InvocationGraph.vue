@@ -263,13 +263,6 @@ function stepClicked(nodeId: number | null) {
     }
 }
 
-.graph-steps-aside {
-    overflow-y: scroll;
-    &.steps-fixed-height {
-        max-height: 60vh;
-    }
-}
-
 .invocation-graph {
     &:deep(.workflow-overview),
     &:deep(.zoom-control) {
