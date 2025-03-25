@@ -70,8 +70,7 @@ watch(
             @submit="importItems">
             <div v-if="wizard.isCurrent('select-items')">
                 <ZipFileSelector
-                    :workflows="importableZipContents.workflows"
-                    :files="importableZipContents.files"
+                    :zip-contents="importableZipContents"
                     :selected-items="importData.filesToImport"
                     @update:selectedItems="importData.filesToImport = $event" />
             </div>
