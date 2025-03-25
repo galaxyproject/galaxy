@@ -45,6 +45,7 @@ function toggleSelection(item: ZipContentFile) {
                             type="checkbox"
                             :value="workflow"
                             :disabled="isAnonymous"
+                            :checked="localSelectedItems.includes(workflow)"
                             @change="toggleSelection(workflow)" />
                         {{ workflow.name }}
                     </label>
@@ -57,7 +58,11 @@ function toggleSelection(item: ZipContentFile) {
             <ul>
                 <li v-for="dataset in props.zipContents.files" :key="dataset.path">
                     <label v-b-tooltip.hover title="Select this file to import">
-                        <input type="checkbox" :value="dataset" @change="toggleSelection(dataset)" />
+                        <input
+                            type="checkbox"
+                            :value="dataset"
+                            :checked="localSelectedItems.includes(dataset)"
+                            @change="toggleSelection(dataset)" />
                         {{ dataset.name }}
                     </label>
                 </li>
