@@ -271,6 +271,7 @@ async function resumePausedJobs() {
 
                     <BDropdownItem
                         :disabled="isAnonymous || !canEditHistory"
+                        data-description="share and manage access"
                         :title="userTitle('Share, Publish, or Set Permissions for this History')"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faUsersCog" class="mr-1" />
