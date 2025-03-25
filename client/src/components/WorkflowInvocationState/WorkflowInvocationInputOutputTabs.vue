@@ -41,13 +41,13 @@ function dataInputStepLabel(key: number, input: HasSrc) {
         </BTab>
         <BTab v-if="Object.keys(invocation.outputs).length" title="Outputs" lazy>
             <div v-for="(output, key) in invocation.outputs" :key="output.id">
-                <b>{{ key }}:</b>
+                <b>{{ key }}</b>
                 <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
             </div>
         </BTab>
         <BTab v-if="Object.keys(invocation.output_collections).length" title="Output Collections" lazy>
             <div v-for="(output, key) in invocation.output_collections" :key="output.id">
-                <b>{{ key }}:</b>
+                <b>{{ key }}</b>
                 <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
             </div>
         </BTab>
