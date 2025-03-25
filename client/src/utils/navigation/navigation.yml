@@ -1228,7 +1228,7 @@ rule_builder:
     collection_name_input: 'input.collection-name'
     view_source: '.rule-builder-view-source'
     source: '.rule-source'
-    table: '#hot-table .htCore'
+    table: '#rules-ag-grid .ag-root'
     extension_select: '.rule-footer-extension-group .extension-select'
 
 charts:
