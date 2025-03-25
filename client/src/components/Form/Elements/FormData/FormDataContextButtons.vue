@@ -60,11 +60,11 @@ function createCollectionType(colType: string) {
                 v-b-tooltip.hover.bottom
                 :pressed="props.currentField === index"
                 :title="v.tooltip"
-                :style="v.icon === faFolder && v.multiple ? 'padding-bottom: 2px' : ''"
+                :style="v.icon === faFolder && v.multiple ? 'padding: 2px' : ''"
                 @click="emit('set-current-field', index)">
-                <span v-if="v.icon === faFolder && v.multiple" style="position: relative; display: inline-block">
-                    <FontAwesomeIcon :icon="faFolder" size="sm" style="position: absolute; left: 2px" />
-                    <FontAwesomeIcon :icon="faFolder" size="sm" />
+                <span v-if="v.icon === faFolder && v.multiple" class="fa-stack" style="height: unset">
+                    <FontAwesomeIcon :icon="faFolder" class="fa-stack-1x" />
+                    <FontAwesomeIcon :icon="faFolder" class="fa-stack-1x" style="transform: translate(0.2em, -0.2em)" />
                 </span>
                 <FontAwesomeIcon v-else :icon="v.icon" />
             </BButton>
