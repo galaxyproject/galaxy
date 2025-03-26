@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { BButton, BDropdown } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faStop } from "font-awesome-6";
 
 import { prependPath } from "@/utils/redirect";
 
@@ -12,6 +14,7 @@ const props = defineProps({
     isVisible: { type: Boolean, default: true },
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
+    isRunningInteractiveTool: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
@@ -115,7 +118,18 @@ function onDisplay($event: MouseEvent) {
             <icon icon="pen" />
         </BButton>
         <BButton
-            v-if="writable && isHistoryItem && !isDeleted"
+            v-if="isRunningInteractiveTool"
+            v-b-tooltip.hover
+            class="delete-btn px-1"
+            title="Stop this Interactive Tool"
+            size="sm"
+            variant="link"
+            @click.stop="onDelete($event)">
+            <!-- TODO: Actually do a stop here... -->
+            <FontAwesomeIcon :icon="faStop" />
+        </BButton>
+        <BButton
+            v-else-if="writable && isHistoryItem && !isDeleted"
             v-b-tooltip.hover
             :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
