@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -59,6 +61,10 @@ function onSelectionUpdate(selectedItems: ZipContentFile[]) {
     filesToImport.value = selectedItems;
 }
 
+function fileToIcon(file: ZipContentFile) {
+    return file.type === "workflow" ? faNetworkWired : faFile;
+}
+
 watch(
     isZipArchiveAvailable,
     (isAvailable) => {
@@ -94,10 +100,10 @@ watch(
             </div>
             <div v-else-if="wizard.isCurrent('import-summary')">
                 <div>
-                    <h3>Selected items</h3>
                     <ul>
                         <li v-for="item in filesToImport" :key="item.path">
-                            {{ item.name }} <span class="text-muted">({{ item.type }})</span>
+                            <FontAwesomeIcon :icon="fileToIcon(item)" :title="`This is a ${item.type}`" />
+                            {{ item.name }}
                         </li>
                     </ul>
                 </div>
