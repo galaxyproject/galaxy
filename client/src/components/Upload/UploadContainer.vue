@@ -206,7 +206,7 @@ defineExpose({
                 :history-id="currentHistoryId"
                 v-on="$listeners" />
         </BTab>
-        <BTab id="zip" title="Import from ZIP" button-id="tab-title-link-zip">
+        <BTab id="zip" title="From ZIP" button-id="tab-title-link-zip">
             <ZipImporter :has-callback="hasCallback" v-on="$listeners" />
         </BTab>
         <DefaultBox

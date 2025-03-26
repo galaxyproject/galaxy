@@ -38,6 +38,7 @@ function toggleSelection(item: ZipContentFile) {
         <div v-if="props.zipContents.workflows.length > 0">
             <h3>Workflows</h3>
             <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
+            <p>Here you can select workflows compatible with Galaxy and import them into your account.</p>
             <ul>
                 <li v-for="workflow in props.zipContents.workflows" :key="workflow.path">
                     <label v-b-tooltip.hover title="Select this workflow to import">
@@ -55,6 +56,7 @@ function toggleSelection(item: ZipContentFile) {
 
         <div v-if="props.zipContents.files.length > 0">
             <h3>Files</h3>
+            <p>Here you can select individual files to import into your <b>current history</b>.</p>
             <ul>
                 <li v-for="dataset in props.zipContents.files" :key="dataset.path">
                     <label v-b-tooltip.hover title="Select this file to import">
