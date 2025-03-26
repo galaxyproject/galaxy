@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -58,7 +59,9 @@ const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
 const showGraph = ref(!showPanels.value);
-const showRuntimeSettingsPanel = ref(false);
+
+const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
+    usePersistentToggle("workflow-run-settings-panel");
 
 const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
@@ -188,10 +191,6 @@ async function onExecute() {
     } finally {
         waitingForRequest.value = false;
     }
-}
-
-function toggleRuntimeSettings() {
-    showRuntimeSettingsPanel.value = !showRuntimeSettingsPanel.value;
 }
 </script>
 
@@ -338,7 +337,7 @@ function toggleRuntimeSettings() {
     to {
         opacity: 1;
         transform: scaleY(1);
-        max-height: 100px;
+        max-height: 200px;
     }
 }
 </style>
