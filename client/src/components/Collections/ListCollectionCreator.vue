@@ -11,11 +11,10 @@ import draggable from "vuedraggable";
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
-import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
 import { stripExtension } from "./common/stripExtension";
-import { useExtensionFiltering } from "./common/useExtensionFilter";
+import { useCollectionCreator } from "./common/useCollectionCreator";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
@@ -47,9 +46,7 @@ const duplicateNames = ref<string[]>([]);
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
 const selectedDatasetElements = ref<string[]>([]);
-const hideSourceItems = ref(props.defaultHideSourceItems || false);
 const atLeastOneElement = ref(true);
-const removeExtensions = ref(true);
 
 const initialElementsById = computed(() => {
     const byId = {} as Record<string, HistoryItemSummary>;
@@ -87,13 +84,12 @@ const allElementsAreInvalid = computed(() => {
 /** If not `fromSelection`, the list of elements that will become the collection */
 const inListElements = ref<HDASummary[]>([]);
 
-const { hasInvalidExtension, showElementExtension } = useExtensionFiltering(props);
-
 /** Does `inListElements` have elements with different extensions? */
 const listHasMixedExtensions = computed(() => {
     const extensions = new Set(inListElements.value.map((e) => e.extension));
     return extensions.size > 1;
 });
+const { removeExtensions, hideSourceItems, onUpdateHideSourceItems, isElementInvalid } = useCollectionCreator(props);
 
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
@@ -126,7 +122,7 @@ function _elementsSetUp() {
     inListElements.value = [];
     inListElementsPrev.forEach((prevElem) => {
         const element = workingElements.value.find((e) => e.id === prevElem.id);
-        const problem = _isElementInvalid(prevElem);
+        const problem = isElementInvalid(prevElem);
 
         if (element) {
             inListElements.value.push(element);
@@ -160,7 +156,7 @@ function _elementsSetUp() {
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
-        var problem = _isElementInvalid(element);
+        var problem = isElementInvalid(element);
 
         if (problem) {
             invalidElements.value.push(element.name + "  " + problem);
@@ -197,29 +193,6 @@ function removeExtensionsToggle() {
         });
     }
     _mangleDuplicateNames();
-}
-
-/** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary): string | null {
-    if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
-    }
-
-    const validState = STATES.VALID_INPUT_STATES.includes(element.state as string);
-
-    if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
-    }
-
-    if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
-    }
-
-    // is the element's extension not a subtype of any of the required extensions?
-    if (hasInvalidExtension(element)) {
-        return localize(`has an invalid format: ${element.extension}`);
-    }
-    return null;
 }
 
 // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
@@ -340,10 +313,6 @@ function compareNames(a: HDASummary, b: HDASummary) {
     return 0;
 }
 
-function onUpdateHideSourceItems(newHideSourceItems: boolean) {
-    hideSourceItems.value = newHideSourceItems;
-}
-
 watch(
     () => props.initialElements,
     () => {
@@ -357,7 +326,7 @@ function addUploadedFiles(files: HDASummary[]) {
     const returnedElements = props.fromSelection ? workingElements : inListElements;
     files.forEach((f) => {
         const file = props.fromSelection ? f : workingElements.value.find((e) => e.id === f.id);
-        const problem = _isElementInvalid(f);
+        const problem = isElementInvalid(f);
         if (file && !returnedElements.value.find((e) => e.id === file.id)) {
             returnedElements.value.push(file);
         } else if (problem) {
