@@ -12,7 +12,7 @@ exit \${GX_TARGET_EXIT_CODE:-1}
         <data name="out_file1" />
     </outputs>
     <tests>
-        <test expect_exit_code="1" expect_failure="true">
+        <test>
             <param name="input" value="5" />
         </test>
     </tests>
