@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:

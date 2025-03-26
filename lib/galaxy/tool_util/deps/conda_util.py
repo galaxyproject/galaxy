@@ -101,7 +101,7 @@ class CondaContext(installable.InstallableContext):
     def __init__(
         self,
         conda_prefix: Optional[str] = None,
-        conda_exec: Optional[str] = None,
+        conda_exec: Optional[Union[str, List[str]]] = None,
         shell_exec: Optional[Callable[..., int]] = None,
         debug: bool = False,
         ensure_channels: Union[str, List[str]] = "",
@@ -204,11 +204,12 @@ class CondaContext(installable.InstallableContext):
 
     def is_conda_installed(self) -> bool:
         """
-        Check if conda_exec exists
+        Check if conda_info() works
         """
-        if os.path.exists(self.conda_exec):
+        try:
+            self.conda_info()
             return True
-        else:
+        except Exception:
             return False
 
     def can_install_conda(self) -> bool:
@@ -218,6 +219,7 @@ class CondaContext(installable.InstallableContext):
         If conda_exec equals conda_prefix/bin/conda, we can install conda if either conda_prefix
         does not exist or is empty.
         """
+        assert isinstance(self.conda_exec, str), "conda_exec is not a str"
         conda_exec = os.path.abspath(self.conda_exec)
         conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, "bin/conda"))
         if conda_exec == conda_prefix_plus_exec:

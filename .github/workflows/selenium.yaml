@@ -3,9 +3,11 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - 'packages/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
