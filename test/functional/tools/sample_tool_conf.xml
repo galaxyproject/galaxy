@@ -234,6 +234,9 @@
   <tool file="integer_default.xml" />
   <tool file="float_default.xml" />
   <tool file="all_output_types.xml" />
+  <tool file="markdown_report_simple.xml" />
+  <tool file="markdown_report_extra_files.xml" />
+  <tool file="markdown_report_from_script.xml" />
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />

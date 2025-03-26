@@ -465,6 +465,7 @@ class Data(metaclass=DataMeta):
     def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
         composite_extensions.append("html")  # for archiving composite datatypes
+        composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
         composite_extensions.append("directory")  # for downloading directories.
         composite_extensions.append("zarr")  # for downloading zarr directories.
