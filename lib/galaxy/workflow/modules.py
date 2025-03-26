@@ -55,11 +55,16 @@ from galaxy.schema.invocation import (
 from galaxy.schema.tools import DynamicToolCreatePayload
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser import get_input_source
-from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
+from galaxy.tool_util.parser.output_objects import (
+    ToolExpressionOutput,
+    ToolOutput,
+    ToolOutputCollection,
+)
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
     get_safe_version,
+    Tool,
 )
 from galaxy.tools.execute import (
     execute,
@@ -1861,7 +1866,7 @@ class ToolModule(WorkflowModule):
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
-        self.tool = None
+        self.tool: Optional[Tool] = None
         if getattr(trans.app, "toolbox", None):
             if trans.user and tool_uuid:
                 self.tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
@@ -2075,10 +2080,10 @@ class ToolModule(WorkflowModule):
             for name, tool_output in self.tool.outputs.items():
                 if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
-                extra_kwds = {}
+                extra_kwds: Dict[str, Any] = {}
                 if isinstance(tool_output, ToolExpressionOutput):
                     extra_kwds["parameter"] = True
-                if tool_output.collection:
+                if isinstance(tool_output, ToolOutputCollection):
                     extra_kwds["collection"] = True
                     collection_type = tool_output.structure.collection_type
                     if not collection_type and tool_output.structure.collection_type_from_rules:
@@ -2091,10 +2096,14 @@ class ToolModule(WorkflowModule):
                     extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ["input"]  # TODO: fix
-                elif tool_output.format_source is not None:
+                elif (
+                    isinstance(tool_output, (ToolOutput, ToolExpressionOutput, ToolOutputCollection))
+                    and tool_output.format_source is not None
+                ):
                     formats = ["input"]  # default to special name "input" which remove restrictions on connections
                 else:
-                    formats = [tool_output.format]
+                    assert isinstance(tool_output, (ToolOutput, ToolExpressionOutput))
+                    formats = [tool_output.format or "data"]
                 for change_format_model in tool_output.change_format:
                     format = change_format_model["format"]
                     if format and format not in formats:
@@ -2105,7 +2114,9 @@ class ToolModule(WorkflowModule):
                         params["on_string"] = "input dataset(s)"
                         params["tool"] = self.tool
                         extra_kwds["label"] = fill_template(
-                            tool_output.label, context=params, python_template_version=self.tool.python_template_version
+                            tool_output.label,
+                            context=params,
+                            python_template_version=str(self.tool.python_template_version),
                         )
                     except Exception:
                         pass
