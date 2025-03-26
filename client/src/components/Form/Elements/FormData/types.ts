@@ -17,3 +17,7 @@ export function isDataOption(item: object): item is DataOption {
 export function itemUniqueKey(item: DataOption): string {
     return `${item.src}-${item.id}`;
 }
+
+export function containsDataOption(items: DataOption[], item: DataOption): boolean {
+    return items.some((i) => itemUniqueKey(i) === itemUniqueKey(item));
+}

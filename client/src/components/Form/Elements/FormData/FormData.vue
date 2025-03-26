@@ -31,6 +31,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
+import { containsDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -427,7 +428,10 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                     if (config.multiple) {
                         const newValues = currentValue.value ? currentValue.value.slice() : [];
                         incomingValues.forEach((v) => {
-                            newValues.push(v);
+                            // Avoid duplicates
+                            if (!containsDataOption(newValues, v)) {
+                                newValues.push(v);
+                            }
                         });
                         currentValue.value = newValues;
                     } else {
