@@ -41,5 +41,6 @@ test_tools = integration_util.integration_tool_runner(
         "composite_output_tests",
         "detect_errors",
         "tool_directory_copy",
+        "metadata_columns",
     ]
 )

@@ -33,7 +33,6 @@ from galaxy.tool_util.deps.conda_util import (
     CondaContext,
     CondaTarget,
 )
-from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
     commands,
     download_to_file,
@@ -45,8 +44,10 @@ from ._cli import arg_parser
 from .util import (
     build_target,
     conda_build_target_str,
+    CONDA_IMAGE,
+    CondaInDockerContext,
     create_repository,
-    default_mulled_conda_channels_from_env,
+    DEFAULT_CHANNELS,
     get_files_from_conda_package,
     PrintProgress,
     quay_repository,
@@ -62,14 +63,12 @@ DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
 )
-DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
-CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -361,33 +360,6 @@ def mull_targets(
 def context_from_args(args):
     verbose = "2" if not args.verbose else "3"
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
-
-
-class CondaInDockerContext(CondaContext):
-    def __init__(
-        self,
-        conda_prefix=None,
-        conda_exec=None,
-        shell_exec=None,
-        debug=False,
-        ensure_channels=DEFAULT_CHANNELS,
-        condarc_override=None,
-    ):
-        if not conda_exec:
-            binds = []
-            for channel in ensure_channels:
-                if channel.startswith("file://"):
-                    bind_path = channel[7:]
-                    binds.extend(["-v", f"{bind_path}:{bind_path}"])
-            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
-        super().__init__(
-            conda_prefix=conda_prefix,
-            conda_exec=conda_exec,
-            shell_exec=shell_exec,
-            debug=debug,
-            ensure_channels=ensure_channels,
-            condarc_override=condarc_override,
-        )
 
 
 class InvolucroContext(installable.InstallableContext):

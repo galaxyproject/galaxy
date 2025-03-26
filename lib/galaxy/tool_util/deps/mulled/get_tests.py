@@ -26,12 +26,17 @@ except ImportError:
     Template = None  # type: ignore[assignment,misc]
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
+from galaxy.tool_util.deps.conda_util import (
+    best_search_result,
+    CondaTarget,
+)
 from galaxy.util import (
     check_github_api_response_rate_limit,
     unicodify,
 )
 from galaxy.util.commands import argv_to_str
 from .util import (
+    CondaInDockerContext,
     get_files_from_conda_package,
     MULLED_SOCKET_TIMEOUT,
     split_container_name,
@@ -299,20 +304,19 @@ def hashed_test_search(
     targets = concatenated_targets.split(",")
     packages = [target.split("=") for target in targets]
 
+    conda_context = CondaInDockerContext(ensure_channels=[anaconda_channel])
     containers = []
-    for package in packages:
-        r = requests.get(f"https://anaconda.org/bioconda/{package[0]}/files", timeout=MULLED_SOCKET_TIMEOUT)
-        r.raise_for_status()
-        p = "-".join(package)
-        for line in r.text.split("\n"):
-            # include only linux-64 builds since that is hardcoded in get_anaconda_url and the only target for container builds
-            if p in line and "linux-64" in line:
-                build = line.split(p)[1].split(".tar.bz2")[0]
-                if build == "":
-                    containers.append(f"{package[0]}:{package[1]}")
-                else:
-                    containers.append(f"{package[0]}:{package[1]}-{build}")
-                break
+    for package_name, package_version in packages:
+        conda_target = CondaTarget(package_name, package_version)
+        # include only linux-64 builds since that is hardcoded in get_anaconda_url and the only target for container builds
+        hit, exact = best_search_result(conda_target, conda_context, platform="linux-64")
+        if not hit or not exact:
+            raise Exception(f"Could not find {conda_target}")
+        build = hit["build"]
+        if build:
+            containers.append(f"{package_name}:{package_version}--{build}")
+        else:
+            containers.append(f"{package_name}:{package_version}")
 
     for container in containers:
         tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo)
