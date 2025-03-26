@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { uid } from "@/utils/utils";
@@ -47,11 +47,26 @@ const currentValue = computed({
         emit("input", newValue.id);
     },
 });
+
+// prevent the escape key closing behavior from the Upload Modal
+const multiSelectRef = ref(null);
+onMounted(() => {
+    multiSelectRef.value?.$el.addEventListener("keyup", handleKeyUp);
+});
+onBeforeUnmount(() => {
+    multiSelectRef.value?.$el.removeEventListener("keyup", handleKeyUp);
+});
+function handleKeyUp(event) {
+    if (event.key === "Escape") {
+        event.stopImmediatePropagation();
+    }
+}
 </script>
 
 <template>
     <Multiselect
         :id="id"
+        ref="multiSelectRef"
         v-model="currentValue"
         class="upload-settings-select rounded"
         deselect-label=""
