@@ -86,9 +86,8 @@ def get_tool_source(
         tool_location_fetcher = ToolLocationFetcher()
 
     assert config_file
-    config_file = str(config_file)
 
-    config_file = tool_location_fetcher.to_tool_path(config_file)
+    config_file = str(tool_location_fetcher.to_tool_path(config_file))
     if not enable_beta_formats:
         tree, macro_paths = load_tool_with_refereces(config_file)
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
