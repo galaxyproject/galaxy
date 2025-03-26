@@ -13,3 +13,7 @@ export type DataOption = {
 export function isDataOption(item: object): item is DataOption {
     return !!item && "src" in item;
 }
+
+export function itemUniqueKey(item: DataOption): string {
+    return `${item.src}-${item.id}`;
+}
