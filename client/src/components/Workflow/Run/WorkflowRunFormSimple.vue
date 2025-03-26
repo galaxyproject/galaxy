@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -277,7 +277,7 @@ async function onExecute() {
                                 class="text-decoration-none"
                                 title="Switch to the fully expanded workflow form"
                                 @click="$emit('showAdvanced')">
-                                Expanded workflow form <span class="fas fa-arrow-right" />
+                                Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
                             </BButton>
                         </div>
                     </div>
