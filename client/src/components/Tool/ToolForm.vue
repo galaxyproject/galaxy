@@ -88,7 +88,7 @@
                     :value="tags"
                     title="Output tags"
                     type="tags"
-                    help="Adding tags to output datasets will help you organize and find them later."
+                    help="Enter tags to apply to the output datasets in your history (e.g., 'sample1'). Tags starting with '#' (e.g., '#sample1') will propagate to datasets derived from these outputs. Tags help you organize and search your history."
                     @input="updateTags" />
             <template v-slot:buttons>
                 <ButtonSpinner
