@@ -136,6 +136,7 @@ class PSAAuthnz(IdentityProvider):
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
+        self.config["USERNAME_IS_FULL_EMAIL"] = oidc_backend_config.get("username_is_full_email")
         if oidc_backend_config.get("oidc_endpoint"):
             self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
         if oidc_backend_config.get("prompt") is not None:

@@ -156,6 +156,13 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="username_is_full_email" minOccurs="0" type="xs:boolean">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Use the full email address of the user as the account username.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>
