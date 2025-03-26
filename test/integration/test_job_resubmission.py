@@ -254,7 +254,10 @@ class TestJobResubmissionToolDetectedErrorIntegration(_BaseResubmissionIntegrati
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_ALWAYS_ERROR_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
-        self._assert_job_fails(tool_id="exit_code_from_env")
+        # the tool test assumes that the test fails (expect_failure="true")
+        # _assert_job_passes checks if this test is successful, i.e. the tool is failing
+        # which it should if it is not resubmitted
+        self._assert_job_passes(tool_id="exit_code_from_env")
 
 
 # Verify the test tool will resubmit on failure tested above and will then pass in
@@ -266,7 +269,10 @@ class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmission
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
-        self._assert_job_passes(tool_id="exit_code_from_env")
+        # the tool test assumes that the test fails (expect_failure="true")
+        # _assert_job_fails checks if this test fails, i.e. the tool is running
+        # successfully after the resubmit
+        self._assert_job_fails("exit_code_from_env")
 
 
 # Verify that a failure to connect to pulsar can trigger a resubmit
