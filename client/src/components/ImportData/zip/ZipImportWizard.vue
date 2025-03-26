@@ -12,7 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import ZipFileSelector from "./ZipFileSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
-const { getImportableZipContents, importArtifacts, isZipArchiveAvailable } = useZipExplorer();
+const { getImportableZipContents, importArtifacts, isZipArchiveAvailable, zipArchive } = useZipExplorer();
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -53,6 +53,11 @@ async function importItems() {
     }
 }
 
+function resetWizard() {
+    filesToImport.value = [];
+    wizard.goBackTo("select-items");
+}
+
 function isAnythingSelected() {
     return filesToImport.value.length > 0;
 }
@@ -66,13 +71,14 @@ function fileToIcon(file: ZipContentFile) {
 }
 
 watch(
-    isZipArchiveAvailable,
+    [isZipArchiveAvailable, zipArchive],
     (isAvailable) => {
         if (isAvailable) {
             importableZipContents.value = getImportableZipContents();
         } else {
             importableZipContents.value = undefined;
         }
+        resetWizard();
     },
     { immediate: true }
 );
