@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   TOOL_SHED_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
