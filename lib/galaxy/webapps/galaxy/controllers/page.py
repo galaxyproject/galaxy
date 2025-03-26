@@ -16,7 +16,6 @@ from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.db.user import get_user_by_username
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error
