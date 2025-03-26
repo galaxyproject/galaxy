@@ -249,19 +249,25 @@ async function onExecute() {
                                 Attempt to re-use jobs with identical parameters?
                             </BFormCheckbox>
                         </div>
-                        <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4">
-                            <BFormCheckbox v-model="splitObjectStore">
-                                Send outputs and intermediate to different storage locations?
-                            </BFormCheckbox>
-                        </div>
-                        <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4">
-                            <WorkflowStorageConfiguration
-                                :split-object-store="splitObjectStore"
-                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                                @updated="onStorageUpdate">
-                            </WorkflowStorageConfiguration>
-                        </div>
+
+                        <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
+                            <div class="mr-4">
+                                <BFormCheckbox v-model="splitObjectStore">
+                                    Send outputs and intermediate to different storage locations?
+                                </BFormCheckbox>
+                            </div>
+                            <div class="mr-4">
+                                <WorkflowStorageConfiguration
+                                    :split-object-store="splitObjectStore"
+                                    :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                                    :invocation-intermediate-preferred-object-store-id="
+                                        preferredIntermediateObjectStoreId
+                                    "
+                                    @updated="onStorageUpdate">
+                                </WorkflowStorageConfiguration>
+                            </div>
+                        </template>
+
                         <div class="mr-4">
                             <BButton
                                 v-b-tooltip.hover.noninteractive
