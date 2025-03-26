@@ -1,7 +1,70 @@
+// todo remove import once all color is ported to css
 @import "theme/blue.scss";
 
 html,
 .reset-theme-variables {
+    // main colors
+    --color-blue-900: #040b21;
+    --color-blue-800: #191f33;
+    --color-blue-700: #2c3143;
+    --color-blue-600: #25537b;
+    --color-blue-500: #197cd2;
+    --color-blue-400: #4593c8;
+    --color-blue-300: #80c3ea;
+    --color-blue-200: #daecf8;
+    --color-blue-100: #f1f9fe;
+
+    --color-grey-900: #191919;
+    --color-grey-800: #23262f;
+    --color-grey-700: #35373f;
+    --color-grey-600: #484a52;
+    --color-grey-500: #63656d;
+    --color-grey-400: #8f9199;
+    --color-grey-300: #aab0b4;
+    --color-grey-200: #dee2e6;
+    --color-grey-100: #f8f9fa;
+
+    --color-green-900: #002a1f;
+    --color-green-800: #003f2e;
+    --color-green-700: #006f50;
+    --color-green-600: #25a35b;
+    --color-green-500: #66cc66;
+    --color-green-400: #98e192;
+    --color-green-300: #c8edc8;
+    --color-green-200: #e0f7df;
+    --color-green-100: #f3fbf2;
+
+    --color-yellow-900: #362100;
+    --color-yellow-800: #462b00;
+    --color-yellow-700: #7f5102;
+    --color-yellow-600: #f0aa02;
+    --color-yellow-500: #ffd700;
+    --color-yellow-400: #ffe848;
+    --color-yellow-300: #fff489;
+    --color-yellow-200: #fefbc5;
+    --color-yellow-100: #fefeea;
+
+    --color-orange-900: #391100;
+    --color-orange-800: #461500;
+    --color-orange-700: #9b3a00;
+    --color-orange-600: #fe7e03;
+    --color-orange-500: #ff9b2f;
+    --color-orange-400: #ffae52;
+    --color-orange-300: #ffc985;
+    --color-orange-200: #ffedd5;
+    --color-orange-100: #fffaf1;
+
+    --color-red-900: #430111;
+    --color-red-800: #63021a;
+    --color-red-700: #91081b;
+    --color-red-600: #e31a1e;
+    --color-red-500: #f33b36;
+    --color-red-400: #ff817b;
+    --color-red-300: #f4a3a5;
+    --color-red-200: #fdd4d5;
+    --color-red-100: #fff3f3;
+
+    // masthead specific
     --masthead-color: #{$masthead-color};
     --masthead-text-color: #{$masthead-text-color};
     --masthead-text-hover: #{$masthead-text-hover};
