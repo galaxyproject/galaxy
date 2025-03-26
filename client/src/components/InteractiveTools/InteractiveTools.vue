@@ -24,12 +24,12 @@
             <template v-slot:cell(actions)="row">
                 <b-button
                     :id="createId('stop', row.item.id)"
+                    v-b-tooltip.hover
                     variant="link"
                     class="p-0"
-                    v-b-tooltip.hover
                     title="Stop this interactive tool"
                     @click.stop="stopInteractiveTool(row.item.id, row.item.name)">
-                    <FontAwesomeIcon icon="stop-circle" />
+                    <FontAwesomeIcon :icon="['fas', 'stop-circle']" />
                 </b-button>
             </template>
             <template v-slot:cell(name)="row">
@@ -42,7 +42,7 @@
                     target="_blank"
                     :name="row.item.name"
                     >{{ row.item.name }}
-                    <FontAwesomeIcon icon="external-link-alt" />
+                    <FontAwesomeIcon :icon="['fas', 'external-link-alt']" />
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">
@@ -64,94 +64,91 @@
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faStopCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
-import { mapActions, mapState } from "pinia";
+import { computed, onMounted, ref } from "vue";
 
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
 
 library.add(faExternalLinkAlt, faStopCircle);
 
-export default {
-    components: {
-        UtcDate,
-        FontAwesomeIcon,
+const error = ref<Error | null>(null);
+const filter = ref("");
+const messages = ref<string[]>([]);
+const nInteractiveTools = ref(0);
+const root = ref("");
+const services = ref<Services | null>(null);
+
+const entryPointStore = useEntryPointStore();
+const activeInteractiveTools = computed(() => entryPointStore.entryPoints);
+
+const fields = [
+    {
+        label: "",
+        key: "actions",
+        class: "text-center",
     },
-    data() {
-        return {
-            error: null,
-            fields: [
-                {
-                    label: "",
-                    key: "actions",
-                    class: "text-center"
-                },
-                {
-                    label: "Name",
-                    key: "name",
-                    sortable: true,
-                },
-                {
-                    label: "Job Info",
-                    key: "job_info",
-                    sortable: true,
-                },
-                {
-                    label: "Created",
-                    key: "created_time",
-                    sortable: true,
-                },
-                {
-                    label: "Last Updated",
-                    key: "last_updated",
-                    sortable: true,
-                },
-            ],
-            filter: "",
-            messages: [],
-            nInteractiveTools: 0,
-        };
+    {
+        label: "Name",
+        key: "name",
+        sortable: true,
     },
-    computed: {
-        ...mapState(useEntryPointStore, { activeInteractiveTools: "entryPoints" }),
-        showNotFound() {
-            return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
-        },
-        isActiveToolsListEmpty() {
-            return this.activeInteractiveTools.length === 0;
-        },
+    {
+        label: "Job Info",
+        key: "job_info",
+        sortable: true,
     },
-    created() {
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
-        this.load();
+    {
+        label: "Created",
+        key: "created_time",
+        sortable: true,
     },
-    methods: {
-        ...mapActions(useEntryPointStore, ["removeEntryPoint"]),
-        load() {
-            this.filter = "";
-        },
-        filtered: function (items) {
-            this.nInteractiveTools = items.length;
-        },
-        stopInteractiveTool(toolId, toolName) {
-            this.services
-                .stopInteractiveTool(toolId)
-                .then((response) => {
-                    this.removeEntryPoint(toolId);
-                })
-                .catch((error) => {
-                    this.messages.push(`Failed to stop interactive tool ${toolName}: ${error.message}`);
-                });
-        },
-        createId(tagLabel, id) {
-            return tagLabel + "-" + id;
-        },
+    {
+        label: "Last Updated",
+        key: "last_updated",
+        sortable: true,
     },
+];
+
+const showNotFound = computed(() => {
+    return nInteractiveTools.value === 0 && filter.value !== "" && !isActiveToolsListEmpty.value;
+});
+
+const isActiveToolsListEmpty = computed(() => {
+    return activeInteractiveTools.value.length === 0;
+});
+
+const load = () => {
+    filter.value = "";
 };
+
+const filtered = (items: any[]) => {
+    nInteractiveTools.value = items.length;
+};
+
+const stopInteractiveTool = (toolId: string, toolName: string) => {
+    services.value
+        ?.stopInteractiveTool(toolId)
+        .then(() => {
+            entryPointStore.removeEntryPoint(toolId);
+        })
+        .catch((error: Error) => {
+            messages.value.push(`Failed to stop interactive tool ${toolName}: ${error.message}`);
+        });
+};
+
+const createId = (tagLabel: string, id: string): string => {
+    return tagLabel + "-" + id;
+};
+
+onMounted(() => {
+    root.value = getAppRoot();
+    services.value = new Services({ root: root.value });
+    load();
+});
 </script>
