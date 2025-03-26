@@ -250,9 +250,11 @@ async function onExecute() {
                             </BFormCheckbox>
                         </div>
                         <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4">
-                            <BFormCheckbox v-model="splitObjectStore" class="mr-4">
+                            <BFormCheckbox v-model="splitObjectStore">
                                 Send outputs and intermediate to different storage locations?
                             </BFormCheckbox>
+                        </div>
+                        <div v-if="isConfigLoaded && config.object_store_allows_id_selection" class="mr-4">
                             <WorkflowStorageConfiguration
                                 :split-object-store="splitObjectStore"
                                 :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
@@ -266,9 +268,9 @@ async function onExecute() {
                                 variant="link"
                                 size="sm"
                                 class="text-decoration-none"
-                                title="Switch to full workflow form"
+                                title="Switch to the fully expanded workflow form"
                                 @click="$emit('showAdvanced')">
-                                Expand to full workflow form <span class="fas fa-arrow-right" />
+                                Expanded workflow form <span class="fas fa-arrow-right" />
                             </BButton>
                         </div>
                     </div>
