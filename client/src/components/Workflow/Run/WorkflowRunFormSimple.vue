@@ -58,6 +58,9 @@ const splitObjectStore = ref(false);
 const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
+// TODO: Once we add readme/help to the right side of the form, we can default the unified `showRightPanel`
+//       (panel that toggles between readme/help or graph) to `true` if the readme/help exists, and if no
+//       readme/help exists, it will be `false`.
 const showGraph = ref(!showPanels.value);
 
 const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
@@ -233,9 +236,7 @@ async function onExecute() {
                 </WorkflowNavigationTitle>
 
                 <!-- Runtime Settings Panel -->
-                <div
-                    v-if="showRuntimeSettingsPanel"
-                    class="workflow-runtime-settings-panel p-2">
+                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-2">
                     <div class="d-flex flex-wrap align-items-center">
                         <div class="mr-4">
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
