@@ -41,64 +41,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    @web.expose_api
-    @web.require_login("create pages")
-    def create(self, trans, payload=None, **kwd):
-        """
-        Create a new page.
-        """
-        if trans.request.method == "GET":
-            form_title = "Create new Page"
-            title = ""
-            slug = ""
-            content = ""
-            if "invocation_id" in kwd:
-                invocation_id = kwd.get("invocation_id")
-                form_title = f"{form_title} from Invocation Report"
-                slug = f"invocation-report-{invocation_id}"
-                invocation_report = self.workflow_manager.get_invocation_report(
-                    trans, trans.security.decode_id(invocation_id)
-                )
-                title = invocation_report.get("title")
-                content = invocation_report.get("markdown")
-            return {
-                "title": form_title,
-                "inputs": [
-                    {
-                        "name": "title",
-                        "label": "Name",
-                        "value": title,
-                    },
-                    {
-                        "name": "slug",
-                        "label": "Identifier",
-                        "help": "A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).",
-                        "value": slug,
-                    },
-                    {
-                        "name": "annotation",
-                        "label": "Annotation",
-                        "help": "A description of the page. The annotation is shown alongside published pages.",
-                    },
-                    {
-                        "name": "content_format",
-                        "label": "Content Format",
-                        "value": "markdown",
-                        "hidden": True,
-                    },
-                    {
-                        "name": "content",
-                        "label": "Content",
-                        "area": True,
-                        "value": content,
-                        "hidden": True,
-                    },
-                ],
-            }
-        else:
-            page = self.page_manager.create_page(trans, CreatePagePayload(**payload))
-            return {"message": f"Page '{page.title}' successfully created.", "status": "success"}
-
     @web.legacy_expose_api
     @web.require_login("edit pages")
     def edit(self, trans, payload=None, **kwd):
