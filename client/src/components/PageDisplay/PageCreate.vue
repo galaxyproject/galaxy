@@ -39,6 +39,8 @@ import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
+
 const router = useRouter();
 
 const props = defineProps<{
@@ -46,7 +48,7 @@ const props = defineProps<{
 }>();
 
 const annotation = ref("");
-const content = ref("");
+const content = ref(pageTemplate.content);
 const errorMessage = ref("");
 const loadingReport = ref(false);
 const slug = ref("");
