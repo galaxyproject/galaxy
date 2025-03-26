@@ -3,9 +3,11 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - 'packages/**'
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
