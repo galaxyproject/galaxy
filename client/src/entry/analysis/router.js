@@ -433,18 +433,9 @@ export function getRouter(Galaxy) {
                     {
                         path: "pages/create",
                         component: PageCreate,
-                        props: (route) => {
-                            let url = "/page/create";
-                            const invocation_id = route.query.invocation_id;
-                            if (invocation_id) {
-                                url += `?invocation_id=${invocation_id}`;
-                            }
-                            return {
-                                url: url,
-                                redirect: "/pages/list",
-                                active_tab: "user",
-                            };
-                        },
+                        props: (route) => ({
+                            invocationId: route.query.invocation_id,
+                        }),
                     },
                     {
                         path: "pages/edit",
