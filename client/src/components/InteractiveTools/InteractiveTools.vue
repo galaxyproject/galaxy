@@ -68,12 +68,14 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faStopCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import UtcDate from "components/UtcDate";
-import { getAppRoot } from "onload/loadConfig";
 import { computed, onMounted, ref } from "vue";
 
-import { useEntryPointStore } from "../../stores/entryPointStore";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useEntryPointStore } from "@/stores/entryPointStore";
+
 import { Services } from "./services";
+
+import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faExternalLinkAlt, faStopCircle);
 
