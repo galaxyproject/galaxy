@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import type { HDCASummary } from "@/api";
 import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -62,7 +63,7 @@ function addUploadedFiles(value: any[], viewUploads = true) {
     }
 }
 
-function collectionCreated(collection: any) {
+function collectionCreated(collection: HDCASummary) {
     addUploadedFiles([collection], false);
     emit("focus");
 }
