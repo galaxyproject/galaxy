@@ -65,6 +65,7 @@ from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
     get_safe_version,
+    Tool,
 )
 from galaxy.tools.execute import (
     execute,
@@ -1856,7 +1857,7 @@ class ToolModule(WorkflowModule):
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
-        self.tool = None
+        self.tool: Optional[Tool] = None
         if getattr(trans.app, "toolbox", None):
             self.tool = trans.app.toolbox.get_tool(
                 tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid, user=trans.user
@@ -2106,7 +2107,9 @@ class ToolModule(WorkflowModule):
                         params["on_string"] = "input dataset(s)"
                         params["tool"] = self.tool
                         extra_kwds["label"] = fill_template(
-                            tool_output.label, context=params, python_template_version=self.tool.python_template_version
+                            tool_output.label,
+                            context=params,
+                            python_template_version=self.tool.python_template_version,
                         )
                     except Exception:
                         pass
