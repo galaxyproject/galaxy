@@ -1,39 +1,63 @@
 <template>
     <div>
+        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <FormCard title="Create a new Page" icon="fa-file-contract">
             <template v-slot:body>
-                <div v-localize class="font-weight-bold py-2">Name</div>
-                <FormInput v-model="name" />
+                <div v-localize class="font-weight-bold py-2">Title</div>
+                <FormInput id="title" v-model="title" />
                 <div v-localize class="font-weight-bold py-2">Identifier</div>
-                <FormInput v-model="identifier" />
+                <FormInput id="slug" v-model="slug" />
                 <small v-localize class="text-muted py-2">
                     A unique identifier that will be used for public links to this page. This field can only contain
                     lowercase letters, numbers, and dashes (-).
                 </small>
                 <div v-localize class="font-weight-bold py-2">Annotation</div>
-                <FormInput v-model="annotation" />
+                <FormInput id="annotation" v-model="annotation" />
                 <small v-localize class="text-muted py-2">
                     A description of the page. The annotation is shown alongside published pages.
                 </small>
             </template>
         </FormCard>
-        <BButton variant="primary" v-localize>
-            <FontAwesomeIcon :icon="faSave" class="mr-1"/>
-            <span>Create</span>
+        <BButton class="my-2" variant="primary" @click="onCreate">
+            <FontAwesomeIcon :icon="faSave" class="mr-1" />
+            <span v-localize>Create</span>
         </BButton>
     </div>
 </template>
 
-<script setup>
-import { ref } from "vue";
-import { BButton } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+<script setup lang="ts">
 import { faSave } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton } from "bootstrap-vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
-import FormCard from "@/components/Form/FormCard";
+import { GalaxyApi } from "@/api";
+
 import FormInput from "@/components/Form/Elements/FormInput.vue";
+import FormCard from "@/components/Form/FormCard.vue";
+
+const router = useRouter();
 
 const annotation = ref("");
-const identifier = ref("");
-const name = ref("");
+const errorMessage = ref("");
+const slug = ref("");
+const title = ref("");
+
+async function onCreate() {
+    const { data, error } = await GalaxyApi().POST("/api/pages", {
+        body: {
+            annotation: annotation.value,
+            content: "",
+            content_format: "markdown",
+            slug: slug.value,
+            title: title.value,
+        },
+    });
+    if (error) {
+        errorMessage.value = error.err_msg;
+    } else {
+        router.push(`/pages/editor?id=${data.id}`);
+    }
+}
 </script>
