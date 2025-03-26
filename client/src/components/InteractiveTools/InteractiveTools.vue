@@ -21,8 +21,16 @@
             :items="activeInteractiveTools"
             :filter="filter"
             @filtered="filtered">
-            <template v-slot:cell(checkbox)="row">
-                <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
+            <template v-slot:cell(actions)="row">
+                <b-button
+                    :id="createId('stop', row.item.id)"
+                    variant="link"
+                    class="p-0"
+                    v-b-tooltip.hover
+                    title="Stop this interactive tool"
+                    @click.stop="stopInteractiveTool(row.item.id, row.item.name)">
+                    <FontAwesomeIcon icon="stop-circle" />
+                </b-button>
             </template>
             <template v-slot:cell(name)="row">
                 <a
@@ -53,20 +61,12 @@
             No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
             >.
         </div>
-        <b-button
-            v-if="isCheckboxMarked"
-            id="stopInteractiveTool"
-            v-b-tooltip.hover.bottom
-            title="Terminate selected tools"
-            @click.stop="stopInteractiveToolSession()"
-            >Stop
-        </b-button>
     </div>
 </template>
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faStopCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
@@ -75,7 +75,7 @@ import { mapActions, mapState } from "pinia";
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
 
-library.add(faExternalLinkAlt);
+library.add(faExternalLinkAlt, faStopCircle);
 
 export default {
     components: {
@@ -88,7 +88,8 @@ export default {
             fields: [
                 {
                     label: "",
-                    key: "checkbox",
+                    key: "actions",
+                    class: "text-center"
                 },
                 {
                     label: "Name",
@@ -121,9 +122,6 @@ export default {
         showNotFound() {
             return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
         },
-        isCheckboxMarked() {
-            return this.activeInteractiveTools.some((tool) => tool.marked);
-        },
         isActiveToolsListEmpty() {
             return this.activeInteractiveTools.length === 0;
         },
@@ -141,19 +139,15 @@ export default {
         filtered: function (items) {
             this.nInteractiveTools = items.length;
         },
-        stopInteractiveToolSession() {
-            this.activeInteractiveTools
-                .filter((tool) => tool.marked)
-                .map((tool) =>
-                    this.services
-                        .stopInteractiveTool(tool.id)
-                        .then((response) => {
-                            this.removeEntryPoint(tool.id);
-                        })
-                        .catch((error) => {
-                            this.messages.push(`Failed to stop interactive tool ${tool.name}: ${error.message}`);
-                        })
-                );
+        stopInteractiveTool(toolId, toolName) {
+            this.services
+                .stopInteractiveTool(toolId)
+                .then((response) => {
+                    this.removeEntryPoint(toolId);
+                })
+                .catch((error) => {
+                    this.messages.push(`Failed to stop interactive tool ${toolName}: ${error.message}`);
+                });
         },
         createId(tagLabel, id) {
             return tagLabel + "-" + id;
