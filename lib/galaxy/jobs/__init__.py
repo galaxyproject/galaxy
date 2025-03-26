@@ -1773,7 +1773,8 @@ class MinimalJobWrapper(HasResourceParameters):
         return True
 
     def _pause_job_if_over_quota(self, job):
-        if self.app.quota_agent.is_over_quota(self.app, job, self.job_destination):
+        quota_source_map = self.app.object_store.get_quota_source_map()
+        if self.app.quota_agent.is_over_quota(quota_source_map, job):
             log.info("(%d) User (%s) is over quota: job paused", job.id, job.user_id)
             message = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
             self.pause(job, message)
