@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -228,7 +228,7 @@ async function onExecute() {
                         variant="link"
                         no-caret>
                         <template v-slot:button-content>
-                            <span class="fa fa-cog" />
+                            <FontAwesomeIcon :icon="faCog" />
                         </template>
                         <BDropdownForm>
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
