@@ -255,7 +255,7 @@ async function onExecute() {
                 </WorkflowNavigationTitle>
 
                 <!-- Runtime Settings Panel -->
-                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-2">
+                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-2 rounded-bottom">
                     <div class="d-flex flex-wrap align-items-center">
                         <div class="mr-4">
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
@@ -352,12 +352,13 @@ async function onExecute() {
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .workflow-runtime-settings-panel {
-    background-color: #f8f9fa;
-    border-left: 1px solid #dee2e6;
-    border-right: 1px solid #dee2e6;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 0 0 0.25rem 0.25rem;
+    background-color: $brand-light;
+    border-left: 1px solid $gray-200;
+    border-right: 1px solid $gray-200;
+    border-bottom: 1px solid $gray-200;
     transition: all 0.2s ease-in-out;
     opacity: 1;
     transform-origin: top;
