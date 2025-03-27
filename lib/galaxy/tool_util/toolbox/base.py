@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    overload,
     Tuple,
     TYPE_CHECKING,
     Union,
@@ -702,6 +703,28 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def get_unprivileged_tool(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
         return None
 
+    @overload
+    def get_tool(
+        self,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        get_all_versions: Literal[False] = False,
+        exact: Optional[bool] = False,
+        user: Optional["User"] = None,
+    ) -> Optional["Tool"]: ...
+
+    @overload
+    def get_tool(
+        self,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        get_all_versions: Literal[True] = True,
+        exact: Optional[bool] = False,
+        user: Optional["User"] = None,
+    ) -> List["Tool"]: ...
+
     def get_tool(
         self,
         tool_id: Optional[str] = None,
@@ -710,7 +733,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         get_all_versions: Optional[bool] = False,
         exact: Optional[bool] = False,
         user: Optional["User"] = None,
-    ):
+    ) -> Union[Optional["Tool"], List["Tool"]]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
         if tool_uuid and user:
             unprivileged_tool = self.get_unprivileged_tool(user, tool_uuid=tool_uuid)
