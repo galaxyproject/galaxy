@@ -77,7 +77,7 @@ async function fetchPage() {
 
 async function onUpdate() {
     if (slug.value && title.value) {
-        const { data, error } = await GalaxyApi().PUT("/api/pages/{id}", {
+        const { error } = await GalaxyApi().PUT("/api/pages/{id}", {
             params: {
                 path: {
                     id: props.id,
