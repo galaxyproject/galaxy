@@ -5,23 +5,23 @@
         <FormCard title="Create a new Page" icon="fa-file-contract">
             <template v-slot:body>
                 <FormElementLabel title="Title" :required="true" :condition="!!title">
-                    <FormInput id="title" v-model="title" />
+                    <FormInput id="page-title" v-model="title" />
                 </FormElementLabel>
                 <FormElementLabel
                     title="Identifier"
                     help="A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-)."
                     :required="true"
                     :condition="!!slug">
-                    <FormInput id="slug" v-model="slug" />
+                    <FormInput id="page-slug" v-model="slug" />
                 </FormElementLabel>
                 <FormElementLabel
                     title="Annotation"
                     help="A description of the page. The annotation is shown alongside published pages.">
-                    <FormInput id="annotation" v-model="annotation" />
+                    <FormInput id="page-annotation" v-model="annotation" />
                 </FormElementLabel>
             </template>
         </FormCard>
-        <BButton class="my-2" variant="primary" @click="onCreate">
+        <BButton id="page-submit" class="my-2" variant="primary" @click="onCreate">
             <FontAwesomeIcon :icon="faSave" class="mr-1" />
             <span v-localize>Create</span>
         </BButton>

@@ -527,12 +527,12 @@ history_import:
 
 pages:
   selectors:
-    activity: "#activity-pages"
+    activity: '#activity-pages'
     create: '#page-create'
-    submit: '#submit'
-    create_title_input: '#form-element-title input'
-    create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
+    slug_input: '#page-slug'
+    submit: '#page-submit'
+    title_input: '#page-title'
 
   editor:
     selectors:
