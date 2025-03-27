@@ -302,7 +302,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page = trans.sa_session.get(model.Page, id)
         if not page:
             raise exceptions.RequestParameterInvalidException("Page not found.")
-        #if not trans.app.security_check(trans, page, check_ownership, check_accessible):
+        # if not trans.app.security_check(trans, page, check_ownership, check_accessible):
         #    raise exceptions.RequestParameterInvalidException("Access denied.")
 
         # Validate payload
