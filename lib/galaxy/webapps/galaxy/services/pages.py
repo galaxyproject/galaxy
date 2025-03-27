@@ -172,6 +172,4 @@ class PagesService(ServiceBase):
         """
         page = self.manager.update_page(trans, id, payload)
         rval = page.to_dict()
-        rval["content"] = page.latest_revision.content
-        self.manager.rewrite_content_for_export(trans, rval)
         return PageSummary(**rval)
