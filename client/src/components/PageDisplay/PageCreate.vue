@@ -38,9 +38,9 @@ import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 
-import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
+import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();

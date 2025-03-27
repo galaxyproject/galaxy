@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 withDefaults(
     defineProps<{
         help?: string;
-        required: boolean;
+        required?: boolean;
         title: string;
         condition?: boolean;
     }>(),
