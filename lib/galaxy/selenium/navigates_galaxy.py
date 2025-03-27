@@ -2086,6 +2086,9 @@ class NavigatesGalaxy(HasDriver):
         list_wizard.auto_pairing.wait_for_visible()
         list_wizard.wizard_next_button.wait_for_and_click()
 
+    def history_panel_build_list_of_lists(self):
+        self.history_panel_build_list_advanced_and_select_builder("list:list")
+
     def history_panel_build_list_advanced_and_select_builder(self, builder: str):
         self.history_panel_build_list_advanced()
         list_wizard = self.components.collection_builders.list_wizard
@@ -2097,6 +2100,13 @@ class NavigatesGalaxy(HasDriver):
         list_wizard = self.components.collection_builders.list_wizard
         list_wizard.which_builder(builder="rules").wait_for_and_click()
         list_wizard.wizard_next_button.wait_for_and_click()
+
+    def list_wizard_click_cell_and_send_keys(self, column_identifier: str, row_index: int, text: str):
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
+        input = list_wizard.cell_input(row_index=row_index, column_identifier=column_identifier)
+        input.wait_for_and_send_keys(text)
+        self.send_enter(input.wait_for_present())
 
     def collection_builder_set_name(self, name):
         # small sleep here seems to be needed in the case of the
@@ -2339,6 +2349,13 @@ class NavigatesGalaxy(HasDriver):
     def wait_for_and_click(self, selector_template):
         element = self.wait_for_clickable(selector_template)
         element.click()
+        return element
+
+    @retry_during_transitions
+    def wait_for_and_double_click(self, selector_template):
+        element = self.wait_for_clickable(selector_template)
+        action_chains = self.action_chains()
+        action_chains.move_to_element(element).double_click().perform()
         return element
 
     def set_history_annotation(self, annotation, clear_text=False):

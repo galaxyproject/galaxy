@@ -100,6 +100,28 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    def test_build_list_of_lists(self):
+        self.perform_upload_of_pasted_content(
+            {
+                "foo1.txt": "forward content 1",
+                "bar1.txt": "reverse content 1",
+                "foo2.txt": "forward content 2",
+                "bar2.txt": "forward content 2",
+            }
+        )
+        self._wait_for_and_select([1, 2, 3, 4])
+        self.history_panel_build_list_of_lists()
+        self.list_wizard_click_cell_and_send_keys("outerIdentifier", 2, "outer1")
+        self.list_wizard_click_cell_and_send_keys("outerIdentifier", 3, "outer1")
+        self.list_wizard_click_cell_and_send_keys("outerIdentifier", 4, "outer2")
+        self.list_wizard_click_cell_and_send_keys("outerIdentifier", 5, "outer2")
+        self.collection_builder_set_name("nested list")
+        self.screenshot("collection_builder_list_list")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(9)
+
+    @selenium_test
+    @managed_history
     def test_build_paired_list_show_original(self):
         self.perform_upload_of_pasted_content(
             {
