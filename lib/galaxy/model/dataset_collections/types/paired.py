@@ -20,7 +20,7 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
         num_datasets = len(dataset_instances)
         if num_datasets != 2:
             raise RequestParameterInvalidException(
-                "Incorrect number of datasets - 2 datasets exactly are required to create a paired collection"
+                f"Incorrect number of datasets - 2 datasets exactly are required to create a paired collection - {num_datasets} provided"
             )
 
         if forward_dataset := self._ensure_dataset_with_identifier(dataset_instances, FORWARD_IDENTIFIER):
