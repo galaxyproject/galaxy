@@ -61,8 +61,8 @@ describe("PageCreate.vue", () => {
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
         await flushPromises();
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
-        expect(wrapper.find("input#title").element.value).toBe("Invoked Report Title");
-        expect(wrapper.find("input#slug").element.value).toBe("invocation-42");
+        expect(wrapper.find("input#page-title").element.value).toBe("Invoked Report Title");
+        expect(wrapper.find("input#page-slug").element.value).toBe("invocation-42");
         await wrapper.findComponent({ name: "BButton" }).trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/editor?id=new-page-321");
@@ -103,9 +103,9 @@ describe("PageCreate.vue", () => {
             })
         );
         const wrapper = mountTarget();
-        await wrapper.find("#title").setValue("My Title");
-        await wrapper.find("#slug").setValue("my-title");
-        await wrapper.find("#annotation").setValue("An annotation");
+        await wrapper.find("#page-title").setValue("My Title");
+        await wrapper.find("#page-slug").setValue("my-title");
+        await wrapper.find("#page-annotation").setValue("An annotation");
         await wrapper.findComponent({ name: "BButton" }).trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/editor?id=new-page-123");
@@ -114,8 +114,8 @@ describe("PageCreate.vue", () => {
     it("shows API error if creation fails", async () => {
         server.use(http.post("/api/pages", ({ response }) => response(400).json({ err_msg: "Creation failed" })));
         const wrapper = mountTarget();
-        await wrapper.find("#title").setValue("Some Title");
-        await wrapper.find("#slug").setValue("some-title");
+        await wrapper.find("#page-title").setValue("Some Title");
+        await wrapper.find("#page-slug").setValue("some-title");
         await wrapper.findComponent({ name: "BButton" }).trigger("click");
         await flushPromises();
         const alert = wrapper.findComponent({ name: "BAlert" });
