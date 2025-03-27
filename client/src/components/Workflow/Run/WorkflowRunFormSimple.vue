@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faArrowRight, faCog, faInfoCircle,faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faCog, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCard, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -222,34 +222,34 @@ async function onExecute() {
                     @on-execute="onExecute">
                     <template v-slot:workflow-title-actions>
                         <BButtonGroup>
-                        <BButton
-                            v-b-tooltip.hover.noninteractive.html
-                            size="sm"
-                            :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
-                            variant="link"
-                            :pressed="showGraph"
-                            @click="showRightPanel = showGraph ? null : 'graph'">
-                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                        </BButton>
-                        <BButton
-                            v-if="model.runData.help"
-                            v-b-tooltip.hover.noninteractive.html
-                            size="sm"
-                            :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
-                            variant="link"
-                            :pressed="showHelp"
-                            @click="showRightPanel = showHelp ? null : 'help'">
-                            <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
-                        </BButton>
-                        <BButton
-                            v-b-tooltip.hover.noninteractive
-                            size="sm"
-                            title="Workflow Run Settings"
-                            variant="link"
-                            :pressed="showRuntimeSettingsPanel"
-                            @click="toggleRuntimeSettings">
-                            <FontAwesomeIcon :icon="faCog" fixed-width />
-                        </BButton>
+                            <BButton
+                                v-b-tooltip.hover.noninteractive.html
+                                size="sm"
+                                :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                                variant="link"
+                                :pressed="showGraph"
+                                @click="showRightPanel = showGraph ? null : 'graph'">
+                                <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                            </BButton>
+                            <BButton
+                                v-if="model.runData.help"
+                                v-b-tooltip.hover.noninteractive.html
+                                size="sm"
+                                :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
+                                variant="link"
+                                :pressed="showHelp"
+                                @click="showRightPanel = showHelp ? null : 'help'">
+                                <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+                            </BButton>
+                            <BButton
+                                v-b-tooltip.hover.noninteractive
+                                size="sm"
+                                title="Workflow Run Settings"
+                                variant="link"
+                                :pressed="showRuntimeSettingsPanel"
+                                @click="toggleRuntimeSettings">
+                                <FontAwesomeIcon :icon="faCog" fixed-width />
+                            </BButton>
                         </BButtonGroup>
                     </template>
                 </WorkflowNavigationTitle>
