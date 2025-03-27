@@ -20,7 +20,7 @@ export function useZipExplorer() {
     const isLoading = ref(false);
 
     const isRoCrate = computed(() => zipExplorer.value?.hasCrate);
-    const isGalaxyExport = computed(() => zipArchive.value?.findFileByName("export_attrs.txt") !== undefined);
+    const isGalaxyExport = computed(() => zipArchive.value?.entries.find(isGalaxyExportFile) !== undefined);
     const isZipArchiveAvailable = computed(() => zipArchive.value !== undefined);
 
     async function openZip(zipSource: File | string) {
@@ -42,89 +42,6 @@ export function useZipExplorer() {
         } finally {
             isLoading.value = false;
         }
-    }
-
-    async function importArtifacts(filesToImport: ZipContentFile[], historyId: string | null) {
-        if (!zipArchive.value) {
-            throw new Error("No ZIP archive loaded. You must call openZip() first.");
-        }
-
-        const selectedPaths = filesToImport.map((item) => item.path);
-        const selectedZipEntries = zipArchive.value.entries.filter((entry) => selectedPaths.includes(entry.path));
-
-        if (isRemoteZip(zipArchive.value.source)) {
-            const zipUrl = zipArchive.value.source;
-            const toUploadToHistory: ZipFileEntry[] = [];
-            for (const file of filesToImport) {
-                const entry = zipArchive.value.entries.filter(isFileEntry).find((e) => e.path === file.path);
-                if (!entry) {
-                    throw new Error(`Selected file not found in ZIP archive: ${file.path}`);
-                }
-
-                const extractUrl = toExtractUrl(zipUrl, entry);
-                if (isWorkflowFile(file)) {
-                    try {
-                        await axios.post(getFullAppUrl("/api/workflows"), { archive_source: extractUrl });
-                    } catch (e) {
-                        rethrowSimple(e);
-                    }
-                } else {
-                    toUploadToHistory.push(entry);
-                }
-            }
-
-            if (toUploadToHistory.length === 0) {
-                return;
-            }
-
-            if (!historyId) {
-                throw new Error("There is no history available to upload the selected files.");
-            }
-
-            const elements = toUploadToHistory.map((entry) => {
-                const extractUrl = toExtractUrl(zipUrl, entry);
-                return {
-                    name: entry.path.split("/").pop() ?? "unknown",
-                    deferred: false,
-                    src: "url",
-                    url: extractUrl,
-                    // dbkey: item.dbKey ?? "?",
-                    // ext: item.extension ?? "auto",
-                    // space_to_tab: item.spaceToTab,
-                    // to_posix_lines: item.toPosixLines,
-                };
-            });
-            const target = {
-                destination: { type: "hdas" },
-                elements: elements,
-            };
-            const payload = {
-                history_id: historyId,
-                targets: [target],
-            };
-            try {
-                await axios.post(getFullAppUrl("/api/tools/fetch"), payload);
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        }
-        //TODO: handle local zip files. This will require downloading the compressed file to a temporary location and then extracting and uploading the selected files.
-
-        console.log("Selected entries:", selectedZipEntries);
-    }
-
-    function toExtractUrl(zipUrl: string, entry: ZipFileEntry): string {
-        return `zip://extract?source=${zipUrl}&header_offset=${entry.headerOffset}&compress_size=${entry.compressSize}&compression_method=${entry.compressionMethod}`;
-    }
-
-    function isWorkflowFile(item: ZipContentFile): boolean {
-        return item.type === "workflow";
-    }
-
-    function reset() {
-        zipExplorer.value = undefined;
-        zipArchive.value = undefined;
-        zipExplorerError.value = undefined;
     }
 
     function getImportableZipContents(): ImportableZipContents | undefined {
@@ -159,8 +76,98 @@ export function useZipExplorer() {
         return { workflows, files };
     }
 
+    async function importArtifacts(filesToImport: ZipContentFile[], historyId: string | null) {
+        if (!zipArchive.value) {
+            throw new Error("No ZIP archive loaded. You must call openZip() first.");
+        }
+
+        const selectedPaths = filesToImport.map((item) => item.path);
+        const selectedZipEntries = zipArchive.value.entries.filter((entry) => selectedPaths.includes(entry.path));
+
+        if (isRemoteZip(zipArchive.value.source)) {
+            return handleRemoteZip(zipArchive.value.source, filesToImport, historyId, zipArchive.value);
+        }
+
+        // TODO: handle local zip files. This will require downloading the compressed file to a temporary location and then extracting and uploading the selected files.
+
+        console.log("Selected entries:", selectedZipEntries);
+    }
+
+    async function handleRemoteZip(
+        zipUrl: string,
+        filesToImport: ZipContentFile[],
+        historyId: string | null,
+        zipArchive: ZipArchive
+    ) {
+        const toUploadToHistory: ZipFileEntry[] = [];
+        for (const file of filesToImport) {
+            const entry = zipArchive.entries.filter(isFileEntry).find((e) => e.path === file.path);
+            if (!entry) {
+                throw new Error(`Selected file not found in ZIP archive: ${file.path}`);
+            }
+
+            const extractUrl = toExtractUrl(zipUrl, entry);
+            if (isWorkflowFile(file)) {
+                try {
+                    await axios.post(getFullAppUrl("/api/workflows"), { archive_source: extractUrl });
+                } catch (e) {
+                    rethrowSimple(e);
+                }
+            } else {
+                toUploadToHistory.push(entry);
+            }
+        }
+
+        if (toUploadToHistory.length === 0) {
+            return;
+        }
+
+        if (!historyId) {
+            throw new Error("There is no history available to upload the selected files.");
+        }
+
+        const elements = toUploadToHistory.map((entry) => {
+            const extractUrl = toExtractUrl(zipUrl, entry);
+
+            return {
+                name: entry.path.split("/").pop() ?? "unknown",
+                deferred: false,
+                src: "url",
+                url: extractUrl,
+                ext: "auto",
+            };
+        });
+        const target = {
+            destination: { type: "hdas" },
+            elements: elements,
+        };
+        const payload = {
+            history_id: historyId,
+            targets: [target],
+        };
+        try {
+            await axios.post(getFullAppUrl("/api/tools/fetch"), payload);
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    function toExtractUrl(zipUrl: string, entry: ZipFileEntry): string {
+        return `zip://extract?source=${zipUrl}&header_offset=${entry.headerOffset}&compress_size=${entry.compressSize}&compression_method=${entry.compressionMethod}`;
+    }
+
+    function isWorkflowFile(item: ZipContentFile): boolean {
+        return item.type === "workflow";
+    }
+
+    function reset() {
+        zipExplorer.value = undefined;
+        zipArchive.value = undefined;
+        zipExplorerError.value = undefined;
+    }
+
     function getEntryName(entry: AnyZipEntry) {
-        return entry.path.split("/").pop() || entry.path;
+        return entry.path;
     }
 
     function shouldSkipZipEntry(entry: AnyZipEntry) {
@@ -172,6 +179,10 @@ export function useZipExplorer() {
 
     function isGalaxyWorkflow(entry: AnyZipEntry) {
         return entry.path.endsWith(".gxwf.yml");
+    }
+
+    function isGalaxyExportFile(entry: AnyZipEntry) {
+        return entry.path.endsWith(GALAXY_EXPORT_ATTRS_FILE);
     }
 
     function isValidUrl(inputUrl?: string) {
@@ -224,11 +235,15 @@ export function isZipFile(file?: File | null): string {
     return "";
 }
 
+const GALAXY_EXPORT_ATTRS_FILE = "export_attrs.txt";
+const GALAXY_HISTORY_EXPORT_ATTRS_FILE = "history_attrs.txt";
+
 export const GALAXY_EXPORT_METADATA_FILES = [
+    GALAXY_EXPORT_ATTRS_FILE,
+    GALAXY_HISTORY_EXPORT_ATTRS_FILE,
     "collections_attrs.txt",
     "datasets_attrs.txt",
     "datasets_attrs.txt.provenance",
-    "export_attrs.txt",
     "implicit_collection_jobs_attrs.txt",
     "implicit_dataset_conversions.txt",
     "invocation_attrs.txt",
