@@ -1060,15 +1060,15 @@ class InputDataModule(InputModule):
         return [dict(name="output", extensions=extensions, optional=optional)]
 
     def get_filter_set(self, connections=None):
-        filter_set = []
+        filter_set = set()  # Use a set to ensure unique extensions
         if connections:
             for oc in connections:
                 for ic in oc.input_step.module.get_data_inputs():
                     if "extensions" in ic and ic["extensions"] != "input" and ic["name"] == oc.input_name:
-                        filter_set += ic["extensions"]
+                        filter_set.update(ic["extensions"])
         if not filter_set:
-            filter_set = ["data"]
-        return ", ".join(filter_set)
+            filter_set = {"data"}
+        return ", ".join(sorted(filter_set))
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()

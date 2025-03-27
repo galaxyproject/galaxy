@@ -9,3 +9,7 @@ export type DataOption = {
     src: string;
     tags: Array<string>;
 };
+
+export function isDataOption(item: object): item is DataOption {
+    return !!item && "src" in item;
+}

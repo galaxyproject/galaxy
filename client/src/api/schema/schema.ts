@@ -13219,6 +13219,11 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this job.
+             */
+            user_id?: string | null;
         };
         /**
          * LabelValuePair
@@ -16449,6 +16454,11 @@ export interface components {
              */
             email_hash: string | null;
             /**
+             * Help
+             * @description The detailed help text for how to use the workflow and debug problems with it.
+             */
+            help: string | null;
+            /**
              * Hidden
              * @description TODO
              */
@@ -16507,6 +16517,11 @@ export interface components {
              * @description Whether this workflow is currently publicly available to all users.
              */
             published: boolean;
+            /**
+             * Readme
+             * @description The detailed markdown readme of the workflow.
+             */
+            readme: string | null;
             /**
              * Show in Tool Panel
              * @description Whether to display this workflow in the Tools Panel.

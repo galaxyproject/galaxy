@@ -9,6 +9,8 @@ import { useFilterObjectArray } from "@/composables/filter";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
+import { type DataOption, isDataOption } from "./FormData/types";
+
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 library.add(faCheckSquare, faSquare);
@@ -21,6 +23,7 @@ type ValueWithTags = SelectValue & { tags: string[] };
 interface SelectOption {
     label: string;
     value: SelectValue;
+    key?: string;
 }
 
 const props = defineProps({
@@ -64,22 +67,24 @@ const filteredOptions = useFilterObjectArray(() => props.options, filter, ["labe
 const optionReorderThreshold = 8;
 
 const reorderedOptions = computed(() => {
-    if (filteredOptions.value.length <= optionReorderThreshold) {
-        return filteredOptions.value;
+    let result;
+    if (!props.multiple || filteredOptions.value.length <= optionReorderThreshold) {
+        result = filteredOptions.value;
     } else {
         const selectedOptions: SelectOption[] = [];
         const unselectedOptions: SelectOption[] = [];
 
         filteredOptions.value.forEach((option) => {
-            if (selectedValues.value.includes(option.value)) {
+            if (isSelected(option.value)) {
                 selectedOptions.push(option);
             } else {
                 unselectedOptions.push(option);
             }
         });
 
-        return [...unselectedOptions, ...selectedOptions];
+        result = [...unselectedOptions, ...selectedOptions];
     }
+    return result.map(getSelectOption);
 });
 
 /**
@@ -115,10 +120,26 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
 /**
+ * Tracks selected keys in case of form data options
+ */
+const selectedKeys = computed(() => {
+    return selectedValues.value
+        .map((v) => (isDataOptionObject(v) ? itemUniqueKey(v) : undefined))
+        .filter((v) => v !== undefined);
+});
+
+/**
+ * Whether current value(s) will be tracked by key or value
+ */
+const trackBy = computed(() => {
+    return selectedKeys.value.length > 0 ? "key" : "value";
+});
+
+/**
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => props.options.filter((option: SelectOption) => isSelected(option.value)).map(getSelectOption),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -133,6 +154,10 @@ const currentValue = computed({
     },
 });
 
+function itemUniqueKey(item: DataOption): string {
+    return `${item.src}-${item.id}`;
+}
+
 /**
  * Ensures that an initial value is selected for non-optional inputs
  */
@@ -140,6 +165,16 @@ function setInitialValue(): void {
     if (initialValue.value) {
         emit("input", initialValue.value);
     }
+}
+
+function getSelectOption(option: SelectOption): SelectOption {
+    if (isDataOptionObject(option.value)) {
+        return {
+            ...option,
+            key: itemUniqueKey(option.value),
+        };
+    }
+    return option;
 }
 
 /**
@@ -163,8 +198,19 @@ function isValueWithTags(item: SelectValue): item is ValueWithTags {
     return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
 }
 
+function isDataOptionObject(item: SelectValue): item is DataOption {
+    return !!item && typeof item === "object" && isDataOption(item);
+}
+
 function onSearchChange(search: string): void {
     filter.value = search;
+}
+
+function isSelected(item: SelectValue): boolean {
+    if (isDataOptionObject(item)) {
+        return selectedKeys.value.includes(itemUniqueKey(item));
+    }
+    return selectedValues.value.includes(item);
 }
 </script>
 
@@ -185,7 +231,7 @@ function onSearchChange(search: string): void {
             :placeholder="placeholder"
             :selected-label="selectedLabel"
             :select-label="null"
-            track-by="value"
+            :track-by="trackBy"
             :internal-search="false"
             @search-change="onSearchChange"
             @open="onOpen"
@@ -200,7 +246,7 @@ function onSearchChange(search: string): void {
                             :value="option.value.tags"
                             disabled />
                     </div>
-                    <FontAwesomeIcon v-if="selectedValues.includes(option.value)" :icon="faCheckSquare" />
+                    <FontAwesomeIcon v-if="isSelected(option.value)" :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else :icon="faSquare" />
                 </div>
             </template>

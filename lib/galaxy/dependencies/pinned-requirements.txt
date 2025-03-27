@@ -141,6 +141,7 @@ pykwalify==1.8.0
 pylibmagic==0.5.0
 pynacl==1.5.0
 pyparsing==3.2.1
+pypng==0.20220715.0
 pyreadline3==3.5.4 ; sys_platform == 'win32'
 pysam==0.23.0
 python-dateutil==2.9.0.post0
