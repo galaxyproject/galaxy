@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BButton, BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import {
     type CreateSourceCredentialsPayload,
@@ -30,13 +30,21 @@ const props = withDefaults(defineProps<ManageToolCredentialsProps>(), {
 const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCredentials());
 
 const emit = defineEmits<{
+    (e: "onUpdateCredentialsList", data: UserCredentials[]): void;
     (e: "save-credentials", credentials: CreateSourceCredentialsPayload): void;
     (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
     (e: "close"): void;
 }>();
 
+const sourceData = computed(() => ({
+    sourceId: props.toolId,
+    sourceType: "tool",
+    sourceVersion: props.toolVersion,
+}));
+
 function saveCredentials() {
     // TODO: Select
+    console.log("Saving credentials", providedCredentials.value);
     emit("save-credentials", providedCredentials.value);
 }
 
@@ -148,6 +156,11 @@ function getUserCredentialsForService(key: string): UserCredentials | undefined 
 function hasUserProvided(credential: ServiceCredentialPayload): boolean {
     return !!getUserCredentialsForService(getKeyFromCredentialsIdentifier(credential));
 }
+
+function onUpdateCredentialsList(data: UserCredentials[]) {
+    console.log("161 - ManageToolCredentials.vue - onUpdateCredentialsList", data);
+    emit("onUpdateCredentialsList", data);
+}
 </script>
 
 <template>
@@ -171,10 +184,12 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
             <ServiceCredentials
                 v-for="credential in providedCredentials.credentials"
                 :key="credential.name"
+                :source-data="sourceData"
                 :credential-definition="getServiceCredentialsDefinition(getKeyFromCredentialsIdentifier(credential))"
                 :credential-payload="credential"
                 :is-provided-by-user="hasUserProvided(credential)"
                 class="mb-2"
+                @update-credentials-list="onUpdateCredentialsList"
                 @new-credentials-set="onNewCredentialsSet"
                 @delete-credentials-group="onDeleteCredentialsGroup"
                 @update-current-set="onCurrentSetChange" />
