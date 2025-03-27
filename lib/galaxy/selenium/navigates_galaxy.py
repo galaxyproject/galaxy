@@ -2075,11 +2075,21 @@ class NavigatesGalaxy(HasDriver):
         return self.use_bootstrap_dropdown(option="advanced build list", menu="selected content menu")
 
     def history_panel_build_list_of_pairs(self):
+        self.history_panel_build_list_advanced_and_select_builder("list:paired")
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.auto_pairing.wait_for_visible()
+        list_wizard.wizard_next_button.wait_for_and_click()
+
+    def history_panel_build_list_of_paired_or_unpaireds(self):
+        self.history_panel_build_list_advanced_and_select_builder("list:paired_or_unpaired")
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.auto_pairing.wait_for_visible()
+        list_wizard.wizard_next_button.wait_for_and_click()
+
+    def history_panel_build_list_advanced_and_select_builder(self, builder: str):
         self.history_panel_build_list_advanced()
         list_wizard = self.components.collection_builders.list_wizard
-        list_wizard.which_builder(builder="list:paired").wait_for_and_click()
-        list_wizard.wizard_next_button.wait_for_and_click()
-        list_wizard.auto_pairing.wait_for_visible()
+        list_wizard.which_builder(builder=builder).wait_for_and_click()
         list_wizard.wizard_next_button.wait_for_and_click()
 
     def history_panel_build_rule_builder_for_selection(self):
