@@ -461,6 +461,8 @@ collection_builders:
       wizard_next_button: '.wizard-actions .go-next-btn'
       auto_pairing: '[data-description="auto pairing"]'
       dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
+      cell: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
+      cell_input: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
     row:
       selectors:
         _: '[row-index="${index}"]'
