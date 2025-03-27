@@ -57,7 +57,7 @@ masthead:
     username:
       type: xpath
       selector: '//a[contains(text(), "Signed in as")]'
-    window_manager: '#enable-window-manager'
+    window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
 preferences:
@@ -184,16 +184,15 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
       state_icon: '${_} .state-icon'
 
-      # Title buttons...
-      display_button: '${_} .display-btn'
-      edit_button: '${_} .edit-btn'
+      # Actions
+      alltags: '${_} .stateless-tags .tag'
       delete_button: '${_} .delete-btn'
-
-      # Action buttons...
+      display_button: '${_} .display-btn'
       download_button: '${_} .download-btn'
+      edit_button: '${_} .edit-btn'
       info_button: '${_} .params-btn'
       rerun_button: '${_} .rerun-btn'
-      alltags: '${_} .stateless-tags .tag'
+      visualize_button: '${_} .visualize-btn'
 
   # history content item
   content_item:
@@ -528,12 +527,12 @@ history_import:
 
 pages:
   selectors:
-    activity: "#activity-pages"
+    activity: '#activity-pages'
     create: '#page-create'
-    submit: '#submit'
-    create_title_input: '#form-element-title input'
-    create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
+    slug_input: '#page-slug'
+    submit: '#page-submit'
+    title_input: '#page-title'
 
   editor:
     selectors:

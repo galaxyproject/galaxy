@@ -1742,7 +1742,6 @@ class NavigatesGalaxy(HasDriver):
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
-        self.select_grid_operation(name, "Edit content")
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
@@ -1752,10 +1751,10 @@ class NavigatesGalaxy(HasDriver):
         self.components.pages.create.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("before_title_input")
-        self.components.pages.create_title_input.wait_for_and_send_keys(name)
+        self.components.pages.title_input.wait_for_and_send_keys(name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("before_slug_input")
-        self.components.pages.create_slug_input.wait_for_and_send_keys(slug)
+        self.components.pages.slug_input.wait_for_and_send_keys(slug)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot_if(screenshot_name)
         self.components.pages.submit.wait_for_and_click()

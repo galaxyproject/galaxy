@@ -17,7 +17,6 @@ class TestPagesPdfExportSeleniumIntegration(SeleniumIntegrationTestCase):
         self.navigate_to_pages()
         self.screenshot("pages_grid")
         page_name = self.create_page()
-        self.select_grid_operation(page_name, "Edit content")
         self.components.pages.editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
         self.screenshot("pages_markdown_editor")
         self.sleep_for(self.wait_types.UX_RENDER)
