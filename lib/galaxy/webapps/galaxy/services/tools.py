@@ -125,7 +125,7 @@ class ToolsService(ServiceBase):
 
         if tool_uuid:
             tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
-        else:
+        if not tool:
             tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool:
             log.debug(f"Not found tool with kwds [{get_kwds}]")
