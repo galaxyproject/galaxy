@@ -123,6 +123,7 @@ class ToolsService(ServiceBase):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
+        tool: Optional[Tool] = None
         if tool_uuid:
             tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
         if not tool:

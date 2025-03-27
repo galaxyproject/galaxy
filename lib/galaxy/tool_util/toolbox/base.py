@@ -832,7 +832,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             self.get_tool(tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=exact, user=user) is not None
         )
 
-    def get_unprivileged_tool(self, user: model.User, tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+    def get_unprivileged_tool(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
+
+    def get_unprivileged_tool_or_none(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
         return None
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
