@@ -4,21 +4,21 @@
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <FormCard title="Create a new Page" icon="fa-file-contract">
             <template v-slot:body>
-                <FormElementContainer title="Title" :required="true" :condition="!!title">
+                <FormElementLabel title="Title" :required="true" :condition="!!title">
                     <FormInput id="title" v-model="title" />
-                </FormElementContainer>
-                <FormElementContainer
+                </FormElementLabel>
+                <FormElementLabel
                     title="Identifier"
                     help="A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-)."
                     :required="true"
                     :condition="!!slug">
                     <FormInput id="slug" v-model="slug" />
-                </FormElementContainer>
-                <FormElementContainer
+                </FormElementLabel>
+                <FormElementLabel
                     title="Annotation"
                     help="A description of the page. The annotation is shown alongside published pages.">
                     <FormInput id="annotation" v-model="annotation" />
-                </FormElementContainer>
+                </FormElementLabel>
             </template>
         </FormCard>
         <BButton class="my-2" variant="primary" @click="onCreate">
@@ -38,7 +38,7 @@ import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 
-import FormElementContainer from "../Form/FormElementContainer.vue";
+import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
