@@ -21,6 +21,7 @@ import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/C
 import ToolLanding from "components/Landing/ToolLanding";
 import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageCreate from "components/PageDisplay/PageCreate";
+import PageEdit from "components/PageDisplay/PageEdit";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
@@ -439,11 +440,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/edit",
-                        component: FormGeneric,
+                        component: PageEdit,
                         props: (route) => ({
-                            url: `/page/edit?id=${route.query.id}`,
-                            redirect: "/pages/list",
-                            active_tab: "user",
+                            id: route.query.id,
                         }),
                     },
                     {

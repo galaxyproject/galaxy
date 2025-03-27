@@ -122,6 +122,7 @@ class PagesService(ServiceBase):
         """
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         rval = page.to_dict()
+        rval["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, page)
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
