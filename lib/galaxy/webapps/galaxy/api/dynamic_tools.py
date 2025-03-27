@@ -89,10 +89,10 @@ class UnprivilegedToolsApi:
         input_bundle = input_models_for_tool_source(tool_source)
         return cwl_runtime_model(input_bundle)
 
-    @router.delete("/api/dynamic_tools/{tool_id}", response_model_exclude_defaults=True)
+    @router.delete("/api/unprivileged_tools/{tool_id}", response_model_exclude_defaults=True)
     def delete(self, tool_id: str, user: User = DependsOnUser):
         """
-        DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
+        DELETE /api/unprivileged_tools/{encoded_dynamic_tool_id|tool_uuid}
 
         Deactivate the specified dynamic tool. Deactivated tools will not
         be loaded into the toolbox.
