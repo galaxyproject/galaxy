@@ -625,7 +625,7 @@ class ToolBox(AbstractToolBox):
     def dynamic_tool_to_tool(self, dynamic_tool: Optional[model.DynamicTool]) -> Optional["Tool"]:
         if dynamic_tool and dynamic_tool.active and dynamic_tool.value:
             tool_source = YamlToolSource(dynamic_tool.value)
-            tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None)
+            tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
             tool.dynamic_tool = dynamic_tool
             return tool
         return None
