@@ -67,6 +67,7 @@ from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
     PageIndexQueryPayload,
+    UpdatePagePayload,
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
@@ -295,15 +296,14 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page
 
-    def update_page(self, trans, id: PageIdPathParam, payload: CreatePagePayload):
+    def update_page(self, trans, id: PageIdPathParam, payload: UpdatePagePayload):
         user = trans.get_user()
 
         # Load page from database
         page = trans.sa_session.get(model.Page, id)
         if not page:
-            raise exceptions.RequestParameterInvalidException("Page not found.")
-        # if not trans.app.security_check(trans, page, check_ownership, check_accessible):
-        #    raise exceptions.RequestParameterInvalidException("Access denied.")
+            raise exceptions.ObjectNotFound("Page not found")
+        page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
 
         # Validate payload
         if not payload.title:
