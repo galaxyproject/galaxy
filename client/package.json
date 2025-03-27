@@ -123,7 +123,7 @@
     "vuedraggable": "^2.24.3",
     "winbox": "^0.2.82",
     "xml-beautifier": "^0.5.0",
-    "yaml": "^2.6.1"
+    "yaml": "^2.7.0"
   },
   "scripts": {
     "develop": "NODE_ENV=development gulp && webpack-dev-server",
