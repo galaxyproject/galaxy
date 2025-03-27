@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { faCheck } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
 withDefaults(
     defineProps<{
         help?: string;
@@ -18,10 +15,13 @@ withDefaults(
 
 <template>
     <div>
-        <div v-localize class="font-weight-bold py-2">
+        <div class="font-weight-bold py-2">
             <span>{{ title }}</span>
-            <FontAwesomeIcon v-if="condition && required" class="text-success" :icon="faCheck" />
-            <span v-else-if="required" class="text-danger">*</span>
+            <small v-if="required && condition" class="align-top">*</small>
+            <small v-else-if="required" class="text-danger">
+                <span class="align-top">*</span>
+                <small class="align-top">required</small>
+            </small>
         </div>
         <slot />
         <small v-localize class="text-muted py-2">{{ help }}</small>

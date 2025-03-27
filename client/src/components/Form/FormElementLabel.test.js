@@ -43,7 +43,9 @@ describe("FormElementLabel.vue", () => {
             required: true,
             condition: true,
         });
-        expect(wrapper.findComponent({ name: "FontAwesomeIcon" }).exists()).toBe(true);
+        const asterisk = wrapper.find("small");
+        expect(asterisk.exists()).toBe(true);
+        expect(asterisk.text()).toBe("*");
     });
 
     it("should render asterisk if required is true and condition is false", () => {
@@ -52,9 +54,9 @@ describe("FormElementLabel.vue", () => {
             required: true,
             condition: false,
         });
-        const asterisk = wrapper.find("span.text-danger");
+        const asterisk = wrapper.find("small.text-danger");
         expect(asterisk.exists()).toBe(true);
-        expect(asterisk.text()).toBe("*");
+        expect(asterisk.text()).toBe("* required");
     });
 
     it("should render nothing extra if required is false", () => {
