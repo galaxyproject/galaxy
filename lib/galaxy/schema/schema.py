@@ -3792,6 +3792,15 @@ class CreatePagePayload(PageSummaryBase):
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
+class UpdatePagePayload(PageSummaryBase):
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
+    model_config = ConfigDict(use_enum_values=True, extra="allow")
+
+
 class AsyncTaskResultSummary(Model):
     id: str = Field(
         ...,

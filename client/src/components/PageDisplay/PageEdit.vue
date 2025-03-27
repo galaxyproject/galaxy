@@ -46,7 +46,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 const router = useRouter();
 
 const props = defineProps<{
-    id?: string;
+    id: string;
 }>();
 
 const annotation = ref("");
@@ -77,11 +77,14 @@ async function fetchPage() {
 
 async function onUpdate() {
     if (slug.value && title.value) {
-        const { data, error } = await GalaxyApi().POST("/api/pages", {
+        const { data, error } = await GalaxyApi().PUT("/api/pages/{id}", {
+            params: {
+                path: {
+                    id: props.id,
+                }
+            },
             body: {
                 annotation: annotation.value,
-                content: content.value,
-                content_format: "markdown",
                 slug: slug.value,
                 title: title.value,
             },

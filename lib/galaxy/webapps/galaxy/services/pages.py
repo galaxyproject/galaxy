@@ -28,10 +28,12 @@ from galaxy.schema.schema import (
     PageIndexQueryPayload,
     PageSummary,
     PageSummaryList,
+    UpdatePagePayload,
 )
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
+from galaxy.webapps.galaxy.api.common import PageIdPathParam
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ensure_celery_tasks_enabled,
@@ -163,3 +165,13 @@ class PagesService(ServiceBase):
         )
         result = prepare_pdf_download.delay(request=pdf_download_request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=request_id, task=async_task_summary(result))
+
+    def update(self, trans, id: PageIdPathParam, payload: UpdatePagePayload) -> PageSummary:
+        """
+        Update a page and return summary
+        """
+        page = self.manager.update_page(trans, id, payload)
+        rval = page.to_dict()
+        rval["content"] = page.latest_revision.content
+        self.manager.rewrite_content_for_export(trans, rval)
+        return PageSummary(**rval)

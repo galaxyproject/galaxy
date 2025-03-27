@@ -76,6 +76,7 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+from galaxy.webapps.galaxy.api.common import PageIdPathParam
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import ScalarResult
@@ -288,6 +289,41 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page.latest_revision = page_revision
         page_revision.content = content
         page_revision.content_format = content_format
+        # Persist
+        session = trans.sa_session
+        session.add(page)
+        session.commit()
+        return page
+
+    def update_page(self, trans, id: PageIdPathParam, payload: CreatePagePayload):
+        user = trans.get_user()
+
+        # Load page from database
+        page = trans.sa_session.get(model.Page, id)
+        if not page:
+            raise exceptions.RequestParameterInvalidException("Page not found.")
+        #if not trans.app.security_check(trans, page, check_ownership, check_accessible):
+        #    raise exceptions.RequestParameterInvalidException("Access denied.")
+
+        # Validate payload
+        if not payload.title:
+            raise exceptions.ObjectAttributeMissingException("Page name is required")
+        elif not payload.slug:
+            raise exceptions.ObjectAttributeMissingException("Page id is required")
+        elif not sharable.SlugBuilder.is_valid_slug(payload.slug):
+            raise exceptions.ObjectAttributeInvalidException(
+                "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
+            )
+        elif payload.slug != page.slug and page_exists(trans.sa_session, user, payload.slug):
+            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+
+        # Update page attributes
+        page.title = payload.title
+        page.slug = payload.slug
+        if (page_annotation := payload.annotation) is not None:
+            page_annotation = sanitize_html(page_annotation)
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
+
         # Persist
         session = trans.sa_session
         session.add(page)

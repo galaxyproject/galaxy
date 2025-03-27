@@ -3599,7 +3599,11 @@ export interface paths {
          * @description Return summary information about a specific Page and the content of the last revision.
          */
         get: operations["show_api_pages__id__get"];
-        put?: never;
+        /**
+         * Update a page and return summary information.
+         * @description Updates an existing Page.
+         */
+        put: operations["update_api_pages__id__put"];
         post?: never;
         /**
          * Marks the specific Page as deleted.
@@ -17324,6 +17328,26 @@ export interface components {
             /** Output Label */
             output_label: string;
         };
+        /** UpdatePagePayload */
+        UpdatePagePayload: {
+            /**
+             * Annotation
+             * @description Annotation that will be attached to the page.
+             */
+            annotation?: string | null;
+            /**
+             * Identifier
+             * @description The title slug for the page URL, must be unique.
+             */
+            slug: string;
+            /**
+             * Title
+             * @description The name of the page.
+             */
+            title: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** UpdateQuotaParams */
         UpdateQuotaParams: {
             /**
@@ -30619,6 +30643,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PageDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_pages__id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePagePayload"];
+            };
+        };
+        responses: {
+            /** @description The page summary information. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageSummary"];
                 };
             };
             /** @description Request Error */
