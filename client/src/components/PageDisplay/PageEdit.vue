@@ -92,7 +92,7 @@ async function onUpdate() {
         if (error) {
             errorMessage.value = error.err_msg;
         } else {
-            router.push(`/pages/editor?id=${data.id}`);
+            router.push(`/pages/list`);
         }
     } else {
         errorMessage.value = "Please complete all required inputs.";
