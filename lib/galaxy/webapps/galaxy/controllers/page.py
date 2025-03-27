@@ -8,7 +8,6 @@ from galaxy.managers.histories import (
     HistorySerializer,
 )
 from galaxy.managers.pages import (
-    get_page as get_page_,
     page_exists,
     PageManager,
 )
