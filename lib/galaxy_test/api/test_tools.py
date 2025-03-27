@@ -1600,7 +1600,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        self._run(history_id=history_id, tool_uuid=tool_response["uuid"])
+        self._run(history_id=history_id, tool_uuid=tool_response["uuid"], assert_ok=True)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
