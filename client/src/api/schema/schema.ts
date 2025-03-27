@@ -3578,7 +3578,7 @@ export interface paths {
         put?: never;
         /**
          * Create a page and return summary information.
-         * @description Get a list with details of all Pages available to the user.
+         * @description Creates a new Page.
          */
         post: operations["create_api_pages_post"];
         delete?: never;
@@ -14781,6 +14781,11 @@ export interface components {
         PageContentFormat: "markdown" | "html";
         /** PageDetails */
         PageDetails: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
             /**
              * Author deleted
              * @description Whether the author of this Page has been deleted.

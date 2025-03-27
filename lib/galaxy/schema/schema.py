@@ -3911,6 +3911,7 @@ class OAuth2State(BaseModel):
 
 
 class PageDetails(PageSummary):
+    annotation: Optional[str] = AnnotationField
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     generate_version: Optional[str] = GenerateVersionField
