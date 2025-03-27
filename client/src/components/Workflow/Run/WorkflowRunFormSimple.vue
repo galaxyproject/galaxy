@@ -294,7 +294,7 @@ async function onExecute() {
                                 variant="link"
                                 size="sm"
                                 class="text-decoration-none"
-                                title="Switch to the fully expanded workflow form"
+                                title="Switch to the legacy workflow form"
                                 @click="$emit('showAdvanced')">
                                 Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
                             </BButton>
