@@ -182,6 +182,11 @@ async function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier,
     }
 }
 
+function onUpdateUserCredentials(data: UserCredentials[]) {
+    console.log("186 uing user credentials", data);
+    userCredentials.value = data;
+}
+
 checkUserCredentials();
 </script>
 
@@ -225,17 +230,21 @@ checkUserCredentials();
                     </span>
                 </div>
 
-                <BButton variant="primary" size="sm" class="provide-credentials-btn" @click="toggleDialog">
-                    {{ provideCredentialsButtonTitle }}
-                </BButton>
+                <div>
+                    <BButton variant="primary" size="sm" class="provide-credentials-btn" @click="toggleDialog">
+                        {{ provideCredentialsButtonTitle }}
+                    </BButton>
+                </div>
             </div>
         </BAlert>
+
         <ManageToolCredentials
             v-if="showModal"
             :tool-id="props.toolId"
             :tool-version="props.toolVersion"
             :tool-credentials-definition="credentialsDefinition"
             :tool-user-credentials="userCredentials"
+            @onUpdateCredentialsList="onUpdateUserCredentials"
             @delete-credentials-group="onDeleteCredentialsGroup"
             @save-credentials="onSavedCredentials"
             @close="toggleDialog" />

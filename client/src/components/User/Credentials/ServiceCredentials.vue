@@ -2,18 +2,22 @@
 import { faCaretRight, faPlus, faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BCollapse, BFormGroup } from "bootstrap-vue";
-import { faPencil } from "font-awesome-6";
+import { faPencil, faSpinner } from "font-awesome-6";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { isRegisteredUser } from "@/api";
 import type {
     ServiceCredentialPayload,
     ServiceCredentialsDefinition,
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
     ServiceVariableDefinition,
+    UserCredentials,
 } from "@/api/users";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useUserCredentialsStore } from "@/stores/userCredentials";
+import { useUserStore } from "@/stores/userStore";
 
 import FormElement from "@/components/Form/FormElement.vue";
 
@@ -23,17 +27,34 @@ interface Props {
     credentialDefinition: ServiceCredentialsDefinition;
     credentialPayload: ServiceCredentialPayload;
     isProvidedByUser: boolean;
+    sourceData: {
+        sourceId: string;
+        sourceType: "tool";
+        sourceVersion: string;
+    };
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
+    (e: "update-credentials-list", userCredentials: UserCredentials[]): void;
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
     (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
     (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
 }>();
 
 const { confirm } = useConfirmDialog();
+
+const userStore = useUserStore();
+const userCredentialsStore = useUserCredentialsStore(
+    isRegisteredUser(userStore.currentUser) ? userStore.currentUser.id : "anonymous"
+);
+
+const isBusy = ref(false);
+const saveButtonText = ref("Save");
+const tmpSet = ref<ServiceGroupPayload | undefined>(undefined);
+const originalName = ref<string>();
+const isNewSet = ref(false);
 
 const selectedSet = ref<ServiceGroupPayload | undefined>(
     props.credentialPayload.groups.find((group) => group.name === props.credentialPayload.current_group)
@@ -43,25 +64,42 @@ const isExpanded = ref(false);
 
 const newNameError = ref<string | undefined>(undefined);
 
+// const newSetName = computed<string>({
+//     get: () => selectedSet.value?.name ?? "",
+//     set: (inputValue) => {
+//         if (
+//             inputValue.trim() !== "" &&
+//             !availableSets.value.some((set) => set.name === inputValue) &&
+//             inputValue !== defaultSet.value?.name
+//         ) {
+//             selectedSet.value!.name = inputValue;
+//             newNameError.value = undefined;
+//         } else if (inputValue.trim() === "" || inputValue === defaultSet.value?.name) {
+//             newNameError.value = "This name is not allowed.";
+//         }
+//     },
+// });
+// check tmpSet name instead of selectedSet name
 const newSetName = computed<string>({
-    get: () => selectedSet.value?.name ?? "",
+    get: () => tmpSet.value?.name ?? "",
     set: (inputValue) => {
         if (
             inputValue.trim() !== "" &&
             !availableSets.value.some((set) => set.name === inputValue) &&
             inputValue !== defaultSet.value?.name
         ) {
-            selectedSet.value!.name = inputValue;
+            tmpSet.value!.name = inputValue;
             newNameError.value = undefined;
-        } else if (inputValue.trim() === "" || inputValue === defaultSet.value?.name) {
+        } else {
             newNameError.value = "This name is not allowed.";
         }
     },
 });
+
 const setNameHelp = computed<string>(() => {
-    if (selectedSet.value?.name === defaultSet.value?.name) {
-        return "The default set cannot be renamed.";
-    }
+    // if (selectedSet.value?.name === defaultSet.value?.name) {
+    //     return "The default set cannot be renamed.";
+    // }
 
     return `Enter a name for the set of credentials for ${serviceName.value}`;
 });
@@ -125,9 +163,13 @@ function onCreateNewSet() {
         secrets: selectedSet.value?.secrets.map((secret) => ({ ...secret, value: null, alreadySet: false })) || [],
     };
 
-    emit("new-credentials-set", props.credentialPayload, newSet);
-    selectedSet.value = newSet;
-    onCurrentSetChange(newSet);
+    console.log("Creating new set of credentials", newSet);
+
+    // emit("new-credentials-set", props.credentialPayload, newSet);
+    tmpSet.value = newSet;
+    // onCurrentSetChange(newSet);
+
+    isNewSet.value = true;
 
     toggleEditingMode(true);
 }
@@ -140,6 +182,11 @@ const editMode = ref(false);
 
 function toggleEditingMode(state: boolean) {
     editMode.value = state;
+
+    if (!state) {
+        tmpSet.value = undefined;
+        isNewSet.value = false;
+    }
 }
 
 async function onDeleteSet() {
@@ -168,16 +215,51 @@ function onDiscardSet() {
     toggleEditingMode(false);
 }
 
-function onSaveSet() {
-    if (newNameError.value) {
-        return;
-    }
+function onEditSet() {
+    tmpSet.value = undefined;
+    tmpSet.value = { ...selectedSet.value! };
+    originalName.value = tmpSet.value!.name;
 
-    if (selectedSet.value) {
-        emit("update-current-set", props.credentialPayload, selectedSet.value);
-    }
+    isNewSet.value = false;
 
-    toggleEditingMode(false);
+    toggleEditingMode(true);
+}
+
+async function onSaveSet() {
+    // if (newNameError.value) {
+    //     return;
+    // }
+
+    // if (selectedSet.value) {
+    //     emit("update-current-set", props.credentialPayload, selectedSet.value);
+    // }
+
+    // toggleEditingMode(false);
+
+    saveButtonText.value = "Saving";
+    // tmpSet
+
+    try {
+        isBusy.value = true;
+        console.log("Saving user credentials");
+
+        const toSend = {
+            source_id: props.sourceData.sourceId,
+            source_type: props.sourceData.sourceType,
+            source_version: props.sourceData.sourceVersion,
+            credentials: [{ ...props.credentialPayload, groups: [tmpSet.value!] }],
+        };
+
+        const newData = await userCredentialsStore.saveUserCredentialsForTool(toSend);
+
+        emit("update-credentials-list", newData);
+        toggleEditingMode(false);
+    } catch (error) {
+        // TODO: Implement error handling.
+        console.error("Error saving user credentials", error);
+    } finally {
+        isBusy.value = false;
+    }
 }
 </script>
 
@@ -214,6 +296,7 @@ function onSaveSet() {
                             :track-by="`name`"
                             :allow-empty="false"
                             :show-labels="false"
+                            :disabled="editMode"
                             :placeholder="`Select ${serviceName} set`"
                             @input="onCurrentSetChange" />
                     </BFormGroup>
@@ -234,7 +317,7 @@ function onSaveSet() {
                             variant="outline-info"
                             size="sm"
                             title="Edit selected set"
-                            @click="toggleEditingMode(true)">
+                            @click="onEditSet">
                             <FontAwesomeIcon :icon="faPencil" />
                         </BButton>
 
@@ -250,10 +333,13 @@ function onSaveSet() {
                     </BButtonGroup>
                 </div>
 
-                <BCollapse v-if="selectedSet" :visible="editMode" class="set-body">
+                <BCollapse v-if="tmpSet" :visible="editMode" class="set-body">
                     <div class="d-flex justify-content-between">
-                        <span>
-                            Editing set: <b>{{ selectedSet.name }}</b>
+                        <span v-if="isNewSet">
+                            New set: <b>{{ originalName }}</b>
+                        </span>
+                        <span v-else v-once>
+                            Editing set: <b>{{ tmpSet.name }}</b>
                         </span>
 
                         <div class="d-flex justify-content-center flex-gapx-1">
@@ -270,18 +356,18 @@ function onSaveSet() {
                                 v-b-tooltip.hover.noninteractive
                                 variant="outline-info"
                                 size="sm"
-                                title="Save changes to this set"
-                                :disabled="newNameError"
+                                :title="saveButtonText"
+                                :disabled="!!newNameError || isBusy"
                                 @click="onSaveSet">
-                                <FontAwesomeIcon :icon="faSave" />
-                                Save
+                                <FontAwesomeIcon :icon="isBusy ? faSpinner : faSave" :spin="isBusy" />
+                                {{ saveButtonText }}
                             </BButton>
                         </div>
                     </div>
 
                     <div class="p-2">
                         <FormElement
-                            v-if="selectedSet?.name !== defaultSet?.name"
+                            v-if="tmpSet?.name !== defaultSet?.name"
                             v-model="newSetName"
                             type="text"
                             title="Set name"
@@ -289,9 +375,9 @@ function onSaveSet() {
                             :optional="false"
                             :help="setNameHelp" />
 
-                        <div v-for="variable in selectedSet.variables" :key="variable.name">
+                        <div v-for="variable in tmpSet.variables" :key="variable.name">
                             <FormElement
-                                :id="`${selectedSet.name}-${variable.name}-variable`"
+                                :id="`${tmpSet.name}-${variable.name}-variable`"
                                 v-model="variable.value"
                                 type="text"
                                 :title="getVariableTitle(variable.name, 'variable')"
@@ -299,12 +385,12 @@ function onSaveSet() {
                                 :help="getVariableDescription(variable.name, 'variable')" />
                         </div>
 
-                        <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
+                        <div v-for="secret in tmpSet.secrets" :key="secret.name" class="secret-input">
                             <FormElement
-                                :id="`${selectedSet.name}-${secret.name}-secret`"
+                                :id="`${tmpSet.name}-${secret.name}-secret`"
                                 v-model="secret.value"
                                 type="password"
-                                :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
+                                :autocomplete="`${tmpSet.name}-${secret.name}-secret`"
                                 :title="getVariableTitle(secret.name, 'secret')"
                                 :optional="isVariableOptional(secret.name, 'secret')"
                                 :help="getVariableDescription(secret.name, 'secret')" />

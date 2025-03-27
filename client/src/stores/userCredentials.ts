@@ -1,4 +1,4 @@
-import { ref, set } from "vue";
+import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { CreateSourceCredentialsPayload, ServiceCredentialsIdentifier, UserCredentials } from "@/api/users";
@@ -9,6 +9,8 @@ export const SECRET_PLACEHOLDER = "********";
 
 export const useUserCredentialsStore = defineScopedStore("userCredentialsStore", (currentUserId: string) => {
     const userCredentialsForTools = ref<Record<string, UserCredentials[]>>({});
+
+    const currentUserCredentialsForTools = computed(() => userCredentialsForTools.value);
 
     function getKey(toolId: string): string {
         const userId = ensureUserIsRegistered();
@@ -75,13 +77,14 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
         const key = getKey(toolId);
         const credentials = userCredentialsForTools.value[key];
 
+        console.log("user cred store", toolId, serviceIdentifier, groupName);
         if (credentials) {
             const serviceCredentials = credentials.find(
                 (credential) =>
                     credential.name === serviceIdentifier.name && credential.version === serviceIdentifier.version
             );
             if (!serviceCredentials) {
-                throw new Error(`No credentials found for service reference ${serviceIdentifier}`);
+                return;
             }
             const group = serviceCredentials.groups[groupName];
             if (!group) {
@@ -130,6 +133,7 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
     }
 
     return {
+        currentUserCredentialsForTools,
         getAllUserCredentialsForTool,
         fetchAllUserCredentialsForTool,
         saveUserCredentialsForTool,
