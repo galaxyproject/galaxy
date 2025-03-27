@@ -4,19 +4,21 @@
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <FormCard title="Create a new Page" icon="fa-file-contract">
             <template v-slot:body>
-                <div v-localize class="font-weight-bold py-2">Title</div>
-                <FormInput id="title" v-model="title" />
-                <div v-localize class="font-weight-bold py-2">Identifier</div>
-                <FormInput id="slug" v-model="slug" />
-                <small v-localize class="text-muted py-2">
-                    A unique identifier that will be used for public links to this page. This field can only contain
-                    lowercase letters, numbers, and dashes (-).
-                </small>
-                <div v-localize class="font-weight-bold py-2">Annotation</div>
-                <FormInput id="annotation" v-model="annotation" />
-                <small v-localize class="text-muted py-2">
-                    A description of the page. The annotation is shown alongside published pages.
-                </small>
+                <FormElementContainer title="Title" :required="true" :condition="!!title">
+                    <FormInput id="title" v-model="title" />
+                </FormElementContainer>
+                <FormElementContainer
+                    title="Identifier"
+                    help="A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-)."
+                    :required="true"
+                    :condition="!!slug">
+                    <FormInput id="slug" v-model="slug" />
+                </FormElementContainer>
+                <FormElementContainer
+                    title="Annotation"
+                    help="A description of the page. The annotation is shown alongside published pages.">
+                    <FormInput id="annotation" v-model="annotation" />
+                </FormElementContainer>
             </template>
         </FormCard>
         <BButton class="my-2" variant="primary" @click="onCreate">
@@ -34,12 +36,12 @@ import { ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
+import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 
+import FormElementContainer from "../Form/FormElementContainer.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 
 const router = useRouter();
 
@@ -73,19 +75,23 @@ async function fetchReport() {
 }
 
 async function onCreate() {
-    const { data, error } = await GalaxyApi().POST("/api/pages", {
-        body: {
-            annotation: annotation.value,
-            content: content.value,
-            content_format: "markdown",
-            slug: slug.value,
-            title: title.value,
-        },
-    });
-    if (error) {
-        errorMessage.value = error.err_msg;
+    if (slug.value && title.value) {
+        const { data, error } = await GalaxyApi().POST("/api/pages", {
+            body: {
+                annotation: annotation.value,
+                content: content.value,
+                content_format: "markdown",
+                slug: slug.value,
+                title: title.value,
+            },
+        });
+        if (error) {
+            errorMessage.value = error.err_msg;
+        } else {
+            router.push(`/pages/editor?id=${data.id}`);
+        }
     } else {
-        router.push(`/pages/editor?id=${data.id}`);
+        errorMessage.value = "Please complete all required inputs.";
     }
 }
 
