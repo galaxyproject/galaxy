@@ -380,10 +380,6 @@ class SimpleTextToolParameter(ToolParameter):
         else:
             self.value = ""
 
-    def to_json(self, value, app, use_security):
-        """Convert a value to a string representation suitable for persisting"""
-        return unicodify(value)
-
     def get_initial_value(self, trans, other_values):
         return self.value
 
@@ -680,9 +676,6 @@ class FileToolParameter(ToolParameter):
     >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
-
-    def __init__(self, tool, input_source):
-        super().__init__(tool, input_source)
 
     def from_json(self, value, trans, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
@@ -2657,10 +2650,6 @@ class BaseJsonToolParameter(ToolParameter):
 
 class DirectoryUriToolParameter(SimpleTextToolParameter):
     """galaxy.files URIs for directories."""
-
-    def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-        super().__init__(tool, input_source)
 
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
