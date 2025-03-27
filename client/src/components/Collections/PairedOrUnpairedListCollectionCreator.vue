@@ -402,7 +402,7 @@ function flatListIdentifiers(): CollectionElementIdentifier[] {
 
 function pairedListIdentifiers(): CollectionElementIdentifier[] {
     let rows = rowData.value || [];
-    const strictPairs = props.collectionType.endsWith("paired");
+    const strictPairs = props.collectionType.endsWith(":paired");
     if (strictPairs) {
         rows = rows.filter((value) => !("unpaired" in value.datasets));
     }

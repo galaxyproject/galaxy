@@ -82,6 +82,24 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    def test_build_paired_unpaired_list(self):
+        self.perform_upload_of_pasted_content(
+            {
+                "commonprefix_1.fasta": "forward content",
+                "commonprefix_2.fasta": "reverse content",
+                "unmatched.fasta": "unmatched",
+            }
+        )
+        self._wait_for_and_select([1, 2, 3])
+        self.history_panel_build_list_of_paired_or_unpaireds()
+
+        self.collection_builder_set_name("mix of paired and unpaired data")
+        self.screenshot("collection_builder_paired_or_unpaired_list")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(7)
+
+    @selenium_test
+    @managed_history
     def test_build_paired_list_show_original(self):
         self.perform_upload_of_pasted_content(
             {
