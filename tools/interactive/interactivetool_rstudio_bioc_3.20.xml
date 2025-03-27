@@ -10,7 +10,7 @@
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($jupyter_notebook.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($rstudio.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="DEBUG">true</environment_variable>
@@ -22,12 +22,29 @@
     </inputs>
     <command><![CDATA[
         #import re
-        echo "[`date`] - Setting up for RStudio." &&
+        echo "[`date`] - Setting up for RStudio as \$(id)." &&
+        ## Match the container user id to the host user/group id if supplied
+        if [ -n "\$USERID" ]; then
+            echo "[`date`] - Setting user id to \$USERID." &&
+            usermod -u "\$USERID" rstudio;
+        fi &&
+        if [ -n "\$GROUPID" ]; then
+            echo "[`date`] - Setting user group to \$GROUPID." &&
+            groupmod -g "\$GROUPID" rstudio;
+        fi &&
+
         ## This is where GalaxyConnector places files copied from Galaxy
         mkdir -p /import &&
         chown rstudio:rstudio /import &&
         ln -s "/import" /home/rstudio/galaxy_imports &&
         mkdir -p ./rstudio_outputs && chown rstudio:rstudio ./rstudio_outputs && ln -s "\$PWD/rstudio_outputs" /home/rstudio/galaxy_outputs &&
+
+        echo "[`date`] - Creating Rprofile" &&
+        cp '$__tool_directory__/Rprofile.R' /home/rstudio/.Rprofile &&
+
+        ## Required because of the above usermod command, but before linking the input files
+        chown -R rstudio:rstudio /home/rstudio/ &&
+
         #if $input:
             echo "[`date`] - Linking input files to '/home/rstudio/galaxy_inputs/'" &&
             mkdir -p /home/rstudio/galaxy_inputs/ &&
@@ -40,16 +57,12 @@
             echo "[`date`] - No input files provided, skipping file linking step." &&
         #end if
 
-        echo "[`date`] - Creating Rprofile" &&
-        cp '$__tool_directory__/Rprofile.R' /home/rstudio/.Rprofile &&
-        chown rstudio:rstudio /home/rstudio/.Rprofile &&
-
         echo "[`date`] - Starting container processes, including RStudio..." &&
         /init
     ]]>
     </command>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="RStudio Interactive Tool"></data>
+        <data name="rstudio" format="txt" label="RStudio Interactive Tool"></data>
         <collection name="output_collection" type="list" label="RStudio outputs">
             <discover_datasets pattern="__name_and_ext__" directory="rstudio_outputs/" assign_primary_output="true" recurse="true"/>
         </collection>
@@ -57,9 +70,9 @@
     <tests>
         <test expect_num_outputs="1">
             <param name="mode" value="previous" />
-            <param name="ipynb" value="test.ipynb" />
+            <param name="rstudio" value="test.txt" />
             <param name="run_it" value="true" />
-            <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
+            <output name="rstudio" file="test.txt" ftype="txt"/>
         </test>
     </tests>
     <help><![CDATA[
@@ -85,35 +98,39 @@ following built-in functions are available:
 Before launching the tool, you can select datasets from your history to include
 in the RStudio environment. This allows you to work with your data directly
 within RStudio without needing to manually transfer files. All files will be
-located in the `/home/rstudio/galaxy_inputs/` directory. Note that files
+located in the `~/galaxy_inputs/` directory. Note that files
 mapped from a Galaxy history into RStudio like this are read only.
 
-In addition, you can use the following functions within your R scripts to
-facilitate data transfer:. All files will be located in the `~/galaxy_imports`
-directory.
+Any files that you store in the `~/galaxy_outputs/` directory will be
+automatically transferred back to Galaxy when you finish your session and stop
+the RStudio Interactive Tool.
 
-**GalaxyConnector::gx_get(history_dataset_number)** – Loads a dataset from your
+In addition, you can use the following functions within your R scripts to
+facilitate interactive data transfer:. All files will be located in the
+`~/galaxy_imports` directory.
+
+**gx_get(history_dataset_number)** – Loads a dataset from your
 Galaxy history into the R environment. Example:
 
 .. code-block:: r
 
-    GalaxyConnector::gx_get(1)
+    gx_get(1)
     df <- read.csv("~/galaxy_imports/1")
     head(df)
 
-**GalaxyConnector::gx_put("file_name", ["file_type"])** – Saves an R object as a
+**gx_put("file_name", ["file_type"])** – Saves an R object as a
 new dataset in your Galaxy history. Example:
 
 .. code-block:: r
 
-    GalaxyConnector::gx_put("/home/rstudio/output.csv")
+  gx_put("/home/rstudio/output.csv")
 
-**GalaxyConnector::gx_save("session_name")** – Saves your R script to Galaxy for
+**gx_save("session_name")** – Saves your R script to Galaxy for
 reproducibility. Example:
 
 .. code-block:: r
 
-    GalaxyConnector::gx_save("analysis_script.R")
+    gx_save("analysis_script.R")
 
     ]]></help>
 </tool>
