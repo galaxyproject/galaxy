@@ -145,7 +145,7 @@ class FastAPIPages:
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreatePagePayload = Body(...),
     ) -> PageSummary:
-        """Get a list with details of all Pages available to the user."""
+        """Creates a new Page."""
         return self.service.create(trans, payload)
 
     @router.delete(

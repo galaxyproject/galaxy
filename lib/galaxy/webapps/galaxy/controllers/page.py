@@ -107,30 +107,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             raise web.httpexceptions.HTTPNotFound()
         return self.display_by_username_and_slug(trans, page.user.username, page.slug)
 
-    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
-        """Display page based on a username and slug."""
-
-        # Get page.
-        user = get_user_by_username(trans.sa_session, username)
-        page = get_page_(trans.sa_session, user, slug)
-        if page is None:
-            raise web.httpexceptions.HTTPNotFound()
-
-        # Security check raises error if user cannot access page.
-        self.security_check(trans, page, False, True)
-
-        # Encode page identifier.
-        page_id = trans.security.encode_id(page.id)
-
-        # Redirect to client.
-        return trans.response.send_redirect(
-            web.url_for(
-                controller="published",
-                action="page",
-                id=page_id,
-            )
-        )
-
     def get_page(self, trans, id, check_ownership=True, check_accessible=False):
         """Get a page from the database by id."""
         # Load history from database
