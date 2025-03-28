@@ -307,8 +307,8 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         # Update page attributes
         page.title = payload.title
         page.slug = payload.slug
-        if (page_annotation := payload.annotation) is not None:
-            self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
+        if payload.annotation is not None:
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
 
         # Persist
         session = trans.sa_session
