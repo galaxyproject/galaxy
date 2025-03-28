@@ -3,3 +3,4 @@ command: echo 'hello world 2' > $output1
 outputs:
   output1:
     format: txt
+    type: data

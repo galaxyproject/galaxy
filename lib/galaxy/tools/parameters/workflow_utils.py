@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+from typing import Literal
 
 
 class NoReplacement:
@@ -11,9 +12,9 @@ NO_REPLACEMENT = NoReplacement()
 
 
 class workflow_building_modes:
-    DISABLED = False
-    ENABLED = True
-    USE_HISTORY = 1
+    DISABLED: Literal[False] = False
+    ENABLED: Literal[True] = True
+    USE_HISTORY: Literal[1] = 1
 
 
 def runtime_to_json(runtime_value):

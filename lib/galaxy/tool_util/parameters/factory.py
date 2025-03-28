@@ -107,6 +107,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             min_int = int(min_raw) if min_raw is not None else None
             max_int = int(max_raw) if max_raw is not None else None
             return IntegerParameterModel(
+                type="integer",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=int_value,
@@ -118,6 +119,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             nullable = input_source.parse_optional()
             value = input_source.get_bool_or_none("checked", None if nullable else False)
             return BooleanParameterModel(
+                type="boolean",
                 name=input_source.parse_name(),
                 optional=nullable,
                 value=value,
@@ -126,6 +128,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional, optionality_inferred = text_input_is_optional(input_source)
             text_validators: List[TextCompatiableValidators] = _text_validators(input_source)
             return TextParameterModel(
+                type="text",
                 name=input_source.parse_name(),
                 optional=optional,
                 validators=text_validators,
@@ -153,6 +156,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             min_float = float(min_raw) if min_raw is not None else None
             max_float = float(max_raw) if max_raw is not None else None
             return FloatParameterModel(
+                type="float",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=float_value,
@@ -165,6 +169,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             value = input_source.get("value")
             hidden_validators: List[TextCompatiableValidators] = _text_validators(input_source)
             return HiddenParameterModel(
+                type="hidden",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=value,
@@ -173,18 +178,21 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "color":
             optional = input_source.parse_optional()
             return ColorParameterModel(
+                type="color",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=get_color_value(input_source),
             )
         elif param_type == "rules":
             return RulesParameterModel(
+                type="rules",
                 name=input_source.parse_name(),
             )
         elif param_type == "data":
             optional = input_source.parse_optional()
             multiple = input_source.get_bool("multiple", False)
             return DataParameterModel(
+                type="data",
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
@@ -193,6 +201,8 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             default_value = input_source.parse_default()
             return DataCollectionParameterModel(
+                type="data_collection",
+                collection_type=input_source.get("collection_type"),
                 name=input_source.parse_name(),
                 optional=optional,
                 value=default_value,
@@ -214,6 +224,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 if static_validator.type == "no_options":
                     select_validators.append(cast(NoOptionsParameterValidatorModel, static_validator))
             return SelectParameterModel(
+                type="select",
                 name=input_source.parse_name(),
                 optional=optional,
                 options=options,
@@ -228,6 +239,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             if dynamic_options is None:
                 static_options = input_source.parse_drill_down_static_options()
             return DrillDownParameterModel(
+                type="drill_down",
                 name=input_source.parse_name(),
                 multiple=multiple,
                 hierarchy=hierarchy,
@@ -237,6 +249,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             multiple = input_source.get_bool("multiple", False)
             optional = input_source.parse_optional()
             return DataColumnParameterModel(
+                type="data_column",
                 name=input_source.parse_name(),
                 multiple=multiple,
                 optional=optional,
@@ -245,18 +258,21 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             multiple = input_source.get_bool("multiple", False)
             optional = input_source.parse_optional()
             return GroupTagParameterModel(
+                type="group_tag",
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
             )
         elif param_type == "baseurl":
             return BaseUrlParameterModel(
+                type="baseurl",
                 name=input_source.parse_name(),
             )
         elif param_type == "genomebuild":
             optional = input_source.parse_optional()
             multiple = input_source.get_bool("multiple", False)
             return GenomeBuildParameterModel(
+                type="genomebuild",
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
@@ -264,6 +280,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "directory_uri":
             directory_uri_validators: List[TextCompatiableValidators] = _text_validators(input_source)
             return DirectoryUriParameterModel(
+                type="directory_uri",
                 name=input_source.parse_name(),
                 validators=directory_uri_validators,
             )
@@ -299,6 +316,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 )
             )
         return ConditionalParameterModel(
+            type="conditional",
             name=input_source.parse_name(),
             test_parameter=test_parameter,
             whens=whens,
@@ -314,6 +332,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         min = int(min_raw) if min_raw is not None else None
         max = int(max_raw) if max_raw is not None else None
         return RepeatParameterModel(
+            type="repeat",
             name=name,
             parameters=instance_tool_parameter_models,
             min=min,
@@ -324,6 +343,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         instance_sources = input_source.parse_nested_inputs_source()
         instance_tool_parameter_models = input_models_for_page(instance_sources, profile)
         return SectionParameterModel(
+            type="section",
             name=name,
             parameters=instance_tool_parameter_models,
         )

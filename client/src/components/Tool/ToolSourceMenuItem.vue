@@ -19,6 +19,10 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    toolUuid: {
+        type: String,
+        default: null,
+    },
 });
 </script>
 
@@ -33,7 +37,7 @@ const props = defineProps({
             :title="`Tool Source for ${props.toolId}`"
             ok-only
             ok-title="Close">
-            <ToolSource :tool-id="props.toolId" />
+            <ToolSource :tool-id="props.toolId" :tool-uuid="props.toolUuid" />
         </b-modal>
     </div>
 </template>

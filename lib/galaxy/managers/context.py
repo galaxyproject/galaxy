@@ -44,6 +44,7 @@ from typing import (
     cast,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
 )
@@ -203,6 +204,7 @@ class ProvidesUserContext(ProvidesAppContext):
     properties.
     """
 
+    workflow_building_mode: Literal[1, True, False] = False
     galaxy_session: Optional[GalaxySession] = None
     _tag_handler: Optional[GalaxyTagHandlerSession] = None
     _short_term_cache: Dict[Tuple[str, ...], Any]

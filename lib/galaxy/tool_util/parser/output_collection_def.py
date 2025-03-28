@@ -58,7 +58,7 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
 
 
 def dataset_collector_descriptions_from_output_dict(as_dict):
-    discover_datasets_dicts = as_dict.get("discover_datasets", [])
+    discover_datasets_dicts = as_dict.get("discover_datasets") or []
     if is_dict(discover_datasets_dicts):
         discover_datasets_dicts = [discover_datasets_dicts]
     dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
