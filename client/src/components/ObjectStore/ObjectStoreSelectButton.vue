@@ -15,17 +15,16 @@ interface ObjectStoreSelectButtonProps {
 defineProps<ObjectStoreSelectButtonProps>();
 
 const emit = defineEmits<{
-    (e: "click", value: string): void;
+    (e: "click", value: string | null): void;
 }>();
 </script>
 
 <template>
     <BButton
-        :id="`${idPrefix}-object-store-button-${objectStore.object_store_id}`"
         :variant="variant"
         :data-object-store-id="objectStore.object_store_id"
-        @click="emit('click', objectStore.object_store_id)"
-        >{{ objectStore.name }}
+        @click="emit('click', objectStore.object_store_id ?? null)">
+        {{ objectStore.name }}
         <ObjectStoreBadges :badges="objectStore.badges" size="lg" :more-on-hover="false" />
         <ProvidedQuotaSourceUsageBar :object-store="objectStore" :compact="true"> </ProvidedQuotaSourceUsageBar>
     </BButton>
