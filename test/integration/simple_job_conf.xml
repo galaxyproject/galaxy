@@ -10,6 +10,9 @@
 
     <destinations>
         <destination id="local_dest" runner="local">
+            <env id="JOBCONF_ENV_VAR">YEAH</env>
+            <param id="docker_env_CONTAINER_VAR">CONTAINER_VAR_VALUE</param>
+            <param id="singularity_env_CONTAINER_VAR">CONTAINER_VAR_VALUE</param>
         </destination>
     </destinations>
 
