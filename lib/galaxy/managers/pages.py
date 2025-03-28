@@ -273,8 +273,8 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page.title = payload.title
         page.slug = payload.slug
         page.user = user
-        if (page_annotation := payload.annotation) is not None:
-            self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
+        if payload.annotation is not None:
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
 
         # And the first (empty) page revision
         page_revision = model.PageRevision()
