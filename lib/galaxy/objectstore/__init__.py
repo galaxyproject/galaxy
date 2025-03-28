@@ -368,7 +368,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_quota_source_map(self):
+    def get_quota_source_map(self) -> "QuotaSourceMap":
         """Return QuotaSourceMap describing mapping of object store IDs to quota sources."""
 
     @abc.abstractmethod
@@ -523,7 +523,7 @@ class BaseObjectStore(ObjectStore):
             badges.append({"type": type, "message": message})
         return badges
 
-    def get_quota_source_map(self):
+    def get_quota_source_map(self) -> "QuotaSourceMap":
         # I'd rather keep this abstract... but register_singleton wants it to be instantiable...
         raise NotImplementedError()
 
