@@ -13,12 +13,6 @@
                     <small class="my-1 mx-3 text-info">{{ title }}</small>
                 </span>
                 <CellOption
-                    v-if="configurable"
-                    title="Attach Data"
-                    description="Select data for this cell"
-                    :icon="faPaperclip"
-                    @click="$emit('configure')" />
-                <CellOption
                     title="Clone"
                     description="Create a copy of this cell"
                     :icon="faClone"
@@ -51,7 +45,7 @@
 <script setup lang="ts">
 import { faClone, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
 import { BModal } from "bootstrap-vue";
-import { faArrowDown, faArrowUp, faPaperclip, faTrash } from "font-awesome-6";
+import { faArrowDown, faArrowUp, faTrash } from "font-awesome-6";
 import { computed, ref } from "vue";
 
 import type { CellType } from "./types";
@@ -60,13 +54,19 @@ import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
-const props = defineProps<{
-    cellIndex: number;
-    cellTotal: number;
-    configurable: boolean;
-    name: string;
-    show: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        cellIndex: number;
+        cellTotal: number;
+        configurable?: boolean;
+        name: string;
+        show?: boolean;
+    }>(),
+    {
+        configurable: false,
+        show: true,
+    }
+);
 
 defineEmits<{
     (e: "click", cell: CellType): void;
