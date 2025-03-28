@@ -1,12 +1,11 @@
 <template>
     <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div
-                class="d-flex flex-column cursor-pointer"
-                :class="{ 'cell-wrapper-hover': hover }"
-                @click="$emit('toggle')">
-                <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
-                <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
+            <div class="d-flex cursor-pointer" :class="{ 'cell-wrapper-hover': hover }" @click="$emit('toggle')">
+                <div class="align-self-end">
+                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
+                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
+                </div>
             </div>
             <SectionWrapper
                 class="m-2 w-100"
@@ -17,9 +16,14 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="d-flex flex-column" :class="{ 'cell-wrapper-hover': hover }">
+                <CellButton
+                    v-if="configurable"
+                    title="Attach Data"
+                    :icon="faPaperclip"
+                    :active="configure"
+                    @click="$emit('configure')" />
                 <CellAction
                     :name="name"
-                    :show="hover"
                     :cell-index="cellIndex"
                     :cell-total="cellTotal"
                     :configurable="configurable"
@@ -39,6 +43,7 @@
                     @cancel="$emit('configure')"
                     @change="handleConfigure($event)" />
                 <CellCode
+                    v-else
                     :key="name"
                     class="mt-1"
                     :value="content"
@@ -54,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleDown, faAngleDoubleUp, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
 import type { WorkflowLabel } from "./types";
