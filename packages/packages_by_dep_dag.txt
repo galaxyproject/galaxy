@@ -23,5 +23,7 @@ app
 
 web_apps
 
+galaxy
+
 test_driver
 tool_shed
