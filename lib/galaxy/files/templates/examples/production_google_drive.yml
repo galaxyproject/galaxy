@@ -1,6 +1,6 @@
 - id: google_drive
-  name: Export to Google Drive
-  description: This file source allows export to your Google Drive but can only read files uploaded by this Galaxy instance.
+  name: Google Drive
+  description: This file source allows export to your Google Drive and import of files that were previously exported by this Galaxy instance. It can only read files uploaded by this Galaxy instance.
   configuration:
     type: googledrive
     oauth2_client_id: "{{ environment.oauth2_client_id }}"
