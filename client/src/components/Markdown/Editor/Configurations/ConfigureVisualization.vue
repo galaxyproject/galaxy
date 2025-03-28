@@ -1,5 +1,5 @@
 <template>
-    <b-alert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</b-alert>
+    <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
     <MarkdownSelector v-else-if="labels !== undefined" argument-name="Dataset" :labels="labels" @onOk="onLabel" />
     <DataDialog
         v-else-if="currentHistoryId !== null"
@@ -7,10 +7,11 @@
         format="id"
         @onOk="onData"
         @onCancel="$emit('cancel')" />
-    <b-alert v-else v-localize variant="info" show> No history available to choose from. </b-alert>
+    <BAlert v-else v-localize variant="info" show> No history available to choose from. </BAlert>
 </template>
 
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { type Ref, ref, watch } from "vue";
 

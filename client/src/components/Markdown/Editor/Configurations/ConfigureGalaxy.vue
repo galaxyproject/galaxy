@@ -1,5 +1,5 @@
 <template>
-    <b-alert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</b-alert>
+    <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
     <MarkdownDialog
         v-else-if="requirement"
         :argument-type="requirement"
@@ -8,12 +8,13 @@
         :labels="labels"
         @onInsert="$emit('change', $event)"
         @onCancel="$emit('cancel')" />
-    <b-alert v-else v-localize variant="info" show>
+    <BAlert v-else v-localize variant="info" show>
         No inputs available for <b>`{{ contentObject?.name }}`</b>.
-    </b-alert>
+    </BAlert>
 </template>
 
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
