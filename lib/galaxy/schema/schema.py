@@ -3798,7 +3798,6 @@ class UpdatePagePayload(PageSummaryBase):
         title="Annotation",
         description="Annotation that will be attached to the page.",
     )
-    model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
 class AsyncTaskResultSummary(Model):
