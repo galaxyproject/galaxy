@@ -81,11 +81,3 @@ const popperRef = ref();
 
 const title = computed(() => `${props.name.charAt(0).toUpperCase()}${props.name.slice(1)}`);
 </script>
-
-<style>
-.cell-add-categories {
-    max-height: 20rem;
-    max-width: 15rem;
-    min-width: 15rem;
-}
-</style>
