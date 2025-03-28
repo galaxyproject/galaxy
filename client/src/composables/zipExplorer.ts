@@ -10,6 +10,7 @@ import {
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
+import { useIndexedDBFileStorage } from "@/composables/localFileStore";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 const zipExplorer = ref<ROCrateZipExplorer>();
@@ -227,66 +228,20 @@ export function useZipExplorer() {
         return proxyUrl;
     }
 
-    interface IndexedDBFile {
-        name: string;
-        fileData: Uint8Array;
-    }
-
-    const dbName = "zip-extract-db";
-    const storeName = "files";
-    const extractedFiles = ref<string[]>([]);
-
-    async function openDB(): Promise<IDBDatabase> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbName, 1);
-            request.onupgradeneeded = (event: any) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    db.createObjectStore(storeName, { keyPath: "name" });
-                }
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = (e) => reject(e);
-        });
-    }
-
-    async function saveToDB(name: string, fileData: Uint8Array) {
-        const db = await openDB();
-        const tx = db.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        store.put({ name, fileData });
-        db.close();
-    }
-
-    async function getFilesFromDB(): Promise<IndexedDBFile[]> {
-        const db = await openDB();
-        const tx = db.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        const request = store.getAll();
-        return new Promise((resolve) => {
-            request.onsuccess = () => {
-                extractedFiles.value = request.result.map((entry: IndexedDBFile) => entry.name);
-                resolve(request.result);
-            };
-        });
-    }
-
-    async function cleanupDatabase() {
-        const db = await openDB();
-        const tx = db.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        store.clear();
-        extractedFiles.value = [];
-        console.log("IndexedDB cleaned up!");
-    }
+    const { storeFile, getAllStoredFiles, clearDatabaseStore } = useIndexedDBFileStorage({
+        name: "zip-extract-db",
+        store: "files",
+        version: 1,
+    });
 
     async function extractFileToDB(entry: ZipFileEntry) {
         const fileData = await entry.data();
-        await saveToDB(entry.path.split("/").pop() ?? "unknown", fileData);
+        const fileBlob = new Blob([fileData]);
+        await storeFile(entry.path.split("/").pop() ?? "unknown", fileBlob);
     }
 
     async function uploadExtractedFiles(historyId: string | null) {
-        const databaseFiles = await getFilesFromDB();
+        const databaseFiles = await getAllStoredFiles();
         if (databaseFiles.length === 0) {
             return; // No files to upload
         }
@@ -299,8 +254,7 @@ export function useZipExplorer() {
         const elements = [];
 
         for (const fileEntry of databaseFiles) {
-            const fileBlob = new Blob([fileEntry.fileData]);
-            files.push(fileBlob);
+            files.push(fileEntry.fileData);
             elements.push({
                 name: fileEntry.name,
                 deferred: false,
@@ -326,7 +280,7 @@ export function useZipExplorer() {
             rethrowSimple(e);
         }
 
-        await cleanupDatabase(); // Clean up after upload
+        await clearDatabaseStore();
     }
 
     return {
