@@ -142,15 +142,6 @@ ${ h.dumps( get_config_dict() )}
                 user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
                 user_dict[ 'is_admin' ] = trans.user_is_admin
 
-                # tags used
-                users_api_controller = trans.webapp.api_controllers[ 'users' ]
-                tags_used = []
-                for tag in users_api_controller.get_user_tags_used( trans, user=trans.user ):
-                    tag = escape( tag )
-                    if tag:
-                        tags_used.append( tag )
-                user_dict[ 'tags_used' ] = tags_used
-
                 return user_dict
 
             usage = 0
