@@ -1,5 +1,4 @@
-<script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItemButton } from "bootstrap-vue";
@@ -8,43 +7,36 @@ import { computed, ref, watch } from "vue";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
 
+import type { FormParameterValue } from "../parameterTypes";
+import type { DataOption } from "./FormData/types";
+
 import FormCheck from "./FormCheck.vue";
 import FormRadio from "./FormRadio.vue";
 import FormSelect from "./FormSelect.vue";
 import FormSelectMany from "./FormSelectMany/FormSelectMany.vue";
 
-library.add(faCaretDown);
+type FormValue = FormParameterValue | DataOption[];
 
-const emit = defineEmits(["input"]);
-const props = defineProps({
-    value: {
-        default: null,
-    },
-    data: {
-        type: Array,
-        default: null,
-    },
-    display: {
-        type: String,
-        default: null,
-    },
-    optional: {
-        type: Boolean,
-        default: false,
-    },
-    options: {
-        type: Array,
-        default: null,
-    },
-    multiple: {
-        type: Boolean,
-        default: false,
-    },
-});
+const emit = defineEmits<{
+    (e: "input", value: FormValue): void;
+}>();
+const props = defineProps<{
+    /** TODO: It should be `value: FormValue` but thats giving:
+     * `Type 'null' is not assignable to type 'PropConstructor<unknown>'.` */
+    value: any;
+    data?: {
+        label: string;
+        value: any;
+    }[];
+    display?: "checkboxes" | "radio" | "select" | "select-many";
+    optional?: boolean;
+    options?: [string, FormParameterValue | undefined][];
+    multiple?: boolean;
+}>();
 
 const currentValue = computed({
     get: () => {
-        return props.value;
+        return props.value as any;
     },
     set: (val) => {
         emit("input", val);
@@ -53,7 +45,7 @@ const currentValue = computed({
 
 /** Provides formatted select options. */
 const currentOptions = computed(() => {
-    let result = [];
+    let result: { label: string; value: any }[] = [];
     const data = props.data;
     const options = props.options;
     if (options && options.length > 0) {
@@ -131,7 +123,7 @@ defineExpose({
 
             <BDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
                 <template v-slot:button-content>
-                    <FontAwesomeIcon icon="fa-caret-down"></FontAwesomeIcon>
+                    <FontAwesomeIcon :icon="faCaretDown" />
                     <span class="sr-only">select element preferences</span>
                 </template>
                 <BDropdownItemButton
