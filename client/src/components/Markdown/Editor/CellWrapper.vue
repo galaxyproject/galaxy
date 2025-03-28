@@ -32,7 +32,7 @@
                 <hr class="solid m-0" />
                 <component
                     :is="configureComponent"
-                    v-if="!configure"
+                    v-if="configure"
                     :name="name"
                     :content="content"
                     :labels="labels"
@@ -63,6 +63,7 @@ import CellAction from "./CellAction.vue";
 import CellButton from "./CellButton.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
+import ConfigureVitessce from "./Configurations/ConfigureVitessce.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const CellCode = () => import("./CellCode.vue");
@@ -91,6 +92,8 @@ const configureComponent = computed(() => {
             return ConfigureGalaxy;
         case "visualization":
             return ConfigureVisualization;
+        case "vitessce":
+            return ConfigureVitessce;
     }
     return undefined;
 });

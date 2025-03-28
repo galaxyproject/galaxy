@@ -20,6 +20,23 @@ export async function copyCollection(hdcaId, historyId) {
     }
 }
 
+export async function getDataset(query) {
+    const { data, error } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                q: ["name-contains"],
+                qv: [query],
+                offset: 0,
+                limit: 50,
+            },
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
 export async function getInvocations() {
     const { data, error } = await GalaxyApi().GET("/api/invocations");
     if (error) {
