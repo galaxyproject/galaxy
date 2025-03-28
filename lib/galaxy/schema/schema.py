@@ -24,6 +24,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    field_validator,
     Json,
     model_validator,
     RootModel,
@@ -3739,9 +3740,16 @@ class PageSummaryBase(Model):
     slug: str = Field(
         ...,  # Required
         title="Identifier",
-        description="The title slug for the page URL, must be unique.",
+        description="The identifiying slug for the page URL, must be unique.",
         pattern=r"^[a-z0-9-]+$",
     )
+
+    @field_validator("title")
+    @classmethod
+    def title_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise ValueError("Title must not be empty")
+        return v
 
 
 class MaterializeDatasetInstanceAPIRequest(Model):

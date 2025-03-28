@@ -43,10 +43,10 @@ class BasePagesApiTestCase(ApiTestCase):
     def _test_page_payload(self, **kwds):
         return self.dataset_populator.new_page_payload(**kwds)
 
-    def _update_valid_page(self, page_id, annotation, slug, title):
+    def _update_page(self, page_id, annotation, slug, title, error_code=200):
         payload = dict(title=title, slug=slug, annotation=annotation)
         page_response = self._put(f"pages/{page_id}", payload, json=True)
-        self._assert_status_code_is(page_response, 200)
+        self._assert_status_code_is(page_response, error_code)
         return page_response.json()
 
 
@@ -397,7 +397,11 @@ steps:
     def test_update(self):
         response_json = self._create_valid_page_with_slug("pagetoupdate")
         page_id = response_json["id"]
-        update_response = self._update_valid_page(page_id, "newannotation", "newslug", "newtitle")
+        update_response = self._update_page(page_id, "newannotation", "new.slug", "newtitle", error_code=400)
+        assert update_response["err_msg"] == "String should match pattern '^[a-z0-9-]+$' in ('body', 'slug')"
+        update_response = self._update_page(page_id, "newannotation", "newslug", "", error_code=400)
+        assert update_response["err_msg"] == "Value error, Title must not be empty in ('body', 'title')"
+        update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle")
         self._assert_has_keys(update_response, "id", "slug", "title")
         assert update_response["title"] == "newtitle"
         assert update_response["slug"] == "newslug"
