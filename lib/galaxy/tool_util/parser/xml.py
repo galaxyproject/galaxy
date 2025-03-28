@@ -233,6 +233,10 @@ class XmlToolSource(ToolSource):
     def parse_description(self) -> str:
         return xml_text(self.root, "description")
 
+    def parse_icon(self) -> Optional[str]:
+        icon_elem = self.root.find("icon")
+        return icon_elem.get("src") if icon_elem is not None else None
+
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
 

@@ -1,5 +1,9 @@
 import logging
 import os
+from datetime import (
+    datetime,
+    timezone,
+)
 from json import loads
 from typing import (
     Any,
@@ -13,8 +17,10 @@ from fastapi import (
     Body,
     Depends,
     Request,
+    Response,
     UploadFile,
 )
+from fastapi.responses import FileResponse
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from galaxy import (
@@ -33,6 +39,10 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tools.evaluation import global_tool_errors
+from galaxy.util.hash_util import (
+    HashFunctionNameEnum,
+    memory_bound_hexdigest,
+)
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
@@ -60,6 +70,8 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
+ICON_CACHE_MAX_AGE = 2592000  # 30 days
+
 
 class FormDataApiRoute(APIContentTypeRoute):
     match_content_type = "multipart/form-data"
@@ -67,6 +79,10 @@ class FormDataApiRoute(APIContentTypeRoute):
 
 class JsonApiRoute(APIContentTypeRoute):
     match_content_type = "application/json"
+
+
+class PNGIconResponse(FileResponse):
+    media_type = "image/png"
 
 
 router = Router(tags=["tools"])
@@ -105,6 +121,60 @@ class FetchTools:
         files: List[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
+
+    @router.get(
+        "/api/tools/{tool_id}/icon",
+        summary="Get the icon image associated with a tool",
+        response_class=PNGIconResponse,
+        responses={
+            200: {
+                "content": {"image/png": {}},
+                "description": "Tool icon image in PNG format",
+            },
+            304: {
+                "description": "Tool icon image has not been modified since the last request",
+            },
+            404: {
+                "description": "Tool icon file not found or not provided by the tool",
+            },
+        },
+    )
+    def get_icon(self, request: Request, tool_id: str, trans: ProvidesHistoryContext = DependsOnTrans):
+        """Returns the icon image associated with a tool.
+
+        The icon image is served with caching headers to allow for efficient
+        client-side caching. The icon image is expected to be in PNG format.
+        """
+        tool_icon_path = self.service.get_tool_icon_path(trans=trans, tool_id=tool_id)
+        if tool_icon_path is None:
+            raise exceptions.ObjectNotFound(f"Tool icon file not found or not provided by the tool: {tool_id}")
+
+        # Get file modification time
+        file_stat = os.stat(tool_icon_path)
+        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc).strftime(
+            "%a, %d %b %Y %H:%M:%S GMT"
+        )
+
+        # Check If-Modified-Since
+        if_modified_since = request.headers.get("If-Modified-Since")
+        if if_modified_since == last_modified:
+            return Response(status_code=304)
+
+        # Generate ETag based on file content
+        file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=tool_icon_path)
+        etag = f'"{file_hash}"'
+
+        # Check If-None-Match (ETag)
+        if_none_match = request.headers.get("If-None-Match", "").split(",")
+        if any(etag.strip() == e.strip(' W/"') for e in if_none_match):  # Handle weak ETags
+            return Response(status_code=304)
+
+        # Serve the file with caching headers
+        response = PNGIconResponse(tool_icon_path)
+        response.headers["Cache-Control"] = f"public, max-age={ICON_CACHE_MAX_AGE}, immutable"
+        response.headers["ETag"] = etag
+        response.headers["Last-Modified"] = last_modified
+        return response
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

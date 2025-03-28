@@ -73,6 +73,10 @@ class YamlToolSource(ToolSource):
     def parse_description(self) -> str:
         return self.root_dict.get("description", "")
 
+    def parse_icon(self) -> Optional[str]:
+        icon_elem = self.root_dict.get("icon", {})
+        return icon_elem.get("src") if icon_elem is not None else None
+
     def parse_edam_operations(self) -> List[str]:
         return self.root_dict.get("edam_operations", [])
 
