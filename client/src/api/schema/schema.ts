@@ -7221,7 +7221,7 @@ export interface components {
             invocation_id?: string | null;
             /**
              * Identifier
-             * @description The title slug for the page URL, must be unique.
+             * @description The identifiying slug for the page URL, must be unique.
              */
             slug: string;
             /**
@@ -14868,7 +14868,7 @@ export interface components {
             revision_ids: string[];
             /**
              * Identifier
-             * @description The title slug for the page URL, must be unique.
+             * @description The identifiying slug for the page URL, must be unique.
              */
             slug: string;
             tags: components["schemas"]["TagCollection"];
@@ -14949,7 +14949,7 @@ export interface components {
             revision_ids: string[];
             /**
              * Identifier
-             * @description The title slug for the page URL, must be unique.
+             * @description The identifiying slug for the page URL, must be unique.
              */
             slug: string;
             tags: components["schemas"]["TagCollection"];
@@ -17337,7 +17337,7 @@ export interface components {
             annotation?: string | null;
             /**
              * Identifier
-             * @description The title slug for the page URL, must be unique.
+             * @description The identifiying slug for the page URL, must be unique.
              */
             slug: string;
             /**
@@ -17345,8 +17345,6 @@ export interface components {
              * @description The name of the page.
              */
             title: string;
-        } & {
-            [key: string]: unknown;
         };
         /** UpdateQuotaParams */
         UpdateQuotaParams: {
