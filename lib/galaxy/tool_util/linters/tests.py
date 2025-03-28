@@ -169,10 +169,7 @@ class TestsCaseValidation(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         profile = tool_source.parse_profile()
-        if Version(profile) < Version("24.2"):
-            report_foo = lint_ctx.warn
-        else:
-            report_foo = lint_ctx.error
+        lint_log = lint_ctx.warn if Version(profile) < Version("24.2") else lint_ctx.error
 
         try:
             validation_results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
@@ -186,7 +183,7 @@ class TestsCaseValidation(Linter):
             error = validation_result.validation_error
             if error:
                 error_str = _cleanup_pydantic_error(error)
-                report_foo(
+                lint_log(
                     f"Test {test_idx}: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [{error_str}]",
                     linter=cls.name(),
                 )
