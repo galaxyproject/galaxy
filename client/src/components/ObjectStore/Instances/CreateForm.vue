@@ -13,7 +13,7 @@ interface CreateFormProps {
     uuid?: string;
 }
 const props = defineProps<CreateFormProps>();
-const title = "Create a new storage location for your data";
+const title = "Create a new Galaxy storage for your data";
 
 const emit = defineEmits<{
     (e: "created", objectStore: UserConcreteObjectStore): void;

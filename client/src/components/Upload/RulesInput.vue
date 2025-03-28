@@ -149,7 +149,7 @@ function inputRemote() {
             </BButton>
             <BButton @click="inputRemote">
                 <FontAwesomeIcon icon="fa-folder-open" />
-                <span v-localize>Choose remote file</span>
+                <span v-localize>Choose from repository</span>
             </BButton>
             <BButton
                 id="btn-build"

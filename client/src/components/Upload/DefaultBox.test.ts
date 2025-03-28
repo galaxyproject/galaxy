@@ -79,7 +79,7 @@ describe("Default", () => {
         await flushPromises();
     });
 
-    it("does render remote files button", async () => {
+    it("does render remote files / repository button", async () => {
         const wrapper = getWrapper();
         expect(wrapper.find("#btn-remote-files").exists()).toBeTruthy();
         await wrapper.setProps({ fileSourcesConfigured: false });

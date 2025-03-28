@@ -19,7 +19,7 @@ interface Props {
 const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
-const title = computed(() => `Edit Storage Location ${instance.value?.name} Settings`);
+const title = computed(() => `Edit Galaxy Storage ${instance.value?.name} Settings`);
 const errorDataDescription = "object-store-update-error";
 
 const {

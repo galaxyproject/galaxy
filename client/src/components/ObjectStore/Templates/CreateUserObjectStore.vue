@@ -9,7 +9,7 @@ import SourceOptionsList from "@/components/ConfigTemplates/SourceOptionsList.vu
 
 const breadcrumbItems = [
     { title: "User Preferences", to: "/user" },
-    { title: "Storage Locations", to: "/object_store_instances/index" },
+    { title: "Galaxy Storage", to: "/object_store_instances/index" },
     { title: "Create New" },
 ];
 
@@ -24,7 +24,7 @@ const templates = computed(() => objectStoreTemplatesStore.latestTemplates);
 
 <template>
     <SourceOptionsList
-        title="storage location option"
+        title="Galaxy storage option"
         list-id="objectStoreOptions"
         show-badges
         :grid-view="currentListView === 'grid'"

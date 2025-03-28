@@ -28,7 +28,7 @@ const name = ref<string>("");
 
 const canExport = computed(() => name.value.length > 0 && directory.value.length > 0);
 
-const directoryDescription = computed(() => localize(`Select a 'remote files' directory to export ${props.what} to.`));
+const directoryDescription = computed(() => localize(`Select a 'repository' to export ${props.what} to.`));
 
 const nameDescription = computed(() => localize("Give the exported file a name."));
 
