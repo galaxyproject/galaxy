@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
     from galaxy.managers.context import ProvidesUserContext
+    from galaxy.tool_util.cwl.parser import ToolProxy
 
 
 class DynamicToolManager(ModelManager[model.DynamicTool]):
@@ -50,7 +51,13 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         stmt = select(DynamicTool).where(DynamicTool.id == object_id)
         return self.session().scalars(stmt).one_or_none()
 
-    def create_tool(self, trans: "ProvidesUserContext", tool_payload: Dict[str, Any], allow_load: bool = True):
+    def create_tool(
+        self,
+        trans: "ProvidesUserContext",
+        tool_payload: Dict[str, Any],
+        allow_load: bool = True,
+        proxy: Optional["ToolProxy"] = None,
+    ):
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
@@ -71,11 +78,13 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         if not dynamic_tool:
             src = tool_payload.get("src", "representation")
             is_path = src == "from_path"
+            target_object = None
 
-            if is_path:
-                tool_format, representation, _ = artifact_class(None, tool_payload)
-            else:
-                assert src == "representation"
+            if proxy:
+                tool_format = proxy._class
+            elif is_path:
+                tool_format, representation, _, target_object = artifact_class(None, tool_payload)
+            elif src == "representation":
                 representation = tool_payload.get("representation")
                 if not representation:
                     raise exceptions.ObjectAttributeMissingException("A tool 'representation' is required.")
@@ -83,8 +92,13 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 tool_format = representation.get("class")
                 if not tool_format:
                     raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
+            else:
+                raise exceptions.ObjectAttributeInvalidException(f"Invalid 'src': {src}")
 
-            tool_path = tool_payload.get("path")
+            # Set tool_path to None so that in ToolBox.create_dynamic_tool()
+            # the tool source is by default recovered using
+            # get_tool_source_from_representation()
+            tool_path = None
             tool_directory = tool_payload.get("tool_directory")
             if tool_format == "GalaxyTool":
                 tool_id = representation.get("id")
@@ -92,7 +106,13 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                     tool_id = str(uuid)
             elif tool_format in ("CommandLineTool", "ExpressionTool"):
                 # CWL tools
-                if is_path:
+                if proxy:
+                    representation = proxy.to_persistent_representation()
+                elif target_object is not None:
+                    representation = {"raw_process_reference": target_object, "uuid": str(uuid), "class": tool_format}
+                    proxy = tool_proxy(tool_object=target_object, tool_directory=tool_directory, uuid=uuid)
+                elif is_path:
+                    tool_path = tool_payload.get("path")
                     proxy = tool_proxy(tool_path=tool_path, uuid=uuid)
                 else:
                     # Build a tool proxy so that we can convert to the persistable
@@ -116,6 +136,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 active=tool_payload.get("active"),
                 hidden=tool_payload.get("hidden"),
                 value=representation,
+                proxy=proxy,
             )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
