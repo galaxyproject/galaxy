@@ -9,7 +9,7 @@ import { useFilterObjectArray } from "@/composables/filter";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
-import { type DataOption, isDataOption } from "./FormData/types";
+import { type DataOption, isDataOption, itemUniqueKey } from "./FormData/types";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -153,10 +153,6 @@ const currentValue = computed({
         }
     },
 });
-
-function itemUniqueKey(item: DataOption): string {
-    return `${item.src}-${item.id}`;
-}
 
 /**
  * Ensures that an initial value is selected for non-optional inputs

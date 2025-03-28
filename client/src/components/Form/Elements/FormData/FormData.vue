@@ -31,6 +31,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
+import { containsDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -376,49 +377,24 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
             const incomingValues: Array<DataOption> = [];
             values.forEach((currVal) => {
                 // Map incoming objects to data option values
-                const { newSrc, datasetCollectionDataset } = getSrcAndContentType(currVal);
-                let v: HistoryOrCollectionItem | HDAObject;
-                if (datasetCollectionDataset) {
-                    v = datasetCollectionDataset;
-                } else {
-                    v = currVal;
-                }
-                const newHid = isHistoryItem(v) ? v.hid : undefined;
-                const newId = v.id;
-                const newName = isHistoryItem(v) && v.name ? v.name : newId;
-                const newValue: DataOption = {
-                    id: newId,
-                    src: newSrc,
-                    batch: false,
-                    map_over_type: undefined,
-                    hid: newHid,
-                    name: newName,
-                    keep: true,
-                    tags: [],
-                };
-                if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
-                    const itemCollectionType = v.collection_type;
-                    if (!props.collectionTypes.includes(itemCollectionType)) {
-                        const mapOverType = props.collectionTypes.find((collectionType) =>
-                            itemCollectionType.endsWith(collectionType)
-                        );
-                        if (!mapOverType) {
-                            return false;
-                        }
-                        newValue["batch"] = true;
-                        newValue["map_over_type"] = mapOverType;
-                    }
+                const newValue = toDataOption(currVal);
+                if (!newValue) {
+                    return false;
                 }
                 // Verify that new value has corresponding option
-                const keepKey = `${newId}_${newSrc}`;
-                const existingOptions = props.options && props.options[newSrc];
-                const foundOption = existingOptions && existingOptions.find((option) => option.id === newId);
+                const keepKey = `${newValue.id}_${newValue.src}`;
+                const existingOptions = props.options && props.options[newValue.src];
+                const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
                 if (!foundOption && !(keepKey in keepOptions)) {
-                    keepOptions[keepKey] = { label: `${newHid || "Selected"}: ${newName}`, value: newValue };
+                    keepOptions[keepKey] = {
+                        label: `${newValue.hid || "Selected"}: ${newValue.name}`,
+                        value: newValue,
+                    };
                 }
                 // Add new value to list
                 incomingValues.push(newValue);
             });
+            let hasDuplicates = false;
             if (incomingValues.length > 0 && incomingValues[0]) {
                 // Set new value
                 const config = currentVariant.value;
@@ -427,19 +403,66 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                     if (config.multiple) {
                         const newValues = currentValue.value ? currentValue.value.slice() : [];
                         incomingValues.forEach((v) => {
-                            newValues.push(v);
+                            if (containsDataOption(newValues, v)) {
+                                hasDuplicates = true;
+                            } else {
+                                newValues.push(v);
+                            }
                         });
                         currentValue.value = newValues;
                     } else {
+                        if (containsDataOption(currentValue.value ?? [], firstValue)) {
+                            hasDuplicates = true;
+                        }
                         currentValue.value = [firstValue];
                     }
                 } else {
                     currentValue.value = incomingValues;
                 }
             }
+            if (hasDuplicates) {
+                return false;
+            }
         }
     }
     return true;
+}
+
+function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
+    const { newSrc, datasetCollectionDataset } = getSrcAndContentType(item);
+    let v: HistoryOrCollectionItem | HDAObject;
+    if (datasetCollectionDataset) {
+        v = datasetCollectionDataset;
+    } else {
+        v = item;
+    }
+    const newHid = isHistoryItem(v) ? v.hid : undefined;
+    const newId = v.id;
+    const newName = isHistoryItem(v) && v.name ? v.name : newId;
+    const newValue: DataOption = {
+        id: newId,
+        src: newSrc,
+        batch: false,
+        map_over_type: undefined,
+        hid: newHid,
+        name: newName,
+        keep: true,
+        tags: [],
+    };
+    if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
+        const itemCollectionType = v.collection_type;
+        if (!props.collectionTypes.includes(itemCollectionType)) {
+            const mapOverType = props.collectionTypes.find((collectionType) =>
+                itemCollectionType.endsWith(collectionType)
+            );
+            if (!mapOverType) {
+                return null;
+            }
+            newValue["batch"] = true;
+            newValue["map_over_type"] = mapOverType;
+        }
+    }
+    return newValue;
 }
 
 /**
@@ -588,6 +611,16 @@ function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollection
     return isHistoryItem(item) || isDCE(item);
 }
 
+function getNameForItem(item: HistoryOrCollectionItem): string {
+    if (isHistoryItem(item)) {
+        return item.name ?? `Item ${item.hid}`;
+    } else if (isDCE(item)) {
+        return item.element_identifier;
+    } else {
+        throw new Error("Unknown item type");
+    }
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragItems();
@@ -606,6 +639,14 @@ function onDragEnter(evt: MouseEvent) {
                 highlightingState = "warning";
                 $emit("alert", `${historyContentType} is not an acceptable input type for this parameter.`);
             }
+            // Check if the item is already in the current value
+            const option = toDataOption(item);
+            const isAlreadyInValue = containsDataOption(currentValue.value ?? [], option);
+            if (isAlreadyInValue) {
+                highlightingState = "warning";
+                $emit("alert", `${getNameForItem(item)} is already selected.`);
+            }
+
             currentHighlighting.value = highlightingState;
             dragTarget.value = evt.target;
             dragData.value.push(item);
