@@ -18,6 +18,6 @@ export function itemUniqueKey(item: DataOption): string {
     return `${item.src}-${item.id}`;
 }
 
-export function containsDataOption(items: DataOption[], item: DataOption): boolean {
-    return items.some((i) => itemUniqueKey(i) === itemUniqueKey(item));
+export function containsDataOption(items: DataOption[], item: DataOption | null): boolean {
+    return item !== null && items.some((i) => itemUniqueKey(i) === itemUniqueKey(item));
 }

@@ -394,6 +394,7 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                 // Add new value to list
                 incomingValues.push(newValue);
             });
+            let hasDuplicates = false;
             if (incomingValues.length > 0 && incomingValues[0]) {
                 // Set new value
                 const config = currentVariant.value;
@@ -402,18 +403,25 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                     if (config.multiple) {
                         const newValues = currentValue.value ? currentValue.value.slice() : [];
                         incomingValues.forEach((v) => {
-                            // Avoid duplicates
-                            if (!containsDataOption(newValues, v)) {
+                            if (containsDataOption(newValues, v)) {
+                                hasDuplicates = true;
+                            } else {
                                 newValues.push(v);
                             }
                         });
                         currentValue.value = newValues;
                     } else {
+                        if (containsDataOption(currentValue.value ?? [], firstValue)) {
+                            hasDuplicates = true;
+                        }
                         currentValue.value = [firstValue];
                     }
                 } else {
                     currentValue.value = incomingValues;
                 }
+            }
+            if (hasDuplicates) {
+                return false;
             }
         }
     }
@@ -603,6 +611,16 @@ function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollection
     return isHistoryItem(item) || isDCE(item);
 }
 
+function getNameForItem(item: HistoryOrCollectionItem): string {
+    if (isHistoryItem(item)) {
+        return item.name ?? `Item ${item.hid}`;
+    } else if (isDCE(item)) {
+        return item.element_identifier;
+    } else {
+        throw new Error("Unknown item type");
+    }
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragItems();
@@ -621,6 +639,14 @@ function onDragEnter(evt: MouseEvent) {
                 highlightingState = "warning";
                 $emit("alert", `${historyContentType} is not an acceptable input type for this parameter.`);
             }
+            // Check if the item is already in the current value
+            const option = toDataOption(item);
+            const isAlreadyInValue = containsDataOption(currentValue.value ?? [], option);
+            if (isAlreadyInValue) {
+                highlightingState = "warning";
+                $emit("alert", `${getNameForItem(item)} is already selected.`);
+            }
+
             currentHighlighting.value = highlightingState;
             dragTarget.value = evt.target;
             dragData.value.push(item);
