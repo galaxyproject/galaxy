@@ -3740,7 +3740,7 @@ class PageSummaryBase(Model):
     slug: str = Field(
         ...,  # Required
         title="Identifier",
-        description="The identifiying slug for the page URL, must be unique.",
+        description="The identifying slug for the page URL, must be unique.",
         pattern=r"^[a-z0-9-]+$",
     )
 
