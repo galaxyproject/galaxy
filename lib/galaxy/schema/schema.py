@@ -24,6 +24,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    field_validator,
     Json,
     model_validator,
     RootModel,
@@ -3739,9 +3740,16 @@ class PageSummaryBase(Model):
     slug: str = Field(
         ...,  # Required
         title="Identifier",
-        description="The title slug for the page URL, must be unique.",
-        pattern=r"^[^/:?#]+$",
+        description="The identifying slug for the page URL, must be unique.",
+        pattern=r"^[a-z0-9-]+$",
     )
+
+    @field_validator("title")
+    @classmethod
+    def title_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise ValueError("Title must not be empty")
+        return v
 
 
 class MaterializeDatasetInstanceAPIRequest(Model):
@@ -3790,6 +3798,14 @@ class CreatePagePayload(PageSummaryBase):
         description="Encoded ID used by workflow generated reports.",
     )
     model_config = ConfigDict(use_enum_values=True, extra="allow")
+
+
+class UpdatePagePayload(PageSummaryBase):
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
 
 
 class AsyncTaskResultSummary(Model):
@@ -3911,6 +3927,7 @@ class OAuth2State(BaseModel):
 
 
 class PageDetails(PageSummary):
+    annotation: Optional[str] = AnnotationField
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     generate_version: Optional[str] = GenerateVersionField
