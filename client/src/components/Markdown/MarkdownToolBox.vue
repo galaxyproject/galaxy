@@ -11,11 +11,6 @@
             <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
             <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
             <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
-            <ToolSection
-                v-if="hasVisualizations"
-                :category="visualizationSection"
-                :expanded="true"
-                @onClick="onClick" />
         </div>
         <MarkdownDialog
             v-if="selectedShow"
@@ -30,10 +25,8 @@
 </template>
 
 <script>
-import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
 import { fromSteps } from "@/components/Workflow/Editor/modules/labels";
@@ -101,7 +94,6 @@ export default {
             selectedType: null,
             selectedShow: false,
             selectedPayload: null,
-            visualizationIndex: {},
             error: null,
             historySection: {
                 title: "History",
@@ -189,12 +181,6 @@ export default {
                     },
                 ],
             },
-
-            visualizationSection: {
-                title: "Visualizations",
-                name: "visualizations",
-                elems: [],
-            },
         };
     },
     computed: {
@@ -203,9 +189,6 @@ export default {
         },
         mode() {
             return this.isWorkflow ? "report" : "page";
-        },
-        hasVisualizations() {
-            return this.visualizationSection.elems.length > 0;
         },
         otherSection() {
             return {
@@ -240,9 +223,6 @@ export default {
         workflowLabels() {
             return this.isWorkflow ? fromSteps(this.steps) : undefined;
         },
-    },
-    created() {
-        this.getVisualizations();
     },
     methods: {
         getSteps() {
@@ -302,9 +282,6 @@ export default {
                 case "onInvocationId":
                     this.onInvocationId(item.id);
                     break;
-                case "onVisualizationId":
-                    this.onVisualizationId(item.id);
-                    break;
                 default:
                     this.onNoParameter(item.id);
             }
@@ -318,12 +295,6 @@ export default {
         },
         onNoParameter(argumentName) {
             this.onInsert(`${argumentName}()`);
-        },
-        onVisualizationId(argumentName) {
-            this.selectedArgumentName = argumentName;
-            this.selectedType = "visualization_id";
-            this.selectedPayload = this.visualizationIndex[argumentName];
-            this.selectedShow = true;
         },
         onHistoryId(argumentName) {
             this.selectedArgumentName = argumentName;
@@ -356,28 +327,6 @@ export default {
             this.selectedArgumentName = argumentName;
             this.selectedType = "invocation_id";
             this.selectedShow = true;
-        },
-        async getVisualizations() {
-            axios
-                .get(`${getAppRoot()}api/plugins?embeddable=True`)
-                .then(({ data }) => {
-                    this.visualizationSection.elems = data.map((x) => {
-                        return {
-                            id: x.name,
-                            name: x.html,
-                            description: x.description,
-                            logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
-                            emitter: "onVisualizationId",
-                        };
-                    });
-                    this.visualizationIndex = {};
-                    data.forEach((element) => {
-                        this.visualizationIndex[element.name] = element;
-                    });
-                })
-                .catch((e) => {
-                    this.error = "Failed to load Visualizations.";
-                });
         },
     },
 };
