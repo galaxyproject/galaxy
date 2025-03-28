@@ -13,7 +13,7 @@
                     <small class="my-1 mx-3 text-info">{{ title }}</small>
                 </span>
                 <CellOption
-                    v-if="['galaxy', 'visualization'].includes(name)"
+                    v-if="configurable"
                     title="Attach Data"
                     description="Select data for this cell"
                     :icon="faPaperclip"
@@ -63,6 +63,7 @@ import Popper from "@/components/Popper/Popper.vue";
 const props = defineProps<{
     cellIndex: number;
     cellTotal: number;
+    configurable: boolean;
     name: string;
     show: boolean;
 }>();

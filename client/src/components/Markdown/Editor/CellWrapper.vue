@@ -22,6 +22,7 @@
                     :show="hover"
                     :cell-index="cellIndex"
                     :cell-total="cellTotal"
+                    :configurable="configurable"
                     @clone="$emit('clone')"
                     @configure="$emit('configure')"
                     @delete="$emit('delete')"
@@ -29,15 +30,9 @@
             </div>
             <div class="w-100 position-relative">
                 <hr class="solid m-0" />
-                <ConfigureGalaxy
-                    v-if="name === 'galaxy' && configure"
-                    :name="name"
-                    :content="content"
-                    :labels="labels"
-                    @cancel="$emit('configure')"
-                    @change="handleConfigure($event)" />
-                <ConfigureVisualization
-                    v-else-if="name === 'visualization' && configure"
+                <component
+                    :is="configureComponent"
+                    v-if="!configure"
                     :name="name"
                     :content="content"
                     :labels="labels"
@@ -87,6 +82,18 @@ const props = defineProps<{
 const emit = defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
 
 const hover = ref(false);
+
+const configurable = computed(() => configureComponent.value !== undefined);
+
+const configureComponent = computed(() => {
+    switch (props.name) {
+        case "galaxy":
+            return ConfigureGalaxy;
+        case "visualization":
+            return ConfigureVisualization;
+    }
+    return undefined;
+});
 
 const mode = computed(() => {
     switch (props.name) {
