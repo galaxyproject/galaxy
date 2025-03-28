@@ -34,18 +34,6 @@
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
-                <span v-localize>Build Dataset List</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
-                <span v-localize>Build List of Dataset Pairs</span>
-            </b-dropdown-item>
-            <b-dropdown-item
-                v-if="showBuildOptions"
-                data-description="build collection from rules"
-                @click="buildCollectionFromRules">
-                <span v-localize>Build Collection from Rules</span>
-            </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptionForAll" />
             <b-dropdown-item
                 v-if="showBuildOptionForAll"
@@ -68,6 +56,13 @@
             </b-dropdown-item>
             <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
                 <span v-localize>Remove tags</span>
+            </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptions" />
+            <b-dropdown-item v-if="showBuildOptions" data-description="auto build list" @click="listWizard(false)">
+                <span v-localize>Auto Build List</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="advanced build list" @click="listWizard(true)">
+                <span v-localize>Advanced Build List</span>
             </b-dropdown-item>
         </b-dropdown>
 
@@ -168,10 +163,8 @@ import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
-import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
-
-import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
+import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 
@@ -305,6 +298,12 @@ export default {
         },
     },
     methods: {
+        listWizard(advanced) {
+            const { setSelectedItems } = useCollectionBuilderItemSelection();
+            const selection = Array.from(this.contentSelection.values());
+            setSelectedItems(selection);
+            this.$router.push({ path: `/collection/new_list?advanced=${advanced}` });
+        },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
             this.runOnSelection(hideSelectedContent);
@@ -374,35 +373,10 @@ export default {
         onSelectedDatatype(datatype) {
             this.selectedDatatype = datatype;
         },
-
-        // collection creation, fires up a modal
-        buildDatasetList() {
-            this.collectionModalType = "list";
-            this.collectionSelection = Array.from(this.contentSelection.values());
-            this.collectionModalShow = true;
-        },
         buildDatasetListAll() {
             this.collectionModalType = "list";
             this.collectionSelection = undefined;
             this.collectionModalShow = true;
-        },
-        buildListOfPairs() {
-            this.collectionModalType = "list:paired";
-            this.collectionSelection = Array.from(this.contentSelection.values());
-            this.collectionModalShow = true;
-        },
-        createdCollection(collection) {
-            this.$emit("reset-selection");
-        },
-        async buildCollectionFromRules() {
-            const modalResult = await buildRuleCollectionModal(this.contentSelection, this.history.id);
-            await createDatasetCollection(this.history, modalResult);
-
-            // have to hide the source items if that was requested
-            if (modalResult.hide_source_items) {
-                this.$emit("hide-selection", this.contentSelection);
-            }
-            this.$emit("reset-selection");
         },
     },
 };
@@ -412,5 +386,11 @@ export default {
 .modal-with-selector {
     overflow: initial;
     min-height: 300px; /* To make room for the selector */
+}
+
+.subtle-header {
+    font-size: 0.74375rem;
+    color: #404862;
+    font-weight: normal;
 }
 </style>

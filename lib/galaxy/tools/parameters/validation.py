@@ -18,13 +18,15 @@ from galaxy import (
     util,
 )
 from galaxy.tool_util.parser.parameter_validators import (
+    parse_xml_validators as parse_xml_validators_models,
+)
+from galaxy.tool_util_models.parameter_validators import (
     AnyValidatorModel,
     EmptyFieldParameterValidatorModel,
     ExpressionParameterValidatorModel,
     InRangeParameterValidatorModel,
     MetadataParameterValidatorModel,
-    parse_xml_validators as parse_xml_validators_models,
-    raise_error_if_valiation_fails,
+    raise_error_if_validation_fails,
     RegexParameterValidatorModel,
 )
 
@@ -62,7 +64,7 @@ class Validator(abc.ABC):
 
         return None if positive validation, otherwise a ValueError is raised
         """
-        raise_error_if_valiation_fails(value, self, message=message, value_to_show=value_to_show)
+        raise_error_if_validation_fails(value, self, message=message, value_to_show=value_to_show)
 
 
 class RegexValidator(Validator):

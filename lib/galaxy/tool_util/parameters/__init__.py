@@ -1,26 +1,4 @@
-from .case import (
-    test_case_state,
-    validate_test_cases_for_tool_source,
-)
-from .convert import (
-    decode,
-    dereference,
-    encode,
-    encode_test,
-    fill_static_defaults,
-    landing_decode,
-    landing_encode,
-)
-from .factory import (
-    from_input_source,
-    input_models_for_pages,
-    input_models_for_tool_source,
-    input_models_from_json,
-    ParameterDefinitionError,
-    tool_parameter_bundle_from_json,
-)
-from .json import to_json_schema_string
-from .models import (
+from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
@@ -53,6 +31,30 @@ from .models import (
     ToolParameterBundleModel,
     ToolParameterModel,
     ToolParameterT,
+)
+from .case import (
+    test_case_state,
+    validate_test_cases_for_tool_source,
+)
+from .convert import (
+    decode,
+    dereference,
+    encode,
+    encode_test,
+    fill_static_defaults,
+    landing_decode,
+    landing_encode,
+)
+from .factory import (
+    from_input_source,
+    input_models_for_pages,
+    input_models_for_tool_source,
+    input_models_from_json,
+    ParameterDefinitionError,
+    tool_parameter_bundle_from_json,
+)
+from .json import to_json_schema_string
+from .model_validation import (
     validate_against_model,
     validate_internal_job,
     validate_internal_landing_request,

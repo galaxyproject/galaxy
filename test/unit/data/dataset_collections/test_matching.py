@@ -17,14 +17,7 @@ def test_lists_of_same_cardinality_match():
 
 
 def test_nested_lists_match():
-    nested_list = list_instance(
-        elements=[
-            pair_element("data1"),
-            pair_element("data2"),
-            pair_element("data3"),
-        ],
-        collection_type="list:paired",
-    )
+    nested_list = list_paired_instance()
     assert_can_match(nested_list, nested_list)
 
 
@@ -53,6 +46,19 @@ def test_valid_collection_subcollection_matching():
     assert_cannot_match(flat_list, nested_list)
     assert_cannot_match(nested_list, flat_list)
     assert_can_match((nested_list, "paired"), flat_list)
+
+
+# can pass a paired input to a paired_or_unpaired input but not vice versa
+def test_paired_can_act_as_paired_or_unpaired():
+    paired = pair_instance()
+    optional_paired = paired_or_unpaired_pair_instance()
+    assert_can_match(optional_paired, paired)
+
+
+def test_paired_or_unpaired_cannot_act_as_paired():
+    paired = pair_instance()
+    optional_paired = paired_or_unpaired_pair_instance()
+    assert_cannot_match(paired, optional_paired)
 
 
 def assert_can_match(*items):
@@ -86,12 +92,74 @@ def pair_element(element_identifier):
     return collection_element(element_identifier, pair_instance().collection)
 
 
+def list_element(element_identifier, list_collection=None):
+    return collection_element(element_identifier, list_collection or list_instance().collection)
+
+
+def list_of_lists_instance():
+    return list_instance(
+        elements=[
+            list_element("outer1"),
+            list_element("outer2"),
+        ]
+    )
+
+
 def pair_instance():
     paired_collection_instance = collection_instance(
         collection_type="paired",
         elements=[
             hda_element("left"),
             hda_element("right"),
+        ],
+    )
+    return paired_collection_instance
+
+
+def list_paired_instance():
+    return list_instance(
+        elements=[
+            pair_element("data1"),
+            pair_element("data2"),
+            pair_element("data3"),
+        ],
+        collection_type="list:paired",
+    )
+
+
+def list_of_paired_and_unpaired_instance():
+    return collection_instance(
+        collection_type="list:paired_or_unpaired",
+        elements=[
+            collection_element(
+                "el1",
+                collection(
+                    "paired_or_unpaired",
+                    [
+                        hda_element("forward"),
+                        hda_element("reverse"),
+                    ],
+                ),
+            ),
+            collection_element(
+                "el2",
+                collection(
+                    "paired_or_unpaired",
+                    [
+                        hda_element("unpaired"),
+                    ],
+                ),
+            ),
+        ],
+    )
+
+
+def paired_or_unpaired_pair_instance():
+    paired_collection_instance = collection_instance(
+        collection_type="paired_or_unpaired",
+        elements=[
+            hda_element("forward"),
+            hda_element("reverse"),
         ],
     )
     return paired_collection_instance

@@ -19,6 +19,8 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util_models import ParsedTool
+
 
 class Repository(BaseModel):
     # element/collection view on the backend have same keys/impl
@@ -540,3 +542,7 @@ class Version(BaseModel):
     version_major: str
     version: str
     api_version: str = "v1"
+
+
+class ShedParsedTool(ParsedTool):
+    repository_revision: Optional[RepositoryRevisionMetadata] = None

@@ -9,8 +9,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Type,
-    TypeVar,
     Union,
 )
 
@@ -29,22 +27,19 @@ from typing_extensions import (
     TypedDict,
 )
 
+from .assertions import assertions
 from .parameters import (
-    input_models_for_tool_source,
     ToolParameterT,
 )
-from .parser.interface import (
+from .tool_outputs import (
+    ToolOutput,
+)
+from .tool_source import (
     Citation,
     HelpContent,
     OutputCompareType,
-    ToolSource,
     XrefDict,
 )
-from .parser.output_models import (
-    from_tool_source,
-    ToolOutput,
-)
-from .verify.assertion_models import assertions
 
 
 class ParsedTool(BaseModel):
@@ -61,45 +56,6 @@ class ParsedTool(BaseModel):
     edam_topics: List[str]
     xrefs: List[XrefDict]
     help: Optional[HelpContent]
-
-
-def parse_tool(tool_source: ToolSource) -> ParsedTool:
-    return parse_tool_custom(tool_source, ParsedTool)
-
-
-P = TypeVar("P", bound=ParsedTool)
-
-
-def parse_tool_custom(tool_source: ToolSource, model_type: Type[P]) -> P:
-    id = tool_source.parse_id()
-    version = tool_source.parse_version()
-    name = tool_source.parse_name()
-    description = tool_source.parse_description()
-    inputs = input_models_for_tool_source(tool_source).parameters
-    outputs = from_tool_source(tool_source)
-    citations = tool_source.parse_citations()
-    license = tool_source.parse_license()
-    profile = tool_source.parse_profile()
-    edam_operations = tool_source.parse_edam_operations()
-    edam_topics = tool_source.parse_edam_topics()
-    xrefs = tool_source.parse_xrefs()
-    help = tool_source.parse_help()
-
-    return model_type(
-        id=id,
-        version=version,
-        name=name,
-        description=description,
-        profile=profile,
-        inputs=inputs,
-        outputs=outputs,
-        license=license,
-        citations=citations,
-        edam_operations=edam_operations,
-        edam_topics=edam_topics,
-        xrefs=xrefs,
-        help=help,
-    )
 
 
 class StrictModel(BaseModel):

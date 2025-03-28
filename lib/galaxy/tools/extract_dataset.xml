@@ -10,7 +10,7 @@
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
   <inputs>
-    <param type="data_collection" collection_type="list,paired" name="input" label="Input List" />
+    <param type="data_collection" collection_type="list,paired,record" name="input" label="Input List" />
     <conditional name="which">
       <param name="which_dataset" type="select" label="How should a dataset be selected?">
         <option value="first">The first dataset</option>
@@ -71,6 +71,18 @@ This tool will create new history datasets from your collection but your quota u
       </param>
       <output name="output" file="simple_line.txt">
         <metadata name="name" value="foo" />
+      </output>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="record">
+          <fields>[{"name": "parent", "type": "File"}, {"name": "child", "type": "File"}]</fields>
+          <element name="parent" value="simple_line.txt" />
+          <element name="child" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="parent" />
       </output>
     </test>
     <test>

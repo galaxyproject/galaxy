@@ -126,17 +126,6 @@ def test_data_collection_input_connections():
     assert output["collection_type"] == "list:paired"
 
 
-def test_data_collection_input_config_form():
-    module = __from_step(
-        type="data_collection_input",
-        tool_inputs={
-            "collection_type": "list:paired",
-        },
-    )
-    result = module.get_config_form()
-    assert result["inputs"][0]["value"], "list:paired"
-
-
 def test_cannot_create_tool_modules_for_missing_tools():
     trans = MockTrans()
     module = modules.module_factory.from_dict(trans, {"type": "tool", "tool_id": "cat1"})

@@ -79,9 +79,8 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
         ).wait_for_and_click()
         self.screenshot(f"test_export_pairs_list={is_new_history}")
         self.components.libraries.folder.add_to_history_as_collection.wait_for_and_click()
-        self.components.libraries.folder.clear_filters.wait_for_and_click()
-        self.collection_builder_click_paired_item("forward", 0)
-        self.collection_builder_click_paired_item("reverse", 1)
+        self.collection_builder_pair_rows(0, 1)
+        self.components.collection_builders.list_wizard.dismiss_unmatched.wait_for_and_click()
         self.components.libraries.folder.export_to_history_collection_name.wait_for_and_send_keys(
             self._get_random_name()
         )
