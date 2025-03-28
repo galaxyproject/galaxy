@@ -174,7 +174,7 @@ class TestsCaseValidation(Linter):
         try:
             validation_results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
         except Exception as e:
-            report_foo(
+            lint_log(
                 f"Serious problem parsing tool source or tests - cannot validate test cases. The exception is [{e}]",
                 linter=cls.name(),
             )
