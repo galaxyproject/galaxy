@@ -104,7 +104,7 @@ class ObjectAttributeMissingException(MessageException):
     err_code = error_codes_by_name["USER_OBJECT_ATTRIBUTE_MISSING"]
 
 
-class MalformedId(MessageException):
+class MalformedId(MessageException, ValueError):
     status_code = 400
     err_code = error_codes_by_name["MALFORMED_ID"]
 
