@@ -29,14 +29,13 @@
 
 <script setup lang="ts">
 import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { type Ref, ref, watch } from "vue";
 
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { getAppRoot } from "@/onload";
 
-import type { OptionType } from "../types";
+import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -64,6 +63,7 @@ interface VitessceType {
 const props = defineProps<{
     name: string;
     content: string;
+    labels?: Array<WorkflowLabel>;
 }>();
 
 const emit = defineEmits<{
