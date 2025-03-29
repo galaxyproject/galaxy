@@ -32,10 +32,9 @@ import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
 import { type Ref, ref, watch } from "vue";
 
+import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { getAppRoot } from "@/onload";
-
-import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
