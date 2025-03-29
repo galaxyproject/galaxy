@@ -33,7 +33,7 @@
                     @move="$emit('move', $event)" />
             </div>
             <div class="w-100 position-relative">
-                <hr class="solid m-0" />
+                <hr v-if="!configure" class="solid m-0" />
                 <component
                     :is="configureComponent"
                     v-if="configure"

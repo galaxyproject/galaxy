@@ -16,24 +16,29 @@ import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from 
 
 const DELAY = 300;
 
-const props = defineProps<{
-    objectId?: string;
-    objectTitle?: string;
-    objectType: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        objectId?: string;
+        objectName?: string;
+        objectTitle?: string;
+        objectType: string;
+    }>(),
+    {
+        objectName: "...",
+    }
+);
 
 const emit = defineEmits<{
     (e: "change", newValue: OptionType): void;
 }>();
 
 const errorMessage = ref("");
-const objectName = ref("...");
 const options: Ref<Array<OptionType>> = ref([]);
 
 const currentValue = computed({
     get: () => ({
         id: props.objectId,
-        name: objectName.value,
+        name: props.objectName,
     }),
     set: (newValue: OptionType) => {
         emit("change", newValue);

@@ -1,20 +1,25 @@
 <template>
     <div class="p-2">
-        <div class="d-flex flex-row">
-            <div class="w-100">
+        <div class="d-flex justify-content-between align-items-start w-100">
+            <div class="flex-grow-1 me-3">
                 <Heading size="sm" separator>Attach Data</Heading>
                 <div class="small mb-2">Fill in the fields below to map required inputs to this cell.</div>
             </div>
-            <CellButton class="align-self-start" title="Close" :icon="faTimes" @click="$emit('cancel')" />
+            <div class="d-flex gap-1">
+                <CellButton title="Save" :icon="faSave" tooltip-placement="bottom" @click="onSave" />
+                <CellButton title="Cancel" :icon="faTimes" tooltip-placement="bottom" @click="$emit('cancel')" />
+            </div>
         </div>
-        <div v-if="true">
+        <div v-if="contentObject.datasets && contentObject.datasets.length > 0">
             <div v-for="(dataset, datasetIndex) in contentObject.datasets" :key="datasetIndex">
                 <Heading size="sm">{{ dataset.name }} ({{ dataset.uid || "n/a" }})</Heading>
                 <div v-for="(file, fileIndex) in dataset.files" :key="fileIndex">
                     <ConfigureSelector
-                        object-id="232323"
+                        :object-id="file.url"
+                        :object-name="file.url"
                         :object-title="`${fileIndex + 1}: ${getFileName(file)}`"
-                        object-type="history_dataset_id" />
+                        object-type="history_dataset_id"
+                        @change="onChange(file, $event)" />
                 </div>
             </div>
         </div>
@@ -23,9 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { type Ref, ref, watch } from "vue";
+
+import { stringify } from "@/components/Markdown/Utilities/stringify";
+import { getAppRoot } from "@/onload";
+
+import type { OptionType } from "../types";
 
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -55,7 +66,7 @@ const props = defineProps<{
     content: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     (e: "cancel"): void;
     (e: "change", content: string): void;
 }>();
@@ -67,6 +78,16 @@ function getFileName(file: FileEntryType) {
     const fileDetailsParts = [file.options?.obsType, file.options?.obsIndex].filter(Boolean);
     const fileDetails = fileDetailsParts.length ? `(${fileDetailsParts.join(", ")})` : "";
     return `${file.fileType} ${fileDetails}`;
+}
+
+function onChange(file: FileEntryType, option: OptionType) {
+    if (option.id) {
+        file.url = `${getAppRoot()}api/datasets/${option.id}/display`;
+    }
+}
+
+function onSave() {
+    emit("change", stringify(contentObject.value));
 }
 
 function parseContent() {
