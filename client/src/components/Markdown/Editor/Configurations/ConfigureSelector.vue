@@ -1,7 +1,7 @@
 <template>
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
-    <div v-else>
-        <label class="form-label font-weight-bold">Select a {{ objectTitle }}:</label>
+    <div v-else class="mb-2">
+        <label class="form-label font-weight-bold">{{ title }}:</label>
         <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
     </div>
 </template>
@@ -17,8 +17,9 @@ import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from 
 const DELAY = 300;
 
 const props = defineProps<{
-    objectType: string;
     objectId?: string;
+    objectTitle?: string;
+    objectType: string;
 }>();
 
 const emit = defineEmits<{
@@ -39,7 +40,10 @@ const currentValue = computed({
     },
 });
 
-const objectTitle = computed(() => props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+const title = computed(
+    () =>
+        props.objectTitle || `Select a ${props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`
+);
 
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
