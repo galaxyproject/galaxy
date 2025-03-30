@@ -6,8 +6,8 @@
                 <div class="small mb-2">Fill in the fields below to map required inputs to this cell.</div>
             </div>
             <div class="d-flex gap-1">
-                <CellButton title="Save" :icon="faSave" tooltip-placement="bottom" @click="onSave" />
-                <CellButton title="Cancel" :icon="faTimes" tooltip-placement="bottom" @click="$emit('cancel')" />
+                <CellButton title="Ok" tooltip-placement="bottom" :icon="faCheck" @click="onOk" />
+                <CellButton title="Cancel" tooltip-placement="bottom" :icon="faTimes" @click="$emit('cancel')" />
             </div>
         </div>
         <div v-if="contentObject.datasets && contentObject.datasets.length > 0">
@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
 import { type Ref, ref, watch } from "vue";
 
@@ -85,7 +85,7 @@ function onChange(file: FileEntryType, option: OptionType) {
     }
 }
 
-function onSave() {
+function onOk() {
     emit("change", stringify(contentObject.value));
 }
 
