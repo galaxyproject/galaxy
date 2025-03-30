@@ -2,7 +2,7 @@
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
     <div v-else class="mb-2">
         <label class="form-label font-weight-bold">{{ title }}:</label>
-        <Multiselect v-model="currentValue" :options="options" @search-change="search" />
+        <Multiselect v-model="currentValue" label="label" :options="options" @search-change="search" />
     </div>
 </template>
 
@@ -25,6 +25,7 @@ const props = withDefaults(
         objectType: string;
     }>(),
     {
+        objectId: "",
         objectName: "...",
     }
 );
@@ -49,7 +50,7 @@ const currentValue = computed({
 const hasLabels = computed(() => props.labels !== undefined);
 
 const mappedLabels = computed(() =>
-    props.labels?.map((entry) => ({ id: `${entry.label} (${entry.type})`, value: entry }))
+    props.labels?.map((value) => ({ name: `${value.label} (${value.type})`, value: value }))
 );
 
 const title = computed(
@@ -63,7 +64,7 @@ const search = debounce(async (query: string = "") => {
             const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d: any) => ({ id: d.id, label: d.name ?? d.id }));
+                options.value = data.map((d: any) => ({ id: d.id, label: d.name ?? d.id, value: d.value }));
             } else {
                 options.value = [];
             }
