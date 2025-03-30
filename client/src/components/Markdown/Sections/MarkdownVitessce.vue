@@ -34,7 +34,18 @@ function processContent() {
         errorMessage.value = "";
         const parsedContent = { ...JSON.parse(props.content) };
 
-        datasetLabel.value = parsedContent.dataset_label;
+        // Remove gxy_dataset_label entries before parsing to vitessce
+        if (Array.isArray(parsedContent.datasets)) {
+            for (const dataset of parsedContent.datasets) {
+                if (Array.isArray(dataset.files)) {
+                    for (const file of dataset.files) {
+                        if ("gxy_dataset_label" in file) {
+                            delete file.gxy_dataset_label;
+                        }
+                    }
+                }
+            }
+        }
 
         visualizationConfig.value = {};
         visualizationConfig.value["dataset_content"] = parsedContent;
