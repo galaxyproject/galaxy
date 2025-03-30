@@ -7,7 +7,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 interface ClaimState {
     workflowId: string | null;
     instance: boolean;
-    requestState: Record<string, never> | null;
+    requestState: { [key: string]: unknown } | null;
     errorMessage: string | null;
 }
 

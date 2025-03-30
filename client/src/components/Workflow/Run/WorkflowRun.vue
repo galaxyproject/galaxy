@@ -32,7 +32,7 @@ interface Props {
     preferSimpleForm?: boolean;
     simpleFormTargetHistory?: string;
     simpleFormUseJobCache?: boolean;
-    requestState?: Record<string, never>;
+    requestState?: { [key: string]: unknown };
     instance?: boolean;
 }
 
