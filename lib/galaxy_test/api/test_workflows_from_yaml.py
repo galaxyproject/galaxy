@@ -319,6 +319,8 @@ steps:
   - label: embed1
     run:
       class: GalaxyTool
+      name: embed1
+      version: "0.1"
       command: echo 'hello world 2' > $output1
       outputs:
         output1:

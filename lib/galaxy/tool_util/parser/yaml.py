@@ -415,10 +415,16 @@ class YamlInputSource(InputSource):
         input_dict = self.input_dict
 
         sources = []
-        for value in input_dict.get("whens", []):
-            discriminator = value.get("discriminator")
-            case_page_source = YamlPageSource(value["parameters"])
-            sources.append((discriminator, case_page_source))
+        if "when" in input_dict:
+            for key, value in input_dict["when"].items():
+                discriminator = key
+                case_page_source = YamlPageSource(value)
+                sources.append((discriminator, case_page_source))
+        else:
+            for value in input_dict.get("whens", []):
+                discriminator = value.get("discriminator")
+                case_page_source = YamlPageSource(value["parameters"])
+                sources.append((discriminator, case_page_source))
         return sources
 
     def parse_validators(self) -> List[AnyValidatorModel]:
