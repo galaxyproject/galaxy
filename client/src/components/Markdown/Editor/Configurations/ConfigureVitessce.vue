@@ -15,6 +15,7 @@
                 <Heading size="sm">{{ dataset.name }} ({{ dataset.uid || "n/a" }})</Heading>
                 <div v-for="(file, fileIndex) in dataset.files" :key="fileIndex">
                     <ConfigureSelector
+                        :labels="labels"
                         :object-id="file.url"
                         :object-name="file.url"
                         :object-title="`${fileIndex + 1}: ${getFileName(file)}`"

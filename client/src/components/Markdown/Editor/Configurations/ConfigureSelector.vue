@@ -2,7 +2,7 @@
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
     <div v-else class="mb-2">
         <label class="form-label font-weight-bold">{{ title }}:</label>
-        <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
+        <Multiselect v-model="currentValue" :options="options" @search-change="search" />
     </div>
 </template>
 
@@ -11,13 +11,14 @@ import { debounce } from "lodash";
 import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import type { ApiResponse, OptionType } from "@/components/Markdown/Editor/types";
+import type { ApiResponse, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from "@/components/Markdown/services";
 
 const DELAY = 300;
 
 const props = withDefaults(
     defineProps<{
+        labels?: Array<WorkflowLabel>;
         objectId?: string;
         objectName?: string;
         objectTitle?: string;
@@ -38,12 +39,18 @@ const options: Ref<Array<OptionType>> = ref([]);
 const currentValue = computed({
     get: () => ({
         id: props.objectId,
-        name: props.objectName,
+        label: props.objectName,
     }),
     set: (newValue: OptionType) => {
         emit("change", newValue);
     },
 });
+
+const hasLabels = computed(() => props.labels !== undefined);
+
+const mappedLabels = computed(() =>
+    props.labels?.map((entry) => ({ id: `${entry.label} (${entry.type})`, value: entry }))
+);
 
 const title = computed(
     () =>
@@ -53,10 +60,10 @@ const title = computed(
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
-            const data = await doQuery(query);
+            const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id }));
+                options.value = data.map((d: any) => ({ id: d.id, label: d.name ?? d.id }));
             } else {
                 options.value = [];
             }
