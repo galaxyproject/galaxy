@@ -400,7 +400,7 @@ steps:
         update_response = self._update_page(page_id, "newannotation", "new.slug", "newtitle", error_code=400)
         assert update_response["err_msg"] == "String should match pattern '^[a-z0-9-]+$' in ('body', 'slug')"
         update_response = self._update_page(page_id, "newannotation", "newslug", "", error_code=400)
-        assert update_response["err_msg"] == "Value error, Title must not be empty in ('body', 'title')"
+        assert update_response["err_msg"] == "String should have at least 1 character in ('body', 'title')"
         update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle")
         self._assert_has_keys(update_response, "id", "slug", "title")
         assert update_response["title"] == "newtitle"
