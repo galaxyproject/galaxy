@@ -30,20 +30,20 @@ async function processContent() {
         errorMessage.value = "";
         const parsedContent = { ...JSON.parse(props.content) };
 
-        // Remove gxy_dataset_label entries before parsing to vitessce
+        // Evaluate __gx_dataset_label entries before rendering vitessce
         if (Array.isArray(parsedContent.datasets)) {
             for (const dataset of parsedContent.datasets) {
                 if (Array.isArray(dataset.files)) {
                     for (const file of dataset.files) {
-                        if ("gxy_dataset_label" in file) {
-                            const gxyDatasetLabel = file.gxy_dataset_label;
-                            const invocationId = gxyDatasetLabel.invocation_id;
+                        if ("__gx_dataset_label" in file) {
+                            const datasetLabel = file.__gx_dataset_label;
+                            const invocationId = datasetLabel.invocation_id;
                             const invocation = await fetchInvocationById(invocationId);
-                            const datasetId = getDatasetId(invocation as Invocation, gxyDatasetLabel);
+                            const datasetId = getDatasetId(invocation as Invocation, datasetLabel);
                             if (datasetId) {
-                                const datasetId = getDatasetId(invocation as Invocation, gxyDatasetLabel);
+                                const datasetId = getDatasetId(invocation as Invocation, datasetLabel);
                                 file.url = `${getAppRoot()}api/datasets/${datasetId}/display`;
-                                delete file.gxy_dataset_label;
+                                delete file.__gx_dataset_label;
                             } else {
                                 throw new Error(`Failed to retrieve dataset id from ${invocationId}.`);
                             }
