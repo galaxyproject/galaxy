@@ -2,7 +2,7 @@
     <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
     <div v-else class="mb-2">
         <label class="form-label font-weight-bold">{{ title }}:</label>
-        <Multiselect v-model="currentValue" label="label" :options="options" @search-change="search" />
+        <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
     </div>
 </template>
 
@@ -40,7 +40,7 @@ const options: Ref<Array<OptionType>> = ref([]);
 const currentValue = computed({
     get: () => ({
         id: props.objectId,
-        label: props.objectName,
+        name: props.objectName,
     }),
     set: (newValue: OptionType) => {
         emit("change", newValue);
@@ -64,7 +64,7 @@ const search = debounce(async (query: string = "") => {
             const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d: any) => ({ id: d.id, label: d.name ?? d.id, value: d.value }));
+                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, value: d.value }));
             } else {
                 options.value = [];
             }
