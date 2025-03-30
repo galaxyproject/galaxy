@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
-import { type Ref, ref, watch } from "vue";
+import { computed, ref, watch, type Ref } from "vue";
 
 import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
@@ -74,6 +74,8 @@ const emit = defineEmits<{
 const contentObject: Ref<VitessceType> = ref({});
 const errorMessage = ref();
 
+const hasLabels = computed(() => props.labels !== undefined);
+
 function getFileName(file: FileEntryType) {
     const fileDetailsParts = [file.options?.obsType, file.options?.obsIndex].filter(Boolean);
     const fileDetails = fileDetailsParts.length ? `(${fileDetailsParts.join(", ")})` : "";
@@ -81,7 +83,9 @@ function getFileName(file: FileEntryType) {
 }
 
 function onChange(file: FileEntryType, option: OptionType) {
-    if (option.id) {
+    if (hasLabels.value) {
+        console.log(option);
+    } else if (option.id) {
         file.url = `${getAppRoot()}api/datasets/${option.id}/display`;
     }
 }

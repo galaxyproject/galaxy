@@ -40,6 +40,7 @@ export interface ContentType {
 }
 
 export interface OptionType {
-    id: string | null | undefined;
-    label: string | null | undefined;
+    id: string;
+    label: string;
+    value?: any;
 }
