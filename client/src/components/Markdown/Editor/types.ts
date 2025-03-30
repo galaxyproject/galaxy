@@ -41,6 +41,6 @@ export interface ContentType {
 
 export interface OptionType {
     id: string;
-    label: string;
+    name: string;
     value?: any;
 }

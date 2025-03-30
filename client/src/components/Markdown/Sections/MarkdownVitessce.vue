@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const errorMessage = ref("");
 const loading = ref(false);
+const missingInvocation = ref(false);
 const visualizationConfig = ref();
 const visualizationKey = ref(0);
 const visualizationName = ref("");
@@ -31,6 +32,7 @@ async function processContent() {
         const parsedContent = { ...JSON.parse(props.content) };
 
         // Evaluate __gx_dataset_label entries before rendering vitessce
+        missingInvocation.value = false;
         if (Array.isArray(parsedContent.datasets)) {
             for (const dataset of parsedContent.datasets) {
                 if (Array.isArray(dataset.files)) {
@@ -38,14 +40,19 @@ async function processContent() {
                         if ("__gx_dataset_label" in file) {
                             const datasetLabel = file.__gx_dataset_label;
                             const invocationId = datasetLabel.invocation_id;
-                            const invocation = await fetchInvocationById(invocationId);
-                            const datasetId = getDatasetId(invocation as Invocation, datasetLabel);
-                            if (datasetId) {
+                            if (invocationId) {
+                                const invocation = await fetchInvocationById(invocationId);
                                 const datasetId = getDatasetId(invocation as Invocation, datasetLabel);
-                                file.url = `${getAppRoot()}api/datasets/${datasetId}/display`;
-                                delete file.__gx_dataset_label;
+                                if (datasetId) {
+                                    const datasetId = getDatasetId(invocation as Invocation, datasetLabel);
+                                    file.url = `${getAppRoot()}api/datasets/${datasetId}/display`;
+                                    delete file.__gx_dataset_label;
+                                } else {
+                                    throw new Error(`Failed to retrieve dataset id for '${invocationId}'.`);
+                                }
                             } else {
-                                throw new Error(`Failed to retrieve dataset id from ${invocationId}.`);
+                                missingInvocation.value = true;
+                                break;
                             }
                         }
                     }
@@ -82,7 +89,10 @@ watch(
 </script>
 
 <template>
-    <div class="markdown-visualization">
+    <BAlert v-if="missingInvocation" v-localize class="m-0" variant="info" show>
+        Data for rendering this <b>Vitessce Dashboard</b> is not yet available.
+    </BAlert>
+    <div v-else class="markdown-visualization">
         <BAlert v-if="errorMessage" v-localize class="m-0" variant="danger" show>
             {{ errorMessage }}
         </BAlert>

@@ -31,9 +31,9 @@
 <script setup lang="ts">
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
-import { computed, ref, watch, type Ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
-import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { getAppRoot } from "@/onload";
 
@@ -48,6 +48,7 @@ interface DatasetEntryType {
 }
 
 interface FileEntryType {
+    __gx_dataset_label?: DatasetLabel;
     fileType: string;
     url: string;
     options?: {
@@ -84,7 +85,10 @@ function getFileName(file: FileEntryType) {
 
 function onChange(file: FileEntryType, option: OptionType) {
     if (hasLabels.value) {
-        console.log(option);
+        file.__gx_dataset_label = {
+            invocation_id: "",
+            [option.value.type]: option.value.label,
+        };
     } else if (option.id) {
         file.url = `${getAppRoot()}api/datasets/${option.id}/display`;
     }
