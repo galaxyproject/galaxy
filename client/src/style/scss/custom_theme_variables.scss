@@ -9,7 +9,7 @@ html,
     --color-blue-700: #2c3143;
     --color-blue-600: #25537b;
     --color-blue-500: #197cd2;
-    --color-blue-400: #4593c8;
+    --color-blue-400: #48a1dd;
     --color-blue-300: #80c3ea;
     --color-blue-200: #daecf8;
     --color-blue-100: #f1f9fe;
@@ -63,6 +63,21 @@ html,
     --color-red-300: #f4a3a5;
     --color-red-200: #fdd4d5;
     --color-red-100: #fff3f3;
+
+    // sizes
+    --spacing: 0.25rem;
+    --spacing-1: var(--spacing);
+    --spacing-2: calc(var(--spacing) * 2);
+    --spacing-3: calc(var(--spacing) * 3);
+    --spacing-4: calc(var(--spacing) * 4);
+    --spacing-5: calc(var(--spacing) * 5);
+    --spacing-6: calc(var(--spacing) * 6);
+    --spacing-7: calc(var(--spacing) * 7);
+    --spacing-8: calc(var(--spacing) * 8);
+
+    --font-size-small: 0.75rem;
+    --font-size-base: 0.85rem;
+    --font-size-large: 1rem;
 
     // masthead specific
     --masthead-color: #{$masthead-color};
