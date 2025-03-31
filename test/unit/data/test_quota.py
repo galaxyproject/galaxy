@@ -1,9 +1,11 @@
 import uuid
 from decimal import Decimal
+from typing import cast
 
 from galaxy import model
 from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import (
+    BaseObjectStore,
     build_object_store_from_config,
     QuotaSourceInfo,
     QuotaSourceMap,
@@ -72,6 +74,7 @@ class TestPurgeUsage(BaseModelTestCase):
 
 class TestCalculateUsage(BaseModelTestCase):
     def setUp(self):
+        self.object_store = cast(BaseObjectStore, MockObjectStore())
         u = model.User(email=f"calc_usage{uuid.uuid1()}@example.com", password="password")
         self.persist(u)
         h = model.History(name="History for Calculated Usage", user=u)
@@ -94,11 +97,10 @@ class TestCalculateUsage(BaseModelTestCase):
 
         d1 = self._add_dataset(10)
 
-        object_store = MockObjectStore()
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         assert u.disk_usage is None
-        u.calculate_and_set_disk_usage(object_store)
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         # method no longer updates user object
         # assert u.disk_usage == 10
 
@@ -112,7 +114,7 @@ class TestCalculateUsage(BaseModelTestCase):
         d3 = model.HistoryDatasetAssociation(extension="txt", history=h, dataset=d1.dataset)
         self.persist(d3)
 
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
 
     def test_calculate_usage_with_user_provided_storage(self):
         u = self.u
@@ -121,11 +123,10 @@ class TestCalculateUsage(BaseModelTestCase):
         # This dataset should not be counted towards the user's disk usage
         self._add_dataset(30, object_store_id="user_objects://user/provided/storage")
 
-        object_store = MockObjectStore()
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         assert u.disk_usage is None
-        u.calculate_and_set_disk_usage(object_store)
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
 
         self._refresh_user_and_assert_disk_usage_is(10)
 
@@ -134,11 +135,10 @@ class TestCalculateUsage(BaseModelTestCase):
 
         self._add_dataset(10)
 
-        object_store = MockObjectStore()
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         assert u.disk_usage is None
-        u.calculate_and_set_disk_usage(object_store)
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
 
         self._refresh_user_and_assert_disk_usage_is(10)
 
@@ -148,7 +148,7 @@ class TestCalculateUsage(BaseModelTestCase):
         self._refresh_user_and_assert_disk_usage_is(-10)
 
         # recalculate and verify it is fixed
-        u.calculate_and_set_disk_usage(object_store)
+        u.calculate_and_set_disk_usage(self.object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
 
         # break it again
@@ -157,7 +157,7 @@ class TestCalculateUsage(BaseModelTestCase):
         self._refresh_user_and_assert_disk_usage_is(1000)
 
         # recalculate and verify it is fixed
-        u.calculate_and_set_disk_usage(object_store)
+        u.calculate_and_set_disk_usage(self.object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
 
     def test_calculate_objectstore_usage(self):
@@ -185,7 +185,7 @@ class TestCalculateUsage(BaseModelTestCase):
         not_tracked.default_quota_enabled = False
         quota_source_map.backends["not_tracked"] = not_tracked
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         assert u.calculate_disk_usage_default_source(object_store) == 15
 
@@ -200,7 +200,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source.default_quota_source = "alt_source"
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
@@ -235,7 +235,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source.default_quota_source = "alt_source"
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
@@ -284,7 +284,7 @@ class TestCalculateUsage(BaseModelTestCase):
         unused_source.default_quota_source = "unused_source"
         quota_source_map.backends["unused_source_store"] = unused_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
         usages = u.dictify_usage(object_store)
@@ -300,7 +300,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source = QuotaSourceMap("alt_source", True)
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
@@ -325,7 +325,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source = QuotaSourceMap("alt_source", True)
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
         u.calculate_and_set_disk_usage(object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
         quota_agent.relabel_quota_for_dataset(alt_d.dataset, "alt_source", None)
@@ -345,7 +345,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source = QuotaSourceMap("alt_source", True)
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
         u.calculate_and_set_disk_usage(object_store)
         self._refresh_user_and_assert_disk_usage_is(15, "alt_source")
         quota_agent.relabel_quota_for_dataset(d.dataset, None, "alt_source")
