@@ -933,9 +933,9 @@ class Bam(BamNative):
         extra_threads = int(os.environ.get("GALAXY_SLOTS", 1)) - 1
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index("-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())  # type: ignore[attr-defined, unused-ignore]
+            pysam.index("-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
         else:
-            pysam.index(index_flag, "-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())  # type: ignore[attr-defined, unused-ignore]
+            pysam.index(index_flag, "-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
         dataset.metadata.bam_index = index_file
 
     def sniff(self, filename: str) -> bool:
@@ -1127,7 +1127,7 @@ class CRAM(Binary):
     def set_index_file(self, dataset: HasFileName, index_file) -> bool:
         extra_threads = int(os.environ.get("GALAXY_SLOTS", 1)) - 1
         try:
-            pysam.index("-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())  # type: ignore[attr-defined, unused-ignore]
+            pysam.index("-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
             return True
         except Exception as exc:
             log.warning("%s, set_index_file Exception: %s", self, exc)
