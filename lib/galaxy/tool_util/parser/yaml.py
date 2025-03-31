@@ -417,12 +417,15 @@ class YamlInputSource(InputSource):
         sources = []
         if "when" in input_dict:
             for key, value in input_dict["when"].items():
-                discriminator = key
+                # casting to string because default value for BooleanToolParameter.legal_values is "true" / "false"
+                # Unfortunate, but I guess that's ok for now?
+                discriminator = "true" if key is True else "false" if key is False else key
                 case_page_source = YamlPageSource(value)
                 sources.append((discriminator, case_page_source))
         else:
             for value in input_dict.get("whens", []):
-                discriminator = value.get("discriminator")
+                key = value.get("discriminator")
+                discriminator = "true" if key is True else "false" if key is False else key
                 case_page_source = YamlPageSource(value["parameters"])
                 sources.append((discriminator, case_page_source))
         return sources
