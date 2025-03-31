@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { HDASummary, HistoryItemSummary, HistorySummary } from "@/api";
+import type { HDASummary, HDCASummary, HistoryItemSummary, HistorySummary } from "@/api";
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -38,7 +38,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "created-collection", collection: any): void;
+    (e: "created-collection", collection: HDCASummary): void;
     (e: "update:show", show: boolean): void;
     (e: "on-hide"): void;
 }>();

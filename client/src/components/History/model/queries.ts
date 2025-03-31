@@ -1,4 +1,4 @@
-import { type components, GalaxyApi, type HistoryItemSummary, type HistorySummary } from "@/api";
+import { type components, GalaxyApi, type HDCASummary, type HistoryItemSummary, type HistorySummary } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 type BulkOperation = components["schemas"]["HistoryContentItemOperation"];
@@ -98,5 +98,5 @@ export async function createDatasetCollection(history: HistorySummary, inputs = 
     if (error) {
         rethrowSimple(error);
     }
-    return data;
+    return data as HDCASummary;
 }
