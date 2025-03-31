@@ -77,7 +77,6 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
-from galaxy.webapps.galaxy.api.common import PageIdPathParam
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import ScalarResult
@@ -290,7 +289,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page
 
-    def update_page(self, trans, id: PageIdPathParam, payload: UpdatePagePayload):
+    def update_page(self, trans, id: int, payload: UpdatePagePayload):
         user = trans.get_user()
 
         # Load page from database
