@@ -31,12 +31,16 @@ async function processContent() {
         errorMessage.value = "";
         const parsedContent = { ...JSON.parse(props.content) };
 
-        // Evaluate __gx_dataset_label entries before rendering vitessce
+        // Evaluate __gx_dataset entries before rendering vitessce
         missingInvocation.value = false;
         if (Array.isArray(parsedContent.datasets)) {
             for (const dataset of parsedContent.datasets) {
                 if (Array.isArray(dataset.files)) {
                     for (const file of dataset.files) {
+                        if ("__gx_dataset_id" in file) {
+                            file.url = `${getAppRoot()}api/datasets/${file.__gx_dataset_id}/display`;
+                            delete file.__gx_dataset_id;
+                        }
                         if ("__gx_dataset_label" in file) {
                             const datasetLabel = file.__gx_dataset_label;
                             const invocationId = datasetLabel.invocation_id;
@@ -54,6 +58,9 @@ async function processContent() {
                                 missingInvocation.value = true;
                                 break;
                             }
+                        }
+                        if ("__gx_dataset_name" in file) {
+                            delete file.__gx_dataset_name;
                         }
                     }
                 }
