@@ -37,6 +37,7 @@
                 <component
                     :is="configureComponent"
                     v-if="configure"
+                    :class="{ 'cell-wrapper-hover': hover }"
                     :name="name"
                     :content="content"
                     :labels="labels"
