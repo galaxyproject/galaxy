@@ -5,7 +5,10 @@
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
             <div class="cell-dropdown overflow-auto">
                 <div v-if="Object.keys(filteredTemplates).length > 0">
-                    <div v-for="(templates, categoryName) of filteredTemplates" :key="categoryName">
+                    <div
+                        v-for="(templates, categoryName) of filteredTemplates"
+                        :key="categoryName"
+                        class="cell-add-categories">
                         <hr class="solid m-0" />
                         <span class="d-flex justify-content-between">
                             <small class="my-1 mx-3 text-info">{{ categoryName }}</small>
