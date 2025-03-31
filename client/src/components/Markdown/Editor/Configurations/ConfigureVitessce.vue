@@ -34,7 +34,6 @@ import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
-import { getAppRoot } from "@/onload";
 
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -47,7 +46,9 @@ interface DatasetEntryType {
 }
 
 interface FileEntryType {
+    __gx_dataset_id?: string;
     __gx_dataset_label?: DatasetLabel;
+    __gx_dataset_name?: string;
     fileType: string;
     url: string;
     options?: {
@@ -83,17 +84,23 @@ function getFileName(file: FileEntryType) {
 }
 
 function getObjectName(file: FileEntryType) {
-    return file.__gx_dataset_label?.input || file.__gx_dataset_label?.output || file.url;
+    return file.__gx_dataset_label?.input || file.__gx_dataset_label?.output || file.__gx_dataset_name || file.url;
 }
 
 function onChange(file: FileEntryType, option: OptionType) {
     if (hasLabels.value) {
+        Vue.set(file, "url", undefined);
+        Vue.set(file, "__gx_dataset_id", undefined);
+        Vue.set(file, "__gx_dataset_name", undefined);
         Vue.set(file, "__gx_dataset_label", {
             invocation_id: "",
             [option.value.type]: option.value.label,
         });
     } else if (option.id) {
-        file.url = `${getAppRoot()}api/datasets/${option.id}/display`;
+        Vue.set(file, "url", undefined);
+        Vue.set(file, "__gx_dataset_id", option.id);
+        Vue.set(file, "__gx_dataset_name", option.name);
+        Vue.set(file, "__gx_dataset_label", undefined);
     }
 }
 
