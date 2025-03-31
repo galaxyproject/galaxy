@@ -16,8 +16,7 @@
                 <div v-for="(file, fileIndex) in dataset.files" :key="fileIndex">
                     <ConfigureSelector
                         :labels="labels"
-                        :object-id="file.url"
-                        :object-name="file.url"
+                        :object-name="getObjectName(file)"
                         :object-title="`${fileIndex + 1}: ${getFileName(file)}`"
                         object-type="history_dataset_id"
                         @change="onChange(file, $event)" />
@@ -31,7 +30,7 @@
 <script setup lang="ts">
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
-import { computed, type Ref, ref, watch } from "vue";
+import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
@@ -83,12 +82,16 @@ function getFileName(file: FileEntryType) {
     return `${file.fileType} ${fileDetails}`;
 }
 
+function getObjectName(file: FileEntryType) {
+    return file.__gx_dataset_label?.input || file.__gx_dataset_label?.output || file.url;
+}
+
 function onChange(file: FileEntryType, option: OptionType) {
     if (hasLabels.value) {
-        file.__gx_dataset_label = {
+        Vue.set(file, "__gx_dataset_label", {
             invocation_id: "",
             [option.value.type]: option.value.label,
-        };
+        });
     } else if (option.id) {
         file.url = `${getAppRoot()}api/datasets/${option.id}/display`;
     }

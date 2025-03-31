@@ -47,10 +47,24 @@ const currentValue = computed({
     },
 });
 
+const availableLabels = computed(() => {
+    switch (props.objectType) {
+        case "history_dataset_id":
+            return ["input", "output"];
+        case "history_dataset_collection_id":
+            return ["input", "output"];
+        case "job_id":
+            return ["step"];
+    }
+    return [];
+});
+
 const hasLabels = computed(() => props.labels !== undefined);
 
 const mappedLabels = computed(() =>
-    props.labels?.map((value) => ({ name: `${value.label} (${value.type})`, value: value }))
+    props.labels
+        ?.filter((value) => availableLabels.value.includes(value.type))
+        .map((value) => ({ name: `${value.label} (${value.type})`, value: value }))
 );
 
 const title = computed(
