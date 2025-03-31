@@ -1,11 +1,15 @@
 import { mount } from "@vue/test-utils";
 import { BAlert } from "bootstrap-vue";
 
+import { useServerMock } from "@/api/client/__mocks__";
+
 import CellAdd from "./CellAdd.vue";
 import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Popper from "@/components/Popper/Popper.vue";
+
+const { server, http } = useServerMock();
 
 jest.mock("./templates", () => ({
     "Category 1": [
@@ -22,6 +26,7 @@ const createContainer = (tag = "div") => {
 };
 
 const mountTarget = () => {
+    server.use(http.get("/api/plugins", ({ response }) => response(200).json([])));
     return mount(CellAdd, {
         attachTo: createContainer(),
         global: {
@@ -52,7 +57,7 @@ describe("CellAdd.vue", () => {
         const categories = wrapper.findAll(".cell-add-categories");
         expect(categories).toHaveLength(1);
         expect(categories.at(0).find(".text-info").text()).toBe("Category 1");
-        expect(categories.at(0).find(".cell-option").text()).toContain("Option A");
+        expect(categories.at(0).find(".cell-add-options").text()).toContain("Option A");
     });
 
     it("shows 'No results found' when no templates match search", async () => {
