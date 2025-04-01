@@ -1,3 +1,5 @@
+export type ApiResponse = Array<any> | undefined;
+
 export interface CellType {
     name: string;
     content: string;
@@ -19,6 +21,12 @@ export interface Invocation {
     workflow_id: string;
 }
 
+export interface OptionType {
+    id: string;
+    name: string;
+    label?: DatasetLabel;
+}
+
 export interface TemplateEntry {
     title: string;
     description: string;
@@ -30,17 +38,4 @@ export interface TemplateEntry {
 export interface WorkflowLabel {
     label: string;
     type: "input" | "output" | "step";
-}
-
-export type ApiResponse = Array<any> | undefined;
-
-export interface ContentType {
-    dataset_id: string;
-    dataset_name?: string;
-}
-
-export interface OptionType {
-    id: string;
-    name: string;
-    value?: any;
 }

@@ -80,14 +80,11 @@ function getObjectName(file: FileEntryType) {
 }
 
 function onChange(file: FileEntryType, option: OptionType) {
-    if (hasLabels.value) {
+    if (hasLabels.value && option.label) {
         Vue.set(file, "url", undefined);
         Vue.set(file, "__gx_dataset_id", undefined);
         Vue.set(file, "__gx_dataset_name", undefined);
-        Vue.set(file, "__gx_dataset_label", {
-            invocation_id: "",
-            [option.value.type]: option.value.label,
-        });
+        Vue.set(file, "__gx_dataset_label", option.label);
     } else if (option.id) {
         Vue.set(file, "url", undefined);
         Vue.set(file, "__gx_dataset_id", option.id);
