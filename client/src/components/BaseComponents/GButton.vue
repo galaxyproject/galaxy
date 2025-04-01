@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import type { Placement } from "@popperjs/core";
+import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
+import { useAccessibleHover } from "@/composables/accessibleHover";
+import { useUid } from "@/composables/utils/uid";
+
 import { type ComponentColor, type ComponentSize, type ComponentVariantClassList, prefix } from "./componentVariants";
+
+import GTooltip from "./GTooltip.vue";
 
 const props = defineProps<{
     href?: string;
@@ -13,6 +19,8 @@ const props = defineProps<{
     title?: string;
     disabledTitle?: string;
     size?: ComponentSize;
+    tooltip?: boolean;
+    tooltipPlacement?: Placement;
 }>();
 
 const emit = defineEmits<{
@@ -20,7 +28,9 @@ const emit = defineEmits<{
 }>();
 
 function onClick(event: PointerEvent) {
-    emit("click", event);
+    if (!props.disabled) {
+        emit("click", event);
+    }
 }
 
 const variantClasses = computed(() => {
@@ -33,6 +43,7 @@ const variantClasses = computed(() => {
 const styleClasses = computed(() => {
     return {
         outline: props.outline,
+        disabled: props.disabled,
     };
 });
 
@@ -45,26 +56,80 @@ const baseComponent = computed(() => {
         return "button" as const;
     }
 });
+
+const currentTooltip = computed(() => {
+    if (props.disabled) {
+        return props.disabledTitle ?? props.title;
+    } else {
+        return props.title;
+    }
+});
+
+const currentTitle = computed(() => {
+    if (props.tooltip) {
+        return false;
+    } else {
+        return currentTooltip.value;
+    }
+});
+
+const tooltipId = useUid("g-tooltip");
+const describedBy = computed(() => {
+    if (props.tooltip) {
+        return tooltipId.value;
+    } else {
+        return false;
+    }
+});
+
+const buttonRef = ref<HTMLElement | null>(null);
+const tooltipRef = ref<InstanceType<typeof GTooltip>>();
+
+useAccessibleHover(
+    buttonRef,
+    () => {
+        tooltipRef.value?.show();
+    },
+    () => {
+        tooltipRef.value?.hide();
+    }
+);
 </script>
 
 <template>
-    <component
-        :is="baseComponent"
-        class="g-button"
-        :class="{ ...variantClasses, ...styleClasses }"
-        :to="props.to"
-        :href="props.href"
-        @click="onClick">
-        <slot></slot>
-    </component>
+    <!-- TODO: Remove wrapping span in Vue 3 -->
+    <span>
+        <component
+            :is="baseComponent"
+            ref="buttonRef"
+            class="g-button"
+            :class="{ ...variantClasses, ...styleClasses }"
+            :to="props.to"
+            :href="props.href"
+            :title="currentTitle"
+            :aria-describedby="describedBy"
+            v-bind="$attrs"
+            @click="onClick">
+            <slot></slot>
+        </component>
+        <GTooltip
+            v-if="props.tooltip"
+            :id="tooltipId"
+            ref="tooltipRef"
+            :reference="buttonRef"
+            :text="currentTooltip"
+            :placement="props.tooltipPlacement" />
+    </span>
 </template>
 
 <style scoped lang="scss">
+// todo: remove bootstrap overrides
+
 .g-button {
     display: inline-block;
     margin: 0;
     border: 1px solid;
-    border-radius: var(--spacing);
+    border-radius: var(--spacing-1);
     text-decoration: none;
     vertical-align: middle;
 
@@ -147,15 +212,56 @@ const baseComponent = computed(() => {
                 color: var(--color-#{$color}-100);
             }
 
-            &:active {
-                background-color: var(--color-#{$color}-600);
-                color: var(--color-#{$color}-100);
-            }
-
             &:focus-visible {
                 border-color: var(--color-#{$color}-900);
                 background-color: var(--color-#{$color}-200);
                 color: var(--color-#{$color}-600);
+            }
+        }
+    }
+
+    &.disabled {
+        // bootstrap override
+        opacity: 1;
+
+        background-color: var(--color-grey-100);
+        border-color: var(--color-grey-200);
+        color: var(--color-grey-500);
+
+        &:hover,
+        &:focus,
+        &:focus-visible {
+            background-color: var(--color-grey-100);
+            border-color: var(--color-grey-200);
+        }
+
+        &:active {
+            background-color: var(--color-grey-100);
+            border-color: var(--color-grey-200);
+            color: var(--color-grey-500);
+        }
+
+        &:focus-visible {
+            border-color: var(--color-grey-500);
+        }
+
+        &.outline {
+            background-color: rgb(100% 100% 100% / 0);
+            border-color: var(--color-grey-400);
+            color: var(--color-grey-400);
+
+            &:hover,
+            &:focus,
+            &:focus-visible {
+                background-color: rgb(100% 100% 100% / 0);
+                border-color: var(--color-grey-400);
+                color: var(--color-grey-400);
+            }
+
+            &:focus-visible {
+                border-color: var(--color-grey-800);
+                background-color: rgb(100% 100% 100% / 0);
+                color: var(--color-grey-500);
             }
         }
     }
