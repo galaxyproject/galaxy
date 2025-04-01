@@ -4,7 +4,7 @@
     <div
         v-else
         class="mb-2"
-        :class="droppable && dragState && `alert alert-${dragState}`"
+        :class="droppable && dragState && `ui-dragover-${dragState}`"
         @dragenter.prevent="onDragEnter"
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
