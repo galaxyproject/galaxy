@@ -24,6 +24,7 @@ from .container_classes import (
     DOCKER_CONTAINER_TYPE,
     SINGULARITY_CONTAINER_TYPE,
 )
+from . import container_resolvers
 from .container_resolvers import ResolutionCache
 from .container_resolvers.explicit import (
     ExplicitContainerResolver,
@@ -345,9 +346,7 @@ class ContainerRegistry:
         return default_resolvers
 
     def __resolvers_dict(self) -> Dict[str, Type["ContainerResolver"]]:
-        import galaxy.tool_util.deps.container_resolvers
-
-        return plugin_config.plugins_dict(galaxy.tool_util.deps.container_resolvers, "resolver_type")
+        return plugin_config.plugins_dict(container_resolvers, "resolver_type")
 
     def get_resolution_cache(self) -> ResolutionCache:
         cache = ResolutionCache()
