@@ -23,7 +23,7 @@ from galaxy.schema.tools import (
 from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parameters.convert import cwl_runtime_model
 from galaxy.tool_util.parser.yaml import YamlToolSource
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     DependsOnUser,
@@ -89,15 +89,15 @@ class UnprivilegedToolsApi:
         input_bundle = input_models_for_tool_source(tool_source)
         return cwl_runtime_model(input_bundle)
 
-    @router.delete("/api/unprivileged_tools/{tool_id}", response_model_exclude_defaults=True)
-    def delete(self, tool_id: str, user: User = DependsOnUser):
+    @router.delete("/api/unprivileged_tools/{uuid}", response_model_exclude_defaults=True)
+    def delete(self, uuid: str, user: User = DependsOnUser):
         """
         DELETE /api/unprivileged_tools/{encoded_dynamic_tool_id|tool_uuid}
 
         Deactivate the specified dynamic tool. Deactivated tools will not
         be loaded into the toolbox.
         """
-        dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_tool_id(user, tool_id)
+        dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_uuid(user, uuid)
         if not dynamic_tool:
             raise ObjectNotFound()
         updated_dynamic_tool = self.dynamic_tools_manager.deactivate_unprivileged_tool(user, dynamic_tool)
@@ -108,11 +108,11 @@ class UnprivilegedToolsApi:
 class DynamicToolApi:
     dynamic_tools_manager: DynamicToolManager = depends(DynamicToolManager)
 
-    @router.get("/api/dynamic_tools")
+    @router.get("/api/dynamic_tools", public=True)
     def index(self):
         return [t.to_dict() for t in self.dynamic_tools_manager.list_tools()]
 
-    @router.get("/api/dynamic_tools/{dynamic_tool_id}")
+    @router.get("/api/dynamic_tools/{dynamic_tool_id}", public=True)
     def show(self, dynamic_tool_id: Union[DatabaseIdOrUUID, str]):
         dynamic_tool = self.dynamic_tools_manager.get_tool_by_id_or_uuid(dynamic_tool_id)
         if dynamic_tool is None:
