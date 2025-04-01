@@ -132,6 +132,13 @@ useAccessibleHover(
     text-decoration: none;
     vertical-align: middle;
 
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out;
+
+    @media (prefers-reduced-motion) {
+        transition: none;
+    }
+
     &:focus-visible {
         box-shadow: 0 0 0 0.2rem var(--color-blue-400);
     }
