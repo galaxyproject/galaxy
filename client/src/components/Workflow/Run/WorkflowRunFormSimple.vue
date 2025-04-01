@@ -294,7 +294,7 @@ async function onExecute() {
                                 v-b-tooltip.hover.noninteractive
                                 variant="link"
                                 size="sm"
-                                class="text-decoration-none"
+                                class="text-decoration-none workflow-expand-form-link"
                                 title="Switch to the legacy workflow form"
                                 @click="$emit('showAdvanced')">
                                 Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
