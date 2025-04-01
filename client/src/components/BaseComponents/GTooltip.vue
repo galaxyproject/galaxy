@@ -24,7 +24,6 @@ watchImmediate(
         popperInstance.value?.destroy();
 
         if (!props.reference) {
-            console.warn(`no reference defined for tooltip with id ${props.id}`);
             return;
         }
 

@@ -97,21 +97,20 @@ useAccessibleHover(
 </script>
 
 <template>
-    <!-- TODO: Remove wrapping span in Vue 3 -->
-    <span>
-        <component
-            :is="baseComponent"
-            ref="buttonRef"
-            class="g-button"
-            :class="{ ...variantClasses, ...styleClasses }"
-            :to="props.to"
-            :href="props.href"
-            :title="currentTitle"
-            :aria-describedby="describedBy"
-            v-bind="$attrs"
-            @click="onClick">
-            <slot></slot>
-        </component>
+    <component
+        :is="baseComponent"
+        ref="buttonRef"
+        class="g-button"
+        :class="{ ...variantClasses, ...styleClasses }"
+        :to="props.to"
+        :href="props.href"
+        :title="currentTitle"
+        :aria-describedby="describedBy"
+        v-bind="$attrs"
+        @click="onClick">
+        <slot></slot>
+
+        <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
             v-if="props.tooltip"
             :id="tooltipId"
@@ -119,7 +118,7 @@ useAccessibleHover(
             :reference="buttonRef"
             :text="currentTooltip"
             :placement="props.tooltipPlacement" />
-    </span>
+    </component>
 </template>
 
 <style scoped lang="scss">
