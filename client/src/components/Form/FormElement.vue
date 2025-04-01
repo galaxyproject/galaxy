@@ -163,9 +163,7 @@ const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
-const showField = computed(
-    () => !collapsed.value && !props.disabled && (!props.workflowRun || props.type !== "boolean")
-);
+const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
 );
@@ -333,9 +331,6 @@ function onAlert(value: string | undefined) {
                 :is-empty="isEmpty"
                 :is-optional="isOptional"
                 :extensions="attrs.extensions">
-                <template v-slot:form-element>
-                    <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
-                </template>
                 <template v-slot:action-items>
                     <slot name="workflow-run-form-title-items" />
                 </template>
