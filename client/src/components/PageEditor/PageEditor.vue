@@ -18,13 +18,10 @@ import { rethrowSimple } from "utils/simple-error";
 
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
-import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
-
 export default {
     components: {
         PageEditorMarkdown,
         LoadingSpan,
-        ActivityBar,
     },
     props: {
         pageId: {
