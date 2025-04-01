@@ -246,6 +246,7 @@ async function onExecute() {
                                 size="sm"
                                 title="Workflow Run Settings"
                                 variant="link"
+                                class="workflow-run-settings"
                                 :pressed="showRuntimeSettingsPanel"
                                 @click="toggleRuntimeSettings">
                                 <FontAwesomeIcon :icon="faCog" fixed-width />
