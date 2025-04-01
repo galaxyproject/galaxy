@@ -1,15 +1,6 @@
 <template>
     <div class="p-2">
-        <div class="d-flex justify-content-between align-items-start w-100">
-            <div class="flex-grow-1 me-3">
-                <Heading size="sm" separator>Attach Data</Heading>
-                <div class="small mb-2">Fill in the fields below to map required inputs to this cell.</div>
-            </div>
-            <div class="d-flex gap-1">
-                <CellButton title="Apply Changes" tooltip-placement="bottom" :icon="faCheck" @click="onOk" />
-                <CellButton title="Cancel" tooltip-placement="bottom" :icon="faTimes" @click="$emit('cancel')" />
-            </div>
-        </div>
+        <ConfigureHeader :has-changed="hasChanged" @ok="onOk" @cancel="$emit('cancel')" />
         <div v-if="contentObject.datasets && contentObject.datasets.length > 0">
             <div v-for="(dataset, datasetIndex) in contentObject.datasets" :key="datasetIndex">
                 <Heading size="sm">{{ dataset.name }} ({{ dataset.uid || "n/a" }})</Heading>
@@ -28,16 +19,15 @@
 </template>
 
 <script setup lang="ts">
-import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 
+import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
-import CellButton from "@/components/Markdown/Editor/CellButton.vue";
 
 interface DatasetEntryType {
     files?: Array<FileEntryType>;
@@ -74,6 +64,7 @@ const emit = defineEmits<{
 
 const contentObject: Ref<VitessceType> = ref({});
 const errorMessage = ref();
+const hasChanged = ref(false);
 
 const hasLabels = computed(() => props.labels !== undefined);
 
@@ -102,6 +93,7 @@ function onChange(file: FileEntryType, option: OptionType) {
         Vue.set(file, "__gx_dataset_name", option.name);
         Vue.set(file, "__gx_dataset_label", undefined);
     }
+    hasChanged.value = true;
 }
 
 function onOk() {
