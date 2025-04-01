@@ -10,9 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import { GalaxyApi } from "@/api";
 import { ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -44,8 +44,8 @@ const getPage = async (id: string): Promise<PageData | undefined> => {
         params: {
             path: {
                 id,
-            }
-        }
+            },
+        },
     });
     if (error) {
         rethrowSimple(error.err_msg);

@@ -20,10 +20,11 @@ export async function copyCollection(hdcaId, historyId) {
     }
 }
 
-export async function getDataset(query) {
+export async function getDataset(query, historyId) {
     const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
             query: {
+                history_id: historyId,
                 q: ["name-contains"],
                 qv: [query],
                 offset: 0,
