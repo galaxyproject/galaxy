@@ -1,5 +1,6 @@
 import re
 from typing import (
+    Callable,
     get_origin,
     TYPE_CHECKING,
     Union,
@@ -11,16 +12,44 @@ from pydantic import (
     PlainSerializer,
     WithJsonSchema,
 )
+from pydantic_core import PydanticCustomError
 from typing_extensions import (
     Annotated,
     get_args,
 )
+
+from galaxy.exceptions import MessageException
 
 if TYPE_CHECKING:
     from galaxy.security.idencoding import IdEncodingHelper
 
 ENCODED_DATABASE_ID_PATTERN = re.compile("f?[0-9a-f]+")
 ENCODED_ID_LENGTH_MULTIPLE = 16
+
+
+def validation_message_wrapper(callable: Callable):
+    """Wraps MessageException in a PydanticCustomError."""
+
+    def wrapper(database_id):
+        try:
+            return callable(database_id)
+        except MessageException as e:
+            # we want to return it as a PydanticCustomError
+            # so that it can be handled by the Pydantic error handling system, so we can restore the
+            # original exception.
+            raise PydanticCustomError("message_exception", "A seralizable exception occurrred", {"exception": e})
+
+    return wrapper
+
+
+@validation_message_wrapper
+def encode_id(database_id: int) -> str:
+    return Security.security.encode_id(database_id)
+
+
+@validation_message_wrapper
+def decode_id(encoded_id: str) -> int:
+    return Security.security.decode_id(encoded_id)
 
 
 class Security:
@@ -50,9 +79,9 @@ def ensure_valid_folder_id(v):
 
 DecodedDatabaseIdField = Annotated[
     int,
-    BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
+    BeforeValidator(decode_id),
     BeforeValidator(ensure_valid_id),
-    PlainSerializer(lambda database_id: Security.security.encode_id(database_id), return_type=str, when_used="json"),
+    PlainSerializer(encode_id, return_type=str, when_used="json"),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
@@ -65,7 +94,7 @@ DecodedDatabaseIdField = Annotated[
 
 EncodedDatabaseIdField = Annotated[
     str,
-    BeforeValidator(lambda database_id: Security.security.encode_id(database_id)),
+    BeforeValidator(encode_id),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
@@ -78,7 +107,7 @@ EncodedDatabaseIdField = Annotated[
 
 LibraryFolderDatabaseIdField = Annotated[
     int,
-    BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
+    BeforeValidator(decode_id),
     BeforeValidator(ensure_valid_folder_id),
     PlainSerializer(
         lambda database_id: f"F{Security.security.encode_id(database_id)}", return_type=str, when_used="json"
@@ -95,7 +124,7 @@ LibraryFolderDatabaseIdField = Annotated[
 
 EncodedLibraryFolderDatabaseIdField = Annotated[
     str,
-    BeforeValidator(lambda database_id: f"F{Security.security.encode_id(database_id)}"),
+    BeforeValidator(lambda database_id: f"F{encode_id(database_id)}"),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",

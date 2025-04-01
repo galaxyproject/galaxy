@@ -6005,7 +6005,9 @@ export interface components {
             /** @description The location of the step in the Galaxy workflow editor. */
             position?: components["schemas"]["Position"] | null;
             /** Tool State */
-            tool_state?: Record<string, never> | null;
+            tool_state?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Type
              * @description Module type of the step to add, see galaxy.workflow.modules for available types.
@@ -6791,7 +6793,9 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Metadata */
-            metadata?: Record<string, never> | null;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -6963,7 +6967,9 @@ export interface components {
             /** Store Content Uri */
             store_content_uri?: string | null;
             /** Store Dict */
-            store_dict?: Record<string, never> | null;
+            store_dict?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** CreateHistoryContentPayload */
         CreateHistoryContentPayload: {
@@ -7045,7 +7051,9 @@ export interface components {
             /** Store Content Uri */
             store_content_uri?: string | null;
             /** Store Dict */
-            store_dict?: Record<string, never> | null;
+            store_dict?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** CreateInstancePayload */
         CreateInstancePayload: {
@@ -7096,7 +7104,9 @@ export interface components {
             /** Store Content Uri */
             store_content_uri?: string | null;
             /** Store Dict */
-            store_dict?: Record<string, never> | null;
+            store_dict?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * View
              * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
@@ -7109,7 +7119,9 @@ export interface components {
             /** Store Content Uri */
             store_content_uri?: string | null;
             /** Store Dict */
-            store_dict?: Record<string, never> | null;
+            store_dict?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** CreateLibraryFilePayload */
         CreateLibraryFilePayload: {
@@ -7354,7 +7366,9 @@ export interface components {
              */
             public: boolean;
             /** Request State */
-            request_state?: Record<string, never> | null;
+            request_state?: {
+                [key: string]: unknown;
+            } | null;
             /** Workflow Id */
             workflow_id: string;
             /**
@@ -8198,7 +8212,9 @@ export interface components {
              * Hashes
              * @description The file contents hashes associated with the supplied dataset instance.
              */
-            hashes: Record<string, never>[];
+            hashes: {
+                [key: string]: unknown;
+            }[];
             /**
              * Name
              * @description The display name of the destination ObjectStore for this dataset.
@@ -8235,7 +8251,9 @@ export interface components {
              * Sources
              * @description The file sources associated with the supplied dataset instance.
              */
-            sources: Record<string, never>[];
+            sources: {
+                [key: string]: unknown;
+            }[];
         };
         /** DatasetTextContentDetails */
         DatasetTextContentDetails: {
@@ -8561,7 +8579,9 @@ export interface components {
              * Preferences
              * @description Preferences of the user
              */
-            preferences: Record<string, never>;
+            preferences: {
+                [key: string]: unknown;
+            };
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -11909,16 +11929,16 @@ export interface components {
              */
             history_id: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "history_deleted";
         };
         /** InvocationCancellationReviewFailedResponse */
         InvocationCancellationReviewFailedResponse: {
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "cancelled_on_review";
             /**
@@ -11930,8 +11950,8 @@ export interface components {
         /** InvocationCancellationUserRequestResponse */
         InvocationCancellationUserRequestResponse: {
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "user_request";
         };
@@ -11943,8 +11963,8 @@ export interface components {
              */
             output_name: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "workflow_output_not_found";
             /** Workflow step id of step that caused a warning. */
@@ -11964,8 +11984,8 @@ export interface components {
              */
             hdca_id: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "collection_failed";
             /**
@@ -11988,8 +12008,8 @@ export interface components {
              */
             hda_id: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "dataset_failed";
             /**
@@ -12006,8 +12026,8 @@ export interface components {
              */
             details?: string | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "expression_evaluation_failed";
             /**
@@ -12030,8 +12050,8 @@ export interface components {
              */
             job_id: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "job_failed";
             /**
@@ -12050,8 +12070,8 @@ export interface components {
             /** Tool or module output name that was referenced but not produced */
             output_name: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "output_not_found";
             /**
@@ -12068,8 +12088,8 @@ export interface components {
              */
             details: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "when_not_boolean";
             /**
@@ -12086,8 +12106,8 @@ export interface components {
              */
             details: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "workflow_parameter_invalid";
             /** Workflow parameter step that failed validation */
@@ -12224,7 +12244,9 @@ export interface components {
              * Errors
              * @description Errors associated with the invocation.
              */
-            errors?: Record<string, never> | null;
+            errors?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Galaxy Version
              * @description The version of Galaxy this object was generated with.
@@ -12239,17 +12261,23 @@ export interface components {
              * Histories
              * @description Histories associated with the invocation.
              */
-            histories?: Record<string, never> | null;
+            histories?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * History dataset collections
              * @description History dataset collections associated with the invocation.
              */
-            history_dataset_collections?: Record<string, never> | null;
+            history_dataset_collections?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * History datasets
              * @description History datasets associated with the invocation.
              */
-            history_datasets?: Record<string, never> | null;
+            history_datasets?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Workflow ID
              * @description The workflow this invocation has been triggered for.
@@ -12265,12 +12293,16 @@ export interface components {
              * Invocations
              * @description Other invocations associated with the invocation.
              */
-            invocations?: Record<string, never> | null;
+            invocations?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Jobs
              * @description Jobs associated with the invocation.
              */
-            jobs?: Record<string, never> | null;
+            jobs?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Markdown
              * @description Raw galaxy-flavored markdown contents of the report.
@@ -12303,7 +12335,9 @@ export interface components {
              * Workflows
              * @description Workflows associated with the invocation.
              */
-            workflows?: Record<string, never> | null;
+            workflows?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * InvocationSerializationView
@@ -12539,8 +12573,8 @@ export interface components {
              */
             details?: string | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Reason
+             * @constant
              */
             reason: "unexpected_failure";
             /**
@@ -12578,7 +12612,9 @@ export interface components {
              * @default {}
              */
             ds_map: {
-                [key: string]: Record<string, never>;
+                [key: string]: {
+                    [key: string]: unknown;
+                };
             } | null;
             /**
              * Effective Outputs
@@ -12599,7 +12635,9 @@ export interface components {
              * Inputs
              * @description Specify values for formal inputs to the workflow
              */
-            inputs?: Record<string, never> | null;
+            inputs?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Inputs By
              * @description How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps.
@@ -12633,7 +12671,9 @@ export interface components {
              * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
              * @default {}
              */
-            parameters: Record<string, never> | null;
+            parameters: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Legacy Step Parameters Normalized
              * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
@@ -12659,7 +12699,9 @@ export interface components {
              * Replacement Parameters
              * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
              */
-            replacement_params?: Record<string, never> | null;
+            replacement_params?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Require Exact Tool Versions
              * @description If true, exact tool versions are required for workflow invocation.
@@ -12670,7 +12712,9 @@ export interface components {
              * Resource Parameters
              * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
              */
-            resource_params?: Record<string, never> | null;
+            resource_params?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Scheduler
              * @description Scheduler to use for workflow invocation.
@@ -13336,12 +13380,16 @@ export interface components {
             /** @description the type of item to create */
             create_type: components["schemas"]["CreateType"];
             /** list of dictionaries containing the element identifiers for the collection */
-            element_identifiers: Record<string, never>[];
+            element_identifiers: {
+                [key: string]: unknown;
+            }[];
             /**
              * Extended Metadata
              * @description sub-dictionary containing any extended metadata to associate with the item
              */
-            extended_metadata?: Record<string, never> | null;
+            extended_metadata?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Folder Id
              * @description the encoded id of the parent folder of the new item
@@ -13500,7 +13548,9 @@ export interface components {
              * Extended Metadata
              * @description sub-dictionary containing any extended metadata to associate with the item
              */
-            extended_metadata?: Record<string, never> | null;
+            extended_metadata?: {
+                [key: string]: unknown;
+            } | null;
             /** file type */
             file_type?: string | null;
             /**
@@ -13560,7 +13610,11 @@ export interface components {
              */
             tags: string[];
             /** list of the uploaded files */
-            upload_files?: Record<string, never>[] | null;
+            upload_files?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * @deprecated
              * @description the method to use for uploading files
@@ -13585,7 +13639,9 @@ export interface components {
              * Extended Metadata
              * @description sub-dictionary containing any extended metadata to associate with the item
              */
-            extended_metadata?: Record<string, never> | null;
+            extended_metadata?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Folder Id
              * @description the encoded id of the parent folder of the new item
@@ -15779,7 +15835,9 @@ export interface components {
              * Inputs
              * @description The inputs of the job.
              */
-            inputs: Record<string, never>;
+            inputs: {
+                [key: string]: unknown;
+            };
             /**
              * State
              * @description Current state of the job.
@@ -16568,7 +16626,9 @@ export interface components {
              * Source Metadata
              * @description The source metadata of the workflow.
              */
-            source_metadata: Record<string, never> | null;
+            source_metadata: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Steps
              * @description A dictionary with information about all the steps of the workflow.
@@ -17947,7 +18007,9 @@ export interface components {
              * @description The config of the visualization.
              * @default {}
              */
-            config: Record<string, never> | null;
+            config: {
+                [key: string]: unknown;
+            } | null;
             /**
              * DbKey
              * @description The database key of the visualization.
@@ -17995,12 +18057,18 @@ export interface components {
              * Entry Point
              * @description The entry point of the plugin.
              */
-            entry_point: Record<string, never>;
+            entry_point: {
+                [key: string]: unknown;
+            };
             /**
              * Groups
              * @description The groups of the plugin.
              */
-            groups?: Record<string, never>[] | null;
+            groups?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Href
              * @description The href of the plugin.
@@ -18025,12 +18093,16 @@ export interface components {
              * Settings
              * @description The settings of the plugin.
              */
-            settings: Record<string, never>[];
+            settings: {
+                [key: string]: unknown;
+            }[];
             /**
              * Specs
              * @description The specs of the plugin.
              */
-            specs?: Record<string, never> | null;
+            specs?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Target
              * @description The target of the plugin.
@@ -18048,7 +18120,9 @@ export interface components {
              * Config
              * @description The config of the visualization revision.
              */
-            config: Record<string, never>;
+            config: {
+                [key: string]: unknown;
+            };
             /**
              * DbKey
              * @description The database key of the visualization.
@@ -18237,7 +18311,12 @@ export interface components {
              * @description The config of the visualization.
              * @default {}
              */
-            config: Record<string, never> | string | null;
+            config:
+                | {
+                      [key: string]: unknown;
+                  }
+                | string
+                | null;
             /**
              * DbKey
              * @description The database key of the visualization.
@@ -18393,7 +18472,9 @@ export interface components {
              * Output values
              * @description Output values of the workflow invocation.
              */
-            output_values: Record<string, never>;
+            output_values: {
+                [key: string]: unknown;
+            };
             /**
              * Outputs
              * @description Output datasets of the workflow invocation.
@@ -18443,7 +18524,9 @@ export interface components {
              * Inputs
              * @description Values for inputs
              */
-            inputs: Record<string, never>;
+            inputs: {
+                [key: string]: unknown;
+            };
             /**
              * Inputs by
              * @description How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps.
@@ -18460,7 +18543,9 @@ export interface components {
              * Legacy Step Parameters
              * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
              */
-            parameters?: Record<string, never> | null;
+            parameters?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Legacy Step Parameters Normalized
              * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
@@ -18487,12 +18572,16 @@ export interface components {
              * Replacement Parameters
              * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
              */
-            replacement_params?: Record<string, never> | null;
+            replacement_params?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Resource Parameters
              * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
              */
-            resource_params?: Record<string, never> | null;
+            resource_params?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Use cached job
              * @description Indicated whether to use a cached job for workflow invocation.
@@ -18583,7 +18672,9 @@ export interface components {
         /** WorkflowLandingRequest */
         WorkflowLandingRequest: {
             /** Request State */
-            request_state: Record<string, never>;
+            request_state: {
+                [key: string]: unknown;
+            };
             state: components["schemas"]["LandingRequestState"];
             /**
              * UUID
@@ -18925,7 +19016,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Request Error */
@@ -19102,7 +19195,9 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: Record<string, never>;
+                        [key: string]: {
+                            [key: string]: unknown;
+                        };
                     }[];
                 };
             };
@@ -25530,7 +25625,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Request Error */
@@ -34617,7 +34714,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Request Error */
@@ -35449,7 +35548,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Request Error */
