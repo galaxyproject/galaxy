@@ -6,7 +6,7 @@
                 <div class="small mb-2">Fill in the fields below to map required inputs to this cell.</div>
             </div>
             <div class="d-flex gap-1">
-                <CellButton title="Ok" tooltip-placement="bottom" :icon="faCheck" @click="onOk" />
+                <CellButton title="Apply Changes" tooltip-placement="bottom" :icon="faCheck" @click="onOk" />
                 <CellButton title="Cancel" tooltip-placement="bottom" :icon="faTimes" @click="$emit('cancel')" />
             </div>
         </div>
