@@ -10,8 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import axios from "axios";
-import { ref, watch } from "vue";
+import { GalaxyApi } from "@/api";
+import { ref } from "vue";
 
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -26,7 +26,6 @@ interface PageData {
     content_format: string;
     username: string;
     slug: string;
-    [key: string]: any;
 }
 
 const props = defineProps<{
@@ -40,28 +39,36 @@ const contentData = ref<PageData>();
 const publicUrl = ref<string>("");
 const loading = ref(true);
 
-const getPage = async (id: string): Promise<PageData> => {
-    try {
-        const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
+const getPage = async (id: string): Promise<PageData | undefined> => {
+    const { data, error } = await GalaxyApi().GET("/api/pages/{id}", {
+        params: {
+            path: {
+                id,
+            }
+        }
+    });
+    if (error) {
+        rethrowSimple(error.err_msg);
+    } else {
+        return data as PageData;
     }
 };
 
 const loadPage = async () => {
     try {
         const data = await getPage(props.pageId);
-        publicUrl.value = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
-        content.value = data.content;
-        contentFormat.value = data.content_format;
-        contentData.value = data || {};
-        title.value = data.title;
-        loading.value = false;
+        if (data) {
+            publicUrl.value = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
+            content.value = data.content;
+            contentFormat.value = data.content_format;
+            contentData.value = data || {};
+            title.value = data.title;
+            loading.value = false;
+        }
     } catch (error: any) {
         Toast.error(`Failed to load page: ${error}`);
     }
 };
 
-watch(() => props.pageId, loadPage);
+loadPage();
 </script>
