@@ -181,7 +181,13 @@ module.exports = (env = {}, argv = {}) => {
                     ],
                 },
                 {
+                    test: /\.css$/,
+                    include: /monaco-editor/,
+                    use: ["css-loader"],
+                },
+                {
                     test: /\.(sa|sc|c)ss$/,
+                    exclude: /monaco-editor/,
                     use: [
                         {
                             loader: MiniCssExtractPlugin.loader,
