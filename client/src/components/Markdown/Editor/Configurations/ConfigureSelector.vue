@@ -112,7 +112,7 @@ async function doQuery(query: string = ""): Promise<ApiResponse> {
 }
 
 watch(
-    () => props.objectType,
+    () => [props.objectType, currentHistoryId.value],
     () => search(),
     { immediate: true }
 );
