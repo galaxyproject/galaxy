@@ -658,7 +658,7 @@ def validate_invocation_collection_crate_directory(crate_directory):
 
 def validate_with_roc_validator(crate_directory, profile):
     settings = services.ValidationSettings(
-        data_path=crate_directory,
+        rocrate_uri=crate_directory,
         profile_identifier=profile,
         requirement_severity=models.Severity.REQUIRED,
         abort_on_first=False,  # do not stop on first issue
