@@ -2,10 +2,7 @@
     <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
     <div v-else class="p-2">
         <ConfigureHeader @cancel="$emit('cancel')" />
-        <ConfigureSelector
-            :labels="labels"
-            object-type="history_dataset_id"
-            @change="onChange" />
+        <ConfigureSelector :labels="labels" object-type="history_dataset_id" @change="onChange" />
     </div>
 </template>
 
