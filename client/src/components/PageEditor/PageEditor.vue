@@ -1,15 +1,12 @@
 <template>
-    <div id="columns" class="d-flex">
-        <ActivityBar />
-        <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
-        <PageEditorMarkdown
-            v-else
-            :title="title"
-            :page-id="pageId"
-            :public-url="publicUrl"
-            :content="content"
-            :content-data="contentData" />
-    </div>
+    <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
+    <PageEditorMarkdown
+        v-else
+        :title="title"
+        :page-id="pageId"
+        :public-url="publicUrl"
+        :content="content"
+        :content-data="contentData" />
 </template>
 
 <script>
