@@ -1321,6 +1321,7 @@ class Tool(UsesDictVisibleKeys):
 
         # Short description of the tool
         self.description = tool_source.parse_description()
+        self.icon = tool_source.parse_icon()
 
         # Versioning for tools
         self.version_string_cmd = None
