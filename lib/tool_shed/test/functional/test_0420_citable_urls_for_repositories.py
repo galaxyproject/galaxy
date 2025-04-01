@@ -139,6 +139,14 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
             strings_displayed_in_iframe=strings_displayed_in_iframe,
         )
 
+    def test_0020_load_alt_repository_view_page(self):
+        # https://github.com/galaxyproject/galaxy/issues/19931
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        encoded_repository_id = repository.id
+        url = f"{self.url}/repository?repository_id={encoded_repository_id}"
+        self.visit_url(url)
+        self.check_for_strings([repository_name, common.test_user_1_name])
+
     def test_0025_load_view_page_for_previous_revision(self):
         """Load a citable url for a past changeset revision and verify that strings display.
 
