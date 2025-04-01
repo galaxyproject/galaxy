@@ -36,36 +36,18 @@ const contentObject: Ref<contentType | undefined> = ref();
 const hasLabels = computed(() => props.labels !== undefined);
 const errorMessage = ref("");
 
-function onChange(newValue: OptionType) {
-    if (hasLabels.value) {
-        onLabel(newValue.value);
-    } else {
-        onDataset(newValue.id);
-    }
-}
-
-function onDataset(datasetId: string) {
+function onChange(option: OptionType) {
     if (contentObject.value) {
-        contentObject.value.dataset_id = datasetId;
-        contentObject.value.dataset_label = undefined;
-        contentObject.value.dataset_url = undefined;
-        emit("change", stringify(contentObject.value));
-    }
-}
-
-function onLabel(selectedLabel: any) {
-    if (selectedLabel !== undefined) {
-        const labelType = selectedLabel.type;
-        const label = selectedLabel.label;
-        if (contentObject.value && label && labelType) {
-            contentObject.value.dataset_label = {
-                invocation_id: "",
-                [labelType]: label,
-            };
+        if (hasLabels.value) {
+            contentObject.value.dataset_label = option.label;
             contentObject.value.dataset_id = undefined;
             contentObject.value.dataset_url = undefined;
-            emit("change", stringify(contentObject.value));
+        } else {
+            contentObject.value.dataset_id = option.id;
+            contentObject.value.dataset_label = undefined;
+            contentObject.value.dataset_url = undefined;
         }
+        emit("change", stringify(contentObject.value));
     }
 }
 

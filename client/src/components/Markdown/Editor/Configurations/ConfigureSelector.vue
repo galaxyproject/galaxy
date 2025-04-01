@@ -88,8 +88,14 @@ const hasLabels = computed(() => props.labels !== undefined);
 
 const mappedLabels = computed(() =>
     props.labels
-        ?.filter((value) => availableLabels.value.includes(value.type))
-        .map((value) => ({ name: `${value.label} (${value.type})`, value: value }))
+        ?.filter((workflowLabel) => availableLabels.value.includes(workflowLabel.type))
+        .map((workflowLabel) => ({
+            name: `${workflowLabel.label} (${workflowLabel.type})`,
+            label: {
+                invocation_id: "",
+                [workflowLabel.type]: workflowLabel.label,
+            },
+        }))
 );
 
 const title = computed(
@@ -103,7 +109,7 @@ const search = debounce(async (query: string = "") => {
             const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, value: d.value }));
+                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, label: d.label }));
             } else {
                 options.value = [];
             }
