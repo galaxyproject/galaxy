@@ -1,5 +1,6 @@
 <template>
-    <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
+    <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+    <LoadingSpan v-else-if="!currentHistoryId" />
     <div v-else class="mb-2">
         <label class="form-label font-weight-bold">{{ title }}:</label>
         <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
@@ -7,12 +8,19 @@
 </template>
 
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { debounce } from "lodash";
+import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { ApiResponse, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from "@/components/Markdown/services";
+import { useHistoryStore } from "@/stores/historyStore";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const DELAY = 300;
 
@@ -93,7 +101,7 @@ async function doQuery(query: string = ""): Promise<ApiResponse> {
         case "history_id":
             return getHistories();
         case "history_dataset_id":
-            return getDataset(query);
+            return getDataset(query, currentHistoryId.value);
         case "invocation_id":
             return getInvocations();
         case "job_id":
