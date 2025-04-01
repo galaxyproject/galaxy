@@ -24,7 +24,7 @@ dependencies = [
     "boltons",
     "boto",
     "bx-python",
-    "celery",
+    "celery>=5.4.0",  # prefer not downgrading this to upgrading typing-extensions
     "cloudauthz==0.6.0",
     "cloudbridge",
     "circus",
@@ -50,7 +50,7 @@ dependencies = [
     "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
-    "kombu>=5.3",  # for importlib-metadata fix
+    "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
     "lagom",
     "Mako",
     "Markdown",
