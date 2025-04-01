@@ -93,7 +93,6 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
-from galaxy.schema.tools import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
     download_output,
@@ -103,6 +102,7 @@ from galaxy.tool_util.cwl.util import (
     output_to_cwl_json,
     tool_response_to_output,
 )
+from galaxy.tool_util.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,

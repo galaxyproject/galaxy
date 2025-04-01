@@ -53,8 +53,8 @@ from galaxy.schema.invocation import (
     InvocationFailureWhenNotBoolean,
     InvocationFailureWorkflowParameterInvalid,
 )
-from galaxy.schema.tools import DynamicToolCreatePayload
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
+from galaxy.tool_util.dynamic_tool_models import DynamicToolCreatePayload
 from galaxy.tool_util.parser import get_input_source
 from galaxy.tool_util.parser.output_objects import (
     ToolExpressionOutput,
