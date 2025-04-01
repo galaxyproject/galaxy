@@ -34,15 +34,10 @@ def validation_message_wrapper(callable: Callable):
         try:
             return callable(database_id)
         except MessageException as e:
-            # If the exception is a MessageException, we want to return it as a PydanticCustomError
+            # we want to return it as a PydanticCustomError
             # so that it can be handled by the Pydantic error handling system, so we can restore the
             # original exception.
-            if isinstance(e, MessageException):
-                # We want to return the exception as a PydanticCustomError
-                # so that it can be handled by the Pydantic error handling system.
-                raise PydanticCustomError("message_exception", "A seralizable exception occurrred", {"exception": e})
-            else:
-                raise
+            raise PydanticCustomError("message_exception", "A seralizable exception occurrred", {"exception": e})
 
     return wrapper
 
