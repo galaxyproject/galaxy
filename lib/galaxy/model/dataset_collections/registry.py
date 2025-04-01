@@ -4,6 +4,7 @@ from .types import (
     paired,
     paired_or_unpaired,
     record,
+    sample_sheet,
 )
 
 PLUGIN_CLASSES = [
@@ -11,6 +12,7 @@ PLUGIN_CLASSES = [
     paired.PairedDatasetCollectionType,
     record.RecordDatasetCollectionType,
     paired_or_unpaired.PairedOrUnpairedDatasetCollectionType,
+    sample_sheet.SampleSheetDatasetCollectionType,
 ]
 
 

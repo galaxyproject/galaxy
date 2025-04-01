@@ -19,6 +19,7 @@ import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./common/use
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+import SampleSheetCollectionCreator from "./SampleSheetCollectionCreator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -36,6 +37,7 @@ interface Props {
     notModal?: boolean;
     suggestedName?: string;
     useBetaComponents?: boolean;
+    fileSourcesConfigured: boolean;
 }
 const props = defineProps<Props>();
 
@@ -314,6 +316,16 @@ function resetCreator() {
             mode="modal"
             @on-cancel="hideCreator"
             @on-create="createHDCA" />
+        <SampleSheetCollectionCreator
+            v-else-if="props.collectionType === 'sample_sheet'"
+            :history-id="props.historyId"
+            :initial-elements="creatorItems || []"
+            :default-hide-source-items="props.defaultHideSourceItems"
+            :file-sources-configured="fileSourcesConfigured"
+            :from-selection="fromSelection"
+            :extensions="props.extensions"
+            @on-create="createHDCA"
+            @on-cancel="hideCreator" />
     </component>
 </template>
 

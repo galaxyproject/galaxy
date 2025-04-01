@@ -598,6 +598,7 @@ const collectionTypesWithBuilders = [
     "list:list",
     "list:list:paired",
     "list:paired_or_unpaired",
+    "sample_sheet",
 ];
 
 /** Allowed collection types for collection creation */

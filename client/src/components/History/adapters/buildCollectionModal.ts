@@ -21,7 +21,8 @@ export type CollectionType =
     | "rules"
     | "list:paired_or_unpaired"
     | "list:list"
-    | "list:list:paired";
+    | "list:list:paired"
+    | "sample_sheet";
 
 interface HasName {
     name: string | null;
@@ -37,6 +38,7 @@ export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     list: "list",
     "list:paired": "list of pairs",
     paired: "dataset pair",
+    sample_sheet: "sample sheet derived",
 };
 
 export type DatasetPair = GenericPair<HDASummary>;

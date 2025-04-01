@@ -1,3 +1,4 @@
+from io import BytesIO
 from logging import getLogger
 from typing import Optional
 
@@ -8,9 +9,17 @@ from fastapi import (
     Response,
     status,
 )
+from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
+    CreateWorkbookFromBase64,
+    generate_workbook_from_base64,
+    parse_workbook,
+    ParsedWorkbook,
+    ParseWorkbook,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDCA,
@@ -51,6 +60,15 @@ ViewTypeQueryParam: str = Query(
     description="The view of collection instance to return.",
 )
 
+Base64ColumnDefinitionsQueryParam: str = Query(
+    ...,
+    description="Base64 encoding of column definitions.",
+)
+WorkbookFilenameQueryParam: Optional[str] = Query(
+    None,
+    description="Filename of the workbook download to generate",
+)
+
 
 @router.cbv
 class FastAPIDatasetCollections:
@@ -66,6 +84,42 @@ class FastAPIDatasetCollections:
         payload: CreateNewCollectionPayload = Body(...),
     ) -> HDCADetailed:
         return self.service.create(trans, payload)
+
+    @router.get(
+        "/api/sample_sheet_workbook/generate",
+        summary="Create an XLSX workbook for a sample sheet definition.",
+        response_class=StreamingResponse,
+        operation_id="dataset_collections__workbook_download",
+    )
+    def create_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        column_definitions: str = Base64ColumnDefinitionsQueryParam,
+        filename: Optional[str] = WorkbookFilenameQueryParam,
+    ):
+        create_object = CreateWorkbookFromBase64(column_definitions=column_definitions)
+        workbook = generate_workbook_from_base64(create_object)
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        filename = filename or "galaxy_sample_sheet_workbook.xlsx"
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+
+    @router.post(
+        "/api/sample_sheet_workbook/parse",
+        summary="Parse an XLSX workbook for a sample sheet definition and supplied file contents.",
+        operation_id="dataset_collections__workbook_parse",
+    )
+    def parse_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseWorkbook = Body(...),
+    ) -> ParsedWorkbook:
+        return parse_workbook(payload)
 
     @router.post(
         "/api/dataset_collections/{id}/copy",

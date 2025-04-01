@@ -26,6 +26,7 @@ const collectionTypeOptions = [
     { value: "list:record", label: "List of Records" },
     { value: "list:paired", label: "List of Dataset Pairs" },
     { value: "list:paired_or_unpaired", label: "Mixed List of Paired and Unpaired Datasets" },
+    { value: "sample_sheet", label: "Sample Sheet of Datasets" },
 ];
 
 function updateValue(newValue: string | undefined) {
