@@ -80,7 +80,9 @@ const availableLabels = computed(() => {
     return [];
 });
 
-const droppable = computed(() => ["history_dataset_id", "history_collection_dataset_id"].includes(props.objectType));
+const droppable = computed(
+    () => !hasLabels.value && ["history_dataset_id", "history_collection_dataset_id"].includes(props.objectType)
+);
 
 const hasLabels = computed(() => props.labels !== undefined);
 

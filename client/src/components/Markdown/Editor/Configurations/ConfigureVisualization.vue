@@ -4,8 +4,6 @@
         <ConfigureHeader @cancel="$emit('cancel')" />
         <ConfigureSelector
             :labels="labels"
-            object-name="..."
-            object-title="Select a Dataset"
             object-type="history_dataset_id"
             @change="onChange" />
     </div>
@@ -15,7 +13,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
@@ -41,7 +39,7 @@ const contentObject: Ref<contentType | undefined> = ref();
 const hasLabels = computed(() => props.labels !== undefined);
 const errorMessage = ref("");
 
-function onChange(newValue: any) {
+function onChange(newValue: OptionType) {
     if (hasLabels.value) {
         onLabel(newValue.value);
     } else {
@@ -49,7 +47,7 @@ function onChange(newValue: any) {
     }
 }
 
-function onDataset(datasetId: any) {
+function onDataset(datasetId: string) {
     if (contentObject.value) {
         contentObject.value.dataset_id = datasetId;
         contentObject.value.dataset_label = undefined;
