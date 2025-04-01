@@ -2371,13 +2371,27 @@ class DataToolParameter(BaseDataToolParameter):
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
+        matches_by_hid: Dict[int, List] = {}
         for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda)
             if match:
                 m = match.hda
                 hda_list = [h for h in hda_list if h != m and h != hda]
-                m_name = f"{match.original_hda.name} (as {match.target_ext})" if match.implicit_conversion else m.name
-                append(d["options"]["hda"], m, m_name, "hda")
+                if m.hid not in matches_by_hid:
+                    matches_by_hid[m.hid] = []
+                matches_by_hid[m.hid].append(match)
+
+        # Add only original HDAs to the options, implicit conversions will be skipped
+        for matches in matches_by_hid.values():
+            match = matches[0]
+            if len(matches) > 1:
+                # If there are multiple matches for the same hid, use the original HDA and skip the implicit conversions
+                match = next((m for m in matches if len(m.hda.implicitly_converted_parent_datasets) == 0), match)
+            m_name = (
+                f"{match.original_hda.name} (as {match.target_ext})" if match.implicit_conversion else match.hda.name
+            )
+            append(d["options"]["hda"], match.hda, m_name, "hda")
+
         for hda in hda_list:
             if hasattr(hda, "hid"):
                 if hda.deleted:

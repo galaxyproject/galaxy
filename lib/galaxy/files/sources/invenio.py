@@ -403,12 +403,10 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         if is_draft_record:
             file_details_url = self._to_draft_url(file_details_url)
             download_file_content_url = self._to_draft_url(download_file_content_url)
-        file_details = self._get_response(user_context, file_details_url)
-        if not self._can_download_from_api(file_details):
-            # TODO: This is a temporary workaround for the fact that the "content" API
-            # does not support downloading files from S3 or other remote storage classes.
-            # More info: https://inveniordm.docs.cern.ch/reference/file_storage/#remote-files-r
-            download_file_content_url = f"{file_details_url.replace('/api', '')}?download=1"
+        # Downloading through the API is only supported for local files and depends on how
+        # the InvenioRDM instance file storage is configured.
+        # So this is the most reliable way to download files for now it.
+        download_file_content_url = f"{file_details_url.replace('/api', '')}?download=1"
         return download_file_content_url
 
     def _is_api_url(self, url: str) -> bool:
@@ -416,11 +414,6 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
     def _to_draft_url(self, url: str) -> str:
         return url.replace("/files/", "/draft/files/")
-
-    def _can_download_from_api(self, file_details: dict) -> bool:
-        # Only files stored locally seems to be fully supported by the API for now
-        # More info: https://inveniordm.docs.cern.ch/reference/file_storage/
-        return file_details["storage_class"] == "L"
 
     def _is_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = self._get_draft_record_url(record_id)
