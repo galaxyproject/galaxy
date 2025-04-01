@@ -24,11 +24,11 @@ from galaxy.model import (
     DynamicTool,
     UserDynamicToolAssociation,
 )
-from galaxy.schema.tools import (
+from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tool_util.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
 )
-from galaxy.tool_util.cwl import tool_proxy
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tools import (
     create_tool_from_source,

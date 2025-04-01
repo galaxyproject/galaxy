@@ -15,7 +15,7 @@ from galaxy.managers.tools import (
 )
 from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.tools import (
+from galaxy.tool_util.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
     UnprivilegedToolResponse,

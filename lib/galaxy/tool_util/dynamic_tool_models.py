@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import (
-    Literal,
     Optional,
     Union,
 )
 
 from pydantic import BaseModel
+from typing_extensions import Literal
 
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.tool_util.models import (
