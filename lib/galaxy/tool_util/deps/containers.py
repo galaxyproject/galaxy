@@ -25,6 +25,7 @@ from .container_classes import (
     DOCKER_CONTAINER_TYPE,
     SINGULARITY_CONTAINER_TYPE,
 )
+from . import container_resolvers
 from .container_resolvers import ResolutionCache
 from .container_resolvers.explicit import (
     ExplicitContainerResolver,
