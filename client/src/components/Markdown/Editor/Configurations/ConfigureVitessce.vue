@@ -1,5 +1,6 @@
 <template>
-    <div class="p-2">
+    <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
+    <div v-else class="p-2">
         <ConfigureHeader :has-changed="hasChanged" @ok="onOk" @cancel="$emit('cancel')" />
         <div v-if="contentObject.datasets && contentObject.datasets.length > 0">
             <div v-for="(dataset, datasetIndex) in contentObject.datasets" :key="datasetIndex">

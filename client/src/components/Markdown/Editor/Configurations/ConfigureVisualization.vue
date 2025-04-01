@@ -1,28 +1,25 @@
 <template>
     <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
-    <MarkdownSelector v-else-if="labels !== undefined" argument-name="Dataset" :labels="labels" @onOk="onLabel" />
-    <DataDialog
-        v-else-if="currentHistoryId !== null"
-        :history="currentHistoryId"
-        format="id"
-        @onOk="onData"
-        @onCancel="$emit('cancel')" />
-    <BAlert v-else v-localize variant="info" show> No history available to choose from. </BAlert>
+    <div v-else class="p-2">
+        <ConfigureHeader @cancel="$emit('cancel')" />
+        <ConfigureSelector
+            :labels="labels"
+            object-name="..."
+            object-title="Select a Dataset"
+            object-type="history_dataset_id"
+            @change="onChange" />
+    </div>
 </template>
 
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
-import { type Ref, ref, watch } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
-import { useHistoryStore } from "@/stores/historyStore";
 
-import DataDialog from "@/components/DataDialog/DataDialog.vue";
-import MarkdownSelector from "@/components/Markdown/MarkdownSelector.vue";
-
-const { currentHistoryId } = storeToRefs(useHistoryStore());
+import ConfigureHeader from "./ConfigureHeader.vue";
+import ConfigureSelector from "./ConfigureSelector.vue";
 
 const props = defineProps<{
     content: string;
@@ -41,9 +38,18 @@ interface contentType {
 }
 
 const contentObject: Ref<contentType | undefined> = ref();
+const hasLabels = computed(() => props.labels !== undefined);
 const errorMessage = ref("");
 
-function onData(datasetId: any) {
+function onChange(newValue: any) {
+    if (hasLabels.value) {
+        onLabel(newValue.value);
+    } else {
+        onDataset(newValue.id);
+    }
+}
+
+function onDataset(datasetId: any) {
     if (contentObject.value) {
         contentObject.value.dataset_id = datasetId;
         contentObject.value.dataset_label = undefined;
