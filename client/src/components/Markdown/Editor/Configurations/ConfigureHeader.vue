@@ -5,7 +5,12 @@
             <div class="small mb-2">Fill in the fields below to map required inputs to this cell.</div>
         </div>
         <div class="d-flex gap-1">
-            <CellButton title="Apply Changes" tooltip-placement="bottom" :icon="faCheck" @click="$emit('ok')" />
+            <CellButton
+                v-if="hasChanged !== undefined"
+                title="Apply Changes"
+                tooltip-placement="bottom"
+                :icon="faCheck"
+                @click="$emit('ok')" />
             <CellButton title="Cancel" tooltip-placement="bottom" :icon="faTimes" @click="onCancel" />
         </div>
         <BModal :visible="showModal">
@@ -43,7 +48,7 @@ const props = withDefaults(
         hasChanged: boolean;
     }>(),
     {
-        hasChanged: false,
+        hasChanged: undefined,
     }
 );
 
