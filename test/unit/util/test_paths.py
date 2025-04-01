@@ -7,7 +7,7 @@ from galaxy.util import in_directory
 
 
 def test_in_directory():
-    base_dir = tempfile.mkdtemp()
+    base_dir = os.path.realpath(tempfile.mkdtemp())
     safe_dir = os.path.join(base_dir, "user")
     os.mkdir(safe_dir)
     good_file = os.path.join(safe_dir, "1")
