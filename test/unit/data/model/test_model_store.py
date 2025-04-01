@@ -720,6 +720,7 @@ def test_export_simple_invocation_to_ro_crate(tmp_path):
     validate_invocation_crate_directory(tmp_path)
 
 
+@pytest.mark.xfail(reason="Awaiting resolution of validator issue https://github.com/crs4/rocrate-validator/issues/62")
 def test_export_collection_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_collection_invocation(app)

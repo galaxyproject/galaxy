@@ -106,9 +106,11 @@ class WorkflowRunCrateProfileBuilder:
     def _add_file(self, dataset: HistoryDatasetAssociation, properties: Dict[Any, Any], crate: ROCrate) -> File:
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
+            description = ""
             if not filename:
-                # dataset was not serialized
-                filename = f"datasets/dataset_{dataset.dataset.uuid}"
+                # dataset was not serialized - create a local identifier to use in the crate
+                filename = f"#datasets/dataset_{dataset.dataset.uuid}"
+                description = "This file was hidden or discarded prior to export."
                 source = None
             else:
                 source = os.path.join(self.model_store.export_directory, filename)
@@ -116,6 +118,7 @@ class WorkflowRunCrateProfileBuilder:
             encoding_format = dataset.datatype.get_mime()
             properties["name"] = name
             properties["encodingFormat"] = encoding_format
+            properties["description"] = description
             file_entity = crate.add_file(
                 source,
                 dest_path=filename,
