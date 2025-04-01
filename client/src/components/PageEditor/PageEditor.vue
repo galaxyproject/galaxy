@@ -9,60 +9,59 @@
         :content-data="contentData" />
 </template>
 
-<script>
+<script setup lang="ts">
 import axios from "axios";
-import LoadingSpan from "components/LoadingSpan";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+import { ref, watch } from "vue";
 
-import PageEditorMarkdown from "./PageEditorMarkdown";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
-export default {
-    components: {
-        PageEditorMarkdown,
-        LoadingSpan,
-    },
-    props: {
-        pageId: {
-            required: true,
-            type: String,
-        },
-    },
-    data() {
-        return {
-            title: null,
-            contentFormat: null,
-            contentData: null,
-            content: null,
-            publicUrl: null,
-            loading: true,
-        };
-    },
-    created() {
-        this.getPage(this.pageId)
-            .then((data) => {
-                this.publicUrl = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
-                this.content = data.content;
-                this.contentFormat = data.content_format;
-                this.contentData = data;
-                this.title = data.title;
-                this.loading = false;
-            })
-            .catch((error) => {
-                Toast.error(`Failed to load page: ${error}`);
-            });
-    },
-    methods: {
-        /** Page data request helper **/
-        async getPage(id) {
-            try {
-                const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
-                return data;
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        },
-    },
+import PageEditorMarkdown from "./PageEditorMarkdown.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface PageData {
+    title: string;
+    content: string;
+    content_format: string;
+    username: string;
+    slug: string;
+    [key: string]: any;
+}
+
+const props = defineProps<{
+    pageId: string;
+}>();
+
+const title = ref("");
+const content = ref<string>("");
+const contentFormat = ref<string>("");
+const contentData = ref<PageData>();
+const publicUrl = ref<string>("");
+const loading = ref(true);
+
+const getPage = async (id: string): Promise<PageData> => {
+    try {
+        const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
 };
+
+const loadPage = async () => {
+    try {
+        const data = await getPage(props.pageId);
+        publicUrl.value = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
+        content.value = data.content;
+        contentFormat.value = data.content_format;
+        contentData.value = data || {};
+        title.value = data.title;
+        loading.value = false;
+    } catch (error: any) {
+        Toast.error(`Failed to load page: ${error}`);
+    }
+};
+
+watch(() => props.pageId, loadPage);
 </script>
