@@ -97,6 +97,7 @@ defineExpose({
     padding: var(--spacing-1) var(--spacing-2);
     font-size: var(--font-size-small);
     border-radius: var(--spacing-1);
+    pointer-events: none;
 
     &:not(.sr-only) {
         display: block;
