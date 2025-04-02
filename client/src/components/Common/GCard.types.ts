@@ -27,6 +27,7 @@ export interface CardAttributes {
     to?: string;
     href?: string;
     inline?: boolean;
+    externalLink?: boolean;
     handler?: () => void;
 }
 

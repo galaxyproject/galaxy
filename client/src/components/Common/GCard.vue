@@ -292,6 +292,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 :href="ea.href"
                                                 :title="ea.title"
                                                 :size="ea.size || 'sm'"
+                                                :target="ea.externalLink ? '_blank' : undefined"
                                                 @click="ea.handler && ea.handler()">
                                                 <FontAwesomeIcon v-if="ea.icon" :icon="ea.icon" fixed-width />
                                                 {{ localize(ea.label) }}
@@ -343,6 +344,8 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 :size="indicator.size || 'sm'"
                                                 :to="indicator.to"
                                                 :href="indicator.href"
+                                                :disabled="indicator.disabled"
+                                                :target="indicator.externalLink ? '_blank' : undefined"
                                                 @click.stop="indicator.handler">
                                                 <FontAwesomeIcon
                                                     v-if="indicator.icon"
@@ -423,6 +426,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             :size="sa.size || 'sm'"
                                             :to="sa.to"
                                             :href="sa.href"
+                                            :target="sa.externalLink ? '_blank' : undefined"
                                             @click.stop="sa.handler">
                                             <FontAwesomeIcon
                                                 v-if="sa.icon"
