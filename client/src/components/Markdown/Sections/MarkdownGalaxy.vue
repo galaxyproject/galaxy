@@ -2,6 +2,7 @@
 import { BAlert, BCollapse, BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import REQUIREMENTS from "@/components/Markdown/Editor/Configurations/requirements.yml";
 import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
 import { useConfig } from "@/composables/config";
@@ -66,6 +67,47 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
 
+const requirement = computed(() => {
+    if (name.value) {
+        for (const [key, values] of Object.entries(REQUIREMENTS)) {
+            if (Array.isArray(values) && values.includes(name.value)) {
+                return key;
+            }
+        }
+    }
+    return null;
+});
+
+const availableLabels = computed(() => {
+    switch (requirement.value) {
+        case "history_dataset_id":
+            return ["input", "output"];
+        case "history_dataset_collection_id":
+            return ["input", "output"];
+        case "job_id":
+            return ["step"];
+    }
+    return [];
+});
+
+const missingLabels = computed(() => {
+    if (hasLabels.value && availableLabels.value.length > 0) {
+        let found = true;
+        for (const key of availableLabels.value) {
+            const value = args.value[key];
+            if (value) {
+                const test = props.labels.filter((label) => label.type === key && label.label === value).length > 0;
+                if (test) {
+                    found = false;
+                }
+            }
+        }
+        return found;
+    } else {
+        return false;
+    }
+});
+
 async function fetchWorkflow() {
     if (invocation.value?.workflow_id) {
         try {
@@ -106,8 +148,11 @@ watch(
     <BAlert v-if="error" v-localize variant="danger" class="m-0" show>
         {{ error }}
     </BAlert>
+    <BAlert v-else-if="missingLabels" v-localize variant="danger" class="m-0" show>
+        Invalid or missing label for <b>{{ name }}</b>.
+    </BAlert>
     <BAlert v-else-if="hasLabels && !invocationId" v-localize variant="info" class="m-0" show>
-        Data for rendering this <b>{{ name }}</b> is not yet available.
+        Data for rendering <b>{{ name }}</b> is not yet available.
     </BAlert>
     <BAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
         {{ invocationLoadError }}
