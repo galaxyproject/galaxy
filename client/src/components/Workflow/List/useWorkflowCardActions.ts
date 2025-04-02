@@ -17,6 +17,7 @@ import { computed, type Ref } from "vue";
 
 import { undeleteWorkflow } from "@/api/workflows";
 import { type WorkflowSummary } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import { type CardAttributes } from "@/components/Common/GCard.types";
 import {
     copyWorkflow as copyWorkflowService,
@@ -28,7 +29,6 @@ import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
-import { getFullAppUrl } from "@/utils/utils";
 
 export function useWorkflowCardActions(
     workflow: Ref<WorkflowSummary>,
