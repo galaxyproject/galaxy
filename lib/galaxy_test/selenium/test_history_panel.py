@@ -141,6 +141,7 @@ class TestHistoryPanel(SeleniumTestCase):
     def clear_tags(self, expected_tags_size):
         self.open_tags()
         tags = self.components.history_panel.tag_editor.selector(scope=".history-index")
+        tags.show_more_button.wait_for_and_click()
         close_tag_buttons = tags.tag_close_btn.all()
         current_tags_size = len(close_tag_buttons)
         errmsg = f"there are more tags than expected! current {current_tags_size}, expected {expected_tags_size}"

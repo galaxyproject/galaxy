@@ -1544,7 +1544,9 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_rename(self, new_name, workflow_index=0):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
-        workflow.find_element(By.CSS_SELECTOR, "[data-workflow-rename]").click()
+        action_chains = self.action_chains()
+        action_chains.move_to_element(workflow).perform()
+        workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
         self.components.workflows.rename_input.wait_for_visible().clear()
         self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
         self.components.workflows.rename_input.wait_for_and_send_keys(self.keys.ENTER)
@@ -1559,7 +1561,7 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
-        return workflow.find_element(By.CSS_SELECTOR, ".workflow-name").text
+        return workflow.find_element(By.CSS_SELECTOR, '[id^="g-card-title-"] a').text
 
     def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
