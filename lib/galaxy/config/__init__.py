@@ -124,6 +124,10 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "level": "INFO",
             "qualname": "celery.utils.functional",
         },
+        "sentry_sdk.errors": {
+            "level": "INFO",
+            "qualname": "sentry_sdk.errors",
+        },
     },
     "filters": {
         "stack": {
