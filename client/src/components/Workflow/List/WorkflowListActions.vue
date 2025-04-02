@@ -2,12 +2,12 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useUserStore } from "@/stores/userStore";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 library.add(faPlus, faUpload);
 
@@ -16,21 +16,6 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const { isAnonymous } = storeToRefs(userStore);
-
-const createButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to create workflow";
-    } else {
-        return "Create new workflow";
-    }
-});
-const importButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to import workflow";
-    } else {
-        return "Import workflow from URL or file";
-    }
-});
 
 function navigateToImport() {
     router.push("/workflows/import");
@@ -44,29 +29,35 @@ function navigateToOldCreate() {
 <template>
     <div id="workflow-list-actions" class="d-flex justify-content-between">
         <div>
-            <BButton
+            <GButton
                 id="workflow-create"
-                v-b-tooltip.hover.noninteractive
-                size="sm"
-                :title="createButtonTitle"
-                variant="outline-primary"
+                size="small"
+                outline
+                tooltip
+                tooltip-placement="bottom"
+                color="blue"
+                title="Create new workflow"
+                disabled-title="Log in to create workflow"
                 :disabled="isAnonymous"
                 @click="navigateToOldCreate">
                 <FontAwesomeIcon :icon="faPlus" />
                 Create
-            </BButton>
+            </GButton>
 
-            <BButton
+            <GButton
                 id="workflow-import"
-                v-b-tooltip.hover.noninteractive
-                size="sm"
-                :title="importButtonTitle"
-                variant="outline-primary"
+                outline
+                tooltip
+                tooltip-placement="bottom"
+                size="small"
+                title="Import workflow from URL or file"
+                disabled-title="Log in to import workflow"
+                color="blue"
                 :disabled="isAnonymous"
                 @click="navigateToImport">
                 <FontAwesomeIcon :icon="faUpload" />
                 Import
-            </BButton>
+            </GButton>
         </div>
     </div>
 </template>
