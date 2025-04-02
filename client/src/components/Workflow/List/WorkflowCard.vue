@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormCheckbox, BLink } from "bootstrap-vue";
+import { BFormCheckbox, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -9,6 +9,7 @@ import { type WorkflowSummary } from "@/api/workflows";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowActions from "@/components/Workflow/List/WorkflowActions.vue";
@@ -133,17 +134,18 @@ const dropdownOpen = ref(false);
                         {{ workflow.name }}
                     </BLink>
 
-                    <BButton
+                    <GButton
                         v-if="!props.current && !shared && !workflow.deleted"
-                        v-b-tooltip.hover.noninteractive
+                        tooltip
+                        icon-only
+                        color="blue"
                         :data-workflow-rename="workflow.id"
-                        class="inline-icon-button workflow-rename"
-                        variant="link"
-                        size="sm"
+                        class="workflow-rename"
+                        size="small"
                         title="Rename"
                         @click="emit('rename', props.workflow.id, props.workflow.name)">
                         <FontAwesomeIcon :icon="faPen" fixed-width />
-                    </BButton>
+                    </GButton>
                 </span>
 
                 <TextSummary
