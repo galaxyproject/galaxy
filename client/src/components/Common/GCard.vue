@@ -152,8 +152,8 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                         :id="`g-card-${props.id}-header`"
                         class="d-flex flex-gapy-1 flex-gapx-1 justify-content-between">
                         <div class="d-flex flex-column">
-                            <div class="align-items-baseline d-flex">
-                                <div v-if="selectable" :id="getElementId(props.id, 'select')">
+                            <div class="d-flex">
+                                <div v-if="selectable">
                                     <slot name="select">
                                         <BFormCheckbox
                                             :id="getElementId(props.id, 'select')"
@@ -218,6 +218,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             :key="badge.id"
                                             v-b-tooltip.hover
                                             :pill="badge.type !== 'badge'"
+                                            class="mt-1"
                                             :class="{
                                                 'outline-badge': badge.variant?.includes('outline'),
                                                 'cursor-pointer': badge.handler,
@@ -236,7 +237,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                         </div>
 
                         <div class="align-items-start d-flex flex-row-reverse flex-wrap gap-1">
-                            <div class="align-content-around justify-content-end">
+                            <div>
                                 <slot v-if="props.showBookmark" name="bookmark">
                                     <BButton
                                         v-if="!bookmarkLoading"
@@ -302,7 +303,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 </slot>
                             </div>
 
-                            <div class="d-flex flex-gapx-1">
+                            <div class="d-flex flex-gapx-1" style="margin-top: 1.5px">
                                 <div
                                     :id="getElementId(props.id, 'badges')"
                                     class="align-items-center align-self-center d-flex flex-gapx-1">
@@ -395,10 +396,13 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                     </slot>
 
                     <div
-                        :id="getElementId(props.id, 'actions')"
+                        :id="getElementId(props.id, 'footer-update-time-actions')"
                         class="align-items-center d-flex flex-gapy-1 flex-sm-wrap justify-content-between">
                         <slot name="update-time">
-                            <div v-if="props.updateTime" :id="`g-card-${props.id}-update-time`">
+                            <div
+                                v-if="props.updateTime"
+                                :id="`g-card-${props.id}-update-time`"
+                                class="align-self-end mt-1">
                                 <BBadge
                                     v-b-tooltip.hover.noninteractive
                                     pill
@@ -411,7 +415,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                             </div>
                         </slot>
 
-                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
+                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto mt-1">
                             <slot name="secondary-actions">
                                 <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
                                     <template v-for="sa in props.secondaryActions">
