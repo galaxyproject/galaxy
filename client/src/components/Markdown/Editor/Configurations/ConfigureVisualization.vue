@@ -33,8 +33,9 @@ interface contentType {
 }
 
 const contentObject: Ref<contentType | undefined> = ref();
-const hasLabels = computed(() => props.labels !== undefined);
 const errorMessage = ref("");
+
+const hasLabels = computed(() => props.labels !== undefined);
 
 function onChange(option: OptionType) {
     if (contentObject.value) {

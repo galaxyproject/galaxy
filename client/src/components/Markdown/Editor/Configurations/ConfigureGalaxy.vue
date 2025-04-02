@@ -1,13 +1,9 @@
 <template>
     <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
-    <MarkdownDialog
-        v-else-if="requirement"
-        :argument-type="requirement"
-        :argument-name="contentObject?.name"
-        :argument-payload="contentObject?.args"
-        :labels="labels"
-        @onInsert="$emit('change', $event)"
-        @onCancel="$emit('cancel')" />
+    <div v-else-if="requirement" class="p-2">
+        <ConfigureHeader @cancel="$emit('cancel')" />
+        <ConfigureSelector :labels="labels" :object-type="requirement" @change="onChange" />
+    </div>
     <BAlert v-else v-localize variant="info" show>
         No inputs available for <b>`{{ contentObject?.name }}`</b>.
     </BAlert>
@@ -17,19 +13,20 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getArgs } from "@/components/Markdown/parse";
 
 import REQUIREMENTS from "./requirements.yml";
 
-import MarkdownDialog from "@/components/Markdown/MarkdownDialog.vue";
+import ConfigureHeader from "./ConfigureHeader.vue";
+import ConfigureSelector from "./ConfigureSelector.vue";
 
 const props = defineProps<{
     content: string;
     labels?: Array<WorkflowLabel>;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     (e: "cancel"): void;
     (e: "change", content: string): void;
 }>();
@@ -42,6 +39,8 @@ interface contentType {
 const contentObject: Ref<contentType | undefined> = ref();
 const errorMessage = ref("");
 
+const hasLabels = computed(() => props.labels !== undefined);
+
 const requirement = computed(() => {
     const name = contentObject.value?.name || "";
     if (name) {
@@ -53,6 +52,18 @@ const requirement = computed(() => {
     }
     return null;
 });
+
+function onChange(option: OptionType) {
+    if (hasLabels.value && option.label) {
+        const values = Object.entries(option.label)
+            .filter(([_, value]) => !!value)
+            .map(([key, value]) => `${key}="${value}"`)
+            .join(", ");
+        emit("change", `${contentObject.value.name}(${values})`);
+    } else if (option.id) {
+        emit("change", `${contentObject.value.name}(${requirement.value}=${option.id})`);
+    }
+}
 
 function parseContent() {
     try {
