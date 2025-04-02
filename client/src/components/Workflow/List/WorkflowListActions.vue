@@ -27,37 +27,35 @@ function navigateToOldCreate() {
 </script>
 
 <template>
-    <div id="workflow-list-actions" class="d-flex justify-content-between">
-        <div>
-            <GButton
-                id="workflow-create"
-                size="small"
-                outline
-                tooltip
-                tooltip-placement="bottom"
-                color="blue"
-                title="Create new workflow"
-                disabled-title="Log in to create workflow"
-                :disabled="isAnonymous"
-                @click="navigateToOldCreate">
-                <FontAwesomeIcon :icon="faPlus" />
-                Create
-            </GButton>
+    <div id="workflow-list-actions" class="d-flex align-items-center flex-gapx-1">
+        <GButton
+            id="workflow-create"
+            size="small"
+            outline
+            tooltip
+            tooltip-placement="bottom"
+            color="blue"
+            title="Create new workflow"
+            disabled-title="Log in to create workflow"
+            :disabled="isAnonymous"
+            @click="navigateToOldCreate">
+            <FontAwesomeIcon :icon="faPlus" />
+            Create
+        </GButton>
 
-            <GButton
-                id="workflow-import"
-                outline
-                tooltip
-                tooltip-placement="bottom"
-                size="small"
-                title="Import workflow from URL or file"
-                disabled-title="Log in to import workflow"
-                color="blue"
-                :disabled="isAnonymous"
-                @click="navigateToImport">
-                <FontAwesomeIcon :icon="faUpload" />
-                Import
-            </GButton>
-        </div>
+        <GButton
+            id="workflow-import"
+            outline
+            tooltip
+            tooltip-placement="bottom"
+            size="small"
+            title="Import workflow from URL or file"
+            disabled-title="Log in to import workflow"
+            color="blue"
+            :disabled="isAnonymous"
+            @click="navigateToImport">
+            <FontAwesomeIcon :icon="faUpload" />
+            Import
+        </GButton>
     </div>
 </template>
