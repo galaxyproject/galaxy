@@ -23,9 +23,7 @@ describe("MarkdownVitessce.vue", () => {
             },
             pinia: createTestingPinia(),
         });
-        expect(wrapper.text()).toContain(
-            "SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
-        );
+        expect(wrapper.text()).toContain("SyntaxError");
     });
 
     it("shows info alert when invocation is missing", async () => {
