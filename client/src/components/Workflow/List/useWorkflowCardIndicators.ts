@@ -48,7 +48,6 @@ export function useWorkflowCardIndicators(
         } else if (sourceType.value == "url") {
             return `Imported from ${workflow.value.source_metadata?.url}. Click to copy link`;
         } else {
-            // @ts-ignore
             return `Imported from ${workflow.value.source_type || "unknown"}`;
         }
     });
