@@ -93,6 +93,8 @@ watch(
     () => processContent(),
     { immediate: true }
 );
+
+defineExpose({ visualizationConfig });
 </script>
 
 <template>
