@@ -1,12 +1,12 @@
 <template>
-    <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
-    <div v-else-if="requirement" class="p-2">
+    <div class="p-2">
         <ConfigureHeader @cancel="$emit('cancel')" />
-        <ConfigureSelector :labels="labels" :object-type="requirement" @change="onChange" />
+        <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
+        <BAlert v-else-if="!requirement || requirementFulfilled" v-localize variant="info" show>
+            No inputs required for <b>`{{ contentName }}`</b>.
+        </BAlert>
+        <ConfigureSelector v-else :labels="labels" :object-type="requirement" @change="onChange" />
     </div>
-    <BAlert v-else v-localize variant="info" show>
-        No inputs available for <b>`{{ contentObject?.name }}`</b>.
-    </BAlert>
 </template>
 
 <script setup lang="ts">
@@ -52,6 +52,13 @@ const requirement = computed(() => {
     }
     return null;
 });
+
+const requirementFulfilled = computed(
+    () =>
+        hasLabels.value &&
+        requirement.value &&
+        ["history_id", "invocation_id", "workflow_id"].includes(requirement.value)
+);
 
 function onChange(option: OptionType) {
     if (contentName.value) {
