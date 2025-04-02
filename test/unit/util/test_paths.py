@@ -6,8 +6,7 @@ from galaxy.util import in_directory
 
 
 def test_in_directory(tmp_path):
-    base_dir = str(tmp_path)
-    safe_dir = os.path.join(base_dir, "user")
+    safe_dir = os.path.join(tmp_path, "user")
     os.mkdir(safe_dir)
     good_file = os.path.join(safe_dir, "1")
     with open(good_file, "w") as f:
