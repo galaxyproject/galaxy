@@ -182,6 +182,7 @@ class CwlToolSource(ToolSource):
             software_requirements=[{"name": r[0], "version": r[1], "type": "package"} for r in software_requirements],
             containers=containers,
             resource_requirements=resource_requirements,
+            javascript_requirements=[],  # TODO, implement in tool proxy?
         )
 
     def parse_profile(self):

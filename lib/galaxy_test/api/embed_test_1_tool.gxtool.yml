@@ -1,5 +1,8 @@
 class: GalaxyTool
 command: echo 'hello world 2' > $output1
+name: embed_test_1_tool
+version: "0.1"
 outputs:
   output1:
     format: txt
+    type: data

@@ -14,6 +14,7 @@ import pytest
 
 from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
 from galaxy.util import bunch
 from galaxy.workflow import modules
@@ -510,7 +511,7 @@ def __mock_tool(
         name=id,
         inputs={},
         outputs={
-            "out_file1": bunch.Bunch(
+            "out_file1": mock.Mock(
                 collection=None,
                 format="input",
                 format_source=None,
@@ -518,6 +519,7 @@ def __mock_tool(
                 filters=[],
                 label=None,
                 output_type="data",
+                spec=ToolOutput,
             )
         },
         params_from_strings=mock.Mock(),
