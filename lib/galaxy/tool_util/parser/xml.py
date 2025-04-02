@@ -28,6 +28,14 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_PIN_LABELS,
     DEFAULT_SORT,
 )
+from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.tool_source import (
+    Citation,
+    DrillDownOptionsDict,
+    HelpContent,
+    OutputCompareType,
+    XrefDict,
+)
 from galaxy.util import (
     Element,
     ElementTree,
@@ -40,13 +48,9 @@ from galaxy.util import (
 )
 from .interface import (
     AssertionList,
-    Citation,
     DrillDownDynamicOptions,
-    DrillDownOptionsDict,
     DynamicOptions,
-    HelpContent,
     InputSource,
-    OutputCompareType,
     PageSource,
     PagesSource,
     RequiredFiles,
@@ -63,7 +67,6 @@ from .interface import (
     ToolSourceTestOutputs,
     ToolSourceTests,
     XmlTestCollectionDefDict,
-    XrefDict,
 )
 from .output_actions import (
     ToolOutputActionApp,
@@ -77,10 +80,7 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
-from .parameter_validators import (
-    AnyValidatorModel,
-    parse_xml_validators,
-)
+from .parameter_validators import parse_xml_validators
 from .stdio import (
     aggressive_error_checks,
     error_on_exit_code,
