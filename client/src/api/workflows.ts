@@ -24,7 +24,13 @@ export type WorkflowSummary = {
     annotations: string[];
     url: string;
     owner: string;
-    source_metadata: Record<string, never> | null;
+    source_type?: string;
+    source_metadata: {
+        url?: string;
+        trs_server?: string;
+        trs_tool_id?: string;
+        trs_version_id?: string;
+    };
     number_of_steps?: number;
     show_in_tool_panel: boolean;
 };
