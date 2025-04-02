@@ -26,3 +26,6 @@ workflow_id:
   - workflow_display
   - workflow_image
   - workflow_license
+none:
+  - generate_galaxy_version
+  - generate_time
