@@ -45,7 +45,7 @@ import CellButton from "@/components/Markdown/Editor/CellButton.vue";
 
 const props = withDefaults(
     defineProps<{
-        hasChanged: boolean;
+        hasChanged?: boolean;
     }>(),
     {
         hasChanged: undefined,
@@ -66,4 +66,6 @@ function onCancel() {
         emit("cancel");
     }
 }
+
+defineExpose({ showModal });
 </script>
