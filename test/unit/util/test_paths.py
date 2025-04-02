@@ -1,13 +1,12 @@
 import ntpath
 import os
 import posixpath
-import tempfile
 
 from galaxy.util import in_directory
 
 
-def test_in_directory():
-    base_dir = os.path.realpath(tempfile.mkdtemp())
+def test_in_directory(tmp_path):
+    base_dir = str(tmp_path)
     safe_dir = os.path.join(base_dir, "user")
     os.mkdir(safe_dir)
     good_file = os.path.join(safe_dir, "1")
