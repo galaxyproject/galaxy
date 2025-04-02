@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Instance as PopperInstance, Placement } from "@popperjs/core";
 import { createPopper } from "@popperjs/core";
-import flip from "@popperjs/core/lib/modifiers/flip";
 import { watchImmediate } from "@vueuse/core";
 import { ref } from "vue";
 
@@ -30,9 +29,11 @@ watchImmediate(
         assertDefined(tooltip.value);
 
         popperInstance.value = createPopper(props.reference, tooltip.value, {
-            placement: props.placement ?? "auto",
+            placement: props.placement ?? "top",
             modifiers: [
-                flip,
+                {
+                    name: "flip",
+                },
                 {
                     name: "offset",
                     options: {
@@ -43,6 +44,12 @@ watchImmediate(
                     name: "preventOverflow",
                     options: {
                         altBoundary: true,
+                    },
+                },
+                {
+                    name: "arrow",
+                    options: {
+                        padding: 8,
                     },
                 },
             ],
@@ -109,32 +116,33 @@ defineExpose({
         &,
         &::before {
             position: absolute;
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             background: inherit;
+            z-index: -1;
         }
 
         &::before {
             visibility: visible;
             content: "";
-            transform: rotate(45deg);
+            transform: translateX(-4px) rotate(45deg);
         }
     }
 
     &[data-popper-placement^="top"] > .g-tooltip-arrow {
-        bottom: -4.5px;
+        bottom: -4px;
     }
 
     &[data-popper-placement^="bottom"] > .g-tooltip-arrow {
-        top: -4.5px;
+        top: -4px;
     }
 
     &[data-popper-placement^="left"] > .g-tooltip-arrow {
-        right: -4.5px;
+        right: -4px;
     }
 
     &[data-popper-placement^="right"] > .g-tooltip-arrow {
-        left: -4.5px;
+        left: -4px;
     }
 }
 </style>
