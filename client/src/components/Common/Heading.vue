@@ -17,7 +17,7 @@ interface Props {
     separator?: boolean;
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
-    icon?: IconDefinition;
+    icon?: IconDefinition | string[];
     truncate?: boolean;
     collapse?: "open" | "closed" | "none";
 }
@@ -98,10 +98,6 @@ const element = computed(() => {
 
 .heading {
     word-break: break-all;
-}
-
-.heading:deep(svg) {
-    font-size: 0.75em;
 }
 
 // prettier-ignore
