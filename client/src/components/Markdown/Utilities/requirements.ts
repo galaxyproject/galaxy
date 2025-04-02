@@ -1,15 +1,6 @@
-import REQUIREMENTS from "./requirements.yml";
+import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
 
-export function isValidName(name: string | undefined) {
-    if (name) {
-        for (const values of Object.values(REQUIREMENTS)) {
-            if (Array.isArray(values) && values.includes(name)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
+import REQUIREMENTS from "./requirements.yml";
 
 export function getRequiredLabels(name: string | undefined) {
     switch (getRequiredObject(name)) {
@@ -32,4 +23,26 @@ export function getRequiredObject(name: string | undefined) {
         }
     }
     return null;
+}
+
+export function hasValidLabel(name: string | undefined, args: Record<string, string>, labels: Array<WorkflowLabel>) {
+    const requiredLabels = getRequiredLabels(name);
+    if (labels !== undefined && requiredLabels.length > 0) {
+        return requiredLabels.some((key) => {
+            const value = args[key];
+            return value && labels.some((label) => label.type === key && label.label === value);
+        });
+    }
+    return true;
+}
+
+export function hasValidName(name: string | undefined) {
+    if (name) {
+        for (const values of Object.values(REQUIREMENTS)) {
+            if (Array.isArray(values) && values.includes(name)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }

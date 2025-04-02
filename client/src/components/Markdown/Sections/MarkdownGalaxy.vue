@@ -4,7 +4,7 @@ import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
-import { getRequiredLabels, isValidName } from "@/components/Markdown/Utilities/requirements";
+import { hasValidLabel, hasValidName } from "@/components/Markdown/Utilities/requirements";
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -67,17 +67,6 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
 
-const missingLabels = computed(() => {
-    const requiredLabels = getRequiredLabels(name.value);
-    if (hasLabels.value && requiredLabels.length > 0) {
-        return requiredLabels.some((key) => {
-            const value = args.value[key];
-            return value && props.labels.some((label) => label.type === key && label.label === value);
-        });
-    }
-    return false;
-});
-
 async function fetchWorkflow() {
     if (invocation.value?.workflow_id) {
         try {
@@ -118,20 +107,17 @@ watch(
     <BAlert v-if="error" v-localize variant="danger" class="m-0" show>
         {{ error }}
     </BAlert>
-    <BAlert v-else-if="!isValidName(name)" v-localize variant="danger" class="m-0" show>
+    <BAlert v-else-if="!hasValidName(name)" v-localize variant="danger" class="m-0" show>
         <span v-localize>Invalid component type </span>
         <b>{{ name }}</b>
-        <span>.</span>
     </BAlert>
-    <BAlert v-else-if="missingLabels" v-localize variant="danger" class="m-0" show>
+    <BAlert v-else-if="!hasValidLabel(name, args, labels)" v-localize variant="danger" class="m-0" show>
         <span v-localize>Invalid or missing label for</span>
         <b>{{ name }}</b>
-        <span>.</span>
     </BAlert>
     <BAlert v-else-if="hasLabels && !invocationId" v-localize variant="info" class="m-0" show>
-        <span v-localize>Data for rendering</span>
+        <span v-localize>Data for rendering not yet available for</span>
         <b>{{ name }}</b>
-        <span v-localize>is not yet available.</span>
     </BAlert>
     <BAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
         {{ invocationLoadError }}
