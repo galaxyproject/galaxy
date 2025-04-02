@@ -450,9 +450,7 @@ class JobSearch:
                 return key, value
             return key, value
 
-        stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
-
-        stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
+        stmt = self._build_job_query(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
         data_conditions: List = []
 
@@ -544,9 +542,7 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
-    def _build_job_subquery(
-        self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
-    ):
+    def _build_job_query(self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump):
         """Build subquery that selects a job with correct job parameters."""
         stmt = (
             select(model.Job.id)
@@ -575,7 +571,7 @@ class JobSearch:
             if isinstance(job_state, str):
                 stmt = stmt.where(Job.state == job_state)
             elif isinstance(job_state, list):
-                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
+                stmt = stmt.where(Job.state.in_(job_state))
 
         # exclude jobs with deleted outputs
         stmt = stmt.where(
@@ -614,7 +610,7 @@ class JobSearch:
                     )
                 )
 
-        return stmt.subquery()
+        return stmt
 
     def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
         a = aliased(model.JobToInputDatasetAssociation)
