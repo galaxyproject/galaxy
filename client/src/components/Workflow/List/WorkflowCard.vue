@@ -79,8 +79,8 @@ const { workflowCardExtraActions, workflowCardSecondaryActions, workflowCardPrim
         props.current,
         props.editorView,
         () => emit("refreshList", true),
-        () => emit("insert"),
-        () => emit("insertSteps")
+        () => emit("insertSteps"),
+        () => emit("insert")
     );
 
 const { workflowCardIndicators } = useWorkflowCardIndicators(
