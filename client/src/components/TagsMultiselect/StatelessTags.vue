@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faAngleUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
@@ -18,6 +20,7 @@ interface StatelessTagsProps {
     useToggleLink?: boolean;
     maxVisibleTags?: number;
     placeholder?: string;
+    inline?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -95,7 +98,7 @@ function onTagClicked(tag: string) {
 
 <template>
     <div class="stateless-tags">
-        <div v-if="!disabled" class="tags-edit">
+        <div v-if="!disabled" class="tags-edit" :class="{ 'align-items-baseline d-flex flex-wrap': props.inline }">
             <div class="interactive-tags">
                 <Tag
                     v-for="tag in trimmedTags"
@@ -110,9 +113,20 @@ function onTagClicked(tag: string) {
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
                     variant="link"
-                    class="toggle-link"
+                    class="toggle-link show-more-tags"
                     @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
+                </BButton>
+                <BButton
+                    v-else-if="slicedTags.length > 0 && toggledOpen"
+                    :id="toggleButtonId"
+                    v-b-tooltip.hover
+                    variant="link"
+                    title="Show fewer tags"
+                    class="toggle-link show-less-tags"
+                    @click.stop="() => (toggledOpen = false)">
+                    <FontAwesomeIcon :icon="faAngleUp" fixed-width />
+                    Fewer tags
                 </BButton>
             </div>
 
