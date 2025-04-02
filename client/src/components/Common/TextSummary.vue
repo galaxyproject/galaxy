@@ -76,6 +76,7 @@ const textTooLong = computed(() => {
 
             :deep(p) {
                 white-space: nowrap;
+                margin: 0;
             }
         }
     }
@@ -85,6 +86,7 @@ const textTooLong = computed(() => {
         overflow: hidden;
         text-overflow: ellipsis;
         width: 100%;
+        margin: 0;
 
         &:not(:first-child) {
             display: none;
