@@ -66,50 +66,54 @@ const notificationVariant = computed(() => {
     }
 });
 
-const primaryActions = [
-    {
-        id: "expiration-time-button",
-        label: "",
-        title: props.notification?.expiration_time
-            ? `This notification will be automatically deleted ${formatDistanceToNow(
-                  parseISO(props.notification.expiration_time),
-                  {
-                      addSuffix: true,
-                  }
-              )}`
-            : "This notification will never be automatically deleted",
-        icon: faHourglassHalf,
-        size: "sm",
-        class: "inline-icon-button",
-        variant: "link",
-        inline: true,
-        visible: !!(props.notification.seen_time && props.notification.expiration_time),
-    },
-    {
-        id: "delete-button",
-        label: "",
-        title: "Delete",
-        icon: faTrash,
-        size: "sm",
-        class: "inline-icon-button",
-        variant: "link",
-        inline: true,
-        handler: () => notificationsStore.updateNotification(props.notification, { deleted: true }),
-        visible: !!props.notification.expiration_time,
-    },
-    {
-        id: "mark-as-read-button",
-        label: "",
-        title: "Mark as read",
-        icon: faCheck,
-        size: "sm",
-        class: "inline-icon-button",
-        variant: "link",
-        inline: true,
-        handler: () => notificationsStore.updateNotification(props.notification, { seen: true }),
-        visible: !props.notification.seen_time,
-    },
-];
+const primaryActions = computed(() => {
+    const tmp = [
+        {
+            id: "expiration-time-button",
+            label: "",
+            title: props.notification?.expiration_time
+                ? `This notification will be automatically deleted ${formatDistanceToNow(
+                      parseISO(props.notification.expiration_time),
+                      {
+                          addSuffix: true,
+                      }
+                  )}`
+                : "This notification will never be automatically deleted",
+            icon: faHourglassHalf,
+            size: "sm",
+            class: "inline-icon-button",
+            variant: "link",
+            inline: true,
+            visible: !!(props.notification.seen_time && props.notification.expiration_time),
+        },
+        {
+            id: "delete-button",
+            label: "",
+            title: "Delete",
+            icon: faTrash,
+            size: "sm",
+            class: "inline-icon-button",
+            variant: "link",
+            inline: true,
+            handler: () => notificationsStore.updateNotification(props.notification, { deleted: true }),
+            visible: !!props.notification.expiration_time,
+        },
+        {
+            id: "mark-as-read-button",
+            label: "",
+            title: "Mark as read",
+            icon: faCheck,
+            size: "sm",
+            class: "inline-icon-button",
+            variant: "link",
+            inline: true,
+            handler: () => notificationsStore.updateNotification(props.notification, { seen: true }),
+            visible: !props.notification.seen_time,
+        },
+    ];
+
+    return tmp.filter((action) => action.visible);
+});
 
 function markNotificationAsSeen() {
     notificationsStore.updateNotification(props.notification, { seen: true });
@@ -127,7 +131,7 @@ function markNotificationAsSeen() {
         :selectable="props.selectable"
         :update-time="props.notification.publication_time ?? props.notification.create_time"
         :update-time-icon="faClock"
-        :update-time-title="`Published ${props.notification.publication_time ? 'on' : 'at'}`"
+        :update-time-title="`Sent ${props.notification.publication_time ? 'on' : 'at'}`"
         :content-class="[props.unreadBorder && !props.notification.seen_time ? 'border-dark unread-notification' : '']"
         @select="emit('select', [props.notification])">
         <template v-slot:description>
@@ -157,3 +161,11 @@ function markNotificationAsSeen() {
         </template>
     </GCard>
 </template>
+
+<style lang="scss">
+.notification-message {
+    p {
+        margin: 0;
+    }
+}
+</style>
