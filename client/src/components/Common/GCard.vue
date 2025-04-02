@@ -382,6 +382,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                     <slot name="tags">
                         <StatelessTags
                             :id="getElementId(props.id, 'tags')"
+                            inline
                             :clickable="props.tagsEditable"
                             :value="props.tags"
                             :disabled="!props.tagsEditable"
