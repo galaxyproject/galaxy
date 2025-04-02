@@ -21,6 +21,9 @@ const props = defineProps<{
     size?: ComponentSize;
     tooltip?: boolean;
     tooltipPlacement?: Placement;
+    inline?: boolean;
+    iconOnly?: boolean;
+    pill?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -42,8 +45,11 @@ const variantClasses = computed(() => {
 
 const styleClasses = computed(() => {
     return {
-        outline: props.outline,
-        disabled: props.disabled,
+        "g-outline": props.outline,
+        "g-disabled": props.disabled,
+        "g-icon-only": props.iconOnly,
+        "g-inline": props.inline,
+        "g-pill": props.pill,
     };
 });
 
@@ -122,8 +128,6 @@ useAccessibleHover(
 </template>
 
 <style scoped lang="scss">
-// todo: remove bootstrap overrides
-
 .g-button {
     display: inline-block;
     margin: 0;
@@ -131,6 +135,7 @@ useAccessibleHover(
     border-radius: var(--spacing-1);
     text-decoration: none;
     vertical-align: middle;
+    cursor: pointer;
 
     transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
         box-shadow 0.15s ease-in-out;
@@ -205,7 +210,7 @@ useAccessibleHover(
             }
         }
 
-        &.outline.g-#{$color} {
+        &.g-outline.g-#{$color} {
             background-color: rgb(100% 100% 100% / 0);
             border-color: var(--color-#{$color}-600);
             color: var(--color-#{$color}-600);
@@ -226,10 +231,7 @@ useAccessibleHover(
         }
     }
 
-    &.disabled {
-        // bootstrap override
-        opacity: 1;
-
+    &.g-disabled {
         background-color: var(--color-grey-100);
         border-color: var(--color-grey-200);
         color: var(--color-grey-500);
@@ -251,7 +253,7 @@ useAccessibleHover(
             border-color: var(--color-grey-500);
         }
 
-        &.outline {
+        &.g-outline {
             background-color: rgb(100% 100% 100% / 0);
             border-color: var(--color-grey-400);
             color: var(--color-grey-400);
@@ -268,6 +270,43 @@ useAccessibleHover(
                 border-color: var(--color-grey-800);
                 background-color: rgb(100% 100% 100% / 0);
                 color: var(--color-grey-500);
+            }
+        }
+    }
+
+    // variants
+    &.g-inline {
+        display: inline;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    &.g-pill {
+        border-radius: 100rem;
+    }
+
+    &.g-icon-only {
+        border: none;
+        background-color: rgb(100% 100% 100% / 0);
+        padding: var(--spacing-1);
+        aspect-ratio: 1;
+        display: inline-flex;
+        justify-content: center;
+
+        &.g-inline {
+            padding: 2px;
+        }
+
+        @each $color in "blue", "green", "red", "yellow", "orange" {
+            &.g-#{$color} {
+                color: var(--color-#{$color}-600);
+
+                &:hover,
+                &:focus,
+                &:focus-visible {
+                    background-color: var(--color-#{$color}-600);
+                    color: var(--color-#{$color}-100);
+                }
             }
         }
     }
