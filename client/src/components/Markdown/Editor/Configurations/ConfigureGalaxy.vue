@@ -2,10 +2,10 @@
     <div class="p-2">
         <ConfigureHeader @cancel="$emit('cancel')" />
         <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
-        <BAlert v-else-if="!requirement || requirementFulfilled" v-localize variant="info" show>
+        <BAlert v-else-if="!requiredObject || requirementFulfilled" v-localize variant="info" show>
             No inputs required for <b>`{{ contentName }}`</b>.
         </BAlert>
-        <ConfigureSelector v-else :labels="labels" :object-type="requirement" @change="onChange" />
+        <ConfigureSelector v-else :labels="labels" :object-type="requiredObject" @change="onChange" />
     </div>
 </template>
 
@@ -15,8 +15,7 @@ import { computed, type Ref, ref, watch } from "vue";
 
 import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getArgs } from "@/components/Markdown/parse";
-
-import REQUIREMENTS from "./requirements.yml";
+import { getRequiredObject } from "@/components/Markdown/Utilities/requirements";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
@@ -42,22 +41,13 @@ const errorMessage = ref("");
 
 const hasLabels = computed(() => props.labels !== undefined);
 
-const requirement = computed(() => {
-    if (contentName.value) {
-        for (const [key, values] of Object.entries(REQUIREMENTS)) {
-            if (Array.isArray(values) && values.includes(contentName.value)) {
-                return key;
-            }
-        }
-    }
-    return null;
-});
+const requiredObject = computed(() => getRequiredObject(contentName.value));
 
 const requirementFulfilled = computed(
     () =>
         hasLabels.value &&
-        requirement.value &&
-        ["history_id", "invocation_id", "workflow_id"].includes(requirement.value)
+        requiredObject.value &&
+        ["history_id", "invocation_id", "workflow_id"].includes(requiredObject.value)
 );
 
 function onChange(option: OptionType) {
@@ -69,7 +59,7 @@ function onChange(option: OptionType) {
                 .join(", ");
             emit("change", `${contentName.value}(${values})`);
         } else if (option.id) {
-            emit("change", `${contentName.value}(${requirement.value}=${option.id})`);
+            emit("change", `${contentName.value}(${requiredObject.value}=${option.id})`);
         }
     }
 }
