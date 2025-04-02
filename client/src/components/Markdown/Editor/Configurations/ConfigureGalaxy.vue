@@ -37,15 +37,15 @@ interface contentType {
 }
 
 const contentObject: Ref<contentType | undefined> = ref();
+const contentName: Ref<string | undefined> = ref();
 const errorMessage = ref("");
 
 const hasLabels = computed(() => props.labels !== undefined);
 
 const requirement = computed(() => {
-    const name = contentObject.value?.name || "";
-    if (name) {
+    if (contentName.value) {
         for (const [key, values] of Object.entries(REQUIREMENTS)) {
-            if (Array.isArray(values) && values.includes(name)) {
+            if (Array.isArray(values) && values.includes(contentName.value)) {
                 return key;
             }
         }
@@ -54,20 +54,23 @@ const requirement = computed(() => {
 });
 
 function onChange(option: OptionType) {
-    if (hasLabels.value && option.label) {
-        const values = Object.entries(option.label)
-            .filter(([_, value]) => !!value)
-            .map(([key, value]) => `${key}="${value}"`)
-            .join(", ");
-        emit("change", `${contentObject.value.name}(${values})`);
-    } else if (option.id) {
-        emit("change", `${contentObject.value.name}(${requirement.value}=${option.id})`);
+    if (contentName.value) {
+        if (hasLabels.value && option.label) {
+            const values = Object.entries(option.label)
+                .filter(([_, value]) => !!value)
+                .map(([key, value]) => `${key}="${value}"`)
+                .join(", ");
+            emit("change", `${contentName.value}(${values})`);
+        } else if (option.id) {
+            emit("change", `${contentName.value}(${requirement.value}=${option.id})`);
+        }
     }
 }
 
 function parseContent() {
     try {
         contentObject.value = getArgs(props.content);
+        contentName.value = contentObject.value.name;
         errorMessage.value = "";
     } catch (e) {
         errorMessage.value = `Failed to parse: ${e}`;
