@@ -22,11 +22,17 @@ import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { ApiResponse, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
-import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from "@/components/Markdown/services";
+import {
+    getDataset,
+    getDatasetCollection,
+    getHistories,
+    getInvocations,
+    getJobs,
+    getWorkflows,
+} from "@/components/Markdown/services";
+import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
-
-import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -115,6 +121,8 @@ async function doQuery(query: string = ""): Promise<ApiResponse> {
             return getHistories();
         case "history_dataset_id":
             return getDataset(query, currentHistoryId.value);
+        case "history_dataset_collection_id":
+            return getDatasetCollection(query, currentHistoryId.value);
         case "invocation_id":
             return getInvocations();
         case "job_id":

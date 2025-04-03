@@ -38,6 +38,20 @@ export async function getDataset(query, historyId) {
     return data;
 }
 
+export async function getDatasetCollection(query, historyId) {
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents/dataset_collections", {
+        params: {
+            path: {
+                history_id: historyId,
+            },
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
 export async function getInvocations() {
     const { data, error } = await GalaxyApi().GET("/api/invocations");
     if (error) {

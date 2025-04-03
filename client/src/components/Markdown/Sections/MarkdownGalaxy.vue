@@ -26,6 +26,7 @@ import InstanceUrl from "./Elements/InstanceUrl.vue";
 import InvocationTime from "./Elements/InvocationTime.vue";
 import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
+import TextContent from "./Elements/TextContent.vue";
 import ToolStd from "./Elements/ToolStd.vue";
 import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
@@ -144,10 +145,11 @@ watch(
             {{ args.collapse }}
         </BLink>
         <BCollapse :visible="isVisible">
-            <pre v-if="name == 'generate_galaxy_version'" class="galaxy-version m-0">
-Galaxy Version {{ config.version_major }}</pre
-            >
-            <pre v-else-if="name == 'generate_time'" class="galaxy-time m-0">{{ new Date().toUTCString() }}</pre>
+            <TextContent
+                v-if="name == 'generate_galaxy_version'"
+                class="galaxy-version"
+                :content="`Galaxy Version ${config.version_major}`" />
+            <TextContent v-else-if="name == 'generate_time'" class="galaxy-time" :content="new Date().toUTCString()" />
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
                 :dataset-id="args.history_dataset_id"
@@ -161,7 +163,7 @@ Galaxy Version {{ config.version_major }}</pre
                 :title="args.title" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
-                :collection-id="rgs.history_dataset_collection_id" />
+                :collection-id="args.history_dataset_collection_id" />
             <HistoryDatasetDetails
                 v-else-if="
                     [
