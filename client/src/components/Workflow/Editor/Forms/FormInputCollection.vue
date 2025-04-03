@@ -83,7 +83,7 @@ function onRecordFieldDefinitions(newRecordFieldDefinitions: FieldDict[]) {
 
 const isRecordType = computed(() => {
     const collectionType = asToolState(toolState.value).collection_type;
-    return collectionType == "record" || collectionType == "list:record";
+    return collectionType == "record" || collectionType == "list:record" || collectionType == "sample_sheet:record";
 });
 
 function onColumnDefinitions(newColumnDefinitions: SampleSheetColumnDefinitions) {
@@ -107,6 +107,10 @@ const formatsAsList = computed(() => {
 const collectionType = computed(() => {
     return toolState.value.collection_type as string | undefined;
 });
+
+const isSampleSheetType = computed(() => {
+    return collectionType.value?.startsWith("sample_sheet");
+})
 
 // Terrible Hack: The parent component (./FormDefault.vue) ignores the first update, so
 // I am sending a dummy update here. Ideally, the parent FormDefault would not expect this.
@@ -133,13 +137,13 @@ emit("onChange", cleanToolState());
             type="text"
             help="Tags to automatically filter inputs"
             @input="onTags" />
+        <FormColumnDefinitions
+            v-if="isSampleSheetType"
+            :value="asToolState(toolState).column_definitions"
+            @onChange="onColumnDefinitions" />
         <FormRecordFieldDefinitions
             v-if="isRecordType"
             :value="asToolState(toolState).fields || []"
             @onChange="onRecordFieldDefinitions" />
-        <FormColumnDefinitions
-            v-if="toolState?.collection_type == 'sample_sheet'"
-            :value="asToolState(toolState).column_definitions"
-            @onChange="onColumnDefinitions" />
     </div>
 </template>

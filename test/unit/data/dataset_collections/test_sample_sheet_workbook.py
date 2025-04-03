@@ -25,17 +25,24 @@ TEST_DATA = [
     ["https://zenodo.org/records/3263975/files/DRR000777.fastqsanger.gz", 3, "treatment2", "badbool"],
 ]
 TEST_COLUMN_DEFINITIONS_1 = [
-    {"name": "replicate number", "type": "int", "description": "The replicate number of this sample."},
+    {
+        "name": "replicate number",
+        "type": "int",
+        "description": "The replicate number of this sample.",
+        "default_value": 0,
+    },
     {
         "name": "treatment",
         "type": "string",
         "restrictions": ["treatment1", "treatment2", "none"],
         "description": "The treatment code for this sample.",
+        "default_value": "none",
     },
     {
         "name": "is control?",
         "type": "boolean",
         "description": "Was this sample a control? If TRUE, please ensure treatment is set to none.",
+        "default_value": True,
     },
 ]
 

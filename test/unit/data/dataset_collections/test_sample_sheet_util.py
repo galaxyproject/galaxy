@@ -1,5 +1,4 @@
 import pytest
-from pydantic import ValidationError
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections.types.sample_sheet_util import (
@@ -9,33 +8,33 @@ from galaxy.model.dataset_collections.types.sample_sheet_util import (
 
 
 def test_sample_sheet_validation_skipped_on_empty_definitions():
-    validate_row([0, 1], None)  # just ensure no execption is thrown
+    validate_row([0, 1], None)  # just ensure no exception is thrown
 
 
 def test_sample_sheet_validation_number_columns():
     with pytest.raises(RequestParameterInvalidException):
-        validate_row([0, 1], [{"type": "int", "name": "replicate number"}])
+        validate_row([0, 1], [{"type": "int", "name": "replicate number", "default_value": 0}])
 
 
 def test_sample_sheet_validation_int_type():
-    validate_row([1], [{"type": "int", "name": "replicate number"}])
+    validate_row([1], [{"type": "int", "name": "replicate number", "default_value": 0}])
 
     with pytest.raises(RequestParameterInvalidException):
-        validate_row(["sample1"], [{"type": "int", "name": "replicate number"}])
+        validate_row(["sample1"], [{"type": "int", "name": "replicate number", "default_value": 0}])
 
 
 def test_sample_sheet_validation_float_type():
     validate_row([1.0], [{"type": "float", "name": "seconds"}])
 
     with pytest.raises(RequestParameterInvalidException):
-        validate_row(["sample1"], [{"type": "float", "name": "seconds"}])
+        validate_row(["sample1"], [{"type": "float", "name": "seconds", "default_value": 0.0}])
 
 
 def test_sample_sheet_validation_string_type():
-    validate_row(["sample1"], [{"type": "string", "name": "condition"}])
+    validate_row(["sample1"], [{"type": "string", "name": "condition", "default_value": "none"}])
 
     with pytest.raises(RequestParameterInvalidException):
-        validate_row([1], [{"type": "string", "name": "condition"}])
+        validate_row([1], [{"type": "string", "name": "condition", "default_value": "none"}])
 
 
 def test_sample_sheet_validation_boolean_type():
@@ -46,14 +45,41 @@ def test_sample_sheet_validation_boolean_type():
 
 
 def test_sample_sheet_validation_restrictions():
-    validate_row(["control"], [{"type": "string", "restrictions": ["treatment", "control"], "name": "condition"}])
+    validate_row(
+        ["control"],
+        [
+            {
+                "type": "string",
+                "restrictions": ["treatment", "control"],
+                "name": "condition",
+                "default_value": "treatment",
+            }
+        ],
+    )
 
     with pytest.raises(RequestParameterInvalidException):
-        validate_row(["controlx"], [{"type": "string", "restrictions": ["treatment", "control"], "name": "condition"}])
+        validate_row(
+            ["controlx"],
+            [
+                {
+                    "type": "string",
+                    "restrictions": ["treatment", "control"],
+                    "name": "condition",
+                    "default_value": "treatment",
+                }
+            ],
+        )
 
 
 def test_sample_sheet_validation_length():
-    column_definitions = [{"type": "string", "validators": [{"type": "length", "min": 6}], "name": "condition"}]
+    column_definitions = [
+        {
+            "type": "string",
+            "validators": [{"type": "length", "min": 6}],
+            "name": "condition",
+            "default_value": "default",
+        }
+    ]
     validate_row(["treatment"], column_definitions)
 
     with pytest.raises(RequestParameterInvalidException):
@@ -69,12 +95,21 @@ def test_sample_sheet_validation_min_max():
 
 
 def test_column_definitions_validators_on_valid_defs():
-    column_definitions = [{"type": "string", "restrictions": ["treatment", "control"], "name": "condition"}]
+    column_definitions = [
+        {"type": "string", "restrictions": ["treatment", "control"], "name": "condition", "default_value": "treatment"}
+    ]
     validate_column_definitions(column_definitions)
 
 
 def test_column_definitions_validators_invalid_length():
-    column_definitions = [{"type": "string", "validators": [{"type": "length", "min": 6}], "name": "condition"}]
+    column_definitions = [
+        {
+            "type": "string",
+            "validators": [{"type": "length", "min": 6}],
+            "name": "condition",
+            "default_value": "default",
+        }
+    ]
     validate_column_definitions(column_definitions)
 
 
@@ -86,8 +121,9 @@ def test_column_definitions_do_not_allow_unsafe_validators():
             "validators": [
                 {"type": "expression", "expression": "False"},
             ],
+            "default_value": "default",
         }
     ]
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(RequestParameterInvalidException):
         validate_column_definitions(column_definitions)

@@ -48,6 +48,8 @@ PrefixRowsField: Optional[PrefixRowValuesT] = Field(
     description="An area to pre-populate URIs, etc...",
 )
 
+SampleSheetCollectionType = Literal["sample_sheet", "sample_sheet:paired", "sample_sheet:paired_or_unpaired", "sample_sheet:record"]
+
 
 class ParsedWorkbook(BaseModel):
     rows: List[Dict[str, SampleSheetColumnValueT]]
@@ -55,6 +57,7 @@ class ParsedWorkbook(BaseModel):
 
 class CreateWorkbookFromBase64(BaseModel):
     title: str = CreateTitleField
+    collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI"] = "URI"
     column_definitions: str
     prefix_values: Optional[PrefixRowValuesT] = None
@@ -62,6 +65,7 @@ class CreateWorkbookFromBase64(BaseModel):
 
 class CreateWorkbook(BaseModel):
     title: str = CreateTitleField
+    collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI"] = "URI"
     column_definitions: SampleSheetColumnDefinitionsModel = ColumnDefinitionsField
     prefix_values: Optional[PrefixRowValuesT] = None
@@ -78,6 +82,15 @@ INSTRUCTIONS = [
     "If you're using Microsft Excel, it is best to run data validation after you've completed filling out this sheet. This can be done by clicking on 'Data' > 'Data Validation' > 'Circle Invalid Data'.",
     "Once data entry is complete, drop this file back into Galaxy to finish creating a sample sheet collection for your inputs.",
 ]
+
+# the first columns are very different based on what we're creating here, TODO write instructions
+# for each collection type
+INSTRUCTIONS_BY_COLLECTION_TYPE: Dict[SampleSheetCollectionType, str] = {
+    "sample_sheet": INSTRUCTIONS,
+    "sample_sheet:paired": INSTRUCTIONS,
+    "sample_sheet:paired_or_unpaired": INSTRUCTIONS,
+    "sample_sheet:record": INSTRUCTIONS,
+}
 
 
 def parse_workbook(payload: ParseWorkbook) -> ParsedWorkbook:
@@ -110,6 +123,7 @@ def generate_workbook_from_base64(payload: CreateWorkbookFromBase64) -> Workbook
     decoded_bytes = base64.b64decode(payload.column_definitions)
     column_definitions = SampleSheetColumnDefinitionsModel.model_validate_json(decoded_bytes)
     create_object = CreateWorkbook(
+        collection_type=payload.collection_type,
         title=payload.title,
         prefix_columns_type=payload.prefix_columns_type,
         column_definitions=column_definitions.root,
@@ -118,6 +132,9 @@ def generate_workbook_from_base64(payload: CreateWorkbookFromBase64) -> Workbook
 
 
 def generate_workbook(payload: CreateWorkbook) -> Workbook:
+    collection_type = payload.collection_type
+    instructions = INSTRUCTIONS_BY_COLLECTION_TYPE[collection_type]
+
     # Create a workbook and select the active worksheet
     workbook = Workbook()
     worksheet = workbook.active
@@ -184,13 +201,13 @@ def generate_workbook(payload: CreateWorkbook) -> Workbook:
     bold_font = Font(bold=True)
     worksheet[f"{_index_to_excel_column(help_label_index)}3"].font = bold_font
 
-    for instruction_index, instruction in enumerate(INSTRUCTIONS):
+    for instruction_index, instruction in enumerate(instructions):
         worksheet.cell(
             row=help_start_row + instruction_index + 1, column=help_label_index + 2, value=f"> {instruction_index + 1}."
         )
         worksheet.cell(row=help_start_row + instruction_index + 1, column=help_label_index + 3, value=instruction)
 
-    column_help_start_row = help_start_row + len(INSTRUCTIONS) + 2
+    column_help_start_row = help_start_row + len(instructions) + 2
 
     worksheet.cell(row=column_help_start_row, column=help_label_index + 1, value="Columns")
     _make_bold(worksheet, column_help_start_row, help_label_index)
@@ -206,7 +223,7 @@ def generate_workbook(payload: CreateWorkbook) -> Workbook:
         )
 
     prefix_rows = payload.prefix_values or []
-    prefix_rows_offset = 2  # header + 1-index-ed datastructue
+    prefix_rows_offset = 2  # header + 1-index-ed data structure
     for row_index, row in enumerate(prefix_rows):
         for column_index, col_value in enumerate(row):
             worksheet.cell(row=row_index + prefix_rows_offset, column=column_index + 1, value=col_value)

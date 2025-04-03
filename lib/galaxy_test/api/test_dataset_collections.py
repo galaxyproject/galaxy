@@ -367,9 +367,10 @@ class TestDatasetCollectionsApi(ApiTestCase):
 
     def test_workbook_download(self):
         xlsx_file = self.dataset_collection_populator.download_workbook(
+            "sample_sheet",
             [
-                {"name": "condition", "type": "string"},
-                {"name": "replicate", "type": "int"},
+                {"name": "condition", "type": "string", "default_value": ""},
+                {"name": "replicate", "type": "int", "default_value": 0},
             ]
         )
         # Check the file header

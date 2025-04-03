@@ -19,6 +19,7 @@ from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
     parse_workbook,
     ParsedWorkbook,
     ParseWorkbook,
+    SampleSheetCollectionType,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -94,10 +95,14 @@ class FastAPIDatasetCollections:
     def create_workbook(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        collection_type: SampleSheetCollectionType = "sample_sheet",
         column_definitions: str = Base64ColumnDefinitionsQueryParam,
         filename: Optional[str] = WorkbookFilenameQueryParam,
     ):
-        create_object = CreateWorkbookFromBase64(column_definitions=column_definitions)
+        create_object = CreateWorkbookFromBase64(
+            collection_type=collection_type,
+            column_definitions=column_definitions
+        )
         workbook = generate_workbook_from_base64(create_object)
         output = BytesIO()
         workbook.save(output)
