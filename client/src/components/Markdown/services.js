@@ -39,10 +39,18 @@ export async function getDataset(query, historyId) {
 }
 
 export async function getDatasetCollection(query, historyId) {
-    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents/dataset_collections", {
+    const { data, error } = await GalaxyApi().GET("/api/histories/{id}/contents", {
         params: {
             path: {
-                history_id: historyId,
+                id: historyId,
+            },
+            query: {
+                q: ["name-contains", "history_content_type-eq"],
+                qv: [query, "dataset_collection"],
+                offset: 0,
+                limit: 50,
+                v: "dev",
+                order: "hid",
             },
         },
     });
