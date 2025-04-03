@@ -28,7 +28,7 @@ import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
 import TextContent from "./Elements/TextContent.vue";
 import ToolStd from "./Elements/ToolStd.vue";
-import Visualization from "./Elements/Visualization.vue";
+import VisualizationFrame from "./Elements/VisualizationFrame.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
@@ -240,7 +240,7 @@ watch(
                 :job-id="args.job_id"
                 :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :name="name" />
-            <Visualization v-else-if="name == 'visualization'" :args="args" />
+            <VisualizationFrame v-else-if="name == 'visualization'" :args="args" />
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"
