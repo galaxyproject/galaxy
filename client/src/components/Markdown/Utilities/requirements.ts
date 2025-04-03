@@ -61,6 +61,5 @@ export function hasValidName(name: string | undefined) {
 
 export function hasValidObject(name: string | undefined, args: Record<string, string>): boolean {
     const requiredObject = getRequiredObject(name);
-    console.log(args);
     return !requiredObject || !!args[requiredObject];
 }
