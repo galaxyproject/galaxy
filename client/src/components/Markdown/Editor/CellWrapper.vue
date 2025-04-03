@@ -6,15 +6,12 @@
         @focusin="hover = true"
         @focusout="hover = false">
         <div class="d-flex">
-            <button
-                class="d-flex cursor-pointer border-0 bg-transparent p-0"
-                :class="{ 'cell-wrapper-hover': hover }"
-                @click="$emit('toggle')">
+            <div class="d-flex" :class="{ 'cell-wrapper-hover': hover }">
                 <div class="align-self-end">
-                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
-                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
+                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" @click="$emit('toggle')" />
+                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" @click="$emit('toggle')" />
                 </div>
-            </button>
+            </div>
             <SectionWrapper
                 class="m-2 w-100"
                 :name="name"
