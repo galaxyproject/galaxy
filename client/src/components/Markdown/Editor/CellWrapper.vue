@@ -3,9 +3,7 @@
         tabindex="0"
         role="presentation"
         @mouseenter="hover = true"
-        @mouseleave="hover = false"
-        @focusin="hover = true"
-        @focusout="hover = false">
+        @mouseleave="hover = false">
         <div class="d-flex">
             <ButtonPlain class="d-flex" :class="{ 'cell-wrapper-hover': hover }" @click="$emit('toggle')">
                 <div class="align-self-end">
