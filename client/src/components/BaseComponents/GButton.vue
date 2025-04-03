@@ -23,6 +23,7 @@ const props = defineProps<{
     tooltipPlacement?: Placement;
     inline?: boolean;
     iconOnly?: boolean;
+    transparent?: boolean;
     pill?: boolean;
 }>();
 
@@ -50,6 +51,7 @@ const styleClasses = computed(() => {
         "g-icon-only": props.iconOnly,
         "g-inline": props.inline,
         "g-pill": props.pill,
+        "g-transparent": props.transparent,
     };
 });
 
@@ -286,16 +288,27 @@ useAccessibleHover(
     }
 
     &.g-icon-only {
-        border: none;
-        background-color: rgb(100% 100% 100% / 0);
-        padding: var(--spacing-1);
         aspect-ratio: 1;
         display: inline-flex;
         justify-content: center;
 
+        &.g-small,
+        &.g-medium {
+            padding: var(--spacing-1);
+        }
+
+        &.g-large {
+            padding: var(--spacing-2);
+        }
+
         &.g-inline {
             padding: 2px;
         }
+    }
+
+    &.g-transparent {
+        border: none;
+        background-color: rgb(100% 100% 100% / 0);
 
         @each $color in "blue", "green", "red", "yellow", "orange" {
             &.g-#{$color} {

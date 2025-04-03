@@ -138,6 +138,7 @@ const dropdownOpen = ref(false);
                         v-if="!props.current && !shared && !workflow.deleted"
                         tooltip
                         icon-only
+                        transparent
                         color="blue"
                         :data-workflow-rename="workflow.id"
                         class="workflow-rename"
