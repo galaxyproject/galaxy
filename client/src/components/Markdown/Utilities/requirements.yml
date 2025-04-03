@@ -29,3 +29,10 @@ workflow_id:
 none:
   - generate_galaxy_version
   - generate_time
+  - instance_access_link
+  - instance_citation_link
+  - instance_help_link
+  - instance_organization_link
+  - instance_resources_link
+  - instance_support_link
+  - instance_terms_link
