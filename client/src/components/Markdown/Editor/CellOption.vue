@@ -1,7 +1,5 @@
 <template>
-    <ButtonPlain
-        class="cell-option d-flex justify-content-between"
-        @click="$emit('click')">
+    <ButtonPlain class="cell-option d-flex justify-content-between" @click="$emit('click')">
         <div class="my-1 mx-3">
             <div class="font-weight-bold">{{ title }}</div>
             <small v-if="description" class="d-inline-block text-wrap text-break">{{ description }}</small>
