@@ -5,7 +5,7 @@ import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { isZipFile, useZipExplorer } from "@/composables/zipExplorer";
+import { isGalaxyZipExport, isRoCrateZip, isZipFile, useZipExplorer } from "@/composables/zipExplorer";
 
 import GalaxyZipView from "./views/GalaxyZipView.vue";
 import RegularZipView from "./views/RegularZipView.vue";
@@ -26,8 +26,6 @@ const router = useRouter();
 const {
     openZip,
     isLoading: loadingPreview,
-    isGalaxyExport,
-    zipArchive,
     zipExplorer,
     errorMessage,
     reset: resetExplorer,
@@ -38,8 +36,8 @@ const fileInputRef = ref<HTMLInputElement>();
 const localZipFile = ref<File>();
 const zipUrl = ref<string>();
 
-const showHelper = computed(() => !loadingPreview.value && !zipArchive.value);
-const canStart = computed(() => Boolean(zipArchive.value));
+const showHelper = computed(() => !loadingPreview.value && !zipExplorer.value);
+const canStart = computed(() => Boolean(zipExplorer.value));
 const canOpenUrl = computed(() => isValidUrl(zipUrl.value));
 
 function browseZipFile() {
@@ -61,6 +59,7 @@ function dismiss() {
 }
 
 function start() {
+    //
     router.push({ name: "ZipImportWizard" });
     dismiss();
 }
@@ -109,8 +108,8 @@ watch(canOpenUrl, (newValue, oldValue) => {
             <ZipDropZone v-if="showHelper" @dropError="onDropError" @dropSuccess="exploreLocalZip" />
             <div v-else>
                 <LoadingSpan v-if="loadingPreview" message="Checking ZIP contents..." />
-                <RoCrateZipView v-else-if="zipExplorer?.hasCrate && zipExplorer.crate" :crate="zipExplorer.crate" />
-                <GalaxyZipView v-else-if="isGalaxyExport" />
+                <RoCrateZipView v-else-if="isRoCrateZip(zipExplorer)" :crate="zipExplorer.crate" />
+                <GalaxyZipView v-else-if="isGalaxyZipExport(zipExplorer)" />
                 <RegularZipView v-else />
             </div>
         </div>

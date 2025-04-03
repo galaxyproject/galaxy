@@ -12,7 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import ZipFileSelector from "./ZipFileSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
-const { getImportableZipContents, importArtifacts, isZipArchiveAvailable, zipArchive } = useZipExplorer();
+const { getImportableZipContents, importArtifacts, isZipArchiveAvailable, zipExplorer } = useZipExplorer();
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -71,7 +71,7 @@ function fileToIcon(file: ZipContentFile) {
 }
 
 watch(
-    [isZipArchiveAvailable, zipArchive],
+    [isZipArchiveAvailable, zipExplorer],
     (isAvailable) => {
         if (isAvailable) {
             importableZipContents.value = getImportableZipContents();

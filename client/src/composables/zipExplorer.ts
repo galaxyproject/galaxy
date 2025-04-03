@@ -1,28 +1,28 @@
 import axios from "axios";
 import {
+    AbstractZipExplorer,
     type AnyZipEntry,
     isFileEntry,
     isRemoteZip,
+    type IZipExplorer,
     ROCrateZipExplorer,
-    type ZipArchive,
+    ZipExplorer,
     type ZipFileEntry,
 } from "ro-crate-zip-explorer";
+import type { FileMetadata } from "ro-crate-zip-explorer/dist/interfaces";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { useIndexedDBFileStorage } from "@/composables/localFileStore";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-const zipExplorer = ref<ROCrateZipExplorer>();
-const zipArchive = ref<ZipArchive>();
+const zipExplorer = ref<IZipExplorer>();
 const zipExplorerError = ref<string>();
 
 export function useZipExplorer() {
     const isLoading = ref(false);
 
-    const isRoCrate = computed(() => zipExplorer.value?.hasCrate);
-    const isGalaxyExport = computed(() => zipArchive.value?.entries.find(isGalaxyExportFile) !== undefined);
-    const isZipArchiveAvailable = computed(() => zipArchive.value !== undefined);
+    const isZipArchiveAvailable = computed(() => zipExplorer.value?.zipArchive !== undefined);
 
     async function openZip(zipSource: File | string) {
         if (typeof zipSource === "string") {
@@ -35,9 +35,11 @@ export function useZipExplorer() {
         zipExplorerError.value = undefined;
         isLoading.value = true;
         try {
-            const explorer = new ROCrateZipExplorer(zipSource);
+            const basicExplorer = new ZipExplorer(zipSource);
+            await basicExplorer.open();
+            const explorer = selectZipExplorerByContent(basicExplorer);
+            await explorer.extractMetadata();
             zipExplorer.value = explorer;
-            zipArchive.value = await explorer.open();
         } catch (e) {
             zipExplorerError.value = errorMessageAsString(e);
         } finally {
@@ -46,13 +48,17 @@ export function useZipExplorer() {
     }
 
     function getImportableZipContents(): ImportableZipContents | undefined {
-        if (!zipArchive.value) {
+        if (!zipExplorer.value) {
             return undefined;
         }
 
         const workflows: ZipContentFile[] = [];
         const files: ZipContentFile[] = [];
-        for (const entry of zipArchive.value.entries) {
+        for (const entry of zipExplorer.value.entries.values()) {
+            if (!isFileEntry(entry)) {
+                continue;
+            }
+
             if (shouldSkipZipEntry(entry)) {
                 continue;
             }
@@ -78,28 +84,32 @@ export function useZipExplorer() {
     }
 
     async function importArtifacts(filesToImport: ZipContentFile[], historyId: string | null) {
-        if (!zipArchive.value) {
+        if (!zipExplorer.value) {
             throw new Error("No ZIP archive loaded. You must call openZip() first.");
         }
+        const zipSource = zipExplorer.value.zipArchive.source;
 
-        if (isRemoteZip(zipArchive.value.source)) {
-            return handleRemoteZip(zipArchive.value.source, filesToImport, historyId, zipArchive.value);
+        if (isRemoteZip(zipSource)) {
+            return handleRemoteZip(zipSource, filesToImport, historyId, zipExplorer.value);
         }
 
-        return handleLocalZip(filesToImport, historyId, zipArchive.value);
+        return handleLocalZip(filesToImport, historyId, zipExplorer.value);
     }
 
     async function handleRemoteZip(
         zipUrl: string,
         filesToImport: ZipContentFile[],
         historyId: string | null,
-        zipArchive: ZipArchive
+        zipExplorer: IZipExplorer
     ) {
         const toUploadToHistory: ZipFileEntry[] = [];
         for (const file of filesToImport) {
-            const entry = zipArchive.entries.filter(isFileEntry).find((e) => e.path === file.path);
+            const entry = zipExplorer.entries.get(file.path);
             if (!entry) {
                 throw new Error(`Selected file not found in ZIP archive: ${file.path}`);
+            }
+            if (!isFileEntry(entry)) {
+                throw new Error(`Selected file is not a valid file entry: ${file.path}`);
             }
 
             const extractUrl = toExtractUrl(zipUrl, entry);
@@ -148,11 +158,20 @@ export function useZipExplorer() {
         }
     }
 
-    async function handleLocalZip(filesToImport: ZipContentFile[], historyId: string | null, zipArchive: ZipArchive) {
+    async function handleLocalZip(
+        filesToImport: ZipContentFile[],
+        historyId: string | null,
+        zipExplorer: IZipExplorer
+    ) {
         for (const file of filesToImport) {
-            const entry = zipArchive.entries.filter(isFileEntry).find((e) => e.path === file.path);
+            const entry = zipExplorer.entries.get(file.path);
+
             if (!entry) {
                 throw new Error(`Selected file not found in ZIP archive: ${file.path}`);
+            }
+
+            if (!isFileEntry(entry)) {
+                throw new Error(`Selected file is not a valid file entry: ${file.path}`);
             }
 
             if (isWorkflowFile(file)) {
@@ -183,27 +202,21 @@ export function useZipExplorer() {
 
     function reset() {
         zipExplorer.value = undefined;
-        zipArchive.value = undefined;
         zipExplorerError.value = undefined;
+        clearDatabaseStore();
     }
 
-    function getEntryName(entry: AnyZipEntry) {
-        return entry.path;
+    function getEntryName(entry: ZipFileEntry) {
+        const metadata = zipExplorer.value?.getFileEntryMetadata(entry);
+        return metadata?.name ?? "unnamed";
     }
 
-    function shouldSkipZipEntry(entry: AnyZipEntry) {
-        return (
-            entry.type == "Directory" ||
-            GALAXY_EXPORT_METADATA_FILES.some((ignoredFile) => entry.path.includes(ignoredFile))
-        );
+    function shouldSkipZipEntry(entry: ZipFileEntry) {
+        return GALAXY_EXPORT_METADATA_FILES.some((ignoredFile) => entry.path.includes(ignoredFile));
     }
 
     function isGalaxyWorkflow(entry: AnyZipEntry) {
         return entry.path.endsWith(".gxwf.yml");
-    }
-
-    function isGalaxyExportFile(entry: AnyZipEntry) {
-        return entry.path.endsWith(GALAXY_EXPORT_ATTRS_FILE);
     }
 
     function isValidUrl(inputUrl?: string) {
@@ -224,7 +237,7 @@ export function useZipExplorer() {
      * To avoid CORS issues, we proxy the URL through the Galaxy server.
      */
     function getProxiedUrl(url: string) {
-        const proxyUrl = getFullAppUrl(`/api/proxy?url=${encodeURIComponent(url)}`);
+        const proxyUrl = getFullAppUrl(`api/proxy?url=${encodeURIComponent(url)}`);
         return proxyUrl;
     }
 
@@ -285,11 +298,8 @@ export function useZipExplorer() {
 
     return {
         zipExplorer,
-        zipArchive,
         errorMessage: zipExplorerError,
         isLoading,
-        isRoCrate,
-        isGalaxyExport,
         isZipArchiveAvailable,
         openZip,
         reset,
@@ -311,14 +321,24 @@ export function isZipFile(file?: File | null): string {
     return "";
 }
 
+export function isRoCrateZip(explorer?: IZipExplorer): explorer is ROCrateZipExplorer {
+    return explorer instanceof ROCrateZipExplorer;
+}
+
+export function isGalaxyZipExport(explorer?: IZipExplorer): explorer is GalaxyZipExplorer {
+    return explorer instanceof GalaxyZipExplorer;
+}
+
+const ROCRATE_METADATA_FILE = "ro-crate-metadata.json";
 const GALAXY_EXPORT_ATTRS_FILE = "export_attrs.txt";
 const GALAXY_HISTORY_EXPORT_ATTRS_FILE = "history_attrs.txt";
+const GALAXY_DATASET_ATTRS_FILE = "datasets_attrs.txt";
 
 export const GALAXY_EXPORT_METADATA_FILES = [
     GALAXY_EXPORT_ATTRS_FILE,
     GALAXY_HISTORY_EXPORT_ATTRS_FILE,
+    GALAXY_DATASET_ATTRS_FILE,
     "collections_attrs.txt",
-    "datasets_attrs.txt",
     "datasets_attrs.txt.provenance",
     "implicit_collection_jobs_attrs.txt",
     "implicit_dataset_conversions.txt",
@@ -337,4 +357,69 @@ export interface ZipContentFile {
 export interface ImportableZipContents {
     workflows: ZipContentFile[];
     files: ZipContentFile[];
+}
+
+interface DatasetAttrs {
+    file_name: string;
+    name?: string;
+    annotation?: string;
+    peek?: string;
+    extension?: string;
+    blurb?: string;
+}
+
+class GalaxyZipExplorer extends AbstractZipExplorer {
+    private datasetAttrs?: Map<string, Partial<FileMetadata>>;
+
+    protected async loadMetadata(): Promise<void> {
+        if (!this.datasetAttrs) {
+            const datasetAttrsFile = this.explorer.zipArchive.findFileByName(GALAXY_DATASET_ATTRS_FILE);
+            if (datasetAttrsFile) {
+                const json = await this.fetchFileAsJSON(datasetAttrsFile);
+                this.datasetAttrs = new Map<string, Partial<FileMetadata>>();
+                for (const value of Object.values(json)) {
+                    if (this.hasDatasetAttrs(value)) {
+                        this.datasetAttrs.set(value["file_name"], {
+                            name: value.name,
+                            description: value.annotation,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    protected extractPartialFileMetadata(entry: ZipFileEntry): Partial<FileMetadata> {
+        const metadata = this.datasetAttrs?.get(entry.path);
+        return {
+            name: metadata?.["name"] as string,
+            description: metadata?.["description"] as string,
+        };
+    }
+
+    private async fetchFileAsJSON(file: ZipFileEntry): Promise<Record<string, unknown>> {
+        const fileData = await file.data();
+        const fileJson = new TextDecoder().decode(fileData);
+        return JSON.parse(fileJson) as Record<string, unknown>;
+    }
+
+    private hasDatasetAttrs(value: unknown): value is DatasetAttrs {
+        return (
+            typeof value === "object" &&
+            value !== null &&
+            "file_name" in value &&
+            typeof (value as DatasetAttrs)["file_name"] === "string"
+        );
+    }
+}
+
+function selectZipExplorerByContent(zipExplorer: IZipExplorer): IZipExplorer {
+    if (zipExplorer.zipArchive.findFileByName(ROCRATE_METADATA_FILE)) {
+        return new ROCrateZipExplorer(zipExplorer);
+    }
+
+    if (zipExplorer.zipArchive.findFileByName(GALAXY_EXPORT_ATTRS_FILE)) {
+        return new GalaxyZipExplorer(zipExplorer);
+    }
+    return zipExplorer;
 }
