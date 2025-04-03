@@ -17,7 +17,7 @@
         </div>
         <BAlert v-else variant="warning" show>No datasets found.</BAlert>
         <FormElementLabel title="Height" help="Specify the height of the view in pixel.">
-            <FormNumber id="vitessce-height" v-model="height" :min="0" :max="1000" type="integer" @input="onHeight"/>
+            <FormNumber id="vitessce-height" v-model="height" :min="100" :max="1000" type="integer" @input="onHeight"/>
         </FormElementLabel>
     </div>
 </template>
