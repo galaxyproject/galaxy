@@ -4,7 +4,7 @@ import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
-import { hasValidLabel, hasValidName, getRequiredObject } from "@/components/Markdown/Utilities/requirements";
+import { getRequiredObject, hasValidLabel, hasValidName } from "@/components/Markdown/Utilities/requirements";
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -115,7 +115,12 @@ watch(
         <span v-localize>Invalid or missing label for</span>
         <b>{{ name }}</b>
     </BAlert>
-    <BAlert v-else-if="hasLabels && !invocationId && getRequiredObject(name)" v-localize variant="info" class="m-0" show>
+    <BAlert
+        v-else-if="hasLabels && !invocationId && getRequiredObject(name)"
+        v-localize
+        variant="info"
+        class="m-0"
+        show>
         <span v-localize>Data for rendering not yet available for</span>
         <b>{{ name }}</b>
     </BAlert>
@@ -134,18 +139,18 @@ Galaxy Version {{ config.version_major }}</pre
             <pre v-else-if="name == 'generate_time'" class="galaxy-time m-0">{{ new Date().toUTCString() }}</pre>
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
                 :compact="argToBoolean(args, 'compact', false)"
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :footer="args.footer"
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
                 :title="args.title" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
-                :collection-id="args.history_target_id || args.history_dataset_collection_id" />
+                :collection-id="rgs.history_dataset_collection_id" />
             <HistoryDatasetDetails
                 v-else-if="
                     [
@@ -155,11 +160,11 @@ Galaxy Version {{ config.version_major }}</pre
                         'history_dataset_type',
                     ].includes(name)
                 "
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
