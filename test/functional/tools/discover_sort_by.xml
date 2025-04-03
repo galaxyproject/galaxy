@@ -2,7 +2,8 @@
     <command><![CDATA[
 for i in \$(seq 1 10);
 do
-    echo "\$i" > \$i.txt;
+    ## also test that lowercase extension will be used as ext
+    echo "\$i" > \$i.tXt;
 done
 ## create a directory that matches the discovery pattern
 ## but must not be discovered because it's a directory which
@@ -27,44 +28,44 @@ done
   <tests>
     <test expect_num_outputs="4">
       <output_collection name="collection_numeric_name" type="list" count="10">
-        <element name="1">
+        <element name="1" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
-        <element name="2">
+        <element name="2" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
-        <element name="10">
+        <element name="10" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
       </output_collection>
       <output_collection name="collection_rev_numeric_name" type="list" count="10">
-        <element name="10">
+        <element name="10" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
-        <element name="2">
+        <element name="2" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
-        <element name="1">
+        <element name="1" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
       </output_collection>
       <output_collection name="collection_lexical_name" type="list" count="10">
-        <element name="1">
+        <element name="1" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
-        <element name="10">
+        <element name="10" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
-        <element name="2">
+        <element name="2" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
       </output_collection>
       <output name="data_reverse_lexical_name">
         <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
-        <discovered_dataset designation="10">
+        <discovered_dataset designation="10" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </discovered_dataset>
-        <discovered_dataset designation="1">
+        <discovered_dataset designation="1" ftype="txt">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </discovered_dataset>
       </output>
