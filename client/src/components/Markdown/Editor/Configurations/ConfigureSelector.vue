@@ -63,7 +63,7 @@ const emit = defineEmits<{
 const errorMessage = ref("");
 const dragData: Ref<EventData[]> = ref([]);
 const dragTarget: Ref<EventTarget | null> = ref(null);
-const dragState: Ref<"success" | "warning" | null> = ref(null);
+const dragState: Ref<"danger" | "success" | "warning" | null> = ref(null);
 const options: Ref<Array<OptionType>> = ref([]);
 
 const currentValue = computed({
@@ -77,7 +77,7 @@ const currentValue = computed({
 });
 
 const droppable = computed(
-    () => !hasLabels.value && ["history_dataset_id", "history_collection_dataset_id"].includes(props.objectType)
+    () => !hasLabels.value && ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
 );
 
 const hasLabels = computed(() => props.labels !== undefined);
@@ -137,14 +137,23 @@ function onDragEnter(evt: DragEvent) {
     dragTarget.value = evt.target;
     const eventData = eventStore.getDragItems();
     if (eventData?.length) {
-        dragTarget.value = evt.target;
-        dragData.value = eventData;
-        dragState.value = "success";
+        const item = eventData[0];
+        if (item) {
+            const { id, name, history_content_type } = item;
+            if (id && name && isValidContent(history_content_type as string)) {
+                dragTarget.value = evt.target;
+                dragData.value = eventData;
+                dragState.value = "success";
+            } else {
+                dragState.value = "danger";
+            }
+        }
     }
 }
 
 function onDragLeave(evt: DragEvent) {
     if (dragTarget.value === evt.target) {
+        dragData.value = [];
         dragState.value = null;
     }
 }
@@ -153,19 +162,18 @@ function onDrop() {
     if (droppable.value && dragData.value.length > 0) {
         const item = dragData.value[0];
         if (item) {
-            const { id, name, history_content_type } = item;
-            if (id && name) {
-                const isDataset = props.objectType === "history_dataset_id" && history_content_type === "dataset";
-                const isCollection =
-                    props.objectType === "history_dataset_collection_id" &&
-                    history_content_type === "dataset_collection";
-                if (isDataset || isCollection) {
-                    emit("change", { id, name } as OptionType);
-                }
-            }
+            const { id, name } = item;
+            emit("change", { id, name } as OptionType);
         }
     }
     dragState.value = null;
+}
+
+function isValidContent(historyContentType: string) {
+    const isDataset = props.objectType === "history_dataset_id" && historyContentType === "dataset";
+    const isCollection =
+        props.objectType === "history_dataset_collection_id" && historyContentType === "dataset_collection";
+    return isDataset || isCollection;
 }
 
 watch(
