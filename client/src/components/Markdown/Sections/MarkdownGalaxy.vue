@@ -134,7 +134,7 @@ watch(
         <b>{{ name }}</b>
     </BAlert>
     <LoadingSpan v-else-if="isLoading" />
-    <BAlert v-else-if="!hasValidObject(name, args)" v-localize variant="danger" class="m-0" show>
+    <BAlert v-else-if="!hasValidObject(name, args)" v-localize variant="warning" class="m-0" show>
         <span v-localize>Missing</span>
         <b>{{ getRequiredObject(name) }}</b>
         <span v-localize>for</span>
