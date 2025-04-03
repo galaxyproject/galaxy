@@ -705,7 +705,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         elif history:
                             user = history.user
                             regenerate_kwds["user"] = user
-                            if user is None:
+                            if user is None and history.galaxy_sessions[0]:
                                 regenerate_kwds["session_id"] = history.galaxy_sessions[0].galaxy_session.id
                             else:
                                 regenerate_kwds["session_id"] = None
