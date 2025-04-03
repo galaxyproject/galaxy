@@ -1,6 +1,7 @@
 <template>
     <div
         tabindex="0"
+        role="presentation"
         @mouseenter="hover = true"
         @mouseleave="hover = false"
         @focusin="hover = true"
