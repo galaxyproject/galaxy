@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, ref } from "vue";
+import { BModal, type BvModalEvent } from "bootstrap-vue";
+import { computed, type PropType, ref } from "vue";
 
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -10,17 +12,24 @@ import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 const props = defineProps({
     userPreferredObjectStoreId: {
-        type: String,
+        type: String as PropType<string | null>,
+        default: null,
+    },
+    preferredObjectStoreId: {
+        type: String as PropType<string | null>,
         default: null,
     },
     history: {
         type: Object,
         required: true,
     },
+    showSubSetting: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const error = ref<string | null>(null);
-const selectedObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history";
 const galaxySelectionDefaultTitle = "Use Galaxy Defaults";
@@ -64,6 +73,7 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
                     await makePrivate(props.history.id, permissionResponse);
                 } catch {
                     error.value = "Failed to update default permissions for history.";
+                    throw new Error();
                 }
             }
         }
@@ -73,19 +83,75 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
     const url = prependPath(`api/histories/${props.history.id}`);
     try {
         await axios.put(url, payload);
+        emit("updated", preferredObjectStoreId);
     } catch (e) {
         error.value = errorMessageAsString(e);
+        throw new Error();
     }
-    selectedObjectStoreId.value = preferredObjectStoreId;
-    emit("updated", preferredObjectStoreId);
 }
+
+const { isOnlyPreference } = useStorageLocationConfiguration();
+const storageLocationTitle = computed(() => {
+    if (isOnlyPreference.value) {
+        return "History Preferred Storage Location";
+    } else {
+        return "History Storage Location";
+    }
+});
+
+const modalShown = ref(false);
+
+function showModal() {
+    modalShown.value = true;
+}
+
+const currentSelectedStoreId = ref<string | null>(props.preferredObjectStoreId);
+const currentSelectedStorePrivate = ref(false);
+
+function selectionChanged(preferredObjectStoreId: string | null, isPrivate: boolean) {
+    currentSelectedStoreId.value = preferredObjectStoreId;
+    currentSelectedStorePrivate.value = isPrivate;
+}
+
+async function modalOk(event: BvModalEvent) {
+    if (currentSelectedStoreId.value !== props.preferredObjectStoreId) {
+        event.preventDefault();
+
+        try {
+            await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
+            modalShown.value = false;
+        } catch (_e) {
+            // pass
+        }
+    }
+}
+
+function reset() {
+    currentSelectedStoreId.value = props.preferredObjectStoreId;
+    currentSelectedStorePrivate.value = false;
+}
+
+defineExpose({
+    showModal,
+});
 </script>
+
 <template>
-    <SelectObjectStore
-        :parent-error="error || undefined"
-        :for-what="newDatasetsDescription"
-        :selected-object-store-id="selectedObjectStoreId"
-        :default-option-title="defaultOptionTitle"
-        :default-option-description="defaultOptionDescription"
-        @onSubmit="handleSubmit" />
+    <BModal
+        v-model="modalShown"
+        :title="storageLocationTitle"
+        title-tag="h2"
+        title-class="h-sm"
+        @ok="modalOk"
+        @cancel="reset"
+        @close="reset">
+        <SelectObjectStore
+            :show-sub-setting="props.showSubSetting"
+            :parent-error="error || undefined"
+            :for-what="newDatasetsDescription"
+            :selected-object-store-id="currentSelectedStoreId"
+            :default-option-title="defaultOptionTitle"
+            :default-option-description="defaultOptionDescription"
+            @onSubmit="selectionChanged" />
+    </BModal>
 </template>

@@ -1,31 +1,37 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, defineAsyncComponent, ref, withDefaults } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel } from "@/api";
+import { useConfig } from "@/composables/config";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
+import DescribeObjectStore from "./DescribeObjectStore.vue";
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
-import ObjectStoreSelectButtonDescribePopover from "./ObjectStoreSelectButtonDescribePopover.vue";
-import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const UserPreferredObjectStore = defineAsyncComponent(() => import("@/components/User/UserPreferredObjectStore.vue"));
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
-    defaultOptionTitle: String;
-    defaultOptionDescription: String;
-    forWhat: String;
+    defaultOptionTitle: string;
+    defaultOptionDescription: string;
+    forWhat: string;
     parentError?: String | null;
+    showSubSetting?: boolean;
 }
 
 const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
     selectedObjectStoreId: null,
     parentError: null,
+    showSubSetting: false,
 });
 
 const store = useObjectStoreStore();
-const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
+const { loading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
 const { isOnlyPreference } = useStorageLocationConfiguration();
 
 const selectableAndVisibleObjectStores = computed(() => {
@@ -47,9 +53,9 @@ click on the info icon in the history panel to view information about where it i
 is not stored in the place you want, contact Galaxy administrator for more information.
 `);
 
-function variant(objectStoreId: string) {
+function variant(objectStoreId?: string | null) {
     if (props.selectedObjectStoreId == objectStoreId) {
-        return "outline-primary";
+        return "info";
     } else {
         return "outline-info";
     }
@@ -68,52 +74,81 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
     const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
     emit("onSubmit", id, isPrivate);
 }
+
+const selectedObjectStore = computed(() => {
+    if (props.selectedObjectStoreId) {
+        const objectStore = store.objectStoresById[props.selectedObjectStoreId as string];
+        return objectStore ?? null;
+    } else {
+        return null;
+    }
+});
+
+const { isConfigLoaded } = useConfig();
+const userStore = useUserStore();
+
+const currentUser = computed(() => {
+    const user = userStore.currentUser;
+    if (user && "id" in user) {
+        return user;
+    } else {
+        return null;
+    }
+});
 </script>
 
 <template>
-    <div>
-        <LoadingSpan v-if="isLoading" :message="loadingObjectStoreInfoMessage" />
-        <div v-else>
-            <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
-                {{ error }}
-            </b-alert>
-            <b-row align-h="center">
-                <b-col cols="7">
-                    <b-button-group vertical size="lg" style="width: 100%">
-                        <b-button
-                            id="no-preferred-object-store-button"
-                            :variant="variant(null)"
-                            class="preferred-object-store-select-button"
-                            data-object-store-id="__null__"
-                            @click="handleSubmit(null)"
-                            ><i>{{ defaultOptionTitle | localize }}</i></b-button
-                        >
-                        <ObjectStoreSelectButton
-                            v-for="objectStore in selectableAndVisibleObjectStores"
-                            :key="objectStore.object_store_id"
-                            id-prefix="preferred"
-                            :object-store="objectStore"
-                            :variant="variant(objectStore.object_store_id)"
-                            class="preferred-object-store-select-button"
-                            @click="handleSubmit(objectStore)" />
-                    </b-button-group>
-                </b-col>
-                <b-col v-if="isOnlyPreference" cols="5">
-                    <p v-localize style="float: right">
-                        {{ whyIsSelectionPreferredText }}
-                    </p>
-                </b-col>
-            </b-row>
-            <ObjectStoreSelectButtonPopover target="no-preferred-object-store-button" :title="defaultOptionTitle">
-                <span v-localize>{{ defaultOptionDescription }}</span>
-            </ObjectStoreSelectButtonPopover>
-            <ObjectStoreSelectButtonDescribePopover
-                v-for="objectStore in selectableAndVisibleObjectStores"
-                :key="objectStore.object_store_id"
-                id-prefix="preferred"
-                :what="forWhat"
-                :object-store="objectStore">
-            </ObjectStoreSelectButtonDescribePopover>
+    <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
+    <div v-else>
+        <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
+            {{ error }}
+        </b-alert>
+
+        <p v-if="isOnlyPreference" v-localize>
+            {{ whyIsSelectionPreferredText }}
+        </p>
+
+        <div class="object-store-selection-columns">
+            <b-button-group vertical size="lg" style="width: 100%">
+                <b-button
+                    id="no-preferred-object-store-button"
+                    :variant="variant(null)"
+                    class="preferred-object-store-select-button"
+                    data-object-store-id="__null__"
+                    @click="handleSubmit(null)">
+                    {{ localize(defaultOptionTitle) }}
+                </b-button>
+                <ObjectStoreSelectButton
+                    v-for="objectStore in selectableAndVisibleObjectStores"
+                    :key="objectStore.object_store_id"
+                    id-prefix="preferred"
+                    :object-store="objectStore"
+                    :variant="variant(objectStore.object_store_id)"
+                    class="preferred-object-store-select-button"
+                    @click="handleSubmit(objectStore)" />
+            </b-button-group>
+
+            <div v-if="!selectedObjectStoreId">
+                <span v-localize>
+                    {{ defaultOptionDescription }}
+                </span>
+                <UserPreferredObjectStore
+                    v-if="props.showSubSetting && isConfigLoaded && currentUser"
+                    hide-icon
+                    class="mt-2"
+                    :preferred-object-store-id="currentUser.preferred_object_store_id ?? undefined"
+                    :user-id="currentUser?.id">
+                </UserPreferredObjectStore>
+            </div>
+            <DescribeObjectStore v-else-if="selectedObjectStore" :what="forWhat" :storage-info="selectedObjectStore" />
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.object-store-selection-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+</style>

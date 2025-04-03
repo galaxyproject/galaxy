@@ -1,6 +1,6 @@
 <template>
     <BRow class="ml-3 mb-1">
-        <i class="pref-icon pt-1 fa fa-lg fa-hdd" />
+        <i v-if="!hideIcon" class="pref-icon pt-1 fa fa-lg fa-hdd" />
         <div class="pref-content pr-1">
             <a
                 id="select-preferred-object-store"
@@ -63,6 +63,10 @@ export default {
         preferredObjectStoreId: {
             type: String,
             default: null,
+        },
+        hideIcon: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
