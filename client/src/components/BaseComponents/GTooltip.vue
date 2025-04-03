@@ -105,6 +105,8 @@ defineExpose({
     font-size: var(--font-size-small);
     border-radius: var(--spacing-1);
     pointer-events: none;
+    font-weight: 400;
+    z-index: 9999;
 
     &:not(.sr-only) {
         display: block;
