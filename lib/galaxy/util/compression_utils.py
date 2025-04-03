@@ -4,7 +4,6 @@ import io
 import logging
 import lzma
 import os
-import shutil
 import tarfile
 import tempfile
 import zipfile
@@ -468,6 +467,3 @@ def make_fast_zipfile(
     if root_dir is not None:
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
-
-
-shutil.register_archive_format("fastzip", make_fast_zipfile)
