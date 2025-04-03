@@ -5,12 +5,21 @@
         v-else
         class="mb-2"
         :class="droppable && dragState && `ui-dragover-${dragState}`"
+        role="presentation"
+        aria-roledescription="drop zone"
+        tabindex="0"
         @dragenter.prevent="onDragEnter"
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <label class="form-label font-weight-bold">{{ title }}:</label>
-        <Multiselect v-model="currentValue" label="name" :options="options" @search-change="search" />
+        <label class="form-label font-weight-bold" for="multiselect">{{ title }}:</label>
+        <Multiselect
+            id="multiselect"
+            v-model="currentValue"
+            label="name"
+            :options="options"
+            @search-change="search"
+        />
     </div>
 </template>
 
@@ -51,8 +60,10 @@ const props = withDefaults(
         objectType: string;
     }>(),
     {
+        labels: undefined,
         objectId: "",
         objectName: "...",
+        objectTitle: undefined,
     }
 );
 
