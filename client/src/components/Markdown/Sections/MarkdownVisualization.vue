@@ -110,10 +110,3 @@ watch(
             @change="onChange" />
     </div>
 </template>
-
-<style>
-.markdown-visualization {
-    min-height: 400px;
-    max-height: 400px;
-}
-</style>

@@ -10,6 +10,8 @@ import { useInvocationStore } from "@/stores/invocationStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
+const DEFAULT_HEIGHT = 400;
+
 const props = defineProps<{
     content: string;
 }>();
@@ -18,6 +20,7 @@ const errorMessage = ref("");
 const loading = ref(false);
 const missingInvocation = ref(false);
 const visualizationConfig = ref();
+const visualizationHeight = ref(DEFAULT_HEIGHT);
 const visualizationKey = ref(0);
 const visualizationName = ref("");
 const visualizationTitle = ref("");
@@ -67,6 +70,12 @@ async function processContent() {
             }
         }
 
+        // Get height
+        if ("__gx_height" in parsedContent) {
+            visualizationHeight.value = parsedContent.__gx_height;
+            delete parsedContent.__gx_height;
+        }
+
         // Build visualization config for vitessce
         visualizationConfig.value = {};
         visualizationConfig.value["dataset_content"] = parsedContent;
@@ -111,14 +120,8 @@ defineExpose({ visualizationConfig });
             :key="visualizationKey"
             class="markdown-vitessce"
             :config="visualizationConfig"
+            :height="visualizationHeight"
             :name="visualizationName"
             :title="visualizationTitle" />
     </div>
 </template>
-
-<style>
-.markdown-vitessce {
-    min-height: 400px;
-    max-height: 400px;
-}
-</style>
