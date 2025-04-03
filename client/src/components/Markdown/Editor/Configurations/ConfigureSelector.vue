@@ -26,6 +26,8 @@ import { getDataset, getHistories, getInvocations, getJobs, getWorkflows } from 
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const eventStore = useEventStore();
@@ -68,18 +70,6 @@ const currentValue = computed({
     },
 });
 
-const availableLabels = computed(() => {
-    switch (props.objectType) {
-        case "history_dataset_id":
-            return ["input", "output"];
-        case "history_dataset_collection_id":
-            return ["input", "output"];
-        case "job_id":
-            return ["step"];
-    }
-    return [];
-});
-
 const droppable = computed(
     () => !hasLabels.value && ["history_dataset_id", "history_collection_dataset_id"].includes(props.objectType)
 );
@@ -88,7 +78,7 @@ const hasLabels = computed(() => props.labels !== undefined);
 
 const mappedLabels = computed(() =>
     props.labels
-        ?.filter((workflowLabel) => availableLabels.value.includes(workflowLabel.type))
+        ?.filter((workflowLabel) => getRequiredLabels(props.objectType).includes(workflowLabel.type))
         .map((workflowLabel) => ({
             name: `${workflowLabel.label} (${workflowLabel.type})`,
             label: {

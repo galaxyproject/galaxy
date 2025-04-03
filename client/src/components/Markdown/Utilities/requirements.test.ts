@@ -33,14 +33,14 @@ describe("requirements utils", () => {
 
     describe("getRequiredLabels", () => {
         it("returns expected labels for known types", () => {
-            expect(getRequiredLabels("tool_a")).toEqual(["input", "output"]);
-            expect(getRequiredLabels("tool_c")).toEqual(["input", "output"]);
-            expect(getRequiredLabels("tool_d")).toEqual(["step"]);
+            expect(getRequiredLabels(getRequiredObject("tool_a"))).toEqual(["input", "output"]);
+            expect(getRequiredLabels(getRequiredObject("tool_c"))).toEqual(["input", "output"]);
+            expect(getRequiredLabels(getRequiredObject("tool_d"))).toEqual(["step"]);
         });
 
         it("returns empty array for unknown or none", () => {
-            expect(getRequiredLabels("tool_x")).toEqual([]);
-            expect(getRequiredLabels("nonexistent_tool")).toEqual([]);
+            expect(getRequiredLabels(getRequiredObject("tool_x"))).toEqual([]);
+            expect(getRequiredLabels(getRequiredObject("nonexistent_tool"))).toEqual([]);
         });
     });
 
