@@ -1,5 +1,3 @@
-import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
-
 import { getRequiredLabels, getRequiredObject, hasValidLabel, hasValidName } from "./requirements";
 
 jest.mock(
@@ -45,7 +43,7 @@ describe("requirements utils", () => {
     });
 
     describe("hasValidLabel", () => {
-        const labels: WorkflowLabel[] = [
+        const labels = [
             { type: "input", label: "A" },
             { type: "output", label: "B" },
             { type: "step", label: "S" },
@@ -68,7 +66,7 @@ describe("requirements utils", () => {
 
         it("returns true when labels are undefined", () => {
             const args = { step: "S" };
-            expect(hasValidLabel("tool_d", args, undefined as any)).toBe(true);
+            expect(hasValidLabel("tool_d", args, undefined)).toBe(true);
         });
 
         it("returns true when requiredLabels is empty", () => {

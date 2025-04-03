@@ -45,7 +45,7 @@ const props = defineProps({
     },
     labels: {
         type: Array,
-        required: false,
+        default: undefined,
     },
 });
 
