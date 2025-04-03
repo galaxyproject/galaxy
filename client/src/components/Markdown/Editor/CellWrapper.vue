@@ -9,9 +9,7 @@
             <button
                 class="d-flex cursor-pointer border-0 bg-transparent p-0"
                 :class="{ 'cell-wrapper-hover': hover }"
-                @click="$emit('toggle')"
-                @keydown.enter="$emit('toggle')"
-                @keydown.space.prevent="$emit('toggle')">
+                @click="$emit('toggle')">
                 <div class="align-self-end">
                     <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
                     <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
