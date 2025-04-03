@@ -5,8 +5,10 @@
         :class="{ active, 'cell-button-hide': !show }"
         :title="title"
         :variant="active ? 'outline-secondary' : 'outline-primary'"
+        :aria-pressed="active"
         @click="$emit('click')"
-        @mouseleave="onMouseLeave($event)">
+        @mouseleave="onMouseLeave"
+        @blur="onMouseLeave">
         <FontAwesomeIcon :icon="icon" fixed-width />
     </BButton>
 </template>
