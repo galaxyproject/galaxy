@@ -25,13 +25,24 @@ export function getRequiredObject(name: string | undefined) {
     return null;
 }
 
-export function hasValidLabel(name: string | undefined, args: Record<string, string>, labels: Array<WorkflowLabel>) {
+export function hasValidLabel(
+    name: string | undefined,
+    args: Record<string, string>,
+    labels: Array<WorkflowLabel>
+): boolean {
     const requiredLabels = getRequiredLabels(name);
     if (labels !== undefined && requiredLabels.length > 0) {
-        return requiredLabels.some((key) => {
+        let matchCount = 0;
+        for (const key of requiredLabels) {
             const value = args[key];
-            return value && labels.some((label) => label.type === key && label.label === value);
-        });
+            if (value) {
+                const matched = labels.some((label) => label.type === key && label.label === value);
+                if (matched) {
+                    matchCount++;
+                }
+            }
+        }
+        return matchCount === 1;
     }
     return true;
 }
