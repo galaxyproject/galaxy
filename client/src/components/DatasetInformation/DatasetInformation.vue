@@ -96,6 +96,7 @@ defineProps<Props>();
                         <div id="history_id">
                             {{ dataset.history_id }}
                             <DecodedId :id="dataset.history_id" />
+                            (<a :href="withPrefix(`/histories/view?id=${dataset.history_id}`)">view</a>)
                         </div>
                     </td>
                 </tr>
