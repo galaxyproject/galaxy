@@ -6,12 +6,12 @@
         @focusin="hover = true"
         @focusout="hover = false">
         <div class="d-flex">
-            <div class="d-flex" :class="{ 'cell-wrapper-hover': hover }">
+            <ButtonPlain class="d-flex" :class="{ 'cell-wrapper-hover': hover }" @click="$emit('toggle')">
                 <div class="align-self-end">
-                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" @click="$emit('toggle')" />
-                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" @click="$emit('toggle')" />
+                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
+                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
                 </div>
-            </div>
+            </ButtonPlain>
             <SectionWrapper
                 class="m-2 w-100"
                 :name="name"
@@ -75,6 +75,7 @@ import CellButton from "./CellButton.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
 import ConfigureVitessce from "./Configurations/ConfigureVitessce.vue";
+import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const CellCode = () => import("./CellCode.vue");
