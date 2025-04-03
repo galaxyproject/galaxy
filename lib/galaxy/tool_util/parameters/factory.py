@@ -24,6 +24,7 @@ from galaxy.tool_util.parser.parameter_validators import (
     static_validators,
 )
 from galaxy.tool_util.parser.util import (
+    multiple_select_value_split,
     parse_profile_version,
     text_input_is_optional,
 )
@@ -236,10 +237,24 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "data_column":
             multiple = input_source.get_bool("multiple", False)
             optional = input_source.parse_optional()
+            value = input_source.get("value")
+            # mirror basic.py logic around accept_default
+            accept_default = input_source.get_bool("accept_default", False)
+            if not optional and accept_default:
+                optional = True
+            if accept_default and value is None:
+                value = [0] if multiple else 0
+
+            if isinstance(value, str):
+                if multiple:
+                    value = [int(v) for v in multiple_select_value_split(value)]
+                else:
+                    value = int(value)
             return DataColumnParameterModel(
                 name=input_source.parse_name(),
                 multiple=multiple,
                 optional=optional,
+                value=value,
             )
         elif param_type == "group_tag":
             multiple = input_source.get_bool("multiple", False)

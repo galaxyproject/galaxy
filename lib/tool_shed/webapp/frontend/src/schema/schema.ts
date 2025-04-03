@@ -1261,6 +1261,8 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_data_column"
+            /** Value */
+            value?: number | number[] | null
         }
         /** DataParameterModel */
         DataParameterModel: {

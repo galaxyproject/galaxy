@@ -17,5 +17,13 @@ echo '$parameter' >> '$output'
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <param name="parameter" value_json="null" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="1" negate="true" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

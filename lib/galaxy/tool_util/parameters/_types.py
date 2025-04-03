@@ -47,7 +47,23 @@ def cast_as_type(arg) -> Type:
 
 
 def is_optional(field) -> bool:
-    return get_origin(field) is Union and type(None) in get_args(field)
+    f = _strip_annotation(field)
+    if f == type(None):  # noqa: E721
+        return True
+    origin = get_origin(f)
+    if origin is Union:
+        return any(is_optional(f) for f in get_args(f))
+
+    return False
+
+
+def _strip_annotation(field):
+    is_annotation = get_origin(field) is Annotated
+    if is_annotation:
+        args = get_args(field)
+        return args[0]
+    else:
+        return field
 
 
 def expand_annotation(field: Type, new_annotations: List[Any]) -> Type:

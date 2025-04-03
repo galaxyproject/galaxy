@@ -860,8 +860,9 @@ class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        # assumes it uses behavior of select parameters - an API test to reference for this would be nice
-        return self.multiple and not self.optional
+        # it seems to always just pick values currently - an empty multiple or optional comes through as null
+        # and empty single non-optional input comes through as "?"". See gx_genomebuild*.xml tools.
+        return False
 
 
 DrillDownHierarchyT = Literal["recurse", "exact"]
@@ -984,6 +985,7 @@ def selected_drill_down_options(options: List[DrillDownOptionsDict]) -> List[str
 class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_column"] = "gx_data_column"
     multiple: bool
+    value: Optional[Union[int, List[int]]] = None
 
     @staticmethod
     def split_str(cls, data: Any) -> Any:
@@ -1009,7 +1011,10 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
                 }
             else:
                 validators = {}
-            return dynamic_model_information_from_py_type(self, self.py_type, validators=validators)
+            requires_value = self.request_requires_value
+            return dynamic_model_information_from_py_type(
+                self, self.py_type, validators=validators, requires_value=requires_value
+            )
         else:
             requires_value = self.request_requires_value
             if state_representation == "job_internal":
@@ -1018,7 +1023,7 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return self.multiple and not self.optional
+        return self.multiple and not (self.optional or self.value)
 
 
 class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
