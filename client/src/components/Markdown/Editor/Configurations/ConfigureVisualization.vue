@@ -30,6 +30,7 @@ interface contentType {
     dataset_id?: string;
     dataset_label?: DatasetLabel;
     dataset_url?: string;
+    [key: string]: unknown;
 }
 
 const contentObject: Ref<contentType | undefined> = ref();

@@ -50,6 +50,7 @@ interface FileEntryType {
 
 interface VitessceType {
     datasets?: Array<DatasetEntryType>;
+    [key: string]: unknown;
 }
 
 const props = defineProps<{
