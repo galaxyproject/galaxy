@@ -70,10 +70,12 @@ async function processContent() {
             }
         }
 
-        // Get height
+        // Determine height
         if ("__gx_height" in parsedContent) {
             visualizationHeight.value = parsedContent.__gx_height;
             delete parsedContent.__gx_height;
+        } else {
+            visualizationHeight.value = DEFAULT_HEIGHT;
         }
 
         // Build visualization config for vitessce

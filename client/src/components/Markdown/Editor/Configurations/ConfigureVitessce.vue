@@ -16,6 +16,9 @@
             </div>
         </div>
         <BAlert v-else variant="warning" show>No datasets found.</BAlert>
+        <FormElementLabel title="Height" help="Specify the height of the view in pixel.">
+            <FormNumber id="vitessce-height" v-model="height" :min="0" :max="1000" type="integer" @input="onHeight"/>
+        </FormElementLabel>
     </div>
 </template>
 
@@ -29,6 +32,8 @@ import { stringify } from "@/components/Markdown/Utilities/stringify";
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
+import FormElementLabel from "@/components/Form/FormElementLabel.vue";
+import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 
 interface DatasetEntryType {
     files?: Array<FileEntryType>;
@@ -50,8 +55,11 @@ interface FileEntryType {
 
 interface VitessceType {
     datasets?: Array<DatasetEntryType>;
+    __gx_height?: number;
     [key: string]: unknown;
 }
+
+const DEFAULT_HEIGHT = 400;
 
 const props = defineProps<{
     name: string;
@@ -67,6 +75,7 @@ const emit = defineEmits<{
 const contentObject: Ref<VitessceType> = ref({});
 const errorMessage = ref();
 const hasChanged = ref(false);
+const height = ref();
 
 const hasLabels = computed(() => props.labels !== undefined);
 
@@ -95,6 +104,10 @@ function onChange(file: FileEntryType, option: OptionType) {
     hasChanged.value = true;
 }
 
+function onHeight(newHeight: number) {
+    contentObject.value.__gx_height = newHeight;
+}
+
 function onOk() {
     emit("change", stringify(contentObject.value));
 }
@@ -102,6 +115,7 @@ function onOk() {
 function parseContent() {
     try {
         contentObject.value = JSON.parse(props.content);
+        height.value = contentObject.value.__gx_height || DEFAULT_HEIGHT;
         errorMessage.value = "";
     } catch (e) {
         errorMessage.value = `Failed to parse: ${e}`;
