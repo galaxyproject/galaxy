@@ -10,7 +10,6 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -21,6 +20,8 @@ import { useUserStore } from "@/stores/userStore";
 
 import { useWorkflowActions } from "./useWorkflowActions";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
@@ -99,84 +100,90 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
 
 <template>
     <div class="workflow-card-actions flex-gapx-1">
-        <BButtonGroup>
+        <GButtonGroup>
             <template v-if="!props.editor && !workflow.deleted">
-                <BButton
+                <GButton
                     v-if="workflow.published"
                     id="workflow-copy-public-button"
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
+                    tooltip
+                    outline
+                    size="small"
+                    color="blue"
                     title="Copy link to workflow"
-                    variant="outline-primary"
                     @click="copyPublicLink">
                     <FontAwesomeIcon :icon="faLink" fixed-width />
                     <span class="compact-view">Link to Workflow</span>
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!isAnonymous && !shared"
                     id="workflow-copy-button"
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
+                    tooltip
+                    outline
+                    size="small"
+                    color="blue"
                     title="Copy"
-                    variant="outline-primary"
                     @click="copyWorkflow">
                     <FontAwesomeIcon :icon="faCopy" fixed-width />
                     <span class="compact-view">Copy</span>
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     id="workflow-download-button"
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
+                    tooltip
+                    outline
+                    size="small"
+                    color="blue"
                     title="Download workflow in .ga format"
-                    variant="outline-primary"
                     :href="downloadUrl">
                     <FontAwesomeIcon :icon="faDownload" fixed-width />
                     <span class="compact-view">Download</span>
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!isAnonymous && !shared"
                     id="workflow-share-button"
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
+                    tooltip
+                    outline
+                    size="small"
+                    color="blue"
                     title="Share"
-                    variant="outline-primary"
                     :to="`/workflows/sharing?id=${workflow.id}`">
                     <FontAwesomeIcon :icon="faShareAlt" fixed-width />
                     <span class="compact-view">Share</span>
-                </BButton>
+                </GButton>
             </template>
 
-            <BButton
+            <GButton
                 v-if="workflow.deleted"
                 id="restore-button"
-                v-b-tooltip.hover.noninteractive
-                size="sm"
+                tooltip
+                outline
+                size="small"
+                color="blue"
                 title="Restore"
-                variant="outline-primary"
                 @click="onRestore">
                 <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
                 <span class="compact-view">Restore</span>
-            </BButton>
-        </BButtonGroup>
+            </GButton>
+        </GButtonGroup>
 
-        <div>
+        <div class="d-flex flex-gapx-1 align-items-center">
             <i v-if="props.current" class="mr-2"> current workflow </i>
 
-            <BButton
+            <GButton
                 v-if="!isAnonymous && !shared && !props.current"
-                v-b-tooltip.hover.noninteractive
                 :disabled="workflow.deleted"
-                size="sm"
+                tooltip
+                outline
+                size="small"
+                color="blue"
                 class="workflow-edit-button"
                 :title="editButtonTitle"
-                variant="outline-primary"
                 :to="`/workflows/edit?id=${workflow.id}`">
                 <FontAwesomeIcon :icon="faEdit" fixed-width />
                 Edit
-            </BButton>
+            </GButton>
 
             <AsyncButton
                 v-else-if="!props.current"
@@ -196,27 +203,29 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
                 :disabled="isAnonymous || workflow.deleted"
                 :title="runButtonTitle" />
 
-            <BButtonGroup v-if="props.editor && !workflow.deleted">
-                <BButton
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
+            <GButtonGroup v-if="props.editor && !workflow.deleted">
+                <GButton
+                    tooltip
+                    outline
+                    size="small"
+                    color="blue"
                     title="Copy steps into workflow"
-                    variant="outline-primary"
                     @click="emit('insertSteps')">
                     <FontAwesomeIcon :icon="faCopy" fixed-width />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!props.current"
-                    v-b-tooltip.hover.noninteractive
-                    size="sm"
+                    tooltip
+                    outline
+                    size="small"
+                    color="blue"
                     title="Insert as sub-workflow"
-                    variant="primary"
                     @click="emit('insert')">
                     <FontAwesomeIcon :icon="faPlusSquare" fixed-width />
                     <span> Insert </span>
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </div>
     </div>
 </template>
