@@ -25,15 +25,18 @@ const props = defineProps<{
     iconOnly?: boolean;
     transparent?: boolean;
     pill?: boolean;
+    pressed?: boolean;
 }>();
 
 const emit = defineEmits<{
     (e: "click", event: PointerEvent): void;
+    (e: "update:pressed", pressed: boolean): void;
 }>();
 
 function onClick(event: PointerEvent) {
     if (!props.disabled) {
         emit("click", event);
+        emit("update:pressed", !props.pressed);
     }
 }
 
@@ -52,6 +55,7 @@ const styleClasses = computed(() => {
         "g-inline": props.inline,
         "g-pill": props.pill,
         "g-transparent": props.transparent,
+        "g-pressed": props.pressed,
     };
 });
 
@@ -114,6 +118,7 @@ useAccessibleHover(
         :href="props.href"
         :title="currentTitle"
         :aria-describedby="describedBy"
+        tabindex="0"
         v-bind="$attrs"
         @click="onClick">
         <slot></slot>
@@ -146,8 +151,16 @@ useAccessibleHover(
         transition: none;
     }
 
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgb(from var(--color-blue-400) r g b / 0.33);
+        z-index: 999;
+    }
+
     &:focus-visible {
+        outline: none;
         box-shadow: 0 0 0 0.2rem var(--color-blue-400);
+        z-index: 999;
     }
 
     // sizes
@@ -173,15 +186,14 @@ useAccessibleHover(
         color: var(--color-grey-800);
 
         &:hover,
-        &:focus,
         &:focus-visible {
             background-color: var(--color-grey-300);
             border-color: var(--color-grey-400);
-        }
 
-        &:active {
-            background-color: var(--color-grey-400);
-            border-color: var(--color-grey-600);
+            &:active {
+                background-color: var(--color-grey-400);
+                border-color: var(--color-grey-600);
+            }
         }
 
         &:focus-visible {
@@ -196,15 +208,14 @@ useAccessibleHover(
             color: var(--color-#{$color}-100);
 
             &:hover,
-            &:focus,
             &:focus-visible {
                 background-color: var(--color-#{$color}-700);
                 border-color: var(--color-#{$color}-700);
-            }
 
-            &:active {
-                background-color: var(--color-#{$color}-600);
-                color: var(--color-#{$color}-100);
+                &:active {
+                    background-color: var(--color-#{$color}-600);
+                    color: var(--color-#{$color}-100);
+                }
             }
 
             &:focus-visible {
@@ -212,14 +223,11 @@ useAccessibleHover(
             }
         }
 
-        &.g-outline.g-#{$color} {
-            background-color: rgb(100% 100% 100% / 0);
+        &.g-outline:not(.g-pressed).g-#{$color} {
             border-color: var(--color-#{$color}-600);
             color: var(--color-#{$color}-600);
 
-            &:hover,
-            &:focus,
-            &:focus-visible {
+            &:hover {
                 background-color: var(--color-#{$color}-600);
                 border-color: var(--color-#{$color}-600);
                 color: var(--color-#{$color}-100);
@@ -233,22 +241,25 @@ useAccessibleHover(
         }
     }
 
+    &.g-outline:not(.g-pressed) {
+        background-color: var(--background-color);
+    }
+
     &.g-disabled {
         background-color: var(--color-grey-100);
         border-color: var(--color-grey-200);
         color: var(--color-grey-500);
 
         &:hover,
-        &:focus,
         &:focus-visible {
             background-color: var(--color-grey-100);
             border-color: var(--color-grey-200);
-        }
 
-        &:active {
-            background-color: var(--color-grey-100);
-            border-color: var(--color-grey-200);
-            color: var(--color-grey-500);
+            &:active {
+                background-color: var(--color-grey-100);
+                border-color: var(--color-grey-200);
+                color: var(--color-grey-500);
+            }
         }
 
         &:focus-visible {
@@ -256,21 +267,21 @@ useAccessibleHover(
         }
 
         &.g-outline {
-            background-color: rgb(100% 100% 100% / 0);
+            background-color: var(--background-color);
             border-color: var(--color-grey-400);
             color: var(--color-grey-400);
 
             &:hover,
             &:focus,
             &:focus-visible {
-                background-color: rgb(100% 100% 100% / 0);
+                background-color: var(--background-color);
                 border-color: var(--color-grey-400);
                 color: var(--color-grey-400);
             }
 
             &:focus-visible {
                 border-color: var(--color-grey-800);
-                background-color: rgb(100% 100% 100% / 0);
+                background-color: var(--background-color);
                 color: var(--color-grey-500);
             }
         }
