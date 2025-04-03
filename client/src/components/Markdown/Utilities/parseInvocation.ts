@@ -59,20 +59,14 @@ export function parseInvocation(
         result.history_id = invocation.history_id;
     } else if (["workflow_display", "workflow_image", "workflow_license"].includes(name)) {
         result.workflow_id = workflowId;
-    } else if (inputId && requiredObject) {
-        if ("history_dataset_id" === requiredObject) {
-            result.history_dataset_id = inputId;
-        }
-        if ("history_dataset_collection_id" === requiredObject) {
-            result.history_dataset_collection_id = inputId;
-        }
-    } else if (outputId) {
-        if ("history_dataset_id" === requiredObject) {
-            result.history_dataset_id = outputId;
-        }
-        if ("history_dataset_collection_id" === requiredObject) {
-            result.history_dataset_collection_id = outputId;
-        }
+    } else if (inputId && "history_dataset_id" === requiredObject) {
+        result.history_dataset_id = inputId;
+    } else if (inputId && "history_dataset_collection_id" === requiredObject) {
+        result.history_dataset_collection_id = inputId;
+    } else if (outputId && "history_dataset_id" === requiredObject) {
+        result.history_dataset_id = outputId;
+    } else if (outputId && "history_dataset_collection_id" === requiredObject) {
+        result.history_dataset_collection_id = outputId;
     } else if (step) {
         result.job_id = step.job_id;
         result.implicit_collection_jobs_id = step.implicit_collection_jobs_id;
