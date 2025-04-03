@@ -1,12 +1,22 @@
 <template>
-    <div @mouseenter="hover = true" @mouseleave="hover = false">
+    <div
+        tabindex="0"
+        @mouseenter="hover = true"
+        @mouseleave="hover = false"
+        @focusin="hover = true"
+        @focusout="hover = false">
         <div class="d-flex">
-            <div class="d-flex cursor-pointer" :class="{ 'cell-wrapper-hover': hover }" @click="$emit('toggle')">
+            <button
+                class="d-flex cursor-pointer border-0 bg-transparent p-0"
+                :class="{ 'cell-wrapper-hover': hover }"
+                @click="$emit('toggle')"
+                @keydown.enter="$emit('toggle')"
+                @keydown.space.prevent="$emit('toggle')">
                 <div class="align-self-end">
                     <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
                     <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
                 </div>
-            </div>
+            </button>
             <SectionWrapper
                 class="m-2 w-100"
                 :name="name"
