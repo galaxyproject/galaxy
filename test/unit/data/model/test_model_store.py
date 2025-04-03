@@ -18,7 +18,7 @@ from typing import (
 
 import pytest
 from rocrate.rocrate import ROCrate
-from rocrate_validator import services, models
+from rocrate_validator import models, services
 from sqlalchemy import select
 
 from galaxy import model
