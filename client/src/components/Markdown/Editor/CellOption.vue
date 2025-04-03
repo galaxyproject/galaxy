@@ -1,5 +1,10 @@
 <template>
-    <span role="button" tabindex="0" class="cell-option d-flex justify-content-between" @click="$emit('click')">
+    <span
+        role="button"
+        tabindex="0"
+        class="cell-option d-flex justify-content-between"
+        @click="$emit('click')"
+        @keydown.enter="$emit('click')">
         <div class="my-1 mx-3">
             <div class="font-weight-bold">{{ title }}</div>
             <small v-if="description" class="d-inline-block text-wrap text-break">{{ description }}</small>

@@ -13,13 +13,7 @@
         @dragover.prevent
         @drop.prevent="onDrop">
         <label class="form-label font-weight-bold" for="multiselect">{{ title }}:</label>
-        <Multiselect
-            id="multiselect"
-            v-model="currentValue"
-            label="name"
-            :options="options"
-            @search-change="search"
-        />
+        <Multiselect id="multiselect" v-model="currentValue" label="name" :options="options" @search-change="search" />
     </div>
 </template>
 
