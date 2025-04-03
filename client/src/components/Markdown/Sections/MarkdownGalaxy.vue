@@ -4,7 +4,12 @@ import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
-import { getRequiredObject, hasValidLabel, hasValidName } from "@/components/Markdown/Utilities/requirements";
+import {
+    getRequiredObject,
+    hasValidLabel,
+    hasValidName,
+    hasValidObject,
+} from "@/components/Markdown/Utilities/requirements";
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -107,6 +112,9 @@ watch(
     <BAlert v-if="error" v-localize variant="danger" class="m-0" show>
         {{ error }}
     </BAlert>
+    <BAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
+        {{ invocationLoadError }}
+    </BAlert>
     <BAlert v-else-if="!hasValidName(name)" v-localize variant="danger" class="m-0" show>
         <span v-localize>Invalid component type </span>
         <b>{{ name }}</b>
@@ -124,10 +132,13 @@ watch(
         <span v-localize>Data for rendering not yet available for</span>
         <b>{{ name }}</b>
     </BAlert>
-    <BAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
-        {{ invocationLoadError }}
-    </BAlert>
     <LoadingSpan v-else-if="isLoading" />
+    <BAlert v-else-if="!hasValidObject(name, args)" v-localize variant="danger" class="m-0" show>
+        <span v-localize>Missing</span>
+        <b>{{ getRequiredObject(name) }}</b>
+        <span v-localize>for</span>
+        <b>{{ name }}</b>
+    </BAlert>
     <div v-else>
         <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}

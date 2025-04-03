@@ -57,3 +57,8 @@ export function hasValidName(name: string | undefined) {
     }
     return false;
 }
+
+export function hasValidObject(name: string | undefined, args: Record<string, string>): boolean {
+    const requiredObject = getRequiredObject(name);
+    return !requiredObject || !!args[requiredObject];
+}
