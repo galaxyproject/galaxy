@@ -4,7 +4,7 @@ import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
-import { hasValidLabel, hasValidName } from "@/components/Markdown/Utilities/requirements";
+import { hasValidLabel, hasValidName, getRequiredObject } from "@/components/Markdown/Utilities/requirements";
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -115,7 +115,7 @@ watch(
         <span v-localize>Invalid or missing label for</span>
         <b>{{ name }}</b>
     </BAlert>
-    <BAlert v-else-if="hasLabels && !invocationId" v-localize variant="info" class="m-0" show>
+    <BAlert v-else-if="hasLabels && !invocationId && getRequiredObject(name)" v-localize variant="info" class="m-0" show>
         <span v-localize>Data for rendering not yet available for</span>
         <b>{{ name }}</b>
     </BAlert>
