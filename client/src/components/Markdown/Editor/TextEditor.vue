@@ -7,6 +7,7 @@
             id="workflow-report-editor"
             ref="textArea"
             v-model="content"
+            aria-label="markdown text editor"
             class="markdown-textarea w-100 p-4"
             @input="onUpdate" />
     </div>
