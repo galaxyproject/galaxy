@@ -85,6 +85,7 @@ dependencies = [
     "refgenconf>=0.12.0",
     "regex",
     "requests",
+    "roc-validator",
     "rocrate",
     "Routes",
     "s3fs>=2023.1.0",
