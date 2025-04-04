@@ -14,10 +14,23 @@ import jQuery from "jquery";
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
-export type CollectionType = "list" | "paired" | "list:paired" | "rules";
-export type DatasetPair = {
-    forward: HDASummary;
-    reverse: HDASummary;
+export type CollectionType =
+    | "list"
+    | "paired"
+    | "list:paired"
+    | "rules"
+    | "list:paired_or_unpaired"
+    | "list:list"
+    | "list:list:paired"
+    | "sample_sheet";
+
+interface HasName {
+    name: string | null;
+}
+
+export type GenericPair<T extends HasName> = {
+    forward: T;
+    reverse: T;
     name: string;
 };
 
@@ -25,7 +38,10 @@ export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     list: "list",
     "list:paired": "list of pairs",
     paired: "dataset pair",
+    sample_sheet: "sample sheet derived",
 };
+
+export type DatasetPair = GenericPair<HDASummary>;
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildRuleCollectionModal(

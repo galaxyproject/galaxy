@@ -197,6 +197,35 @@ const RULES = {
             return { data, columns };
         },
     },
+    add_column_by_sample_sheet_index: {
+        title: _l("Add Column By By Sample Sheet Index"),
+        display: (rule, colHeaders) => {
+            return `Add column for value of sample sheet index ${rule.value}.`;
+        },
+        init: (component, rule) => {
+            if (!rule) {
+                component.addColumnBySampleSheetIndex = null;
+            } else {
+                component.addColumnBySampleSheetIndex = rule.value;
+            }
+        },
+        save: (component, rule) => {
+            rule.value = component.addColumnBySampleSheetIndex;
+        },
+        apply: (rule, data, sources, columns) => {
+            const ruleValue = rule.value;
+            const newRow = (row, index) => {
+                const newRow = row.slice();
+                const columns = sources[index]["columns"];
+                const value = columns[ruleValue];
+                newRow.push(value);
+                return newRow;
+            };
+            data = data.map(newRow);
+            columns.push(NEW_COLUMN);
+            return { data, columns };
+        },
+    },
     add_column_group_tag_value: {
         title: _l("Add Column from Group Tag Value"),
         display: (rule, colHeaders) => {

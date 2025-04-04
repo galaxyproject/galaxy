@@ -20,9 +20,7 @@ from galaxy.tool_util.parser.interface import (
     xml_data_input_to_json,
     XmlTestCollectionDefDict,
 )
-from galaxy.util import asbool
-from .factory import input_models_for_tool_source
-from .models import (
+from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
     ConditionalWhen,
@@ -35,6 +33,8 @@ from .models import (
     SectionParameterModel,
     ToolParameterT,
 )
+from galaxy.util import asbool
+from .factory import input_models_for_tool_source
 from .state import TestCaseToolState
 from .visitor import (
     flat_state_path,

@@ -11,7 +11,7 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.structured_app import BasicSharedApp
-from galaxy.tool_util.parser.interface import Citation
+from galaxy.tool_util_models.tool_source import Citation
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,

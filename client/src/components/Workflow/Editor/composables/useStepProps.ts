@@ -12,6 +12,7 @@ export function useStepProps(step: Ref<Step>) {
         inputs: stepInputs,
         outputs: stepOutputs,
         post_job_actions: postJobActions,
+        tool_state: toolState,
     } = toRefs(step);
 
     const label = computed(() => step.value.label ?? undefined);
@@ -29,5 +30,6 @@ export function useStepProps(step: Ref<Step>) {
         stepOutputs,
         configForm,
         postJobActions,
+        toolState,
     };
 }

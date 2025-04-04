@@ -14,21 +14,20 @@ from galaxy.tool_util.parser.interface import (
     PagesSource,
     ToolSource,
 )
-from galaxy.tool_util.parser.parameter_validators import (
+from galaxy.tool_util.parser.parameter_validators import static_validators
+from galaxy.tool_util.parser.util import (
+    parse_profile_version,
+    text_input_is_optional,
+)
+from galaxy.tool_util_models.parameter_validators import (
     EmptyFieldParameterValidatorModel,
     ExpressionParameterValidatorModel,
     InRangeParameterValidatorModel,
     LengthParameterValidatorModel,
     NoOptionsParameterValidatorModel,
     RegexParameterValidatorModel,
-    static_validators,
 )
-from galaxy.tool_util.parser.util import (
-    parse_profile_version,
-    text_input_is_optional,
-)
-from galaxy.util import string_as_bool
-from .models import (
+from galaxy.tool_util_models.parameters import (
     BaseUrlParameterModel,
     BooleanParameterModel,
     ColorParameterModel,
@@ -66,6 +65,7 @@ from .models import (
     ToolParameterBundleModel,
     ToolParameterT,
 )
+from galaxy.util import string_as_bool
 
 
 class ParameterDefinitionError(Exception):

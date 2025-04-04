@@ -317,10 +317,20 @@ export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
  */
 export type MessageException = components["schemas"]["MessageExceptionModel"];
 
+export type FieldDict = components["schemas"]["FieldDict"];
+export type FieldType = FieldDict["type"];
+
 export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
 export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
+export type SampleSheetColumnDefinition = components["schemas"]["SampleSheetColumnDefinitionModel"];
+export type SampleSheetColumnDefinitionType = SampleSheetColumnDefinition["type"];
+export type SampleSheetColumnDefinitions = SampleSheetColumnDefinition[] | null;
+
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
+
+export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
+export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
