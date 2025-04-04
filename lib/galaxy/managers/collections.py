@@ -3,6 +3,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     overload,
     Union,
 )
@@ -39,7 +40,10 @@ from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.mapping import GalaxyModelMapping
-from galaxy.schema.schema import DatasetCollectionInstanceType
+from galaxy.schema.schema import (
+    DatasetCollectionInstanceType,
+    HistoryContentSource,
+)
 from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import (
@@ -451,24 +455,24 @@ class DatasetCollectionManager:
     def copy(
         self,
         trans: ProvidesHistoryContext,
-        parent,
-        source,
+        parent: model.History,
+        source: Literal[HistoryContentSource.hdca],
         encoded_source_id,
-        copy_elements=False,
-        dataset_instance_attributes=None,
+        copy_elements: bool = False,
+        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
     ):
         """
         PRECONDITION: security checks on ability to add to parent occurred
         during load.
         """
-        assert source == "hdca"  # for now
+        assert source == HistoryContentSource.hdca  # for now
         source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
-        copy_kwds = {}
-        if copy_elements:
-            copy_kwds["element_destination"] = parent  # e.g. a history
-        if dataset_instance_attributes is not None:
-            copy_kwds["dataset_instance_attributes"] = dataset_instance_attributes
-        new_hdca = source_hdca.copy(flush=False, **copy_kwds)
+        element_destination = parent if copy_elements else None
+        new_hdca = source_hdca.copy(
+            flush=False,
+            element_destination=element_destination,
+            dataset_instance_attributes=dataset_instance_attributes,
+        )
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
             parent.add_dataset_collection(new_hdca)
