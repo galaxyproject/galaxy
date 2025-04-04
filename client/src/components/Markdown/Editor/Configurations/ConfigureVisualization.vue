@@ -71,7 +71,7 @@ function onChange(option: OptionType) {
             contentObject.value.dataset_label = undefined;
             contentObject.value.dataset_url = undefined;
         }
-        contentObject.value.name = option.name;
+        contentObject.value.dataset_name = option.name;
         hasChanged.value = true;
     }
 }
