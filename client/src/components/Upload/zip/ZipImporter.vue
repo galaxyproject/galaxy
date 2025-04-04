@@ -108,9 +108,9 @@ watch(canOpenUrl, (newValue, oldValue) => {
             <ZipDropZone v-if="showHelper" @dropError="onDropError" @dropSuccess="exploreLocalZip" />
             <div v-else>
                 <LoadingSpan v-if="loadingPreview" message="Checking ZIP contents..." />
-                <RoCrateZipView v-else-if="isRoCrateZip(zipExplorer)" :crate="zipExplorer.crate" />
-                <GalaxyZipView v-else-if="isGalaxyZipExport(zipExplorer)" />
-                <RegularZipView v-else />
+                <RoCrateZipView v-else-if="isRoCrateZip(zipExplorer)" :explorer="zipExplorer" />
+                <GalaxyZipView v-else-if="isGalaxyZipExport(zipExplorer)" :explorer="zipExplorer" />
+                <RegularZipView v-else-if="zipExplorer" :explorer="zipExplorer" />
             </div>
         </div>
 

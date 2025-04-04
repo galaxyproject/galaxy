@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import type { ROCrateImmutableView } from "ro-crate-zip-explorer";
 import { onMounted, ref } from "vue";
+
+import type { ROCrateZipExplorer } from "@/composables/zipExplorer";
 
 import { extractROCrateSummary, type ROCrateSummary } from "./rocrate.utils";
 
+import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-interface Props {
-    crate: ROCrateImmutableView;
-}
-
-const props = defineProps<Props>();
+const props = defineProps<{
+    explorer: ROCrateZipExplorer;
+}>();
 
 const crateSummary = ref<ROCrateSummary>();
 
 onMounted(async () => {
-    crateSummary.value = await extractROCrateSummary(props.crate);
+    crateSummary.value = await extractROCrateSummary(props.explorer.crate);
 });
 </script>
 
 <template>
     <div v-if="crateSummary" class="rocrate-explorer">
-        <h2>RO-Crate Summary</h2>
+        <Heading size="lg">RO-Crate Summary</Heading>
 
         <div>
             <strong>Publication Date:</strong>
