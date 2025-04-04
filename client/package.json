@@ -94,7 +94,7 @@
     "querystring-es3": "^0.2.1",
     "regenerator-runtime": "^0.14.0",
     "requirejs": "2.3.7",
-    "ro-crate-zip-explorer": "^0.3.0",
+    "ro-crate-zip-explorer": "^0.3.1",
     "rxjs": "^7.8.1",
     "rxjs-spy": "^8.0.2",
     "rxjs-spy-devtools-plugin": "^0.0.4",
