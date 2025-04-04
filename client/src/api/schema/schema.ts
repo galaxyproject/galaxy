@@ -11929,16 +11929,16 @@ export interface components {
              */
             history_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "history_deleted";
         };
         /** InvocationCancellationReviewFailedResponse */
         InvocationCancellationReviewFailedResponse: {
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "cancelled_on_review";
             /**
@@ -11950,8 +11950,8 @@ export interface components {
         /** InvocationCancellationUserRequestResponse */
         InvocationCancellationUserRequestResponse: {
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "user_request";
         };
@@ -11963,8 +11963,8 @@ export interface components {
              */
             output_name: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "workflow_output_not_found";
             /** Workflow step id of step that caused a warning. */
@@ -11984,8 +11984,8 @@ export interface components {
              */
             hdca_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "collection_failed";
             /**
@@ -12008,8 +12008,8 @@ export interface components {
              */
             hda_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "dataset_failed";
             /**
@@ -12026,8 +12026,8 @@ export interface components {
              */
             details?: string | null;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "expression_evaluation_failed";
             /**
@@ -12050,8 +12050,8 @@ export interface components {
              */
             job_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "job_failed";
             /**
@@ -12070,8 +12070,8 @@ export interface components {
             /** Tool or module output name that was referenced but not produced */
             output_name: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "output_not_found";
             /**
@@ -12088,8 +12088,8 @@ export interface components {
              */
             details: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "when_not_boolean";
             /**
@@ -12106,8 +12106,8 @@ export interface components {
              */
             details: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "workflow_parameter_invalid";
             /** Workflow parameter step that failed validation */
@@ -12573,8 +12573,8 @@ export interface components {
              */
             details?: string | null;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             reason: "unexpected_failure";
             /**
