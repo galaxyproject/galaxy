@@ -1021,11 +1021,11 @@ class Tool(UsesDictVisibleKeys):
         self.input_params: List[ToolParameter] = []
         # Attributes of tools installed from Galaxy tool sheds.
         self.tool_shed: Optional[str] = None
-        self.repository_name = None
-        self.repository_owner = None
-        self.changeset_revision = None
-        self.installed_changeset_revision = None
-        self.sharable_url = None
+        self.repository_name: Optional[str] = None
+        self.repository_owner: Optional[str] = None
+        self.changeset_revision: Optional[str] = None
+        self.installed_changeset_revision: Optional[str] = None
+        self.sharable_url: Optional[str] = None
         self.npages = 0
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
@@ -1891,6 +1891,8 @@ class Tool(UsesDictVisibleKeys):
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision
             self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            assert self.repository_owner
+            assert self.repository_name
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
