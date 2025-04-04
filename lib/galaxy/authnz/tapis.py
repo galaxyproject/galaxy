@@ -31,6 +31,7 @@ class TapisOAuth2(BaseOAuth2):
         return {
             "username": response.get("username"),
             "email": response.get("email"),
+            # There is no fullname, we have first/last in Tapis, so we can construct it from the first and last names if available
             "fullname": response.get("full_name"),
         }
 
