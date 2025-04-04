@@ -1935,12 +1935,12 @@ class Tool(UsesDictVisibleKeys):
     ) -> Dict[int, Optional[model.Job]]:
         completed_jobs: Dict[int, Optional[model.Job]] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job:
+            if use_cached_job and trans.user:
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
                 completed_jobs[i] = self.job_search.by_tool_input(
-                    trans=trans,
+                    user=trans.user,
                     tool_id=tool_id,
                     tool_version=self.version,
                     param=param,
@@ -1976,7 +1976,9 @@ class Tool(UsesDictVisibleKeys):
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
-        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
+        if use_cached_job:
+            mapping_params.param_template["__use_cached_job__"] = use_cached_job
+        completed_jobs: Dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,
             self,

@@ -48,7 +48,6 @@ from galaxy.job_metrics import (
 )
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import (
-    ProvidesHistoryContext,
     ProvidesUserContext,
 )
 from galaxy.managers.datasets import DatasetManager
@@ -377,15 +376,15 @@ class JobSearch:
 
     def by_tool_input(
         self,
-        trans: ProvidesHistoryContext,
+        user: User,
         tool_id: str,
         tool_version: Optional[str],
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
         job_state: Optional[JobStatesT] = (Job.states.OK, Job.states.SKIPPED),
+        require_name_match: bool = True,
     ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
-        user = trans.user
         input_data = defaultdict(list)
 
         def populate_input_data_input_id(path, key, value):
@@ -427,6 +426,7 @@ class JobSearch:
             job_state=job_state,
             param_dump=param_dump,
             wildcard_param_dump=wildcard_param_dump,
+            require_name_match=require_name_match,
         )
 
     def __search(
@@ -438,6 +438,7 @@ class JobSearch:
         job_state: Optional[JobStatesT],
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
+        require_name_match: bool = True,
     ):
         search_timer = ExecutionTimer()
 
@@ -478,7 +479,9 @@ class JobSearch:
                 data_types.append(t)
                 identifier = type_values["identifier"]
                 if t == "hda":
-                    stmt = self._build_stmt_for_hda(stmt, data_conditions, used_ids, k, v, identifier)
+                    stmt = self._build_stmt_for_hda(
+                        stmt, data_conditions, used_ids, k, v, identifier, require_name_match=require_name_match
+                    )
                 elif t == "ldda":
                     stmt = self._build_stmt_for_ldda(stmt, data_conditions, used_ids, k, v)
                 elif t == "hdca":
@@ -628,7 +631,7 @@ class JobSearch:
 
         return stmt
 
-    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier, require_name_match=True):
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
         c = aliased(model.HistoryDatasetAssociation)
@@ -651,7 +654,7 @@ class JobSearch:
                     d.value == json.dumps(identifier),
                 )
             )
-        else:
+        elif require_name_match:
             hda_stmt = hda_stmt.where(e.name == c.name)
             name_condition.append(b.name == c.name)
         hda_stmt = (
@@ -696,7 +699,8 @@ class JobSearch:
         used_ids.append(a.ldda_id)
         return stmt
 
-    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v):
+    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, require_name_match=True):
+        # TODO: clean up join condition, maybe replace by the added data_conditions below ?
         a = aliased(model.JobToInputDatasetCollectionAssociation)
         b = aliased(model.HistoryDatasetCollectionAssociation)
         c = aliased(model.HistoryDatasetCollectionAssociation)

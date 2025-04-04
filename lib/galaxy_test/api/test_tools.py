@@ -1043,6 +1043,40 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert cached_job["copied_from_job_id"] == original_output["jobs"][0]["id"]
 
     @skip_without_tool("cat1")
+    @requires_new_history
+    def test_run_cat1_use_cached_job_renamed_input(self):
+        with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job_renamed_input) as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            inputs = self._get_cat1_inputs(history_id)
+            outputs_one = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            # Rename inputs. Job should still be cached since cat1 doesn't look at name attribute
+            self.dataset_populator.rename_dataset(inputs["input1"]["id"])
+            outputs_two = self._run_cat1(
+                history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("identifier_single")
+    @requires_new_history
+    def test_run_identifier_single_use_cached_job_renamed_input(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_identifier_single_use_cached_job_renamed_input
+        ) as history_id:
+            # Run tool that acccesses input.name (via input.element_identifier).
+            inputs = self._get_cat1_inputs(history_id)
+            self._run("identifier_single", history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            # Rename inputs. Job should not be cached since tool looks at name attribute
+            self.dataset_populator.rename_dataset(inputs["input1"]["id"])
+            outputs_two = self._run(
+                "identifier_single", history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] is None
+
+    @skip_without_tool("cat1")
     def test_run_cat1_listified_param(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_listified_param) as history_id:
             # Run simple non-upload tool with an input data parameter.
