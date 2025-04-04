@@ -28,6 +28,7 @@ import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.v
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
+import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -263,6 +264,10 @@ async function onCancel() {
                     <FontAwesomeIcon :icon="faSquare" fixed-width />
                     Cancel
                 </BButton>
+                <WorkflowInvocationShare
+                    :invocation-id="invocation.id"
+                    :workflow-id="invocation.workflow_id"
+                    :history-id="invocation.history_id" />
             </template>
         </WorkflowNavigationTitle>
         <WorkflowAnnotation
