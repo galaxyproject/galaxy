@@ -13,6 +13,7 @@ from queue import (
 from typing import (
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
     Union,
@@ -73,6 +74,9 @@ DEFAULT_JOB_RUNNER_FAILURE_MESSAGE = "Unable to run job due to a misconfiguratio
 
 
 class JobHandlerI:
+
+    dispatcher: Optional["DefaultJobDispatcher"]
+
     def start(self):
         pass
 
