@@ -106,6 +106,7 @@ function onChange(file: FileEntryType, option: OptionType) {
 
 function onHeight(newHeight: number) {
     contentObject.value.__gx_height = newHeight;
+    hasChanged.value = true;
 }
 
 function onOk() {

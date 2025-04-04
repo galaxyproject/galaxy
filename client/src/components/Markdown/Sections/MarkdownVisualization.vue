@@ -10,6 +10,8 @@ import { useInvocationStore } from "@/stores/invocationStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
+const DEFAULT_HEIGHT = 400;
+
 const props = defineProps<{
     content: string;
     name?: string;
@@ -18,8 +20,10 @@ const props = defineProps<{
 const emit = defineEmits(["change"]);
 
 const datasetLabel: Ref<DatasetLabel | undefined> = ref();
+const datasetName: Ref<string | undefined> = ref();
 const errorMessage = ref("");
 const visualizationConfig = ref();
+const visualizationHeight = ref(DEFAULT_HEIGHT);
 const visualizationKey = ref(0);
 const visualizationName = ref();
 const visualizationTitle = ref("");
@@ -38,6 +42,8 @@ function onChange(incomingData: Record<string, any>) {
         visualization_name: visualizationName.value,
         visualization_title: incomingData.visualization_title,
         dataset_label: datasetLabel.value,
+        dataset_name: datasetName.value,
+        height: visualizationHeight.value,
         ...incomingData.visualization_config,
     };
     currentContent.value = stringify(newContent);
@@ -49,12 +55,14 @@ function processContent() {
         errorMessage.value = "";
         const parsedContent = { ...JSON.parse(props.content) };
         datasetLabel.value = parsedContent.dataset_label;
+        datasetName.value = parsedContent.dataset_name;
         visualizationConfig.value = {
             dataset_id: parsedContent.dataset_id,
             dataset_url: parsedContent.dataset_url,
             settings: parsedContent.settings,
             tracks: parsedContent.tracks,
         };
+        visualizationHeight.value = parsedContent.height || DEFAULT_HEIGHT;
         visualizationTitle.value = parsedContent.visualization_title || "";
         visualizationName.value = props.name || parsedContent.visualization_name;
         if (!visualizationName.value) {
@@ -105,6 +113,7 @@ watch(
             :key="visualizationKey"
             class="markdown-visualization"
             :config="visualizationConfig"
+            :height="visualizationHeight"
             :name="visualizationName"
             :title="visualizationTitle"
             @change="onChange" />
