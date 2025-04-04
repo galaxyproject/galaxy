@@ -6,15 +6,17 @@ import {
     isRemoteZip,
     type IZipExplorer,
     ROCrateZipExplorer,
+    type ZipEntryMetadata,
     ZipExplorer,
     type ZipFileEntry,
 } from "ro-crate-zip-explorer";
-import type { FileMetadata } from "ro-crate-zip-explorer/dist/interfaces";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { useIndexedDBFileStorage } from "@/composables/localFileStore";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+
+export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
 const zipExplorer = ref<IZipExplorer>();
 const zipExplorerError = ref<string>();
@@ -47,43 +49,7 @@ export function useZipExplorer() {
         }
     }
 
-    function getImportableZipContents(): ImportableZipContents | undefined {
-        if (!zipExplorer.value) {
-            return undefined;
-        }
-
-        const workflows: ZipContentFile[] = [];
-        const files: ZipContentFile[] = [];
-        for (const entry of zipExplorer.value.entries.values()) {
-            if (!isFileEntry(entry)) {
-                continue;
-            }
-
-            if (shouldSkipZipEntry(entry)) {
-                continue;
-            }
-
-            const baseFile = {
-                name: getEntryName(entry),
-                path: entry.path,
-            };
-
-            if (isGalaxyWorkflow(entry)) {
-                workflows.push({
-                    ...baseFile,
-                    type: "workflow",
-                });
-            } else {
-                files.push({
-                    ...baseFile,
-                    type: "file",
-                });
-            }
-        }
-        return { workflows, files };
-    }
-
-    async function importArtifacts(filesToImport: ZipContentFile[], historyId: string | null) {
+    async function importArtifacts(filesToImport: ImportableFile[], historyId: string | null) {
         if (!zipExplorer.value) {
             throw new Error("No ZIP archive loaded. You must call openZip() first.");
         }
@@ -98,7 +64,7 @@ export function useZipExplorer() {
 
     async function handleRemoteZip(
         zipUrl: string,
-        filesToImport: ZipContentFile[],
+        filesToImport: ImportableFile[],
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
@@ -159,7 +125,7 @@ export function useZipExplorer() {
     }
 
     async function handleLocalZip(
-        filesToImport: ZipContentFile[],
+        filesToImport: ImportableFile[],
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
@@ -196,7 +162,7 @@ export function useZipExplorer() {
         return `zip://extract?source=${zipUrl}&header_offset=${entry.headerOffset}&compress_size=${entry.compressSize}&compression_method=${entry.compressionMethod}`;
     }
 
-    function isWorkflowFile(item: ZipContentFile): boolean {
+    function isWorkflowFile(item: ImportableFile): boolean {
         return item.type === "workflow";
     }
 
@@ -204,19 +170,6 @@ export function useZipExplorer() {
         zipExplorer.value = undefined;
         zipExplorerError.value = undefined;
         clearDatabaseStore();
-    }
-
-    function getEntryName(entry: ZipFileEntry) {
-        const metadata = zipExplorer.value?.getFileEntryMetadata(entry);
-        return metadata?.name ?? "unnamed";
-    }
-
-    function shouldSkipZipEntry(entry: ZipFileEntry) {
-        return GALAXY_EXPORT_METADATA_FILES.some((ignoredFile) => entry.path.includes(ignoredFile));
-    }
-
-    function isGalaxyWorkflow(entry: AnyZipEntry) {
-        return entry.path.endsWith(".gxwf.yml");
     }
 
     function isValidUrl(inputUrl?: string) {
@@ -304,9 +257,36 @@ export function useZipExplorer() {
         openZip,
         reset,
         isValidUrl,
-        getImportableZipContents,
         importArtifacts,
     };
+}
+
+export function getImportableFiles(explorer: IZipExplorer): ImportableFile[] {
+    const files: ImportableFile[] = [];
+    for (const entry of explorer.entries.values()) {
+        if (!isFileEntry(entry)) {
+            continue;
+        }
+
+        if (shouldSkipZipEntry(entry)) {
+            continue;
+        }
+
+        const baseFile = explorer.getFileEntryMetadata(entry);
+        files.push({
+            ...baseFile,
+            type: isGalaxyWorkflow(entry) ? "workflow" : "file",
+        });
+    }
+    return files;
+}
+
+function shouldSkipZipEntry(entry: ZipFileEntry) {
+    return GALAXY_EXPORT_METADATA_FILES.some((ignoredFile) => entry.path.includes(ignoredFile));
+}
+
+function isGalaxyWorkflow(entry: AnyZipEntry) {
+    return entry.path.endsWith(".gxwf.yml");
 }
 
 export function isZipFile(file?: File | null): string {
@@ -348,15 +328,13 @@ export const GALAXY_EXPORT_METADATA_FILES = [
     "library_folders_attrs.txt",
 ];
 
-export interface ZipContentFile {
-    name: string;
-    path: string;
+export interface ImportableFile extends ZipEntryMetadata {
     type: "workflow" | "file";
 }
 
 export interface ImportableZipContents {
-    workflows: ZipContentFile[];
-    files: ZipContentFile[];
+    workflows: ImportableFile[];
+    files: ImportableFile[];
 }
 
 interface DatasetAttrs {
@@ -368,15 +346,15 @@ interface DatasetAttrs {
     blurb?: string;
 }
 
-class GalaxyZipExplorer extends AbstractZipExplorer {
-    private datasetAttrs?: Map<string, Partial<FileMetadata>>;
+export class GalaxyZipExplorer extends AbstractZipExplorer {
+    private datasetAttrs?: Map<string, Partial<ZipEntryMetadata>>;
 
     protected async loadMetadata(): Promise<void> {
         if (!this.datasetAttrs) {
             const datasetAttrsFile = this.explorer.zipArchive.findFileByName(GALAXY_DATASET_ATTRS_FILE);
             if (datasetAttrsFile) {
                 const json = await this.fetchFileAsJSON(datasetAttrsFile);
-                this.datasetAttrs = new Map<string, Partial<FileMetadata>>();
+                this.datasetAttrs = new Map<string, Partial<ZipEntryMetadata>>();
                 for (const value of Object.values(json)) {
                     if (this.hasDatasetAttrs(value)) {
                         this.datasetAttrs.set(value["file_name"], {
@@ -389,7 +367,7 @@ class GalaxyZipExplorer extends AbstractZipExplorer {
         }
     }
 
-    protected extractPartialFileMetadata(entry: ZipFileEntry): Partial<FileMetadata> {
+    protected extractPartialZipEntryMetadata(entry: ZipFileEntry): Partial<ZipEntryMetadata> {
         const metadata = this.datasetAttrs?.get(entry.path);
         return {
             name: metadata?.["name"] as string,

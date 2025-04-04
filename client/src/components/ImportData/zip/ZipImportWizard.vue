@@ -5,14 +5,19 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
-import { type ImportableZipContents, useZipExplorer, type ZipContentFile } from "@/composables/zipExplorer";
+import {
+    getImportableFiles,
+    type ImportableFile,
+    type ImportableZipContents,
+    useZipExplorer,
+} from "@/composables/zipExplorer";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
-const { getImportableZipContents, importArtifacts, isZipArchiveAvailable, zipExplorer } = useZipExplorer();
+const { importArtifacts, isZipArchiveAvailable, zipExplorer } = useZipExplorer();
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -21,7 +26,7 @@ const errorMessage = ref<string>();
 
 const importableZipContents = ref<ImportableZipContents>();
 
-const filesToImport = ref<ZipContentFile[]>([]);
+const filesToImport = ref<ImportableFile[]>([]);
 
 const wizard = useWizard({
     "select-items": {
@@ -62,19 +67,23 @@ function isAnythingSelected() {
     return filesToImport.value.length > 0;
 }
 
-function onSelectionUpdate(selectedItems: ZipContentFile[]) {
+function onSelectionUpdate(selectedItems: ImportableFile[]) {
     filesToImport.value = selectedItems;
 }
 
-function fileToIcon(file: ZipContentFile) {
+function fileToIcon(file: ImportableFile) {
     return file.type === "workflow" ? faNetworkWired : faFile;
 }
 
 watch(
     [isZipArchiveAvailable, zipExplorer],
     (isAvailable) => {
-        if (isAvailable) {
-            importableZipContents.value = getImportableZipContents();
+        if (isAvailable && zipExplorer.value) {
+            const contents = getImportableFiles(zipExplorer.value);
+            importableZipContents.value = {
+                workflows: contents.filter((file) => file.type === "workflow"),
+                files: contents.filter((file) => file.type === "file"),
+            };
         } else {
             importableZipContents.value = undefined;
         }

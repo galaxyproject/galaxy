@@ -3,26 +3,26 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
-import type { ImportableZipContents, ZipContentFile } from "@/composables/zipExplorer";
+import type { ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
 
 interface Props {
     zipContents: ImportableZipContents;
-    selectedItems: ZipContentFile[];
+    selectedItems: ImportableFile[];
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "update:selectedItems", value: ZipContentFile[]): void;
+    (e: "update:selectedItems", value: ImportableFile[]): void;
 }>();
 
 const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 
-const localSelectedItems = ref<ZipContentFile[]>(props.selectedItems);
+const localSelectedItems = ref<ImportableFile[]>(props.selectedItems);
 
-function toggleSelection(item: ZipContentFile) {
+function toggleSelection(item: ImportableFile) {
     const index = localSelectedItems.value.findIndex((selected) => selected.path === item.path);
     if (index === -1) {
         localSelectedItems.value.push(item);
