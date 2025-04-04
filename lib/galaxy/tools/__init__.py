@@ -1011,7 +1011,7 @@ class Tool(UsesDictVisibleKeys):
         self.require_login = False
         self.rerun = False
         # This will be non-None for tools loaded from the database (DynamicTool objects).
-        self.dynamic_tool = None
+        self.dynamic_tool: Optional[model.DynamicTool] = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
