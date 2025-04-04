@@ -18,9 +18,9 @@
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
-                                        <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
+                                        <GButton tooltip title="Rerun" :href="runUrl">
                                             <span class="fa fa-redo" />
-                                        </b-button>
+                                        </GButton>
                                     </b-col>
                                     <b-col>
                                         <b>{{ dataManager["name"] }}</b> <i>{{ dataManager["description"] }}</i>
@@ -35,13 +35,13 @@
                                         <b-container>
                                             <b-row align-v="center">
                                                 <b-col cols="auto">
-                                                    <b-button
-                                                        v-b-tooltip.hover
+                                                    <GButton
+                                                        tooltip
                                                         title="View complete info"
                                                         :href="hdaInfo[i]['infoUrl']"
                                                         target="galaxy_main">
                                                         <span class="fa fa-info-circle" />
-                                                    </b-button>
+                                                    </GButton>
                                                 </b-col>
                                                 <b-col>
                                                     <b>{{ hda["name"] }}</b>
@@ -76,11 +76,13 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Alert from "components/Alert.vue";
 
 export default {
     components: {
         Alert,
+        GButton,
     },
     props: {
         id: {
