@@ -17,7 +17,7 @@
         </div>
         <BAlert v-else variant="warning" show>No datasets found.</BAlert>
         <FormElementLabel title="Height" help="Specify the height of the view in pixel.">
-            <FormNumber id="vitessce-height" v-model="height" :min="100" :max="1000" type="integer" @input="onHeight"/>
+            <FormNumber id="vitessce-height" v-model="height" :min="100" :max="1000" type="integer" @input="onHeight" />
         </FormElementLabel>
     </div>
 </template>
@@ -32,8 +32,8 @@ import { stringify } from "@/components/Markdown/Utilities/stringify";
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
-import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
+import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 
 interface DatasetEntryType {
     files?: Array<FileEntryType>;
