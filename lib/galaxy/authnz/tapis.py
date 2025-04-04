@@ -28,9 +28,12 @@ class TapisOAuth2(BaseOAuth2):
         Extract user details from the Tapis API response.
         TODO: verify and adjust the field names as provided by Tapis.
         """
+        # For TACC Tapis, we use username@tacc.utexas.edu as the email, but this may vary by deployment
+        # TODO: Allow config override of canonical identifier for username/email
+        TAPIS_DOMAIN_OVERRIDE = "tacc.utexas.edu"
         return {
             "username": response.get("username"),
-            "email": response.get("email"),
+            "email": f"{response.get('username')}@{TAPIS_DOMAIN_OVERRIDE}",
             # There is no fullname, we have first/last in Tapis, so we can construct it from the first and last names if available
             "fullname": response.get("full_name"),
         }
