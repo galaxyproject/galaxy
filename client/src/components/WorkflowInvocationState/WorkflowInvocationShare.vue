@@ -23,7 +23,7 @@ const props = defineProps<{
 const modalToggle = ref(false);
 
 // Workflow and History refs
-const { workflow, loading: workflowLoading, error: workflowError } = useWorkflowInstance(props.workflowId);
+const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 const historyStore = useHistoryStore();
 
 /** The link to the invocation. */
@@ -58,7 +58,7 @@ async function makeInvocationShareable() {
 </script>
 
 <template>
-    <div>
+    <div v-if="owned">
         <BButton
             v-b-tooltip.noninteractive.hover
             title="Share Invocation"
@@ -76,11 +76,11 @@ async function makeInvocationShareable() {
             title-tag="h2"
             ok-title="Make Workflow and History Shareable, and Copy Link"
             @ok="makeInvocationShareable">
-            <BAlert v-if="workflowError" variant="danger" show>
-                {{ workflowError }}
+            <BAlert v-if="error" variant="danger" show>
+                {{ error }}
             </BAlert>
 
-            <LoadingSpan v-else-if="workflowLoading" message="Loading details for invocation" />
+            <LoadingSpan v-else-if="loading" message="Loading details for invocation" />
 
             <div v-else-if="!!workflow">
                 <p v-localize>
