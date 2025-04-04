@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
 import { useAccessibleHover } from "@/composables/accessibleHover";
+import { useResolveElement } from "@/composables/resolveElement";
 import { useUid } from "@/composables/utils/uid";
 
 import { type ComponentColor, type ComponentSize, type ComponentVariantClassList, prefix } from "./componentVariants";
@@ -86,6 +87,7 @@ const currentTitle = computed(() => {
 });
 
 const tooltipId = useUid("g-tooltip");
+
 const describedBy = computed(() => {
     if (props.tooltip) {
         return tooltipId.value;
@@ -94,11 +96,13 @@ const describedBy = computed(() => {
     }
 });
 
-const buttonRef = ref<HTMLElement | null>(null);
+const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
 const tooltipRef = ref<InstanceType<typeof GTooltip>>();
 
+const buttonElementRef = useResolveElement(buttonRef);
+
 useAccessibleHover(
-    buttonRef,
+    buttonElementRef,
     () => {
         tooltipRef.value?.show();
     },
@@ -127,7 +131,7 @@ useAccessibleHover(
             v-if="props.tooltip"
             :id="tooltipId"
             ref="tooltipRef"
-            :reference="buttonRef"
+            :reference="buttonElementRef"
             :text="currentTooltip"
             :placement="props.tooltipPlacement" />
     </component>
