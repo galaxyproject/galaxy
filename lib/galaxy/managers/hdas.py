@@ -195,7 +195,7 @@ class HDAManager(
         copy = hda.copy(
             parent_id=kwargs.get("parent_id"),
             copy_hid=False,
-            copy_tags=hda.tags,  # type:ignore[attr-defined]
+            copy_tags=hda.tags,
             flush=False,
         )
         if hide_copy:
