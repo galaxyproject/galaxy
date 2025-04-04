@@ -10,6 +10,7 @@ import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "../LoadingSpan.vue";
 
@@ -43,7 +44,10 @@ async function makeInvocationShareable() {
     });
 
     if (workflowShareError || historyShareError) {
-        Toast.error(`${workflowShareError || historyShareError}`, "Failed to make workflow and history shareable.");
+        Toast.error(
+            `${errorMessageAsString(workflowShareError) || errorMessageAsString(historyShareError)}`,
+            "Failed to make workflow and history shareable."
+        );
         return;
     } else {
         Toast.success("Workflow and history are now shareable.");
