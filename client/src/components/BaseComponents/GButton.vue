@@ -203,6 +203,12 @@ useAccessibleHover(
         &:focus-visible {
             border-color: var(--color-grey-600);
         }
+
+        &.g-outline.g-pressed {
+            background-color: var(--color-grey-600);
+            color: var(--color-grey-100);
+            border-color: var(--color-grey-800);
+        }
     }
 
     @each $color in "blue", "green", "red", "yellow", "orange" {
