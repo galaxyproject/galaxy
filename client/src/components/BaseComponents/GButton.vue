@@ -115,10 +115,9 @@ useAccessibleHover(
         class="g-button"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="props.to"
-        :href="props.href"
+        :href="props.to ?? props.href"
         :title="currentTitle"
         :aria-describedby="describedBy"
-        tabindex="0"
         v-bind="$attrs"
         @click="onClick">
         <slot></slot>
