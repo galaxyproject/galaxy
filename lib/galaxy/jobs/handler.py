@@ -2,6 +2,7 @@
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 
+import abc
 import datetime
 import os
 import time
@@ -34,6 +35,7 @@ from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import (
     JobDestination,
+    JobQueueI,
     JobWrapper,
     TaskWrapper,
 )
@@ -74,14 +76,15 @@ DEFAULT_JOB_RUNNER_FAILURE_MESSAGE = "Unable to run job due to a misconfiguratio
 
 
 class JobHandlerI:
-
     dispatcher: Optional["DefaultJobDispatcher"]
+    job_queue: JobQueueI
+    job_stop_queue: JobQueueI
 
-    def start(self):
-        pass
+    @abc.abstractmethod
+    def start(self): ...
 
-    def shutdown(self):
-        pass
+    @abc.abstractmethod
+    def shutdown(self): ...
 
 
 class JobHandler(JobHandlerI):
@@ -231,7 +234,7 @@ class StopSignalException(Exception):
     """Exception raised when queue returns a stop signal."""
 
 
-class BaseJobHandlerQueue(Monitors):
+class BaseJobHandlerQueue(JobQueueI, Monitors):
     STOP_SIGNAL = object()
 
     def __init__(self, app: MinimalManagerApp, dispatcher: "DefaultJobDispatcher"):

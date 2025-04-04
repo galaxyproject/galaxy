@@ -2,6 +2,7 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
+import abc
 import copy
 import datetime
 import errno
@@ -3003,15 +3004,20 @@ class TaskWrapper(JobWrapper):
         return working_directory
 
 
-class NoopQueue:
+class JobQueueI:
+    @abc.abstractmethod
+    def put(self, *args, **kwargs): ...
+
+    @abc.abstractmethod
+    def shutdown(self): ...
+
+
+class NoopQueue(JobQueueI):
     """
-    Implements the JobQueue / JobStopQueue interface but does nothing
+    Implements the JobQueueI interface but does nothing
     """
 
     def put(self, *args, **kwargs):
-        return
-
-    def put_stop(self, *args):
         return
 
     def shutdown(self):
