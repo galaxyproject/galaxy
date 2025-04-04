@@ -112,7 +112,7 @@ from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
-    from galaxy.jobs.handler import JobHandlerQueue
+    from galaxy.jobs.handler import BaseJobHandlerQueue
     from galaxy.model import DatasetInstance
     from galaxy.tools import Tool
 
@@ -2744,7 +2744,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
 
 class JobWrapper(MinimalJobWrapper):
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False):
+    def __init__(self, job, queue: "BaseJobHandlerQueue", use_persisted_destination=False):
         app = queue.app
         super().__init__(
             job,
