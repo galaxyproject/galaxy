@@ -255,6 +255,41 @@ class TestDatasetCollectionsApi(ApiTestCase):
         create_response = self._post("dataset_collections", payload, json=True)
         assert_status_code_is(create_response, 400)
 
+    def test_sample_sheet_of_pairs_creation(self, history_id):
+        contents = [
+            "1\t2\t3",
+            "4\t5\t6",
+        ]
+        pair_identifiers = self.dataset_collection_populator.pair_identifiers(history_id, contents)
+        identifiers = [{
+            "name": "sample1",
+            "collection_type": "paired",
+            "src": "new_collection",
+            "element_identifiers": pair_identifiers,
+        }]
+        payload = dict(
+            name="my cool sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=identifiers,
+            collection_type="sample_sheet:paired",
+            column_definitions=[{"type": "int", "name": "replicate", "default_value": 0}],
+            rows={"sample1": [42]},
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        print(create_response.json())
+        self._check_create_response(create_response)
+        dataset_collection = create_response.json()
+        assert dataset_collection["collection_type"] == "sample_sheet:paired"
+        assert dataset_collection["name"] == "my cool sample sheet"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 1, dataset_collection
+        sheet_row_0_element = returned_collections[0]
+        self._assert_has_keys(sheet_row_0_element, "element_index", "columns")
+        columns = sheet_row_0_element["columns"]
+        assert len(columns) == 1
+        assert columns[0] == 42
+
     def test_sample_sheet_validating_against_column_definition(self, history_id):
         contents = [
             ("sample1", "1\t2\t3"),
@@ -267,15 +302,17 @@ class TestDatasetCollectionsApi(ApiTestCase):
             history_id=history_id,
             element_identifiers=sample_sheet_identifiers,
             collection_type="sample_sheet",
-            column_definitions=[{"type": "int", "name": "replicate"}],
+            column_definitions=[{"type": "int", "name": "replicate", "default_value": 0}],
             rows={"sample1": [42], "sample2": [45]},
         )
         create_response = self._post("dataset_collections", payload, json=True)
+        print(create_response.json())
         self._check_create_response(create_response)
         # now the datatype of the row data is wrong....
-        payload["column_definitions"] = [{"type": "string", "name": "replicate"}]
+        payload["column_definitions"] = [{"type": "string", "name": "replicate", "default_value": ""}]
         create_response = self._post("dataset_collections", payload, json=True)
         assert_status_code_is(create_response, 400)
+        print(create_response.json())
 
         # now the row values are too small for the supplied validator
         payload["column_definitions"] = [
