@@ -40,13 +40,14 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["myst_parser", "sphinx.ext.intersphinx"]
+extensions = ["myst_parser", "sphinx.ext.intersphinx", "sphinx.ext.mathjax"]
 if not SKIP_SOURCE:
     # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
     extensions += ["sphinx.ext.doctest", "sphinx.ext.todo", "sphinx.ext.coverage", "sphinx.ext.autodoc"]
     if not SKIP_VIEW_CODE:
         extensions.append("sphinx.ext.viewcode")
 myst_enable_extensions = [
+    "dollarmath",
     "attrs_block",
     "deflist",
     "substitution",

@@ -4,7 +4,7 @@ from typing import List
 
 import yaml
 
-from galaxy.tool_util.models import Tests
+from galaxy.tool_util_models import Tests
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest_utils import skip_unless_environ
 

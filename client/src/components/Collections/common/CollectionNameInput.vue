@@ -37,11 +37,12 @@ watch(name, (newValue) => {
         label-for="collection-name">
         <BFormInput
             id="collection-name"
-            v-model="name"
+            :value="name"
             class="collection-name"
             :placeholder="localize('Enter a name for your new ' + shortWhatIsBeingCreated)"
             size="sm"
             required
-            :state="!name ? false : null" />
+            :state="!name ? false : null"
+            @update="(v) => (name = v)" />
     </BFormGroup>
 </template>
