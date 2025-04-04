@@ -6888,9 +6888,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     def copy(
         self,
-        destination=None,
-        element_destination=None,
-        dataset_instance_attributes=None,
+        destination: Optional["HistoryDatasetCollectionAssociation"] = None,
+        element_destination: Optional["History"] = None,
+        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
         flush=True,
         minimize_copies=False,
     ):
@@ -7301,11 +7301,11 @@ class HistoryDatasetCollectionAssociation(
 
     def copy(
         self,
-        element_destination=None,
-        dataset_instance_attributes=None,
-        flush=True,
-        set_hid=True,
-        minimize_copies=False,
+        element_destination: Optional[History] = None,
+        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
+        flush: bool = True,
+        set_hid: bool = True,
+        minimize_copies: bool = False,
     ):
         """
         Create a copy of this history dataset collection association. Copy
@@ -7334,7 +7334,8 @@ class HistoryDatasetCollectionAssociation(
         hdca.collection = collection_copy
         session = required_object_session(self)
         session.add(hdca)
-        hdca.copy_tags_from(self.history.user, self)
+        if self.history and self.history.user:
+            hdca.copy_tags_from(self.history.user, self)
         if element_destination and set_hid:
             element_destination.stage_addition(hdca)
             element_destination.add_pending_items()
@@ -7553,21 +7554,21 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 
     @property
     def has_deferred_data(self):
-        return self.element_object.has_deferred_data
+        return self.element_object and self.element_object.has_deferred_data
 
     def copy_to_collection(
         self,
-        collection,
-        destination=None,
-        element_destination=None,
-        dataset_instance_attributes=None,
+        collection: DatasetCollection,
+        destination: Optional[HistoryDatasetCollectionAssociation] = None,
+        element_destination: Optional[History] = None,
+        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
         flush=True,
         minimize_copies=False,
     ):
         dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
-            if self.is_collection:
+            if isinstance(element_object, DatasetCollection):
                 element_object = element_object.copy(
                     destination=destination,
                     element_destination=element_destination,
@@ -7575,7 +7576,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                     flush=flush,
                     minimize_copies=minimize_copies,
                 )
-            else:
+            elif isinstance(element_object, HistoryDatasetAssociation):
                 new_element_object = None
                 if minimize_copies:
                     new_element_object = element_destination.get_dataset_by_hid(element_object.hid)
