@@ -832,6 +832,17 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(_wait_for_purge, "dataset to become purged", timeout=2)
         return self._get(dataset_url)
 
+    def rename_dataset(
+        self,
+        content_id: str,
+        new_name: Optional[str] = None,
+    ):
+        if not new_name:
+            new_name = self.get_random_name()
+        dataset_url = f"datasets/{content_id}"
+        response = self._put(dataset_url, {"name": new_name}, json=True)
+        response.raise_for_status()
+
     def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
         create_url = "tool_landings"
         json = payload.model_dump(mode="json")

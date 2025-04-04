@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.model.metadata import MetadataCollection
     from galaxy.tools import Tool
+    from galaxy.tools.evaluation import ToolEvaluator
     from galaxy.tools.parameters.basic import (
         SelectToolParameter,
         ToolParameter,
@@ -356,6 +357,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         identifier: Optional[str] = None,
         io_type: str = "input",
         formats: Optional[List[str]] = None,
+        tool_evaluator: Optional["ToolEvaluator"] = None,
     ) -> None:
         dataset_instance: Optional[DatasetInstance] = None
         if not dataset:
@@ -393,6 +395,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 # May be a 'FakeDatasetAssociation'
                 self.groups = set()
         self.compute_environment = compute_environment
+        self.tool_evaluator = tool_evaluator
         # TODO: lazy initialize this...
         self.__io_type = io_type
         self.false_path: Optional[str] = None
@@ -498,6 +501,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 return self.compute_environment.input_extra_files_rewrite(self.unsanitized)
             else:
                 return self.compute_environment.output_extra_files_rewrite(self.unsanitized)
+        elif key == "name":
+            if self.tool_evaluator:
+                self.tool_evaluator.consumes_names = True
+            return getattr(self.dataset, key)
         elif key == "serialize":
             return self.serialize
         else:
@@ -627,6 +634,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         job_working_directory: Optional[str],
         has_collection: Union[None, DatasetCollectionElement, HistoryDatasetCollectionAssociation],
         datatypes_registry: "Registry",
+        tool_evaluator: Optional["ToolEvaluator"] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -635,6 +643,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self._element_identifiers_extensions_paths_and_metadata_files: Optional[List[List[Any]]] = None
         self.datatypes_registry = datatypes_registry
         kwargs["datatypes_registry"] = datatypes_registry
+        self.tool_evaluator = tool_evaluator
         self.kwargs = kwargs
 
         if has_collection is None:
@@ -666,10 +675,12 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
             if isinstance(element_object, DatasetCollection):
                 element_wrapper: DatasetCollectionElementWrapper = DatasetCollectionWrapper(
-                    job_working_directory, dataset_collection_element, **kwargs
+                    job_working_directory, dataset_collection_element, tool_evaluator=self.tool_evaluator, **kwargs
                 )
             else:
-                element_wrapper = self._dataset_wrapper(element_object, identifier=element_identifier, **kwargs)
+                element_wrapper = self._dataset_wrapper(
+                    element_object, identifier=element_identifier, tool_evaluator=self.tool_evaluator, **kwargs
+                )
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append(element_wrapper)
