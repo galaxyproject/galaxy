@@ -39,6 +39,7 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     DatasetAssociationRoles,
     DatasetSourceType,
+    ToolReportForDataset,
 )
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.base.api import GalaxyFileResponse
@@ -189,9 +190,10 @@ class FastAPIDatasets:
     def get_content_as_text(
         self,
         dataset_id: HistoryDatasetIDPathParam,
+        filename: Optional[str] = FilenameQueryParam,
         trans=DependsOnTrans,
     ) -> DatasetTextContentDetails:
-        return self.service.get_content_as_text(trans, dataset_id)
+        return self.service.get_content_as_text(trans, dataset_id, filename=filename)
 
     @router.get(
         "/api/datasets/{dataset_id}/converted/{ext}",
@@ -502,6 +504,17 @@ class FastAPIDatasets:
         payload: ComputeDatasetHashPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         return self.service.compute_hash(trans, dataset_id, payload, hda_ldda=hda_ldda)
+
+    @router.get(
+        "/api/datasets/{dataset_id}/report",
+        summary="Return JSON content Galaxy will use to render Markdown reports",
+    )
+    def report(
+        self,
+        dataset_id: HistoryDatasetIDPathParam,
+        trans=DependsOnTrans,
+    ) -> ToolReportForDataset:
+        return self.service.report(trans, dataset_id)
 
     @router.put(
         "/api/datasets/{dataset_id}/object_store_id",

@@ -30,6 +30,7 @@ const props = defineProps<{
     downloadEndpoint: string;
     readOnly?: boolean;
     exportLink?: string;
+    showIdentifier?: boolean;
 }>();
 
 // Refs and data
@@ -56,6 +57,10 @@ const updateTime = computed(() => {
         });
     }
     return "";
+});
+
+const pageTitle = computed(() => {
+    return props.markdownConfig.title || props.markdownConfig.model_class;
 });
 
 // Methods
@@ -85,7 +90,7 @@ onMounted(() => {
             <div class="d-flex flex-column sticky-top bg-white">
                 <div class="d-flex">
                     <Heading v-localize h1 separator inline size="md" class="flex-grow-1">
-                        {{ markdownConfig.title || markdownConfig.model_class }}
+                        {{ pageTitle }}
                     </Heading>
                     <div>
                         <StsDownloadButton
