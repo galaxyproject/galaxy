@@ -41,6 +41,16 @@ if [ -n "$ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ" ]; then
 fi
 """
 
+# Copy working, outputs, and configs before tool execution so that these can be restored on job resubmission
+# xref https://github.com/galaxyproject/galaxy/issues/3289
+PREPARE_DIRS = """mkdir -p working outputs configs
+if [ -d _working ]; then
+    rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
+else
+    cp -R working _working; cp -R outputs _outputs; cp -R configs _configs
+fi
+"""
+
 INTEGRITY_SYNC_COMMAND = "/bin/sync"
 DEFAULT_INTEGRITY_CHECK = True
 DEFAULT_INTEGRITY_COUNT = 35
@@ -58,6 +68,7 @@ OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     "shell": DEFAULT_SHELL,
     "preserve_python_environment": True,
     "tmp_dir_creation_statement": '""',
+    "prepare_dirs_statement": PREPARE_DIRS,
 }
 
 
