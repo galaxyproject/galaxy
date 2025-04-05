@@ -19,6 +19,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
 
@@ -147,18 +148,19 @@ onMounted(() => {
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <BButton
-            v-b-tooltip.hover
+        <GButton
+            tooltip
             title="History Size"
-            variant="link"
-            size="sm"
-            class="rounded-0 text-decoration-none history-storage-overview-button"
+            transparent
+            size="small"
+            color="blue"
+            class="rounded-0 history-storage-overview-button"
             :disabled="!canManageStorage"
             data-description="storage dashboard button"
             @click="onDashboard">
             <FontAwesomeIcon :icon="faDatabase" />
             <span>{{ niceHistorySize }}</span>
-        </BButton>
+        </GButton>
 
         <BButtonGroup v-if="currentUser">
             <BButton
