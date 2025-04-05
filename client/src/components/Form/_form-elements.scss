@@ -1,5 +1,4 @@
 @import "theme/blue.scss";
-@import "base.scss";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
 
 .ui-form-element {
@@ -7,53 +6,6 @@
     margin-bottom: $margin-v * 0.5;
     overflow: visible;
     clear: both;
-
-    // Workflow Run Form
-    &.workflow-run-element {
-        // when a temporary focus is applied to the element
-        &.temp-focus {
-            border: solid 3px $brand-primary;
-        }
-        &:not(.temp-focus) {
-            border: solid 1px $portlet-bg-color;
-            box-shadow: 0 0 5px $portlet-bg-color;
-        }
-
-        .ui-form-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            // inherit the border radius from the parent .alert class
-            border-top-left-radius: inherit;
-            border-top-right-radius: inherit;
-
-            &:deep(.form-element-header-badge) {
-                display: flex;
-                align-items: center;
-                font-weight: normal;
-                font-size: 100%;
-                padding-left: $spacer;
-                padding-right: $spacer;
-
-                &.populated {
-                    background-color: map-get($galaxy-state-bg, "ok");
-                }
-                &.unpopulated {
-                    background-color: $state-info-bg;
-                }
-            }
-        }
-        .form-element-content {
-            display: flex;
-            flex-direction: column;
-            row-gap: 0.25rem;
-
-            .ui-form-info {
-                order: -1;
-            }
-        }
-    }
 
     .ui-form-title {
         word-wrap: break-word;
