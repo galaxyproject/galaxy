@@ -53,7 +53,6 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended) {
     userStore.currentUser = {
         email: "email",
         id: "user_id",
-        tags_used: [],
         isAnonymous: false,
         total_disk_usage: 0,
         nice_total_disk_usage: "0 bytes",
