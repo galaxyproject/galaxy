@@ -97,7 +97,7 @@ async function submitLogin() {
         }
 
         if (response.data.expired_user) {
-            window.location.href = withPrefix(`/root/login?expired_user=${response.data.expired_user}`);
+            window.location.href = withPrefix(`/login/start?expired_user=${response.data.expired_user}`);
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
@@ -123,20 +123,6 @@ async function submitLogin() {
 
 function setRedirect(url: string) {
     localStorage.setItem("redirect_url", url);
-}
-
-async function resetLogin() {
-    loading.value = true;
-    try {
-        const response = await axios.post(withPrefix("/user/reset_password"), { email: login.value });
-        messageVariant.value = "info";
-        messageText.value = response.data.message;
-    } catch (e) {
-        messageVariant.value = "danger";
-        messageText.value = errorMessageAsString(e, "Password reset failed for an unknown reason.");
-    } finally {
-        loading.value = false;
-    }
 }
 
 function returnToLogin() {
@@ -205,7 +191,12 @@ function returnToLogin() {
                                                 v-localize
                                                 href="javascript:void(0)"
                                                 role="button"
-                                                @click.prevent="resetLogin">
+                                                @click.prevent="
+                                                    router.push({
+                                                        path: '/login/reset_password',
+                                                        query: { email: login },
+                                                    })
+                                                ">
                                                 Click here to reset your password.
                                             </a>
                                         </BFormText>
