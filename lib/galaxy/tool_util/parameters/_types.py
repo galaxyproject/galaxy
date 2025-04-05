@@ -54,6 +54,6 @@ def expand_annotation(field: Type, new_annotations: List[Any]) -> Type:
     is_annotation = get_origin(field) is Annotated
     if is_annotation:
         args = get_args(field)  # noqa: F841
-        return Annotated[tuple([args[0], *args[1:], *new_annotations])]  # type: ignore[return-value]
+        return Annotated[(args[0], *args[1:], *new_annotations)]  # type: ignore[return-value]
     else:
-        return Annotated[tuple([field, *new_annotations])]  # type: ignore[return-value]
+        return Annotated[(field, *new_annotations)]  # type: ignore[return-value]
