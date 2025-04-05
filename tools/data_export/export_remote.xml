@@ -1,5 +1,5 @@
 <tool id="export_remote" name="Export datasets" version="0.1.0" profile="21.05">
-    <description>to remote files source</description>
+    <description>to repositories</description>
     <!-- TODO
     <requirements>
         <requirement type="package" version="21.05">galaxy-files</requirement>
