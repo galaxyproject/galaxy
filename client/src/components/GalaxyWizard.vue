@@ -2,13 +2,14 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BSkeleton } from "bootstrap-vue";
+import { BAlert, BSkeleton } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "./BaseComponents/GButton.vue";
 import LoadingSpan from "./LoadingSpan.vue";
 
 library.add(faThumbsUp, faThumbsDown);
@@ -89,10 +90,10 @@ async function sendFeedback(value: "up" | "down") {
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
-        <BButton v-else-if="!queryResponse" class="w-100" variant="info" :disabled="busy" @click="submitQuery">
+        <GButton v-else-if="!queryResponse" class="w-100" color="blue" :disabled="busy" @click="submitQuery">
             <span v-if="!busy"> Let our Help Wizard Figure it out! </span>
             <LoadingSpan v-else message="Thinking" />
-        </BButton>
+        </GButton>
         <div :class="props.view == 'wizard' && 'mt-4'">
             <div v-if="busy">
                 <BSkeleton animation="wave" width="85%" />
@@ -105,20 +106,20 @@ async function sendFeedback(value: "up" | "down") {
             <div v-if="queryResponse" class="feedback-buttons mt-2">
                 <hr class="w-100" />
                 <h4>Was this answer helpful?</h4>
-                <BButton
-                    variant="success"
+                <GButton
+                    color="green"
                     :disabled="feedback !== null"
                     :class="{ submitted: feedback === 'up' }"
                     @click="sendFeedback('up')">
                     <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                </BButton>
-                <BButton
-                    variant="danger"
+                </GButton>
+                <GButton
+                    color="red"
                     :disabled="feedback !== null"
                     :class="{ submitted: feedback === 'down' }"
                     @click="sendFeedback('down')">
                     <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                </BButton>
+                </GButton>
                 <i v-if="!feedback">This feedback helps us improve our responses.</i>
                 <i v-else>Thank you for your feedback!</i>
             </div>

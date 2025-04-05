@@ -8,6 +8,8 @@ import { useRouter } from "vue-router/composables";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 const props = defineProps<{
     activityBarId: string;
     query: string;
@@ -87,34 +89,40 @@ function executeActivity(activity: Activity) {
                             }}</span>
                         </span>
                         <div>
-                            <BButton
+                            <GButton
                                 v-if="activity.mutable"
-                                v-b-tooltip.hover
+                                tooltip
                                 data-description="delete activity"
-                                size="sm"
+                                size="small"
+                                transparent
+                                icon-only
+                                color="blue"
                                 title="Delete Activity"
-                                variant="link"
                                 @click.stop="onRemove(activity)">
                                 <FontAwesomeIcon :icon="faTrash" fa-fw />
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-if="activity.visible"
-                                v-b-tooltip.hover
-                                size="sm"
+                                tooltip
+                                size="small"
+                                transparent
+                                icon-only
+                                color="blue"
                                 title="Hide in Activity Bar"
-                                variant="link"
                                 @click.stop="onFavorite(activity)">
                                 <FontAwesomeIcon :icon="faStar" fa-fw />
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-else
-                                v-b-tooltip.hover
-                                size="sm"
+                                tooltip
+                                transparent
+                                icon-only
+                                color="blue"
+                                size="small"
                                 title="Show in Activity Bar"
-                                variant="link"
                                 @click.stop="onFavorite(activity)">
                                 <FontAwesomeIcon :icon="faStarRegular" fa-fw />
-                            </BButton>
+                            </GButton>
                         </div>
                     </span>
                 </div>
