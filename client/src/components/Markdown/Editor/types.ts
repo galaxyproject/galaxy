@@ -1,3 +1,5 @@
+export type ApiResponse = Array<any> | undefined;
+
 export interface CellType {
     name: string;
     content: string;
@@ -17,6 +19,12 @@ export interface Invocation {
     outputs: Record<string, { id?: string }>;
     steps: { workflow_step_label?: string; job_id?: string; implicit_collection_jobs_id?: string }[];
     workflow_id: string;
+}
+
+export interface OptionType {
+    id: string;
+    name: string;
+    label?: DatasetLabel;
 }
 
 export interface TemplateEntry {

@@ -4,6 +4,12 @@ import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
 import { parseInvocation } from "@/components/Markdown/Utilities/parseInvocation";
+import {
+    getRequiredObject,
+    hasValidLabel,
+    hasValidName,
+    hasValidObject,
+} from "@/components/Markdown/Utilities/requirements";
 import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -20,8 +26,9 @@ import InstanceUrl from "./Elements/InstanceUrl.vue";
 import InvocationTime from "./Elements/InvocationTime.vue";
 import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
+import TextContent from "./Elements/TextContent.vue";
 import ToolStd from "./Elements/ToolStd.vue";
-import Visualization from "./Elements/Visualization.vue";
+import VisualizationFrame from "./Elements/VisualizationFrame.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
@@ -38,7 +45,7 @@ const props = defineProps({
     },
     labels: {
         type: Array,
-        required: false,
+        default: undefined,
     },
 });
 
@@ -106,36 +113,57 @@ watch(
     <BAlert v-if="error" v-localize variant="danger" class="m-0" show>
         {{ error }}
     </BAlert>
-    <BAlert v-else-if="hasLabels && !invocationId" v-localize variant="info" class="m-0" show>
-        Data for rendering this <b>{{ name }}</b> is not yet available.
-    </BAlert>
     <BAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
         {{ invocationLoadError }}
     </BAlert>
+    <BAlert v-else-if="!hasValidName(name)" v-localize variant="danger" class="m-0" show>
+        <span v-localize>Invalid component type </span>
+        <b>{{ name }}</b>
+    </BAlert>
+    <BAlert v-else-if="!hasValidLabel(name, args, labels)" v-localize variant="danger" class="m-0" show>
+        <span v-localize>Invalid or missing label for</span>
+        <b>{{ name }}</b>
+    </BAlert>
+    <BAlert
+        v-else-if="hasLabels && !invocationId && getRequiredObject(name)"
+        v-localize
+        variant="info"
+        class="m-0"
+        show>
+        <span v-localize>Data for rendering not yet available for</span>
+        <b>{{ name }}</b>
+    </BAlert>
     <LoadingSpan v-else-if="isLoading" />
+    <BAlert v-else-if="!hasValidObject(name, args)" v-localize variant="warning" class="m-0" show>
+        <span v-localize>Missing</span>
+        <b>{{ getRequiredObject(name) }}</b>
+        <span v-localize>for</span>
+        <b>{{ name }}</b>
+    </BAlert>
     <div v-else>
         <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
         </BLink>
         <BCollapse :visible="isVisible">
-            <pre v-if="name == 'generate_galaxy_version'" class="galaxy-version m-0">
-Galaxy Version {{ config.version_major }}</pre
-            >
-            <pre v-else-if="name == 'generate_time'" class="galaxy-time m-0">{{ new Date().toUTCString() }}</pre>
+            <TextContent
+                v-if="name == 'generate_galaxy_version'"
+                class="galaxy-version"
+                :content="`Galaxy Version ${config.version_major}`" />
+            <TextContent v-else-if="name == 'generate_time'" class="galaxy-time" :content="new Date().toUTCString()" />
             <HistoryDatasetAsImage
                 v-else-if="name == 'history_dataset_as_image'"
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
                 :compact="argToBoolean(args, 'compact', false)"
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :footer="args.footer"
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
                 :title="args.title" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
-                :collection-id="args.history_target_id || args.history_dataset_collection_id" />
+                :collection-id="args.history_dataset_collection_id" />
             <HistoryDatasetDetails
                 v-else-if="
                     [
@@ -145,11 +173,11 @@ Galaxy Version {{ config.version_major }}</pre
                         'history_dataset_type',
                     ].includes(name)
                 "
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
-                :dataset-id="args.history_target_id || args.history_dataset_id"
+                :dataset-id="args.history_dataset_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
@@ -212,7 +240,7 @@ Galaxy Version {{ config.version_major }}</pre
                 :job-id="args.job_id"
                 :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :name="name" />
-            <Visualization v-else-if="name == 'visualization'" :args="args" />
+            <VisualizationFrame v-else-if="name == 'visualization'" :args="args" />
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"

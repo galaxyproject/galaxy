@@ -56,7 +56,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     }
 
     const {
-        fetchItemById: fetchInvocationForId,
+        fetchItemById: fetchInvocationById,
         getItemById: getInvocationById,
         getItemLoadError: getInvocationLoadError,
         isLoadingItem: isLoadingInvocation,
@@ -71,7 +71,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     return {
         cancelWorkflowScheduling,
-        fetchInvocationForId,
+        fetchInvocationById,
         fetchInvocationJobsSummaryForId,
         fetchInvocationStepById,
         getInvocationById,

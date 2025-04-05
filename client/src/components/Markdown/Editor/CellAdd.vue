@@ -3,9 +3,12 @@
         <CellButton ref="buttonRef" title="Insert" :icon="faPlus" />
         <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
-            <div class="cell-add-categories overflow-auto">
+            <div class="cell-dropdown overflow-auto">
                 <div v-if="Object.keys(filteredTemplates).length > 0">
-                    <div v-for="(templates, categoryName) of filteredTemplates" :key="categoryName">
+                    <div
+                        v-for="(templates, categoryName) of filteredTemplates"
+                        :key="categoryName"
+                        class="cell-add-categories">
                         <hr class="solid m-0" />
                         <span class="d-flex justify-content-between">
                             <small class="my-1 mx-3 text-info">{{ categoryName }}</small>
@@ -75,11 +78,3 @@ onMounted(async () => {
     visualizations.value = await getVisualizations();
 });
 </script>
-
-<style>
-.cell-add-categories {
-    max-height: 20rem;
-    max-width: 15rem;
-    min-width: 15rem;
-}
-</style>

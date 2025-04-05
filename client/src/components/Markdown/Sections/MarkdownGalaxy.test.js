@@ -121,4 +121,99 @@ describe("MarkdownContainer", () => {
         const message = error.find("span");
         expect(message.text()).toBe("Failed to handle History: history_name!");
     });
+
+    it("Renders error for invalid directive syntax", async () => {
+        const wrapper = mountComponent({
+            content: "not_valid_content(",
+        });
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toContain("The directive provided below is invalid");
+    });
+
+    it("Renders error for invalid component type", async () => {
+        const wrapper = mountComponent({
+            content: "unknown_component()",
+        });
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.text()).toContain("Invalid component type");
+    });
+
+    it("Renders error for missing required label", async () => {
+        const wrapper = mountComponent({
+            content: "tool_a(input=foo)",
+            labels: [{ type: "input", label: "NotFoo" }],
+        });
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.text()).toContain("Invalid component type tool_a");
+    });
+
+    it("Renders info alert if labels exist but no invocation_id is present", async () => {
+        const wrapper = mountComponent({
+            content: "history_dataset_display(input=foo)",
+            labels: [
+                { type: "input", label: "foo" },
+                { type: "output", label: "bar" },
+            ],
+        });
+        await flushPromises();
+        const alert = wrapper.find(".alert-info");
+        expect(alert.text()).toContain("Data for rendering not yet available for");
+    });
+
+    it("Renders danger alert if more than one label exists", async () => {
+        const wrapper = mountComponent({
+            content: "history_dataset_display(input=foo, output=bar)",
+            labels: [
+                { type: "input", label: "foo" },
+                { type: "output", label: "bar" },
+            ],
+        });
+        await flushPromises();
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.text()).toContain("Invalid or missing label for history_dataset_display");
+    });
+
+    it("Renders loading span while invocation is loading", async () => {
+        const mockInvocationStore = require("@/stores/invocationStore");
+        mockInvocationStore.useInvocationStore = jest.fn(() => ({
+            getInvocationById: () => null,
+            getInvocationLoadError: () => null,
+            isLoadingInvocation: jest.fn(() => true),
+        }));
+        const wrapper = mountComponent({
+            content: "history_dataset_display(invocation_id=123, input=foo)",
+            labels: [
+                { type: "input", label: "foo" },
+                { type: "output", label: "bar" },
+            ],
+        });
+        await flushPromises();
+        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
+    });
+
+    it("Handles invocation fetching and workflow ID resolution", async () => {
+        const invocation = { workflow_id: "wf123", inputs: {}, outputs: {} };
+        const mockInvocationStore = require("@/stores/invocationStore");
+        const mockWorkflowStore = require("@/stores/workflowStore");
+        mockInvocationStore.useInvocationStore = jest.fn(() => ({
+            getInvocationById: () => invocation,
+            getInvocationLoadError: () => null,
+            isLoadingInvocation: () => false,
+        }));
+        const fetchWorkflowMock = jest.fn(() => Promise.resolve());
+        mockWorkflowStore.useWorkflowStore = jest.fn(() => ({
+            fetchWorkflowForInstanceIdCached: fetchWorkflowMock,
+            getStoredWorkflowIdByInstanceId: () => "wf123",
+        }));
+        mountComponent({
+            content: "tool_a(invocation_id=123, input=foo, output=bar)",
+            labels: [
+                { type: "input", label: "foo" },
+                { type: "output", label: "bar" },
+            ],
+        });
+        await flushPromises();
+        expect(fetchWorkflowMock).toHaveBeenCalledWith("wf123");
+    });
 });
