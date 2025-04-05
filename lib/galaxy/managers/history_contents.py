@@ -416,7 +416,7 @@ class HistoryContentsManager(base.SortableManager):
             .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
-            .options(joinedload(component_class.tags))  # type: ignore[attr-defined]
+            .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         result = self._session().scalars(stmt).unique()

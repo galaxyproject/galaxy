@@ -43,10 +43,12 @@ from galaxy.workflow.trs_proxy import TrsProxy
 if TYPE_CHECKING:
     from galaxy.config_watchers import ConfigWatchers
     from galaxy.jobs import JobConfiguration
+    from galaxy.jobs.manager import JobManager
     from galaxy.managers.collections import DatasetCollectionManager
     from galaxy.managers.folders import FolderManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
+    from galaxy.managers.jobs import JobSearch
     from galaxy.managers.tools import DynamicToolManager
     from galaxy.managers.workflows import (
         WorkflowContentsManager,
@@ -123,7 +125,8 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     user_manager: Any
     job_config: "JobConfiguration"
-    job_manager: Any  # galaxy.jobs.manager.JobManager
+    job_manager: "JobManager"
+    job_search: "JobSearch"
     job_metrics: JobMetrics
     dynamic_tool_manager: "DynamicToolManager"
     genomes: "Genomes"
