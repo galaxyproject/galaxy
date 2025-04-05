@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -189,9 +189,9 @@ gravity:
     # Public-facing port of the proxy
     # port: 4002
 
-    # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set``.
+    # Database to monitor.
+    # Should be set to the same value as ``interactivetools_map`` (or ``interactivetoolsproxy_map``) in the ``galaxy:`` section. This is
+    # ignored if either ``interactivetools_map`` or ``interactivetoolsproxy_map`` are set.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -3066,6 +3066,34 @@ galaxy:
   # but outdated contents might be displayed to the user. Currently only
   # affects s3fs file sources.
   #file_source_listings_expiry_time: 60
+
+  # Set the default value in the Admin UI to automatically install tool
+  # dependencies when installing tools from the Tool Shed or not. Tool
+  # dependencies are the software packages and libraries required for a
+  # tool to function properly. Tool dependencies are typically specified
+  # in the tool's XML configuration using <requirement> tags. Galaxy can
+  # automatically install these dependencies if the tool_dependency_dir
+  # is properly configured in the galaxy.yml file. This option should be
+  # set to false if containerized versions of tools are used.
+  #install_tool_dependencies: true
+
+  # Set the default value in the Admin UI to automatically install
+  # repository dependencies when installing tools from the Tool Shed.
+  # Repository dependencies are other Tool Shed repositories that the
+  # tool being installed depends on and they are commonly used with tool
+  # suites. Repository dependencies ensure that all necessary components
+  # are installed for the tool (or suite) to work correctly within the
+  # Galaxy environment.
+  #install_repository_dependencies: true
+
+  # Set the default value in the Admin UI to automatically install
+  # resolver dependencies when installing tools from the Tool Shed.
+  # Resolver dependencies is a mechanism used by Galaxy to locate and
+  # make available the required software packages for Galaxy tools.
+  # Galaxy uses dependency resolvers (e.g., Conda) to determine how to
+  # satisfy these dependencies. This option should be set to false if
+  # containerized versions of tools are used.
+  #install_resolver_dependencies: true
 
   # Enables the cleanup of failed Galaxy job's working directories. Runs
   # in a Celery task.
