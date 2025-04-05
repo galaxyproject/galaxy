@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { faCog, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faCog, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCard, BDropdown, BDropdownForm, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BCard, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { useMarkdown } from "@/composables/markdown";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -68,6 +69,9 @@ const { renderMarkdown } = useMarkdown({
     removeNewlinesAfterList: true,
     increaseHeadingLevelBy: 2,
 });
+
+const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
+    usePersistentToggle("workflow-run-settings-panel");
 
 const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
@@ -210,74 +214,95 @@ async function onExecute() {
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <WorkflowNavigationTitle
-                :workflow-id="model.runData.workflow_id"
-                :run-disabled="hasValidationErrors || !canRunOnHistory"
-                :run-waiting="waitingForRequest"
-                @on-execute="onExecute">
-                <template v-slot:workflow-title-actions>
-                    <BButtonGroup>
-                        <BButton
-                            v-b-tooltip.hover.noninteractive.html
-                            size="sm"
-                            :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
-                            variant="link"
-                            :pressed="showGraph"
-                            @click="showRightPanel = showGraph ? null : 'graph'">
-                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                        </BButton>
-                        <BButton
-                            v-if="model.runData.help"
-                            v-b-tooltip.hover.noninteractive.html
-                            size="sm"
-                            :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
-                            variant="link"
-                            :pressed="showHelp"
-                            @click="showRightPanel = showHelp ? null : 'help'">
-                            <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
-                        </BButton>
-                    </BButtonGroup>
-                    <BDropdown
-                        id="dropdown-form"
-                        ref="dropdown"
-                        v-b-tooltip.hover.noninteractive
-                        class="workflow-run-settings"
-                        title="Workflow Run Settings"
-                        size="sm"
-                        variant="link"
-                        no-caret>
-                        <template v-slot:button-content>
-                            <FontAwesomeIcon :icon="faCog" />
-                        </template>
-                        <BDropdownForm>
+            <div class="mb-2">
+                <WorkflowNavigationTitle
+                    :workflow-id="model.runData.workflow_id"
+                    :run-disabled="hasValidationErrors || !canRunOnHistory"
+                    :run-waiting="waitingForRequest"
+                    @on-execute="onExecute">
+                    <template v-slot:workflow-title-actions>
+                        <BButtonGroup>
+                            <BButton
+                                v-b-tooltip.hover.noninteractive.html
+                                size="sm"
+                                :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                                variant="link"
+                                :pressed="showGraph"
+                                @click="showRightPanel = showGraph ? null : 'graph'">
+                                <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                            </BButton>
+                            <BButton
+                                v-if="model.runData.help"
+                                v-b-tooltip.hover.noninteractive.html
+                                size="sm"
+                                :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
+                                variant="link"
+                                :pressed="showHelp"
+                                @click="showRightPanel = showHelp ? null : 'help'">
+                                <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+                            </BButton>
+                            <BButton
+                                v-b-tooltip.hover.noninteractive
+                                size="sm"
+                                title="Workflow Run Settings"
+                                variant="link"
+                                class="workflow-run-settings"
+                                :pressed="showRuntimeSettingsPanel"
+                                @click="toggleRuntimeSettings">
+                                <FontAwesomeIcon :icon="faCog" fixed-width />
+                            </BButton>
+                        </BButtonGroup>
+                    </template>
+                </WorkflowNavigationTitle>
+
+                <!-- Runtime Settings Panel -->
+                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-2 rounded-bottom">
+                    <div class="d-flex flex-wrap align-items-center">
+                        <div class="mr-4">
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
                                 Send results to a new history
                             </BFormCheckbox>
+                        </div>
+                        <div class="mr-4">
                             <BFormCheckbox
                                 v-model="useCachedJobs"
                                 title="This may skip executing jobs that you have already run.">
                                 Attempt to re-use jobs with identical parameters?
                             </BFormCheckbox>
-                            <BFormCheckbox
-                                v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                                v-model="splitObjectStore">
-                                Send outputs and intermediate to different storage locations?
-                            </BFormCheckbox>
-                            <!-- Options to default one way or the other, disable if admins want, etc.. -->
-                            <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
-                                Expand to full workflow form.
-                            </BFormCheckbox>
-                            <WorkflowStorageConfiguration
-                                v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                                :split-object-store="splitObjectStore"
-                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                                @updated="onStorageUpdate">
-                            </WorkflowStorageConfiguration>
-                        </BDropdownForm>
-                    </BDropdown>
-                </template>
-            </WorkflowNavigationTitle>
+                        </div>
+
+                        <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
+                            <div class="mr-4">
+                                <BFormCheckbox v-model="splitObjectStore">
+                                    Send outputs and intermediate to different storage locations?
+                                </BFormCheckbox>
+                            </div>
+                            <div class="mr-4">
+                                <WorkflowStorageConfiguration
+                                    :split-object-store="splitObjectStore"
+                                    :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                                    :invocation-intermediate-preferred-object-store-id="
+                                        preferredIntermediateObjectStoreId
+                                    "
+                                    @updated="onStorageUpdate">
+                                </WorkflowStorageConfiguration>
+                            </div>
+                        </template>
+
+                        <div class="mr-4">
+                            <BButton
+                                v-b-tooltip.hover.noninteractive
+                                variant="link"
+                                size="sm"
+                                class="text-decoration-none workflow-expand-form-link"
+                                title="Switch to the legacy workflow form"
+                                @click="$emit('showAdvanced')">
+                                Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
+                            </BButton>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
@@ -326,3 +351,31 @@ async function onExecute() {
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.workflow-runtime-settings-panel {
+    background-color: $brand-light;
+    border-left: 1px solid $gray-200;
+    border-right: 1px solid $gray-200;
+    border-bottom: 1px solid $gray-200;
+    transition: all 0.2s ease-in-out;
+    opacity: 1;
+    transform-origin: top;
+    animation: slideDown 0.2s ease-in-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: scaleY(0);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+        max-height: 200px;
+    }
+}
+</style>
