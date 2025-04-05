@@ -13,9 +13,7 @@ Quick Reference
 _______________
 
 - provider:         Sets the name of OpenID Connect (OIDC) Identity Provider (IdP).
-                    The following IdPs are currently supported:
-
-                        { "Google", "Globus" }
+                    Supported providers are listed below in the sample.
 
 - client id:        Sets the id of this client (i.e., your Galaxy instance) with the IdP, which is
                     obtained from the IdP at client registration.
@@ -152,6 +150,9 @@ Please mind `http` and `https`.
         <!-- <pkce_support>false</pkce_support> -->
         <!-- (Optional) the audiences accepted on the access-token for this IDP. -->
         <!-- <accepted_audiences>galaxy</accepted_audiences> -->
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- Please note that offline_access scope can be required to obtain refresh tokens from your provider-->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
 
     </provider>
 
@@ -163,6 +164,7 @@ Please mind `http` and `https`.
         <prompt>consent</prompt>
         <icon>https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png</icon>
         <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- Please note that offline_access scope can be required to obtain refresh tokens from your provider-->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
 
