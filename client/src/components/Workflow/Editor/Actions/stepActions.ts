@@ -269,6 +269,13 @@ export class InsertStepAction extends UndoRedoAction {
         return `insert ${this.stepData.name}`;
     }
 
+    get dataAttributes(): Record<string, string> {
+        return {
+            type: "step-insert",
+            "step-type": this.stepData.type as string,
+        };
+    }
+
     stepDataToTuple() {
         return Object.values(this.stepData) as Parameters<WorkflowStepStore["insertNewStep"]>;
     }

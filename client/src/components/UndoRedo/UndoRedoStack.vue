@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-import { useUndoRedoStore } from "@/stores/undoRedoStore";
+import { type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 
 import ActivityPanel from "../Panels/ActivityPanel.vue";
 
@@ -15,6 +15,15 @@ watch(
     () => props.storeId,
     (id) => (currentStore.value = useUndoRedoStore(id))
 );
+
+function dataAttributes(action: UndoRedoAction): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [key, value] of Object.entries(action.dataAttributes)) {
+        result[`data-${key}`] = value;
+    }
+
+    return result;
+}
 
 function onInput(event: Event) {
     const value = (event.target as HTMLInputElement).value;
@@ -37,6 +46,7 @@ function updateSavedUndoActions() {
         <div class="scroll-list">
             <button
                 v-for="action in currentStore.redoActionStack"
+                v-bind="dataAttributes(action)"
                 :key="action.id"
                 class="action future"
                 @click="currentStore.rollForwardTo(action)">
@@ -51,6 +61,7 @@ function updateSavedUndoActions() {
 
             <button
                 v-for="action in [...currentStore.undoActionStack].reverse()"
+                v-bind="dataAttributes(action)"
                 :key="action.id"
                 class="action past"
                 @click="currentStore.rollBackTo(action)">

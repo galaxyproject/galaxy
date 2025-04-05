@@ -127,7 +127,9 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                         <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
                     </span>
                     <span itemprop="description">{{ props.description }}</span>
-                    <span>(Galaxy Version {{ props.version }})</span>
+                    <span data-description="galaxy tool version" :data-version="props.version"
+                        >(Galaxy Version {{ props.version }})</span
+                    >
                 </div>
                 <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                     <b-button-group class="tool-card-buttons">
