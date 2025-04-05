@@ -22,6 +22,13 @@ for i = 1, #channels do
     channel_args = channel_args .. " -c '" .. channels[i] .. "'"
 end
 
+local strict_channel_priority = VAR.STRICT_CHANNEL_PRIORITY
+if strict_channel_priority == '' then
+    strict_channel_priority = ''
+else
+    strict_channel_priority = '--strict-channel-priority'
+end
+
 local target_args = ''
 local targets = VAR.TARGETS:split(",")
 for i = 1, #targets do
@@ -90,8 +97,9 @@ inv.task('build')
         .run('/bin/sh', '-c', preinstall
             .. conda_bin .. ' install '
             .. channel_args .. ' '
+            .. strict_channel_priority .. ' '
             .. target_args
-            .. ' --strict-channel-priority -p /usr/local --copy --yes '
+            .. ' -p /usr/local --copy --yes '
             .. verbose
             .. postinstall)
     .wrap('build/dist')
