@@ -9,6 +9,7 @@ import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.
 
 interface HistoryDatasetPermissionsProps {
     historyId: string;
+    noRedirect?: boolean;
 }
 const props = defineProps<HistoryDatasetPermissionsProps>();
 
@@ -34,7 +35,7 @@ const formConfig = computed(() => {
         title: title,
         url: inputsUrl.value,
         submitTitle: "Save Permissions",
-        redirect: "/histories/list",
+        redirect: props.noRedirect ? undefined : "/histories/list",
     };
 });
 

@@ -369,9 +369,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    async function secureHistory(history: HistorySummary) {
-        const securedHistory = (await secureHistoryOnServer(history)) as HistorySummaryExtended;
+    async function secureHistory(history: HistorySummary): Promise<{ sharingStatusChanged: boolean }> {
+        const { securedHistory, sharingStatusChanged } = await secureHistoryOnServer(history);
         setHistory(securedHistory);
+        return {
+            sharingStatusChanged,
+        };
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
