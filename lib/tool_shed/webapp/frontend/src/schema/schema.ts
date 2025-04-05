@@ -1232,7 +1232,9 @@ export interface components {
              */
             parameter_type: "gx_data_collection"
             /** Value */
-            value: Record<string, never> | null
+            value: {
+                [key: string]: unknown
+            } | null
         }
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
@@ -2096,7 +2098,9 @@ export interface components {
             /** Repository Clone Url */
             repository_clone_url: string
             /** Repository Dependencies */
-            repository_dependencies?: Record<string, never> | null
+            repository_dependencies?: {
+                [key: string]: unknown
+            } | null
             /** Repository Owner */
             repository_owner: string
         }
@@ -4124,7 +4128,9 @@ export interface operations {
                     [name: string]: unknown
                 }
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": {
+                        [key: string]: unknown
+                    }
                 }
             }
             /** @description Request Error */

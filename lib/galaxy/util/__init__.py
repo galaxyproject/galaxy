@@ -314,7 +314,10 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
         yield data
 
 
-def chunk_iterable(it: Iterable, size: int = 1000) -> Iterator[tuple]:
+ItemType = TypeVar("ItemType")
+
+
+def chunk_iterable(it: Iterable[ItemType], size: int = 1000) -> Iterator[Tuple[ItemType, ...]]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -1076,9 +1079,6 @@ def string_as_bool_or_none(string):
         return None
     else:
         return False
-
-
-ItemType = TypeVar("ItemType")
 
 
 @overload

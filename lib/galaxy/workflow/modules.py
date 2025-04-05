@@ -91,6 +91,7 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
@@ -1060,15 +1061,15 @@ class InputDataModule(InputModule):
         return [dict(name="output", extensions=extensions, optional=optional)]
 
     def get_filter_set(self, connections=None):
-        filter_set = []
+        filter_set = set()  # Use a set to ensure unique extensions
         if connections:
             for oc in connections:
                 for ic in oc.input_step.module.get_data_inputs():
                     if "extensions" in ic and ic["extensions"] != "input" and ic["name"] == oc.input_name:
-                        filter_set += ic["extensions"]
+                        filter_set.update(ic["extensions"])
         if not filter_set:
-            filter_set = ["data"]
-        return ", ".join(filter_set)
+            filter_set = {"data"}
+        return ", ".join(sorted(filter_set))
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
@@ -1452,7 +1453,7 @@ class InputParameterModule(WorkflowModule):
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
-            static_options = []
+            static_options: List[List[ParameterOption]] = []
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
@@ -1487,18 +1488,18 @@ class InputParameterModule(WorkflowModule):
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
-                intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
-                intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
-                d = defaultdict(set)  # Collapse labels with same values
-                for label, value, _ in intxn_opts:
-                    d[value].add(label)
+                intxn_vals = set.intersection(*({option.value for option in options} for options in static_options))
+                intxn_opts = {option for options in static_options for option in options if option.value in intxn_vals}
+                collapsed_labels = defaultdict(set)  # Collapse labels with same values
+                for option in intxn_opts:
+                    collapsed_labels[option.value].add(option.name)
                 options = [
                     {
-                        "label": ", ".join(label),
+                        "label": ", ".join(labels),
                         "value": value,
                         "selected": bool(default_value and value == default_value),
                     }
-                    for value, label in d.items()
+                    for value, labels in collapsed_labels.items()
                 ]
 
             return options

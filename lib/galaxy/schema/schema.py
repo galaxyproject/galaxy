@@ -2120,6 +2120,11 @@ class JobSummary(JobBaseModel):
             "Only the owner of the job and administrators can see this value."
         ),
     )
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="User ID",
+        description="The encoded ID of the user that owns this job.",
+    )
 
 
 class DatasetSourceIdBase(Model):
@@ -3730,12 +3735,13 @@ class PageSummaryBase(Model):
         ...,  # Required
         title="Title",
         description="The name of the page.",
+        min_length=1,
     )
     slug: str = Field(
         ...,  # Required
         title="Identifier",
-        description="The title slug for the page URL, must be unique.",
-        pattern=r"^[^/:?#]+$",
+        description="The identifying slug for the page URL, must be unique.",
+        pattern=r"^[a-z0-9-]+$",
     )
 
 
@@ -3785,6 +3791,14 @@ class CreatePagePayload(PageSummaryBase):
         description="Encoded ID used by workflow generated reports.",
     )
     model_config = ConfigDict(use_enum_values=True, extra="allow")
+
+
+class UpdatePagePayload(PageSummaryBase):
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
 
 
 class AsyncTaskResultSummary(Model):
@@ -3906,6 +3920,7 @@ class OAuth2State(BaseModel):
 
 
 class PageDetails(PageSummary):
+    annotation: Optional[str] = AnnotationField
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     generate_version: Optional[str] = GenerateVersionField

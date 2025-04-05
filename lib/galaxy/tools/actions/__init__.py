@@ -9,6 +9,7 @@ from typing import (
     cast,
     Dict,
     List,
+    Mapping,
     MutableMapping,
     Optional,
     Set,
@@ -38,6 +39,7 @@ from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tool_util.parser.output_objects import tool_output_is_collection
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -88,7 +90,7 @@ class ToolAction:
     @abstractmethod
     def execute(
         self,
-        tool,
+        tool: "Tool",
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
@@ -416,14 +418,14 @@ class DefaultToolAction(ToolAction):
 
     def execute(
         self,
-        tool,
+        tool: "Tool",
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
-        dataset_collection_elements=None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
         completed_job: Optional[Job] = None,
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
@@ -523,6 +525,7 @@ class DefaultToolAction(ToolAction):
         async_tool = tool.tool_type == "data_source_async"
 
         def handle_output(name, output, hidden=None):
+            assert incoming is not None
             if async_tool and name in incoming:
                 # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
@@ -604,19 +607,19 @@ class DefaultToolAction(ToolAction):
             out_data[name] = data
             if output.actions:
                 # Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
-                output_action_params = dict(out_data)
+                output_action_params: Dict[str, Any] = dict(out_data)
                 output_action_params.update(wrapped_params.params)
                 output_action_params["__python_template_version__"] = tool.python_template_version
                 output.actions.apply_action(data, output_action_params)
             # Flush all datasets at once.
             return data
 
-        child_dataset_names = set()
+        child_dataset_names: Set[str] = set()
 
         for name, output in tool.outputs.items():
             if not filter_output(tool, output, incoming):
                 handle_output_timer = ExecutionTimer()
-                if output.collection:
+                if tool_output_is_collection(output):  # Only XML tools include collections in tool.outputs
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
                         # Output collection is mapped over and has already been copied from original job
                         continue
@@ -630,10 +633,12 @@ class DefaultToolAction(ToolAction):
                         # Add elements to top-level collection, unless nested...
                         current_element_identifiers = element_identifiers
                         current_collection_type = output.structure.collection_type
+                        assert current_collection_type
 
                         for parent_id in output_part_def.parent_ids or []:
+                            # Get subcollection type
                             # TODO: replace following line with formal abstractions for doing this.
-                            current_collection_type = ":".join(current_collection_type.split(":")[1:])
+                            current_collection_type = current_collection_type.partition(":")[2]
                             name_to_index = {
                                 value["name"]: index for (index, value) in enumerate(current_element_identifiers)
                             }
@@ -958,11 +963,12 @@ class DefaultToolAction(ToolAction):
         self._record_input_datasets(trans, job, inp_data)
 
     def _record_outputs(
-        self, job: Job, out_data: Dict[str, "DatasetInstance"], output_collections: "OutputCollections"
+        self, job: Job, out_data: Mapping[str, "DatasetInstance"], output_collections: "OutputCollections"
     ):
         out_collections = output_collections.out_collections
         out_collection_instances = output_collections.out_collection_instances
         for name, dataset in out_data.items():
+            assert isinstance(dataset, HistoryDatasetAssociation)
             job.add_output_dataset(name, dataset)
         for name, dataset_collection in out_collections.items():
             job.add_implicit_output_dataset_collection(name, dataset_collection)

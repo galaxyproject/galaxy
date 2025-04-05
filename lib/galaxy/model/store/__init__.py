@@ -110,7 +110,10 @@ from galaxy.util import (
     safe_makedirs,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.compression_utils import CompressedFile
+from galaxy.util.compression_utils import (
+    CompressedFile,
+    make_fast_zipfile,
+)
 from galaxy.util.path import StrPath
 from ._bco_convert_utils import (
     bco_workflow_version,
@@ -2881,7 +2884,7 @@ class ROCrateArchiveModelExportStore(FileSourceModelExportStore, WriteCrates):
             out_file = out_file_name[: -len(".zip")]
         else:
             out_file = out_file_name
-        archive = shutil.make_archive(out_file, "fastzip", self.export_directory)
+        archive = make_fast_zipfile(base_name=out_file, base_dir=self.export_directory, root_dir=self.export_directory)
         shutil.move(archive, self.out_file)
 
 

@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     )
     from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
     from galaxy.tool_util.parser.output_objects import (
-        ToolOutput,
+        ToolOutputBase,
         ToolOutputCollection,
     )
 
@@ -191,6 +191,10 @@ class ToolSource(metaclass=ABCMeta):
         We parse this out as "" if it isn't explicitly declared.
         """
 
+    @abstractmethod
+    def parse_icon(self) -> Optional[str]:
+        """Return icon path for tool."""
+
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
         return []
@@ -339,7 +343,7 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_outputs(
         self, app: Optional["ToolOutputActionApp"]
-    ) -> Tuple[Dict[str, "ToolOutput"], Dict[str, "ToolOutputCollection"]]:
+    ) -> Tuple[Dict[str, "ToolOutputBase"], Dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
         """

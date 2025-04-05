@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { RouterLink } from "vue-router";
+
 import { type HDADetailed } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
@@ -96,6 +98,7 @@ defineProps<Props>();
                         <div id="history_id">
                             {{ dataset.history_id }}
                             <DecodedId :id="dataset.history_id" />
+                            (<RouterLink :to="`/histories/view?id=${dataset.history_id}`">view</RouterLink>)
                         </div>
                     </td>
                 </tr>

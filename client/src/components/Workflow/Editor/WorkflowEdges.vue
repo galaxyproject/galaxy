@@ -3,8 +3,8 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { Connection, OutputTerminal } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+import type { Connection, OutputTerminal } from "@/stores/workflowStoreTypes";
 
 import type { OutputTerminals } from "./modules/terminals";
 

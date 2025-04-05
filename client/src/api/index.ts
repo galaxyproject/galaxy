@@ -207,7 +207,7 @@ export function isHDA(entry?: HistoryItemSummary): entry is HDASummary {
 /**
  * Returns true if the given entry is a top level HDCA and false for sub-collections.
  */
-export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
+export function isHDCA(entry?: HistoryItemSummary | CollectionEntry): entry is HDCASummary {
     return (
         entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset_collection"
     );
@@ -309,6 +309,7 @@ export function canMutateHistory(history: AnyHistory): boolean {
 
 export type DatasetHash = components["schemas"]["DatasetHash"];
 
+export type DatasetSource = components["schemas"]["DatasetSource"];
 export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
 
 /**

@@ -19,7 +19,6 @@ interface HistoryRecord extends SelectionItem {
 }
 
 interface Props {
-    folderId: string;
     title?: string;
     actionButtonText?: string;
 }

@@ -8,6 +8,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
 from galaxy.tool_util.verify.assertion_models import assertion_list
@@ -166,10 +168,13 @@ class TestsAssertionValidation(Linter):
 class TestsCaseValidation(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        profile = tool_source.parse_profile()
+        lint_log = lint_ctx.warn if Version(profile) < Version("24.2") else lint_ctx.error
+
         try:
             validation_results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
         except Exception as e:
-            lint_ctx.warn(
+            lint_log(
                 f"Serious problem parsing tool source or tests - cannot validate test cases. The exception is [{e}]",
                 linter=cls.name(),
             )
@@ -178,7 +183,7 @@ class TestsCaseValidation(Linter):
             error = validation_result.validation_error
             if error:
                 error_str = _cleanup_pydantic_error(error)
-                lint_ctx.warn(
+                lint_log(
                     f"Test {test_idx}: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [{error_str}]",
                     linter=cls.name(),
                 )

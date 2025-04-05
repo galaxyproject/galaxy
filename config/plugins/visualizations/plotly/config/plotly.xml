@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Bar, Line and Scatter (plotly.js)">
-    <description>Basic Diagrams from Plotly Graphing Library.</description>
+<visualization name="Bar, Line and Scatter" embeddable="true">
+    <description>Basic Diagrams from http://plotly.com</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/plotly"/>
+        <requirement type="npm" version="0.0.14" package="@galaxyproject/plotly"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>

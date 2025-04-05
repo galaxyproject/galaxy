@@ -1,0 +1,54 @@
+name: Visualizations - Introduction
+description: "An introduction on how to visualize datasets."
+title_default: "Visualizations Tour"
+tags:
+  - "core"
+  - "UI"
+  - "visualization"
+
+requirements:
+  - new_history
+
+steps:
+    - content: "This short tour will walk you through <b>Galaxy's Visualization</b> feature."
+
+    - component: upload.start
+      intro: "First, we will upload some tabular data into our new history."
+      postclick: true
+
+    - component: upload.create_button
+      intro: "We will be using the paste feature to create a new dataset."
+      postclick: true
+
+    - component: upload.paste_content(n=0)
+      intro: "...and paste content into the text area field."
+      textinsert: http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/matrix_generator_for_pc_and_lda_output.tabular
+
+    - component: upload.start_button
+      intro: "Upload the data into your Galaxy history."
+      postclick: true
+
+    - component: upload.close_button
+      intro: "Hit the close button to close the upload dialog."
+      postclick: true
+
+    - component: history_panel
+      intro: "This is your history. It contains our matrix being uploaded."
+
+    - component: history_panel.item(hid=1,state=ok).title
+      intro: "Clicking on a dataset expands its options."
+      postclick: true
+
+    - component: history_panel.item(hid=1,state=ok).visualize_button
+      intro: "Clicking the diagram-icon will visualize your dataset."
+      postclick: true
+
+    - component: visualization.plugin_item(id=plotly_surface)
+      intro: "Select the surface visualization."
+      postclick: true
+
+    - element: 'iframe[id="galaxy_visualization"]'
+      intro: "This visualization is interactive."
+
+    - title: "Enjoy Galaxy"
+      intro: "Thanks for taking this tour! Happy research with Galaxy!"

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="OpenLayers map">
+<visualization name="OpenLayers map" embeddable="true">
     <description>A viewer to show maps using OpenLayers from https://openlayers.org/</description>
     <data_sources>
         <data_source>
@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/openlayers"/>
+        <requirement type="npm" version="0.0.4" package="@galaxyproject/openlayers"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>

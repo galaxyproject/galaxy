@@ -1,25 +1,27 @@
 <script setup lang="ts">
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { parseMarkdown } from "./parse";
 
-import MarkdownDefault from "./Sections/MarkdownDefault.vue";
-import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 import StsDownloadButton from "@/components/StsDownloadButton.vue";
 
 // Props
 interface MarkdownConfig {
+    content?: string;
+    errors?: Array<{ error?: string; line?: string }>;
     generate_time?: string;
     generate_version?: string;
-    content?: string;
-    markdown?: string;
-    errors?: Array<{ error?: string; line?: string }>;
     id?: string;
-    title?: string;
+    markdown?: string;
     model_class?: string;
+    title?: string;
+    update_time?: string;
 }
 
 const props = defineProps<{
@@ -38,8 +40,8 @@ const loading = ref(true);
 // Computed properties
 const effectiveExportLink = computed(() => (props.enable_beta_markdown_export ? props.exportLink : null));
 
-const time = computed(() => {
-    const generateTime = props.markdownConfig.generate_time;
+const updateTime = computed(() => {
+    const generateTime = props.markdownConfig.update_time;
     if (generateTime) {
         const formattedTime = generateTime.endsWith("Z") ? generateTime : `${generateTime}Z`;
         const date = new Date(formattedTime);
@@ -53,10 +55,8 @@ const time = computed(() => {
             timeZoneName: "short",
         });
     }
-    return "unavailable";
+    return "";
 });
-
-const version = computed(() => props.markdownConfig.generate_version || "Unknown Galaxy Version");
 
 // Methods
 function initConfig() {
@@ -81,48 +81,50 @@ onMounted(() => {
 <template>
     <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
-        <div v-else>
-            <div>
-                <StsDownloadButton
-                    v-if="effectiveExportLink"
-                    class="float-right markdown-pdf-export"
-                    :fallback-url="exportLink"
-                    :download-endpoint="downloadEndpoint"
-                    size="sm"
-                    title="Generate PDF" />
-                <b-button
-                    v-if="!readOnly"
-                    v-b-tooltip.hover
-                    class="float-right markdown-edit mr-2"
-                    role="button"
-                    size="sm"
-                    title="Edit Markdown"
-                    @click="$emit('onEdit')">
-                    Edit
-                    <FontAwesomeIcon :icon="faEdit" />
-                </b-button>
-                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
-                <span class="float-left font-weight-light">
-                    <h1 class="text-break align-middle">
-                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
-                    </h1>
-                </span>
+        <div v-else class="d-flex flex-column">
+            <div class="d-flex flex-column sticky-top bg-white">
+                <div class="d-flex">
+                    <Heading v-localize h1 separator inline size="md" class="flex-grow-1">
+                        {{ markdownConfig.title || markdownConfig.model_class }}
+                    </Heading>
+                    <div>
+                        <StsDownloadButton
+                            v-if="effectiveExportLink"
+                            class="markdown-pdf-export"
+                            :fallback-url="exportLink"
+                            :download-endpoint="downloadEndpoint"
+                            size="sm"
+                            title="Generate PDF"
+                            variant="outline-primary" />
+                        <BButton
+                            v-if="!readOnly"
+                            v-b-tooltip.hover
+                            class="markdown-edit"
+                            role="button"
+                            size="sm"
+                            title="Edit Markdown"
+                            variant="outline-primary"
+                            @click="$emit('onEdit')">
+                            Edit
+                            <FontAwesomeIcon :icon="faEdit" />
+                        </BButton>
+                    </div>
+                </div>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
-                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
-                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
-            </b-badge>
-            <div>
+            <div class="flex-grow-1 w-75 mx-auto">
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
                         <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>
+                <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component py-2">
+                    <SectionWrapper :name="obj.name" :content="obj.content" />
+                </div>
             </div>
-            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component">
-                <MarkdownDefault v-if="obj.name === 'markdown'" :content="obj.content" />
-                <MarkdownGalaxy v-else-if="obj.name === 'galaxy'" :content="obj.content" />
+            <div class="d-flex justify-content-between p-1">
+                <small v-if="updateTime" class="text-break">Last updated on {{ updateTime }}</small>
+                <small class="text-break">Identifier: {{ markdownConfig.id }}</small>
             </div>
         </div>
     </div>

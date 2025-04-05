@@ -74,7 +74,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0015_upload_dependency_xml_if_needed(self):
         """If this test is being run by itself, it will not have repository dependencies configured yet."""
-        global running_standalone
         if running_standalone:
             convert_repository = self._get_repository_by_name_and_owner(
                 convert_repository_name, common.test_user_1_name

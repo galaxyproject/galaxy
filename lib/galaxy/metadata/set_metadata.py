@@ -477,9 +477,10 @@ def set_metadata_portable(
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
                 if not is_deferred and not link_data_only:
-                    object_store_update_actions.append(
-                        partial(push_if_necessary, object_store, dataset, external_filename)
-                    )
+                    if dataset_instance_id not in unnamed_id_to_path:
+                        object_store_update_actions.append(
+                            partial(push_if_necessary, object_store, dataset, external_filename)
+                        )
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))

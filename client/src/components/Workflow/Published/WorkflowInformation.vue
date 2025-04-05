@@ -6,8 +6,8 @@ import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
 import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import { useUserStore } from "@/stores/userStore";
-import { getFullAppUrl } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";

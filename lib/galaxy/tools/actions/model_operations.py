@@ -30,6 +30,10 @@ from galaxy.tools.execution_helpers import ToolExecutionCache
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
+    from galaxy.tools import (
+        DatabaseOperationTool,
+        Tool,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +54,7 @@ class ModelOperationToolAction(DefaultToolAction):
 
     def execute(
         self,
-        tool,
+        tool: "Tool",
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
@@ -66,6 +70,9 @@ class ModelOperationToolAction(DefaultToolAction):
         flush_job: bool = True,
         skip: bool = False,
     ) -> ToolActionExecuteResult:
+        from galaxy.tools import DatabaseOperationTool
+
+        assert isinstance(tool, DatabaseOperationTool)
         incoming = incoming or {}
         trans.check_user_activation()
 
@@ -137,7 +144,16 @@ class ModelOperationToolAction(DefaultToolAction):
         return job, out_data, history
 
     def _produce_outputs(
-        self, trans: "ProvidesUserContext", tool, out_data, output_collections, incoming, history, tags, hdca_tags, skip
+        self,
+        trans: "ProvidesUserContext",
+        tool: "DatabaseOperationTool",
+        out_data,
+        output_collections,
+        incoming,
+        history,
+        tags,
+        hdca_tags,
+        skip,
     ):
         tool.produce_outputs(
             trans,

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Cytoscape">
-    <description>A viewer based on graph theory/ network library for analysis and visualisation hosted at http://js.cytoscape.org.</description>
+<visualization name="Cytoscape" embeddable="true">
+    <description>Graph viewer from http://js.cytoscape.org</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.3" package="@galaxyproject/cytoscape"/>
+        <requirement type="npm" version="0.0.7" package="@galaxyproject/cytoscape"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>

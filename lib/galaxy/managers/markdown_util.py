@@ -66,6 +66,7 @@ from .markdown_parse import (
 
 log = logging.getLogger(__name__)
 
+# Matches galaxy block attributes
 ARG_VAL_CAPTURED_REGEX = r"""(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')"""
 OUTPUT_LABEL_PATTERN = re.compile(rf"output=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 INPUT_LABEL_PATTERN = re.compile(rf"input=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
@@ -73,13 +74,37 @@ INVOCATION_ID_PATTERN = re.compile(rf"invocation_id=\s*({ARG_VAL_CAPTURED_REGEX}
 STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 
+# Matches encoded and unencoded ids in galaxy blocks
 UNENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"
 )
 ENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([a-z0-9]+)"
 )
-GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE ^ re.DOTALL)
+
+# Matches blocks of various types
+GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE | re.DOTALL)
+VISUALIZATION_FENCED_BLOCK = re.compile(r"^```\s*visualization+\n\s*(.*?)^```", re.MULTILINE | re.DOTALL)
+
+# Match invocation ids in json blocks
+INVOCATION_ID_JSON_PATTERN = re.compile(r'("invocation_id"\s*:\s*)"([^"]*)"')
+
+
+def process_invocation_ids(f, workflow_markdown: str) -> str:
+    """Finds all invocation ids in JSONs inside visualization blocks and applies f to them."""
+
+    def replace_invocation_id(match):
+        """Replaces only the invocation_id value while preserving the JSON structure."""
+        original_id = match.group(2)
+        new_id = f(original_id)
+        return f'{match.group(1)}"{new_id}"'
+
+    def process_block(block_match):
+        """Processes a matched block and replaces invocation_id inside it."""
+        block_content = block_match.group(0)
+        return re.sub(INVOCATION_ID_JSON_PATTERN, replace_invocation_id, block_content)
+
+    return re.sub(VISUALIZATION_FENCED_BLOCK, process_block, workflow_markdown)
 
 
 def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
@@ -96,6 +121,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         return (line, False)
 
     internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    internal_markdown = process_invocation_ids(trans.security.decode_id, internal_markdown)
     return internal_markdown
 
 
@@ -534,10 +560,12 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
         "generate_time": now().isoformat(),
         "generate_version": trans.app.config.version_major,
     }
+
     # Walk Galaxy directives inside the Galaxy Markdown and collect dict-ified data
     # needed to render this efficiently.
     directive_handler = ReadyForExportMarkdownDirectiveHandler(trans, extra_rendering_data)
     export_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
+    export_markdown = process_invocation_ids(lambda value: trans.security.encode_id(int(value)), export_markdown)
     return export_markdown, extra_rendering_data
 
 
@@ -925,6 +953,7 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
         return (line, False)
 
     galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = process_invocation_ids(lambda _: invocation.id, galaxy_markdown)
     return galaxy_markdown
 
 

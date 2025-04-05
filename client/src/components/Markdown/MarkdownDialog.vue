@@ -3,11 +3,10 @@ import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
-import { rethrowSimple } from "@/utils/simple-error";
 
-import { type WorkflowLabel, type WorkflowLabels } from "./labels";
+import { type WorkflowLabel } from "./Editor/types";
+import { getHistories, getInvocations, getJobs, getWorkflows } from "./services";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
 import MarkdownVisualization from "./MarkdownVisualization.vue";
@@ -21,8 +20,7 @@ interface MarkdownDialogProps {
     argumentName?: string;
     argumentType?: string;
     argumentPayload?: object;
-    labels?: WorkflowLabels;
-    useLabels: boolean;
+    labels?: Array<WorkflowLabel>;
 }
 
 const props = withDefaults(defineProps<MarkdownDialogProps>(), {
@@ -43,12 +41,12 @@ interface SelectTitles {
 
 type SelectType = "job_id" | "invocation_id" | "history_dataset_id" | "history_dataset_collection_id";
 
-const effectiveLabels = computed<WorkflowLabels>(() => {
+const effectiveLabels = computed<Array<WorkflowLabel>>(() => {
     if (!props.labels) {
-        return [] as WorkflowLabels;
+        return [];
     }
     const selectSteps = props.argumentType == "job_id";
-    const filteredLabels: WorkflowLabels = [];
+    const filteredLabels: Array<WorkflowLabel> = [];
     for (const label of props.labels) {
         if (selectSteps && label.type == "step") {
             filteredLabels.push(label);
@@ -58,6 +56,8 @@ const effectiveLabels = computed<WorkflowLabels>(() => {
     }
     return filteredLabels;
 });
+
+const hasLabels = computed(() => props.labels !== undefined);
 
 const selectorConfig = {
     job_id: {
@@ -88,38 +88,6 @@ const selectedLabelTitle = computed(() => {
     const config: SelectTitles = selectorConfig[props.argumentType as SelectType] as SelectTitles;
     return (config && config.labelTitle) || "Select Label";
 });
-
-async function getInvocations() {
-    const { data, error } = await GalaxyApi().GET("/api/invocations");
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
-}
-
-async function getJobs() {
-    const { data, error } = await GalaxyApi().GET("/api/jobs");
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
-}
-
-async function getWorkflows() {
-    const { data, error } = await GalaxyApi().GET("/api/workflows");
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
-}
-
-async function getHistories() {
-    const { data, error } = await GalaxyApi().GET("/api/histories/published");
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
-}
 
 function onData(response: unknown) {
     dataShow.value = false;
@@ -161,8 +129,9 @@ function onVisualization(response: string) {
 }
 
 function onOk(selectedLabel: WorkflowLabel | undefined) {
+    const argumentType = props.argumentType ?? "";
     const defaultLabelType: string =
-        ["history_dataset_id", "history_dataset_collection_id"].indexOf(props.argumentType) >= 0 ? "output" : "step";
+        ["history_dataset_id", "history_dataset_collection_id"].indexOf(argumentType) >= 0 ? "output" : "step";
     const labelText: string = selectedLabel ? selectedLabel.label : "<ENTER LABEL>";
     const labelType: string = selectedLabel ? selectedLabel.type : defaultLabelType;
     selectedShow.value = false;
@@ -172,25 +141,25 @@ function onOk(selectedLabel: WorkflowLabel | undefined) {
     }
 
     if (props.argumentType == "history_dataset_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             dataShow.value = true;
         }
     } else if (props.argumentType == "history_dataset_collection_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             dataCollectionShow.value = true;
         }
     } else if (props.argumentType == "job_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             jobShow.value = true;
         }
     } else if (props.argumentType == "invocation_id") {
-        if (props.useLabels) {
+        if (hasLabels.value) {
             onInsertArgument();
         } else {
             invocationShow.value = true;
@@ -214,25 +183,25 @@ if (props.argumentType == "workflow_id") {
 } else if (props.argumentType == "history_id") {
     historyShow.value = true;
 } else if (props.argumentType == "history_dataset_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         dataShow.value = true;
     }
 } else if (props.argumentType == "history_dataset_collection_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         dataCollectionShow.value = true;
     }
 } else if (props.argumentType == "invocation_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         invocationShow.value = true;
     }
 } else if (props.argumentType == "job_id") {
-    if (props.useLabels) {
+    if (hasLabels.value) {
         selectedShow.value = true;
     } else {
         jobShow.value = true;
@@ -257,7 +226,7 @@ if (props.argumentType == "workflow_id") {
             :argument-name="argumentName"
             :argument-payload="argumentPayload"
             :labels="effectiveLabels"
-            :use-labels="useLabels"
+            :use-labels="hasLabels"
             :history="currentHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel" />

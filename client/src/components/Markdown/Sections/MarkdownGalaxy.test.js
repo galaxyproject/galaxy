@@ -58,12 +58,12 @@ function mountComponent(propsData = {}, apiMap = {}) {
 describe("MarkdownContainer", () => {
     it("Renders version", async () => {
         const version = "test_version";
-        const wrapper = await mountComponent({
+        const wrapper = mountComponent({
             content: "generate_galaxy_version()",
         });
         const versionEl = wrapper.find(".galaxy-version");
         expect(versionEl.exists()).toBe(true);
-        expect(versionEl.find("code").text()).toBe(version);
+        expect(versionEl.text()).toContain(version);
 
         // test collapsing
         const nolink = wrapper.find("a");
@@ -81,12 +81,12 @@ describe("MarkdownContainer", () => {
     it("Renders time stamp", async () => {
         const time = new Date();
         jest.useFakeTimers().setSystemTime(time);
-        const wrapper = await mountComponent({
+        const wrapper = mountComponent({
             content: "generate_time()",
         });
         const version = wrapper.find(".galaxy-time");
         expect(version.exists()).toBe(true);
-        expect(version.find("code").text()).toBe(time.toUTCString());
+        expect(version.text()).toBe(time.toUTCString());
     });
 
     it("Renders history link", async () => {

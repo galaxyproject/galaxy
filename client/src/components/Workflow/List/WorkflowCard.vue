@@ -254,10 +254,10 @@ const dropdownOpen = ref(false);
                 display: flex;
                 align-items: center;
                 flex-direction: row;
-                justify-content: end;
+                justify-content: flex-end;
 
                 @container workflow-card (max-width: #{$breakpoint-xs}) {
-                    align-items: end;
+                    align-items: flex-end;
                     flex-direction: column-reverse;
                 }
             }
@@ -277,7 +277,7 @@ const dropdownOpen = ref(false);
         .workflow-card-footer {
             display: flex;
             justify-content: space-between;
-            align-items: end;
+            align-items: flex-end;
 
             .workflow-card-tags {
                 max-width: 60%;

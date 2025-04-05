@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Heatmap" embeddable="false">
+<visualization name="Heatmap" embeddable="true">
     <description>Renders a heatmap from matrix data provided in 3-column format (x, y, observation).</description>
     <requirements>
-        <requirement type="npm" version="0.0.8" package="@galaxyproject/heatmap"/>
+        <requirement type="npm" version="0.0.14" package="@galaxyproject/heatmap"/>
     </requirements>
     <data_sources>
         <data_source>

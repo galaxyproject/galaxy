@@ -13,7 +13,6 @@ from typing import (
     List,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
@@ -21,6 +20,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.deferred import (
     materialize_collection_input,
@@ -33,6 +33,7 @@ from galaxy.structured_app import (
     MinimalToolApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import determine_output_format
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -118,11 +119,6 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
         ) from e
 
 
-DeferrableObjectsT = Union[
-    model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
-]
-
-
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -169,6 +165,7 @@ class ToolEvaluator:
 
         # materialize deferred datasets
         materialized_objects = self._materialize_objects(deferred_objects, self.local_working_directory)
+        self.compute_environment.materialized_objects = materialized_objects
 
         # replace materialized objects back into tool input parameters
         self._replaced_deferred_objects(inp_data, incoming, materialized_objects)
@@ -289,6 +286,7 @@ class ToolEvaluator:
         for output_name, output in out_data.items():
             if (
                 (tool_output := self.tool.outputs.get(output_name))
+                and isinstance(tool_output, ToolOutput)
                 and (tool_output.format_source or tool_output.change_format)
                 and output.extension == "expression.json"
             ):

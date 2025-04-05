@@ -21,7 +21,6 @@ import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
-import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
@@ -65,6 +64,7 @@ const initialLoading = ref(true);
 const errored = ref(false);
 const errorMessage = ref("");
 const pollTimeout = ref<any>(null);
+const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
@@ -183,8 +183,13 @@ function stepClicked(nodeId: number | null) {
         </div>
         <div v-else-if="steps && datatypesMapper">
             <div class="d-flex">
-                <div class="position-relative w-100">
+                <!-- eslint-disable-next-line vuejs-accessibility/mouse-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+                <div
+                    class="position-relative w-100"
+                    @mouseover="showSideOverlay = true"
+                    @mouseleave="showSideOverlay = false">
                     <BCard no-body>
+                        <div v-if="activeNodeId !== null && showSideOverlay" class="overlay overlay-left" />
                         <WorkflowGraph
                             ref="workflowGraph"
                             class="invocation-graph"
@@ -198,38 +203,30 @@ function stepClicked(nodeId: number | null) {
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
+                        <div v-if="activeNodeId !== null && showSideOverlay" class="overlay overlay-right" />
                     </BCard>
                 </div>
             </div>
-            <BCard ref="stepCard" class="mt-1" no-body>
+            <BCard v-if="activeNodeId !== null" ref="stepCard" class="mt-2" no-body>
                 <BCardHeader
-                    class="d-flex justify-content-between align-items-center"
+                    class="d-flex justify-content-between align-items-center px-3 py-1"
                     :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
-                    <Heading inline size="sm" class="w-100 mr-2">
-                        <WorkflowInvocationStepHeader
-                            v-if="activeNodeId !== null"
-                            class="w-100"
-                            :workflow-step="activeStepFor(activeNodeId)"
-                            :graph-step="steps[activeNodeId]"
-                            :invocation-step="props.invocation.steps[activeNodeId]" />
-                        <span v-else>No Step Selected</span>
-                    </Heading>
+                    <WorkflowInvocationStepHeader
+                        class="w-100 pr-2"
+                        :workflow-step="activeStepFor(activeNodeId)"
+                        :graph-step="steps[activeNodeId]"
+                        :invocation-step="props.invocation.steps[activeNodeId]" />
                     <div class="d-flex flex-gapx-1">
-                        <BButton
-                            v-if="activeNodeId !== null"
-                            title="Scroll to Step"
-                            size="sm"
-                            @click="scrollStepToView()">
+                        <BButton title="Scroll to Step" size="sm" variant="link" @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </BButton>
-                        <BButton v-if="activeNodeId !== null" title="Hide Step" size="sm" @click="activeNodeId = null">
+                        <BButton title="Hide Step" size="sm" variant="link" @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </div>
                 </BCardHeader>
-                <BCardBody>
+                <BCardBody body-class="p-2">
                     <WorkflowInvocationStep
-                        v-if="activeNodeId !== null"
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
@@ -238,9 +235,9 @@ function stepClicked(nodeId: number | null) {
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
                         expanded />
-                    <BAlert v-else show>Click on a step in the invocation to view its details here.</BAlert>
                 </BCardBody>
             </BCard>
+            <BAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</BAlert>
         </div>
     </div>
 </template>
@@ -258,10 +255,17 @@ function stepClicked(nodeId: number | null) {
     }
 }
 
-.graph-steps-aside {
-    overflow-y: scroll;
-    &.steps-fixed-height {
-        max-height: 60vh;
+.overlay {
+    bottom: 0;
+    width: 1.5rem;
+    background: $gray-200;
+    opacity: 0.5;
+    &.overlay-left {
+        z-index: 1;
+    }
+    &.overlay-right {
+        left: auto;
+        right: 0;
     }
 }
 

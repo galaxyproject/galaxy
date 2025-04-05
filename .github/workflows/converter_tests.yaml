@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'packages/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'

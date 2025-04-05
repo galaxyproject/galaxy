@@ -53,9 +53,7 @@
                         @onValidation="onValidation" />
                 </div>
 
-                <div
-                    v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
-                    class="mt-2 mb-4">
+                <div class="mt-2 mb-4">
                     <Heading h2 separator bold size="sm"> Additional Options </Heading>
                     <FormElement
                         v-if="emailAllowed(config, currentUser)"
@@ -72,7 +70,6 @@
                         :help="remapHelp"
                         type="boolean" />
                     <FormElement
-                        v-if="reuseAllowed(currentUser)"
                         id="use_cached_job"
                         v-model="useCachedJobs"
                         title="Attempt to re-use jobs with identical parameters?"
@@ -130,7 +127,6 @@ import { startWatchingHistory } from "@/watch/watchHistory";
 import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
-import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
@@ -268,9 +264,6 @@ export default {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
-        },
-        reuseAllowed(user) {
-            return allowCachedJobs(user.preferences);
         },
         onHistoryChange() {
             const Galaxy = getGalaxyInstance();

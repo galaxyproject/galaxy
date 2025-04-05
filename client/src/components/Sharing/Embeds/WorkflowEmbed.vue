@@ -6,8 +6,8 @@ import { useDebounce } from "@vueuse/core";
 import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
+import { getFullAppUrl } from "@/app/utils";
 import { copy } from "@/utils/clipboard";
-import { getFullAppUrl } from "@/utils/utils";
 
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -184,8 +184,8 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
     .settings {
         flex: 1;
         display: flex;
-        align-items: start;
-        justify-content: start;
+        align-items: flex-start;
+        justify-content: flex-start;
         flex-direction: column;
     }
 

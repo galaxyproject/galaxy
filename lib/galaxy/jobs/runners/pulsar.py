@@ -365,7 +365,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
+                    compute_environment.materialized_objects
+                ):
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -449,9 +451,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
             # params from the Pulsar client.
-            # Flush with change_state.
-            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=False, job=job)
-            job_wrapper.change_state(model.Job.states.QUEUED, job=job)
+            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=True, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)

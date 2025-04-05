@@ -4,7 +4,6 @@ import io
 import logging
 import lzma
 import os
-import shutil
 import tarfile
 import tempfile
 import zipfile
@@ -409,13 +408,13 @@ class FastZipFile(zipfile.ZipFile):
 # modified from shutil._make_zipfile
 def make_fast_zipfile(
     base_name: str,
-    base_dir: str,
+    base_dir: StrPath,
     verbose: int = 0,
     dry_run: int = 0,
     logger: Optional[logging.Logger] = None,
     owner: Optional[str] = None,
     group: Optional[str] = None,
-    root_dir: Optional[str] = None,
+    root_dir: Optional[StrPath] = None,
 ) -> str:
     """Create a zip file from all the files under 'base_dir'.
 
@@ -468,6 +467,3 @@ def make_fast_zipfile(
     if root_dir is not None:
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
-
-
-shutil.register_archive_format("fastzip", make_fast_zipfile)

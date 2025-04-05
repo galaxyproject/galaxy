@@ -21,6 +21,7 @@ import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/C
 import ToolLanding from "components/Landing/ToolLanding";
 import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageDisplay from "components/PageDisplay/PageDisplay";
+import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
@@ -431,27 +432,18 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/create",
-                        component: FormGeneric,
-                        props: (route) => {
-                            let url = "/page/create";
-                            const invocation_id = route.query.invocation_id;
-                            if (invocation_id) {
-                                url += `?invocation_id=${invocation_id}`;
-                            }
-                            return {
-                                url: url,
-                                redirect: "/pages/list",
-                                active_tab: "user",
-                            };
-                        },
+                        component: PageForm,
+                        props: (route) => ({
+                            invocationId: route.query.invocation_id,
+                            mode: "create",
+                        }),
                     },
                     {
                         path: "pages/edit",
-                        component: FormGeneric,
+                        component: PageForm,
                         props: (route) => ({
-                            url: `/page/edit?id=${route.query.id}`,
-                            redirect: "/pages/list",
-                            active_tab: "user",
+                            id: route.query.id,
+                            mode: "edit",
                         }),
                     },
                     {

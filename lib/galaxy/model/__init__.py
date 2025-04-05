@@ -229,9 +229,12 @@ from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.expression import BindParameter
+
     from galaxy.objectstore import (
         BaseObjectStore,
         ObjectStorePopulator,
+        QuotaSourceMap,
     )
     from galaxy.schema.invocation import InvocationMessageUnion
 
@@ -678,9 +681,9 @@ WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
 """
 
 
-def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=False):
+def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaSourceMap", for_sqlite: bool = False):
     """Standalone function so can be reused for postgres directly in pgcleanup.py."""
-    statements = []
+    statements: List[Tuple[str, Dict[str, Any]]] = []
     default_quota_enabled = quota_source_map.default_quota_enabled
     default_exclude_ids = quota_source_map.default_usage_excluded_ids()
     default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled and default_exclude_ids else ""
@@ -696,7 +699,7 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
 UPDATE galaxy_user SET disk_usage = ({default_usage})
 WHERE id = :id
 """
-    params = {"id": user_id}
+    params: Dict[str, Any] = {"id": user_id}
     if default_exclude_ids:
         params["exclude_object_store_ids"] = default_exclude_ids
     statements.append((default_usage, params))
@@ -1162,13 +1165,13 @@ ON CONFLICT
         usage = sa_session.scalar(sql_calc, params)
         return usage
 
-    def calculate_and_set_disk_usage(self, object_store):
+    def calculate_and_set_disk_usage(self, object_store: "BaseObjectStore"):
         """
         Calculates and sets user disk usage.
         """
         self._calculate_or_set_disk_usage(object_store=object_store)
 
-    def _calculate_or_set_disk_usage(self, object_store):
+    def _calculate_or_set_disk_usage(self, object_store: "BaseObjectStore"):
         """
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
@@ -1176,11 +1179,13 @@ ON CONFLICT
         assert object_store is not None
         quota_source_map = object_store.get_quota_source_map()
         sa_session = object_session(self)
+        assert sa_session
+        assert sa_session.bind
         for_sqlite = "sqlite" in sa_session.bind.dialect.name
         statements = calculate_user_disk_usage_statements(self.id, quota_source_map, for_sqlite)
         for sql, args in statements:
             statement = text(sql)
-            binds = []
+            binds: List[BindParameter] = []
             for key, _ in args.items():
                 expand_binding = key.endswith("s")
                 binds.append(bindparam(key, expanding=expand_binding))
@@ -1243,7 +1248,10 @@ ON CONFLICT
         }
 
     def is_active(self):
-        return self.active
+        # This is ONLY used for python social auth (PSA) - it is not used for
+        # authentication in Galaxy, and `user_is_active` checks the attribute directly.
+        # PSA uses this to determine login flow, but ours is the exact same for active and inactive users.
+        return True
 
     def is_authenticated(self):
         # TODO: is required for python social auth (PSA); however, a user authentication is relative to the backend.
@@ -1504,7 +1512,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     params: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
-    object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
+    object_store_id_overrides: Mapped[Optional[Dict[str, Optional[str]]]] = mapped_column(JSONType)
     tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
@@ -1541,7 +1549,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     interactivetool_entry_points: Mapped[List["InteractiveToolEntryPoint"]] = relationship(
         back_populates="job", uselist=True
     )
-    implicit_collection_jobs_association: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(
+    implicit_collection_jobs_association: Mapped["ImplicitCollectionJobsJobAssociation"] = relationship(
         back_populates="job", uselist=False
     )
     container: Mapped[Optional["JobContainerAssociation"]] = relationship(back_populates="job", uselist=False)
@@ -1801,7 +1809,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
-    def add_output_dataset(self, name: str, dataset: "DatasetInstance"):
+    def add_output_dataset(self, name: str, dataset: "HistoryDatasetAssociation"):
         joda = JobToOutputDatasetAssociation(name, dataset)
         if dataset.dataset.job is None:
             # Only set job if dataset doesn't already have associated job.
@@ -2459,7 +2467,7 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
     )
     job: Mapped["Job"] = relationship(back_populates="output_datasets")
 
-    def __init__(self, name, dataset):
+    def __init__(self, name: str, dataset: "HistoryDatasetAssociation"):
         self.name = name
         add_object_to_object_session(self, dataset)
         self.dataset = dataset
@@ -3216,8 +3224,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     active_datasets: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[arg-type]
-                not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
+                HistoryDatasetAssociation.history_id == History.id,
+                not_(HistoryDatasetAssociation.deleted),
             )
         ),
         order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore[has-type]
@@ -3229,7 +3237,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             lambda: (
                 and_(
                     HistoryDatasetCollectionAssociation.history_id == History.id,
-                    not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[arg-type]
+                    not_(HistoryDatasetCollectionAssociation.deleted),
                 )
             )
         ),
@@ -3239,8 +3247,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     visible_datasets: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[arg-type]
-                not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
+                HistoryDatasetAssociation.history_id == History.id,
+                not_(HistoryDatasetAssociation.deleted),
                 HistoryDatasetAssociation.visible,  # type: ignore[has-type]
             )
         ),
@@ -3251,7 +3259,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         primaryjoin=(
             lambda: and_(
                 HistoryDatasetCollectionAssociation.history_id == History.id,
-                not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[arg-type]
+                not_(HistoryDatasetCollectionAssociation.deleted),
                 HistoryDatasetCollectionAssociation.visible,  # type: ignore[arg-type]
             )
         ),
@@ -4172,9 +4180,9 @@ class Dataset(Base, StorableObject, Serializable):
     active_history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
-                HistoryDatasetAssociation.purged == false(),  # type: ignore[arg-type]
+                Dataset.id == HistoryDatasetAssociation.dataset_id,
+                HistoryDatasetAssociation.deleted == false(),
+                HistoryDatasetAssociation.purged == false(),
             )
         ),
         viewonly=True,
@@ -4182,8 +4190,8 @@ class Dataset(Base, StorableObject, Serializable):
     purged_history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                HistoryDatasetAssociation.purged == true(),  # type: ignore[arg-type]
+                Dataset.id == HistoryDatasetAssociation.dataset_id,
+                HistoryDatasetAssociation.purged == true(),
             )
         ),
         viewonly=True,
@@ -4191,8 +4199,8 @@ class Dataset(Base, StorableObject, Serializable):
     active_library_associations: Mapped[List["LibraryDatasetDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                LibraryDatasetDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,
+                LibraryDatasetDatasetAssociation.deleted == false(),
             )
         ),
         viewonly=True,
@@ -4654,11 +4662,13 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
 class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDDAs, etc"""
 
+    purged: Mapped[Optional[bool]]
+    deleted: Mapped[bool]
+    dataset_id: Mapped[Optional[int]]
+    _state: Mapped[Optional[str]]
     states = Dataset.states
-    _state: Optional[str]
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
-    purged: bool
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
@@ -5101,8 +5111,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 fake_hda = HistoryDatasetAssociation(dataset=fake_dataset)
                 return fake_hda
 
-    def clear_associated_files(self, metadata_safe=False, purge=False):
-        raise Exception("Unimplemented")
+    @abc.abstractmethod
+    def clear_associated_files(self, metadata_safe=False, purge=False): ...
 
     def get_converter_types(self):
         return self.datatype.get_converter_types(self, _get_datatypes_registry())
@@ -5318,7 +5328,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     Resource class that creates a relation between a dataset and a user history.
     """
 
-    history_id: Optional[int]
+    history_id: Mapped[Optional[int]]
 
     def __init__(
         self,
@@ -5848,7 +5858,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     description: Mapped[Optional[str]] = mapped_column(TEXT)
     order_id: Mapped[Optional[int]]  # not currently being used, but for possible future use
-    item_count: Mapped[Optional[int]]
+    item_count: Mapped[int] = mapped_column(nullable=True)
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     genome_build: Mapped[Optional[str]] = mapped_column(TrimmedString(40))
@@ -5901,7 +5911,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
         "deleted",
     ]
 
-    def __init__(self, name=None, description=None, item_count=0, order_id=None, genome_build=None):
+    def __init__(self, name=None, description=None, item_count: int = 0, order_id=None, genome_build=None):
         self.name = name or "Unnamed folder"
         self.description = description
         self.item_count = item_count
@@ -7000,7 +7010,7 @@ class HistoryDatasetCollectionAssociation(
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     hid: Mapped[Optional[int]]
     visible: Mapped[Optional[bool]]
-    deleted: Mapped[Optional[bool]] = mapped_column(default=False)
+    deleted: Mapped[bool] = mapped_column(default=False, nullable=True)
     copied_from_history_dataset_collection_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_collection_association.id")
     )
@@ -8284,7 +8294,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         # Older Galaxy workflows may have multiple WorkflowOutputs
         # per "output_name", when serving these back to the editor
         # feed only a "best" output per "output_name.""
-        outputs = {}
+        outputs: Dict[str, WorkflowOutput] = {}
         for workflow_output in self.workflow_outputs:
             output_name = workflow_output.output_name
 

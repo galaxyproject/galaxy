@@ -380,10 +380,6 @@ class SimpleTextToolParameter(ToolParameter):
         else:
             self.value = ""
 
-    def to_json(self, value, app, use_security):
-        """Convert a value to a string representation suitable for persisting"""
-        return unicodify(value)
-
     def get_initial_value(self, trans, other_values):
         return self.value
 
@@ -680,9 +676,6 @@ class FileToolParameter(ToolParameter):
     >>> sorted(p.to_dict(trans).items())
     [('argument', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
-
-    def __init__(self, tool, input_source):
-        super().__init__(tool, input_source)
 
     def from_json(self, value, trans, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
@@ -2378,13 +2371,27 @@ class DataToolParameter(BaseDataToolParameter):
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
+        matches_by_hid: Dict[int, List] = {}
         for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda)
             if match:
                 m = match.hda
                 hda_list = [h for h in hda_list if h != m and h != hda]
-                m_name = f"{match.original_hda.name} (as {match.target_ext})" if match.implicit_conversion else m.name
-                append(d["options"]["hda"], m, m_name, "hda")
+                if m.hid not in matches_by_hid:
+                    matches_by_hid[m.hid] = []
+                matches_by_hid[m.hid].append(match)
+
+        # Add only original HDAs to the options, implicit conversions will be skipped
+        for matches in matches_by_hid.values():
+            match = matches[0]
+            if len(matches) > 1:
+                # If there are multiple matches for the same hid, use the original HDA and skip the implicit conversions
+                match = next((m for m in matches if len(m.hda.implicitly_converted_parent_datasets) == 0), match)
+            m_name = (
+                f"{match.original_hda.name} (as {match.target_ext})" if match.implicit_conversion else match.hda.name
+            )
+            append(d["options"]["hda"], match.hda, m_name, "hda")
+
         for hda in hda_list:
             if hasattr(hda, "hid"):
                 if hda.deleted:
@@ -2658,10 +2665,6 @@ class BaseJsonToolParameter(ToolParameter):
 class DirectoryUriToolParameter(SimpleTextToolParameter):
     """galaxy.files URIs for directories."""
 
-    def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-        super().__init__(tool, input_source)
-
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
         if not value:
@@ -2674,6 +2677,14 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         user_has_access = file_source.user_has_access(user_context)
         if not user_has_access:
             raise ParameterValueError(f"The user cannot access {value}.", self.name)
+
+    def to_param_dict_string(self, value, other_values=None) -> str:
+        """Called via __str__ when used in the Cheetah template"""
+        if value is None:
+            value = ""
+        elif not isinstance(value, str):
+            value = str(value)
+        return value
 
 
 class RulesListToolParameter(BaseJsonToolParameter):

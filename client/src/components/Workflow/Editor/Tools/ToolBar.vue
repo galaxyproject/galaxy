@@ -524,7 +524,7 @@ function autoLayout() {
         display: flex;
         padding: 0.25rem;
         gap: 0.25rem;
-        align-items: start;
+        align-items: flex-start;
         flex-direction: column-reverse;
         align-self: flex-start;
 

@@ -67,6 +67,7 @@ from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
     PageIndexQueryPayload,
+    UpdatePagePayload,
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
@@ -251,17 +252,11 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
 
-        if not payload.title:
-            raise exceptions.ObjectAttributeMissingException("Page name is required")
-        elif not payload.slug:
-            raise exceptions.ObjectAttributeMissingException("Page id is required")
-        elif not sharable.SlugBuilder.is_valid_slug(payload.slug):
-            raise exceptions.ObjectAttributeInvalidException(
-                "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
-            )
-        elif page_exists(trans.sa_session, user, payload.slug):
+        # Validate payload
+        if page_exists(trans.sa_session, user, payload.slug):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
+        # Populate content from invocation or payload
         if payload.invocation_id:
             invocation_id = payload.invocation_id
             invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
@@ -276,11 +271,10 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page = model.Page()
         page.title = payload.title
         page.slug = payload.slug
-        if (page_annotation := payload.annotation) is not None:
-            page_annotation = sanitize_html(page_annotation)
-            self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
-
         page.user = user
+        if payload.annotation is not None:
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
+
         # And the first (empty) page revision
         page_revision = model.PageRevision()
         page_revision.title = payload.title
@@ -288,6 +282,32 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page.latest_revision = page_revision
         page_revision.content = content
         page_revision.content_format = content_format
+
+        # Persist
+        session = trans.sa_session
+        session.add(page)
+        session.commit()
+        return page
+
+    def update_page(self, trans, id: int, payload: UpdatePagePayload):
+        user = trans.get_user()
+
+        # Load page from database
+        page = trans.sa_session.get(model.Page, id)
+        if not page:
+            raise exceptions.ObjectNotFound("Page not found")
+        page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
+
+        # Validate payload
+        if payload.slug != page.slug and page_exists(trans.sa_session, user, payload.slug):
+            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+
+        # Update page attributes
+        page.title = payload.title
+        page.slug = payload.slug
+        if payload.annotation is not None:
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
+
         # Persist
         session = trans.sa_session
         session.add(page)

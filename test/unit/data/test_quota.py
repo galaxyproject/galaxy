@@ -1,11 +1,18 @@
 import uuid
 from decimal import Decimal
+from typing import cast
 
 from galaxy import model
 from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import (
+    BaseObjectStore,
+    build_object_store_from_config,
     QuotaSourceInfo,
     QuotaSourceMap,
+    serialize_static_object_store_config,
+)
+from galaxy.objectstore.unittest_utils import (
+    Config,
 )
 from galaxy.quota import DatabaseQuotaAgent
 from .test_galaxy_mapping import (
@@ -67,6 +74,7 @@ class TestPurgeUsage(BaseModelTestCase):
 
 class TestCalculateUsage(BaseModelTestCase):
     def setUp(self):
+        self.object_store = cast(BaseObjectStore, MockObjectStore())
         u = model.User(email=f"calc_usage{uuid.uuid1()}@example.com", password="password")
         self.persist(u)
         h = model.History(name="History for Calculated Usage", user=u)
@@ -89,11 +97,10 @@ class TestCalculateUsage(BaseModelTestCase):
 
         d1 = self._add_dataset(10)
 
-        object_store = MockObjectStore()
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         assert u.disk_usage is None
-        u.calculate_and_set_disk_usage(object_store)
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         # method no longer updates user object
         # assert u.disk_usage == 10
 
@@ -107,7 +114,7 @@ class TestCalculateUsage(BaseModelTestCase):
         d3 = model.HistoryDatasetAssociation(extension="txt", history=h, dataset=d1.dataset)
         self.persist(d3)
 
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
 
     def test_calculate_usage_with_user_provided_storage(self):
         u = self.u
@@ -116,11 +123,10 @@ class TestCalculateUsage(BaseModelTestCase):
         # This dataset should not be counted towards the user's disk usage
         self._add_dataset(30, object_store_id="user_objects://user/provided/storage")
 
-        object_store = MockObjectStore()
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         assert u.disk_usage is None
-        u.calculate_and_set_disk_usage(object_store)
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
 
         self._refresh_user_and_assert_disk_usage_is(10)
 
@@ -129,11 +135,10 @@ class TestCalculateUsage(BaseModelTestCase):
 
         self._add_dataset(10)
 
-        object_store = MockObjectStore()
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
         assert u.disk_usage is None
-        u.calculate_and_set_disk_usage(object_store)
-        assert u.calculate_disk_usage_default_source(object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
 
         self._refresh_user_and_assert_disk_usage_is(10)
 
@@ -143,7 +148,7 @@ class TestCalculateUsage(BaseModelTestCase):
         self._refresh_user_and_assert_disk_usage_is(-10)
 
         # recalculate and verify it is fixed
-        u.calculate_and_set_disk_usage(object_store)
+        u.calculate_and_set_disk_usage(self.object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
 
         # break it again
@@ -152,7 +157,7 @@ class TestCalculateUsage(BaseModelTestCase):
         self._refresh_user_and_assert_disk_usage_is(1000)
 
         # recalculate and verify it is fixed
-        u.calculate_and_set_disk_usage(object_store)
+        u.calculate_and_set_disk_usage(self.object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
 
     def test_calculate_objectstore_usage(self):
@@ -180,7 +185,7 @@ class TestCalculateUsage(BaseModelTestCase):
         not_tracked.default_quota_enabled = False
         quota_source_map.backends["not_tracked"] = not_tracked
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         assert u.calculate_disk_usage_default_source(object_store) == 15
 
@@ -195,7 +200,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source.default_quota_source = "alt_source"
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
@@ -230,7 +235,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source.default_quota_source = "alt_source"
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
@@ -279,7 +284,7 @@ class TestCalculateUsage(BaseModelTestCase):
         unused_source.default_quota_source = "unused_source"
         quota_source_map.backends["unused_source_store"] = unused_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
         usages = u.dictify_usage(object_store)
@@ -295,7 +300,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source = QuotaSourceMap("alt_source", True)
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
         u.calculate_and_set_disk_usage(object_store)
         self.model.context.refresh(u)
@@ -320,7 +325,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source = QuotaSourceMap("alt_source", True)
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
         u.calculate_and_set_disk_usage(object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
         quota_agent.relabel_quota_for_dataset(alt_d.dataset, "alt_source", None)
@@ -340,7 +345,7 @@ class TestCalculateUsage(BaseModelTestCase):
         alt_source = QuotaSourceMap("alt_source", True)
         quota_source_map.backends["alt_source_store"] = alt_source
 
-        object_store = MockObjectStore(quota_source_map)
+        object_store = cast(BaseObjectStore, MockObjectStore(quota_source_map))
         u.calculate_and_set_disk_usage(object_store)
         self._refresh_user_and_assert_disk_usage_is(15, "alt_source")
         quota_agent.relabel_quota_for_dataset(d.dataset, None, "alt_source")
@@ -443,19 +448,138 @@ class TestQuota(BaseModelTestCase):
     def _assert_user_quota_is(self, user, amount, quota_source_label=None):
         actual_quota = self.quota_agent.get_quota(user, quota_source_label=quota_source_label)
         assert amount == actual_quota, f"Expected quota [{amount}], got [{actual_quota}]"
+        quota_source_map = QuotaSourceMap()
         if quota_source_label is None:
             if amount is None:
                 user.total_disk_usage = 1000
                 job = model.Job()
                 job.user = user
-                assert not self.quota_agent.is_over_quota(None, job, None)
+                assert not self.quota_agent.is_over_quota(quota_source_map, job)
             else:
                 job = model.Job()
                 job.user = user
                 user.total_disk_usage = amount - 1
-                assert not self.quota_agent.is_over_quota(None, job, None)
+                assert not self.quota_agent.is_over_quota(quota_source_map, job)
                 user.total_disk_usage = amount + 1
-                assert self.quota_agent.is_over_quota(None, job, None)
+                assert self.quota_agent.is_over_quota(quota_source_map, job)
+
+
+class TestQuotaObjectStore(BaseModelTestCase):
+    def setUp(self):
+        super().setUp()
+        u = model.User(email=f"calc_usage{uuid.uuid1()}@example.com", password="password")
+        self.persist(u)
+        h = model.History(name="History for Calculated Usage", user=u)
+        self.persist(h)
+        self.u = u
+        self.h = h
+
+        self.quota_agent = DatabaseQuotaAgent(self.model)
+
+    def test_labeled_quota_objectstore(self):
+        """
+        setup an object store with 3 backends with 2 quota sources
+        - backends "files" and "legacy" count for a quota source "permanent"
+        - backend "files-scratch"
+        setup corresponding default quotas for the quota sources
+
+        - add datasets to each of the backends such that the default quotas are (just) not violated
+        - assert that jobs targeting files / files-scratch pass the quota check
+
+        - add datasets such that quotas are violated
+        - assert that jobs targeting files / files-scratch violate the quota check
+        """
+
+        DISTRIBUTED_TEST_CONFIG_YAML = """
+type: distributed
+search_for_missing: true
+backends:
+  - id: "files"
+    type: disk
+    device: "files"
+    weight: 1
+    store_by: uuid
+    allow_selection: true
+    private: false
+    quota:
+      source: permanent
+    name: "Permanent Storage"
+    description: Data in Permanent Storage is not deleted automatically.  Default quota is X.
+    files_dir: database/files_24.1/
+    badges:
+      - type: not_backed_up
+  - id: "files-scratch"
+    type: disk
+    device: "files"
+    weight: 0
+    store_by: uuid
+    allow_selection: true
+    private: true
+    quota:
+      source: scratch
+    name: "Scratch storage"
+    description: "Data in scratch storage is scheduled for automatic removal after Y days. Default quota is Z."
+    files_dir: database/files_24.1/
+    badges:
+      - type: not_backed_up
+      - type: short_term
+        message: "Data stored here is scheduled for removal after 30 days"
+  - id: legacy
+    type: disk
+    store_by: id
+    quota:
+      source: permanent
+    weight: 0
+    files_dir: database/files/
+"""
+        with Config(DISTRIBUTED_TEST_CONFIG_YAML) as (directory, object_store):
+            as_dict = serialize_static_object_store_config(object_store, set())
+            self.object_store = build_object_store_from_config(None, config_dict=as_dict)
+
+        quota = model.Quota(name="default permanent quota", amount=20, quota_source_label="permanent")
+        self.quota_agent.set_default_quota(
+            model.DefaultQuotaAssociation.types.REGISTERED,
+            quota,
+        )
+
+        quota = model.Quota(name="default scratch quota", amount=100, quota_source_label="scratch")
+        self.quota_agent.set_default_quota(
+            model.DefaultQuotaAssociation.types.REGISTERED,
+            quota,
+        )
+
+        self._add_dataset(10, "legacy")
+        self._add_dataset(10, "files")
+        self._add_dataset(100, "files-scratch")
+        self.u.calculate_and_set_disk_usage(self.object_store)
+
+        self._run_job("files", False)
+        self._run_job("files-scratch", False)
+
+        self._add_dataset(1, "files")
+        self._add_dataset(1, "files-scratch")
+        self.u.calculate_and_set_disk_usage(self.object_store)
+
+        self._run_job("files", True)
+        self._run_job("files-scratch", True)
+
+    def _add_dataset(self, total_size, object_store_id=None):
+        d1 = model.HistoryDatasetAssociation(
+            extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
+        )
+        d1.dataset.total_size = total_size
+        d1.dataset.object_store_id = object_store_id
+        self.persist(d1)
+        return d1
+
+    def _run_job(self, object_store_id, over_quota):
+        """
+        check if a job targeting object_store_id is over_quota
+        """
+        job = model.Job()
+        job.user = self.u
+        job.object_store_id = object_store_id
+        assert over_quota is self.quota_agent.is_over_quota(self.object_store.get_quota_source_map(), job)
 
 
 class TestUsage(BaseModelTestCase):

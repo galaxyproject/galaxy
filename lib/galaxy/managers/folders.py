@@ -9,6 +9,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -54,6 +55,9 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
 
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
+
 log = logging.getLogger(__name__)
 
 
@@ -87,7 +91,13 @@ class FolderManager:
     Interface/service object for interacting with folders.
     """
 
-    def get(self, trans, decoded_folder_id: int, check_manageable: bool = False, check_accessible: bool = True):
+    def get(
+        self,
+        trans: "ProvidesUserContext",
+        decoded_folder_id: int,
+        check_manageable: bool = False,
+        check_accessible: bool = True,
+    ):
         """
         Get the folder from the DB.
 
@@ -111,7 +121,13 @@ class FolderManager:
         folder = self.secure(trans, folder, check_manageable, check_accessible)
         return folder
 
-    def secure(self, trans, folder, check_manageable=True, check_accessible=True):
+    def secure(
+        self,
+        trans: "ProvidesUserContext",
+        folder: LibraryFolder,
+        check_manageable: bool = True,
+        check_accessible: bool = True,
+    ):
         """
         Check if (a) user can manage folder or (b) folder is accessible to user.
 
@@ -190,7 +206,7 @@ class FolderManager:
         folder_dict["update_time"] = folder.update_time
         return folder_dict
 
-    def create(self, trans, parent_folder_id, new_folder_name, new_folder_description=""):
+    def create(self, trans, parent_folder_id: int, new_folder_name: str, new_folder_description: Optional[str] = None):
         """
         Create a new folder under the given folder.
 

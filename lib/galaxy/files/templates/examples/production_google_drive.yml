@@ -1,5 +1,5 @@
 - id: google_drive
-  name: Export to Google Drive
+  name: Google Drive
   description: Configure your Google Drive account to accept file uploads. Only files uploaded by this Galaxy instance can be read.
   configuration:
     type: googledrive

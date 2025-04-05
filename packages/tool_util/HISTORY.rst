@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.2.3 (2025-03-16)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix parameter model constructions with leading underscores, fixes converter linting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19790 <https://github.com/galaxyproject/galaxy/pull/19790>`_
+
+-------------------
 24.2.2 (2025-03-08)
 -------------------
 

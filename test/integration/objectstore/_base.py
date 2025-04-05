@@ -40,8 +40,8 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
     <rucio_upload_scheme rse="${rucio_rse}" scheme="file" scope="galaxy"/>
     <rucio_download_scheme rse="${rucio_rse}" scheme="file"/>
     <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
-    <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
-    <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory_rucio"/>
+    <extra_dir type="temp" path="${temp_directory}"/>
 </object_store>
 """
 )
@@ -106,6 +106,7 @@ ONEDATA_OBJECT_STORE_CONFIG = string.Template(
 def wait_rucio_ready(container_name):
     timeout = 30
     start_time = time.time()
+    rse = None
     while True:
         try:
             rse = docker_exec(container_name, "rucio", "list-rses").decode("utf-8").strip()
@@ -114,7 +115,7 @@ def wait_rucio_ready(container_name):
         except subprocess.CalledProcessError:
             pass
         if time.time() - start_time >= timeout:
-            raise TimeoutError(rse)
+            raise TimeoutError(f"cannot start Rucio {rse}")
         time.sleep(1)
 
 
@@ -261,22 +262,6 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         config["metadata_strategy"] = "extended"
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
-        # Rucio client requires a config file to exist on disk. This is ugly,
-        # but we have to live with it for now. An issue is created: https://github.com/rucio/rucio/issues/6410
-        rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
-        env_file = os.path.join(temp_directory, "env_set.sh")
-        with open(env_file, "w") as f:
-            f.write(f"export RUCIO_CONFIG={rucio_config_path}\n")
-        config["environment_setup_file"] = env_file
-        with open(rucio_config_path, "w") as f:
-            f.write("[client]\n")
-            f.write(f"rucio_host = http://{OBJECT_STORE_HOST}:{OBJECT_STORE_PORT}\n")
-            f.write(f"auth_host = http://{OBJECT_STORE_HOST}:{OBJECT_STORE_PORT}\n")
-            f.write(f"account = {OBJECT_STORE_RUCIO_ACCOUNT}\n")
-            f.write("auth_type = userpass\n")
-            f.write(f"username = {OBJECT_STORE_RUCIO_USERNAME}\n")
-            f.write(f"password = {OBJECT_STORE_RUCIO_ACCESS}\n")
-        os.environ["RUCIO_CONFIG"] = rucio_config_path
         with open(config_path, "w") as f:
             f.write(
                 RUCIO_OBJECT_STORE_CONFIG.safe_substitute(
@@ -292,7 +277,6 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                     }
                 )
             )
-
         config["object_store_config_file"] = config_path
 
     def setUp(self):

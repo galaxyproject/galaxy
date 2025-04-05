@@ -128,6 +128,9 @@ class CwlToolSource(ToolSource):
     def parse_description(self):
         return self.tool_proxy.description()
 
+    def parse_icon(self) -> Optional[str]:
+        return None  # Not implemented
+
     def parse_interactivetool(self):
         return []
 

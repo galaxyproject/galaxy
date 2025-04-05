@@ -43,6 +43,12 @@ class BasePagesApiTestCase(ApiTestCase):
     def _test_page_payload(self, **kwds):
         return self.dataset_populator.new_page_payload(**kwds)
 
+    def _update_page(self, page_id, annotation, slug, title, error_code=200):
+        payload = dict(title=title, slug=slug, annotation=annotation)
+        page_response = self._put(f"pages/{page_id}", payload, json=True)
+        self._assert_status_code_is(page_response, error_code)
+        return page_response.json()
+
 
 class TestPagesApi(BasePagesApiTestCase, SharingApiTests):
     api_name = "pages"
@@ -387,6 +393,21 @@ steps:
         assert show_json["title"] == "MY PAGE"
         assert show_json["content"] == "<p>Page!</p>"
         assert show_json["content_format"] == "html"
+
+    def test_update(self):
+        response_json = self._create_valid_page_with_slug("pagetoupdate")
+        page_id = response_json["id"]
+        update_response = self._update_page(page_id, "newannotation", "new.slug", "newtitle", error_code=400)
+        assert update_response["err_msg"] == "String should match pattern '^[a-z0-9-]+$' in ('body', 'slug')"
+        update_response = self._update_page(page_id, "newannotation", "newslug", "", error_code=400)
+        assert update_response["err_msg"] == "String should have at least 1 character in ('body', 'title')"
+        update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle")
+        self._assert_has_keys(update_response, "id", "slug", "title")
+        assert update_response["title"] == "newtitle"
+        assert update_response["slug"] == "newslug"
+        show_response = self._get(f"pages/{page_id}")
+        show_json = show_response.json()
+        assert show_json["annotation"] == "newannotation"
 
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")

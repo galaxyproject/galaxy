@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="PCA 3D plot" embeddable="false">
+<visualization name="PCA 3D plot">
     <description>Plotly-based 3D PCA visualization plugin.</description>
     <data_sources>
         <data_source>

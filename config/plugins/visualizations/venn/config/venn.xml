@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Venn Diagram (Benfred)">
-    <description>A javascript library for laying out area proportional venn and euler diagrams hosted at https://github.com/benfred/venn.js.</description>
+<visualization name="Venn Diagram" embeddable="true">
+    <description>Area proportional Venn and Euler Diagrams from http://github.com/benfred/venn.js</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.3" package="@galaxyproject/venn"/>
+        <requirement type="npm" version="0.0.7" package="@galaxyproject/venn"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tracks>

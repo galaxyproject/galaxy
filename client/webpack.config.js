@@ -4,10 +4,11 @@ const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
-const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const CircularDependencyPlugin = require("circular-dependency-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -17,7 +18,6 @@ const styleBase = path.join(scriptsBase, "style");
 const modulesExcludedFromLibs = [
     "jspdf",
     "canvg",
-    "prismjs",
     "html2canvas",
     "handsontable",
     "pikaday",
@@ -28,6 +28,7 @@ const modulesExcludedFromLibs = [
     "vega",
     "vega-embed",
     "vega-lite",
+    "ace-builds",
 ].join("|");
 
 const buildDate = new Date();
@@ -110,11 +111,21 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.tsx?$/,
                     exclude: /node_modules/,
-                    loader: "ts-loader",
-                    options: {
-                        configFile: "tsconfig.webpack.json",
-                        appendTsSuffixTo: [/\.vue$/],
-                    },
+                    use: [
+                        {
+                            loader: "thread-loader",
+                            // options: { workers: 2 },
+                        },
+                        {
+                            loader: "ts-loader",
+                            options: {
+                                transpileOnly: true,
+                                happyPackMode: true, // IMPORTANT! use happyPackMode mode to allow thread-loader
+                                configFile: "tsconfig.webpack.json",
+                                appendTsSuffixTo: [/\.vue$/],
+                            },
+                        },
+                    ],
                 },
                 {
                     test: /\.mjs$/,
@@ -174,7 +185,6 @@ module.exports = (env = {}, argv = {}) => {
                         },
                         {
                             loader: "css-loader",
-                            options: { sourceMap: true },
                         },
                         {
                             loader: "postcss-loader",
@@ -182,10 +192,9 @@ module.exports = (env = {}, argv = {}) => {
                         {
                             loader: "sass-loader",
                             options: {
-                                sourceMap: true,
                                 sassOptions: {
                                     quietDeps: true,
-                                    includePaths: [
+                                    loadPaths: [
                                         path.join(styleBase, "scss"),
                                         path.resolve(__dirname, "./node_modules"),
                                     ],
@@ -233,7 +242,6 @@ module.exports = (env = {}, argv = {}) => {
             new MiniCssExtractPlugin({
                 filename: "[name].css",
             }),
-            new DuplicatePackageCheckerPlugin(),
             new DumpMetaPlugin({
                 filename: path.join(__dirname, "../lib/galaxy/web/framework/meta.json"),
                 prepare: (stats) => ({
@@ -242,7 +250,22 @@ module.exports = (env = {}, argv = {}) => {
                     epoch: Date.parse(buildDate),
                 }),
             }),
+            new ForkTsCheckerWebpackPlugin({
+                async: false,
+                typescript: {
+                    diagnosticOptions: {
+                        semantic: true,
+                        syntactic: true,
+                    },
+                },
+            }),
         ],
+        cache: {
+            type: "filesystem",
+            buildDependencies: {
+                config: [__filename],
+            },
+        },
         devServer: {
             client: {
                 overlay: {
@@ -264,8 +287,9 @@ module.exports = (env = {}, argv = {}) => {
             // proxy *everything* to the galaxy server.
             // someday, when we have a fully API-driven independent client, this
             // can be a more limited set -- e.g. `/api`, `/auth`
-            proxy: {
-                "**": {
+            proxy: [
+                {
+                    context: ["**"],
                     // We explicitly use ipv4 loopback instead of localhost to
                     // avoid ipv6/ipv4 resolution order issues; this should
                     // align with Galaxy's default.
@@ -274,12 +298,29 @@ module.exports = (env = {}, argv = {}) => {
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
                     logLevel: "debug",
                 },
-            },
+            ],
         },
     };
 
+    // Only include CircularDependencyPlugin in development mode
+    if (targetEnv === "development") {
+        buildconfig.plugins.push(
+            new CircularDependencyPlugin({
+                // exclude detection of files based on a RegExp
+                exclude: /a\.js|node_modules|src\/libs/,
+                // add errors to webpack instead of warnings
+                failOnError: !!process.env.CIRCULAR_DEPENDENCY_FAIL_ON_ERROR,
+                // allow import cycles that include an asyncronous import,
+                // e.g. via import(/* webpackMode: "weak" */ './file.js')
+                allowAsyncCycles: false,
+                // set the current working directory for displaying module paths
+                cwd: process.cwd(),
+            })
+        );
+    }
+
     if (process.env.GXY_BUILD_SOURCEMAPS) {
-        buildconfig.devtool = "source-map";
+        buildconfig.devtool = "eval-cheap-module-source-map";
     }
 
     return buildconfig;

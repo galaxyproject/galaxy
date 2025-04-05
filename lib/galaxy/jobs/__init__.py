@@ -14,9 +14,14 @@ import shutil
 import sys
 import time
 import traceback
+from dataclasses import (
+    dataclass,
+    field,
+)
 from json import loads
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -27,7 +32,12 @@ from typing import (
 import yaml
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
-from sqlalchemy import select
+from sqlalchemy import (
+    and_,
+    func,
+    select,
+    update,
+)
 
 from galaxy import (
     model,
@@ -298,6 +308,18 @@ def job_config_xml_to_dict(config, root):
     return config_dict
 
 
+@dataclass
+class JobConfigurationLimits:
+    registered_user_concurrent_jobs: Optional[int] = None
+    anonymous_user_concurrent_jobs: Optional[int] = None
+    walltime: Optional[str] = None
+    walltime_delta: Optional[datetime.timedelta] = None
+    total_walltime: Dict[str, Any] = field(default_factory=dict)
+    output_size: Optional[int] = None
+    destination_user_concurrent_jobs: Dict[str, int] = field(default_factory=dict)
+    destination_total_concurrent_jobs: Dict[str, int] = field(default_factory=dict)
+
+
 class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
@@ -346,16 +368,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.resource_groups = {}
         self.default_resource_group = None
         self.resource_parameters = {}
-        self.limits = Bunch(
-            registered_user_concurrent_jobs=None,
-            anonymous_user_concurrent_jobs=None,
-            walltime=None,
-            walltime_delta=None,
-            total_walltime={},
-            output_size=None,
-            destination_user_concurrent_jobs={},
-            destination_total_concurrent_jobs={},
-        )
+        self.limits = JobConfigurationLimits()
 
         default_resubmits = []
         default_resubmit_condition = self.app.config.default_job_resubmission_condition
@@ -458,10 +471,18 @@ class JobConfiguration(ConfiguresHandlers):
         job_metrics = self.app.job_metrics
         execution_dict = job_config_dict.get("execution", {})
         environments = execution_dict.get("environments", [])
-        enviroment_iter = (
+        environments_list = list(
             ((e["id"], e) for e in environments) if isinstance(environments, list) else environments.items()
         )
-        for environment_id, environment_dict in enviroment_iter:
+        for _, environment_dict in environments_list:
+            runner = environment_dict.get("runner")
+            if runner == "dynamic_tpv":
+                environment_dict["runner"] = "dynamic"
+                environment_dict["type"] = "python"
+                environment_dict["function"] = "map_tool_to_destination"
+                environment_dict["rules_module"] = "tpv.rules"
+
+        for environment_id, environment_dict in environments_list:
             metrics = environment_dict.get("metrics")
             if metrics is None:
                 metrics = {"src": "default"}
@@ -1607,12 +1628,143 @@ class MinimalJobWrapper(HasResourceParameters):
         dest_params = self.job_destination.params
         return self.get_job().get_destination_configuration(dest_params, self.app.config, key, default)
 
+    def queue_with_limit(self, job: Job, job_destination: JobDestination):
+        anonymous_user_concurrent_jobs = self.app.job_config.limits.anonymous_user_concurrent_jobs
+        registered_user_concurrent_jobs = self.app.job_config.limits.registered_user_concurrent_jobs
+        destination_total_concurrent_jobs = self.app.job_config.limits.destination_total_concurrent_jobs
+        destination_total_limit = self.app.job_config.limits.destination_total_concurrent_jobs.get(job_destination.id)
+        destination_user_limit = self.app.job_config.limits.destination_user_concurrent_jobs.get(job_destination.id)
+        destination_tag_limits = {}
+        if job_destination.tags:
+            for tag in job_destination.tags:
+                if tag_limit := destination_total_concurrent_jobs.get(tag):
+                    destination_tag_limits[tag] = tag_limit
+
+        conditions = [model.Job.table.c.id == job.id]
+
+        if job.user_id:
+            user_job_count = (
+                select(func.count(model.Job.table.c.id))
+                .where(
+                    and_(
+                        model.Job.table.c.state.in_(
+                            [
+                                model.Job.states.QUEUED,
+                                model.Job.states.RUNNING,
+                                model.Job.states.RESUBMITTED,
+                            ]
+                        ),
+                        model.Job.table.c.user_id == job.user_id,
+                    )
+                )
+                .scalar_subquery()
+            )
+
+            if registered_user_concurrent_jobs is not None:
+                conditions.append(user_job_count < registered_user_concurrent_jobs)
+            if destination_user_limit is not None:
+                destination_job_count = (
+                    select(func.count(model.Job.table.c.id))
+                    .where(
+                        and_(
+                            model.Job.table.c.state.in_(
+                                [
+                                    model.Job.states.QUEUED,
+                                    model.Job.states.RUNNING,
+                                    model.Job.states.RESUBMITTED,
+                                ]
+                            ),
+                            model.Job.table.c.destination_id == job_destination.id,
+                            model.Job.table.c.user_id == job.user_id,
+                        )
+                    )
+                    .scalar_subquery()
+                )
+                conditions.append(destination_job_count < destination_user_limit)
+
+        elif anonymous_user_concurrent_jobs and job.galaxy_session and job.galaxy_session.id:
+            anon_job_count = (
+                select(func.count(model.Job.table.c.id))
+                .where(
+                    and_(
+                        model.Job.table.c.state.in_(
+                            [
+                                model.Job.states.QUEUED,
+                                model.Job.states.RUNNING,
+                                model.Job.states.RESUBMITTED,
+                            ]
+                        ),
+                        model.Job.table.c.session_id == job.galaxy_session.id,
+                    )
+                )
+                .scalar_subquery()
+            )
+            conditions.append(anon_job_count < anonymous_user_concurrent_jobs)
+
+        if destination_total_limit is not None:
+            destination_total_count = (
+                select(func.count(model.Job.table.c.id))
+                .where(
+                    and_(
+                        model.Job.table.c.state.in_(
+                            [
+                                model.Job.states.QUEUED,
+                                model.Job.states.RUNNING,
+                                model.Job.states.RESUBMITTED,
+                            ]
+                        ),
+                        model.Job.table.c.destination_id == job_destination.id,
+                    )
+                )
+                .scalar_subquery()
+            )
+            conditions.append(destination_total_count < destination_total_limit)
+
+        if destination_tag_limits:
+            for tag, limit in destination_tag_limits.items():
+                destination_ids = {destination.id for destination in self.app.job_config.get_destinations(tag)}
+                tag_count = (
+                    select(func.count(model.Job.table.c.id))
+                    .where(
+                        and_(
+                            model.Job.table.c.state.in_(
+                                [
+                                    model.Job.states.QUEUED,
+                                    model.Job.states.RUNNING,
+                                    model.Job.states.RESUBMITTED,
+                                ]
+                            ),
+                            model.Job.table.c.destination_id.in_(destination_ids),
+                        )
+                    )
+                    .scalar_subquery()
+                )
+                conditions.append(tag_count < limit)
+
+        update_stmt = (
+            update(model.Job)
+            .where(*conditions)
+            .values(
+                state=model.Job.states.QUEUED,
+                destination_id=job_destination.id,
+                destination_params=job_destination.params,
+                job_runner_name=job_destination.runner,
+            )
+        )
+
+        result = self.sa_session.execute(update_stmt)
+        self.sa_session.commit()
+
+        return result.rowcount > 0
+
     def enqueue(self):
         job = self.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        self.change_state(Job.states.QUEUED, flush=False, job=job)
-        # Persist the destination so that the job will be included in counts if using concurrency limits
-        self.set_job_destination(self.job_destination, None, flush=False, job=job)
+        if self.is_task:
+            self.change_state(model.Job.states.QUEUED, flush=False, job=job)
+        elif not self.queue_with_limit(job, self.job_destination):
+            return False
+        job.update_output_states(self.app.application_stack.supports_skip_locked())
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
         # Now that we have the object store id, check if we are over the limit
@@ -1621,7 +1773,8 @@ class MinimalJobWrapper(HasResourceParameters):
         return True
 
     def _pause_job_if_over_quota(self, job):
-        if self.app.quota_agent.is_over_quota(self.app, job, self.job_destination):
+        quota_source_map = self.app.object_store.get_quota_source_map()
+        if self.app.quota_agent.is_over_quota(quota_source_map, job):
             log.info("(%d) User (%s) is over quota: job paused", job.id, job.user_id)
             message = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
             self.pause(job, message)
@@ -1629,19 +1782,19 @@ class MinimalJobWrapper(HasResourceParameters):
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
         """Subclasses should implement this to persist a destination, if necessary."""
 
-    def _set_object_store_ids(self, job):
+    def _set_object_store_ids(self, job: Job):
         if job.object_store_id:
             # We aren't setting this during job creation anymore, but some existing
             # jobs may have this set. Skip this following code if that is the case.
             return
 
         object_store = self.app.object_store
-        if not object_store.object_store_allows_id_selection:
+        if not object_store.object_store_allows_id_selection():
             self._set_object_store_ids_basic(job)
         else:
             self._set_object_store_ids_full(job)
 
-    def _set_object_store_ids_basic(self, job):
+    def _set_object_store_ids_basic(self, job: Job):
         object_store_id = self.get_destination_configuration("object_store_id", None)
         object_store_populator = ObjectStorePopulator(self.app, job.user)
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
@@ -1662,11 +1815,11 @@ class MinimalJobWrapper(HasResourceParameters):
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
 
-    def _set_object_store_ids_full(self, job):
+    def _set_object_store_ids_full(self, job: Job):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
-        split_object_stores = None
-        object_store_id_overrides = None
+        split_object_stores: Optional[Callable[[str], ObjectStorePopulator]] = None
+        object_store_id_overrides: Optional[Dict[str, Optional[str]]] = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
@@ -1687,7 +1840,11 @@ class MinimalJobWrapper(HasResourceParameters):
                 # directory?
                 object_store_id = invocation_object_stores.preferred_outputs_object_store_id
                 object_store_populator = intermediate_object_store_populator
-                output_names = [o.output_name for o in workflow_invocation_step.workflow_step.unique_workflow_outputs]
+                output_names = [
+                    o.output_name
+                    for o in workflow_invocation_step.workflow_step.unique_workflow_outputs
+                    if o.output_name
+                ]
                 if invocation_object_stores.step_effective_outputs is not None:
                     output_names = [
                         o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
@@ -1696,9 +1853,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 # we resolve the precreated datasets here with object store populators
                 # but for dynamically created datasets after the job we need to record
                 # the outputs and set them accordingly
-                object_store_id_overrides = {o: preferred_outputs_object_store_id for o in output_names}
+                object_store_id_overrides = dict.fromkeys(output_names, preferred_outputs_object_store_id)
 
-                def split_object_stores(output_name):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
+                def split_object_stores(output_name: str):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
                         output_name = output_name.split("|__part__|", 1)[0]
                     if output_name in output_names:
@@ -1718,7 +1875,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 object_store_id = user.preferred_object_store_id
 
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
-        if not split_object_stores:
+        if split_object_stores is None:
             object_store_populator = ObjectStorePopulator(self.app, user)
 
             if object_store_id:

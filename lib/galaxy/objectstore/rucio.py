@@ -138,25 +138,45 @@ def parse_config_xml(config_xml):
 
 
 class RucioBroker:
-    def __init__(self, rucio_config):
+    def __init__(self, rucio_object_store):
         self._temp_file_name = None
-        self.config = rucio_config
-        self.upload_scheme = rucio_config["upload_scheme"]
-        self.upload_rse_name = rucio_config["upload_rse_name"]
-        self.scope = rucio_config["scope"]
-        self.register_only = rucio_config["register_only"]
-        self.download_schemes = rucio_config["download_schemes"]
+        self.rucio_config_path: Optional[str] = None
+        self.config = rucio_object_store.rucio_config
+        self.extra_dirs = rucio_object_store.extra_dirs
+        self.upload_scheme = self.config["upload_scheme"]
+        self.upload_rse_name = self.config["upload_rse_name"]
+        self.scope = self.config["scope"]
+        self.register_only = self.config["register_only"]
+        self.download_schemes = self.config["download_schemes"]
         if Client is None:
             raise Exception(NO_RUCIO_ERROR_MESSAGE)
         rucio.common.utils.PREFERRED_CHECKSUM = "md5"
 
     def get_rucio_client(self):
+        if not self.rucio_config_path:
+            temp_directory = self.extra_dirs["temp"]
+            self.rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
+            key_for_pass = "password"
+            with open(self.rucio_config_path, "w") as f:
+                f.write(
+                    f"""[client]
+rucio_host = {self.config['host']}
+auth_host = {self.config['auth_host']}
+account = {self.config['account']}
+auth_type = {self.config['auth_type']}
+username = {self.config['username']}
+{key_for_pass} = {self.config[key_for_pass]}
+"""
+                )
+        # We may have crossed a forkpool boundary. No harm setting the env var again.
+        # Fixes rucio integration tests
+        os.environ["RUCIO_CONFIG"] = self.rucio_config_path
         client = Client(
             rucio_host=self.config["host"],
             auth_host=self.config["auth_host"],
             account=self.config["account"],
             auth_type=self.config["auth_type"],
-            creds={"username": self.config["username"], "password": self.config["username"]},
+            creds={"username": self.config["username"], "password": self.config["password"]},
         )
         return client
 
@@ -293,7 +313,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         self.rucio_config = config_dict.get("rucio") or {}
 
         self.oidc_provider = config_dict.get("oidc_provider", None)
-        self.rucio_broker = RucioBroker(self.rucio_config)
+        self.rucio_broker = RucioBroker(self)
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
