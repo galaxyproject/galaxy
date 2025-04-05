@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem } from "bootstrap-vue";
 
 import historiesGridConfig from "@/components/Grid/configs/histories";
 import historiesPublishedGridConfig from "@/components/Grid/configs/historiesPublished";
 import historiesSharedGridConfig from "@/components/Grid/configs/historiesShared";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -14,8 +16,9 @@ import GridList from "@/components/Grid/GridList.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 
 const userStore = useUserStore();
+const historyStore = useHistoryStore();
 
-library.add(faPlus);
+library.add(faPlus, faUpload);
 
 interface Props {
     activeList?: "archived" | "my" | "shared" | "published";
@@ -36,10 +39,18 @@ const props = withDefaults(defineProps<Props>(), {
                 <BButton
                     size="sm"
                     variant="outline-primary"
+                    data-description="grid action create new history"
+                    @click="historyStore.createNewHistory()">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    <span v-localize>Create</span>
+                </BButton>
+                <BButton
+                    size="sm"
+                    variant="outline-primary"
                     to="/histories/import"
                     data-description="grid action import new history">
-                    <Icon :icon="faPlus" />
-                    <span v-localize>Import History</span>
+                    <FontAwesomeIcon :icon="faUpload" />
+                    <span v-localize>Import</span>
                 </BButton>
             </div>
         </div>
