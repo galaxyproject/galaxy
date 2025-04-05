@@ -1,0 +1,70 @@
+<tool id="select_optional_legacy" name="select_optional_legacy" version="1.0.0">
+    <command><![CDATA[
+        echo select_opt $select_opt >> '$output1' &&
+        echo select_mult_opt $select_mult_opt >> '$output1' &&
+        echo col_opt $col_opt >> '$output1' &&
+        echo col_mult_opt $col_mult_opt >> '$output1' &&
+        echo groups_opt $groups_opt >> '$output1' &&
+        echo groups_mult_opt $groups_mult_opt >> '$output1' &&
+        echo build_opt $build_opt >> '$output1' &&
+        echo build_mult_opt $build_mult_opt >> '$output1'
+    ]]></command>
+    <inputs>
+        <!-- verify that it is possible to select no options
+             for optional select parameters with dynamic
+             options mn parameter 
+            
+            - select
+            - data_column
+            - group_tag
+            - genomebuild
+            -->
+        <param name="select_opt" type="select" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="remove_value" value="hg18_value"/>
+                <filter type="remove_value" value="hg19_value"/>
+                <filter type="remove_value" value="mm10_value"/>
+            </options>
+        </param>
+        <param name="select_mult_opt" type="select" multiple="true" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="remove_value" value="hg18_value"/>
+                <filter type="remove_value" value="hg19_value"/>
+                <filter type="remove_value" value="mm10_value"/>
+            </options>
+        </param>
+
+        <param name="input1" type="data" format="tabular" optional="true" label="Input 1" />
+        <param name="col_opt" type="data_column" data_ref="input1" optional="true"/>
+        <param name="col_mult_opt" type="data_column" data_ref="input1" multiple="true" optional="true"/>
+
+        <param name="groups_opt" type="group_tag" data_ref="input1" optional="true"/>
+        <param name="groups_mult_opt" type="group_tag" data_ref="input1" multiple="true" optional="true"/>
+
+        <param name="build_opt" type="genomebuild" optional="true"/>
+        <param name="build_mult_opt" type="genomebuild" multiple="true" optional="true"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="select_opt None" />
+                    <has_line line="select_mult_opt None" />
+                    <has_line line="col_opt None" />
+                    <has_line line="col_mult_opt None" />
+                    <has_line line="groups_opt None" />
+                    <has_line line="groups_mult_opt None" />
+                    <has_line line="build_opt None" />
+                    <has_line line="build_mult_opt None" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
