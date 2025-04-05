@@ -4,6 +4,7 @@ import { type Ref, ref } from "vue";
 import { type AnyUser } from "@/api";
 
 import { useHashedUserId } from "./hashedUserId";
+import { useHashedUserId as useHashedUserIdFromStore } from "./hashedUserIdFromUserStore";
 import { syncRefToLocalStorage } from "./persistentRef";
 
 /**
@@ -12,7 +13,12 @@ import { syncRefToLocalStorage } from "./persistentRef";
  * @param initialValue
  */
 export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<AnyUser>) {
-    const { hashedUserId } = useHashedUserId(user);
+    let hashedUserId;
+    if (user) {
+        hashedUserId = useHashedUserId(user).hashedUserId;
+    } else {
+        hashedUserId = useHashedUserIdFromStore().hashedUserId;
+    }
 
     const refToSync = ref(initialValue);
     let hasSynced = false;
