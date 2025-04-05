@@ -128,7 +128,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 3.
         Create a simple repository dependency for blastxml_to_top_descr_0120 that defines a dependency on blast_datatypes_0120.
         """
-        global running_standalone
         if running_standalone:
             datatypes_repository = self._get_repository_by_name_and_owner(
                 datatypes_repository_name, common.test_user_2_name

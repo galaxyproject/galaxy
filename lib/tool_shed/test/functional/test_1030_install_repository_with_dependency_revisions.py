@@ -147,7 +147,6 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
 
     def test_0015_install_emboss_repository(self):
         """Install the emboss repository without installing tool dependencies."""
-        global running_standalone
         self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,

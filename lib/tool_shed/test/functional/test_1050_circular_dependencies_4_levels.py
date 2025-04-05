@@ -154,7 +154,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0040_create_and_upload_dependency_definitions(self):
         """Set up the dependency structure."""
-        global running_standalone
         if running_standalone:
             column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
             convert_repository = self._get_repository_by_name_and_owner(
@@ -313,7 +312,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0060_install_emboss_repository(self):
         """Install emboss_5 with repository dependencies."""
-        global running_standalone
         self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
