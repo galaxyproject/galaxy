@@ -101,6 +101,7 @@ from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
+from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
@@ -468,7 +469,7 @@ class WorkflowModule:
         return state
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans: WorkRequestContext, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         """Execute the given workflow invocation step.
 
@@ -764,7 +765,11 @@ class SubWorkflowModule(WorkflowModule):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
+        self,
+        trans: WorkRequestContext,
+        progress: "WorkflowProgress",
+        invocation_step: WorkflowInvocationStep,
+        use_cached_job: bool = False,
     ) -> Optional[bool]:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -949,7 +954,7 @@ class InputModule(WorkflowModule):
         return []
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans: WorkRequestContext, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
@@ -957,25 +962,25 @@ class InputModule(WorkflowModule):
         if input_value is None:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             if default_value is not NO_REPLACEMENT:
-                input_value = raw_to_galaxy(trans.app, trans.history, default_value)
+                input_value = raw_to_galaxy(trans.app, invocation.history, default_value)
 
         step_outputs = dict(output=input_value)
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
         if progress.copy_inputs_to_history:
-            for input_dataset_hda in list(step_outputs.values()):
-                content_type = input_dataset_hda.history_content_type
-                if content_type == "dataset":
-                    new_hda = input_dataset_hda.copy()
-                    invocation.history.add_dataset(new_hda)
-                    step_outputs["input_ds_copy"] = new_hda
-                elif content_type == "dataset_collection":
-                    new_hdca = input_dataset_hda.copy()
-                    invocation.history.add_dataset_collection(new_hdca)
-                    step_outputs["input_ds_copy"] = new_hdca
+            history = invocation.history
+            for input_item in list(step_outputs.values()):
+                if isinstance(input_item, model.HistoryDatasetAssociation):
+                    step_outputs["input_ds_copy"] = trans.app.hda_manager.copy(input_item, history, flush=False)
+                elif isinstance(input_item, model.HistoryDatasetCollectionAssociation):
+                    step_outputs["input_ds_copy"] = input_item.copy(
+                        element_destination=history, set_hid=False, flush=False
+                    )
+                    history.stage_addition(step_outputs["input_ds_copy"])
                 else:
                     raise Exception("Unknown history content encountered")
+            history.add_pending_items()
         # If coming from UI - we haven't registered invocation inputs yet,
         # so do that now so dependent steps can be recalculated. In the future
         # everything should come in from the API and this can be eliminated.
@@ -1548,7 +1553,7 @@ class InputParameterModule(WorkflowModule):
         ]
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans: WorkRequestContext, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         step = invocation_step.workflow_step
         input_value = step.state.inputs["input"]
@@ -1695,7 +1700,7 @@ class PauseModule(WorkflowModule):
         return state
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans: WorkRequestContext, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         step = invocation_step.workflow_step
         progress.mark_step_outputs_delayed(step, why="executing pause step")
@@ -2151,7 +2156,7 @@ class ToolModule(WorkflowModule):
             )
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans: WorkRequestContext, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
