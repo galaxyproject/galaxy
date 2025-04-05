@@ -57,7 +57,9 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_send_notifications(sender_context)
         galaxy_url = (
-            str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
+            str(sender_context.url_builder("/", qualified=True)).rstrip("/")
+            if sender_context.url_builder
+            else self.notification_manager.config.galaxy_external_url
         )
         request = NotificationCreateRequest.model_construct(
             notification=payload.notification,
