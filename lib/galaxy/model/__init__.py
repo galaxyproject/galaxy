@@ -988,32 +988,28 @@ class User(Base, Dictifiable, RepresentById):
         """
         Return a unique list of Roles associated with this user or any of their groups.
         """
-        try:
-            db_session = object_session(self)
-            user = (
-                db_session.query(User)
-                .filter_by(id=self.id)  # don't use get, it will use session variant.
-                .options(
-                    joinedload(User.roles),
-                    joinedload(User.roles.role),
-                    joinedload(User.groups),
-                    joinedload(User.groups.group),
-                    joinedload(User.groups.group.roles),
-                    joinedload(User.groups.group.roles.role),
-                )
-                .one()
-            )
-        except Exception:
-            # If not persistent user, just use models normaly and
-            # skip optimizations...
-            user = self
+        if self.id:  # if user persistent, retrieve from database
+            roles = self._get_all_user_roles_from_db()
+        else:
+            # else: use models normally
+            roles = [ura.role for ura in self.roles]
 
-        roles = [ura.role for ura in user.roles]
-        for group in [uga.group for uga in user.groups]:
+        for group in [uga.group for uga in self.groups]:
             for role in [gra.role for gra in group.roles]:
                 if role not in roles:
                     roles.append(role)
         return roles
+
+    def _get_all_user_roles_from_db(self):
+        user_roles = select(Role).join(UserRoleAssociation).join(User).where(UserRoleAssociation.user_id == self.id)
+        user_group_roles = (
+            select(Role)
+            .join(GroupRoleAssociation)
+            .join(UserGroupAssociation, UserGroupAssociation.group_id == GroupRoleAssociation.group_id)
+            .where(UserGroupAssociation.user_id == self.id)
+        )
+        roles = select(Role).from_statement(user_roles.union(user_group_roles))
+        return object_session(self).scalars(roles)
 
     def all_roles_exploiting_cache(self):
         """ """
