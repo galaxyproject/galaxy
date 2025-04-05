@@ -5,7 +5,10 @@ tool execution code, and tool action code.
 """
 
 import logging
-from typing import Collection
+from typing import (
+    Collection,
+    Optional,
+)
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +51,9 @@ def filter_output(tool, output, incoming):
     return False
 
 
-def on_text_for_names(input_names: Collection[str]) -> str:
+def on_text_for_names(input_names: Optional[Collection[str]], prefix) -> str:
+    if input_names is None:
+        return ""
     # input_names may contain duplicates... this is because the first value in
     # multiple input dataset parameters will appear twice once as param_name
     # and once as param_name1.
@@ -62,11 +67,17 @@ def on_text_for_names(input_names: Collection[str]) -> str:
     if len(input_names) == 0:
         on_text = ""
     elif len(input_names) == 1:
-        on_text = input_names[0]
+        on_text = prefix + " " + input_names[0]
     elif len(input_names) == 2:
-        on_text = "{} and {}".format(*input_names)
+        on_text = prefix + "s {} and {}".format(*input_names)
     elif len(input_names) == 3:
-        on_text = "{}, {}, and {}".format(*input_names)
+        on_text = prefix + "s {}, {}, and {}".format(*input_names)
     else:
-        on_text = "{}, {}, and others".format(*input_names[:2])
+        on_text = prefix + "s {}, {}, and others".format(*input_names[:2])
     return on_text
+
+
+def on_text_for_dataset_and_collections(
+    dataset_names: Optional[Collection[str]] = None, collection_names: Optional[Collection[str]] = None
+) -> str:
+    return on_text_for_names(collection_names, "collection") + on_text_for_names(dataset_names, "dataset")
