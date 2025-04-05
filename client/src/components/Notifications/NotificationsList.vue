@@ -164,14 +164,14 @@ function togglePreferences() {
                 name="notifications-list"
                 class="notifications-list"
                 tag="div">
-                <div v-for="item in filteredNotifications" :key="item.id">
-                    <NotificationCard
-                        selectable
-                        unread-border
-                        :notification="item"
-                        :selected="selectedNotificationIds?.includes(item.id)"
-                        @select="selectOrDeselectNotification" />
-                </div>
+                <NotificationCard
+                    v-for="notification in filteredNotifications"
+                    :key="notification.id"
+                    selectable
+                    unread-border
+                    :notification="notification"
+                    :selected="selectedNotificationIds?.includes(notification.id)"
+                    @select="selectOrDeselectNotification" />
             </TransitionGroup>
         </div>
     </div>

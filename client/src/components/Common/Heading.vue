@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -17,14 +17,14 @@ interface Props {
     separator?: boolean;
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
-    icon?: string | [string, string];
+    icon?: IconDefinition | string[];
     truncate?: boolean;
     collapse?: "open" | "closed" | "none";
 }
 
 const props = withDefaults(defineProps<Props>(), {
     collapse: "none",
-    icon: "",
+    icon: undefined,
     size: "lg",
 });
 
@@ -98,10 +98,6 @@ const element = computed(() => {
 
 .heading {
     word-break: break-all;
-}
-
-.heading:deep(svg) {
-    font-size: 0.75em;
 }
 
 // prettier-ignore
