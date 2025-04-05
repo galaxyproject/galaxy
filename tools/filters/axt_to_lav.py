@@ -45,8 +45,6 @@ axt_to_lav primary_spec secondary_spec [--silent] < axt_file > lav_file
 
 
 def main():
-    global debug
-
     # parse the command line
 
     primary: Optional[str] = None

@@ -76,7 +76,6 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         # Filtering revision 0 -> freebayes revision 0.
         # Freebayes revision 0 -> filtering revision 1.
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
-        global running_standalone
         if running_standalone:
             freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name

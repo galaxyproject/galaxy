@@ -20,7 +20,6 @@ error_encountered: Optional[str] = None
 @pytest.fixture()
 def reset_global_vars():
     global error_encountered
-    global error_handled
     error_encountered = None
 
 
