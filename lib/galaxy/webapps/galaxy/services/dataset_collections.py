@@ -39,6 +39,7 @@ from galaxy.schema.schema import (
     DCESummary,
     DCEType,
     HDCADetailed,
+    HistoryContentSource,
     Model,
     TagCollection,
 )
@@ -152,8 +153,15 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3'}
         """
+        if trans.history is None:
+            raise exceptions.RequestParameterInvalidException("Current user has no default history.")
         self.collection_manager.copy(
-            trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload.dict()
+            trans,
+            trans.history,
+            HistoryContentSource.hdca,
+            id,
+            copy_elements=True,
+            dataset_instance_attributes=payload.model_dump(),
         )
 
     def attributes(
