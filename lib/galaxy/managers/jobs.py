@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Set,
     Union,
 )
 
@@ -512,6 +513,8 @@ class JobSearch:
                         continue
                     elif k == "chromInfo" and "?.len" in v:
                         continue
+                    elif k == "__when_value__":
+                        continue
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
                         and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
@@ -563,16 +566,21 @@ class JobSearch:
             stmt = stmt.where(Job.tool_version == str(tool_version))
 
         if job_state is None:
-            stmt = stmt.where(
-                Job.state.in_(
-                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
-                )
-            )
+            job_states: Set[str] = {
+                Job.states.NEW,
+                Job.states.QUEUED,
+                Job.states.WAITING,
+                Job.states.RUNNING,
+                Job.states.OK,
+            }
         else:
             if isinstance(job_state, str):
-                stmt = stmt.where(Job.state == job_state)
-            elif isinstance(job_state, list):
-                stmt = stmt.where(Job.state.in_(job_state))
+                job_states = {job_state}
+            else:
+                job_states = {*job_state}
+            if wildcard_param_dump.get("__when_value__") is False:
+                job_states = {Job.states.SKIPPED}
+            stmt = stmt.where(Job.state.in_(job_states))
 
         # exclude jobs with deleted outputs
         stmt = stmt.where(
@@ -590,6 +598,9 @@ class JobSearch:
                 # We've taken care of this while constructing the conditions based on ``input_data`` above
                 continue
             elif k == "chromInfo" and "?.len" in v:
+                continue
+            elif k == "__when_value__":
+                # TODO: really need to separate this.
                 continue
             value_dump = json.dumps(v, sort_keys=True)
             wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')

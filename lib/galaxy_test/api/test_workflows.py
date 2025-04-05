@@ -7932,3 +7932,68 @@ test_data:
         )
         self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, request=workflow_request)
         assert self.dataset_populator.get_history_dataset_content(history_id) == "Hello World Second!\nhello world 2\n"
+
+
+class TestCachedWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
+    dataset_populator: DatasetPopulator
+
+    def test_run_workflow_use_cached_job_simple_conditional_step(self):
+        wf = """class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+steps:
+  cat1:
+    tool_id: create_2
+    in:
+      should_run: should_run
+    when: $(inputs.should_run)
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Run once without cache
+            summary = self._run_workflow(
+                wf,
+                test_data="""
+should_run:
+  value: True
+  type: raw
+""",
+                history_id=history_id,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            job = invocation_details["steps"][1]["jobs"][0]
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert job_details["state"] == "ok"
+            assert not job_details["copied_from_job_id"]
+            # Run with cache but skip, job state is skipped but copied_from_job_id should be None
+            summary = self._run_workflow(
+                wf,
+                test_data="""
+should_run:
+  value: False
+  type: raw
+""",
+                history_id=history_id,
+                use_cached_job=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            job = invocation_details["steps"][1]["jobs"][0]
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert job_details["state"] == "skipped"
+            assert not job_details["copied_from_job_id"]
+            # Run again with cache and expect copied job
+            summary = self._run_workflow(
+                wf,
+                test_data="""
+should_run:
+  value: False
+  type: raw
+""",
+                history_id=history_id,
+                use_cached_job=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            job = invocation_details["steps"][1]["jobs"][0]
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert job_details["state"] == "skipped"
+            assert job_details["copied_from_job_id"]
