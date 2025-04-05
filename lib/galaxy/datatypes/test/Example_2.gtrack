@@ -1,0 +1,10 @@
+##gtrack version: 1.0
+##track type: linked valued segments
+##uninterrupted data lines: true
+###seqid	start	end	id	value	strand	thickStart	thickEnd	itemRgb	edges
+chr22	1000	5000	cloneA	960	+	1000	5000	0	.
+chr22	1000	1567	cloneA.1	960	+	.	.	.	cloneA
+chr22	4512	5000	cloneA.2	960	+	.	.	.	cloneA
+chr22	2000	6000	cloneB	900	-	2000	6000	0	.
+chr22	2000	2433	cloneB.1	900	-	.	.	.	cloneB
+chr22	5601	6000	cloneB.2	900	-	.	.	.	cloneB

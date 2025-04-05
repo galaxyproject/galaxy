@@ -196,17 +196,28 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if spec.visible:
                     attributes = data.metadata.get_metadata_parameter(name, trans=trans)
                     if type(attributes) is form_builder.SelectField:
-                        attribute_inputs.append(
-                            {
-                                "type": "select",
-                                "multiple": attributes.multiple,
-                                "optional": spec.get("optional"),
-                                "name": name,
-                                "label": spec.desc,
-                                "options": attributes.options,
-                                "value": attributes.value,
-                            }
-                        )
+                        if spec.get("readonly") is True:
+                            attribute_inputs.append(
+                                {
+                                    "type": "text",
+                                    "name": name,
+                                    "label": spec.desc,
+                                    "value": f"{attributes.value}{' (No value)' if attributes.value == spec.no_value else ''}",
+                                    "readonly": True,
+                                }
+                            )
+                        else:
+                            attribute_inputs.append(
+                                {
+                                    "type": "select",
+                                    "multiple": attributes.multiple,
+                                    "optional": spec.get("optional"),
+                                    "name": name,
+                                    "label": spec.desc,
+                                    "options": attributes.options,
+                                    "value": attributes.value,
+                                }
+                            )
                     elif type(attributes) is form_builder.TextField:
                         attribute_inputs.append(
                             {

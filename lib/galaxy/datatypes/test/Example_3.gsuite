@@ -1,0 +1,6 @@
+# Example 1: List of URLs
+
+http://www.server.com/path/to/file.bed
+http://www.server.com/path/to/file2.bed
+http://www.server2.com/path/to/other_file.bed
+ftp://www.server3.com/path/to/new_file.wig
