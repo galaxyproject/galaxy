@@ -6,7 +6,7 @@ export type DataOption = {
     batch: boolean;
     map_over_type?: string;
     name: string;
-    src: string;
+    src: "dce" | "hda" | "hdca" | "ldda" | "url";
     tags: Array<string>;
 };
 
