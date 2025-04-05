@@ -1630,6 +1630,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.job_runner_name = job.job_runner_name
         self.job_runner_external_id = job.job_runner_external_id
         if copy_outputs:
+            assert self.history
             requires_addition_to_history = False
             outputs_to_copy = job.io_dicts(exclude_implicit_outputs=True)
             self_io = self.io_dicts(exclude_implicit_outputs=True)
@@ -1647,10 +1648,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     # If it is a map-over job, then we were working with element_identifiers instead of names.
                     # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
                     # and we will never get here.
-                    self_out_collection.elements = [
-                        e.copy_to_collection(self_out_collection, element_destination=self.history, flush=False)
-                        for e in out_collection.elements
-                    ]
+                    self_out_collection.replace_elements_with_copies(out_collection.elements, history=self.history)
                     requires_addition_to_history = True
                 elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
                     out_collection, HistoryDatasetCollectionAssociation
@@ -6985,6 +6983,28 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 session.commit()
         return new_collection
 
+    def replace_elements_with_copies(self, replacements: List["DatasetCollectionElement"], history: "History"):
+        assert len(replacements) == len(self.elements)
+        for element, replacement in zip(self.elements, replacements):
+            assert replacement.element_object
+            if replacement.hda:
+                if element.hda:
+                    element.hda.copy_from(replacement.hda, include_metadata=True)
+                else:
+                    element.hda = replacement.hda.copy(copy_hid=False, flush=False)
+                    history.stage_addition(element.hda)
+            if replacement.child_collection:
+                if element.child_collection:
+                    element.child_collection.replace_elements_with_copies(
+                        replacement.child_collection.elements, history=history
+                    )
+                else:
+                    element.child_collection = replacement.child_collection.copy(
+                        flush=False, element_destination=history
+                    )
+            else:
+                raise ValueError("Cannot replace {type(replacement.element_object)}")
+
     def replace_failed_elements(self, replacements):
         stmt = self._build_nested_collection_attributes_stmt(
             return_entities=[DatasetCollectionElement], hda_attributes=["id"]
@@ -7563,7 +7583,10 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 
         self.id = id
         add_object_to_object_session(self, collection)
-        self.collection = collection
+        if collection:
+            self.collection = collection
+            if collection.id:
+                self.dataset_collection_id = collection.id
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
 
@@ -7599,6 +7622,19 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             return self.child_collection
         else:
             return None
+
+    @element_object.setter
+    def element_object(
+        self, value: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, DatasetCollection]
+    ):
+        if isinstance(value, HistoryDatasetAssociation):
+            self.hda = value
+        elif isinstance(value, LibraryDatasetDatasetAssociation):
+            self.ldda = value
+        elif isinstance(value, DatasetCollection):
+            self.child_collection = value
+        else:
+            raise AttributeError(f"Unknown element type provided: {type(value)}")
 
     @property
     def dataset_instance(self):
