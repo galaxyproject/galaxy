@@ -1,0 +1,8 @@
+x=load("https://raw.githubusercontent.com/fiji/fiji/master/luts/mpl-viridis.lut?raw=true",true)
+d = x._DATA_
+s = ""
+rgb = [ ]
+for (var i = 1; i <= 256; i++) {
+ s += "" + ((d[i]+256)%256) +" " + ((d[i+256]+256)%256) + " " + ((d[i+512]+256)%256) + "\n"
+}
+write var s c:\temp\viridis.lut.txt 
