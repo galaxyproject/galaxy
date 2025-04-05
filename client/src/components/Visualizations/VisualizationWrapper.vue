@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BAlert } from "bootstrap-vue";
 import { debounce } from "lodash";
 import { onMounted, ref } from "vue";
 
@@ -94,7 +95,7 @@ onMounted(() => render());
 
 <template>
     <div v-if="errorMessage">
-        <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
+        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     </div>
     <iframe v-else ref="iframeRef" title="visualization" class="visualization-wrapper"></iframe>
 </template>

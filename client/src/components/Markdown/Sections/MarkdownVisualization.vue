@@ -3,28 +3,26 @@ import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, Invocation } from "@/components/Markdown/Editor/types";
+import { parseInput, parseOutput } from "@/components/Markdown/Utilities/parseInvocation";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { useInvocationStore } from "@/stores/invocationStore";
-
-import { parseInput, parseOutput } from "../Utilities/parseInvocation";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
 const props = defineProps<{
-    attribute?: string;
     content: string;
     name?: string;
 }>();
 
 const emit = defineEmits(["change"]);
 
+const datasetLabel: Ref<DatasetLabel | undefined> = ref();
 const errorMessage = ref("");
 const visualizationConfig = ref();
 const visualizationKey = ref(0);
 const visualizationName = ref();
 const visualizationTitle = ref("");
-const datasetLabel: Ref<DatasetLabel | undefined> = ref();
 
 const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
 
@@ -50,21 +48,14 @@ function processContent() {
     try {
         errorMessage.value = "";
         const parsedContent = { ...JSON.parse(props.content) };
-
         datasetLabel.value = parsedContent.dataset_label;
-
-        if (props.attribute) {
-            visualizationConfig.value = {};
-            visualizationConfig.value[props.attribute] = parsedContent;
-        } else {
-            visualizationConfig.value = {
-                dataset_id: parsedContent.dataset_id,
-                dataset_url: parsedContent.dataset_url,
-                settings: parsedContent.settings,
-                tracks: parsedContent.tracks,
-            };
-            visualizationTitle.value = parsedContent.visualization_title || "";
-        }
+        visualizationConfig.value = {
+            dataset_id: parsedContent.dataset_id,
+            dataset_url: parsedContent.dataset_url,
+            settings: parsedContent.settings,
+            tracks: parsedContent.tracks,
+        };
+        visualizationTitle.value = parsedContent.visualization_title || "";
         visualizationName.value = props.name || parsedContent.visualization_name;
         if (!visualizationName.value) {
             throw new Error("Please add a 'visualization_name` to the dictionary.");

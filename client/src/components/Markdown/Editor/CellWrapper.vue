@@ -1,12 +1,11 @@
 <template>
     <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div
-                class="d-flex flex-column cursor-pointer"
-                :class="{ 'cell-wrapper-hover': hover }"
-                @click="$emit('toggle')">
-                <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
-                <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
+            <div class="d-flex cursor-pointer" :class="{ 'cell-wrapper-hover': hover }" @click="$emit('toggle')">
+                <div class="align-self-end">
+                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
+                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
+                </div>
             </div>
             <SectionWrapper
                 class="m-2 w-100"
@@ -17,33 +16,35 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="d-flex flex-column" :class="{ 'cell-wrapper-hover': hover }">
+                <CellButton
+                    v-if="configurable"
+                    title="Attach Data"
+                    :icon="faPaperclip"
+                    :active="configure"
+                    @click="$emit('configure')" />
                 <CellAction
                     :name="name"
-                    :show="hover"
                     :cell-index="cellIndex"
                     :cell-total="cellTotal"
+                    :configurable="configurable"
                     @clone="$emit('clone')"
                     @configure="$emit('configure')"
                     @delete="$emit('delete')"
                     @move="$emit('move', $event)" />
             </div>
             <div class="w-100 position-relative">
-                <hr class="solid m-0" />
-                <ConfigureGalaxy
-                    v-if="name === 'galaxy' && configure"
-                    :name="name"
-                    :content="content"
-                    :labels="labels"
-                    @cancel="$emit('configure')"
-                    @change="handleConfigure($event)" />
-                <ConfigureVisualization
-                    v-else-if="name === 'visualization' && configure"
+                <hr v-if="!configure" class="solid m-0" />
+                <component
+                    :is="configureComponent"
+                    v-if="configure"
+                    :class="{ 'cell-wrapper-hover': hover }"
                     :name="name"
                     :content="content"
                     :labels="labels"
                     @cancel="$emit('configure')"
                     @change="handleConfigure($event)" />
                 <CellCode
+                    v-else
                     :key="name"
                     class="mt-1"
                     :value="content"
@@ -59,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleDown, faAngleDoubleUp, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
 import type { WorkflowLabel } from "./types";
@@ -68,6 +69,7 @@ import CellAction from "./CellAction.vue";
 import CellButton from "./CellButton.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
+import ConfigureVitessce from "./Configurations/ConfigureVitessce.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const CellCode = () => import("./CellCode.vue");
@@ -87,6 +89,20 @@ const props = defineProps<{
 const emit = defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
 
 const hover = ref(false);
+
+const configurable = computed(() => configureComponent.value !== undefined);
+
+const configureComponent = computed(() => {
+    switch (props.name) {
+        case "galaxy":
+            return ConfigureGalaxy;
+        case "visualization":
+            return ConfigureVisualization;
+        case "vitessce":
+            return ConfigureVitessce;
+    }
+    return undefined;
+});
 
 const mode = computed(() => {
     switch (props.name) {
