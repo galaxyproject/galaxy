@@ -250,10 +250,10 @@ async function resumePausedJobs() {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :title="localize('Export Citations for all Tools used in this History')"
+                        :title="localize('Export references for all Tools used in this History')"
                         @click="$router.push(`/histories/citations?id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faStream" class="mr-1" />
-                        <span v-localize>Export Tool Citations</span>
+                        <span v-localize>Export Tool References</span>
                     </BDropdownItem>
 
                     <BDropdownItem

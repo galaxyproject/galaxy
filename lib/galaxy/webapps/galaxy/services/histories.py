@@ -532,7 +532,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def citations(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField):
         """
-        Return all the citations for the tools used to produce the datasets in
+        Return all the references for the tools used to produce the datasets in
         the history.
         """
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
