@@ -15,21 +15,21 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
 
     collection_type = "paired"
 
-    def generate_elements(self, elements):
-        if forward_dataset := elements.get(FORWARD_IDENTIFIER):
+    def generate_elements(self, dataset_instances, **kwds):
+        if forward_dataset := dataset_instances.get(FORWARD_IDENTIFIER):
             left_association = DatasetCollectionElement(
                 element=forward_dataset,
                 element_identifier=FORWARD_IDENTIFIER,
             )
             yield left_association
-        if reverse_dataset := elements.get(REVERSE_IDENTIFIER):
+        if reverse_dataset := dataset_instances.get(REVERSE_IDENTIFIER):
             right_association = DatasetCollectionElement(
                 element=reverse_dataset,
                 element_identifier=REVERSE_IDENTIFIER,
             )
             yield right_association
 
-    def prototype_elements(self):
+    def prototype_elements(self, **kwds):
         left_association = DatasetCollectionElement(
             element=HistoryDatasetAssociation(),
             element_identifier=FORWARD_IDENTIFIER,
