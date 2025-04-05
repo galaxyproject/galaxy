@@ -29,7 +29,7 @@ const props = defineProps<Props>();
 
 const breadcrumbItems = computed(() => [
     { title: "User Preferences", to: "/user" },
-    { title: "Remote File Sources", to: "/file_source_instances/index" },
+    { title: "My Repositories", to: "/file_source_instances/index" },
     { title: "Create New", to: "/file_source_instances/create" },
     { title: template.value?.name || "Option" },
 ]);

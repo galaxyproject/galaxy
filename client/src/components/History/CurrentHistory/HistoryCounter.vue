@@ -69,9 +69,9 @@ const canManageStorage = computed(
 
 const storageLocationTitle = computed(() => {
     if (isOnlyPreference.value) {
-        return "History Preferred Storage Location";
+        return "History Preferred Storage";
     } else {
-        return "History Storage Location";
+        return "History Storage";
     }
 });
 

@@ -29,7 +29,7 @@ const props = defineProps<ExportHistoryProps>();
                             <ToLink :history-id="props.historyId" />
                         </b-card-text>
                     </BTab>
-                    <BTab title="to a remote file" title-link-class="tab-export-to-file">
+                    <BTab title="to a repository" title-link-class="tab-export-to-file">
                         <b-card-text>
                             <ToRemoteFile :history-id="props.historyId" />
                         </b-card-text>
