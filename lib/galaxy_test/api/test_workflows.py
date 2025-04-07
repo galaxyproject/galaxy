@@ -7997,3 +7997,72 @@ should_run:
             job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
             assert job_details["state"] == "skipped"
             assert job_details["copied_from_job_id"]
+
+    def test_run_workflow_use_cached_job_format_source_pick_param(self):
+        wf = """class: GalaxyWorkflow
+inputs: []
+steps:
+  create_2:
+    tool_id: create_2
+  cat_data_and_sleep:
+    # cat_data_and_sleep has format_source
+    tool_id: cat_data_and_sleep
+    in:
+      input1: create_2/out_file1
+    when: $(false)
+  pick_value:
+    tool_id: pick_value
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - __index__: 0
+            value:
+              __class__: RuntimeValue
+          - __index__: 1
+            value:
+              __class__: RuntimeValue
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: cat_data_and_sleep/out_file1
+      style_cond|type_cond|pick_from_1|value:
+        source: create_2/out_file2
+  """
+        with self.dataset_populator.test_history() as history_id:
+            # Run once without cache
+            summary = self._run_workflow(wf, history_id=history_id, copy_inputs_to_history=True, wait=True)
+            # Run again, now with cache
+            summary = self._run_workflow(
+                wf,
+                history_id=history_id,
+                use_cached_job=True,
+                copy_inputs_to_history=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            conditional_step = invocation_details["steps"][1]
+            job_details = self.dataset_populator.get_job_details(conditional_step["jobs"][0]["id"], full=True).json()
+            assert job_details["state"] == "skipped"
+            assert job_details["copied_from_job_id"]
+            hda_id = job_details["outputs"]["out_file1"]["id"]
+            hda = self.dataset_populator.get_history_dataset_details(
+                history_id=job_details["history_id"], content_id=hda_id
+            )
+            assert hda["extension"] == "expression.json"
+            pick_value_step = invocation_details["steps"][2]
+            pick_value_details = self.dataset_populator.get_job_details(
+                pick_value_step["jobs"][0]["id"], full=True
+            ).json()
+            assert pick_value_details["state"] == "ok"
+            pick_value_hda_id = pick_value_details["outputs"]["data_param"]["id"]
+            pick_value_hda = self.dataset_populator.get_history_dataset_details(
+                history_id=job_details["history_id"], content_id=pick_value_hda_id
+            )
+            assert pick_value_hda["extension"] == "txt"
+            assert (
+                self.dataset_populator.get_history_dataset_content(
+                    history_id=summary.history_id, content_id=pick_value_hda_id
+                ).strip()
+                == "2"
+            )
