@@ -117,6 +117,7 @@ useAccessibleHover(
         :is="baseComponent"
         ref="buttonRef"
         class="g-button"
+        :data-title="currentTooltip"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="props.to"
         :href="props.to ?? props.href"
