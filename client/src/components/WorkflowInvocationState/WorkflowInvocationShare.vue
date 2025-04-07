@@ -15,6 +15,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "../LoadingSpan.vue";
 
+const CLIPBOARD_MSG = "The link to the invocation has been copied to your clipboard.";
+
 const props = defineProps<{
     invocationId: string;
     workflowId: string;
@@ -42,6 +44,11 @@ const historyAlreadyShareable = computed(() => {
 
 /** If the workflow is already shareable. */
 const workflowAlreadyShareable = computed(() => !!workflow.value && workflow.value.importable);
+
+/** If both the workflow and history are already shareable. */
+const historyAndWorkflowAlreadyShareable = computed(
+    () => historyAlreadyShareable.value && workflowAlreadyShareable.value
+);
 
 async function makeInvocationShareable() {
     if (!workflow.value) {
@@ -76,7 +83,15 @@ async function makeInvocationShareable() {
         Toast.success("Workflow and history are now shareable.");
     }
 
-    copy(invocationLink.value, "The link to the invocation has been copied to your clipboard.");
+    copy(invocationLink.value, CLIPBOARD_MSG);
+}
+
+function shareInvocationButtonClicked() {
+    if (historyAndWorkflowAlreadyShareable.value) {
+        copy(invocationLink.value, CLIPBOARD_MSG);
+    } else {
+        modalToggle.value = true;
+    }
 }
 </script>
 
@@ -89,7 +104,7 @@ async function makeInvocationShareable() {
             class="text-decoration-none"
             variant="link"
             :disabled="!workflow"
-            @click="modalToggle = true">
+            @click="shareInvocationButtonClicked">
             <FontAwesomeIcon :icon="faShareAlt" fixed-width />
         </BButton>
 
