@@ -54,7 +54,7 @@ describe("HistoryImport.vue", () => {
 
     it("should render a form with submit disabled because inputs empty", async () => {
         expect(wrapper.find(".import-button").exists()).toBeTruthy();
-        expect(wrapper.find(".import-button").attributes("disabled")).toBeTruthy();
+        expect(wrapper.find(".import-button").attributes("data-disabled")).toBeTruthy();
         expect(wrapper.vm.importReady).toBeFalsy();
     });
 
