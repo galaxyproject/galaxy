@@ -487,7 +487,8 @@ class JobSearch:
                 elif t == "dce":
                     stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v)
                 else:
-                    return []
+                    log.error("Unknown input data type %s", t)
+                    return None
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 

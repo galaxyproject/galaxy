@@ -2123,7 +2123,10 @@ class Tool(UsesDictVisibleKeys):
             validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
 
     def completed_jobs(
-        self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
+        self,
+        trans,
+        use_cached_job: bool,
+        all_params: List[ToolStateJobInstancePopulatedT],
     ) -> Dict[int, Optional[Job]]:
         completed_jobs: Dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
@@ -2131,12 +2134,14 @@ class Tool(UsesDictVisibleKeys):
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
+                require_name_match = param.get("__when_value__") is not False
                 completed_jobs[i] = self.job_search.by_tool_input(
                     user=trans.user,
                     tool_id=tool_id,
                     tool_version=self.version,
                     param=param,
                     param_dump=param_dump,
+                    require_name_match=require_name_match,
                 )
             else:
                 completed_jobs[i] = None
