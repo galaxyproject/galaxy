@@ -7599,6 +7599,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                     # as an element of the containing collection.
                     element_destination.stage_addition(new_element_object)
                     element_object = new_element_object
+            else:
+                raise NotImplementedError(f"Cannot copy a {type(element_object)} to a collection element.")
 
         new_element = DatasetCollectionElement(
             element=element_object,
