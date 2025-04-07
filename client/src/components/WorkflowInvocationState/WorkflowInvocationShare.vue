@@ -102,6 +102,7 @@ function shareInvocationButtonClicked() {
             title="Share Invocation"
             size="sm"
             class="text-decoration-none"
+            data-description="share invocation icon button"
             variant="link"
             :disabled="!workflow"
             @click="shareInvocationButtonClicked">
@@ -113,6 +114,7 @@ function shareInvocationButtonClicked() {
             title="Share Workflow Invocation"
             title-tag="h2"
             ok-title="Share"
+            data-description="share invocation modal"
             @ok="makeInvocationShareable">
             <BAlert v-if="error" variant="danger" show>
                 {{ error }}
