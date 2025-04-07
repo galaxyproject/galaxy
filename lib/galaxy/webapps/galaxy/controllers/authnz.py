@@ -96,7 +96,13 @@ class OIDC(JSAppLauncher):
     @web.expose
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
-        login_next = url_for(trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME) or "/")
+        login_next_cookie = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
+        if login_next_cookie and login_next_cookie != "None":
+            # This cookie can sometimes be set to a literal string 'None', which we don't want to use as a redirect.
+            login_next = url_for(login_next_cookie)
+        else:
+            # Fallback to default redirect if no login_next cookie is found.
+            login_next = url_for("/")
         if not bool(kwargs):
             log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
