@@ -177,7 +177,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
         </BAlert>
 
         <div v-if="!loading && config.enable_notification_system" class="d-flex justify-content-center">
-            <AsyncButton :action="updateNotificationsPreferences" :icon="faSave" variant="primary" size="md">
+            <AsyncButton :action="updateNotificationsPreferences" :icon="faSave" color="blue" size="medium">
                 <span v-localize>Save</span>
             </AsyncButton>
         </div>

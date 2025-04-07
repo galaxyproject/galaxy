@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faEdit, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
@@ -15,6 +15,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { copyWorkflow } from "./workflows.services";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import LoadingSpan from "../LoadingSpan.vue";
@@ -98,35 +100,30 @@ const workflowImportTitle = computed(() => {
                             <span>(Version: {{ workflow.version + 1 }})</span>
                         </div>
                     </div>
-                    <BButtonGroup>
-                        <BButton
+                    <GButtonGroup>
+                        <GButton
                             v-if="owned && workflow"
-                            v-b-tooltip.hover.noninteractive.html
-                            size="sm"
-                            :title="
-                                !workflow.deleted
-                                    ? `<b>Edit</b><br>${getWorkflowName()}`
-                                    : 'This workflow has been deleted.'
-                            "
+                            tooltip
+                            size="small"
+                            :title="!workflow.deleted ? `Edit ${getWorkflowName()}` : 'This workflow has been deleted.'"
                             variant="link"
                             :disabled="workflow.deleted"
                             :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
-                        </BButton>
+                        </GButton>
                         <AsyncButton
                             v-else
-                            v-b-tooltip.hover.noninteractive
                             data-description="import workflow button"
-                            size="sm"
+                            transparent
+                            size="small"
                             :disabled="isAnonymous || workflowImportedAttempted"
                             :title="workflowImportTitle"
                             :icon="faUpload"
-                            variant="link"
                             :action="onImport">
                         </AsyncButton>
 
                         <slot name="workflow-title-actions" />
-                    </BButtonGroup>
+                    </GButtonGroup>
                     <ButtonSpinner
                         v-if="!props.invocation"
                         id="run-workflow"

@@ -275,8 +275,8 @@ async function sendNewNotification() {
                     id="notification-submit"
                     icon="save"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
-                    variant="primary"
-                    size="md"
+                    color="blue"
+                    size="medium"
                     :disabled="!requiredFieldsFilled"
                     :action="sendNewNotification">
                     <span v-localize> Send Notification </span>

@@ -271,8 +271,8 @@ if (props.id) {
                     id="broadcast-submit"
                     icon="save"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
-                    variant="primary"
-                    size="md"
+                    color="blue"
+                    size="medium"
                     :disabled="!requiredFieldsFilled"
                     :action="createOrUpdateBroadcast">
                     <span v-if="props.id" v-localize> Update Broadcast </span>
