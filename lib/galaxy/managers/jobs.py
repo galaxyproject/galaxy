@@ -586,9 +586,9 @@ class JobSearch:
                 job_states = {job_state}
             else:
                 job_states = {*job_state}
-            if wildcard_param_dump.get("__when_value__") is False:
-                job_states = {Job.states.SKIPPED}
-            stmt = stmt.where(Job.state.in_(job_states))
+        if wildcard_param_dump.get("__when_value__") is False:
+            job_states = {Job.states.SKIPPED}
+        stmt = stmt.where(Job.state.in_(job_states))
 
         # exclude jobs with deleted outputs
         stmt = stmt.where(
