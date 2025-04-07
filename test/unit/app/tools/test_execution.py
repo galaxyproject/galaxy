@@ -40,6 +40,7 @@ class TestToolExecution(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
         self.history = galaxy.model.History()
+        self.app.model.session.add(self.history)
         self.trans = MockTrans(self.app, self.history)
         self.app.dataset_collection_manager = cast(DatasetCollectionManager, MockCollectionService())
         self.tool_action = MockAction(self.trans)

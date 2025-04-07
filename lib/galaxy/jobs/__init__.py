@@ -2,6 +2,7 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
+import abc
 import copy
 import datetime
 import errno
@@ -111,7 +112,7 @@ from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
-    from galaxy.jobs.handler import JobHandlerQueue
+    from galaxy.jobs.handler import BaseJobHandlerQueue
     from galaxy.model import DatasetInstance
     from galaxy.tools import Tool
 
@@ -2743,7 +2744,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
 
 class JobWrapper(MinimalJobWrapper):
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False):
+    def __init__(self, job, queue: "BaseJobHandlerQueue", use_persisted_destination=False):
         app = queue.app
         super().__init__(
             job,
@@ -3003,15 +3004,20 @@ class TaskWrapper(JobWrapper):
         return working_directory
 
 
-class NoopQueue:
+class JobQueueI:
+    @abc.abstractmethod
+    def put(self, *args, **kwargs): ...
+
+    @abc.abstractmethod
+    def shutdown(self): ...
+
+
+class NoopQueue(JobQueueI):
     """
-    Implements the JobQueue / JobStopQueue interface but does nothing
+    Implements the JobQueueI interface but does nothing
     """
 
     def put(self, *args, **kwargs):
-        return
-
-    def put_stop(self, *args):
         return
 
     def shutdown(self):
