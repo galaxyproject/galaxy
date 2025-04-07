@@ -4,32 +4,44 @@ from social_core.utils import handle_http_errors
 
 class TapisOAuth2(BaseOAuth2):
     name = "tapis"
-    # TODO: parameterize tenant
-    AUTHORIZATION_URL = "https://cfde.tapis.io/v3/oauth2/authorize"
-    ACCESS_TOKEN_URL = "https://cfde.tapis.io/v3/oauth2/tokens"
-    USERINFO_URL = "https://cfde.tapis.io/v3/oauth2/userinfo"
+
+    DEFAULT_TENANT_ID = "tacc"
+
+    @property
+    def AUTHORIZATION_URL(self):
+        """Generate authorization URL based on tenant ID setting"""
+        tenant = self.setting("TENANT_ID", self.DEFAULT_TENANT_ID)
+        return f"https://{tenant}.tapis.io/v3/oauth2/authorize"
+
+    @property
+    def ACCESS_TOKEN_URL(self):
+        """Generate access token URL based on tenant ID setting"""
+        tenant = self.setting("TENANT_ID", self.DEFAULT_TENANT_ID)
+        return f"https://{tenant}.tapis.io/v3/oauth2/tokens"
+
+    @property
+    def USERINFO_URL(self):
+        """Generate user info URL based on tenant ID setting"""
+        tenant = self.setting("TENANT_ID", self.DEFAULT_TENANT_ID)
+        return f"https://{tenant}.tapis.io/v3/oauth2/userinfo"
 
     ACCESS_TOKEN_METHOD = "POST"
     REDIRECT_STATE = False  # Don't include state parameter since tapis validates redirect_uri and state invalidates it?
-
     RESPONSE_TYPE = "code"
     USE_BASIC_AUTH = True
 
-    # What extra data do we need?
     EXTRA_DATA = [
         ("expires_in", "expires"),
         ("refresh_token", "refresh_token"),
     ]
 
-    # Response for token needs to be something like: requests.post(url, data=data, auth=(client_id, res.client_key))
-
     def get_user_details(self, response):
         """
         Extract user details from the Tapis API response.
-        TODO: verify and adjust the field names as provided by Tapis.
         """
         # For TACC Tapis, we use username@tacc.utexas.edu as the email, but this may vary by deployment
-        # TODO: Allow config override of canonical identifier for username/email
+        # TODO: We may want to eventually allow config override of canonical identifier for username/email, if needed.
+        # For now, with TACC Tapis, we will hardcode the domain to `tacc.utexas.edu` for email addresses.
         TAPIS_DOMAIN_OVERRIDE = "tacc.utexas.edu"
         username = response.get("username")
         return {
