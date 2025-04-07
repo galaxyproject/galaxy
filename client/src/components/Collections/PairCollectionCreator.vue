@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowsAltV } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
@@ -14,6 +14,7 @@ import localize from "@/utils/localization";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 
+import GButton from "../BaseComponents/GButton.vue";
 import DelayedInput from "../Common/DelayedInput.vue";
 import HelpText from "../Help/HelpText.vue";
 import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
@@ -514,15 +515,15 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     <div v-else>
                         <div class="collection-elements-controls flex-gapx-1">
                             <div>
-                                <BButton
+                                <GButton
                                     class="swap"
-                                    size="sm"
+                                    size="small"
                                     :disabled="!exactlyTwoValidElements"
                                     :title="localize('Swap forward and reverse datasets')"
                                     @click="swapButton">
                                     <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
                                     {{ localize("Swap") }}
-                                </BButton>
+                                </GButton>
                             </div>
                             <div class="flex-grow-1">
                                 <BAlert v-if="!exactlyTwoValidElements" show variant="warning">
