@@ -5,6 +5,7 @@ import { BAlert, BButton, BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { hasImportable } from "@/api/histories";
 import { getFullAppUrl } from "@/app/utils";
 import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
@@ -25,31 +26,53 @@ const modalToggle = ref(false);
 // Workflow and History refs
 const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 const historyStore = useHistoryStore();
+const history = computed(() => historyStore.getHistoryById(props.historyId));
 
 /** The link to the invocation. */
 const invocationLink = computed(() => getFullAppUrl(`workflows/invocations/${props.invocationId}`));
+
+/** If the history is already shareable.
+ * (i.e. It has the `importable` property, and it is set to `true`)
+ */
+const historyAlreadyShareable = computed(() => {
+    // Note: We will mostly have a summarized history object without the importable property
+    //       and in that case we still attempt to make it shareable.
+    return !!history.value && hasImportable(history.value) && history.value.importable;
+});
+
+/** If the workflow is already shareable. */
+const workflowAlreadyShareable = computed(() => !!workflow.value && workflow.value.importable);
 
 async function makeInvocationShareable() {
     if (!workflow.value) {
         return;
     }
 
-    // Note: Is it worth it to check here if the workflow and history are already shareable?
+    let errorMessage = "";
+    let shared = false;
+    if (!workflowAlreadyShareable.value) {
+        const { error: workflowShareError } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/enable_link_access", {
+            params: { path: { workflow_id: workflow.value.id } },
+        });
+        shared = true;
+        if (workflowShareError) {
+            errorMessage = errorMessageAsString(workflowShareError);
+        }
+    }
+    if (!historyAlreadyShareable.value) {
+        const { error: historyShareError } = await GalaxyApi().PUT("/api/histories/{history_id}/enable_link_access", {
+            params: { path: { history_id: props.historyId } },
+        });
+        shared = true;
+        if (historyShareError) {
+            errorMessage += errorMessageAsString(historyShareError);
+        }
+    }
 
-    const { error: workflowShareError } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/enable_link_access", {
-        params: { path: { workflow_id: workflow.value.id } },
-    });
-    const { error: historyShareError } = await GalaxyApi().PUT("/api/histories/{history_id}/enable_link_access", {
-        params: { path: { history_id: props.historyId } },
-    });
-
-    if (workflowShareError || historyShareError) {
-        Toast.error(
-            `${errorMessageAsString(workflowShareError) || errorMessageAsString(historyShareError)}`,
-            "Failed to make workflow and history shareable."
-        );
+    if (errorMessage) {
+        Toast.error(errorMessage, "Failed to make workflow and history shareable.");
         return;
-    } else {
+    } else if (shared) {
         Toast.success("Workflow and history are now shareable.");
     }
 
