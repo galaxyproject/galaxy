@@ -726,39 +726,41 @@ class JobSearch:
         return stmt
 
     def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
+        dce = self.sa_session.get_one(model.DatasetCollectionElement, v)
+        if dce.child_collection:
+            depth = dce.child_collection.collection_type.count(":") + 1
+        else:
+            depth = 0
         a = aliased(model.JobToInputDatasetCollectionElementAssociation)
-        b = aliased(model.DatasetCollectionElement)
-        c = aliased(model.DatasetCollectionElement)
-        d = aliased(model.HistoryDatasetAssociation)
-        e = aliased(model.HistoryDatasetAssociation)
+        dce_left = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        dce_right = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        hda_left = aliased(model.HistoryDatasetAssociation)
+        hda_right = aliased(model.HistoryDatasetAssociation)
+
+        # Base joins
         stmt = stmt.add_columns(a.dataset_collection_element_id)
-        stmt = (
-            stmt.join(a, a.job_id == model.Job.id)
-            .join(b, b.id == a.dataset_collection_element_id)
-            .join(
-                c,
-                and_(
-                    c.element_identifier == b.element_identifier,
-                    or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
-                ),
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        stmt = stmt.join(dce_left[0], dce_left[0].id == a.dataset_collection_element_id)
+        stmt = stmt.join(dce_right[0], dce_right[0].id == v)
+
+        # Parallel walk the collection structure
+        for i in range(1, depth + 1):
+            stmt = (
+                stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
+                .join(dce_right[i], dce_right[i].dataset_collection_id == dce_right[i - 1].child_collection_id)
+                .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
             )
-            .outerjoin(d, d.id == c.hda_id)
-            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
-        )
+
+        # Compare dataset_ids at the leaf level
+        leaf_left = dce_left[-1]
+        leaf_right = dce_right[-1]
+        stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
+        stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
+
         data_conditions.append(
-            and_(
-                a.name.in_(k),
-                or_(
-                    c.child_collection_id == b.child_collection_id,
-                    and_(
-                        c.hda_id == b.hda_id,
-                        d.id == c.hda_id,
-                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
-                    ),
-                ),
-                c.id == v,
-            )
+            and_(a.name.in_(k), hda_left.dataset_id == hda_right.dataset_id)  # type:ignore[attr-defined]
         )
+
         used_ids.append(a.dataset_collection_element_id)
         return stmt
 
