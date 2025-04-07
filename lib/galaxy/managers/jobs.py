@@ -701,29 +701,60 @@ class JobSearch:
         return stmt
 
     def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, require_name_match=True):
-        # TODO: clean up join condition, maybe replace by the added data_conditions below ?
+        # Determine depth based on collection_type of the HDCA we're matching against
+        collection_type = self.sa_session.scalar(
+            select(model.DatasetCollection.collection_type)
+            .select_from(model.HistoryDatasetCollectionAssociation)
+            .join(model.DatasetCollection)
+            .where(model.HistoryDatasetCollectionAssociation.id == v)
+        )
+        depth = collection_type.count(":") if collection_type else 0
+
         a = aliased(model.JobToInputDatasetCollectionAssociation)
-        b = aliased(model.HistoryDatasetCollectionAssociation)
-        c = aliased(model.HistoryDatasetCollectionAssociation)
+        hdca_input = aliased(model.HistoryDatasetCollectionAssociation)
+        root_collection = aliased(model.DatasetCollection)
+
+        dce_left = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        dce_right = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        hda_left = aliased(model.HistoryDatasetAssociation)
+        hda_right = aliased(model.HistoryDatasetAssociation)
+
+        # Start joins from job → input HDCA → its collection → DCE
         stmt = stmt.add_columns(a.dataset_collection_id)
-        stmt = stmt.join(a, a.job_id == model.Job.id).join(b, b.id == a.dataset_collection_id).join(c, b.name == c.name)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
+        stmt = stmt.join(root_collection, root_collection.id == hdca_input.collection_id)
+        stmt = stmt.join(dce_left[0], dce_left[0].dataset_collection_id == root_collection.id)
+
+        # Join to target HDCA (v), then to its collection and its first-level DCE
+        hdca_target = aliased(model.HistoryDatasetCollectionAssociation)
+        target_collection = aliased(model.DatasetCollection)
+        stmt = stmt.join(hdca_target, hdca_target.id == v)
+        stmt = stmt.join(target_collection, target_collection.id == hdca_target.collection_id)
+        stmt = stmt.join(dce_right[0], dce_right[0].dataset_collection_id == target_collection.id)
+
+        # Parallel walk the structure
+        for i in range(1, depth + 1):
+            stmt = (
+                stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
+                .join(dce_right[i], dce_right[i].dataset_collection_id == dce_right[i - 1].child_collection_id)
+                .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
+            )
+
+        # Compare leaf-level HDAs
+        leaf_left = dce_left[-1]
+        leaf_right = dce_right[-1]
+        stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
+        stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
+
         data_conditions.append(
             and_(
                 a.name.in_(k),
-                c.id == v,
-                or_(
-                    and_(b.deleted == false(), b.id == v),
-                    and_(
-                        or_(
-                            c.copied_from_history_dataset_collection_association_id == b.id,
-                            b.copied_from_history_dataset_collection_association_id == c.id,
-                        ),
-                        c.deleted == false(),
-                    ),
-                ),
+                hda_left.dataset_id == hda_right.dataset_id,  # type:ignore[attr-defined]
             )
         )
-        used_ids.append(a.dataset_collection_id)
+
+        used_ids.append(a.dataset_collection_id)  # input-side HDCA
         return stmt
 
     def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
