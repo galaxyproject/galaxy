@@ -31,7 +31,7 @@ class TapisOAuth2(BaseOAuth2):
     USE_BASIC_AUTH = True
 
     EXTRA_DATA = [
-        ("expires_in", "expires"),
+        ("expires_in", "expires_in"),
         ("refresh_token", "refresh_token"),
     ]
 
