@@ -74,7 +74,7 @@ async function makeInvocationShareable() {
             v-model="modalToggle"
             title="Share Workflow Invocation"
             title-tag="h2"
-            ok-title="Make Workflow and History Shareable, and Copy Link"
+            ok-title="Share"
             @ok="makeInvocationShareable">
             <BAlert v-if="error" variant="danger" show>
                 {{ error }}
@@ -91,9 +91,10 @@ async function makeInvocationShareable() {
                     are accessible via link.
                 </p>
                 <p v-localize>
-                    You can do this by clicking the <i>"Make Workflow and History Shareable, and Copy Link"</i>
-                    button below. This will generate a link that you can share with others, allowing them to view the
-                    invocation.
+                    You can do this by clicking the <i>"Share"</i>
+                    button below. This will
+                    <strong>make the workflow and history shareable</strong>
+                    and generate a link that you can share with others, allowing them to view the invocation.
                 </p>
             </div>
         </BModal>
