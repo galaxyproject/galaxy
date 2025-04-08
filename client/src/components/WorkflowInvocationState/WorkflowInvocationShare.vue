@@ -39,11 +39,11 @@ const invocationLink = computed(() => getFullAppUrl(`workflows/invocations/${pro
 const historyAlreadyShareable = computed(() => {
     // Note: We will mostly have a summarized history object without the importable property
     //       and in that case we still attempt to make it shareable.
-    return !!history.value && hasImportable(history.value) && history.value.importable;
+    return Boolean(history.value && hasImportable(history.value) && history.value.importable);
 });
 
 /** If the workflow is already shareable. */
-const workflowAlreadyShareable = computed(() => !!workflow.value && workflow.value.importable);
+const workflowAlreadyShareable = computed(() => Boolean(workflow.value && workflow.value.importable));
 
 /** If both the workflow and history are already shareable. */
 const historyAndWorkflowAlreadyShareable = computed(
@@ -122,7 +122,7 @@ function shareInvocationButtonClicked() {
 
             <LoadingSpan v-else-if="loading" message="Loading details for invocation" />
 
-            <div v-else-if="!!workflow">
+            <div v-else-if="workflow">
                 <p v-localize>
                     To share this invocation, you need to make sure that the workflow
                     <strong>"{{ workflow.name }}"</strong>
