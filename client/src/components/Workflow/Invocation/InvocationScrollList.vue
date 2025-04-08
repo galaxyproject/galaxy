@@ -208,9 +208,6 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                         clickable
                         button
                         :current="invocation.id === currentItemId"
-                        :class="{
-                            'panel-item': props.inPanel,
-                        }"
                         :active="invocation.id === currentItemId"
                         :badges="getInvocationBadges(invocation)"
                         :title="workflowName(invocation.workflow_id)"
