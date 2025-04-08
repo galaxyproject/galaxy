@@ -203,8 +203,9 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                 <BListGroup>
                     <GCard
                         v-for="(invocation, cardIndex) in invocations"
-                        id="invocation-card"
+                        :id="`invocation-${invocation.id}`"
                         :key="cardIndex"
+                        clickable
                         button
                         :current="invocation.id === currentItemId"
                         :class="{

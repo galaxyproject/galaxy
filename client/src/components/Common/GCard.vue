@@ -21,6 +21,8 @@ interface Props {
     badges?: CardBadge[];
     /** Indicates if the card is bookmarked */
     bookmarked?: boolean;
+    /** Indicates if the card is clickable */
+    clickable?: boolean;
     /** Additional CSS classes for the card container */
     containerClass?: string | string[];
     /** Additional CSS classes for the card content */
@@ -130,9 +132,10 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 </script>
 
 <template>
-    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
-    <div
+    <component
+        :is="'div'"
         :id="`g-card-${props.id}`"
+        :role="props.clickable ? 'button' : undefined"
         class="g-card pt-0 px-1 pb-2"
         :class="[
             { 'g-card-grid-view': gridView },
@@ -141,7 +144,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
             { 'g-card-published': published },
             containerClass,
         ]"
-        @click="emit('click')">
+        :tabindex="props.clickable ? 0 : undefined"
+        @click="props.clickable ? emit('click') : undefined"
+        @keydown.enter="props.clickable ? emit('click') : undefined">
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
@@ -478,7 +483,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                 </div>
             </slot>
         </div>
-    </div>
+    </component>
 </template>
 
 <style scoped lang="scss">
@@ -487,7 +492,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
 .g-card {
     container: g-card / inline-size;
-
     width: 100%;
 
     &.g-card-grid-view {
@@ -531,7 +535,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
     .g-card-content {
         background-color: $body-bg;
-
         border: 1px solid $brand-secondary;
         border-radius: 0.5rem;
 
@@ -539,6 +542,16 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
             @container g-card (max-width: #{$breakpoint-sm}) {
                 display: none;
             }
+        }
+    }
+
+    &:focus {
+        outline: none;
+
+        .g-card-content {
+            border-color: $brand-primary;
+            box-shadow: 0 0 0 0.5px;
+            background-color: lighten($brand-light, 0.5);
         }
     }
 }
