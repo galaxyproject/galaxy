@@ -190,7 +190,7 @@ const nonMdHelp = computed(() =>
         ? sanitize(helpText.value!)
         : ""
 );
-const showNonMdHelp = computed(() => !!nonMdHelp.value && (!props.workflowRun || props.type !== "boolean"));
+const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
 
 const currentValue = computed({
     get() {
@@ -343,16 +343,13 @@ function onAlert(value: string | undefined) {
 
             <div v-if="showField" class="ui-form-field" :data-label="props.title">
                 <div
-                    v-if="props.type === 'boolean'"
-                    :class="{ 'd-flex align-items-start flex-gapx-1': props.workflowRun && nonMdHelp }">
-                    <FormBoolean
-                        :id="props.id"
-                        v-model="currentValue"
-                        class="mr-2"
-                        :no-label="props.workflowRun && Boolean(nonMdHelp)" />
+                    v-if="props.type === 'boolean' && props.workflowRun"
+                    :class="{ 'd-flex align-items-start flex-gapx-1': Boolean(nonMdHelp) }">
+                    <FormBoolean :id="props.id" v-model="currentValue" class="mr-2" :no-label="Boolean(nonMdHelp)" />
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span v-if="props.workflowRun && nonMdHelp" class="text-muted" v-html="nonMdHelp" />
+                    <span v-if="Boolean(nonMdHelp)" class="text-muted" v-html="nonMdHelp" />
                 </div>
+                <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"
