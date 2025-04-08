@@ -92,7 +92,8 @@ class TapisOAuth2(BaseOAuth2):
         self.process_error(response)
         result = response.get("result")
         token = result.get("access_token")
-        return self.do_auth(token, response=response, *args, **kwargs)
+        # ignore B026, we keep the same signature as the base class
+        return self.do_auth(token, response=response, *args, **kwargs)  # noqa: B026
 
     def restructure_response(self, response):
         # For compatibility we pull several keys up to the top to match the expected payload
