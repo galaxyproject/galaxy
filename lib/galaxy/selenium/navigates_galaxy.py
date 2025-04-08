@@ -1255,6 +1255,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_search_for_workflow(self, name: str):
         self.wait_for_and_click(self.components.workflow_editor.workflow_activity)
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.clear_tooltips(".workflow-scroll-list")
 
         input = self.wait_for_selector(".activity-panel input")
         input.send_keys(name)
@@ -1486,9 +1487,9 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
-    def clear_tooltips(self):
+    def clear_tooltips(self, selector_to_move="#center"):
         action_chains = self.action_chains()
-        center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
+        center_element = self.driver.find_element(By.CSS_SELECTOR, selector_to_move)
         action_chains.move_to_element(center_element).perform()
         self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
 

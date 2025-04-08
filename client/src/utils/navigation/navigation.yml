@@ -869,7 +869,7 @@ invocations:
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
     invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
-    invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list button.panel-item'
+    invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list .g-card[id^="g-card-invocation-"]'
     pager: '[data-description="grid pager"]'
     pager_page: '[data-description="grid pager"] .gx-grid-pager-page [aria-posinset=${page}]'
     pager_page_next: '[data-description="grid pager"] .gx-grid-pager-next button'
