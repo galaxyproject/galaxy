@@ -30,7 +30,8 @@ class TapisOAuth2(BaseOAuth2):
     RESPONSE_TYPE = "code"
     USE_BASIC_AUTH = True
 
-    EXTRA_DATA = [
+    # Upstream this is initialized to None, but it is expected this will be a list of tuples
+    EXTRA_DATA = [  # type: ignore[assignment]
         ("refresh_token", "refresh_token"),
     ]
 
