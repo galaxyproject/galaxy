@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 interface Props {
@@ -25,16 +26,17 @@ const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user"
     <div>
         <BreadcrumbHeading :items="breadcrumbItems">
             <div>
-                <BButton
+                <GButton
                     :id="`create-button-${header.toLowerCase().replace(/ /g, '-')}`"
-                    v-b-tooltip.hover.noninteractive
+                    tooltip
                     title="Create new file source"
-                    size="sm"
-                    variant="outline-primary"
+                    size="small"
+                    outline
+                    color="blue"
                     :to="createUrl">
                     <FontAwesomeIcon :icon="faPlus" />
                     {{ localize("Create") }}
-                </BButton>
+                </GButton>
             </div>
         </BreadcrumbHeading>
 
