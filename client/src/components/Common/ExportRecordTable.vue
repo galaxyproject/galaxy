@@ -9,10 +9,13 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BButtonToolbar, BCard, BCollapse, BLink, BTable } from "bootstrap-vue";
+import { BCard, BCollapse, BLink, BTable } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type ExportRecord } from "./models/exportRecordModel";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 library.add(faCheckCircle, faDownload, faExclamationCircle, faFileImport, faLink, faSpinner);
 
@@ -122,32 +125,34 @@ function copyDownloadLink(record: ExportRecord) {
                     </template>
 
                     <template v-slot:cell(actions)="row">
-                        <BButtonToolbar aria-label="Actions">
-                            <BButtonGroup>
-                                <BButton
-                                    v-b-tooltip.hover.bottom
-                                    :disabled="!row.item.canDownload"
-                                    title="Download"
-                                    @click="downloadObject(row.item)">
-                                    <FontAwesomeIcon :icon="faDownload" />
-                                </BButton>
+                        <GButtonGroup aria-label="Actions">
+                            <GButton
+                                tooltip
+                                tooltip-placement="bottom"
+                                :disabled="!row.item.canDownload"
+                                title="Download"
+                                @click="downloadObject(row.item)">
+                                <FontAwesomeIcon :icon="faDownload" />
+                            </GButton>
 
-                                <BButton
-                                    v-if="row.item.canDownload"
-                                    title="Copy Download Link"
-                                    @click.stop="copyDownloadLink(row.item)">
-                                    <FontAwesomeIcon :icon="faLink" />
-                                </BButton>
+                            <GButton
+                                v-if="row.item.canDownload"
+                                tooltip
+                                tooltip-placement="bottom"
+                                title="Copy Download Link"
+                                @click.stop="copyDownloadLink(row.item)">
+                                <FontAwesomeIcon :icon="faLink" />
+                            </GButton>
 
-                                <BButton
-                                    v-b-tooltip.hover.bottom
-                                    :disabled="!row.item.canReimport"
-                                    title="Reimport"
-                                    @click="reimportObject(row.item)">
-                                    <FontAwesomeIcon :icon="faFileImport" />
-                                </BButton>
-                            </BButtonGroup>
-                        </BButtonToolbar>
+                            <GButton
+                                tooltip
+                                tooltip-placement="bottom"
+                                :disabled="!row.item.canReimport"
+                                title="Reimport"
+                                @click="reimportObject(row.item)">
+                                <FontAwesomeIcon :icon="faFileImport" />
+                            </GButton>
+                        </GButtonGroup>
                     </template>
                 </BTable>
             </BCard>
