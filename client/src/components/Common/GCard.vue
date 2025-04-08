@@ -144,7 +144,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
         @click="emit('click')">
         <div
             :id="`g-card-content-${props.id}`"
-            class="g-card-content d-flex flex-column justify-content-between h-100"
+            class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
             :class="contentClass">
             <slot>
                 <div class="d-flex flex-column flex-gapy-1">
@@ -303,10 +303,10 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 </slot>
                             </div>
 
-                            <div class="d-flex flex-gapx-1" style="margin-top: 1.5px">
+                            <div class="d-flex flex-gapx-1" style="margin-top: 1px">
                                 <div
                                     :id="getElementId(props.id, 'badges')"
-                                    class="align-items-center align-self-center d-flex flex-gapx-1">
+                                    class="align-items-center align-self-baseline d-flex flex-gapx-1">
                                     <slot name="badges">
                                         <template v-for="badge in props.badges">
                                             <BBadge
@@ -534,7 +534,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
         border: 1px solid $brand-secondary;
         border-radius: 0.5rem;
-        padding: 0.75rem;
 
         .g-card-secondary-action-label {
             @container g-card (max-width: #{$breakpoint-sm}) {
