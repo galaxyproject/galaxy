@@ -130,7 +130,7 @@ const workflowImportTitle = computed(() => {
                         data-description="execute workflow button"
                         :wait="runWaiting"
                         :disabled="runDisabled"
-                        size="sm"
+                        size="small"
                         title="Run Workflow"
                         @onClick="emit('on-execute')" />
                     <WorkflowRunButton
