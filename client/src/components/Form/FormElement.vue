@@ -345,7 +345,11 @@ function onAlert(value: string | undefined) {
                 <div
                     v-if="props.type === 'boolean'"
                     :class="{ 'd-flex align-items-start flex-gapx-1': props.workflowRun && nonMdHelp }">
-                    <FormBoolean :id="props.id" v-model="currentValue" class="mr-2" />
+                    <FormBoolean
+                        :id="props.id"
+                        v-model="currentValue"
+                        class="mr-2"
+                        :no-label="props.workflowRun && Boolean(nonMdHelp)" />
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <span v-if="props.workflowRun && nonMdHelp" class="text-muted" v-html="nonMdHelp" />
                 </div>
