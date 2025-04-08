@@ -217,7 +217,9 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                         @title-click="workflowName(invocation.workflow_id)"
                         @click="() => cardClicked(invocation)">
                         <template v-slot:description>
-                            <Heading class="m-0" size="text" :icon="faHdd">
+                            <Heading class="m-0" size="text">
+                                <FontAwesomeIcon :icon="faHdd" fixed-width />
+
                                 <small class="text-muted truncate-n-lines two-lines">
                                     {{ historyName(invocation.history_id) }}
                                 </small>

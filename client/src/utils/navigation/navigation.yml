@@ -96,7 +96,7 @@ object_store_instances:
 
   create:
     selectors:
-      select: '#select-button-${template_id}'
+      select: '#g-card-action-select-${template_id}'
       _: '#create-object-store-landing'
       submit: '#submit'
 
@@ -108,7 +108,7 @@ file_source_instances:
 
   create:
     selectors:
-      select: '#select-button-${template_id}'
+      select: '#g-card-action-select-${template_id}'
       _: '#create-file-source-landing'
       submit: '#submit'
 
