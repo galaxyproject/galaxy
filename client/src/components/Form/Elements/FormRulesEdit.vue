@@ -40,7 +40,7 @@ async function onEdit() {
         try {
             loading.value = true;
             loadError.value = undefined;
-            const collectionDetails = await fetchCollectionDetails({ id: props.target.id });
+            const collectionDetails = await fetchCollectionDetails({ hdca_id: props.target.id });
             elements.value = collectionDetails;
             modal.value.show();
         } catch (e) {

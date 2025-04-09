@@ -89,9 +89,9 @@ const onCopyCollection = async (currentHistoryId: string) => {
 };
 
 const getContent = async () => {
-    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
         params: {
-            path: { id: props.collectionId },
+            path: { hdca_id: props.collectionId },
         },
     });
     if (error) {

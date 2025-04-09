@@ -181,7 +181,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     async function fetchCollection(params: { id: string }) {
         set(loadingCollectionElements.value, params.id, true);
         try {
-            const collection = await fetchCollectionDetails({ id: params.id });
+            const collection = await fetchCollectionDetails({ hdca_id: params.id });
             set(storedCollections.value, collection.id, collection);
             return collection;
         } catch (error) {

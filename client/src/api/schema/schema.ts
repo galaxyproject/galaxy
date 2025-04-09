@@ -226,12 +226,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Returns detailed information about the given collection. */
+        get: operations["show_api_dataset_collections__hdca_id__get"];
         /**
          * Updates the values for the history dataset (HDA) item with the given ``ID``.
          * @description Updates the values for the history content item with the given ``ID``.
          */
         put: operations["dataset_collections__update_collection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dataset_collections/{hdca_id}/attributes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Returns `dbkey`/`extension` attributes for all the collection elements. */
+        get: operations["attributes_api_dataset_collections__hdca_id__attributes_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -256,41 +274,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dataset_collections/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns detailed information about the given collection. */
-        get: operations["show_api_dataset_collections__id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/dataset_collections/{id}/attributes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns `dbkey`/`extension` attributes for all the collection elements. */
-        get: operations["attributes_api_dataset_collections__id__attributes_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/dataset_collections/{id}/copy": {
+    "/api/dataset_collections/{hdca_id}/copy": {
         parameters: {
             query?: never;
             header?: never;
@@ -300,14 +284,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Copy the given collection datasets to a new collection using a new `dbkey` attribute. */
-        post: operations["copy_api_dataset_collections__id__copy_post"];
+        post: operations["copy_api_dataset_collections__hdca_id__copy_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/dataset_collections/{id}/download": {
+    "/api/dataset_collections/{hdca_id}/download": {
         parameters: {
             query?: never;
             header?: never;
@@ -328,7 +312,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dataset_collections/{id}/prepare_download": {
+    "/api/dataset_collections/{hdca_id}/prepare_download": {
         parameters: {
             query?: never;
             header?: never;
@@ -343,14 +327,14 @@ export interface paths {
          *     returned short term storage object. Progress tracking this file's creation
          *     can be tracked with the short_term_storage API.
          */
-        post: operations["prepare_collection_download_api_dataset_collections__id__prepare_download_post"];
+        post: operations["prepare_collection_download_api_dataset_collections__hdca_id__prepare_download_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/dataset_collections/{id}/suitable_converters": {
+    "/api/dataset_collections/{hdca_id}/suitable_converters": {
         parameters: {
             query?: never;
             header?: never;
@@ -358,7 +342,7 @@ export interface paths {
             cookie?: never;
         };
         /** Returns a list of applicable converters for all datatypes in the given collection. */
-        get: operations["suitable_converters_api_dataset_collections__id__suitable_converters_get"];
+        get: operations["suitable_converters_api_dataset_collections__hdca_id__suitable_converters_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1875,7 +1859,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/histories/{history_id}/contents/dataset_collections/{id}/download": {
+    "/api/histories/{history_id}/contents/dataset_collections/{hdca_id}/download": {
         parameters: {
             query?: never;
             header?: never;
@@ -19371,6 +19355,58 @@ export interface operations {
             };
         };
     };
+    show_api_dataset_collections__hdca_id__get: {
+        parameters: {
+            query?: {
+                /** @description The type of collection instance. Either `history` (default) or `library`. */
+                instance_type?: "history" | "library";
+                /** @description The view of collection instance to return. */
+                view?: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the `HDCA`. */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["HDCACustom"]
+                        | components["schemas"]["HDCADetailed"]
+                        | components["schemas"]["HDCASummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     dataset_collections__update_collection: {
         parameters: {
             query?: {
@@ -19409,6 +19445,53 @@ export interface operations {
                         | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    attributes_api_dataset_collections__hdca_id__attributes_get: {
+        parameters: {
+            query?: {
+                /** @description The type of collection instance. Either `history` (default) or `library`. */
+                instance_type?: "history" | "library";
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the `HDCA`. */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetCollectionAttributesResult"];
                 };
             };
             /** @description Request Error */
@@ -19484,106 +19567,7 @@ export interface operations {
             };
         };
     };
-    show_api_dataset_collections__id__get: {
-        parameters: {
-            query?: {
-                /** @description The type of collection instance. Either `history` (default) or `library`. */
-                instance_type?: "history" | "library";
-                /** @description The view of collection instance to return. */
-                view?: string;
-            };
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the `HDCA`. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json":
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    attributes_api_dataset_collections__id__attributes_get: {
-        parameters: {
-            query?: {
-                /** @description The type of collection instance. Either `history` (default) or `library`. */
-                instance_type?: "history" | "library";
-            };
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the `HDCA`. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatasetCollectionAttributesResult"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    copy_api_dataset_collections__id__copy_post: {
+    copy_api_dataset_collections__hdca_id__copy_post: {
         parameters: {
             query?: never;
             header?: {
@@ -19592,7 +19576,7 @@ export interface operations {
             };
             path: {
                 /** @description The ID of the `HDCA`. */
-                id: string;
+                hdca_id: string;
             };
             cookie?: never;
         };
@@ -19638,7 +19622,7 @@ export interface operations {
             };
             path: {
                 /** @description The ID of the `HDCA`. */
-                id: string;
+                hdca_id: string;
             };
             cookie?: never;
         };
@@ -19671,7 +19655,7 @@ export interface operations {
             };
         };
     };
-    prepare_collection_download_api_dataset_collections__id__prepare_download_post: {
+    prepare_collection_download_api_dataset_collections__hdca_id__prepare_download_post: {
         parameters: {
             query?: never;
             header?: {
@@ -19680,7 +19664,7 @@ export interface operations {
             };
             path: {
                 /** @description The ID of the `HDCA`. */
-                id: string;
+                hdca_id: string;
             };
             cookie?: never;
         };
@@ -19722,7 +19706,7 @@ export interface operations {
             };
         };
     };
-    suitable_converters_api_dataset_collections__id__suitable_converters_get: {
+    suitable_converters_api_dataset_collections__hdca_id__suitable_converters_get: {
         parameters: {
             query?: {
                 /** @description The type of collection instance. Either `history` (default) or `library`. */
@@ -19734,7 +19718,7 @@ export interface operations {
             };
             path: {
                 /** @description The ID of the `HDCA`. */
-                id: string;
+                hdca_id: string;
             };
             cookie?: never;
         };
@@ -24902,7 +24886,7 @@ export interface operations {
             };
             path: {
                 /** @description The ID of the `HDCA`. */
-                id: string;
+                hdca_id: string;
                 /** @description The encoded database identifier of the History. */
                 history_id: string | null;
             };

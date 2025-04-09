@@ -334,7 +334,7 @@ export function useInvocationGraph(
                 set(graphStep, "state", getContentItemState(hda));
                 set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
             } else {
-                const hdca = await fetchCollectionDetails({ id: inputItem.id });
+                const hdca = await fetchCollectionDetails({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
                 set(graphStep, "state", getContentItemState(hdca));
                 set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
