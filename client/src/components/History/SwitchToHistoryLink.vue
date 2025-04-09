@@ -71,11 +71,10 @@ const tag = computed(() => {
 
 async function onClick(event: MouseEvent, history: HistorySummary) {
     const eventStore = useEventStore();
-    const ctrlKey = eventStore.isMac ? event.metaKey : event.ctrlKey;
-    if (!ctrlKey && historyStore.currentHistoryId === history.id) {
+    if (!eventStore.isCtrlKey(event) && historyStore.currentHistoryId === history.id) {
         return;
     }
-    if (!ctrlKey && canSwitch.value) {
+    if (!!eventStore.isCtrlKey(event) && canSwitch.value) {
         if (props.filters) {
             historyStore.applyFilters(history.id, props.filters);
         } else {
