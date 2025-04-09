@@ -1121,6 +1121,23 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("identifier_single")
     @requires_new_history
+    def test_run_identifier_single_map_over_nested_collection_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_identifier_single_use_cached_job_renamed_input
+        ) as history_id:
+            # Run tool that acccesses input.name (via input.element_identifier).
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+            inputs = {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}}
+            outputs_one = self._run("identifier_single", history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run(
+                "identifier_single", history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("identifier_single")
+    @requires_new_history
     def test_run_identifier_single_use_cached_job_renamed_input(self):
         with self.dataset_populator.test_history_for(
             self.test_run_identifier_single_use_cached_job_renamed_input
