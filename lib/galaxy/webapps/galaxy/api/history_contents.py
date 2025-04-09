@@ -841,6 +841,28 @@ class FastAPIHistoryContents:
         )
 
     @router.put(
+        "/api/dataset_collections/{hdca_id}",
+        summary="Updates the values for the history dataset (HDA) item with the given ``ID``.",
+        operation_id="dataset_collections__update_collection",
+    )
+    def update_collection(
+        self,
+        hdca_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Updates the values for the history content item with the given ``ID``."""
+        return self.service.update(
+            trans,
+            None,
+            hdca_id,
+            payload.model_dump(exclude_unset=True),
+            serialization_params,
+            contents_type=HistoryContentType.dataset_collection,
+        )
+
+    @router.put(
         "/api/histories/{history_id}/contents/{id}",
         summary="Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,

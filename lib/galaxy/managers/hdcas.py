@@ -115,7 +115,6 @@ class HDCAManager(
         """
         Use history to see if current user owns HDA.
         """
-        super().is_owner(item, user, **kwargs)
         history = item.history
         assert history
         # allow anonymous user to access current history

@@ -219,6 +219,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dataset_collections/{hdca_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Updates the values for the history dataset (HDA) item with the given ``ID``.
+         * @description Updates the values for the history content item with the given ``ID``.
+         */
+        put: operations["dataset_collections__update_collection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dataset_collections/{hdca_id}/contents/{parent_id}": {
         parameters: {
             query?: never;
@@ -19329,6 +19349,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HDCADetailed"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    dataset_collections__update_collection: {
+        parameters: {
+            query?: {
+                /** @description View to be passed to the serializer */
+                view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
+                keys?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the item (`HDA`/`HDCA`) */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHistoryContentsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["HDACustom"]
+                        | components["schemas"]["HDADetailed"]
+                        | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
+                        | components["schemas"]["HDCADetailed"]
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
