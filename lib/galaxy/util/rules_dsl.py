@@ -34,7 +34,7 @@ def _ensure_valid_pattern(expression):
     re.compile(expression)
 
 
-def apply_regex(regex, target, data, replacement=None, group_count=None):
+def apply_regex(regex, target, data, replacement=None, group_count=None, allow_unmatched: bool = False):
     pattern = re.compile(regex)
 
     def new_row(row):
@@ -42,17 +42,30 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
-
-            if group_count:
-                if len(match.groups()) != group_count:
-                    raise Exception("Problem applying regular expression, wrong number of groups found.")
-
-                result = row + list(match.groups())
+                if allow_unmatched:
+                    new_columns = [""]
+                    if group_count:
+                        new_columns = ["" for _ in range(group_count)]
+                    result = row + new_columns
+                else:
+                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
             else:
-                result = row + [match.group(0)]
+                if group_count:
+                    if len(match.groups()) != group_count:
+                        raise Exception("Problem applying regular expression, wrong number of groups found.")
+
+                    result = row + list(match.groups())
+                else:
+                    result = row + [match.group(0)]
         else:
-            result = row + [pattern.search(source).expand(replacement)]
+            match = pattern.search(source)
+            if match:
+                result = row + [match.expand(replacement)]
+            else:
+                if allow_unmatched:
+                    result = row + [""]
+                else:
+                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
 
         return result
 
@@ -173,7 +186,12 @@ class AddColumnRegexRuleDefinition(BaseRuleDefinition):
         replacement = rule.get("replacement")
         group_count = rule.get("group_count")
 
-        return apply_regex(expression, target, data, replacement, group_count), sources
+        allow_unmatched = False
+        if "allow_unmatched" in rule:
+            _ensure_rule_contains_keys(rule, {"allow_unmatched": bool})
+            allow_unmatched = rule["allow_unmatched"]
+
+        return apply_regex(expression, target, data, replacement, group_count, allow_unmatched=allow_unmatched), sources
 
 
 class AddColumnRownumRuleDefinition(BaseRuleDefinition):
