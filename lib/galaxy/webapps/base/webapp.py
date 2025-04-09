@@ -195,6 +195,7 @@ class WebApplication(base.WebApplication):
             )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
+        log.exception(f"Encountered exception in controller method: {method}")
         if isinstance(e, TypeError):
             method_signature = inspect.signature(method)
             required_parameters = {
