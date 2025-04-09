@@ -1713,26 +1713,35 @@ export default {
 
             return datasets;
         },
-        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_) {
+        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_, parentIndices_) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
+            const parentIndices = parentIndices_ ? parentIndices_ : [];
             let data = [];
             let sources = [];
-            for (const element of elements) {
+            for (const index in elements) {
+                const element = elements[index];
                 const elementObject = element.object;
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
+                const indices = parentIndices.concat([index]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
                     data.push([]);
-                    const source = { identifiers: identifiers, dataset: elementObject, tags: elementObject.tags };
+                    const source = {
+                        identifiers: identifiers,
+                        indices: indices,
+                        dataset: elementObject,
+                        tags: elementObject.tags,
+                    };
                     sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
                     const elementObj = this.populateElementsFromCollectionDescription(
                         elementObject.elements,
                         restCollectionType,
-                        identifiers
+                        identifiers,
+                        indices
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;

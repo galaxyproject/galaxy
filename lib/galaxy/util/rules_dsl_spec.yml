@@ -443,7 +443,8 @@
   final:
     data: [["moo", "cow"], ["meow", "cat"], ["bark", "dog"]]
 
-- rules:
+- doc: Add columns based on flat list indicies
+  rules:
     - type: add_column_metadata
       value: index0
   initial:
@@ -451,6 +452,18 @@
     sources: [{"indices": [0]}, {"indices": [1]}, {"indices": [2]}]
   final:
     data: [["moo", "0"], ["meow", "1"], ["bark", "2"]]
+
+- doc: Add columns based on paired list indicies
+  rules:
+    - type: add_column_metadata
+      value: index0
+    - type: add_column_metadata
+      value: index1
+  initial:
+    data: [["samp1for"], ["samp1rev"], ["samp2for"], ["samp2rev"]]
+    sources: [{"indices": [0, 0]}, {"indices": [0, 1]}, {"indices": [1, 0]}, {"indices": [1, 1]}]
+  final:
+    data: [["samp1for", "0", "0"], ["samp1rev", "0", "1"], ["samp2for", "1", "0"], ["samp2rev", "1", "1"]]
 
 - rules:
     - type: add_column_metadata

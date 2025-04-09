@@ -773,11 +773,15 @@ class DatasetCollectionManager:
 
         return elements
 
-    def __init_rule_data(self, elements, collection_type_description, parent_identifiers=None):
+    def __init_rule_data(self, elements, collection_type_description, parent_identifiers=None, parent_indices=None):
         parent_identifiers = parent_identifiers or []
+        parent_indices = parent_indices or []
         data: List[List[str]] = []
         sources: List[Dict[str, str]] = []
-        for element in elements:
+        for i, element in enumerate(elements):
+            indices = parent_indices.copy()
+            indices.append(i)
+
             element_object = element.element_object
             identifiers = parent_identifiers + [element.element_identifier]
             if not element.is_collection:
@@ -786,12 +790,16 @@ class DatasetCollectionManager:
                     "identifiers": identifiers,
                     "dataset": element_object,
                     "tags": element_object.make_tag_string_list(),
+                    "indices": indices,
                 }
                 sources.append(source)
             else:
                 child_collection_type_description = collection_type_description.child_collection_type_description()
                 element_data, element_sources = self.__init_rule_data(
-                    element_object.elements, child_collection_type_description, identifiers
+                    element_object.elements,
+                    child_collection_type_description,
+                    identifiers,
+                    parent_indices=indices,
                 )
                 data.extend(element_data)
                 sources.extend(element_sources)

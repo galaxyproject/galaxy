@@ -193,6 +193,14 @@ const RULES = {
                     newRow.push(sources[index]["identifiers"][identifierIndex]);
                     return newRow;
                 };
+            } else if (ruleValue.indexOf("index") == 0) {
+                const indexIndex = parseInt(ruleValue.substring("index".length), 10);
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    const indexValue = String(sources[index]["indices"][indexIndex]);
+                    newRow.push(indexValue);
+                    return newRow;
+                };
             } else if (ruleValue == "tags") {
                 newRow = (row, index) => {
                     const newRow = row.slice();
