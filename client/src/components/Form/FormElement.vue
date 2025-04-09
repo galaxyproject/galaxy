@@ -29,6 +29,7 @@ import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
 import FormElementHeader from "./FormElementHeader.vue";
 import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const TYPE_TO_PLACEHOLDER: Record<string, string> = {
     text: "text input",
@@ -289,19 +290,33 @@ function onAlert(value: string | undefined) {
         <div class="ui-form-title" :class="{ 'card-header m-0 px-3 py-2': props.workflowRun }">
             <div>
                 <span v-if="collapsible || connectable">
-                    <b-button
+                    <GButton
                         v-if="collapsible && !connected"
-                        class="ui-form-collapsible-icon"
+                        color="blue"
+                        tooltip
+                        transparent
+                        inline
+                        icon-only
+                        data-collapsible
                         :title="collapseText"
                         @click="onCollapse">
-                        <FontAwesomeIcon v-if="collapsed" :icon="props.collapsedEnableIcon" />
-                        <FontAwesomeIcon v-else :icon="props.collapsedDisableIcon" />
-                    </b-button>
+                        <FontAwesomeIcon v-if="collapsed" fixed-with :icon="props.collapsedEnableIcon" />
+                        <FontAwesomeIcon v-else fixed-with :icon="props.collapsedDisableIcon" />
+                    </GButton>
 
-                    <b-button v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
-                        <FontAwesomeIcon v-if="connected" :icon="props.connectedEnableIcon" />
-                        <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
-                    </b-button>
+                    <GButton
+                        v-if="connectable"
+                        color="blue"
+                        tooltip
+                        transparent
+                        inline
+                        icon-only
+                        data-connected
+                        :title="connectText"
+                        @click="onConnect">
+                        <FontAwesomeIcon v-if="connected" fixed-with :icon="props.connectedEnableIcon" />
+                        <FontAwesomeIcon v-else fixed-with :icon="props.connectedDisableIcon" />
+                    </GButton>
 
                     <span v-if="props.title" class="ui-form-title-text ml-1">
                         <label :for="props.id">{{ props.title }}</label>

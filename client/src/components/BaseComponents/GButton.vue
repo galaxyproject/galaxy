@@ -312,7 +312,6 @@ useAccessibleHover(
     }
 
     &.g-icon-only {
-        aspect-ratio: 1;
         display: inline-flex;
         justify-content: center;
 
