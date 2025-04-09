@@ -122,6 +122,7 @@ function markNotificationAsSeen() {
 
 <template>
     <GCard
+        v-if="props.notification"
         :id="props.notification.id"
         :title="title"
         :primary-actions="primaryActions"
