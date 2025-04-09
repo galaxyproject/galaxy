@@ -3,9 +3,10 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const router = useRouter();
 const toolStore = useToolStore();
@@ -36,7 +37,7 @@ function onToolClick(tool: Tool, evt: Event) {
             </div>
         </template>
 
-        <div class="tool-list">
+        <div>
             <div v-if="loading" class="p-3 text-center">
                 <b-spinner label="Loading interactive tools..."></b-spinner>
                 <p class="mt-2">Loading interactive tools...</p>
@@ -44,7 +45,7 @@ function onToolClick(tool: Tool, evt: Event) {
             <div v-else-if="interactiveTools.length === 0" class="p-3 text-center">
                 <p>No interactive tools available</p>
             </div>
-            <div v-else class="tool-list-container p-2">
+            <div v-else class="p-2">
                 <button
                     v-for="tool in interactiveTools"
                     :key="tool.id"
@@ -58,8 +59,8 @@ function onToolClick(tool: Tool, evt: Event) {
                                 alt="tool icon" />
                         </div>
                         <div class="text-break">
-                            <div class="tool-list-title font-weight-bold">{{ tool.name }}</div>
-                            <div class="tool-list-text text-muted">{{ tool.description }}</div>
+                            <div class="font-weight-bold">{{ tool.name }}</div>
+                            <div class="text-muted">{{ tool.description }}</div>
                         </div>
                     </div>
                 </button>
