@@ -112,7 +112,7 @@ describe("History center panel View", () => {
     }
 
     function storageDashboardButtonDisabled(wrapper) {
-        return wrapper.find("[data-description='storage dashboard button']").attributes("disabled");
+        return wrapper.find("[data-description='storage dashboard button']").classes().includes("g-disabled");
     }
 
     it("current user's current history", async () => {
