@@ -60,28 +60,6 @@ class AccessibleManagerMixin(Generic[U]):
             return item
         raise exceptions.ItemAccessibilityException(f"{self.model_class.__name__} is not accessible by user")
 
-    # TODO:?? are these even useful?
-    def list_accessible(self, user, **kwargs):
-        """
-        Return a list of items accessible to the user, raising an error if ANY
-        are inaccessible.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        raise exceptions.NotImplemented("Abstract interface Method")
-        # NOTE: this will be a large, inefficient list if filters are not passed in kwargs
-        # items = ModelManager.list( self, trans, **kwargs )
-        # return [ self.error_unless_accessible( trans, item, user ) for item in items ]
-
-    def filter_accessible(self, user, **kwargs):
-        """
-        Return a list of items accessible to the user.
-        """
-        raise exceptions.NotImplemented("Abstract interface Method")
-        # NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
-        # items = ModelManager.list( self, trans, **kwargs )
-        # return filter( lambda item: self.is_accessible( trans, item, user ), items )
-
 
 class OwnableManagerMixin(Generic[U]):
     """
@@ -124,24 +102,6 @@ class OwnableManagerMixin(Generic[U]):
         if self.is_owner(item, user, **kwargs):
             return item
         raise exceptions.ItemOwnershipException(f"{self.model_class.__name__} is not owned by user")
-
-    def list_owned(self, user, **kwargs):
-        """
-        Return a list of items owned by the user, raising an error if ANY
-        are not.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        raise exceptions.NotImplemented("Abstract interface Method")
-        # just alias to by_user (easier/same thing)
-        # return self.by_user( trans, user, **kwargs )
-
-    def filter_owned(self, user, **kwargs):
-        """
-        Return a list of items owned by the user.
-        """
-        # just alias to list_owned
-        return self.list_owned(user, **kwargs)
 
     def get_mutable(self, id: int, user: Optional[model.User], **kwargs: Any) -> U:
         """
