@@ -445,6 +445,15 @@
 
 - rules:
     - type: add_column_metadata
+      value: index0
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"indices": [0]}, {"indices": [1]}, {"indices": [2]}]
+  final:
+    data: [["moo", "0"], ["meow", "1"], ["bark", "2"]]
+
+- rules:
+    - type: add_column_metadata
       value: tags
   initial:
     data: [["moo"], ["meow"], ["bark"]]

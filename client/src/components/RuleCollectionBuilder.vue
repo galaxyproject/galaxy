@@ -1014,6 +1014,8 @@ export default {
                         } else {
                             metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
                         }
+                    } else if (collectionTypeRank == "record") {
+                        metadataOptions["identifier" + index] = _l("Record Identifier");
                     } else {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }

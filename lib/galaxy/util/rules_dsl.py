@@ -103,6 +103,13 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
             for index, row in enumerate(data):
                 new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
 
+        elif rule_value.startswith("index"):
+            element_index = int(rule_value[len("index") :])
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + [str(sources[index]["indices"][element_index])])
+
         elif rule_value == "tags":
 
             def sorted_tags(index):
