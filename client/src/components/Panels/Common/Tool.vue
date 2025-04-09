@@ -12,6 +12,8 @@
             :target="tool.target"
             :title="tool.help"
             @click="onClick">
+            <img v-if="renderIcon && toolIconHref" class="icon" :src="toolIconHref" :alt="`${tool.name} logo`" />
+            <!-- See if/where logo is actually used and unify?  Was this just apocyrphal visualizatinos maybe? -->
             <img v-if="tool.logo" class="logo" :src="tool.logo" :alt="tool.name" />
             <span class="labels">
                 <span
@@ -34,6 +36,7 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
+import { getAppRoot } from "onload/loadConfig";
 import ariaAlert from "utils/ariaAlert";
 import Vue from "vue";
 
@@ -62,6 +65,10 @@ export default {
             type: String,
             default: "",
         },
+        renderIcon: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         targetClass() {
@@ -70,6 +77,9 @@ export default {
             } else {
                 return `title-link cursor-pointer`;
             }
+        },
+        toolIconHref() {
+            return this.tool.icon ? `${getAppRoot()}api/tools/${this.tool.id}/icon/` : null;
         },
     },
     methods: {
@@ -91,5 +101,9 @@ export default {
 }
 .logo {
     width: 2.5rem;
+}
+.icon {
+    width: 2.5rem;
+    margin-right: .5rem;
 }
 </style>

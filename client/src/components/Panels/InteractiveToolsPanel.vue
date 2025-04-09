@@ -47,7 +47,7 @@ function onToolClick(tool: Tool, evt: Event) {
             </div>
             <div v-else class="tool-list-container p-2">
                 <div v-for="tool in interactiveTools" :key="tool.id" class="tool-item">
-                    <ToolComponent :tool="tool" @onClick="onToolClick" />
+                    <ToolComponent :tool="tool" @onClick="onToolClick" :renderIcon="true" />
                 </div>
             </div>
         </div>

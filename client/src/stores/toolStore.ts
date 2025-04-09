@@ -50,6 +50,7 @@ export interface Tool {
     panel_section_name: string | null;
     form_style: string;
     disabled?: boolean;
+    icon?: string;
 }
 
 export interface ToolSection {
