@@ -41,6 +41,39 @@
     sources: [1,2]
   final:
     data: [["foo", "o", "o"], ["boo", "o", "o"]]
+- doc: add_column_regex fails if unmatched by default
+  rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '(o)+'
+  initial:
+    data: [[foo], [cow], [cat]]
+    sources: [1,2]
+  error: true
+- doc: add_column_regex allowed to unmatched with allow_unmatched property
+  rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '(o)+'
+      allow_unmatched: true
+  initial:
+    data: [[foo], [cow], [cat]]
+    sources: [1,2]
+  final:
+    data: [["foo", "oo"], ["cow", "o"], ["cat", ""]]
+- doc: add_column_regex allowed to unmatched with group counts
+  rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '.*(o)(o)'
+      group_count: 2
+      allow_unmatched: true
+  initial:
+    data: [[foo], [boo], [cat]]
+    sources: [1,2]
+  final:
+    data: [["foo", "o", "o"], ["boo", "o", "o"], ["cat", "", ""]]
+
 - doc: add_column_substr works for keeping a fixed length prefix
   rules:
     - type: add_column_substr
