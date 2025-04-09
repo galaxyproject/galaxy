@@ -67,17 +67,17 @@
                 :workflow-run="workflowRun"
                 @change="onChange">
                 <template v-slot:workflow-run-form-title-items>
-                    <b-button
+                    <GButton
                         v-if="syncWithGraph"
-                        class="text-decoration-none"
-                        size="sm"
-                        variant="link"
+                        size="small"
+                        color="blue"
+                        transparent
                         :title="activeNodeId === index ? 'Active' : 'View in Graph'"
                         :disabled="activeNodeId === index"
                         @click="$emit('update:active-node-id', index)">
                         <span class="fas fa-sitemap" />
                         <span class="fas fa-arrow-right" />
-                    </b-button>
+                    </GButton>
                 </template>
             </FormElement>
         </div>
@@ -91,6 +91,7 @@ import { matchCase } from "@/components/Form/utilities";
 
 import FormCard from "./FormCard.vue";
 import FormRepeat from "./FormRepeat.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
 export default {
@@ -99,6 +100,7 @@ export default {
         FormCard,
         FormElement,
         FormRepeat,
+        GButton,
     },
     props: {
         inputs: {
