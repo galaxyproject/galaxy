@@ -525,3 +525,33 @@
       target_column: 0
       expression: '(o+'
   error: true
+
+# convert list:record to list:paired
+- rules:
+    - type: add_column_metadata
+      value: identifier0
+    - type: add_column_metadata
+      value: identifier1
+    - type: add_column_regex
+      target_column: 2
+      expression: 'mother'
+      replacement: 'forward'
+      allow_unmatched: true
+    - type: add_column_regex
+      target_column: 2
+      expression: 'child'
+      replacement: 'reverse'
+      allow_unmatched: true
+    - type: add_column_concatenate
+      target_column_0: 3
+      target_column_1: 4
+    - type: add_filter_empty
+      target_column: 5
+      invert: false
+    - type: remove_columns
+      target_columns: [2, 3, 4]
+  initial:
+    data: [["el1"], ["el2"], ["el3"]]
+    sources: [{"identifiers": ["samp1", "mother"]}, {"identifiers": ["samp1", "father"]}, {"identifiers": ["samp1", "child"]}]
+  final:
+    data: [["el1", "samp1", "forward"],  ["el3", "samp1", "reverse"]]
