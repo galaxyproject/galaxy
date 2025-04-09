@@ -153,10 +153,7 @@ function markNotificationAsSeen() {
                 <span> with you.</span>
             </template>
             <template v-else>
-                <span
-                    id="notification-message"
-                    class="notification-message"
-                    v-html="renderMarkdown(props.notification.content.message)" />
+                <span class="notification-message" v-html="renderMarkdown(props.notification.content.message)" />
             </template>
         </template>
     </GCard>
