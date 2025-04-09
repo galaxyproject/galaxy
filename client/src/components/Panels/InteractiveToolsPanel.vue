@@ -2,11 +2,10 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getAppRoot } from "@/onload/loadConfig";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-
-import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
-import ToolComponent from "@/components/Panels/Common/Tool.vue";
 
 const router = useRouter();
 const toolStore = useToolStore();
@@ -46,26 +45,53 @@ function onToolClick(tool: Tool, evt: Event) {
                 <p>No interactive tools available</p>
             </div>
             <div v-else class="tool-list-container p-2">
-                <div v-for="tool in interactiveTools" :key="tool.id" class="tool-item">
-                    <ToolComponent :tool="tool" @onClick="onToolClick" :renderIcon="true" />
-                </div>
+                <button
+                    v-for="tool in interactiveTools"
+                    :key="tool.id"
+                    class="tool-item"
+                    @click="onToolClick(tool, $event)">
+                    <div class="d-flex">
+                        <div class="tool-icon mr-2">
+                            <img
+                                v-if="tool.icon"
+                                :src="getAppRoot() + 'api/tools/' + tool.id + '/icon'"
+                                alt="tool icon" />
+                        </div>
+                        <div class="text-break">
+                            <div class="tool-list-title font-weight-bold">{{ tool.name }}</div>
+                            <div class="tool-list-text text-muted">{{ tool.description }}</div>
+                        </div>
+                    </div>
+                </button>
             </div>
         </div>
     </ActivityPanel>
 </template>
 
-<style scoped>
-.tool-list-container {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-}
+<style lang="scss" scoped>
+@import "theme/blue.scss";
 
 .tool-item {
+    background: none;
+    border: none;
+    text-align: left;
+    transition: none;
+    width: 100%;
     padding: 0.25rem;
     border-bottom: 1px solid #eee;
+
+    &:hover {
+        background: $gray-200;
+    }
+
+    &:last-child {
+        border-bottom: none;
+    }
 }
 
-.tool-item:last-child {
-    border-bottom: none;
+.tool-icon {
+    img {
+        width: 3rem;
+    }
 }
 </style>

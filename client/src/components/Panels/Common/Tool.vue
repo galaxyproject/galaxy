@@ -104,6 +104,6 @@ export default {
 }
 .icon {
     width: 2.5rem;
-    margin-right: .5rem;
+    margin-right: 0.5rem;
 }
 </style>
