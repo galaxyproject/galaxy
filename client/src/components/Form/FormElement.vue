@@ -163,9 +163,7 @@ const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
-const showField = computed(
-    () => !collapsed.value && !props.disabled && (!props.workflowRun || props.type !== "boolean")
-);
+const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
 );
@@ -192,6 +190,7 @@ const nonMdHelp = computed(() =>
         ? sanitize(helpText.value!)
         : ""
 );
+const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
 
 const currentValue = computed({
     get() {
@@ -333,9 +332,6 @@ function onAlert(value: string | undefined) {
                 :is-empty="isEmpty"
                 :is-optional="isOptional"
                 :extensions="attrs.extensions">
-                <template v-slot:form-element>
-                    <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
-                </template>
                 <template v-slot:action-items>
                     <slot name="workflow-run-form-title-items" />
                 </template>
@@ -346,7 +342,14 @@ function onAlert(value: string | undefined) {
             <FormError v-if="props.workflowRun && hasAlert && !unPopulatedError" :alerts="alerts" has-alert-class />
 
             <div v-if="showField" class="ui-form-field" :data-label="props.title">
-                <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
+                <div
+                    v-if="props.type === 'boolean' && props.workflowRun"
+                    :class="{ 'd-flex align-items-start flex-gapx-1': Boolean(nonMdHelp) }">
+                    <FormBoolean :id="props.id" v-model="currentValue" class="mr-2" :no-label="Boolean(nonMdHelp)" />
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span v-if="Boolean(nonMdHelp)" class="text-muted" v-html="nonMdHelp" />
+                </div>
+                <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"
@@ -445,7 +448,7 @@ function onAlert(value: string | undefined) {
 
             <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-if="nonMdHelp" class="ui-form-info form-text text-muted" v-html="nonMdHelp" />
+            <span v-if="showNonMdHelp" class="ui-form-info form-text text-muted" v-html="nonMdHelp" />
             <span v-else-if="Boolean(helpText) && helpFormat === 'markdown'" class="ui-form-info form-text text-muted">
                 <FormElementHelpMarkdown :content="helpText ?? ''" />
             </span>
