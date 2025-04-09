@@ -1,5 +1,5 @@
 <template>
-    <FormGeneric v-bind="formConfig" />
+    <FormGeneric v-bind="formConfig" :trim-inputs="true" />
 </template>
 <script>
 import FormGeneric from "components/Form/FormGeneric";
