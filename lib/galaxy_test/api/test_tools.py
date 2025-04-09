@@ -1058,6 +1058,67 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
             assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
 
+    @skip_without_tool("collection_creates_list")
+    @requires_new_history
+    def test_run_collection_creates_list_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_collection_creates_list_use_cached_job
+        ) as history_id:
+            # Run tool that consumes and produces hdca
+            create_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["123", "456"], wait=True
+            ).json()
+            hdca = create_response["output_collections"][0]
+            outputs_one = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            outputs_two = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("collection_creates_list")
+    @requires_new_history
+    def test_run_collection_creates_list_use_cached_job_renamed_input(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_collection_creates_list_use_cached_job
+        ) as history_id:
+            # Run tool that consumes and produces hdca
+            create_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["123", "456"], wait=True
+            ).json()
+            hdca = create_response["output_collections"][0]
+            outputs_one = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            self.dataset_populator.rename_collection(hdca["id"])
+            outputs_two = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
     @skip_without_tool("identifier_single")
     @requires_new_history
     def test_run_identifier_single_use_cached_job_renamed_input(self):
