@@ -82,7 +82,7 @@ class HistoryDatasetAssociationNoHistoryException(Exception):
 
 class HDAManager(
     datasets.DatasetAssociationManager[HistoryDatasetAssociation],
-    secured.OwnableManagerMixin,
+    secured.OwnableManagerMixin[HistoryDatasetAssociation],
     annotatable.AnnotatableManagerMixin,
 ):
     """

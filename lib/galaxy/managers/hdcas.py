@@ -6,7 +6,10 @@ history.
 """
 
 import logging
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -61,7 +64,7 @@ def set_collection_attributes(dataset_element, *payload):
 class HDCAManager(
     base.ModelManager[model.HistoryDatasetCollectionAssociation],
     secured.AccessibleManagerMixin,
-    secured.OwnableManagerMixin,
+    secured.OwnableManagerMixin[model.HistoryDatasetCollectionAssociation],
     deletable.PurgableManagerMixin,
     annotatable.AnnotatableManagerMixin,
 ):
@@ -106,6 +109,20 @@ class HDCAManager(
     def update_attributes(self, content, payload: Dict):
         # pre-requisite checked that attributes are valid
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
+
+    # .... security and permissions
+    def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: Optional[model.User], **kwargs) -> bool:
+        """
+        Use history to see if current user owns HDA.
+        """
+        super().is_owner(item, user, **kwargs)
+        history = item.history
+        assert history
+        # allow anonymous user to access current history
+        if history.user is None:
+            current_history = kwargs.get("history")
+            return current_history is not None and history == current_history
+        return history.user == user
 
 
 # serializers
