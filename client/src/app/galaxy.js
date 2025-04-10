@@ -1,10 +1,10 @@
-import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
 import _ from "underscore";
 import { create, dialog } from "utils/data";
 import { _getUserLocale, _setUserLocale, localize } from "utils/localization";
 
+import { getGalaxyInstance } from "./singleton";
 import userModel from "./user-model";
 
 // ============================================================================
