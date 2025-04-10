@@ -52,7 +52,23 @@ class FastAPIJobFiles:
     for tool execution.
     """
 
-    @router.get(
+    # The ARC remote job runner (`lib.galaxy.jobs.runners.pulsar.PulsarARCJobRunner`) expects this endpoint not only to
+    # answer `GET` and `HEAD` requests, but also even to return HTTP codes other than 404 when `PROPFIND` requests are
+    # issued. The latter are not part of the HTTP spec, but it is used in the WebDAV protocol. The correct answer to
+    # such requests is likely 501 (not implemented).
+    #
+    # FastAPI answers HEAD requests automatically for `GET` endpoints, and returns HTTP 405 (method not allowed) for
+    # `PROPFIND`, which maybe is not fully correct but tolerable because it is one less quirk to maintain.
+    #
+    # However, because of the way legacy WSGI endpoints are injected into the FastAPI app (using
+    # `app.mount("/", wsgi_handler)`), the built-in support for `HEAD` requests and for returning HTTP 405 for
+    # `PROPFIND` breaks, because such requests are passed to the `wsgi_handler` sub-application. This means that the
+    # endpoint still needs to include some code to handle this behavior.
+    #
+    # When ALL routes have been migrated to ASGI (no WSGI handler sub-application needed anymore), some lines of code
+    # can be removed, they are labeled using comments.
+    # @router.get(  # use me when ALL endpoints have been migrated to FastAPI
+    @router.api_route(  # remove me when ALL endpoints have been migrated to FastAPI
         "/api/jobs/{job_id}/files",
         summary="Get a file required to staging a job.",
         responses={
@@ -60,12 +76,25 @@ class FastAPIJobFiles:
                 "description": "Contents of file.",
                 "content": {"application/json": None, "application/octet-stream": {"example": None}},
             },
-            500: {
-                "description": (
-                    "File not found, path does not refer to a file, or input dataset(s) for job have been purged."
-                )
+            400: {
+                "description": "Path does not refer to a file.",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Path does not refer to a file."},
+                    }
+                },
             },
+            404: {
+                "description": "File not found.",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "File not found."},
+                    }
+                },
+            },
+            500: {"description": "Input dataset(s) for job have been purged."},
         },
+        methods=["GET", "HEAD", "PROPFIND"],  # remove me when ALL endpoints have been migrated to FastAPI
     )
     def index(
         self,
@@ -96,6 +125,11 @@ class FastAPIJobFiles:
 
         job = self.__authorize_job_access(trans, job_id, path=path, job_key=job_key)
 
+        # PROPFIND is not implemented, but the endpoint needs to return a non-404 error code for it
+        # remove me when ALL endpoints have been migrated to FastAPI
+        if trans.request.method == "PROPFIND":
+            raise HTTPException(status_code=501, detail="Not implemented yet.")
+
         if not os.path.exists(path):
             # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
             # Here we discriminate that case from truly unexpected bugs.
@@ -105,6 +139,10 @@ class FastAPIJobFiles:
                 # This looks like a galaxy dataset, check if any job input has been deleted.
                 if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
                     raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+            else:
+                raise HTTPException(status_code=404, detail="File not found.")
+        elif not os.path.isfile(path):
+            raise HTTPException(status_code=400, detail="Path does not refer to a file.")
 
         return GalaxyFileResponse(path)
 
@@ -113,6 +151,7 @@ class FastAPIJobFiles:
         summary="Populate an output file.",
         responses={
             200: {"description": "An okay message.", "content": {"application/json": {"example": {"message": "ok"}}}},
+            400: {"description": "Bad request (including no file contents provided)."},
         },
     )
     def create(
@@ -191,7 +230,7 @@ class FastAPIJobFiles:
             input_file_path = underscore_file.file.name
             input_file = open(underscore_file.file.name, "rb")
         else:
-            input_file = None
+            raise HTTPException(status_code=400, detail="No file contents provided.")
 
         target_dir = os.path.dirname(path)
         util.safe_makedirs(target_dir)
