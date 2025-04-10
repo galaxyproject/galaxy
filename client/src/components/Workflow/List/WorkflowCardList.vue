@@ -22,6 +22,7 @@ interface Props {
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
     itemRefs?: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
+    rangeSelectAnchor?: WorkflowSummary;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -34,6 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
     itemRefs: () => ({}),
+    rangeSelectAnchor: undefined,
 });
 
 const emit = defineEmits<{
@@ -106,6 +108,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :compact="props.compact"
             :current="workflow.id === props.currentWorkflowId"
             class="workflow-card-in-list"
+            :class="{ 'range-select-anchor-workfow': props.rangeSelectAnchor?.id === workflow.id }"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -172,6 +175,12 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
                 &:not(.workflow-shared) {
                     border: 0.1rem solid $brand-primary;
                 }
+            }
+        }
+
+        &.range-select-anchor-workfow {
+            &:deep(.workflow-card-container) {
+                box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
             }
         }
     }
