@@ -355,19 +355,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect("/api/upload/resumable_upload", controller="uploads", action="hooks")
     webapp.mapper.connect("/api/upload/hooks", controller="uploads", action="hooks", conditions=dict(method=["POST"]))
 
-    webapp.mapper.connect(
-        "/api/job_files/resumable_upload/{session_id}",
-        controller="job_files",
-        action="tus_patch",
-        conditions=dict(method=["PATCH"]),
-    )
-    # user facing upload has this endpoint enabled but the middleware completely masks it and the controller
-    # is not used. Probably it isn't needed there but I am keeping the doc here until we remove both
-    # routes.
-    # webapp.mapper.connect("/api/job_files/resumable_upload", controller="job_files", action="tus_post")
-    webapp.mapper.connect(
-        "/api/job_files/tus_hooks", controller="job_files", action="tus_hooks", conditions=dict(method=["POST"])
-    )
 
     webapp.mapper.resource(
         "revision",
@@ -860,24 +847,6 @@ def populate_api_routes(webapp, app):
         controller="jobs",
         action="build_for_rerun",
         conditions=dict(method=["GET"]),
-    )
-
-    # Job files controllers. Only for consumption by remote job runners.
-    webapp.mapper.resource(
-        "file",
-        "files",
-        controller="job_files",
-        name_prefix="job_",
-        path_prefix="/api/jobs/{job_id}",
-        parent_resources=dict(member_name="job", collection_name="jobs"),
-    )
-
-    webapp.mapper.connect(
-        "index",
-        "/api/jobs/{job_id}/files",
-        controller="job_files",
-        action="index",
-        conditions=dict(method=["HEAD"]),
     )
 
     webapp.mapper.resource(

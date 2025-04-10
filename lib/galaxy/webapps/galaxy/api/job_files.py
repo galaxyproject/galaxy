@@ -1,11 +1,24 @@
-"""API for asynchronous job running mechanisms can use to fetch or put files
-related to running and queued jobs.
+"""
+API for asynchronous job running mechanisms can use to fetch or put files related to running and queued jobs.
 """
 
 import logging
 import os
 import re
 import shutil
+from typing import IO
+from urllib.parse import unquote
+
+from fastapi import (
+    File,
+    Form,
+    HTTPException,
+    Path,
+    Query,
+    Response,
+    UploadFile,
+)
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -13,55 +26,78 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Job
-from galaxy.web import (
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless,
+from galaxy.webapps.base.api import GalaxyFileResponse
+from galaxy.webapps.galaxy.api import (
+    DependsOnTrans,
+    Router,
 )
-from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class JobFilesAPIController(BaseGalaxyAPIController):
-    """This job files controller allows remote job running mechanisms to
-    read and modify the current state of files for queued and running jobs.
-    It is certainly not meant to represent part of Galaxy's stable, user
-    facing API.
+router = Router(
+    # keep the endpoint in the undocumented section of the API docs `/api/docs`, as all endpoints from `FastAPIJobFiles`
+    # are certainly not meant to represent part of Galaxy's stable, user facing API
+    tags=["undocumented"]
+)
 
-    Furthermore, even if a user key corresponds to the user running the job,
-    it should not be accepted for authorization - this API allows access to
-    low-level unfiltered files and such authorization would break Galaxy's
-    security model for tool execution.
+
+@router.cbv
+class FastAPIJobFiles:
+    """
+    This job files controller allows remote job running mechanisms to read and modify the current state of files for
+    queued and running jobs. It is certainly not meant to represent part of Galaxy's stable, user facing API.
+
+    Furthermore, even if a user key corresponds to the user running the job, it should not be accepted for authorization
+    - this API allows access to low-level unfiltered files and such authorization would break Galaxy's security model
+    for tool execution.
     """
 
-    @expose_api_raw_anonymous_and_sessionless
-    def index(self, trans: ProvidesAppContext, job_id, **kwargs):
+    @router.get(
+        "/api/jobs/{job_id}/files",
+        summary="Get a file required to staging a job.",
+        responses={
+            200: {
+                "description": "Contents of file.",
+                "content": {"application/json": None, "application/octet-stream": {"example": None}},
+            },
+            500: {
+                "description": (
+                    "File not found, path does not refer to a file, or input dataset(s) for job have been purged."
+                )
+            },
+        },
+    )
+    def index(
+        self,
+        job_id: Annotated[str, Path(description="Encoded id string of the job.")],
+        path: Annotated[
+            str,
+            Query(
+                description="Path to file.",
+            ),
+        ],
+        job_key: Annotated[
+            str,
+            Query(
+                description=(
+                    "A key used to authenticate this request as acting on behalf or a job runner for the specified job."
+                ),
+            ),
+        ],
+        trans: ProvidesAppContext = DependsOnTrans,
+    ) -> GalaxyFileResponse:
         """
-        GET /api/jobs/{job_id}/files
+        Get a file required to staging a job (proper datasets, extra inputs, task-split inputs, working directory
+        files).
 
-        Get a file required to staging a job (proper datasets, extra inputs,
-        task-split inputs, working directory files).
-
-        :type   job_id: str
-        :param  job_id: encoded id string of the job
-        :type   path: str
-        :param  path: Path to file.
-        :type   job_key: str
-        :param  job_key: A key used to authenticate this request as acting on
-                         behalf or a job runner for the specified job.
-
-        ..note:
-            This API method is intended only for consumption by job runners,
-            not end users.
-
-        :rtype:     binary
-        :returns:   contents of file
+        This API method is intended only for consumption by job runners, not end users.
         """
-        job = self.__authorize_job_access(trans, job_id, **kwargs)
-        path = kwargs["path"]
-        try:
-            return open(path, "rb")
-        except FileNotFoundError:
+        path = unquote(path)
+
+        job = self.__authorize_job_access(trans, job_id, path=path, job_key=job_key)
+
+        if not os.path.exists(path):
             # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
             # Here we discriminate that case from truly unexpected bugs.
             # Not failing the job here, this is or should be handled by pulsar.
@@ -70,55 +106,75 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 # This looks like a galaxy dataset, check if any job input has been deleted.
                 if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
                     raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
-            else:
-                raise
 
-    @expose_api_anonymous_and_sessionless
-    def create(self, trans, job_id, payload, **kwargs):
+        return GalaxyFileResponse(path)
+
+    @router.post(
+        "/api/jobs/{job_id}/files",
+        summary="Populate an output file.",
+        responses={
+            200: {"description": "An okay message.", "content": {"application/json": {"example": {"message": "ok"}}}},
+        },
+    )
+    def create(
+        self,
+        job_id: Annotated[str, Path(description="Encoded id string of the job.")],
+        path: Annotated[str, Form(description="Path to file to create.")],
+        job_key: Annotated[
+            str,
+            Form(
+                description=(
+                    "A key used to authenticate this request as acting on behalf or a job runner for the specified job."
+                )
+            ),
+        ],
+        file: UploadFile = File(None, description="Contents of the file to create."),
+        session_id: str = Form(None),
+        underscore_file_path: str = Form(
+            None,
+            alias="__file_path",
+            validation_alias="__file_path",
+            # both `alias` and `validation_alias` are needed for body parameters, see
+            # https://github.com/fastapi/fastapi/issues/10286#issuecomment-1727642960
+        ),
+        underscore_file: UploadFile = File(
+            None,
+            alias="__file",
+            validation_alias="__file",
+            # both `alias` and `validation_alias` are needed for body parameters, see
+            # https://github.com/fastapi/fastapi/issues/10286#issuecomment-1727642960
+        ),
+        trans: ProvidesAppContext = DependsOnTrans,
+    ):
         """
-        create( self, trans, job_id, payload, **kwargs )
-        * POST /api/jobs/{job_id}/files
-            Populate an output file (formal dataset, task split part, working
-            directory file (such as those related to metadata)). This should be
-            a multipart post with a 'file' parameter containing the contents of
-            the actual file to create.
+        Populate an output file (formal dataset, task split part, working directory file (such as those related to
+        metadata). This should be a multipart POST with a 'file' parameter containing the contents of the actual file to
+        create.
 
-        :type   job_id: str
-        :param  job_id: encoded id string of the job
-        :type   payload:    dict
-        :param  payload:    dictionary structure containing::
-            'job_key'   = Key authenticating
-            'path'      = Path to file to create.
-
-        ..note:
-            This API method is intended only for consumption by job runners,
-            not end users.
-
-        :rtype:     dict
-        :returns:   an okay message
+        This API method is intended only for consumption by job runners, not end users.
         """
-        job = self.__authorize_job_access(trans, job_id, **payload)
-        path = payload.get("path")
-        if not path:
-            raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
+        path = unquote(path)
+
+        job = self.__authorize_job_access(trans, job_id, path=path, job_key=job_key)
         self.__check_job_can_write_to_path(trans, job, path)
 
+        input_file: IO[bytes]
+        input_file_path: str
         # Is this writing an unneeded file? Should this just copy in Python?
-        if "__file_path" in payload:
-            file_path = payload.get("__file_path")
+        if underscore_file_path:
+            input_file_path = underscore_file_path
             upload_store = trans.app.config.nginx_upload_job_files_store
             assert upload_store, (
                 "Request appears to have been processed by"
                 " nginx_upload_module but Galaxy is not"
                 " configured to recognize it"
             )
-            assert file_path.startswith(
+            assert input_file_path.startswith(
                 upload_store
-            ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
-            input_file = open(file_path)
-        elif "session_id" in payload:
+            ), f"Filename provided by nginx ({input_file_path}) is not in correct directory ({upload_store})"
+            input_file = open(input_file_path, "rb")
+        elif session_id is not None:
             # code stolen from basic.py
-            session_id = payload["session_id"]
             upload_store = (
                 trans.app.config.tus_upload_store_job_files
                 or trans.app.config.tus_upload_store
@@ -127,17 +183,25 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             if re.match(r"^[\w-]+$", session_id) is None:
                 raise ValueError("Invalid session id format.")
             local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-            input_file = open(local_filename)
+            input_file_path = local_filename
+            input_file = open(local_filename, "rb")
+        elif file:
+            input_file_path = file.file.name
+            input_file = open(file.file.name, "rb")
+        elif underscore_file:
+            input_file_path = underscore_file.file.name
+            input_file = open(underscore_file.file.name, "rb")
         else:
-            input_file = payload.get("file", payload.get("__file", None)).file
+            input_file = None
+
         target_dir = os.path.dirname(path)
         util.safe_makedirs(target_dir)
         try:
             if os.path.exists(path) and (path.endswith("tool_stdout") or path.endswith("tool_stderr")):
                 with open(path, "ab") as destination:
-                    shutil.copyfileobj(open(input_file.name, "rb"), destination)
+                    shutil.copyfileobj(input_file, destination)
             else:
-                shutil.move(input_file.name, path)
+                shutil.move(input_file_path, path)
         finally:
             try:
                 input_file.close()
@@ -145,31 +209,40 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 # Fails to close file if not using nginx upload because the
                 # tempfile has moved and Python wants to delete it.
                 pass
+
         return {"message": "ok"}
 
-    @expose_api_anonymous_and_sessionless
-    def tus_patch(self, trans, **kwds):
+    @router.patch(
+        "/api/job_files/resumable_upload/{session_id}",
+        summary="Upload job files using the TUS protocol.",
+        responses={
+            200: {"description": "Default response, since this endpoint is not implemented yet."},
+        },
+    )
+    def tus_patch(
+        self,
+        session_id: Annotated[str, Path(description="Resumable upload session id.")],
+        trans: ProvidesAppContext = DependsOnTrans,
+    ):
         """
-        Exposed as PATCH /api/job_files/resumable_upload.
-
         I think based on the docs, a separate tusd server is needed for job files if
         also hosting one for use facing uploads.
 
         Setting up tusd for job files should just look like (I think):
 
-        tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp
+        `tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp`
 
         See more discussion of checking upload access, but we shouldn't need the
         API key and session stuff the user upload tusd server should be configured with.
 
         Also shouldn't need a hooks endpoint for this reason but if you want to add one
-        the target CLI entry would be -hooks-http=<galaxy_url>/api/job_files/tus_hooks
+        the target CLI entry would be `-hooks-http=<galaxy_url>/api/job_files/tus_hooks`
         and the action is featured below.
 
-        I would love to check the job state with __authorize_job_access on the first
-        POST but it seems like TusMiddleware doesn't default to coming in here for that
+        I would love to check the job state with `__authorize_job_access` on the first
+        POST but it seems like `TusMiddleware` doesn't default to coming in here for that
         initial POST the way it does for the subsequent PATCHes. Ultimately, the upload
-        is still authorized before the write done with POST /api/jobs/<job_id>/files
+        is still authorized before the write done with POST `/api/jobs/<job_id>/files`
         so I think there is no route here to mess with user data - the worst of the security
         issues that can be caused is filling up the sever with needless files that aren't
         acted on. Since this endpoint is not meant for public consumption - all the job
@@ -177,26 +250,45 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         to your Pulsar servers and similar targeting could be accomplished with a user account
         and the user facing upload endpoints.
         """
-        return None
+        ...
+        return Response(status_code=200)
 
-    @expose_api_anonymous_and_sessionless
-    def tus_hooks(self, trans, **kwds):
-        """No-op but if hook specified the way we do for user upload it would hit this action.
-
-        Exposed as PATCH /api/job_files/tus_hooks and documented in the docstring for
-        tus_patch.
+    @router.post(
+        "/api/job_files/resumable_upload",
+        summary="Upload job files using the TUS protocol.",
+        responses={
+            200: {"description": "Default response, since this endpoint is not implemented yet."},
+        },
+    )
+    def tus_post(self, trans: ProvidesAppContext = DependsOnTrans):
         """
-        pass
+        User facing upload has this endpoint enabled but the middleware completely masks it and the endpoint is not
+        used. Probably it isn't needed there, but I am keeping the doc here until we remove both routes.
+        """
+        ...
+        return Response(status_code=200)
 
-    def __authorize_job_access(self, trans, encoded_job_id, **kwargs):
-        for key in ["path", "job_key"]:
-            if key not in kwargs:
-                error_message = f"Job files action requires a valid '{key}'."
-                raise exceptions.ObjectAttributeMissingException(error_message)
+    @router.post(
+        "/api/job_files/tus_hooks",
+        summary="No-op but if hook specified the way we do for user upload it would hit this action.",
+        responses={
+            200: {"description": "Default response, since this endpoint is not implemented yet."},
+        },
+    )
+    def tus_hooks(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+    ):
+        """
+        No-op but if hook specified the way we do for user upload it would hit this action.
+        """
+        ...
+        return Response(status_code=200)
 
+    def __authorize_job_access(self, trans, encoded_job_id, path, job_key):
         job_id = trans.security.decode_id(encoded_job_id)
-        job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(str(kwargs["job_key"]), job_key):
+        job_key_from_job_id = trans.security.encode_id(job_id, kind="jobs_files")
+        if not util.safe_str_cmp(str(job_key), job_key_from_job_id):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
@@ -207,9 +299,9 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return job
 
     def __check_job_can_write_to_path(self, trans, job, path):
-        """Verify an idealized job runner should actually be able to write to
-        the specified path - it must be a dataset output, a dataset "extra
-        file", or a some place in the working directory of this job.
+        """
+        Verify an idealized job runner should actually be able to write to the specified path - it must be a dataset
+        output, a dataset "extra file", or a some place in the working directory of this job.
 
         Would like similar checks for reading the unstructured nature of loc
         files make this very difficult. (See abandoned work here
@@ -220,8 +312,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
     def __is_output_dataset_path(self, job, path):
-        """Check if is an output path for this job or a file in the an
-        output's extra files path.
+        """
+        Check if is an output path for this job or a file in the output's extra files path.
         """
         da_lists = [job.output_datasets, job.output_library_datasets]
         for da_list in da_lists:
