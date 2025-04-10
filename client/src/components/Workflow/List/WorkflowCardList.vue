@@ -19,7 +19,7 @@ interface Props {
     editorView?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
-    itemRefs: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
+    itemRefs?: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
     editorView: false,
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
+    itemRefs: () => ({}),
 });
 
 const emit = defineEmits<{
