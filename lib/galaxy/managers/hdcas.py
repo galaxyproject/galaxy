@@ -113,7 +113,7 @@ class HDCAManager(
     # .... security and permissions
     def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: Optional[model.User], **kwargs) -> bool:
         """
-        Use history to see if current user owns HDA.
+        Use history to see if current user owns HDCA.
         """
         history = item.history
         assert history
