@@ -6,6 +6,7 @@
             v-bind="buttonProps"
             @click="showPreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
+            Primary Storage
         </b-button>
         <WorkflowTargetPreferredObjectStorePopover
             target="workflow-storage-indicator-primary"
@@ -24,6 +25,7 @@
             class="workflow-storage-indicator workflow-storage-indicator-intermediate"
             @click="showIntermediatePreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
+            Intermediate Storage
         </b-button>
         <WorkflowTargetPreferredObjectStorePopover
             v-if="splitObjectStore"
