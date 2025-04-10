@@ -3,14 +3,11 @@ import { faClock } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { isRegisteredUser } from "@/api";
 import { useMarkdown } from "@/composables/markdown";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 import Heading from "../Common/Heading.vue";
 import TextSummary from "../Common/TextSummary.vue";
@@ -32,16 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
     invocationUpdateTime: undefined,
 });
 
-const { workflow } = useWorkflowInstance(props.workflowId);
-
-const { currentUser } = storeToRefs(useUserStore());
-const owned = computed(() => {
-    if (isRegisteredUser(currentUser.value) && workflow.value) {
-        return currentUser.value.username === workflow.value.owner;
-    } else {
-        return false;
-    }
-});
+const { workflow, owned } = useWorkflowInstance(props.workflowId);
 
 const description = computed(() => {
     if (workflow.value?.annotation) {
