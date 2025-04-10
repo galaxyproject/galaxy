@@ -6,29 +6,35 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 import { useSelectedItems } from "./selectedItems";
 
+const querySelectionBreakMock = jest.fn();
+
+type ItemType = { id: number };
+
 describe("useSelectedItems", () => {
-    let selectionReturn: ReturnType<typeof useSelectedItems<{ id: number }, any>>;
+    let selectionReturn: ReturnType<typeof useSelectedItems<ItemType, any>>;
 
     const numberOfLoadedItems = 10;
     const allItems = generateTestItems(numberOfLoadedItems);
-    const DEFAULT_PROPS = {
+    const selectedItemsProps = {
         scopeKey: ref("scope"),
         getItemKey: getItemKey,
         filterText: ref(""),
         totalItemsInQuery: ref(numberOfLoadedItems),
         allItems: ref(allItems),
-        filterClass: HistoryFilters,
+        filterClass: HistoryFilters, // Can be any, just to satisfy the type
         selectable: ref(true),
+        querySelectionBreak: () => querySelectionBreakMock(),
         onDelete: () => {},
     };
 
     beforeEach(async () => {
         setActivePinia(createPinia());
-        selectionReturn = useSelectedItems<{ id: number }, any>(DEFAULT_PROPS);
+        selectionReturn = useSelectedItems<ItemType, any>(selectedItemsProps);
         await flushPromises();
 
         // We need to enable selection first; note that this is not an enforced behavior for this composable
-        // but the HistoryPanel uses the `showSelection` ref to determine if it should show the selection
+        // e.g.: the HistoryPanel uses the `showSelection` ref to determine if it should show the selection
+        //       while the WorkflowList doesn't.
         enableSelection();
     });
 
@@ -60,7 +66,7 @@ describe("useSelectedItems", () => {
         await selectSomeItemsManually(numberOfExpectedItems);
         expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
 
-        DEFAULT_PROPS.scopeKey.value = "different-scope";
+        selectedItemsProps.scopeKey.value = "different-scope";
         await flushPromises();
 
         expectSelectionDisabled();
@@ -77,53 +83,60 @@ describe("useSelectedItems", () => {
         expectSelectionEnabled();
     });
 
-    // describe("Query Selection Mode", () => {
-    //     it("is considered a query selection when we select `all items` and the query contains more items than we have currently loaded", async () => {
-    //         const expectedTotalItemsInQuery = 100;
-    //         DEFAULT_PROPS.totalItemsInQuery.value = expectedTotalItemsInQuery;
+    describe("Query Selection Mode", () => {
+        it("is considered a query selection when we select `all items` and the query contains more items than we have currently loaded", async () => {
+            const expectedTotalItemsInQuery = 100;
+            await setTotalItemsInQuery(expectedTotalItemsInQuery);
 
-    //         await selectAllItemsInCurrentQuery();
+            await selectAllItemsInCurrentQuery();
 
-    //         expect(selectionReturn.isQuerySelection.value).toBe(true);
-    //         expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-    //     });
+            expect(selectionReturn.isQuerySelection.value).toBe(true);
+            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
+        });
 
-    //     it("shouldn't be a query selection when we already have all items loaded", async () => {
-    //         const expectedTotalItemsInQuery = 10;
-    //         DEFAULT_PROPS.totalItemsInQuery.value = expectedTotalItemsInQuery;
+        it("shouldn't be a query selection when we already have all items loaded", async () => {
+            const expectedTotalItemsInQuery = 10;
+            await setTotalItemsInQuery(expectedTotalItemsInQuery);
 
-    //         await selectAllItemsInCurrentQuery();
+            await selectAllItemsInCurrentQuery();
 
-    //         expect(selectionReturn.isQuerySelection.value).toBe(false);
-    //         expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-    //     });
+            expect(selectionReturn.isQuerySelection.value).toBe(false);
+            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
+        });
 
-    //     it("should `break` query selection mode when we unselect an item", async () => {
-    //         const expectedTotalItemsInQuery = 100;
-    //         await selectAllItemsInCurrentQuery();
-    //         expect(selectionReturn.isQuerySelection.value).toBe(true);
-    //         expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-    //         // expect(composable.emitted()["query-selection-break"]).toBeUndefined(); // TODO
+        it("should `break` query selection mode when we unselect an item", async () => {
+            const expectedTotalItemsInQuery = 100;
+            await setTotalItemsInQuery(expectedTotalItemsInQuery);
 
-    //         await unselectItem(allItems[0]);
+            await selectAllItemsInCurrentQuery();
+            expect(selectionReturn.isQuerySelection.value).toBe(true);
+            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
+            expect(querySelectionBreakMock).not.toHaveBeenCalled();
 
-    //         expect(selectionReturn.isQuerySelection.value).toBe(false);
-    //         expect(selectionReturn.selectionSize.value).toBe(numberOfLoadedItems - 1);
-    //         // expect(composable.emitted()["query-selection-break"]).toBeDefined(); // TODO
-    //     });
+            if (!allItems.length || !allItems[0]) {
+                throw new Error("allItems is empty or undefined");
+            }
 
-    //     it("should `break` query selection mode when the total number of items changes", async () => {
-    //         await selectAllItemsInCurrentQuery();
-    //         expect(selectionReturn.isQuerySelection.value).toBe(true);
-    //         // expect(composable.emitted()["query-selection-break"]).toBeUndefined(); // TODO
+            selectionReturn.setSelected(allItems[0], false);
 
-    //         DEFAULT_PROPS.totalItemsInQuery.value = 80;
+            expect(selectionReturn.isQuerySelection.value).toBe(false);
+            expect(selectionReturn.selectionSize.value).toBe(numberOfLoadedItems - 1);
+            expect(querySelectionBreakMock).toHaveBeenCalled();
+        });
 
-    //         expect(selectionReturn.isQuerySelection.value).toBe(false);
-    //         expect(selectionReturn.selectionSize.value).toBe(numberOfLoadedItems);
-    //         // expect(composable.emitted()["query-selection-break"]).toBeDefined(); // TODO
-    //     });
-    // });
+        it("should `break` query selection mode when the total number of items changes", async () => {
+            await selectAllItemsInCurrentQuery();
+            expect(selectionReturn.isQuerySelection.value).toBe(true);
+            expect(querySelectionBreakMock).not.toHaveBeenCalled();
+
+            selectedItemsProps.totalItemsInQuery.value = 80;
+            await flushPromises();
+
+            expect(selectionReturn.isQuerySelection.value).toBe(false);
+            expect(selectionReturn.selectionSize.value).toBe(numberOfLoadedItems);
+            expect(querySelectionBreakMock).toHaveBeenCalled();
+        });
+    });
 
     describe("Selection Size", () => {
         it("should select/unselect items correctly", async () => {
@@ -146,29 +159,39 @@ describe("useSelectedItems", () => {
             }
         });
 
-        // it("should match the number of items explicitly selected (non query)", async () => {
-        //     const numberOfExpectedItems = 3;
-        //     const items = generateTestItems(numberOfExpectedItems);
-        //     selectItems(items);
-        //     expect(selectionReturn.isQuerySelection.value).toBe(false);
-        //     expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
+        it("should match the number of items explicitly selected (non query)", async () => {
+            const numberOfExpectedItems = 3;
+            const items = generateTestItems(numberOfExpectedItems);
+            selectItems(items);
+            expect(selectionReturn.isQuerySelection.value).toBe(false);
+            expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
 
-        //     await unselectItem(items[0]);
+            if (!items.length || !items[0]) {
+                throw new Error("items is empty or undefined");
+            }
+            selectionReturn.setSelected(items[0], false);
 
-        //     expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems - 1);
-        // });
+            expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems - 1);
+        });
 
-        // it("should match the number of items in query when selecting all items", async () => {
-        //     const expectedTotalItemsInQuery = 100;
-        //     DEFAULT_PROPS.allItems.value = generateTestItems(0); // Even if there are no explicit items selected
-        //     await selectAllItemsInCurrentQuery();
-        //     expect(selectionReturn.isQuerySelection.value).toBe(true);
-        //     expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-        // });
+        it("should match the number of items in query when selecting all items", async () => {
+            const expectedTotalItemsInQuery = 100;
+            await setTotalItemsInQuery(expectedTotalItemsInQuery);
+
+            selectedItemsProps.allItems.value = generateTestItems(0); // Even if there are no explicit items selected
+            await selectAllItemsInCurrentQuery();
+            expect(selectionReturn.isQuerySelection.value).toBe(true);
+            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
+        });
     });
 
-    function getItemKey(item: any) {
+    function getItemKey(item: ItemType) {
         return `item-key-${item.id}`;
+    }
+
+    async function setTotalItemsInQuery(totalItems: number) {
+        selectedItemsProps.totalItemsInQuery.value = totalItems;
+        await flushPromises();
     }
 
     function enableSelection() {
@@ -184,7 +207,7 @@ describe("useSelectedItems", () => {
         await flushPromises();
     }
 
-    function selectItems(items: any[]) {
+    function selectItems(items: ItemType[]) {
         const { selectItems } = selectionReturn;
         expect(selectItems).toBeInstanceOf(Function);
 
@@ -197,19 +220,13 @@ describe("useSelectedItems", () => {
         await flushPromises();
     }
 
-    async function unselectItem(item: any) {
-        const { setSelected } = selectionReturn;
-        expect(setSelected).toBeInstanceOf(Function);
-        await setSelected(item, false);
-    }
-
     async function resetSelection() {
         const { resetSelection } = selectionReturn;
         expect(resetSelection).toBeInstanceOf(Function);
         resetSelection();
     }
 
-    async function selectAllItemsInCurrentQuery(loadedItems: any[] = allItems) {
+    async function selectAllItemsInCurrentQuery() {
         const { selectAllInCurrentQuery } = selectionReturn;
         expect(selectAllInCurrentQuery).toBeInstanceOf(Function);
 
