@@ -2178,6 +2178,8 @@ class BaseWorkflowPopulator(BasePopulator):
         round_trip_format_conversion: bool = False,
         invocations: int = 1,
         raw_yaml: bool = False,
+        use_cached_job: bool = False,
+        copy_inputs_to_history: bool = False,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
@@ -2218,6 +2220,10 @@ class BaseWorkflowPopulator(BasePopulator):
             history=f"hist_id={history_id}",
             workflow_id=workflow_id,
         )
+        if use_cached_job:
+            workflow_request["use_cached_job"] = True
+        if copy_inputs_to_history:
+            workflow_request["copy_inputs_to_history"] = True
         workflow_request["inputs"] = json.dumps(label_map)
         workflow_request["inputs_by"] = "name"
         if parameters:

@@ -546,6 +546,7 @@ class DefaultToolAction(ToolAction):
                         if output_dataset.name == name:
                             create_datasets = False
                             completed_data = output_dataset.dataset
+                            ext = completed_data.extension
                             dataset = output_dataset.dataset.dataset
                             break
 
