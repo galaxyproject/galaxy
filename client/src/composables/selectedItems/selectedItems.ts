@@ -19,6 +19,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     onDelete,
     expectedKeyDownClass = undefined,
     disallowedKeyDownClasses = [],
+    attributeForRangeSelection = "id",
 }: SelectedItemsProps<T>) {
     const eventStore = useEventStore();
 
@@ -390,8 +391,11 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         () => currItemFocused.value,
         (newItem, oldItem) => {
             // if user clicked elsewhere, set lastItemId to the last focused item
-            if (newItem && oldItem && validateClassList(oldItem.classList)) {
-                const lastItem = allItems.value.find((item) => oldItem.id === getItemKey(item));
+            const lastExpectedParent = oldItem?.closest(`.${expectedKeyDownClass}`);
+            if (newItem && lastExpectedParent && validateClassList(lastExpectedParent.classList)) {
+                const lastItem = allItems.value.find(
+                    (item) => lastExpectedParent.getAttribute(attributeForRangeSelection) === getItemKey(item)
+                );
                 lastItemId.value = lastItem ? getItemKey(lastItem) : null;
             }
         }
@@ -405,7 +409,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
 
     watch(selectionSize, (newSize) => {
         if (newSize > 0) {
-            showSelection.value = true;
+            setShowSelection(true);
         }
     });
 
