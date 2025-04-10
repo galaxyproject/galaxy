@@ -15,7 +15,6 @@ from fastapi import (
     HTTPException,
     Path,
     Query,
-    Response,
     UploadFile,
 )
 from typing_extensions import Annotated
@@ -216,7 +215,10 @@ class FastAPIJobFiles:
         "/api/job_files/resumable_upload/{session_id}",
         summary="Upload job files using the TUS protocol.",
         responses={
-            200: {"description": "Default response, since this endpoint is not implemented yet."},
+            # 200: None,
+            # Galaxy adds an HTTP 200 response to the API docs. Even though it should be removed for this endpoint,
+            # because it simply can never happen, there is no mechanism to remove it (the above won't work).
+            501: {"description": "Default response, since this endpoint is not implemented yet."},
         },
     )
     def tus_patch(
@@ -251,13 +253,16 @@ class FastAPIJobFiles:
         and the user facing upload endpoints.
         """
         ...
-        return Response(status_code=200)
+        raise HTTPException(status_code=501, detail="Not implemented yet.")
 
     @router.post(
         "/api/job_files/resumable_upload",
         summary="Upload job files using the TUS protocol.",
         responses={
-            200: {"description": "Default response, since this endpoint is not implemented yet."},
+            # 200: None,
+            # Galaxy adds an HTTP 200 response to the API docs. Even though it should be removed for this endpoint,
+            # because it simply can never happen, there is no mechanism to remove it (the above won't work).
+            501: {"description": "Default response, since this endpoint is not implemented yet."},
         },
     )
     def tus_post(self, trans: ProvidesAppContext = DependsOnTrans):
@@ -266,13 +271,16 @@ class FastAPIJobFiles:
         used. Probably it isn't needed there, but I am keeping the doc here until we remove both routes.
         """
         ...
-        return Response(status_code=200)
+        raise HTTPException(status_code=501, detail="Not implemented yet.")
 
     @router.post(
         "/api/job_files/tus_hooks",
         summary="No-op but if hook specified the way we do for user upload it would hit this action.",
         responses={
-            200: {"description": "Default response, since this endpoint is not implemented yet."},
+            # 200: None,
+            # Galaxy adds an HTTP 200 response to the API docs. Even though it should be removed for this endpoint,
+            # because it simply can never happen, there is no mechanism to remove it (the above won't work).
+            501: {"description": "Default response, since this endpoint is not implemented yet."},
         },
     )
     def tus_hooks(
@@ -283,7 +291,7 @@ class FastAPIJobFiles:
         No-op but if hook specified the way we do for user upload it would hit this action.
         """
         ...
-        return Response(status_code=200)
+        raise HTTPException(status_code=501, detail="Not implemented yet.")
 
     def __authorize_job_access(self, trans, encoded_job_id, path, job_key):
         job_id = trans.security.decode_id(encoded_job_id)
