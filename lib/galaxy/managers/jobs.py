@@ -382,7 +382,7 @@ class JobSearch:
         tool_version: Optional[str],
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
-        job_state: Optional[Union[JobStatesT, JobStatesT]] = (Job.states.OK, Job.states.SKIPPED),
+        job_state: Optional[JobStatesT] = (Job.states.OK, Job.states.SKIPPED),
     ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
