@@ -6,6 +6,7 @@ import { BAlert, BButton, BSkeleton } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { components } from "@/api/schema/schema";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -23,32 +24,29 @@ const props = withDefaults(defineProps<Props>(), {
     context: "username",
 });
 
-interface ChatResponse {
-    response: string;
-    error_code?: number;
-    error_message?: string;
-}
+type ChatResponse = components["schemas"]["ChatResponse"];
 
 const query = ref(props.query);
 const queryResponse = ref("");
 const errorMessage = ref("");
 const busy = ref(false);
 const feedback = ref<null | "up" | "down">(null);
+const hasError = ref(false);
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
+
 /** On submit, query the server and put response in display box **/
 async function submitQuery() {
     busy.value = true;
+    hasError.value = false;
+    errorMessage.value = "";
+    queryResponse.value = "";
+
     if (query.value === "") {
         errorMessage.value = "There is no context to provide a response.";
         busy.value = false;
         return;
     }
-    /**
-     * Note: We are using a POST request here, which at the backend checks if a response exists
-     * for the given job_id and returns it if it does. If it doesn't, it will create a new response.
-     * Curious whether this is better done by using a separate GET and then a POST?
-     * TODO: Remove this comment after discussion.
-     */
+
     const { data, error } = await GalaxyApi().POST("/api/chat", {
         params: {
             query: { job_id: props.jobId },
@@ -58,29 +56,29 @@ async function submitQuery() {
             context: props.context,
         },
     });
+
     if (error) {
         errorMessage.value = errorMessageAsString(error, "Failed to get response from the server.");
+        hasError.value = true;
     } else {
-        // Handle the updated response format
-        if (typeof data === "string") {
-            // Handle legacy string response format
-            queryResponse.value = data;
-        } else {
-            // Handle the new object response format
-            const chatResponse = data as ChatResponse;
-            
-            if (chatResponse.error_code && chatResponse.error_message) {
-                errorMessage.value = `${chatResponse.error_message} (Error ${chatResponse.error_code})`;
-            } else if (chatResponse.error_message) {
-                errorMessage.value = chatResponse.error_message;
-            } else if (chatResponse.response) {
-                queryResponse.value = chatResponse.response;
-            } else {
-                // Fallback for unexpected response structure
-                queryResponse.value = JSON.stringify(data);
+        if (data.response) {
+            queryResponse.value = data.response;
+        }
+
+        // If there's an error code or message, set the error flag and message
+        if (data.error_code || data.error_message) {
+            hasError.value = true;
+
+            if (data.error_code && data.error_message) {
+                errorMessage.value = `${data.error_message} (Error ${data.error_code})`;
+            } else if (data.error_message) {
+                errorMessage.value = data.error_message;
+            } else if (data.error_code) {
+                errorMessage.value = `Error ${data.error_code}`;
             }
         }
     }
+
     busy.value = false;
 }
 /** Send feedback to the server **/
@@ -102,15 +100,6 @@ async function sendFeedback(value: "up" | "down") {
 
 <template>
     <div>
-        <!-- <Heading v-if="props.view == 'wizard'" inline h2>Ask the wizard</Heading>
-        <div :class="props.view == 'wizard' && 'mt-2'">
-            <b-input
-                v-if="props.query == ''"
-                id="wizardinput"
-                v-model="query"
-                style="width: 100%"
-                placeholder="What's the difference in fasta and fastq files?"
-                @keyup.enter="submitQuery" /> -->
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
@@ -127,7 +116,7 @@ async function sendFeedback(value: "up" | "down") {
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-else class="chatResponse" v-html="renderMarkdown(queryResponse)" />
 
-            <div v-if="queryResponse" class="feedback-buttons mt-2">
+            <div v-if="queryResponse && !hasError" class="feedback-buttons mt-2">
                 <hr class="w-100" />
                 <h4>Was this answer helpful?</h4>
                 <BButton
