@@ -4,6 +4,7 @@ Accessible models can be read and copied but not modified or deleted.
 Owned models can be modified and deleted.
 """
 
+import abc
 from typing import (
     Any,
     Generic,
@@ -30,10 +31,11 @@ class AccessibleManagerMixin(Generic[U]):
     # declare what we are using from base ModelManager
     model_class: Type[U]
 
-    def by_id(self, id: int): ...
+    @abc.abstractmethod
+    def by_id(self, id: int) -> U: ...
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible(self, item, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_accessible(self, item: U, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Return True if the item accessible to user.
         """
@@ -50,7 +52,7 @@ class AccessibleManagerMixin(Generic[U]):
         item = self.by_id(id)
         return self.error_unless_accessible(item, user, **kwargs)
 
-    def error_unless_accessible(self, item: U, user: Optional[model.User], **kwargs) -> U:
+    def error_unless_accessible(self, item: U, user: Optional[model.User], **kwargs: Any) -> U:
         """
         Raise an error if the item is NOT accessible to user, otherwise return the item.
 
@@ -74,7 +76,8 @@ class OwnableManagerMixin(Generic[U]):
     # declare what we are using from base ModelManager
     model_class: Type[U]
 
-    def by_id(self, id: int): ...
+    @abc.abstractmethod
+    def by_id(self, id: int) -> U: ...
 
     def is_owner(self, item: U, user: Optional[model.User], **kwargs: Any) -> bool:
         """
@@ -114,7 +117,7 @@ class OwnableManagerMixin(Generic[U]):
         self.error_unless_mutable(item)
         return item
 
-    def error_unless_mutable(self, item: U):
+    def error_unless_mutable(self, item: U) -> None:
         """
         Raise an error if the item is NOT mutable.
 
