@@ -111,6 +111,7 @@ function createCollectionType(colType: string) {
             "
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
+            data-description="upload"
             :title="createTitle"
             :pressed="props.workflowTab === 'create'"
             @click="clickedTab('create')">
