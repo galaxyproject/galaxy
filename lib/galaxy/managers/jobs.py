@@ -9,6 +9,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    Iterable,
     List,
     Optional,
     Union,
@@ -96,7 +97,7 @@ from galaxy.util.search import (
 log = logging.getLogger(__name__)
 
 JobStateT = str
-JobStatesT = Union[JobStateT, List[JobStateT]]
+JobStatesT = Union[JobStateT, Iterable[JobStateT]]
 
 
 STDOUT_LOCATION = "outputs/tool_stdout"
@@ -380,7 +381,7 @@ class JobSearch:
         tool_version: Optional[str],
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
-        job_state: Optional[JobStatesT] = "ok",
+        job_state: Optional[Union[JobStatesT, JobStatesT]] = (Job.states.OK, Job.states.SKIPPED),
     ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
