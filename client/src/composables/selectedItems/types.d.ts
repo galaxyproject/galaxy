@@ -18,7 +18,7 @@ export interface SelectedItemsProps<T> {
     /** If the items are selectable. */
     selectable: Ref<boolean>;
     /** A method called when the "Query Selection Mode" is broken. */
-    querySelectionBreak: () => void;
+    querySelectionBreak?: () => void;
     /** A method called when an item is deleted. */
     onDelete: (item: T, recursive: boolean) => void;
     /** The class name for the element that is used for keydown selection/navigation. */
