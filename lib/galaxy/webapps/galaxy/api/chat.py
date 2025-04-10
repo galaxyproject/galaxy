@@ -18,7 +18,10 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import ChatPayload
+from galaxy.schema.schema import (
+    ChatPayload,
+    ChatResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -60,7 +63,7 @@ class ChatAPI:
         payload: ChatPayload,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> dict:
+    ) -> ChatResponse:
         """We're off to ask the wizard and return a JSON response"""
         # Initialize response structure
         result = {"response": "", "error_code": 0, "error_message": ""}
@@ -74,8 +77,11 @@ class ChatAPI:
             # asking follow-up questions.
             existing_response = self.chat_manager.get(trans, job.id)
             if existing_response and existing_response.messages[0]:
-                result["response"] = existing_response.messages[0].message
-                return result
+                return ChatResponse(
+                    response=existing_response.messages[0].message,
+                    error_code=0,
+                    error_message="",
+                )
 
         self._ensure_openai_configured()
 
@@ -94,7 +100,7 @@ class ChatAPI:
         except Exception:
             result["error_code"] = 500
             result["error_message"] = "Unexpected error, contact an administrator"
-        return result
+        return ChatResponse(**result)
 
     @router.put("/api/chat/{job_id}/feedback")
     def feedback(
