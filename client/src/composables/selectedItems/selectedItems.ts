@@ -304,7 +304,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
                     initKeySelection();
                     arrowNavigate(item, "ArrowDown");
                 } else if (event.key === "Escape") {
-                    setShowSelection(false);
+                    (event.target as HTMLElement)?.blur();
                 } else if (event.key === "a" && eventStore.isCtrlKey(event)) {
                     selectAllInCurrentQuery(false);
                 }
