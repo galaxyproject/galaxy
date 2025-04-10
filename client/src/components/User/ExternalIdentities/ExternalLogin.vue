@@ -198,8 +198,8 @@ function getIdpPreference() {
                             placeholder="Select your institution"
                             :options="cILogonIdps"
                             label="DisplayName"
-                            selectLabel=""
-                            deselectLabel=""
+                            select-label=""
+                            deselect-label=""
                             :allow-empty="false"
                             track-by="EntityID" />
                     </BFormGroup>
