@@ -2997,6 +2997,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a file required to staging a job.
+         * @description Get a file required to staging a job (proper datasets, extra inputs, task-split inputs, working directory
+         *     files).
+         *
+         *     This API method is intended only for consumption by job runners, not end users.
+         */
+        get: operations["index_api_jobs__job_id__files_get"];
+        put?: never;
+        /**
+         * Populate an output file.
+         * @description Populate an output file (formal dataset, task split part, working directory file (such as those related to
+         *     metadata). This should be a multipart POST with a 'file' parameter containing the contents of the actual file to
+         *     create.
+         *
+         *     This API method is intended only for consumption by job runners, not end users.
+         */
+        post: operations["create_api_jobs__job_id__files_post"];
+        delete?: never;
+        options?: never;
+        /**
+         * Get a file required to staging a job.
+         * @description Get a file required to staging a job (proper datasets, extra inputs, task-split inputs, working directory
+         *     files).
+         *
+         *     This API method is intended only for consumption by job runners, not end users.
+         */
+        head: operations["index_api_jobs__job_id__files_get"];
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs/{job_id}/inputs": {
         parameters: {
             query?: never;
@@ -6627,6 +6665,34 @@ export interface components {
             history_id?: unknown;
             /** Name */
             name?: unknown;
+        };
+        /** Body_create_api_jobs__job_id__files_post */
+        Body_create_api_jobs__job_id__files_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            __file?: string;
+            /** File Path */
+            __file_path?: string;
+            /**
+             * File
+             * Format: binary
+             * @description Contents of the file to create.
+             */
+            file?: string;
+            /**
+             * Job Key
+             * @description A key used to authenticate this request as acting on behalf or a job runner for the specified job.
+             */
+            job_key: string;
+            /**
+             * Path
+             * @description Path to file to create.
+             */
+            path: string;
+            /** Session Id */
+            session_id?: string;
         };
         /** Body_create_form_api_libraries__library_id__contents_post */
         Body_create_form_api_libraries__library_id__contents_post: {
@@ -31143,6 +31209,166 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JobErrorSummary"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_jobs__job_id__files_get: {
+        parameters: {
+            query: {
+                /** @description Path to file. */
+                path: string;
+                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job. */
+                job_key: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contents of file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description File not found, path does not refer to a file, or input dataset(s) for job have been purged. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_jobs__job_id__files_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_api_jobs__job_id__files_post"];
+            };
+        };
+        responses: {
+            /** @description An okay message. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_jobs__job_id__files_get: {
+        parameters: {
+            query: {
+                /** @description Path to file. */
+                path: string;
+                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job. */
+                job_key: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contents of file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description File not found, path does not refer to a file, or input dataset(s) for job have been purged. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
