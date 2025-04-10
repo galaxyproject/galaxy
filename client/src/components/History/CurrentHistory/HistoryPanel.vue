@@ -377,12 +377,12 @@ const {
     selectionSize,
     setShowSelection,
     selectAllInCurrentQuery,
+    isRangeSelectAnchor,
     isSelected,
     setSelected,
     initKeySelection,
     resetFocusToOffset,
     resetSelection,
-    initSelectedItem,
     itemRefs,
     onClick,
     onKeyDown,
@@ -528,9 +528,7 @@ const {
                                 :writable="canEditHistory"
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="isDataset(item)"
-                                :is-range-select-anchor="
-                                    Boolean(initSelectedItem && itemUniqueKey(item) === itemUniqueKey(initSelectedItem))
-                                "
+                                :is-range-select-anchor="isRangeSelectAnchor(item)"
                                 :highlight="getHighlight(item)"
                                 :selected="isSelected(item)"
                                 :selectable="showSelection"

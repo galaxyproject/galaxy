@@ -221,6 +221,10 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         lastInRange.value = item;
     }
 
+    function isRangeSelectAnchor(item: T) {
+        return Boolean(initSelectedItem.value && getItemKey(item) === getItemKey(initSelectedItem.value));
+    }
+
     /** Resets the initial item in a range select (or shiftArrowKeySelect) */
     function initKeySelection() {
         initSelectedItem.value = undefined;
@@ -439,6 +443,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         rangeSelect,
         onClick,
         onKeyDown,
+        isRangeSelectAnchor,
         isSelected,
         setSelected,
         resetSelection,
