@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, type Ref, ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
 
@@ -21,6 +21,7 @@ interface Props {
     compact?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
+    itemRefs: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -41,6 +42,7 @@ const emit = defineEmits<{
     (e: "updateFilter", key: string, value: any): void;
     (e: "insertWorkflow", id: string, name: string): void;
     (e: "insertWorkflowSteps", id: string, stepCount: number): void;
+    (e: "on-key-down", workflow: WorkflowSummary, event: KeyboardEvent): void;
 }>();
 
 const modalOptions = reactive({
@@ -82,13 +84,27 @@ function onInsertSteps(workflow: WorkflowSummary) {
 }
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
+
+function onKeyDown(event: KeyboardEvent) {
+    const targetElement = event.target as HTMLElement;
+    const classList = targetElement?.classList;
+    const id = targetElement?.getAttribute("data-workflow-id");
+    const workflow = classList.contains("workflow-card-in-list") ? props.workflows.find((w) => w.id === id) : undefined;
+    if (workflow) {
+        emit("on-key-down", workflow, event);
+    }
+}
 </script>
 
 <template>
-    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto" @keydown="onKeyDown">
         <WorkflowCard
             v-for="workflow in workflows"
+            :ref="props.itemRefs[workflow.id]"
             :key="workflow.id"
+            tabindex="0"
+            :data-workflow-id="workflow.id"
             :workflow="workflow"
             :selectable="!publishedView && !editorView"
             :selected="props.selectedWorkflowIds.some((w) => w.id === workflow.id)"
@@ -99,6 +115,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :editor-view="props.editorView"
             :compact="props.compact"
             :current="workflow.id === props.currentWorkflowId"
+            class="workflow-card-in-list"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -151,9 +168,20 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </style>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
 @import "_breakpoints.scss";
 
 .workflow-card-list {
     container: cards-list / inline-size;
+    .workflow-card-in-list {
+        &:focus {
+            outline: none;
+            &:deep(.workflow-card-container) {
+                &:not(.workflow-shared) {
+                    border: 0.1rem solid $brand-primary;
+                }
+            }
+        }
+    }
 }
 </style>
