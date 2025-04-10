@@ -1,4 +1,8 @@
 import os
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
@@ -31,6 +35,9 @@ from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
 
 # To Test:
 # - param_file handling.
@@ -83,7 +90,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
     def test_conditional_evaluation(self):
         select_xml = XML("""<param name="always_true" type="select"><option value="true">True</option></param>""")
-        parameter = SelectToolParameter(self.tool, select_xml)
+        parameter = SelectToolParameter(cast("Tool", self.tool), select_xml)
 
         conditional = Conditional("c")
         conditional.test_param = parameter
@@ -104,7 +111,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         # Make sure optional dataset don't cause evaluation to break and
         # evaluate in cheetah templates as 'None'.
         select_xml = XML("""<param name="input1" type="data" optional="true"></param>""")
-        parameter = DataToolParameter(self.tool, select_xml)
+        parameter = DataToolParameter(cast("Tool", self.tool), select_xml)
         self.job.parameters = [JobParameter(name="input1", value="null")]
         self.tool.set_params({"input1": parameter})
         self.tool._command_line = "prog1 --opt_input='${input1}'"
@@ -164,7 +171,7 @@ class TestToolEvaluator(TestCase, UsesApp):
             <option value="/old/path/mouse">Mouse</option>
         </param>"""
         )
-        parameter = SelectToolParameter(self.tool, xml)
+        parameter = SelectToolParameter(cast("Tool", self.tool), xml)
 
         def get_field_by_name_for_value(name, value, trans, other_values):
             assert value == "/old/path/human"
@@ -310,7 +317,7 @@ class MockTool:
 
     def test_thresh_param(self):
         elem = XML('<param name="thresh" type="integer" value="5" />')
-        return IntegerToolParameter(self, elem)
+        return IntegerToolParameter(cast("Tool", self), elem)
 
     def params_from_strings(self, params, app, ignore_errors=False):
         return params_from_strings(self.inputs, params, app, ignore_errors)
