@@ -733,7 +733,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         job = job_wrapper.get_job()
-        if not job.job_runner_external_id:
+        if not job.job_runner_external_id or not job.destination_params:
             return
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client(job.destination_params, job.job_runner_external_id)
