@@ -96,7 +96,7 @@ const workflowImportTitle = computed(() => {
 
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
-        <div class="position-relative mb-2">
+        <div class="position-relative">
             <div v-if="workflow" class="bg-secondary px-2 py-1 rounded">
                 <div class="d-flex align-items-center flex-gapx-1">
                     <div class="flex-grow-1" data-description="workflow heading">
