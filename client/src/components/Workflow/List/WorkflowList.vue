@@ -125,7 +125,6 @@ const {
     allItems: workflowsLoaded,
     filterClass: workflowFilters.value,
     selectable: computed(() => !published.value && !sharedWithMe.value),
-    querySelectionBreak: () => {},
     onDelete: async (item) => {
         const { deleteWorkflow: deleteInModal } = useWorkflowCardActions(
             computed(() => item),
