@@ -55,8 +55,19 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     /* These shouldn't probably be here, but they need to be right now for
      * compatibility with external plugins */
     this.data = {};
-    this.data.create = create;
-    this.data.dialog = dialog;
+
+    const galaxy = this;
+
+    const createWithGalaxyProvided = (...args) => {
+        return create(galaxy, ...args);
+    };
+
+    const dialogWithGalaxyProvided = (...args) => {
+        return dialog(galaxy, ...args);
+    };
+
+    this.data.create = createWithGalaxyProvided;
+    this.data.dialog = dialogWithGalaxyProvided;
 
     return this;
 };

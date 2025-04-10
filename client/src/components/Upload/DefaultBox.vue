@@ -7,7 +7,7 @@ import Vue, { computed, type Ref, ref } from "vue";
 import type { HDASummary } from "@/api";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
-import { filesDialog } from "@/utils/data";
+import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import type { CollectionType } from "../History/adapters/buildCollectionModal";
