@@ -4762,8 +4762,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return self.extension
 
     @property
-    def has_deferred_data(self):
-        return self.dataset.state == Dataset.states.DEFERRED
+    def has_deferred_data(self) -> bool:
+        return self.dataset and self.dataset.state == Dataset.states.DEFERRED
 
     @property
     def deferred_source_uri(self):

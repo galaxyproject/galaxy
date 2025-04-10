@@ -156,7 +156,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
 
     def __eq__(self, other: Any) -> bool:
         casted_self, casted_other = self._get_cast_values(other)
-        return casted_self == casted_other
+        return bool(casted_self == casted_other)
 
     def __ne__(self, other: Any) -> bool:
         return not self == other
@@ -180,7 +180,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
 
     def __gt__(self, other: Any) -> bool:
         casted_self, casted_other = self._get_cast_values(other)
-        return casted_self > casted_other
+        return bool(casted_self > casted_other)
 
     def __int__(self) -> int:
         return int(float(self))
