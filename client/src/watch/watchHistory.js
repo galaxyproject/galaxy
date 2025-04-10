@@ -5,7 +5,6 @@
  * submitted, delayed only by the throttle period and the request response time.
  */
 
-import { getGalaxyInstance } from "app";
 import { storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
@@ -18,8 +17,8 @@ import { useDatasetStore } from "@/stores/datasetStore";
 
 const limit = 1000;
 
-const ACTIVE_POLLING_INTERVAL = 3000;
-const INACTIVE_POLLING_INTERVAL = 60000;
+export const ACTIVE_POLLING_INTERVAL = 3000;
+export const INACTIVE_POLLING_INTERVAL = 60000;
 
 // last time the history has changed
 let lastUpdateTime = null;
@@ -34,11 +33,12 @@ const { startWatchingResource: startWatchingHistory } = useResourceWatcher(watch
 
 export { startWatchingHistory };
 
-async function watchHistory() {
+export async function watchHistory(app) {
+    // GalaxyApp
     const { isWatching } = storeToRefs(useHistoryItemsStore());
     try {
         isWatching.value = true;
-        await watchHistoryOnce();
+        await watchHistoryOnce(app);
     } catch (error) {
         // error alerting the user that watch history failed
         console.warn(error);
@@ -46,7 +46,7 @@ async function watchHistory() {
     }
 }
 
-export async function watchHistoryOnce() {
+export async function watchHistoryOnce(app) {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
@@ -91,10 +91,9 @@ export async function watchHistoryOnce() {
         historyItemsStore.saveHistoryItems(historyId, payload);
         collectionElementsStore.saveCollections(payload);
         // trigger changes in legacy handler
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy) {
-            Galaxy.user.fetch({
-                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
+        if (app) {
+            app.user.fetch({
+                url: `${app.user.urlRoot()}/${app.user.id || "current"}`,
             });
         }
     }

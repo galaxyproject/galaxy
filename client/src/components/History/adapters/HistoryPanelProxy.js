@@ -6,7 +6,7 @@ import Backbone from "backbone";
 import { createDatasetCollection } from "components/History/model/queries";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
-import { startWatchingHistory } from "watch/watchHistory";
+import { startWatchingHistory } from "watch/watchHistoryProvided";
 
 import { buildRuleCollectionModal } from "./buildCollectionModal";
 

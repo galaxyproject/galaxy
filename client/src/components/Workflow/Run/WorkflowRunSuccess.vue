@@ -4,7 +4,7 @@ import { onMounted } from "vue";
 import type { WorkflowInvocation } from "@/api/invocations";
 import { useHistoryStore } from "@/stores/historyStore";
 import Webhooks from "@/utils/webhooks";
-import { startWatchingHistory } from "@/watch/watchHistory";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";

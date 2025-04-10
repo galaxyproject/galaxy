@@ -89,6 +89,8 @@ function _mountSelectionDialog(clazz, options) {
  * TODO: This should live somewhere else.
  */
 export function create(options) {
+    const galaxy = getGalaxyInstance();
+
     async function getHistory() {
         if (!options.history_id) {
             return getCurrentGalaxyHistory();
@@ -98,7 +100,7 @@ export function create(options) {
     getHistory().then((history_id) => {
         uploadSubmit({
             success: (response) => {
-                startWatchingHistory();
+                startWatchingHistory(galaxy);
                 if (options.success) {
                     options.success(response);
                 }

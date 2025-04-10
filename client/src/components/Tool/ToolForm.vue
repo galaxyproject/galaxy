@@ -122,7 +122,7 @@ import { canMutateHistory } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import { startWatchingHistory } from "@/watch/watchHistory";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
