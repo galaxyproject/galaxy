@@ -216,7 +216,7 @@ const emit = defineEmits<{
     /** Emitted when card is clicked
      * @event click
      */
-    (e: "click"): void;
+    (e: "click", event: MouseEvent | KeyboardEvent): void;
 
     /** Emitted when bookmark button is clicked
      * @event bookmark
@@ -296,8 +296,8 @@ const allowedTitleLines = computed(() => props.titleNLines);
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
-        @click="props.clickable ? emit('click') : undefined"
-        @keydown.enter="props.clickable ? emit('click') : undefined">
+        @click="props.clickable ? emit('click', $event) : undefined"
+        @keydown.enter="props.clickable ? emit('click', $event) : undefined">
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"

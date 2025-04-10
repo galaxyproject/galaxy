@@ -43,6 +43,7 @@ const emit = defineEmits<{
     (e: "insertWorkflow", id: string, name: string): void;
     (e: "insertWorkflowSteps", id: string, stepCount: number): void;
     (e: "on-key-down", workflow: WorkflowSummary, event: KeyboardEvent): void;
+    (e: "on-workflow-card-click", workflow: WorkflowSummary, event: Event): void;
 }>();
 
 const modalOptions = reactive({
@@ -84,27 +85,15 @@ function onInsertSteps(workflow: WorkflowSummary) {
 }
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
-
-function onKeyDown(event: KeyboardEvent) {
-    const targetElement = event.target as HTMLElement;
-    const classList = targetElement?.classList;
-    const id = targetElement?.getAttribute("data-workflow-id");
-    const workflow = classList.contains("workflow-card-in-list") ? props.workflows.find((w) => w.id === id) : undefined;
-    if (workflow) {
-        emit("on-key-down", workflow, event);
-    }
-}
 </script>
 
 <template>
-    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-    <div class="workflow-card-list d-flex flex-wrap overflow-auto" @keydown="onKeyDown">
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
         <WorkflowCard
             v-for="workflow in workflows"
             :ref="props.itemRefs[workflow.id]"
             :key="workflow.id"
             tabindex="0"
-            :data-workflow-id="workflow.id"
             :workflow="workflow"
             :selectable="!publishedView && !editorView"
             :selected="props.selectedWorkflowIds.some((w) => w.id === workflow.id)"
@@ -123,7 +112,9 @@ function onKeyDown(event: KeyboardEvent) {
             @rename="onRename"
             @preview="onPreview"
             @insert="onInsert(workflow)"
-            @insertSteps="onInsertSteps(workflow)" />
+            @insertSteps="onInsertSteps(workflow)"
+            @on-key-down="(...args) => emit('on-key-down', ...args)"
+            @on-workflow-card-click="(...args) => emit('on-workflow-card-click', ...args)" />
 
         <WorkflowRename
             :id="modalOptions.rename.id"
