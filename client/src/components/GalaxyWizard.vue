@@ -100,10 +100,7 @@ async function sendFeedback(value: "up" | "down") {
 
 <template>
     <div>
-        <BAlert v-if="errorMessage" variant="danger" show>
-            {{ errorMessage }}
-        </BAlert>
-        <BButton v-else-if="!queryResponse" class="w-100" variant="info" :disabled="busy" @click="submitQuery">
+        <BButton v-if="!queryResponse" class="w-100" variant="info" :disabled="busy" @click="submitQuery">
             <span v-if="!busy"> Let our Help Wizard Figure it out! </span>
             <LoadingSpan v-else message="Thinking" />
         </BButton>
@@ -113,8 +110,15 @@ async function sendFeedback(value: "up" | "down") {
                 <BSkeleton animation="wave" width="55%" />
                 <BSkeleton animation="wave" width="70%" />
             </div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-else class="chatResponse" v-html="renderMarkdown(queryResponse)" />
+            <div v-else>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div class="chatResponse" v-html="renderMarkdown(queryResponse)" />
+
+                <template v-if="errorMessage">
+                    <hr class="error-divider" />
+                    <div class="error-message">{{ errorMessage }}</div>
+                </template>
+            </div>
 
             <div v-if="queryResponse && !hasError" class="feedback-buttons mt-2">
                 <hr class="w-100" />
@@ -156,5 +160,19 @@ async function sendFeedback(value: "up" | "down") {
     100% {
         transform: translateY(0);
     }
+}
+
+.error-divider {
+    margin: 12px 0;
+    border-top: 1px dashed #ccc;
+}
+
+.error-message {
+    font-family: monospace;
+    font-size: 12px;
+    color: #d9534f;
+    padding: 8px;
+    background-color: #f9f2f2;
+    border-radius: 3px;
 }
 </style>
