@@ -2,7 +2,7 @@
     <description>Filter (single) input on a dbkey</description>
     <command><![CDATA[
        cat '$inputs' > '$output' &&
-       echo $index
+       echo $index.fields.value
     ]]></command>
     <inputs>
         <param name="inputs" type="data" format="txt" label="Inputs" help="" />

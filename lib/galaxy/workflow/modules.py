@@ -132,6 +132,12 @@ RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
+class OptionDict(TypedDict):
+    label: str
+    value: str
+    selected: bool
+
+
 class ConditionalStepWhen(BooleanToolParameter):
     pass
 
@@ -1479,7 +1485,7 @@ class InputParameterModule(WorkflowModule):
                                 ].static_options
                             )
 
-            options = None
+            options: Optional[List[OptionDict]] = None
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
@@ -1501,6 +1507,7 @@ class InputParameterModule(WorkflowModule):
                     }
                     for value, labels in collapsed_labels.items()
                 ]
+                options.sort(key=lambda x: x["label"])
 
             return options
         except Exception:

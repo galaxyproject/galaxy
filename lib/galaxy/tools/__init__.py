@@ -2137,7 +2137,6 @@ class Tool(UsesDictVisibleKeys):
                     tool_version=self.version,
                     param=param,
                     param_dump=param_dump,
-                    job_state=None,
                 )
             else:
                 completed_jobs[i] = None

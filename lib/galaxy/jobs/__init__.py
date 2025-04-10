@@ -1755,8 +1755,12 @@ class MinimalJobWrapper(HasResourceParameters):
 
         result = self.sa_session.execute(update_stmt)
         self.sa_session.commit()
+        state_updated = result.rowcount > 0
+        if state_updated:
+            self.sa_session.refresh(job)
+            job.state_history.append(model.JobStateHistory(job=job))
 
-        return result.rowcount > 0
+        return state_updated
 
     def enqueue(self):
         job = self.get_job()
