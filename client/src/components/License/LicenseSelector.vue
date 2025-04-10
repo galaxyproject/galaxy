@@ -105,6 +105,8 @@ watchImmediate(
             track-by="licenseId"
             :options="licenseOptions"
             label="name"
+            selectLabel=""
+            deselectLabel=""
             placeholder="Select a license"
             @select="onLicense" />
         <License v-if="currentLicense?.licenseId" :license-id="currentLicense.licenseId" />
