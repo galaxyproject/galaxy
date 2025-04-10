@@ -115,6 +115,7 @@ const {
     setSelected,
     resetSelection,
     itemRefs,
+    initSelectedItem,
     onClick,
     onKeyDown,
 } = useSelectedItems<WorkflowSummary, typeof WorkflowCard>({
@@ -509,6 +510,7 @@ onMounted(() => {
                 :grid-view="currentListViewMode === 'grid'"
                 :selected-workflow-ids="selectedWorkflowIds"
                 :item-refs="itemRefs"
+                :range-select-anchor="initSelectedItem"
                 @on-workflow-card-click="onClick"
                 @on-key-down="onKeyDown"
                 @select="onSelectWorkflow"
