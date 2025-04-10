@@ -60,8 +60,11 @@ class ChatAPI:
         payload: ChatPayload,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> str:
-        """We're off to ask the wizard"""
+    ) -> dict:
+        """We're off to ask the wizard and return a JSON response"""
+        # Initialize response structure
+        result = {"response": "", "error_code": 0, "error_message": ""}
+
         # Currently job-based chat exchanges are the only ones supported,
         # and will only have the one message.
         job = self.job_manager.get_accessible_job(trans, job_id)
@@ -71,23 +74,27 @@ class ChatAPI:
             # asking follow-up questions.
             existing_response = self.chat_manager.get(trans, job.id)
             if existing_response and existing_response.messages[0]:
-                return existing_response.messages[0].message
+                result["response"] = existing_response.messages[0].message
+                return result
 
         self._ensure_openai_configured()
 
         messages = self._build_messages(payload, trans)
 
-        answer = ""
         try:
             # We never want this to just blow up and return *nothing*, so catch common errors and provide friendly responses.
             response = self._call_openai(messages)
-            answer = response.choices[0].message.content
+            result["response"] = response.choices[0].message.content
             if job:
-                self.chat_manager.create(trans, job.id, answer)
+                self.chat_manager.create(trans, job.id, result["response"])
         except openai.RateLimitError:
-            answer = "The wizard is tired.  Please try again later."
-
-        return answer
+            result["response"] = "The wizard is tired.  Please try again later."
+            result["error_code"] = 429
+            result["error_message"] = "Rate limit exceeded"
+        except Exception:
+            result["error_code"] = 500
+            result["error_message"] = "Unexpected error, contact an administrator"
+        return result
 
     @router.put("/api/chat/{job_id}/feedback")
     def feedback(
