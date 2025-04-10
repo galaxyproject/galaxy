@@ -94,12 +94,16 @@ class ChatAPI:
             if job:
                 self.chat_manager.create(trans, job.id, result["response"])
         except openai.RateLimitError:
-            result["response"] = "The wizard is tired.  Please try again later."
+            result["response"] = (
+                "Our AI assistant is experiencing high demand right now. Please try again in a few minutes, or contact an administrator of this persists."
+            )
             result["error_code"] = 429
             result["error_message"] = "Rate limit exceeded"
         except Exception:
             result["error_code"] = 500
-            result["error_message"] = "Unexpected error, contact an administrator"
+            result["error_message"] = (
+                "Something unexpected happened. Our team has been notified and is looking into it. Please try again later."
+            )
         return ChatResponse(**result)
 
     @router.put("/api/chat/{job_id}/feedback")
