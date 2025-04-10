@@ -22,6 +22,13 @@ const props = withDefaults(defineProps<Props>(), {
     view: "error",
     context: "username",
 });
+
+interface ChatResponse {
+    response: string;
+    error_code?: number;
+    error_message?: string;
+}
+
 const query = ref(props.query);
 const queryResponse = ref("");
 const errorMessage = ref("");
@@ -54,7 +61,25 @@ async function submitQuery() {
     if (error) {
         errorMessage.value = errorMessageAsString(error, "Failed to get response from the server.");
     } else {
-        queryResponse.value = data;
+        // Handle the updated response format
+        if (typeof data === "string") {
+            // Handle legacy string response format
+            queryResponse.value = data;
+        } else {
+            // Handle the new object response format
+            const chatResponse = data as ChatResponse;
+            
+            if (chatResponse.error_code && chatResponse.error_message) {
+                errorMessage.value = `${chatResponse.error_message} (Error ${chatResponse.error_code})`;
+            } else if (chatResponse.error_message) {
+                errorMessage.value = chatResponse.error_message;
+            } else if (chatResponse.response) {
+                queryResponse.value = chatResponse.response;
+            } else {
+                // Fallback for unexpected response structure
+                queryResponse.value = JSON.stringify(data);
+            }
+        }
     }
     busy.value = false;
 }
