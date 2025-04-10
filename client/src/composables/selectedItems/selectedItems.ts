@@ -258,6 +258,35 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         }, {} as ComponentInstanceRef<ComponentType>);
     });
 
+    function findFirstFocusable(itemRef: InstanceType<ComponentType> | null | undefined): HTMLElement | null {
+        if (!itemRef) {
+            return null;
+        }
+
+        // If itemRef is a component instance with $el, check if it's focusable
+        if ("$el" in itemRef) {
+            if (itemRef.$el && typeof itemRef.$el.focus === "function") {
+                return itemRef.$el;
+            }
+        }
+        // If itemRef is an array, recursively check its elements
+        else if (Array.isArray(itemRef)) {
+            for (const element of itemRef as unknown[]) {
+                const focusable = findFirstFocusable(element as InstanceType<ComponentType>);
+                if (focusable) {
+                    return focusable;
+                }
+            }
+        }
+        // If itemRef is a DOM element, check if it's focusable
+        else if (typeof itemRef.focus === "function") {
+            return itemRef;
+        }
+
+        // If no focusable element is found, return null
+        return null;
+    }
+
     function arrowNavigate(item: T, eventKey: string) {
         let nextItem = null;
         if (eventKey === "ArrowDown") {
@@ -266,8 +295,11 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
             nextItem = allItems.value[allItems.value.indexOf(item) - 1];
         }
         if (nextItem) {
-            const itemElement = itemRefs.value[getItemKey(nextItem)]?.value?.$el as HTMLElement;
-            itemElement?.focus();
+            const itemRef = itemRefs.value[getItemKey(nextItem)]?.value;
+            const focusableElement = findFirstFocusable(itemRef);
+            if (focusableElement) {
+                focusableElement.focus();
+            }
         }
         return nextItem ?? null;
     }
