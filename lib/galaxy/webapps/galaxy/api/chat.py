@@ -76,11 +76,16 @@ class ChatAPI:
         self._ensure_openai_configured()
 
         messages = self._build_messages(payload, trans)
-        response = self._call_openai(messages)
-        answer = response.choices[0].message.content
 
-        if job:
-            self.chat_manager.create(trans, job.id, answer)
+        answer = ""
+        try:
+            # We never want this to just blow up and return *nothing*, so catch common errors and provide friendly responses.
+            response = self._call_openai(messages)
+            answer = response.choices[0].message.content
+            if job:
+                self.chat_manager.create(trans, job.id, answer)
+        except openai.RateLimitError:
+            answer = "The wizard is tired.  Please try again later."
 
         return answer
 
@@ -137,6 +142,14 @@ class ChatAPI:
                 model=self.config.openai_model,
                 messages=messages,
             )
+        except openai.APIConnectionError as e:
+            print("The server could not be reached")
+            log.error(e.__cause__)
+            raise ConfigurationError("An error occurred while connecting to OpenAI.")
+        except openai.RateLimitError as e:
+            # Wizard quota likely exceeded
+            log.error(f"A 429 status code was received; OpenAI rate limit exceeded.: ${e}")
+            raise
         except Exception as e:
             log.error(f"Error calling OpenAI: {e}")
             raise ConfigurationError("An error occurred while communicating with OpenAI.")
