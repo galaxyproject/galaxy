@@ -25,6 +25,14 @@ export interface SelectedItemsProps<T> {
     expectedKeyDownClass?: string;
     /** A list of class names that are not allowed to be used for keydown selection/navigation. */
     disallowedKeyDownClasses?: string[];
+    /** The element attribute used for range selection.
+     * @default "id"
+     * @example Could instead be `data-id` in
+     *          ```html
+     *          <div data-id="1">
+     *          ```
+     */
+    attributeForRangeSelection?: string;
 }
 
 export type ComponentInstanceRef<T extends ComponentInstanceExtends> = Record<string, Ref<InstanceType<T> | null>>;

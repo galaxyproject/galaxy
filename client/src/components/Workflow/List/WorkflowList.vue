@@ -115,7 +115,7 @@ const {
     setSelected,
     resetSelection,
     itemRefs,
-    // onClick, // TODO: Use this to enable range select; or the `rangeSelect` fn directly?
+    onClick,
     onKeyDown,
 } = useSelectedItems<WorkflowSummary, typeof WorkflowCard>({
     scopeKey: computed(() => `${props.activeList}-workflows-${filterText.value}`),
@@ -136,7 +136,7 @@ const {
         );
         deleteInModal();
     },
-    expectedKeyDownClass: "workflow-card-in-list",
+    expectedKeyDownClass: "workflow-card",
 });
 
 function updateFilterValue(filterKey: string, newValue: any) {
@@ -509,6 +509,7 @@ onMounted(() => {
                 :grid-view="currentListViewMode === 'grid'"
                 :selected-workflow-ids="selectedWorkflowIds"
                 :item-refs="itemRefs"
+                @on-workflow-card-click="onClick"
                 @on-key-down="onKeyDown"
                 @select="onSelectWorkflow"
                 @refreshList="load"

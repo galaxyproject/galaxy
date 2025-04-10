@@ -107,7 +107,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "click"): void;
+    (e: "click", event: MouseEvent | KeyboardEvent): void;
     (e: "bookmark"): void;
     (e: "dropdown", open: boolean): void;
     (e: "rename"): void;
@@ -145,8 +145,8 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
-        @click="props.clickable ? emit('click') : undefined"
-        @keydown.enter="props.clickable ? emit('click') : undefined">
+        @click="props.clickable ? emit('click', $event) : undefined"
+        @keydown.enter="props.clickable ? emit('click', $event) : undefined">
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
