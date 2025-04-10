@@ -447,7 +447,11 @@ class JobSearch:
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
-                src = current_case["src"]
+                src = current_case.get("src")
+                if src is None:
+                    # just a parameter named id.
+                    # same workaround as in populate_input_data_input_id
+                    return key, value
                 value = job_input_ids[src][value]
                 return key, value
             return key, value
