@@ -5,6 +5,8 @@ import { useEventStore } from "@/stores/eventStore";
 import { useActiveElement } from "../useActiveElement";
 import type { ComponentInstanceExtends, ComponentInstanceRef, SelectedItemsProps } from "./types";
 
+/** A composable that allows for the selection of items in a list using keyboard and mouse
+ * events, as well as navigating that list using keyboard events. */
 export function useSelectedItems<T, ComponentType extends ComponentInstanceExtends>({
     scopeKey,
     getItemKey,
@@ -13,7 +15,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     allItems,
     filterClass,
     selectable,
-    querySelectionBreak,
+    querySelectionBreak = () => {},
     onDelete,
     expectedKeyDownClass = undefined,
     disallowedKeyDownClasses = [],
