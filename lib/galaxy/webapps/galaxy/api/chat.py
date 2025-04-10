@@ -95,14 +95,14 @@ class ChatAPI:
                 self.chat_manager.create(trans, job.id, result["response"])
         except openai.RateLimitError:
             result["response"] = (
-                "Our AI assistant is experiencing high demand right now. Please try again in a few minutes, or contact an administrator of this persists."
+                "Our AI assistant is experiencing high demand right now. Please try again in a few minutes, or contact an administrator if this persists."
             )
             result["error_code"] = 429
             result["error_message"] = "Rate limit exceeded"
         except Exception:
             result["error_code"] = 500
             result["error_message"] = (
-                "Something unexpected happened. Our team has been notified and is looking into it. Please try again later."
+                "Something unexpected happened. An error has been logged and administrators will look into it. Please try again later."
             )
         return ChatResponse(**result)
 
@@ -159,14 +159,13 @@ class ChatAPI:
                 model=self.config.openai_model,
                 messages=messages,
             )
-        except openai.APIConnectionError as e:
-            print("The server could not be reached")
-            log.error(e.__cause__)
+        except openai.APIConnectionError:
+            log.exception("OpenAI API Connection Error")
             raise ConfigurationError("An error occurred while connecting to OpenAI.")
         except openai.RateLimitError as e:
             # Wizard quota likely exceeded
-            log.error(f"A 429 status code was received; OpenAI rate limit exceeded.: ${e}")
+            log.exception(f"A 429 status code was received; OpenAI rate limit exceeded.: ${e}")
             raise
-        except Exception as e:
-            log.error(f"Error calling OpenAI: {e}")
+        except Exception:
+            # For anything else, it's likely a configuration issue and admins should be notified.
             raise ConfigurationError("An error occurred while communicating with OpenAI.")

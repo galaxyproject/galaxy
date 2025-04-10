@@ -2,11 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BSkeleton } from "bootstrap-vue";
+import { BButton, BSkeleton } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { components } from "@/api/schema/schema";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -23,8 +22,6 @@ const props = withDefaults(defineProps<Props>(), {
     view: "error",
     context: "username",
 });
-
-type ChatResponse = components["schemas"]["ChatResponse"];
 
 const query = ref(props.query);
 const queryResponse = ref("");
