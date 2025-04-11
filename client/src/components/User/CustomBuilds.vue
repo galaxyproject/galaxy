@@ -33,6 +33,8 @@
                         multiple
                         taggable
                         label="label"
+                        select-label=""
+                        deselect-label=""
                         track-by="value"
                         :searchable="false"
                         :options="installedBuilds">
