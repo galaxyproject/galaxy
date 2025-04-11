@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
 import { useInstanceRouting } from "./routing";
@@ -12,6 +13,9 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Props {
     templateId: string;
 }
+
+const { addOrUpdateObjectStore } = useObjectStoreStore();
+
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 objectStoreTemplatesStore.fetchTemplates();
 
@@ -21,6 +25,7 @@ const props = defineProps<Props>();
 const template = computed(() => objectStoreTemplatesStore.getLatestTemplate(props.templateId));
 
 async function onCreated(objectStore: UserConcreteObjectStore) {
+    addOrUpdateObjectStore(objectStore);
     const message = `Created storage location ${objectStore.name}`;
     goToIndex({ message });
 }
