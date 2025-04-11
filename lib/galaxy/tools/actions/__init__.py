@@ -883,7 +883,13 @@ class DefaultToolAction(ToolAction):
         jtid.dataset.hid = jtod.dataset.hid
         log.info(f"Job {job_to_remap.id} input HDA {jtod.dataset.id} remapped to new HDA {jtid.dataset.id}")
 
-    def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
+    def _wrapped_params(
+        self,
+        trans,
+        tool: "Tool",
+        incoming: "ToolStateJobInstancePopulatedT",
+        input_datasets: Optional[LegacyUnprefixedDict] = None,
+    ) -> WrappedParameters:
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
         return wrapped_params
 

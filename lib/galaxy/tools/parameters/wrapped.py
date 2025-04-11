@@ -3,7 +3,9 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     Sequence,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -11,6 +13,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     SelectToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
@@ -30,10 +33,15 @@ from galaxy.util.permutations import (
     split_flattened_repeat_key,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+    from galaxy.tools._types import ToolStateJobInstancePopulatedT
+    from galaxy.tools.parameters import ToolInputsT
+
 PARAMS_UNWRAPPED = object()
 
 
-class LegacyUnprefixedDict(UserDict):
+class LegacyUnprefixedDict(UserDict[str, Any]):
     """Track and provide access to prefixed and unprefixed tool parameter values."""
 
     # It used to be valid to access members of conditionals without specifying the conditional.
@@ -66,7 +74,13 @@ def copy_identifiers(source, destination):
 
 
 class WrappedParameters:
-    def __init__(self, trans, tool, incoming, input_datasets=None):
+    def __init__(
+        self,
+        trans,
+        tool: "Tool",
+        incoming: "ToolStateJobInstancePopulatedT",
+        input_datasets: Optional[LegacyUnprefixedDict] = None,
+    ):
         self.trans = trans
         self.tool = tool
         self.incoming = incoming
@@ -81,12 +95,12 @@ class WrappedParameters:
             self._params = params
         return self._params
 
-    def wrap_values(self, inputs, input_values, skip_missing_values=False):
+    def wrap_values(self, inputs: "ToolInputsT", input_values: dict, skip_missing_values: bool = False):
         trans = self.trans
         tool = self.tool
         incoming = self.incoming
 
-        element_identifier_mapper = ElementIdentifierMapper(self._input_datasets)
+        element_identifier_mapper = ElementIdentifierMapper(self._input_datasets.data if self._input_datasets else None)
 
         # Wrap tool inputs as necessary
         for input in inputs.values():
@@ -135,10 +149,11 @@ class WrappedParameters:
                     name=input.name,
                 )
             else:
+                assert isinstance(input, ToolParameter)
                 input_values[input.name] = InputValueWrapper(input, value, incoming, tool.profile)
 
 
-def make_dict_copy(from_dict):
+def make_dict_copy(from_dict: dict):
     """
     Makes a copy of input dictionary from_dict such that all values that are dictionaries
     result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle
@@ -156,7 +171,7 @@ def make_dict_copy(from_dict):
     return copy_from_dict
 
 
-def make_list_copy(from_list):
+def make_list_copy(from_list: list):
     new_list = []
     for value in from_list:
         if isinstance(value, dict):

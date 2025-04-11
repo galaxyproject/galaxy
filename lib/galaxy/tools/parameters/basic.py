@@ -18,6 +18,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -89,6 +90,7 @@ if TYPE_CHECKING:
     )
     from galaxy.security.idencoding import IdEncodingHelper
     from galaxy.structured_app import MinimalApp
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -191,7 +193,7 @@ class ToolParameter(UsesDictVisibleKeys):
     name: str
     dict_collection_visible_keys = ["name", "argument", "type", "label", "help", "help_format", "refresh_on_change"]
 
-    def __init__(self, tool, input_source, context=None):
+    def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
         self.tool = tool
         self.argument = input_source.get("argument")
@@ -347,7 +349,7 @@ class ToolParameter(UsesDictVisibleKeys):
         return tool_dict
 
     @classmethod
-    def build(cls, tool, input_source):
+    def build(cls, tool: "Tool", input_source) -> "ToolParameter":
         """Factory method to create parameter of correct type"""
         input_source = ensure_input_source(input_source)
         param_name = cls.parse_name(input_source)
@@ -365,7 +367,7 @@ class ToolParameter(UsesDictVisibleKeys):
 
 
 class SimpleTextToolParameter(ToolParameter):
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         optional = input_source.get("optional", None)
@@ -398,7 +400,7 @@ class TextToolParameter(SimpleTextToolParameter):
     [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.profile = tool.profile if tool else None
@@ -460,7 +462,7 @@ class IntegerToolParameter(TextToolParameter):
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         super().__init__(tool, input_source)
         if self.value:
             try:
@@ -533,7 +535,7 @@ class FloatToolParameter(TextToolParameter):
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         super().__init__(tool, input_source)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
@@ -617,11 +619,12 @@ class BooleanToolParameter(ToolParameter):
     >>> assert value == True
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         try:
-            truevalue, falsevalue = boolean_true_and_false_values(input_source, tool and tool.profile)
+            profile = tool.profile if tool else None
+            truevalue, falsevalue = boolean_true_and_false_values(input_source, profile)
         except ParameterParseException as ppe:
             raise ParameterValueError(ppe.message, self.name)
         self.truevalue = truevalue
@@ -748,7 +751,7 @@ class FTPFileToolParameter(ToolParameter):
     [('argument', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile'), ('value', None)]
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.multiple = input_source.get_bool("multiple", True)
@@ -763,6 +766,7 @@ class FTPFileToolParameter(ToolParameter):
 
     @property
     def visible(self):
+        assert self.tool
         if self.tool.app.config.ftp_upload_dir is None or self.tool.app.config.ftp_upload_site is None:
             return False
         return True
@@ -798,8 +802,10 @@ class FTPFileToolParameter(ToolParameter):
             if not self.optional and validate:
                 raise ValueError("Please select a valid FTP file.")
             return None
-        if validate and self.tool.app.config.ftp_upload_dir is None:
-            raise ValueError("The FTP directory is not configured.")
+        if validate:
+            assert self.tool
+            if self.tool.app.config.ftp_upload_dir is None:
+                raise ValueError("The FTP directory is not configured.")
         return lst
 
     def to_dict(self, trans, other_values=None):
@@ -821,7 +827,7 @@ class HiddenToolParameter(ToolParameter):
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('help_format', 'html'), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         super().__init__(tool, input_source)
         self.value = input_source.get("value")
         self.hidden = True
@@ -856,7 +862,7 @@ class ColorToolParameter(ToolParameter):
     ...      p.to_param_dict_string(None)
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.value = get_color_value(input_source)
@@ -889,7 +895,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('help_format', 'html'), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         super().__init__(tool, input_source)
         self.value = input_source.get("value", "")
 
@@ -955,7 +961,7 @@ class SelectToolParameter(ToolParameter):
 
     value_label: str
 
-    def __init__(self, tool, input_source, context=None):
+    def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.multiple = input_source.get_bool("multiple", False)
@@ -987,6 +993,7 @@ class SelectToolParameter(ToolParameter):
             return self.options.get_options(trans, other_values)
         elif self.dynamic_options:
             call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
+            assert self.tool
             try:
                 return [
                     ParameterOption(*o) for o in eval(self.dynamic_options, self.tool.code_namespace, call_other_values)
@@ -1052,6 +1059,7 @@ class SelectToolParameter(ToolParameter):
                 "an invalid option (None) was selected, please verify", self.name, None, is_dynamic=self.is_dynamic
             )
         elif not legal_values:
+            assert self.tool
             if self.optional and Version(str(self.tool.profile)) < Version("18.09"):
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
@@ -1279,10 +1287,9 @@ class SelectTagParameter(SelectToolParameter):
     Select set that is composed of a set of tags available for an input.
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.tool = tool
         self.tag_key = input_source.get("group", False)
         self.optional = input_source.get("optional", False)
         self.multiple = input_source.get("multiple", False)
@@ -1401,7 +1408,7 @@ class ColumnListParameter(SelectToolParameter):
     numerical_column
     """
 
-    def __init__(self, tool, input_source):
+    def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.numerical = input_source.get_bool("numerical", False)
@@ -1656,14 +1663,14 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][1]['value'] == 'option5'
     """
 
-    def __init__(self, tool, input_source, context=None):
+    def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
         self.multiple = input_source.get_bool("multiple", False)
         self.display = input_source.get("display", None)
         self.hierarchy = input_source.get("hierarchy", "exact")  # exact or recurse
         self.separator = input_source.get("separator", ",")
-        tool_data_path = tool.app.config.tool_data_path
+        tool_data_path = self.tool.app.config.tool_data_path if self.tool else None
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:
             self.is_dynamic = True
@@ -1681,6 +1688,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             call_other_values.parent = other_values.parent
             call_other_values.update(other_values.dict)
         try:
+            assert self.tool
             return eval(self.dynamic_options, self.tool.code_namespace, call_other_values)
         except Exception:
             return []
@@ -1851,7 +1859,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 class BaseDataToolParameter(ToolParameter):
     multiple: bool
 
-    def __init__(self, tool, input_source, trans):
+    def __init__(self, tool: Optional["Tool"], input_source, trans):
         super().__init__(tool, input_source)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
@@ -2061,7 +2069,7 @@ class DataToolParameter(BaseDataToolParameter):
     security stuff will dramatically alter this anyway.
     """
 
-    def __init__(self, tool, input_source, trans=None):
+    def __init__(self, tool: Optional["Tool"], input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
         self.load_contents = int(input_source.get("load_contents", 0))
@@ -2442,7 +2450,7 @@ class DataToolParameter(BaseDataToolParameter):
 class DataCollectionToolParameter(BaseDataToolParameter):
     """ """
 
-    def __init__(self, tool, input_source, trans=None):
+    def __init__(self, tool: Optional["Tool"], input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
         self._parse_formats(trans, input_source)
@@ -2634,7 +2642,7 @@ class HiddenDataToolParameter(HiddenToolParameter, DataToolParameter):
     parameters, this is a HACK.
     """
 
-    def __init__(self, tool, elem):
+    def __init__(self, tool: Optional["Tool"], elem):
         DataToolParameter.__init__(self, tool, elem)
         self.value = "None"
         self.type = "hidden_data"
@@ -2692,7 +2700,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
     Parameter that allows for the creation of a list of rules using the Galaxy rules DSL.
     """
 
-    def __init__(self, tool, input_source, context=None):
+    def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.data_ref = input_source.get("data_ref", None)
@@ -2816,7 +2824,7 @@ def raw_to_galaxy(
         return hdca
 
 
-parameter_types = dict(
+parameter_types: Dict[str, Type[ToolParameter]] = dict(
     text=TextToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,

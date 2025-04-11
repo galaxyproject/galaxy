@@ -153,7 +153,6 @@ from galaxy.tools.parameters.dataset_matcher import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
-    Group,
     Repeat,
     Section,
     UploadDataset,
@@ -236,6 +235,7 @@ if TYPE_CHECKING:
     )
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tools.actions.metadata import SetMetadataToolAction
+    from galaxy.tools.parameters import ToolInputsT
 
 log = logging.getLogger(__name__)
 
@@ -1625,7 +1625,7 @@ class Tool(UsesDictVisibleKeys):
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
-        self.inputs: Dict[str, Union[Group, ToolParameter]] = {}
+        self.inputs: ToolInputsT = {}
         pages = tool_source.parse_input_pages()
         enctypes: Set[str] = set()
         if pages.inputs_defined:
@@ -1716,15 +1716,13 @@ class Tool(UsesDictVisibleKeys):
                     citations.append(citation)
         return citations
 
-    def parse_input_elem(
-        self, page_source: PageSource, enctypes, context=None
-    ) -> Dict[str, Union[Group, ToolParameter]]:
+    def parse_input_elem(self, page_source: PageSource, enctypes, context=None) -> "ToolInputsT":
         """
         Parse a parent element whose children are inputs -- these could be
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
-        rval: Dict[str, Union[Group, ToolParameter]] = {}
+        rval: ToolInputsT = {}
         context = ExpressionContext(rval, context)
         for input_source in page_source.parse_input_sources():
             # Repeat group
@@ -1757,8 +1755,9 @@ class Tool(UsesDictVisibleKeys):
                     value_from = value_from.split(":")
                     temp_value_from = locals().get(value_from[0])
                     assert value_ref
-                    group_c.test_param = rval[value_ref]
-                    assert isinstance(group_c.test_param, ToolParameter)
+                    group_c_test_param = rval[value_ref]
+                    assert isinstance(group_c_test_param, ToolParameter)
+                    group_c.test_param = group_c_test_param
                     group_c.test_param.refresh_on_change = True
                     for attr in value_from[1].split("."):
                         temp_value_from = getattr(temp_value_from, attr)

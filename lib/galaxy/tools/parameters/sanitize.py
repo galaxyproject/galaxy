@@ -4,6 +4,10 @@ Tool Parameter specific sanitizing.
 
 import logging
 import string
+from typing import (
+    List,
+    overload,
+)
 
 import galaxy.util
 
@@ -139,7 +143,7 @@ class ToolParameterSanitizer:
                 text = text.replace(value, key)
         return text
 
-    def sanitize_text(self, text):
+    def sanitize_text(self, text: str):
         """Restricts the characters that are allowed in a text"""
         if not self.sanitize:
             return text
@@ -152,6 +156,12 @@ class ToolParameterSanitizer:
             else:
                 rval.append(self._invalid_char)
         return "".join(rval)
+
+    @overload
+    def sanitize_param(self, value: str) -> str: ...
+
+    @overload
+    def sanitize_param(self, value: List[str]) -> List[str]: ...
 
     def sanitize_param(self, value):
         """Clean incoming parameters (strings or lists)"""
