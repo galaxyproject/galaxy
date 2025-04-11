@@ -7,8 +7,8 @@ const DEFAULT_LIMIT = 50;
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionDetails(params: { id: string }): Promise<HDCADetailed> {
-    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+export async function fetchCollectionDetails(params: { hdca_id: string }): Promise<HDCADetailed> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
         params: { path: params },
     });
 
@@ -22,8 +22,8 @@ export async function fetchCollectionDetails(params: { id: string }): Promise<HD
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionSummary(params: { id: string }): Promise<HDCASummary> {
-    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+export async function fetchCollectionSummary(params: { hdca_id: string }): Promise<HDCASummary> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
         params: {
             path: params,
             query: { view: "collection" },

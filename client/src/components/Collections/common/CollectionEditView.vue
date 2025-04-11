@@ -121,8 +121,8 @@ async function clickedSave(attribute: string, newValue: any) {
 
     const dbKey = newValue.id as string;
 
-    const { error } = await GalaxyApi().POST("/api/dataset_collections/{id}/copy", {
-        params: { path: { id: props.collectionId } },
+    const { error } = await GalaxyApi().POST("/api/dataset_collections/{hdca_id}/copy", {
+        params: { path: { hdca_id: props.collectionId } },
         body: { dbkey: dbKey },
     });
     if (error) {

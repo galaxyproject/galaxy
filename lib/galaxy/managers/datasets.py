@@ -327,7 +327,7 @@ U = TypeVar("U", bound=DatasetInstance)
 class DatasetAssociationManager(
     base.ModelManager[U],
     secured.AccessibleManagerMixin,
-    secured.OwnableManagerMixin,
+    secured.OwnableManagerMixin[U],
     deletable.PurgableManagerMixin,
 ):
     """

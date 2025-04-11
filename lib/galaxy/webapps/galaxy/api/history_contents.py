@@ -624,14 +624,14 @@ class FastAPIHistoryContents:
         return self.service.index_jobs_summary(trans, params)
 
     @router.get(
-        "/api/histories/{history_id}/contents/dataset_collections/{id}/download",
+        "/api/histories/{history_id}/contents/dataset_collections/{hdca_id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
         operation_id="history_contents__download_collection",
     )
     def download_dataset_collection_history_content(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Path(
             description="The encoded database identifier of the History.",
@@ -640,10 +640,10 @@ class FastAPIHistoryContents:
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
-        return self._download_collection(trans, id)
+        return self._download_collection(trans, hdca_id)
 
     @router.get(
-        "/api/dataset_collections/{id}/download",
+        "/api/dataset_collections/{hdca_id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
         tags=["dataset collections"],
@@ -651,21 +651,21 @@ class FastAPIHistoryContents:
     )
     def download_dataset_collection(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
-        return self._download_collection(trans, id)
+        return self._download_collection(trans, hdca_id)
 
     @router.post(
-        "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
+        "/api/histories/{history_id}/contents/dataset_collections/{hdca_id}/prepare_download",
         summary="Prepare an short term storage object that the collection will be downloaded to.",
         include_in_schema=False,
     )
     @router.post(
-        "/api/dataset_collections/{id}/prepare_download",
+        "/api/dataset_collections/{hdca_id}/prepare_download",
         summary="Prepare an short term storage object that the collection will be downloaded to.",
         responses={
             200: {
@@ -677,14 +677,14 @@ class FastAPIHistoryContents:
     )
     def prepare_collection_download(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AsyncFile:
         """The history dataset collection will be written as a `zip` archive to the
         returned short term storage object. Progress tracking this file's creation
         can be tracked with the short_term_storage API.
         """
-        return self.service.prepare_collection_download(trans, id)
+        return self.service.prepare_collection_download(trans, hdca_id)
 
     @router.post(
         "/api/histories/{history_id}/contents/{type}s",
@@ -838,6 +838,28 @@ class FastAPIHistoryContents:
             payload.model_dump(exclude_unset=True),
             serialization_params,
             contents_type=HistoryContentType.dataset,
+        )
+
+    @router.put(
+        "/api/dataset_collections/{hdca_id}",
+        summary="Updates the values for the history dataset (HDA) item with the given ``ID``.",
+        operation_id="dataset_collections__update_collection",
+    )
+    def update_collection(
+        self,
+        hdca_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Updates the values for the history content item with the given ``ID``."""
+        return self.service.update(
+            trans,
+            None,
+            hdca_id,
+            payload.model_dump(exclude_unset=True),
+            serialization_params,
+            contents_type=HistoryContentType.dataset_collection,
         )
 
     @router.put(
