@@ -35,7 +35,9 @@ const emit = defineEmits<{
 }>();
 
 function onClick(event: PointerEvent) {
-    if (!props.disabled) {
+    if (props.disabled) {
+        event.preventDefault();
+    } else {
         emit("click", event);
         emit("update:pressed", !props.pressed);
     }
