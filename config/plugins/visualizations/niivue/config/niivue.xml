@@ -5,18 +5,9 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">gii</test>
-            <test test_attr="ext" result_type="datatype">hdr</test>
-            <test test_attr="ext" result_type="datatype">img</test>
-            <test test_attr="ext" result_type="datatype">mgz</test>
-            <test test_attr="ext" result_type="datatype">mgh</test>
-            <test test_attr="ext" result_type="datatype">nii</test>
-            <test test_attr="ext" result_type="datatype">nii.gz</test>
+            <test test_attr="ext" result_type="datatype">nii1</test>
             <test test_attr="ext" result_type="datatype">nii1.gz</test>
-            <test test_attr="ext" result_type="datatype">obj</test>
-            <test test_attr="ext" result_type="datatype">ply</test>
-            <test test_attr="ext" result_type="datatype">stl</test>
-            <test test_attr="ext" result_type="datatype">vtk</test>
+            <test test_attr="ext" result_type="datatype">png</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
@@ -24,7 +15,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.8" package="@galaxyproject/niivue"/>
+        <requirement type="npm" version="0.0.9" package="@galaxyproject/niivue"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
