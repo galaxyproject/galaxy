@@ -1,6 +1,7 @@
 from typing import (
     List,
     Optional,
+    TYPE_CHECKING,
 )
 
 from selenium.webdriver.support.select import Select
@@ -14,6 +15,8 @@ from .axe_results import (
     Impact,
 )
 
+if TYPE_CHECKING:
+    from galaxy.selenium.navigates_galaxy import NavigatesGalaxy
 
 class SmartComponent:
     """Wrap a Component with driver aware methods.
@@ -23,7 +26,7 @@ class SmartComponent:
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 
-    def __init__(self, component, has_driver):
+    def __init__(self, component, has_driver: "NavigatesGalaxy"):
         self._component = component
         self._has_driver = has_driver
 
@@ -45,7 +48,7 @@ class SmartComponent:
 class SmartTarget:
     """Wrap a Target with driver aware methods."""
 
-    def __init__(self, target, has_driver):
+    def __init__(self, target, has_driver: "NavigatesGalaxy"):
         self._target = target
         self._has_driver = has_driver
 
