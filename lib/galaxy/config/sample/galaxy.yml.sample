@@ -2934,12 +2934,15 @@ galaxy:
   # as threshold (above threshold: regular select fields will be used)
   #select_type_workflow_threshold: -1
 
-  # API key for OpenAI (https://openai.com/) to enable the wizard (or
+  # API key for an AI provider. AI provider is Openai By default (https://openai.com/) to enable the wizard (or
   # more?)
-  #openai_api_key: null
+  # ai_api_key: null
 
-  # OpenAI model to enable the wizard.
-  #openai_model: gpt-4o
+  # AI model to enable the wizard.
+  # ai_model: gpt-4o
+
+  # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
+  # ai_api_base_url: null
 
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please

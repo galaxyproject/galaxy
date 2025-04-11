@@ -1107,7 +1107,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_celery_config()
 
         # load in the chat_prompts if openai api key is configured
-        if self.openai_api_key:
+        if self.ai_api_key:
             self._load_chat_prompts()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)

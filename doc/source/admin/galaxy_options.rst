@@ -5431,23 +5431,33 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~
+``ai_api_base_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The base url of your AI providers API. Defaults to OpenAI
+:Default: ``https://api.openai.com/v1``
+:Type: str
+
+
+
 ~~~~~~~~~~~~~~~~~~
-``openai_api_key``
+``ai_api_key``
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    API key for OpenAI (https://openai.com/) to enable the wizard (or
-    more?)
+    API key to use for the AI wizzard. Should be your Openai/Deepinfra/Groq api key
 :Default: ``None``
 :Type: str
 
 
 ~~~~~~~~~~~~~~~~
-``openai_model``
+``ai_model``
 ~~~~~~~~~~~~~~~~
 
 :Description:
-    OpenAI model to enable the wizard.
+    AI model to enable the wizard.
 :Default: ``gpt-4o``
 :Type: str
 

@@ -4026,18 +4026,24 @@ mapping:
           use -1 (default) in order to always use the regular select fields,
           use any other positive number as threshold (above threshold: regular select fields will be used)
 
-      openai_api_key:
+      ai_api_key:
         type: str
         required: false
         desc: |
-          API key for OpenAI (https://openai.com/) to enable the wizard (or more?)
+          API key for an AI provider. AI provider is Openai By default (https://openai.com/) to enable the wizard (or more?)
 
-      openai_model:
+      ai_api_base_url:
+        type: str
+        required: false
+        desc: |
+          AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
+
+      ai_model:
         type: str
         default: gpt-4o
         required: false
         desc: |
-          OpenAI model to enable the wizard.
+          AI model to enable the wizard.
 
       enable_tool_recommendations:
         type: bool
