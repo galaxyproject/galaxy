@@ -16,7 +16,9 @@ from .axe_results import (
 )
 
 if TYPE_CHECKING:
+    # TODO: ideally this after refactoring things this should be galaxy.selenium.has_driver.HasDriver -John
     from galaxy.selenium.navigates_galaxy import NavigatesGalaxy
+
 
 class SmartComponent:
     """Wrap a Component with driver aware methods.
