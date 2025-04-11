@@ -90,9 +90,10 @@ class ChatAPI:
         try:
             # We never want this to just blow up and return *nothing*, so catch common errors and provide friendly responses.
             response = self._call_openai(messages)
-            result["response"] = response.choices[0].message.content
+            answer = response.choices[0].message.content
+            result["response"] = answer
             if job:
-                self.chat_manager.create(trans, job.id, result["response"])
+                self.chat_manager.create(trans, job.id, answer)
         except openai.RateLimitError:
             result["response"] = (
                 "Our AI assistant is experiencing high demand right now. Please try again in a few minutes, or contact an administrator if this persists."
