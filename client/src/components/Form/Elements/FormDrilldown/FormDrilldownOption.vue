@@ -8,6 +8,7 @@ import { computed, type ComputedRef, onMounted, ref } from "vue";
 import { getAllValues, type Option } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     currentValue: string[];
@@ -66,10 +67,10 @@ onMounted(() => {
 
 <template>
     <div>
-        <b-button v-if="hasOptions" variant="link" class="btn p-0" @click="toggleChildren">
+        <GButton v-if="hasOptions" color="blue" transparent class="p-0" @click="toggleChildren">
             <FontAwesomeIcon v-if="showChildren" :icon="faCaretDown" class="align-checkbox" />
             <FontAwesomeIcon v-else :icon="faCaretRight" class="align-checkbox" />
-        </b-button>
+        </GButton>
         <span v-if="!hasOptions" class="align-indent"></span>
         <component
             :is="isComponent"
