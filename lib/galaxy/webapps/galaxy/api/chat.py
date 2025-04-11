@@ -18,7 +18,10 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import ChatPayload
+from galaxy.schema.schema import (
+    ChatPayload,
+    ChatResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -60,8 +63,11 @@ class ChatAPI:
         payload: ChatPayload,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> str:
-        """We're off to ask the wizard"""
+    ) -> ChatResponse:
+        """We're off to ask the wizard and return a JSON response"""
+        # Initialize response structure
+        result = {"response": "", "error_code": 0, "error_message": ""}
+
         # Currently job-based chat exchanges are the only ones supported,
         # and will only have the one message.
         job = self.job_manager.get_accessible_job(trans, job_id)
@@ -71,18 +77,35 @@ class ChatAPI:
             # asking follow-up questions.
             existing_response = self.chat_manager.get(trans, job.id)
             if existing_response and existing_response.messages[0]:
-                return existing_response.messages[0].message
+                return ChatResponse(
+                    response=existing_response.messages[0].message,
+                    error_code=0,
+                    error_message="",
+                )
 
         self._ensure_openai_configured()
 
         messages = self._build_messages(payload, trans)
-        response = self._call_openai(messages)
-        answer = response.choices[0].message.content
 
-        if job:
-            self.chat_manager.create(trans, job.id, answer)
-
-        return answer
+        try:
+            # We never want this to just blow up and return *nothing*, so catch common errors and provide friendly responses.
+            response = self._call_openai(messages)
+            answer = response.choices[0].message.content
+            result["response"] = answer
+            if job:
+                self.chat_manager.create(trans, job.id, answer)
+        except openai.RateLimitError:
+            result["response"] = (
+                "Our AI assistant is experiencing high demand right now. Please try again in a few minutes, or contact an administrator if this persists."
+            )
+            result["error_code"] = 429
+            result["error_message"] = "Rate limit exceeded"
+        except Exception:
+            result["error_code"] = 500
+            result["error_message"] = (
+                "Something unexpected happened. An error has been logged and administrators will look into it. Please try again later."
+            )
+        return ChatResponse(**result)
 
     @router.put("/api/chat/{job_id}/feedback")
     def feedback(
@@ -137,6 +160,13 @@ class ChatAPI:
                 model=self.config.openai_model,
                 messages=messages,
             )
-        except Exception as e:
-            log.error(f"Error calling OpenAI: {e}")
+        except openai.APIConnectionError:
+            log.exception("OpenAI API Connection Error")
+            raise ConfigurationError("An error occurred while connecting to OpenAI.")
+        except openai.RateLimitError as e:
+            # Wizard quota likely exceeded
+            log.exception(f"A 429 status code was received; OpenAI rate limit exceeded.: ${e}")
+            raise
+        except Exception:
+            # For anything else, it's likely a configuration issue and admins should be notified.
             raise ConfigurationError("An error occurred while communicating with OpenAI.")
