@@ -89,17 +89,15 @@ function onToolClick(tool: Tool, evt: Event) {
     background: none;
     border: none;
     text-align: left;
-    transition: none;
     width: 100%;
-    padding: 0.25rem;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 0.5rem;
 
     &:hover {
         background: $gray-200;
     }
 
     &:last-child {
-        border-bottom: none;
+        margin-bottom: none;
     }
 }
 

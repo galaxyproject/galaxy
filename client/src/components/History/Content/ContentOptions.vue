@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BButton, BDropdown } from "bootstrap-vue";
-import { computed, type Ref, ref } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BDropdown } from "bootstrap-vue";
 import { faStop } from "font-awesome-6";
+import { computed, type Ref, ref } from "vue";
 
 import { prependPath } from "@/utils/redirect";
 

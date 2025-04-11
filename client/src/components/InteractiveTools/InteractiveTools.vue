@@ -13,7 +13,6 @@ import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faExternalLinkAlt, faStopCircle);
 
-const error = ref<Error | null>(null);
 const filter = ref("");
 const messages = ref<string[]>([]);
 const nInteractiveTools = ref(0);

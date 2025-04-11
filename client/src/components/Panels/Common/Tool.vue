@@ -33,7 +33,6 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
 import ariaAlert from "utils/ariaAlert";
 import Vue from "vue";
 
