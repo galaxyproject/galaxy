@@ -98,6 +98,7 @@ from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
 )
+from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
     parse_xml_string,
     RWXRWXRWX,
@@ -1291,6 +1292,24 @@ class MinimalJobWrapper(HasResourceParameters):
             self.environment_variables,
             self.interactivetools,
         ) = tool_evaluator.build()
+        if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
+            # search again, now we know tool doesn't require name match
+            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
+            assert self.tool
+            params = self.tool.params_from_strings(param_dump, self.app)
+            json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
+            job_to_copy = self.app.job_search.by_tool_input(
+                job.user,
+                job.tool_id,
+                job.tool_version,
+                param=params,
+                param_dump=json_internal,
+                require_name_match=False,
+            )
+            if job_to_copy and isinstance(job_to_copy, model.Job):
+                job.copy_from_job(job_to_copy, copy_outputs=True)
+                self.sa_session.commit()
+                return False
         job.command_line = self.command_line
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs

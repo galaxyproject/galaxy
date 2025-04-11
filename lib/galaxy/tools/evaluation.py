@@ -140,6 +140,8 @@ class ToolEvaluator:
         self.version_command_line: Optional[str] = None
         self.command_line: Optional[str] = None
         self.interactivetools: List[Dict[str, Any]] = []
+        self.consumes_names = False
+        self.use_cached_job = False
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
@@ -151,6 +153,8 @@ class ToolEvaluator:
         job = self.job
         incoming = {p.name: p.value for p in job.parameters}
         incoming = self.tool.params_from_strings(incoming, self.app)
+        if "__use_cached_job__" in incoming:
+            self.use_cached_job = bool(incoming["__use_cached_job__"])
 
         self.file_sources_dict = compute_environment.get_file_sources_dict()
 
@@ -399,6 +403,7 @@ class ToolEvaluator:
                     tool=self.tool,
                     name=input.name,
                     formats=input.formats,
+                    tool_evaluator=self,
                 )
 
             elif isinstance(input, DataToolParameter):
@@ -412,6 +417,7 @@ class ToolEvaluator:
                     compute_environment=self.compute_environment,
                     identifier=element_identifier,
                     formats=input.formats,
+                    tool_evaluator=self,
                 )
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
@@ -422,6 +428,7 @@ class ToolEvaluator:
                     compute_environment=self.compute_environment,
                     tool=self.tool,
                     name=input.name,
+                    tool_evaluator=self,
                 )
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
