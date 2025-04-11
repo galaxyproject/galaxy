@@ -1,17 +1,29 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const router = useRouter();
 const toolStore = useToolStore();
 const interactiveTools = ref<Tool[]>([]);
 const loading = ref(true);
+const query = ref("");
+
+const filteredTools = computed(() => {
+    const queryLower = query.value.toLowerCase();
+    return interactiveTools.value.filter(
+        (tool) =>
+            !query.value ||
+            tool.name.toLowerCase().includes(queryLower) ||
+            (tool.description && tool.description.toLowerCase().includes(queryLower))
+    );
+});
 
 onMounted(async () => {
     await toolStore.fetchTools();
@@ -35,6 +47,7 @@ function onToolClick(tool: Tool, evt: Event) {
             <div class="mb-1">
                 <strong>Launch and manage interactive tools</strong>
             </div>
+            <DelayedInput :delay="100" placeholder="Search interactive tools" @change="query = $event" />
         </template>
 
         <div>
@@ -42,12 +55,12 @@ function onToolClick(tool: Tool, evt: Event) {
                 <b-spinner label="Loading interactive tools..."></b-spinner>
                 <p class="mt-2">Loading interactive tools...</p>
             </div>
-            <div v-else-if="interactiveTools.length === 0" class="p-3 text-center">
-                <p>No interactive tools available</p>
+            <div v-else-if="filteredTools.length === 0" class="p-3 text-center">
+                <p>No matching interactive tools found</p>
             </div>
             <div v-else class="p-2">
                 <button
-                    v-for="tool in interactiveTools"
+                    v-for="tool in filteredTools"
                     :key="tool.id"
                     class="tool-item"
                     @click="onToolClick(tool, $event)">
