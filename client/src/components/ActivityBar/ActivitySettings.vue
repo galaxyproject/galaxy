@@ -10,8 +10,6 @@ import type { Activity } from "@/stores/activityStoreTypes";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
-import GButton from "@/components/BaseComponents/GButton.vue";
-
 const props = defineProps<{
     activityBarId: string;
     query: string;
