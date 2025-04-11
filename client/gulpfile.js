@@ -39,6 +39,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "heatmap",
     "ngl",
     "msa",
+    "niivue",
     "openlayers",
     "phylocanvas",
     "plotly",

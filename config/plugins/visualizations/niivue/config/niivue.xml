@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Niivue">
+    <description>WebGL2 based medical image viewer</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">gii</test>
+            <test test_attr="ext" result_type="datatype">hdr</test>
+            <test test_attr="ext" result_type="datatype">img</test>
+            <test test_attr="ext" result_type="datatype">mgz</test>
+            <test test_attr="ext" result_type="datatype">mgh</test>
+            <test test_attr="ext" result_type="datatype">nii</test>
+            <test test_attr="ext" result_type="datatype">nii.gz</test>
+            <test test_attr="ext" result_type="datatype">nii1.gz</test>
+            <test test_attr="ext" result_type="datatype">obj</test>
+            <test test_attr="ext" result_type="datatype">ply</test>
+            <test test_attr="ext" result_type="datatype">stl</test>
+            <test test_attr="ext" result_type="datatype">vtk</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <requirements>
+        <requirement type="npm" version="0.0.0" package="@galaxyproject/niivue"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <settings>
+    <input>
+        <label>Colormap</label>
+        <help>Select the color mapping used to render the volume</help>
+        <name>colormap</name>
+        <type>select</type>
+        <value>gray</value>
+        <data>
+            <data><label>Autumn</label><value>autumn</value></data>
+            <data><label>Blue</label><value>blue</value></data>
+            <data><label>Bone</label><value>bone</value></data>
+            <data><label>Copper</label><value>copper</value></data>
+            <data><label>Cool</label><value>cool</value></data>
+            <data><label>Glasbey</label><value>glasbey</value></data>
+            <data><label>Gray</label><value>gray</value></data>
+            <data><label>Green</label><value>green</value></data>
+            <data><label>Hot</label><value>hot</value></data>
+            <data><label>HSV</label><value>hsv</value></data>
+            <data><label>Inferno</label><value>inferno</value></data>
+            <data><label>Jet</label><value>jet</value></data>
+            <data><label>Magma</label><value>magma</value></data>
+            <data><label>Parula</label><value>parula</value></data>
+            <data><label>Plasma</label><value>plasma</value></data>
+            <data><label>Red</label><value>red</value></data>
+            <data><label>Spring</label><value>spring</value></data>
+            <data><label>Summer</label><value>summer</value></data>
+            <data><label>Turbo</label><value>turbo</value></data>
+            <data><label>Viridis</label><value>viridis</value></data>
+            <data><label>Winter</label><value>winter</value></data>
+        </data>
+        </input>
+        <input>
+            <label>Gamma</label>
+            <help>Adjust screen gamma. Low values emphasize shadows but can appear flat, high gamma hides shadow details.</help>
+            <name>gamma</name>
+            <type>float</type>
+            <value>1</value>
+            <min>0</min>
+            <max>1</max>
+        </input>
+        <input>
+            <label>Interpolation</label>
+            <help>Toggles between smooth and nearest-neighbor rendering.​</help>
+            <name>interpolation</name>
+            <type>boolean</type>
+        </input>
+        <input>
+            <label>Opacity</label>
+            <help>Controls the transparency of the image.​</help>
+            <name>opacity</name>
+            <type>float</type>
+            <value>1</value>
+            <min>0</min>
+            <max>1</max>
+        </input>
+    </settings>
+</visualization>
