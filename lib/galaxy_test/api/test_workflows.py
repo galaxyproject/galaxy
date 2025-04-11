@@ -42,6 +42,7 @@ from galaxy_test.base.workflow_fixtures import (
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
     WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
+    WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -1514,19 +1515,7 @@ steps:
 
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
-        workflow_id = self._upload_yaml_workflow(
-            """
-class: GalaxyWorkflow
-inputs:
-  - id: text_input1
-    type: collection
-    collection_type: "list:paired"
-steps:
-  - tool_id: collection_type_source
-    in:
-      input_collect: text_input1
-"""
-        )
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow["steps"]
         assert len(steps) == 2

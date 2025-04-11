@@ -7,6 +7,7 @@ from typing_extensions import Literal
 
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -456,6 +457,21 @@ steps: {}
         input.upload.wait_for_and_click()
         input.collection_tab_upload_link.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input1")
+        self._upload_hello_world_for_input(builder, count=2)
+        input.collection_tab_build_link.wait_for_and_click()
+        builder.create.wait_for_and_click()
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+
+    @selenium_test
+    @managed_history
+    def test_upload_list_paired_from_workflow(self):
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input_list")
+        input.upload.wait_for_and_click()
+        input.collection_tab_upload_link.wait_for_and_click()
+        builder = workflow_run.input.collection_builder._(label="input_list")
         self._upload_hello_world_for_input(builder, count=2)
         input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()

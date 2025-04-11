@@ -863,6 +863,21 @@ steps:
         default: 6
 """
 
+WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE ="""
+class: GalaxyWorkflow
+inputs:
+  - id: input_header
+    type: data
+  - id: input_list
+    type: collection
+    collection_type: "list:paired"
+steps:
+  - tool_id: collection_type_source
+    in:
+      header: input_header
+      input_collect: input_list
+"""
+
 WORKFLOW_WITH_OUTPUTS = """
 class: GalaxyWorkflow
 inputs:
