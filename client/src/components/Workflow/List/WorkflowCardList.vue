@@ -55,7 +55,7 @@ const showPreview = ref(false);
 
 function onRenameClose() {
     showRename.value = false;
-    emit("refreshList", true);
+    emit("refreshList", true, true);
 }
 
 function onRename(id: string, name: string) {
@@ -80,7 +80,7 @@ function onInsertSteps(workflow: WorkflowSummary) {
 </script>
 
 <template>
-    <div class="workflow-card-list" :class="{ grid: props.gridView }">
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
         <WorkflowCard
             v-for="workflow in workflows"
             :key="workflow.id"
@@ -93,7 +93,6 @@ function onInsertSteps(workflow: WorkflowSummary) {
             :published-view="props.publishedView"
             :editor-view="props.editorView"
             :current="workflow.id === props.currentWorkflowId"
-            class="workflow-card"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -101,8 +100,7 @@ function onInsertSteps(workflow: WorkflowSummary) {
             @rename="onRename"
             @preview="onPreview"
             @insert="onInsert(workflow)"
-            @insertSteps="onInsertSteps(workflow)">
-        </WorkflowCard>
+            @insertSteps="onInsertSteps(workflow)" />
 
         <WorkflowRename
             :id="modalOptions.rename.id"
@@ -136,30 +134,6 @@ function onInsertSteps(workflow: WorkflowSummary) {
 @import "_breakpoints.scss";
 
 .workflow-card-list {
-    overflow: auto;
-    container: card-list / inline-size;
-    display: flex;
-    flex-wrap: wrap;
-
-    .workflow-card {
-        width: 100%;
-    }
-
-    &.grid {
-        // it is overwriting the base non used css for the grid class
-        padding-top: 0 !important;
-
-        .workflow-card {
-            width: calc(100% / 3);
-
-            @container card-list (max-width: #{$breakpoint-xl}) {
-                width: calc(100% / 2);
-            }
-
-            @container card-list (max-width: #{$breakpoint-sm}) {
-                width: 100%;
-            }
-        }
-    }
+    container: cards-list / inline-size;
 }
 </style>

@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInbox, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
+import { BAlert, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { type MessageNotificationCreateRequest } from "@/api/notifications";
+import { useMarkdown } from "@/composables/markdown";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
+import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import GDateTime from "@/components/GDateTime.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
-
-library.add(faInfoCircle);
 
 type SelectOption = [string, string];
 
 const router = useRouter();
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const loading = ref(false);
 const roles = ref<SelectOption[]>([]);
@@ -244,9 +244,23 @@ async function sendNewNotification() {
                 <Heading size="md"> Preview </Heading>
             </BRow>
 
-            <BCard class="my-2">
-                <MessageNotification :options="{ notification: notificationData.notification, previewMode: true }" />
-            </BCard>
+            <GCard
+                id="notification-preview"
+                :title="notificationData.notification.content.subject"
+                :title-icon="{
+                    icon: faInbox,
+                    class: `text-${isUrgent ? 'danger' : notificationData.notification.variant}`,
+                }"
+                :description="notificationData.notification.content.message"
+                :update-time-title="`Published ${notificationData.notification.publication_time ? 'on' : 'at'}`"
+                @tagClick="() => {}">
+                <template v-slot:description>
+                    <span
+                        id="notification-message"
+                        class="notification-message"
+                        v-html="renderMarkdown(notificationData.notification.content.message)" />
+                </template>
+            </GCard>
 
             <BAlert show variant="info">
                 <FontAwesomeIcon class="mr-2" :icon="faInfoCircle" />

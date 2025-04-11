@@ -21,7 +21,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         workflow_cards = self.workflow_card_elements()
         assert len(workflow_cards) == 1
 
-        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, ".workflow-name")
+        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, '[id^="g-card-title-"] a')
         assert "TestWorkflow1 (imported from URL)" in first_workflow_card.text, first_workflow_card.text
 
     @selenium_test
