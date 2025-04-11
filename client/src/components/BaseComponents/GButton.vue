@@ -329,8 +329,8 @@ useAccessibleHover(
         }
     }
 
-    &.g-transparent {
-        border: none;
+    &.g-transparent:not(.g-pressed) {
+        border: 1px solid rgb(100% 100% 100% / 0);
         background-color: rgb(100% 100% 100% / 0);
 
         @each $color in "blue", "green", "red", "yellow", "orange" {
@@ -338,7 +338,6 @@ useAccessibleHover(
                 color: var(--color-#{$color}-600);
 
                 &:hover,
-                &:focus,
                 &:focus-visible {
                     background-color: var(--color-#{$color}-600);
                     color: var(--color-#{$color}-100);
