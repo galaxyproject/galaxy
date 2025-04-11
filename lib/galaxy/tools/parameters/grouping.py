@@ -35,8 +35,8 @@ from galaxy.util.expressions import ExpressionContext
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
-    from galaxy.tools.parameter.basic import ToolParameter
     from galaxy.tools.parameters import ToolInputsT
+    from galaxy.tools.parameters.basic import ToolParameter
 
 log = logging.getLogger(__name__)
 URI_PREFIXES = [
