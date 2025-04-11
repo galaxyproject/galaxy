@@ -24,10 +24,16 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/niivue"/>
+        <requirement type="npm" version="0.0.8" package="@galaxyproject/niivue"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
+    <input>
+        <label>Colorbar</label>
+        <help>Display a gradient color bar legend.​</help>
+        <name>is_colorbar</name>
+        <type>boolean</type>
+    </input>
     <input>
         <label>Colormap</label>
         <help>Select the color mapping used to render the volume</help>
