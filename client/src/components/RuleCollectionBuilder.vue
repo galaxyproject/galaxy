@@ -593,7 +593,7 @@ import _l from "utils/localization";
 import Vue from "vue";
 
 import { errorMessageAsString } from "@/utils/simple-error";
-import { startWatchingHistory } from "@/watch/watchHistory";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
