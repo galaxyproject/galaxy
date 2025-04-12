@@ -66,16 +66,17 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     it("sends a delete request after the stop button is pressed", async () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
-        await wrapper.get("#checkbox-" + testInteractiveToolsResponse[0].id).setChecked();
-        await wrapper.get("#stopInteractiveTool").trigger("click");
+        await wrapper.get(`#stop-${testInteractiveToolsResponse[0].id}`).trigger("click");
         expect(axiosMock.history.delete.length).toBe(1);
-        expect(axiosMock.history.delete[0].url === "/api/entry_points/b887d74393f85b6d").toBeTruthy();
+        expect(
+            axiosMock.history.delete[0].url === `/api/entry_points/${testInteractiveToolsResponse[0].id}`
+        ).toBeTruthy();
     });
 
     it("shows an error message if the tool deletion fails", async () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onDelete(new RegExp("/api/entry_points/*")).networkError();
-        wrapper.get("#stopInteractiveTool").trigger("click");
+        await wrapper.get(`#stop-${testInteractiveToolsResponse[0].id}`).trigger("click");
         await flushPromises();
         expect(wrapper.get(".alert-danger").text()).toMatch(/Network Error/);
     });
