@@ -74,6 +74,7 @@ const selectorConfig = {
 };
 
 const selectedShow = ref(false);
+const visualizationShow = ref(false);
 const workflowShow = ref(false);
 const historyShow = ref(false);
 const jobShow = ref(false);
@@ -121,6 +122,11 @@ function onWorkflow(response: ObjectReference) {
     emit("onInsert", `${props.argumentName}(workflow_id=${response.id})`);
 }
 
+function onVisualization(response: unknown) {
+    visualizationShow.value = false;
+    emit("onInsert", `visualization(visualization_id=${props.argumentName}, history_dataset_id=${response})`);
+}
+
 function onOk(selectedLabel: WorkflowLabel | undefined) {
     const argumentType = props.argumentType ?? "";
     const defaultLabelType: string =
@@ -157,6 +163,12 @@ function onOk(selectedLabel: WorkflowLabel | undefined) {
         } else {
             invocationShow.value = true;
         }
+    } else if (props.argumentType == "visualization_id") {
+        if (hasLabels.value) {
+            emit("onInsert", `visualization(visualization_id=${props.argumentName}, ${labelType}="${labelText}")`);
+        } else {
+            visualizationShow.value = true;
+        }
     }
 }
 
@@ -164,6 +176,7 @@ function onCancel() {
     dataCollectionShow.value = false;
     selectedShow.value = false;
     workflowShow.value = false;
+    visualizationShow.value = false;
     jobShow.value = false;
     invocationShow.value = false;
     dataShow.value = false;
@@ -198,6 +211,12 @@ if (props.argumentType == "workflow_id") {
     } else {
         jobShow.value = true;
     }
+} else if (props.argumentType == "visualization_id") {
+    if (hasLabels.value) {
+        selectedShow.value = true;
+    } else {
+        visualizationShow.value = true;
+    }
 }
 </script>
 
@@ -210,6 +229,12 @@ if (props.argumentType == "workflow_id") {
             :labels="effectiveLabels"
             :label-title="selectedLabelTitle"
             @onOk="onOk"
+            @onCancel="onCancel" />
+        <DataDialog
+            v-else-if="visualizationShow && currentHistoryId !== null"
+            :history="currentHistoryId"
+            format="id"
+            @onOk="onVisualization"
             @onCancel="onCancel" />
         <DataDialog
             v-else-if="dataShow && currentHistoryId !== null"
