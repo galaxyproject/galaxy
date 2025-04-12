@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
+import { faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
@@ -11,7 +11,6 @@ import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
-import Heading from "@/components/Common/Heading.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -49,20 +48,30 @@ function onToolClick(tool: Tool, evt: Event) {
 function stopInteractiveTool(toolId: string) {
     entryPointStore.removeEntryPoint(toolId);
 }
+
+function openInteractiveTool(toolId: string) {
+    router.push(`/interactivetool_entry_points/${toolId}/display`);
+}
 </script>
 
 <template>
     <ActivityPanel title="Interactive Tools">
+        <template v-slot:header>
+            <div class="mb-1">
+                <strong>Launch and manage interactive tools</strong>
+            </div>
+            <DelayedInput :delay="100" placeholder="Search interactive tools" @change="query = $event" />
+        </template>
+
         <!-- Active Interactive Tools Section -->
         <div v-if="entryPoints.length > 0" class="active-tools-section mb-3">
-            <Heading h3 size="sm">Active</Heading>
+            <h6 class="mt-2 mb-2">Active Interactive Tools</h6>
             <div class="active-tools-list">
                 <div v-for="tool in entryPoints" :key="tool.id" class="active-tool-item">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <a :href="tool.target" target="_blank" class="tool-link">
+                            <a :href="tool.target" class="tool-link" @click.prevent="openInteractiveTool(tool.id)">
                                 {{ tool.name }}
-                                <FontAwesomeIcon :icon="faExternalLinkAlt" />
                             </a>
                             <div class="text-muted small">
                                 <span v-if="tool.active">Running</span>
@@ -91,8 +100,6 @@ function stopInteractiveTool(toolId: string) {
                 <p>No matching interactive tools found</p>
             </div>
             <div v-else class="p-2">
-                <Heading h3 size="sm">Available</Heading>
-                <DelayedInput :delay="100" placeholder="Filter tools" @change="query = $event" />
                 <button
                     v-for="tool in filteredTools"
                     :key="tool.id"
@@ -141,11 +148,11 @@ function stopInteractiveTool(toolId: string) {
     }
 }
 
-// .active-tools-section {
-//     background-color: #f8f9fa;
-//     border-radius: 0.25rem;
-//     padding: 0.5rem;
-// }
+.active-tools-section {
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
 
 .active-tool-item {
     padding: 0.5rem;

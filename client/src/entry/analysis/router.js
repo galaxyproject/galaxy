@@ -15,6 +15,7 @@ import HistoryView from "components/History/HistoryView";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryImport from "components/HistoryImport";
+import InteractiveToolFrame from "components/InteractiveTools/InteractiveToolFrame";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
@@ -372,6 +373,12 @@ export function getRouter(Galaxy) {
                     {
                         path: "interactivetool_entry_points/list",
                         component: InteractiveTools,
+                    },
+                    {
+                        path: "interactivetool_entry_points/:entryId/display",
+                        component: InteractiveToolFrame,
+                        props: true,
+                        name: "InteractiveToolDisplay",
                     },
                     {
                         path: "jobs/submission/success",

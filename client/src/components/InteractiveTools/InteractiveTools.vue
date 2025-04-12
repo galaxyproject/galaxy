@@ -2,6 +2,7 @@
 import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useEntryPointStore } from "@/stores/entryPointStore";
@@ -15,6 +16,7 @@ const messages = ref<string[]>([]);
 const nInteractiveTools = ref(0);
 const root = ref("");
 const services = ref<Services | null>(null);
+const router = useRouter();
 
 const entryPointStore = useEntryPointStore();
 const activeInteractiveTools = computed(() => entryPointStore.entryPoints);
@@ -78,6 +80,10 @@ const createId = (tagLabel: string, id: string): string => {
     return tagLabel + "-" + id;
 };
 
+const openInteractiveTool = (toolId: string) => {
+    router.push(`/interactivetool_entry_points/${toolId}/display`);
+};
+
 onMounted(() => {
     root.value = getAppRoot();
     services.value = new Services({ root: root.value });
@@ -124,11 +130,21 @@ onMounted(() => {
                     v-b-tooltip
                     title="Open Interactive Tool"
                     :index="row.index"
-                    :href="row.item.target"
-                    target="_blank"
+                    href="#"
                     :name="row.item.name"
+                    @click.prevent="openInteractiveTool(row.item.id)"
                     >{{ row.item.name }}
                     <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                </a>
+                <!-- Add a direct link option as well -->
+                <a
+                    :id="createId('external-link', row.item.id)"
+                    v-b-tooltip
+                    class="ml-2"
+                    title="Open in new tab"
+                    :href="row.item.target"
+                    target="_blank">
+                    <small>(new tab)</small>
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">
