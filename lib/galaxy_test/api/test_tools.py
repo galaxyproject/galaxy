@@ -1187,6 +1187,14 @@ class TestToolsApi(ApiTestCase, TestsTools):
             # 2 output collections
             # with 6 HDAs each
             assert len(contents) == 15
+            hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=outputs_two["output_collections"][0]["id"]
+            )
+            assert hdca_details["collection_type"] == "list:paired"
+            assert hdca_details["element_count"] == 3
+            assert hdca_details["populated"]
+            assert hdca_details["populated_state"] == "ok"
+            assert hdca_details["elements_datatypes"] == ["fastqsanger"]
 
     @skip_without_tool("multi_output_assign_primary_ext_dbkey")
     @requires_new_history
