@@ -1668,13 +1668,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     # If it is a map-over job, then we were working with element_identifiers instead of names.
                     # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
                     # and we will never get here.
-                    self_out_collection.replace_elements_with_copies(out_collection.elements, history=self.history)
+                    self_out_collection.copy_from(out_collection, history=self.history)
                     requires_addition_to_history = True
                 elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
                     out_collection, HistoryDatasetCollectionAssociation
                 ):
-                    out_collection.collection.copy(
-                        destination=self_out_collection, element_destination=self.history, flush=False
+                    self_out_collection.collection.copy_from(
+                        out_collection.collection,
+                        history=self.history,
                     )
                     requires_addition_to_history = True
                 else:
@@ -7002,6 +7003,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             with transaction(session):
                 session.commit()
         return new_collection
+
+    def copy_from(self, other_collection: "DatasetCollection", history: "History"):
+        self.populated_state = other_collection.populated_state
+        self.populated_state_message = other_collection.populated_state_message
+        if self.element_count:
+            self.replace_elements_with_copies(other_collection.elements, history)
+        else:
+            self.element_count = other_collection.element_count
+            # this is a new collection and elements are still to be discovered
+            for element in other_collection.elements:
+                element.copy_to_collection(
+                    self,
+                    element_destination=history,
+                    flush=False,
+                )
 
     def replace_elements_with_copies(self, replacements: List["DatasetCollectionElement"], history: "History"):
         assert len(replacements) == len(self.elements)
