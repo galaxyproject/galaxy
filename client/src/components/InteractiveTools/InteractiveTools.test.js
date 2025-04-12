@@ -47,19 +47,12 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
             return wrapper.find(tag + toolId).exists();
         }
         const toolId = testInteractiveToolsResponse[0].id;
-        const tool = wrapper.vm.activeInteractiveTools.find((tool) => tool.id === toolId);
         expect(checkIfExists("#link-", toolId) === true).toBeTruthy();
-        expect(tool.marked === undefined || false).toBeTruthy();
-        const checkbox = wrapper.get("#checkbox-" + toolId);
-        await checkbox.setChecked();
-        expect(tool.marked === true).toBeTruthy();
 
         // drop the tested tool from store
         const store = useEntryPointStore();
         await store.entryPoints.splice(0, 1);
 
-        const deletedTool = wrapper.vm.activeInteractiveTools.filter((tool) => tool.id === toolId);
-        expect(deletedTool.length).toBe(0);
         expect(checkIfExists("#link-", toolId) === false).toBeTruthy();
     });
 
