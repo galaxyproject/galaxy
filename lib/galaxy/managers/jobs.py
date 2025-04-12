@@ -523,7 +523,11 @@ class JobSearch:
                         continue
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
-                        and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
+                        and_(
+                            model.Job.id == a.job_id,
+                            a.name == k,
+                            a.value == (None if v is None else json.dumps(v, sort_keys=True)),
+                        )
                     )
             else:
                 job_parameter_conditions = [model.Job.id == job[0]]
@@ -608,10 +612,11 @@ class JobSearch:
             elif k == "__when_value__":
                 # TODO: really need to separate this.
                 continue
-            value_dump = json.dumps(v, sort_keys=True)
-            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            value_dump = None if v is None else json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %') if value_dump else None
             a = aliased(JobParameter)
             if value_dump == wildcard_value:
+                # No wildcard needed, use exact match
                 stmt = stmt.join(a).where(
                     and_(
                         Job.id == a.job_id,
