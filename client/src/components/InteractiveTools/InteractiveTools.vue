@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faStopCircle } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
 
@@ -112,10 +112,10 @@ onMounted(() => {
                     :id="createId('stop', row.item.id)"
                     v-b-tooltip.hover
                     variant="link"
-                    class="p-0 stopInteractiveTool"
+                    class="p-0"
                     title="Stop this interactive tool"
                     @click.stop="stopInteractiveTool(row.item.id, row.item.name)">
-                    <FontAwesomeIcon :icon="faStopCircle" />
+                    <FontAwesomeIcon :icon="faStop" />
                 </b-button>
             </template>
             <template v-slot:cell(name)="row">
