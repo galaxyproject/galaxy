@@ -35,7 +35,9 @@ const emit = defineEmits<{
 }>();
 
 function onClick(event: PointerEvent) {
-    if (!props.disabled) {
+    if (props.disabled) {
+        event.preventDefault();
+    } else {
         emit("click", event);
         emit("update:pressed", !props.pressed);
     }
@@ -118,6 +120,7 @@ useAccessibleHover(
         ref="buttonRef"
         class="g-button"
         :data-title="currentTooltip"
+        :data-disabled="props.disabled"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="props.to"
         :href="props.to ?? props.href"
@@ -202,6 +205,12 @@ useAccessibleHover(
 
         &:focus-visible {
             border-color: var(--color-grey-600);
+        }
+
+        &.g-outline.g-pressed {
+            background-color: var(--color-grey-600);
+            color: var(--color-grey-100);
+            border-color: var(--color-grey-800);
         }
     }
 
