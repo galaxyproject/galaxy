@@ -6986,6 +6986,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         dataset_instance_attributes=None,
         flush=True,
         minimize_copies=False,
+        copy_hid=True,
     ):
         new_collection = DatasetCollection(collection_type=self.collection_type, element_count=self.element_count)
         for element in self.elements:
@@ -6996,6 +6997,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 dataset_instance_attributes=dataset_instance_attributes,
                 flush=flush,
                 minimize_copies=minimize_copies,
+                copy_hid=copy_hid,
             )
         object_session(self).add(new_collection)
         if flush:
@@ -7013,11 +7015,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             self.element_count = other_collection.element_count
             # this is a new collection and elements are still to be discovered
             for element in other_collection.elements:
-                element.copy_to_collection(
-                    self,
-                    element_destination=history,
-                    flush=False,
-                )
+                element.copy_to_collection(self, element_destination=history, flush=False, copy_hid=False)
 
     def replace_elements_with_copies(self, replacements: List["DatasetCollectionElement"], history: "History"):
         assert len(replacements) == len(self.elements)
@@ -7710,6 +7708,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         dataset_instance_attributes=None,
         flush=True,
         minimize_copies=False,
+        copy_hid=True,
     ):
         dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
@@ -7721,6 +7720,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                     dataset_instance_attributes=dataset_instance_attributes,
                     flush=flush,
                     minimize_copies=minimize_copies,
+                    copy_hid=copy_hid,
                 )
             else:
                 new_element_object = None
@@ -7733,7 +7733,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                 ):
                     element_object = new_element_object
                 else:
-                    new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
+                    new_element_object = element_object.copy(
+                        flush=flush, copy_tags=element_object.tags, copy_hid=copy_hid
+                    )
                     for attribute, value in dataset_instance_attributes.items():
                         setattr(new_element_object, attribute, value)
 
