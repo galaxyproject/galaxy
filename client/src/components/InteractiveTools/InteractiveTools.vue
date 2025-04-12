@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faStopCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
@@ -10,8 +9,6 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { Services } from "./services";
 
 import UtcDate from "@/components/UtcDate.vue";
-
-library.add(faExternalLinkAlt, faStopCircle);
 
 const filter = ref("");
 const messages = ref<string[]>([]);
@@ -115,10 +112,10 @@ onMounted(() => {
                     :id="createId('stop', row.item.id)"
                     v-b-tooltip.hover
                     variant="link"
-                    class="p-0"
+                    class="p-0 stopInteractiveTool"
                     title="Stop this interactive tool"
                     @click.stop="stopInteractiveTool(row.item.id, row.item.name)">
-                    <FontAwesomeIcon :icon="['fas', 'stop-circle']" />
+                    <FontAwesomeIcon :icon="faStopCircle" />
                 </b-button>
             </template>
             <template v-slot:cell(name)="row">
@@ -131,7 +128,7 @@ onMounted(() => {
                     target="_blank"
                     :name="row.item.name"
                     >{{ row.item.name }}
-                    <FontAwesomeIcon :icon="['fas', 'external-link-alt']" />
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">
