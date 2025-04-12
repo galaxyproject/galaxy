@@ -1641,11 +1641,31 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             outputs_to_copy = job.io_dicts(exclude_implicit_outputs=True)
             self_io = self.io_dicts(exclude_implicit_outputs=True)
             for output_name, out_data in outputs_to_copy.out_data.items():
-                self_output = self_io.out_data[output_name]
-                if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
-                    out_data, HistoryDatasetAssociation
-                ):
-                    self_output.copy_from(out_data, include_metadata=True)
+                if output_name in self_io.out_data:
+                    self_output = self_io.out_data[output_name]
+                    if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
+                        out_data, HistoryDatasetAssociation
+                    ):
+                        self_output.copy_from(out_data, include_metadata=True)
+                else:
+                    assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
+                    if output_name.startswith("__new_primary_file_"):
+                        # Check if output is part of a discovered collection, in which case we don't need to make a copy.
+                        # Not tracking the discoverd HDA as a job to output dataset association creates a slightly inconsistent state for the copied job outputs,
+                        # but I wonder if we ever really intended to track the discovered collection outputs like this in the first place.
+                        # Maintaining a consistent state here would require traversing the output collection and adding the job output dataset associations,
+                        # which is a little tricky and probably not worth it.
+                        split_name = output_name[len("__new_primary_file_") :].split("|")
+                        if len(split_name) > 1:
+                            collection_name = split_name[0]
+                            if collection_name in outputs_to_copy.out_collections:
+                                continue
+                    # Should be discovered primary output. The newly created job hasn't discovered this yet, so we have to copy the dataset to the job history and track it among the job outputs.
+                    requires_addition_to_history = True
+                    copied_output = out_data.copy(copy_tags=out_data.tags, flush=False)
+                    copied_output.history = self.history
+                    self.history.stage_addition(copied_output)
+                    self.add_output_dataset(output_name, copied_output)
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
                 if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
