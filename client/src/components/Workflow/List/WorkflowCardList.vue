@@ -21,6 +21,7 @@ interface Props {
     selectedWorkflowIds?: SelectedWorkflow[];
     itemRefs?: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
     rangeSelectAnchor?: WorkflowSummary;
+    clickable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -101,6 +102,7 @@ function onInsertSteps(workflow: WorkflowSummary) {
             :published-view="props.publishedView"
             :editor-view="props.editorView"
             :current="workflow.id === props.currentWorkflowId"
+            :clickable="props.clickable"
             class="workflow-card-in-list"
             :class="{ 'range-select-anchor-workfow': props.rangeSelectAnchor?.id === workflow.id }"
             @select="(...args) => emit('select', ...args)"
@@ -148,6 +150,7 @@ function onInsertSteps(workflow: WorkflowSummary) {
 
 .workflow-card-list {
     container: cards-list / inline-size;
+    // TODO: GCards already have focus styles, so we need to remove these
     .workflow-card-in-list {
         &:focus {
             outline: none;
