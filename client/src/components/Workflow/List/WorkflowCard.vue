@@ -22,6 +22,7 @@ interface Props {
     current?: boolean;
     selected?: boolean;
     selectable?: boolean;
+    clickable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -34,6 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
     current: false,
     selected: false,
     selectable: false,
+    clickable: false,
 });
 
 const emit = defineEmits<{
@@ -109,6 +111,18 @@ const workflowCardTitle = computed(() => {
         handler: () => emit("preview", props.workflow.id),
     };
 });
+
+function onClick(event: Event) {
+    if (props.clickable) {
+        emit("on-workflow-card-click", workflow.value, event);
+    }
+}
+
+function onKeyDown(event: KeyboardEvent) {
+    if (props.clickable) {
+        emit("on-key-down", workflow.value, event);
+    }
+}
 </script>
 
 <template>
@@ -136,14 +150,14 @@ const workflowCardTitle = computed(() => {
         :max-visible-tags="props.gridView ? 2 : 8"
         :update-time="workflow.update_time"
         :bookmarked="!!workflow.show_in_tool_panel"
-        clickable
+        :clickable="props.clickable"
         @bookmark="() => toggleBookmark(!workflow?.show_in_tool_panel)"
         @rename="emit('rename', props.workflow.id, props.workflow.name)"
         @select="emit('select', workflow)"
         @tagsUpdate="onTagsUpdate"
         @tagClick="onTagClick"
-        @click="emit('on-workflow-card-click', workflow, $event)"
-        @keydown="emit('on-key-down', workflow, $event)">
+        @click="onClick"
+        @keydown="onKeyDown">
         <template v-if="props.current" v-slot:primary-actions>
             <i class="mr-2"> current workflow </i>
         </template>

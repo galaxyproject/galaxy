@@ -20,6 +20,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     expectedKeyDownClass = undefined,
     disallowedKeyDownClasses = [],
     attributeForRangeSelection = "id",
+    getAttributeForRangeSelection = (item: T) => getItemKey(item),
 }: SelectedItemsProps<T>) {
     const eventStore = useEventStore();
 
@@ -396,10 +397,21 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         (newItem, oldItem) => {
             // if user clicked elsewhere, set lastItemId to the last focused item
             const lastExpectedParent = oldItem?.closest(`.${expectedKeyDownClass}`);
-            if (newItem && lastExpectedParent && validateClassList(lastExpectedParent.classList)) {
-                const lastItem = allItems.value.find(
-                    (item) => lastExpectedParent.getAttribute(attributeForRangeSelection) === getItemKey(item)
-                );
+
+            if (newItem) {
+                let lastElement: Element | null = null;
+                if (oldItem && validateClassList(oldItem.classList)) {
+                    lastElement = oldItem;
+                } else if (lastExpectedParent && validateClassList(lastExpectedParent.classList)) {
+                    lastElement = lastExpectedParent;
+                }
+                const lastItem = lastElement
+                    ? allItems.value.find(
+                          (item) =>
+                              lastElement.getAttribute(attributeForRangeSelection) ===
+                              getAttributeForRangeSelection(item)
+                      )
+                    : null;
                 lastItemId.value = lastItem ? getItemKey(lastItem) : null;
             }
         }
