@@ -125,7 +125,7 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_files(self, crate: ROCrate):
         for wfda in self.invocation.input_datasets:
-            if not self.file_entities.get(wfda.dataset.dataset.id):
+            if wfda.dataset and not self.file_entities.get(wfda.dataset.dataset.id):
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
                 crate.mainEntity.append_to("input", dataset_formal_param)
                 properties = {
@@ -135,7 +135,7 @@ class WorkflowRunCrateProfileBuilder:
                 self.create_action.append_to("object", file_entity)
 
         for wfda in self.invocation.output_datasets:
-            if not self.file_entities.get(wfda.dataset.dataset.id):
+            if wfda.dataset and not self.file_entities.get(wfda.dataset.dataset.id):
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
                 crate.mainEntity.append_to("output", dataset_formal_param)
                 properties = {
@@ -190,16 +190,18 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_collections(self, crate: ROCrate):
         for wfdca in self.invocation.input_dataset_collections:
-            collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
-            collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
-            crate.mainEntity.append_to("input", collection_formal_param)
-            self.create_action.append_to("object", collection_entity)
+            if wfdca.dataset_collection:
+                collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
+                collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
+                crate.mainEntity.append_to("input", collection_formal_param)
+                self.create_action.append_to("object", collection_entity)
 
         for wfdca in self.invocation.output_dataset_collections:
-            collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
-            collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
-            crate.mainEntity.append_to("output", collection_formal_param)
-            self.create_action.append_to("result", collection_entity)
+            if wfdca.dataset_collection:
+                collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
+                collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
+                crate.mainEntity.append_to("output", collection_formal_param)
+                self.create_action.append_to("result", collection_entity)
 
     def _add_workflows(self, crate: ROCrate):
         workflows_directory = self.model_store.workflows_directory
