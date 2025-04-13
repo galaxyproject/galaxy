@@ -3427,7 +3427,6 @@ def load_data_dict(
                 ).json()
             hdca_output = fetch_response["outputs"][0]
             hdca = dataset_populator.ds_entry(hdca_output)
-            hdca["hid"] = hdca_output["hid"]
             label_map[key] = hdca
             inputs[key] = hdca
             has_uploads = True

@@ -7203,16 +7203,16 @@ steps:
                 "coolinput": {
                     "batch": True,
                     "values": [
-                        {"id": hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
-                        {"id": hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                        {"id": hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                        {"id": hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                        {"id": hda1.get("id"), "src": "hda"},
+                        {"id": hda2.get("id"), "src": "hda"},
+                        {"id": hda3.get("id"), "src": "hda"},
+                        {"id": hda4.get("id"), "src": "hda"},
                     ],
                 }
             }
             parameters = {
                 "1": {
-                    "input": {"batch": False, "values": [{"id": hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]},
+                    "input": {"batch": False, "values": [{"id": hda1.get("id"), "src": "hda"}]},
                     "exp": "2",
                 }
             }
