@@ -139,6 +139,9 @@ const {
         deleteInModal();
     },
     expectedKeyDownClass: "workflow-card",
+    getAttributeForRangeSelection(item) {
+        return `g-card-${item.id}`;
+    },
 });
 
 function updateFilterValue(filterKey: string, newValue: any) {
@@ -508,6 +511,7 @@ onMounted(() => {
                 :selected-workflow-ids="selectedWorkflowIds"
                 :item-refs="itemRefs"
                 :range-select-anchor="initSelectedItem"
+                clickable
                 @on-workflow-card-click="onClick"
                 @on-key-down="onKeyDown"
                 @select="onSelectWorkflow"

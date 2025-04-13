@@ -33,6 +33,10 @@ export interface SelectedItemsProps<T> {
      *          ```
      */
     attributeForRangeSelection?: string;
+    /** A method that returns the value for the attribute used for range selection.
+     * If not provided, the `getItemKey` method will be used.
+     */
+    getAttributeForRangeSelection?: (item: T) => string;
 }
 
 export type ComponentInstanceRef<T extends ComponentInstanceExtends> = Record<string, Ref<InstanceType<T> | null>>;
