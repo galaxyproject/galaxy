@@ -37,6 +37,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
     "h5web",
     "heatmap",
+    "kepler",
     "ngl",
     "msa",
     "openlayers",
