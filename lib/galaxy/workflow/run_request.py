@@ -7,9 +7,13 @@ from typing import (
     List,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
+from pydantic import ValidationError
+
 from galaxy import exceptions
+from galaxy.exceptions.utils import validation_error_to_message_exception
 from galaxy.managers.hdas import dereference_input
 from galaxy.model import (
     EffectiveOutput,
@@ -17,14 +21,13 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     InputWithRequest,
-    LibraryDataset,
     LibraryDatasetDatasetAssociation,
     WorkflowInvocation,
     WorkflowRequestInputParameter,
     WorkflowRequestStepState,
 )
 from galaxy.model.base import ensure_object_added_to_session
-from galaxy.tool_util.parameters import DataRequestUri
+from galaxy.tool_util_models.parameters import DataOrCollectionRequestAdapter
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
@@ -383,25 +386,14 @@ def build_workflow_run_configs(
                         f"{step.label or step.order_index + 1}: {e.message_suffix}"
                     )
                 continue
-            if "src" not in input_dict:
-                raise exceptions.RequestParameterInvalidException(
-                    f"Not input source type defined for input '{input_dict}'."
-                )
-            input_source = input_dict["src"]
-            if "id" not in input_dict and input_source != "url":
-                raise exceptions.RequestParameterInvalidException(f"No input id defined for input '{input_dict}'.")
-            elif input_source == "url" and not input_dict.get("url"):
-                raise exceptions.RequestParameterInvalidException(
-                    f"Supplied 'url' is empty or absent for input '{input_dict}'."
-                )
-            if "content" in input_dict:
-                raise exceptions.RequestParameterInvalidException(
-                    f"Input cannot specify explicit 'content' attribute {input_dict}'."
-                )
             input_id = input_dict.get("id")
             try:
                 added_to_history = False
-                if input_source == "ldda":
+                try:
+                    data_request = DataOrCollectionRequestAdapter.validate_python(input_dict)
+                except ValidationError as e:
+                    raise validation_error_to_message_exception(e)
+                if data_request.src == "ldda":
                     assert input_id
                     ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
                     assert ldda
@@ -409,38 +401,27 @@ def build_workflow_run_configs(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif input_source == "ld":
-                    assert input_id
-                    library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(input_id))
-                    assert library_dataset
-                    ldda = library_dataset.library_dataset_dataset_association
-                    assert ldda
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
-                        trans.get_current_user_roles(), ldda.dataset
-                    )
-                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif input_source == "hda":
+                elif data_request.src == "hda":
                     assert input_id
                     # Get dataset handle, add to dict and history if necessary
                     content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(input_id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
-                elif input_source == "hdca":
+                elif data_request.src == "hdca":
                     content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
-                elif input_source == "url":
-                    data_request = DataRequestUri.model_validate(input_dict)
-                    hda: HistoryDatasetAssociation = dereference_input(trans, data_request, history)
+                elif data_request.src == "url" or data_request.class_ == "File" or data_request.class_ == "Collection":
+                    request_input = dereference_input(trans, data_request, history)
                     added_to_history = True
                     content = InputWithRequest(
-                        input=hda,
+                        input=request_input,
                         request=data_request.model_dump(mode="json"),
                     )
                     if not data_request.deferred:
                         requires_materialization = True
                 else:
                     raise exceptions.RequestParameterInvalidException(
-                        f"Unknown workflow input source '{input_source}' specified."
+                        f"Unknown workflow input source for '{key}' specified."
                     )
                 if not added_to_history and add_to_history and content.history != history:
                     if isinstance(content, HistoryDatasetCollectionAssociation):
@@ -635,7 +616,9 @@ def workflow_request_to_run_config(
     param_types = WorkflowRequestInputParameter.types
     history = workflow_invocation.history
     replacement_dict = {}
-    inputs = {}
+    inputs: Dict[
+        int, Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation, str, int, float, bool, None]
+    ] = {}
     param_map = {}
     resource_params = {}
     copy_inputs_to_history = None
@@ -666,10 +649,12 @@ def workflow_request_to_run_config(
             resource_params[parameter.name] = parameter.value
         elif parameter_type == param_types.STEP_PARAMETERS:
             param_map[int(parameter.name)] = json.loads(parameter.value)
-    for input_association in workflow_invocation.input_datasets:
-        inputs[input_association.workflow_step_id] = input_association.dataset
-    for input_association in workflow_invocation.input_dataset_collections:
-        inputs[input_association.workflow_step_id] = input_association.dataset_collection
+    for dataset_input_association in workflow_invocation.input_datasets:
+        assert dataset_input_association.workflow_step_id
+        inputs[dataset_input_association.workflow_step_id] = dataset_input_association.dataset
+    for collection_input_association in workflow_invocation.input_dataset_collections:
+        assert collection_input_association.workflow_step_id
+        inputs[collection_input_association.workflow_step_id] = collection_input_association.dataset_collection
     for input_association in workflow_invocation.input_step_parameters:
         parameter_value = input_association.parameter_value
         inputs[input_association.workflow_step_id] = parameter_value

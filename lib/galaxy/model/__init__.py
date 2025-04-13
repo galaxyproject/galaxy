@@ -8841,7 +8841,9 @@ class InputWithRequest:
 @dataclass
 class InputToMaterialize:
     hda: "HistoryDatasetAssociation"
-    input_dataset: "WorkflowRequestToInputDatasetAssociation"
+    input_dataset: Union[
+        "WorkflowRequestToInputDatasetAssociation", "WorkflowRequestToInputDatasetCollectionAssociation"
+    ]
 
 
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
@@ -8861,8 +8863,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
     step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation")
     input_step_parameters = relationship("WorkflowRequestInputStepParameter", back_populates="workflow_invocation")
-    input_datasets = relationship("WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation")
-    input_dataset_collections = relationship(
+    input_datasets: Mapped[List["WorkflowRequestToInputDatasetAssociation"]] = relationship(
+        "WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation"
+    )
+    input_dataset_collections: Mapped[List["WorkflowRequestToInputDatasetCollectionAssociation"]] = relationship(
         "WorkflowRequestToInputDatasetCollectionAssociation",
         back_populates="workflow_invocation",
     )
@@ -9159,12 +9163,21 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             request = input_dataset_assoc.request
             if request:
                 deferred = request.get("deferred", False)
-                if not deferred:
+                if not deferred and input_dataset_assoc.dataset:
                     hdas_to_materialize.append(
                         InputToMaterialize(
                             input_dataset_assoc.dataset,
                             input_dataset_assoc,
                         )
+                    )
+        for input_dataset_collection_association in self.input_dataset_collections:
+            request = input_dataset_collection_association.request
+            if request:
+                deferred = request.get("deferred", False)
+                if not deferred and input_dataset_collection_association.dataset_collection:
+                    hdas_to_materialize.extend(
+                        InputToMaterialize(hda, input_dataset_collection_association)
+                        for hda in input_dataset_collection_association.dataset_collection.dataset_instances
                     )
         return hdas_to_materialize
 
@@ -9356,7 +9369,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             self.input_step_parameters.append(request_to_content)
 
     def recover_inputs(self) -> Tuple[Dict[str, Any], str]:
-        inputs = {}
+        inputs: Dict[str, Any] = {}
         inputs_by = "name"
 
         have_referenced_steps_by_order_index = False

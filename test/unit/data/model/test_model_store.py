@@ -18,11 +18,11 @@ from typing import (
 import pytest
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
 from galaxy.model.store import SessionlessContext
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (

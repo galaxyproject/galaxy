@@ -33,10 +33,12 @@ from starlette_context.plugins import (
 )
 
 from galaxy.exceptions import MessageException
-from galaxy.exceptions.utils import api_error_to_dict
+from galaxy.exceptions.utils import (
+    api_error_to_dict,
+    validation_error_to_message_exception,
+)
 from galaxy.util.path import StrPath
 from galaxy.web.framework.base import walk_controller_modules
-from galaxy.web.framework.decorators import validation_error_to_message_exception
 
 if TYPE_CHECKING:
     from starlette.background import BackgroundTask

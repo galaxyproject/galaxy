@@ -14,6 +14,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Union,
 )
 
 from sqlalchemy import (
@@ -47,12 +48,16 @@ from galaxy.managers import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     Job,
     JobStateHistory,
     JobToOutputDatasetAssociation,
 )
 from galaxy.model.deferred import materializer_factory
-from galaxy.model.dereference import dereference_to_model
+from galaxy.model.dereference import (
+    derefence_collection_to_model,
+    dereference_to_model,
+)
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -70,7 +75,11 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
-from galaxy.tool_util.parameters import DataRequestUri
+from galaxy.tool_util_models.parameters import (
+    DataRequestCollectionUri,
+    DataRequestUri,
+    FileRequestUri,
+)
 from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
@@ -332,11 +341,17 @@ class HDAManager(
 
 
 def dereference_input(
-    trans: ProvidesHistoryContext, data_request: DataRequestUri, history: Optional[model.History] = None
-) -> HistoryDatasetAssociation:
-    target_history = history or trans.history
-    hda = dereference_to_model(trans.sa_session, trans.user, target_history, data_request)
-    permissions = trans.app.security_agent.history_get_default_permissions(target_history)
+    trans: ProvidesHistoryContext,
+    data_request: Union[DataRequestUri, FileRequestUri, DataRequestCollectionUri],
+    history: model.History,
+) -> Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]:
+    permissions = trans.app.security_agent.history_get_default_permissions(history)
+    if isinstance(data_request, DataRequestCollectionUri):
+        hdca = derefence_collection_to_model(trans.sa_session, trans.user, history, data_request)
+        for hda in hdca.dataset_instances:
+            trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+        return hdca
+    hda = dereference_to_model(trans.sa_session, trans.user, history, data_request)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
     trans.sa_session.commit()
     return hda
