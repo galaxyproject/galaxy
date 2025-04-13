@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Kepler" embeddable="true">
+<visualization name="Kepler.gl" embeddable="true">
     <description>Geospatial analysis tool for large-scale data sets</description>
     <data_sources>
         <data_source>
@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/kepler"/>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/kepler"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
 </visualization>
