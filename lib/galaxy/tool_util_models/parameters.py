@@ -36,6 +36,7 @@ from pydantic import (
     Tag,
     TypeAdapter,
 )
+from pydantic.json_schema import SkipJsonSchema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -343,16 +344,22 @@ TestCaseDataSrcT = Literal["File"]
 class DataRequestHda(StrictModel):
     src: Literal["hda"] = "hda"
     id: StrictStr
+    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)  # Drop this ?
+    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
 class DataRequestLdda(StrictModel):
     src: Literal["ldda"] = "ldda"
     id: StrictStr
+    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)  # Drop this ?
+    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
 class DataRequestHdca(StrictModel):
     src: Literal["hdca"] = "hdca"
     id: StrictStr
+    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)  # Drop this ?
+    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
 class DatasetHash(StrictModel):
