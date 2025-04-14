@@ -3,6 +3,7 @@ import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useConfigurationTemplateEdit } from "@/components/ConfigTemplates/useConfigurationTesting";
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
@@ -15,6 +16,8 @@ const editUrl = "/api/object_store_instances/{uuid}";
 interface Props {
     instanceId: string;
 }
+
+const { addOrUpdateObjectStore } = useObjectStoreStore();
 
 const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
@@ -35,7 +38,15 @@ const {
     testResults,
     showForceActionButton,
     submitTitle,
-} = useConfigurationTemplateEdit("storage location", instance, template, editTestUrl, editUrl, useInstanceRouting);
+} = useConfigurationTemplateEdit(
+    "storage location",
+    instance,
+    template,
+    editTestUrl,
+    editUrl,
+    useInstanceRouting,
+    addOrUpdateObjectStore
+);
 </script>
 <template>
     <div>
