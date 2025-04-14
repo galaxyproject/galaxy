@@ -49,7 +49,7 @@ describe("FormElement", () => {
             attributes: { default_value: "default_value", collapsible_value: "collapsible_value" },
         });
         expect(wrapper.find(".ui-form-title-text").text()).toEqual("title_text");
-        expect(wrapper.findAll("button[title='Disable']").length).toEqual(1);
+        expect(wrapper.findAll("button[data-title='Disable']").length).toEqual(1);
 
         await wrapper.find(".ui-form-collapsible-icon").trigger("click");
         expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");

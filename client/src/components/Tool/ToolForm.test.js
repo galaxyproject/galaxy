@@ -86,7 +86,7 @@ describe("ToolForm", () => {
     it("shows props", async () => {
         await flushPromises();
         const button = wrapper.find(".btn-primary");
-        expect(button.attributes("title")).toBe("Run tool: tool_name (version)");
+        expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
