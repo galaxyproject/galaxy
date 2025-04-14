@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from math import isinf
 from typing import (
-    cast,
     Optional,
     Sequence,
     Type,
@@ -971,4 +970,4 @@ T = TypeVar("T")
 
 def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
     assert isinstance(obj, clazz)
-    return cast(T, obj)
+    return obj

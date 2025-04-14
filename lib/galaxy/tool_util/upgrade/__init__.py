@@ -308,7 +308,7 @@ def _xml_tool_source(xml_file: str) -> XmlToolSource:
     tool_source = get_tool_source(xml_file)
     if not isinstance(tool_source, XmlToolSource):
         raise Exception("Can only provide upgrade advice for XML tools.")
-    return cast(XmlToolSource, tool_source)
+    return tool_source
 
 
 def _has_matching_xpath(tool_source: XmlToolSource, xpath: str) -> bool:

@@ -59,7 +59,7 @@ log = logging.getLogger(__name__)
 def get_app() -> ToolShedApp:
     if tool_shed_app_mod.app is None:
         raise Exception("Failed to initialize the tool shed app correctly for FastAPI")
-    return cast(ToolShedApp, tool_shed_app_mod.app)
+    return tool_shed_app_mod.app
 
 
 async def get_app_with_request_session() -> AsyncGenerator[ToolShedApp, None]:
