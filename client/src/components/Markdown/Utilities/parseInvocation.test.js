@@ -54,19 +54,19 @@ describe("parseInvocation.ts", () => {
                 "workflow_id_1"
             );
             expect(
-                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "history_dataset_display", {
                     input: "input_3",
-                }).history_target_id
+                }).history_dataset_id
             ).toBe("input_id_3");
             expect(
-                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "history_dataset_display", {
                     output: "unavailable_output",
-                }).history_target_id
+                }).history_dataset_id
             ).toBeUndefined();
             expect(
-                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "history_dataset_collection_display", {
                     output: "output_2",
-                }).history_target_id
+                }).history_dataset_collection_id
             ).toBe("output_id_2");
             expect(
                 parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {

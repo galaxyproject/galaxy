@@ -131,14 +131,6 @@ export function getRouter(Galaxy) {
                 component: Login,
                 redirect: redirectLoggedIn(),
             },
-            /** Page editor */
-            {
-                path: "/pages/editor",
-                component: PageEditor,
-                props: (route) => ({
-                    pageId: route.query.id,
-                }),
-            },
             /** Workflow editor */
             {
                 path: "/workflows/edit",
@@ -444,6 +436,13 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             id: route.query.id,
                             mode: "edit",
+                        }),
+                    },
+                    {
+                        path: "/pages/editor",
+                        component: PageEditor,
+                        props: (route) => ({
+                            pageId: route.query.id,
                         }),
                     },
                     {

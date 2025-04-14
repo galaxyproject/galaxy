@@ -184,7 +184,7 @@ watch(
     async (id) => {
         invocationLoaded.value = false;
         try {
-            await invocationStore.fetchInvocationForId({ id });
+            await invocationStore.fetchInvocationById({ id });
             invocationLoaded.value = true;
             // Only start polling if there is a valid invocation
             if (invocation.value) {
@@ -217,7 +217,7 @@ onUnmounted(() => {
 
 async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
-        await invocationStore.fetchInvocationForId({ id: props.invocationId });
+        await invocationStore.fetchInvocationById({ id: props.invocationId });
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
 }

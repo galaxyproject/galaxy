@@ -1,5 +1,5 @@
 <template>
-    <span role="button" tabindex="0" class="cell-option d-flex justify-content-between" @click="$emit('click')">
+    <ButtonPlain class="cell-option d-flex justify-content-between" @click="$emit('click')">
         <div class="my-1 mx-3">
             <div class="font-weight-bold">{{ title }}</div>
             <small v-if="description" class="d-inline-block text-wrap text-break">{{ description }}</small>
@@ -10,12 +10,14 @@
         <div v-else-if="logo" class="my-2 mx-3 align-self-start">
             <Img class="cell-option-logo" :src="logo" :alt="title" />
         </div>
-    </span>
+    </ButtonPlain>
 </template>
 
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { IconDefinition } from "font-awesome-6";
+
+import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 
 defineProps<{
     title: string;

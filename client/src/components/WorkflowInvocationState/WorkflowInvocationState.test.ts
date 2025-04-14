@@ -56,7 +56,7 @@ const invocationJobsSummaryById = {
 // Mock the invocation store to return the expected invocation data given the invocation ID
 jest.mock("@/stores/invocationStore", () => {
     const originalModule = jest.requireActual("@/stores/invocationStore");
-    const mockFetchInvocationForId = jest.fn().mockImplementation((fetchParams) => {
+    const mockFetchInvocationById = jest.fn().mockImplementation((fetchParams) => {
         if (fetchParams.id === "error-invocation") {
             throw new Error("User does not own specified item.");
         }
@@ -72,10 +72,10 @@ jest.mock("@/stores/invocationStore", () => {
             getInvocationJobsSummaryById: jest.fn().mockImplementation((invocationId) => {
                 return invocationJobsSummaryById[invocationId];
             }),
-            fetchInvocationForId: mockFetchInvocationForId,
+            fetchInvocationById: mockFetchInvocationById,
             fetchInvocationJobsSummaryForId: mockFetchInvocationJobsSummaryForId,
         }),
-        mockFetchInvocationForId,
+        mockFetchInvocationById,
         mockFetchInvocationJobsSummaryForId,
     };
 });
@@ -207,8 +207,8 @@ function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
 
 /** Asserts that the invocation was fetched in the store the given number of times */
 function assertInvocationFetched(count = 1) {
-    const { mockFetchInvocationForId } = jest.requireMock("@/stores/invocationStore");
-    expect(mockFetchInvocationForId).toHaveBeenCalledTimes(count);
+    const { mockFetchInvocationById } = jest.requireMock("@/stores/invocationStore");
+    expect(mockFetchInvocationById).toHaveBeenCalledTimes(count);
 }
 
 /** Asserts that the jobs summary was fetched in the store the given number of times */
