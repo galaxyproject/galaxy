@@ -718,7 +718,7 @@ workflow_run:
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
-    run_workflow_disabled: "#run-workflow.disabled"
+    run_workflow_disabled: '#run-workflow[aria-disabled="true"]'
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
