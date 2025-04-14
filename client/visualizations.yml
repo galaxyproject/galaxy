@@ -84,6 +84,9 @@ plotly_surface:
 plyr:
     package: "@galaxyproject/plyr"
     version: 0.0.4
+rerunio:
+    package: "@galaxyproject/rerunio"
+    version: 0.0.0
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
