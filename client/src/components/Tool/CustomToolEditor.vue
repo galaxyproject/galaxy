@@ -48,11 +48,16 @@ const persistedTool = ref<UnprivilegedToolResponse>();
 const defaultYaml = `class: GalaxyUserTool
 id:
 name:
+version: "0.1"
 description:
 container:
 shell_command:
 inputs:
-outputs:`;
+  - name: input1
+    type: data
+outputs:
+  - name: output1
+    type: data`;
 const yamlRepresentation = ref<string>(defaultYaml);
 
 if (props.toolUuid) {
