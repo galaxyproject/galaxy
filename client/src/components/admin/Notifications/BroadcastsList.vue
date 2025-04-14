@@ -108,33 +108,30 @@ loadBroadcastsList();
                             <GButton
                                 id="show-active-filter-button"
                                 size="small"
-                                :pressed="showActive"
+                                :pressed.sync="showActive"
                                 title="Show active broadcasts"
                                 outline
-                                color="blue"
-                                @click="showActive = !showActive">
+                                color="blue">
                                 <FontAwesomeIcon :icon="faCheck" />
                                 Active
                             </GButton>
                             <GButton
                                 id="show-scheduled-filter-button"
                                 size="small"
-                                :pressed="showScheduled"
+                                :pressed.sync="showScheduled"
                                 title="Show scheduled broadcasts"
                                 outline
-                                color="blue"
-                                @click="showScheduled = !showScheduled">
+                                color="blue">
                                 <FontAwesomeIcon :icon="faClock" />
                                 Scheduled
                             </GButton>
                             <GButton
                                 id="show-expired-filter-button"
                                 size="small"
-                                :pressed="showExpired"
+                                :pressed.sync="showExpired"
                                 title="Show expired broadcasts"
                                 outline
-                                color="blue"
-                                @click="showExpired = !showExpired">
+                                color="blue">
                                 <FontAwesomeIcon :icon="faHourglassHalf" />
                                 Expired
                             </GButton>
