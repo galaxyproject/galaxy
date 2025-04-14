@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faStop } from "@fortawesome/free-solid-svg-icons";
+import { faStop, faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
@@ -99,7 +99,7 @@ function openInteractiveTool(toolId: string) {
             <div v-else-if="filteredTools.length === 0" class="p-3 text-center">
                 <p>No matching interactive tools found</p>
             </div>
-            <div v-else class="p-2">
+            <div v-else>
                 <button
                     v-for="tool in filteredTools"
                     :key="tool.id"
@@ -111,6 +111,7 @@ function openInteractiveTool(toolId: string) {
                                 v-if="tool.icon"
                                 :src="getAppRoot() + 'api/tools/' + tool.id + '/icon'"
                                 alt="tool icon" />
+                            <FontAwesomeIcon v-else :icon="faTools" size="2x" />
                         </div>
                         <div class="text-break">
                             <div class="font-weight-bold">{{ tool.name }}</div>
@@ -143,8 +144,18 @@ function openInteractiveTool(toolId: string) {
 }
 
 .tool-icon {
+    color: $gray-600;
+    display: inline-block;
+    width: 3rem;
+    min-width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     img {
         width: 3rem;
+        max-height: 3rem;
     }
 }
 
