@@ -24,8 +24,8 @@ const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
 
 const SELECTORS = {
     WORKFLOW_HEADING: "[data-description='workflow heading']",
-    ACTIONS_BUTTON_GROUP: "bbuttongroup-stub",
-    EDIT_WORKFLOW_BUTTON: `bbutton-stub[title='<b>Edit</b><br>${SAMPLE_WORKFLOW.name}']`,
+    ACTIONS_BUTTON_GROUP: "[data-button-group]",
+    EDIT_WORKFLOW_BUTTON: `[data-button-edit][title='Edit ${SAMPLE_WORKFLOW.name}']`,
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
     EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
     ROUTE_TO_RUN_BUTTON: "[data-description='route to workflow run button']",

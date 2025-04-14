@@ -100,13 +100,13 @@ const workflowImportTitle = computed(() => {
                             <span>(Version: {{ workflow.version + 1 }})</span>
                         </div>
                     </div>
-                    <GButtonGroup>
+                    <GButtonGroup data-button-group>
                         <GButton
                             v-if="owned && workflow"
                             tooltip
+                            data-button-edit
                             size="small"
                             :title="!workflow.deleted ? `Edit ${getWorkflowName()}` : 'This workflow has been deleted.'"
-                            variant="link"
                             :disabled="workflow.deleted"
                             :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
