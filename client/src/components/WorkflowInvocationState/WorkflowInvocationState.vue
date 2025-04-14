@@ -108,11 +108,16 @@ const invocationSchedulingTerminal = computed(() => {
     );
 });
 const jobStatesTerminal = computed(() => {
+    // If the job states summary is null, we haven't fetched it yet
+    if (jobStatesSummary.value === null) {
+        return false;
+    }
+
     if (invocationSchedulingTerminal.value && jobCount.value === 0) {
-        // no jobs for this invocation (think subworkflow or just inputs)
+        // no jobs for this invocation (think it has just subworkflows/inputs)
         return true;
     }
-    return !!jobStatesSummary.value && isTerminal(jobStatesSummary.value as InvocationJobsSummary);
+    return isTerminal(jobStatesSummary.value);
 });
 const jobStatesSummary = computed(() => {
     const jobsSummary = invocationStore.getInvocationJobsSummaryById(props.invocationId);
