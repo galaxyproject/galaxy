@@ -1,7 +1,6 @@
 import json
 from typing import (
     Any,
-    cast,
     Dict,
     List,
     Optional,
@@ -81,8 +80,7 @@ def validateInputsBy(inputsBy: Optional[str]) -> Optional[str]:
     if inputsBy is not None:
         if not isinstance(inputsBy, str):
             raise ValueError(f"Invalid type for inputsBy {inputsBy}")
-        inputsByStr = cast(str, inputsBy)
-        inputsByArray: List[str] = inputsByStr.split("|")
+        inputsByArray: List[str] = inputsBy.split("|")
         for inputsByItem in inputsByArray:
             if inputsByItem not in VALID_INPUTS_BY_ITEMS:
                 raise ValueError(f"Invalid inputsBy delineation {inputsByItem}")

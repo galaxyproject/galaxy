@@ -130,7 +130,6 @@ def parse_change_format(change_format: Iterable[Element]) -> List[ChangeFormatMo
     change_models: List[ChangeFormatModel] = []
     for change_elem in change_format:
         for when_elem in change_elem.findall("when"):
-            when_elem = cast(Element, when_elem)
             value: Optional[str] = when_elem.get("value", None)
             format_: Optional[str] = when_elem.get("format", None)
             check: Optional[str] = when_elem.get("input", None)

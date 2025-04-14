@@ -8,7 +8,6 @@ projects (e.g. gxformat2).
 
 import re
 from typing import (
-    cast,
     Dict,
     List,
     Union,
@@ -141,10 +140,9 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 if function_calls > 1:
                     invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)", line_no)
                 container = func_call_match.group("container")
-                valid_args_raw = VALID_ARGUMENTS[container]
-                if isinstance(valid_args_raw, DynamicArguments):
+                valid_args = VALID_ARGUMENTS[container]
+                if isinstance(valid_args, DynamicArguments):
                     continue
-                valid_args = cast(List[str], valid_args_raw)
 
                 first_arg_call = func_call_match.group("firstargcall")
 

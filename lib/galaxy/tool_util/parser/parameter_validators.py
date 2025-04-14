@@ -680,7 +680,7 @@ def raise_error_if_valiation_fails(
 
 
 def _parse_message(xml_el: Element) -> Optional[str]:
-    message = cast(Optional[str], xml_el.get("message"))
+    message = xml_el.get("message")
     return message
 
 

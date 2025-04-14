@@ -14,8 +14,6 @@ from typing_extensions import Protocol
 from .models import (
     ConditionalParameterModel,
     ConditionalWhen,
-    RepeatParameterModel,
-    SectionParameterModel,
     simple_input_models,
     ToolParameterBundle,
     ToolParameterT,
@@ -74,14 +72,12 @@ def _visit_input_values(
     new_input_values: Dict[str, Any] = {}
     for model in input_models:
         name = model.name
-        parameter_type = model.parameter_type
         input_value = input_values.get(name, VISITOR_UNDEFINED)
         if input_value is VISITOR_UNDEFINED:
             continue
 
-        if parameter_type == "gx_repeat":
-            repeat_parameter = cast(RepeatParameterModel, model)
-            repeat_parameters = repeat_parameter.parameters
+        if model.parameter_type == "gx_repeat":
+            repeat_parameters = model.parameters
             repeat_values = cast(list, input_value)
             new_repeat_values = []
             for repeat_instance_values in repeat_values:
@@ -91,21 +87,19 @@ def _visit_input_values(
                     )
                 )
             new_input_values[name] = new_repeat_values
-        elif parameter_type == "gx_section":
-            section_parameter = cast(SectionParameterModel, model)
-            section_parameters = section_parameter.parameters
+        elif model.parameter_type == "gx_section":
+            section_parameters = model.parameters
             section_values = cast(dict, input_value)
             new_section_values = _visit_input_values(
                 section_parameters, section_values, callback, no_replacement_value=no_replacement_value
             )
             new_input_values[name] = new_section_values
-        elif parameter_type == "gx_conditional":
-            conditional_parameter = cast(ConditionalParameterModel, model)
-            test_parameter = conditional_parameter.test_parameter
+        elif model.parameter_type == "gx_conditional":
+            test_parameter = model.test_parameter
             test_parameter_name = test_parameter.name
 
             conditional_values = cast(dict, input_value)
-            when: ConditionalWhen = _select_which_when(conditional_parameter, conditional_values)
+            when: ConditionalWhen = _select_which_when(model, conditional_values)
             new_conditional_values = _visit_input_values(
                 when.parameters, conditional_values, callback, no_replacement_value=no_replacement_value
             )
@@ -138,7 +132,7 @@ def flat_state_path(has_name: Union[str, ToolParameterT], prefix: Optional[str] 
     if hasattr(has_name, "name"):
         name = cast(ToolParameterT, has_name).name
     else:
-        name = cast(str, has_name)
+        name = has_name
     return name if prefix is None else f"{prefix}|{name}"
 
 
@@ -182,4 +176,4 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List
 def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> Optional[Union[str, bool]]:
     if value is not None and not isinstance(value, (str, bool)):
         raise Exception(f"Invalid conditional test value ({value}) for parameter ({test_parameter_name})")
-    return cast(Optional[Union[str, bool]], value)
+    return value

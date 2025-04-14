@@ -16,24 +16,16 @@ from galaxy.tool_util.parser.interface import (
     JsonTestDatasetDefDict,
 )
 from .models import (
-    BooleanParameterModel,
     ConditionalParameterModel,
     ConditionalWhen,
     DataCollectionRequest,
-    DataColumnParameterModel,
-    DataParameterModel,
     DataRequestHda,
     DataRequestInternalHda,
     DataRequestUri,
     DiscriminatorType,
-    DrillDownParameterModel,
     FloatParameterModel,
-    GenomeBuildParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
-    RepeatParameterModel,
-    SectionParameterModel,
-    SelectParameterModel,
     ToolParameterBundle,
     ToolParameterT,
 )
@@ -150,8 +142,7 @@ def dereference(
         if parameter.parameter_type == "gx_data":
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            data_parameter = cast(DataParameterModel, parameter)
-            if data_parameter.multiple:
+            if parameter.multiple:
                 assert isinstance(value, list), str(value)
                 return list(map(derefrence_dict, value))
             else:
@@ -179,9 +170,8 @@ def encode_test(
 
     def encode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
-            data_parameter = cast(DataParameterModel, parameter)
             if value is not None:
-                if data_parameter.multiple:
+                if parameter.multiple:
                     assert isinstance(value, list), str(value)
                     test_datasets = cast(List[JsonTestDatasetDefDict], value)
                     return [d.model_dump() for d in map(adapt_datasets, test_datasets)]
@@ -190,27 +180,22 @@ def encode_test(
                     test_dataset = cast(JsonTestDatasetDefDict, value)
                     return adapt_datasets(test_dataset).model_dump()
         elif parameter.parameter_type == "gx_data_collection":
-            # data_collection_parameter = cast(DataCollectionParameterModel, parameter)
             if value is not None:
                 assert isinstance(value, dict), str(value)
                 test_collection = cast(JsonTestCollectionDefDict, value)
                 return adapt_collections(test_collection).model_dump()
         elif parameter.parameter_type == "gx_select":
-            select_parameter = cast(SelectParameterModel, parameter)
-            if select_parameter.multiple and value is not None:
+            if parameter.multiple and value is not None:
                 return [v.strip() for v in value.split(",")]
             else:
                 return VISITOR_NO_REPLACEMENT
         elif parameter.parameter_type == "gx_drill_down":
-            drilldown = cast(DrillDownParameterModel, parameter)
-            if drilldown.multiple and value is not None:
+            if parameter.multiple and value is not None:
                 return [v.strip() for v in value.split(",")]
             else:
                 return VISITOR_NO_REPLACEMENT
         elif parameter.parameter_type == "gx_data_column":
-            data_column = cast(DataColumnParameterModel, parameter)
-            is_multiple = data_column.multiple
-            if is_multiple and value is not None and isinstance(value, (str,)):
+            if parameter.multiple and value is not None and isinstance(value, (str,)):
                 return [int(v.strip()) for v in value.split(",")]
             else:
                 return VISITOR_NO_REPLACEMENT
@@ -249,15 +234,13 @@ def _fill_defaults(tool_state: Dict[str, Any], input_models: ToolParameterBundle
 
 def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> None:
     parameter_name = parameter.name
-    parameter_type = parameter.parameter_type
-    if parameter_type == "gx_boolean":
-        boolean = cast(BooleanParameterModel, parameter)
+    if parameter.parameter_type == "gx_boolean":
         if parameter_name not in tool_state:
             # even optional parameters default to false if not in the body of the request :_(
             # see test_tools.py -> expression_null_handling_boolean or test cases for gx_boolean_optional.xml
-            tool_state[parameter_name] = boolean.value or False
+            tool_state[parameter_name] = parameter.value or False
 
-    if parameter_type in ["gx_integer", "gx_float", "gx_hidden"]:
+    if parameter.parameter_type in ["gx_integer", "gx_float", "gx_hidden"]:
         has_value_parameter = cast(
             Union[
                 IntegerParameterModel,
@@ -268,33 +251,30 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
         )
         if parameter_name not in tool_state:
             tool_state[parameter_name] = has_value_parameter.value
-    elif parameter_type == "gx_genomebuild":
-        genomebuild = cast(GenomeBuildParameterModel, parameter)
-        if parameter_name not in tool_state and genomebuild.optional:
+    elif parameter.parameter_type == "gx_genomebuild":
+        if parameter_name not in tool_state and parameter.optional:
             tool_state[parameter_name] = None
-    elif parameter_type == "gx_select":
-        select = cast(SelectParameterModel, parameter)
+    elif parameter.parameter_type == "gx_select":
         # don't fill in dynamic parameters - wait for runtime to specify the default
-        if select.dynamic_options:
+        if parameter.dynamic_options:
             return
 
         if parameter_name not in tool_state:
-            if not select.multiple:
-                tool_state[parameter_name] = select.default_value
+            if not parameter.multiple:
+                tool_state[parameter_name] = parameter.default_value
             else:
                 tool_state[parameter_name] = None
-    elif parameter_type == "gx_drill_down":
+    elif parameter.parameter_type == "gx_drill_down":
         if parameter_name not in tool_state:
-            drilldown = cast(DrillDownParameterModel, parameter)
-            if drilldown.multiple:
-                options = drilldown.default_options
+            if parameter.multiple:
+                options = parameter.default_options
                 if options is not None:
                     tool_state[parameter_name] = options
             else:
-                option = drilldown.default_option
+                option = parameter.default_option
                 if option is not None:
                     tool_state[parameter_name] = option
-    elif parameter_type in ["gx_conditional"]:
+    elif parameter.parameter_type == "gx_conditional":
         if parameter_name not in tool_state:
             tool_state[parameter_name] = {}
 
@@ -302,34 +282,31 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
         assert isinstance(raw_conditional_state, dict)
         conditional_state = cast(Dict[str, Any], raw_conditional_state)
 
-        conditional = cast(ConditionalParameterModel, parameter)
-        test_parameter = conditional.test_parameter
+        test_parameter = parameter.test_parameter
         test_parameter_name = test_parameter.name
 
         explicit_test_value: Optional[DiscriminatorType] = (
             conditional_state[test_parameter_name] if test_parameter_name in conditional_state else None
         )
         test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
-        when = _select_which_when(conditional, test_value, conditional_state)
+        when = _select_which_when(parameter, test_value, conditional_state)
         _fill_default_for(conditional_state, test_parameter)
         _fill_defaults(conditional_state, when)
-    elif parameter_type in ["gx_repeat"]:
+    elif parameter.parameter_type == "gx_repeat":
         if parameter_name not in tool_state:
             tool_state[parameter_name] = []
         repeat_instances = cast(List[Dict[str, Any]], tool_state[parameter_name])
-        repeat = cast(RepeatParameterModel, parameter)
-        if repeat.min:
-            while len(repeat_instances) < repeat.min:
+        if parameter.min:
+            while len(repeat_instances) < parameter.min:
                 repeat_instances.append({})
 
         for instance_state in tool_state[parameter_name]:
-            _fill_defaults(instance_state, repeat)
-    elif parameter_type in ["gx_section"]:
+            _fill_defaults(instance_state, parameter)
+    elif parameter.parameter_type == "gx_section":
         if parameter_name not in tool_state:
             tool_state[parameter_name] = {}
         section_state = cast(Dict[str, Any], tool_state[parameter_name])
-        section = cast(SectionParameterModel, parameter)
-        _fill_defaults(section_state, section)
+        _fill_defaults(section_state, parameter)
 
 
 def _select_which_when(
@@ -358,8 +335,7 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
 
     def encode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
-            data_parameter = cast(DataParameterModel, parameter)
-            if data_parameter.multiple:
+            if parameter.multiple:
                 assert isinstance(value, list), str(value)
                 return list(map(encode_src_dict, value))
             else:
@@ -388,8 +364,7 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
         if parameter.parameter_type == "gx_data":
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            data_parameter = cast(DataParameterModel, parameter)
-            if data_parameter.multiple:
+            if parameter.multiple:
                 assert isinstance(value, list), str(value)
                 return list(map(decode_src_dict, value))
             else:

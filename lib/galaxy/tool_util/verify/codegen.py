@@ -86,7 +86,7 @@ def check_center_of_mass(v: typing.Any):
 def check_regex(v: typing.Any):
     assert isinstance(v, str)
     try:
-        re.compile(typing.cast(str, v))
+        re.compile(v)
     except re.error:
         raise AssertionError(f"Invalid regular expression {v}")
     return v
@@ -103,7 +103,7 @@ def check_non_negative_if_set(v: typing.Any):
 
 def check_non_negative_if_int(v: typing.Any):
     if v is not None and isinstance(v, int):
-        assert typing.cast(int, v) >= 0
+        assert v >= 0
     return v
 
 

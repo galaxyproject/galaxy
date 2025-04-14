@@ -393,7 +393,7 @@ MultiDataInstance: Type = cast(
         union_type([DataRequestHda, DataRequestLdda, DataRequestHdca, DataRequestUri]), Field(discriminator="src")
     ],
 )
-MultiDataRequest: Type = cast(Type, union_type([MultiDataInstance, list_type(MultiDataInstance)]))
+MultiDataRequest: Type = union_type([MultiDataInstance, list_type(MultiDataInstance)])
 
 
 class DataRequestInternalHda(StrictModel):
@@ -1068,8 +1068,7 @@ def cond_test_parameter_default_value(
     if isinstance(test_parameter, BooleanParameterModel):
         default_value = test_parameter.value
     elif isinstance(test_parameter, SelectParameterModel):
-        select_parameter = cast(SelectParameterModel, test_parameter)
-        select_default_value = select_parameter.default_value
+        select_default_value = test_parameter.default_value
         if select_default_value is not None:
             default_value = select_default_value
     return default_value
