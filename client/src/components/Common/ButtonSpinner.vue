@@ -2,6 +2,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 import type { ComponentColor, ComponentSize } from "@/components/BaseComponents/componentVariants";
 
@@ -26,6 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
     color: "blue",
     icon: undefined,
 });
+
+const currentTitle = computed(() => (props.wait ? "Please wait..." : props.tooltip));
 </script>
 
 <template>
