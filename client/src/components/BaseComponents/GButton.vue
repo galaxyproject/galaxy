@@ -120,12 +120,12 @@ useAccessibleHover(
         ref="buttonRef"
         class="g-button"
         :data-title="currentTooltip"
-        :data-disabled="props.disabled"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="props.to"
         :href="props.to ?? props.href"
         :title="currentTitle"
         :aria-describedby="describedBy"
+        :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
         <slot></slot>
