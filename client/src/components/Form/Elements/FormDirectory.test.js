@@ -110,7 +110,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const breadcrumbPaths = wrapper.findAll("li.breadcrumb-item");
         expect(breadcrumbPaths.length).toBe(testingData.expectedNumberOfPaths);
         expect(wrapper.find(".pathname").text()).toBe(testingData.protocol);
-        const regularPathElements = wrapper.findAll("li.breadcrumb-item button[disabled='disabled']");
+        const regularPathElements = wrapper.findAll("li.breadcrumb-item button[aria-disabled='true']");
 
         expect(regularPathElements.length).toBe(testingData.pathChunks.length);
 
