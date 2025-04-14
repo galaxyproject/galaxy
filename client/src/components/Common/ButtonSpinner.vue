@@ -17,7 +17,7 @@ interface Props {
     icon?: IconDefinition;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     title: "",
     wait: false,
     tooltip: "",
@@ -32,14 +32,13 @@ withDefaults(defineProps<Props>(), {
     <GButton
         tooltip
         tooltip-placement="bottom"
-        :color="color"
-        class="d-flex flex-nowrap align-items-center text-nowrap"
-        :title="tooltip"
-        :disabled="wait ?? disabled"
-        :size="size"
+        :color="props.color"
+        :title="props.tooltip"
+        :disabled="props.wait ?? props.disabled"
+        :size="props.size"
         @click="$emit('onClick')">
         <FontAwesomeIcon v-if="wait" :icon="faSpinner" fixed-width spin />
-        <FontAwesomeIcon v-else :icon="!icon ? faPlay : icon" fixed-width />
-        <span v-if="title" class="ml-1">{{ title }}</span>
+        <FontAwesomeIcon v-else :icon="!props.icon ? faPlay : props.icon" fixed-width />
+        <span v-if="title">{{ title }}</span>
     </GButton>
 </template>

@@ -91,7 +91,7 @@ const currentTitle = computed(() => {
 const tooltipId = useUid("g-tooltip");
 
 const describedBy = computed(() => {
-    if (props.tooltip) {
+    if (props.tooltip && props.title) {
         return tooltipId.value;
     } else {
         return false;
@@ -132,7 +132,7 @@ useAccessibleHover(
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
-            v-if="props.tooltip"
+            v-if="props.tooltip && props.title"
             :id="tooltipId"
             ref="tooltipRef"
             :reference="buttonElementRef"
