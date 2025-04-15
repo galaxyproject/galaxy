@@ -105,6 +105,8 @@ const workflowImportTitle = computed(() => {
                             v-if="owned && workflow"
                             tooltip
                             data-button-edit
+                            transparent
+                            color="blue"
                             size="small"
                             :title="!workflow.deleted ? `Edit ${getWorkflowName()}` : 'This workflow has been deleted.'"
                             :disabled="workflow.deleted"
@@ -115,6 +117,7 @@ const workflowImportTitle = computed(() => {
                             v-else
                             data-description="import workflow button"
                             transparent
+                            color="blue"
                             size="small"
                             :disabled="isAnonymous || workflowImportedAttempted"
                             :title="workflowImportTitle"
