@@ -302,11 +302,15 @@ export function isZipFile(file?: File | null): string {
 }
 
 export function isRoCrateZip(explorer?: IZipExplorer): explorer is ROCrateZipExplorer {
-    return explorer instanceof ROCrateZipExplorer;
+    return explorer !== undefined && hasRoCrateMetadata(explorer);
 }
 
 export function isGalaxyZipExport(explorer?: IZipExplorer): explorer is GalaxyZipExplorer {
-    return explorer instanceof GalaxyZipExplorer;
+    return explorer !== undefined && hasGalaxyExportMetadata(explorer);
+}
+
+export function isGalaxyHistoryExport(explorer?: IZipExplorer): explorer is GalaxyZipExplorer {
+    return explorer !== undefined && hasGalaxyHistoryExportMetadata(explorer);
 }
 
 const ROCRATE_METADATA_FILE = "ro-crate-metadata.json";
@@ -391,12 +395,24 @@ export class GalaxyZipExplorer extends AbstractZipExplorer {
     }
 }
 
+function hasRoCrateMetadata(zipExplorer: IZipExplorer): boolean {
+    return zipExplorer.zipArchive.findFileByName(ROCRATE_METADATA_FILE) !== undefined;
+}
+
+function hasGalaxyExportMetadata(zipExplorer: IZipExplorer): boolean {
+    return zipExplorer.zipArchive.findFileByName(GALAXY_EXPORT_ATTRS_FILE) !== undefined;
+}
+
+function hasGalaxyHistoryExportMetadata(zipExplorer: IZipExplorer): boolean {
+    return zipExplorer.zipArchive.findFileByName(GALAXY_HISTORY_EXPORT_ATTRS_FILE) !== undefined;
+}
+
 function selectZipExplorerByContent(zipExplorer: IZipExplorer): IZipExplorer {
-    if (zipExplorer.zipArchive.findFileByName(ROCRATE_METADATA_FILE)) {
+    if (hasRoCrateMetadata(zipExplorer)) {
         return new ROCrateZipExplorer(zipExplorer);
     }
 
-    if (zipExplorer.zipArchive.findFileByName(GALAXY_EXPORT_ATTRS_FILE)) {
+    if (hasGalaxyExportMetadata(zipExplorer)) {
         return new GalaxyZipExplorer(zipExplorer);
     }
     return zipExplorer;

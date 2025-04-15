@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faBoxOpen, faUniversity, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faUniversity, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { sanitize } from "dompurify";
@@ -7,6 +7,7 @@ import { onMounted, ref } from "vue";
 
 import { type CardBadge } from "@/components/Common/GCard.types";
 import type { ROCrateZipExplorer } from "@/composables/zipExplorer";
+import { isGalaxyHistoryExport, isGalaxyZipExport } from "@/composables/zipExplorer";
 
 import { extractROCrateSummary, type ROCrateSummary } from "./rocrate.utils";
 
@@ -21,16 +22,39 @@ const props = defineProps<{
 }>();
 
 const crateSummary = ref<ROCrateSummary>();
-const badges: CardBadge[] = [
-    {
-        id: "rocrate",
-        label: "RO-Crate",
-        title: "A Research Object Crate is a structured package for sharing research data.",
-        variant: "info",
-        icon: faBoxOpen,
-        visible: true,
-    },
-];
+const badges = buildBadges();
+
+function buildBadges(): CardBadge[] {
+    const badges: CardBadge[] = [
+        {
+            id: "rocrate",
+            label: "RO-Crate",
+            title: "This archive contains an RO-Crate. A Research Object Crate (RO-Crate) is a structured package for sharing research data.",
+            variant: "info",
+            visible: true,
+        },
+    ];
+    if (isGalaxyZipExport(props.explorer)) {
+        if (isGalaxyHistoryExport(props.explorer)) {
+            badges.push({
+                id: "galaxy-history-export-badge",
+                label: "Galaxy History",
+                title: "This archive contains the exported datasets of a Galaxy History.",
+                variant: "info",
+                visible: true,
+            });
+        } else {
+            badges.push({
+                id: "galaxy-invocation-export-badge",
+                label: "Galaxy Workflow Run",
+                title: "This archive contains the exported results of a Galaxy workflow invocation or run.",
+                variant: "info",
+                visible: true,
+            });
+        }
+    }
+    return badges;
+}
 
 onMounted(async () => {
     crateSummary.value = await extractROCrateSummary(props.explorer.crate);
