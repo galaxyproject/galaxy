@@ -14,6 +14,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolForm from "./ToolForm.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { server, http } = useServerMock();
 
@@ -85,7 +86,7 @@ describe("ToolForm", () => {
 
     it("shows props", async () => {
         await flushPromises();
-        const button = wrapper.find(".btn-primary");
+        const button = wrapper.findComponent(GButton);
         expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
