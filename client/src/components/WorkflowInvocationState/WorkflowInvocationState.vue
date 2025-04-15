@@ -109,7 +109,8 @@ const invocationSchedulingTerminal = computed(() => {
 });
 const jobStatesTerminal = computed(() => {
     // If the job states summary is null, we haven't fetched it yet
-    if (jobStatesSummary.value === null) {
+    // If the `populated_state` for the summary is `new`, we haven't finished scheduling all jobs
+    if (jobStatesSummary.value === null || jobStatesSummary.value.populated_state === "new") {
         return false;
     }
 
