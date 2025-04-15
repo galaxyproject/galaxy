@@ -15,6 +15,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
 const { importArtifacts, isZipArchiveAvailable, zipExplorer } = useZipExplorer();
@@ -91,6 +92,14 @@ watch(
     },
     { immediate: true }
 );
+
+const breadcrumbItems = computed(() => {
+    return [
+        {
+            title: "Import Files from Zip",
+        },
+    ];
+});
 </script>
 
 <template>
@@ -101,18 +110,22 @@ watch(
 
         <GenericWizard
             v-if="importableZipContents"
+            container-component="div"
             class="zip-import-wizard"
             title="Import individual files from Zip"
             :use="wizard"
             submit-button-label="Import"
             :is-busy="isWizardBusy"
             @submit="importItems">
-            <div v-if="wizard.isCurrent('select-items')">
-                <ZipFileSelector
-                    :zip-contents="importableZipContents"
-                    :selected-items="filesToImport"
-                    @update:selectedItems="onSelectionUpdate" />
-            </div>
+            <template v-slot:header>
+                <BreadcrumbHeading :items="breadcrumbItems" />
+            </template>
+
+            <ZipFileSelector
+                v-if="wizard.isCurrent('select-items')"
+                :zip-contents="importableZipContents"
+                :selected-items="filesToImport"
+                @update:selectedItems="onSelectionUpdate" />
             <div v-else-if="wizard.isCurrent('import-summary')">
                 <div>
                     <ul>
