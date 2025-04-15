@@ -170,19 +170,9 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 
 .workflow-card-list {
     container: cards-list / inline-size;
-    // TODO: GCards already have focus styles, so we need to remove these
     .workflow-card-in-list {
-        &:focus {
-            outline: none;
-            &:deep(.workflow-card-container) {
-                &:not(.workflow-shared) {
-                    border: 0.1rem solid $brand-primary;
-                }
-            }
-        }
-
         &.range-select-anchor-workfow {
-            &:deep(.workflow-card-container) {
+            &:deep(.g-card-content) {
                 box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
             }
         }
