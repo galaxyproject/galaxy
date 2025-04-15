@@ -1269,6 +1269,8 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data_column"
+            /** Value */
+            value?: number | number[] | null
         }
         /** DataParameterModel */
         DataParameterModel: {

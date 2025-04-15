@@ -49,6 +49,7 @@ from galaxy.tool_util.parser.interface import DrillDownOptionsDict
 from galaxy.tool_util.parser.util import (
     boolean_is_checked,
     boolean_true_and_false_values,
+    multiple_select_value_split,
     ParameterParseException,
     text_input_is_optional,
 )
@@ -1309,15 +1310,10 @@ class SelectTagParameter(SelectToolParameter):
         other_values = other_values or {}
         if self.multiple:
             tag_list = []
+
             # split on newline and ,
             if isinstance(value, list) or isinstance(value, str):
-                if not isinstance(value, list):
-                    value = value.split("\n")
-                for tag_str in value:
-                    for tag in str(tag_str).split(","):
-                        tag = tag.strip()
-                        if tag:
-                            tag_list.append(tag)
+                tag_list = multiple_select_value_split(value)
             if len(tag_list) == 0:
                 value = None
             else:
@@ -1446,14 +1442,7 @@ class ColumnListParameter(SelectToolParameter):
         if self.multiple:
             # split on newline and ,
             if isinstance(value, list) or isinstance(value, str):
-                column_list = []
-                if not isinstance(value, list):
-                    value = value.split("\n")
-                for column in value:
-                    for column2 in str(column).split(","):
-                        column2 = column2.strip()
-                        if column2:
-                            column_list.append(column2)
+                column_list = multiple_select_value_split(value)
                 if len(column_list) == 0:
                     value = None
                 else:

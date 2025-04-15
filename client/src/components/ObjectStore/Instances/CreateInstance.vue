@@ -2,6 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import localize from "@/utils/localization";
 
@@ -15,6 +16,9 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Props {
     templateId: string;
 }
+
+const { addOrUpdateObjectStore } = useObjectStoreStore();
+
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 objectStoreTemplatesStore.fetchTemplates();
 
@@ -32,6 +36,7 @@ const breadcrumbItems = computed(() => [
 ]);
 
 async function onCreated(objectStore: UserConcreteObjectStore) {
+    addOrUpdateObjectStore(objectStore);
     const message = `Created storage location ${objectStore.name}`;
     goToIndex({ message });
 }
