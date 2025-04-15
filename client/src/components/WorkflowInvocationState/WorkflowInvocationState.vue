@@ -35,7 +35,6 @@ interface Props {
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
-    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -278,8 +277,7 @@ async function onCancel() {
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
             :invocation-update-time="invocation.update_time"
-            :history-id="invocation.history_id"
-            :new-history-target="props.newHistoryTarget">
+            :history-id="invocation.history_id">
             <template v-slot:middle-content>
                 <div class="progress-bars mx-1">
                     <ProgressBar
