@@ -12,7 +12,7 @@
     <inputs>
         <!-- verify that it is possible to select no options
              for optional select parameters with dynamic
-             options mn parameter 
+             options parameter
             
             - select
             - data_column
