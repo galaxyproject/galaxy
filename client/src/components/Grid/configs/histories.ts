@@ -356,6 +356,7 @@ const gridConfig: GridConfig = {
     sortDesc: true,
     sortKeys: ["create_time", "name", "update_time"],
     title: "Histories",
+    getItemKey: (data: HistoryEntry) => String(data.id),
 };
 
 export default gridConfig;

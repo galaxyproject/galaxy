@@ -14,7 +14,7 @@ export interface SelectedItemsProps<T> {
     /** A list of all items. */
     allItems: Ref<T[]>;
     /** The filtering class used to check query selection. */
-    filterClass: Filtering<any>;
+    filterClass?: Filtering<any>;
     /** If the items are selectable. */
     selectable: Ref<boolean>;
     /** A method called when the "Query Selection Mode" is broken. */

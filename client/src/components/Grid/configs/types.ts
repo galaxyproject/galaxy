@@ -30,6 +30,7 @@ export interface GridConfig {
     sortKeys: Array<string>;
     sortDesc: boolean;
     title: string;
+    getItemKey?: (data: RowData) => string;
 }
 
 export type FieldArray = Array<FieldEntry>;
