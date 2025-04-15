@@ -2154,7 +2154,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 final_job_state = job.states.ERROR
                 job.job_messages = [
                     {
-                        "type": "internal",
+                        "type": "max_discovered_files",
                         "desc": str(e),
                         "error_level": StdioErrorLevel.FATAL,
                     }

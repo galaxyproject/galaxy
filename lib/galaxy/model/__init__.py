@@ -190,6 +190,7 @@ from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
+from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.util import (
     directory_hash_id,
     enum_values,
@@ -572,6 +573,7 @@ def cached_id(galaxy_model_object):
 
 
 class JobLike:
+    job_messages: Mapped[Optional[List[AnyJobMessage]]]
     MAX_NUMERIC = 10 ** (JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
     def _init_metrics(self):
@@ -606,7 +608,14 @@ class JobLike:
         # TODO: Make iterable, concatenate with chain
         return self.text_metrics + self.numeric_metrics
 
-    def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
+    def set_streams(
+        self,
+        tool_stdout,
+        tool_stderr,
+        job_stdout=None,
+        job_stderr=None,
+        job_messages: Optional[List[AnyJobMessage]] = None,
+    ):
         def shrink_and_unicodify(what, stream):
             if stream and len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
                 log.info(
@@ -631,7 +640,7 @@ class JobLike:
             self.job_stderr = None
 
         if job_messages is not None:
-            self.job_messages = job_messages
+            self.job_messages = cast(Optional[List[AnyJobMessage]], job_messages)
 
     def log_str(self):
         extra = ""
@@ -1497,7 +1506,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     copied_from_job_id: Mapped[Optional[int]]
     command_line: Mapped[Optional[str]] = mapped_column(TEXT)
     dependencies: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    job_messages: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    job_messages: Mapped[Optional[List[AnyJobMessage]]] = mapped_column(MutableJSONType)
     param_filename: Mapped[Optional[str]] = mapped_column(String(1024))
     runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     job_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -2324,7 +2333,7 @@ class Task(Base, JobLike, RepresentById):
     tool_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
     tool_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
     exit_code: Mapped[Optional[int]]
-    job_messages: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    job_messages: Mapped[Optional[List[AnyJobMessage]]] = mapped_column(MutableJSONType)
     info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     traceback: Mapped[Optional[str]] = mapped_column(TEXT)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
