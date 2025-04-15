@@ -45,7 +45,6 @@ from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
-from galaxy.tool_util.parser.interface import DrillDownOptionsDict
 from galaxy.tool_util.parser.util import (
     boolean_is_checked,
     boolean_true_and_false_values,
@@ -53,6 +52,7 @@ from galaxy.tool_util.parser.util import (
     ParameterParseException,
     text_input_is_optional,
 )
+from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
     NO_REPLACEMENT,

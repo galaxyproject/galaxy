@@ -8,18 +8,18 @@ import requests
 import yaml
 from gxformat2.yaml import ordered_load
 
-from galaxy.tool_util.models import (
-    OutputChecks,
-    OutputsDict,
-    TestDicts,
-    TestJobDict,
-)
 from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import verify_file_contents_against_dict
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     get_metadata_to_test,
     verify_collection,
+)
+from galaxy.tool_util_models import (
+    OutputChecks,
+    OutputsDict,
+    TestDicts,
+    TestJobDict,
 )
 from galaxy.util import asbool
 from galaxy_test.api._framework import ApiTestCase

@@ -84,7 +84,6 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.interface import (
-    HelpContent,
     InputSource,
     PageSource,
     ToolSource,
@@ -113,6 +112,7 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
