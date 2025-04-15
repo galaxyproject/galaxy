@@ -131,11 +131,8 @@ const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicato
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
 
-// TODO: This has broken all keydown events within the card (e.g. for the select checkbox, buttons, etc.)
-// (Unsure if it is exactly here or in the parent component(s)?)
 function onKeyDown(event: KeyboardEvent) {
     if ((props.clickable && event.key === "Enter") || event.key === " ") {
-        event.preventDefault();
         emit("click", event);
     } else if (props.clickable) {
         emit("keydown", event);
