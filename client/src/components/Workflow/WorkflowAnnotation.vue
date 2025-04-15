@@ -22,7 +22,6 @@ interface Props {
     invocationUpdateTime?: string;
     historyId: string;
     showDetails?: boolean;
-    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -71,12 +70,12 @@ const { renderMarkdown } = useMarkdown({
                     <FontAwesomeIcon :icon="faHdd" />History:
                     <SwitchToHistoryLink :history-id="props.historyId" />
                     <BBadge
-                        v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.historyId"
+                        v-if="useHistoryStore().currentHistoryId !== props.historyId"
                         v-b-tooltip.hover.noninteractive
                         data-description="new history badge"
                         role="button"
                         variant="info"
-                        title="Results generated in a new history. Click on history name to switch to that history.">
+                        title="Results generated in a different history. Click on history name to switch to that history.">
                         <FontAwesomeIcon :icon="faExclamation" />
                     </BBadge>
                 </span>

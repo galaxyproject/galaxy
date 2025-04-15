@@ -33,6 +33,10 @@ const invocationById = {
         ...invocationData,
         id: "non-terminal-jobs",
     },
+    "non-terminal-populated-state": {
+        ...invocationData,
+        id: "non-terminal-populated-state",
+    },
 };
 
 // Jobs summary constants
@@ -50,6 +54,10 @@ const invocationJobsSummaryById = {
         states: {
             running: 1,
         },
+    },
+    "non-terminal-populated-state": {
+        ...invocationDataJobsSummary,
+        populated_state: "new",
     },
 };
 
@@ -156,6 +164,15 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
 
     it("determines that job states are not terminal with non-terminal jobs but scheduled invocation", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+
+        // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
+        assertInvocationFetched(1);
+        assertJobsSummaryFetched(1);
+    });
+
+    it("determines that job states are not terminal with non-terminal populated state for summary", async () => {
+        const wrapper = await mountWorkflowInvocationState("non-terminal-populated-state");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state

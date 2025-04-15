@@ -83,11 +83,15 @@ if (props.instance) {
 }
 
 function handleInvocations(incomingInvocations: any) {
-    invocations.value = incomingInvocations;
-    // make sure any new histories are added to historyStore
-    invocations.value.forEach((invocation: any) => {
-        historyStore.getHistoryById(invocation.history_id);
-    });
+    if (incomingInvocations.length === 1) {
+        router.push(`/workflows/invocations/${incomingInvocations[0].id}?success=true`);
+    } else {
+        invocations.value = incomingInvocations;
+        // make sure any new histories are added to historyStore
+        invocations.value.forEach((invocation: any) => {
+            historyStore.getHistoryById(invocation.history_id);
+        });
+    }
 }
 
 function handleSubmissionError(error: string) {
