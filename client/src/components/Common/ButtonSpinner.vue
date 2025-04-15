@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
         tooltip-placement="bottom"
         :color="props.color"
         :title="props.tooltip"
-        :disabled="props.wait ?? props.disabled"
+        :disabled="props.wait || props.disabled"
         :size="props.size"
         @click="$emit('onClick')">
         <FontAwesomeIcon v-if="wait" :icon="faSpinner" fixed-width spin />
