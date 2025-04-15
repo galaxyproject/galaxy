@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { faCopy, faEdit, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faFileArchive, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
@@ -20,6 +21,8 @@ import UploadSelect from "./UploadSelect.vue";
 import UploadSelectExtension from "./UploadSelectExtension.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const router = useRouter();
 
 interface Props {
     chunkUploadSize: number;
@@ -352,6 +355,13 @@ function uploadPercentage(percentage: number, size: number) {
     return (uploadCompleted.value + percentage * size) / uploadSize.value;
 }
 
+function exploreZipContents() {
+    router.push({
+        name: "ZipImportWizard",
+    });
+    emit("dismiss");
+}
+
 defineExpose({
     addFiles,
     counterAnnounce,
@@ -477,6 +487,14 @@ defineExpose({
             <BButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
                 <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste/Fetch data</span>
+            </BButton>
+            <BButton
+                id="btn-explore-zip"
+                :size="size"
+                title="Explore the contents of a remote or local Zip archive and upload individual files"
+                @click="exploreZipContents">
+                <FontAwesomeIcon :icon="faFileArchive" />
+                <span v-localize>Explore ZIP</span>
             </BButton>
             <BButton
                 id="btn-start"

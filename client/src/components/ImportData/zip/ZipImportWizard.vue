@@ -3,6 +3,7 @@ import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import {
@@ -15,8 +16,11 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
+import ZipSelector from "./ZipSelector.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
+
+const router = useRouter();
 
 const { importArtifacts, isZipArchiveAvailable, zipExplorer } = useZipExplorer();
 
@@ -30,6 +34,14 @@ const importableZipContents = ref<ImportableZipContents>();
 const filesToImport = ref<ImportableFile[]>([]);
 
 const wizard = useWizard({
+    "zip-file-selector": {
+        label: "Select ZIP archive",
+        instructions: computed(() => {
+            return `Open a local ZIP archive or paste a URL to a ZIP archive. Then see a preview of the contents.`;
+        }),
+        isValid: () => Boolean(importableZipContents.value),
+        isSkippable: () => false,
+    },
     "select-items": {
         label: "Select items to import",
         instructions: computed(() => {
@@ -51,6 +63,7 @@ const wizard = useWizard({
 async function importItems() {
     isWizardBusy.value = true;
     try {
+        router.push({ name: "ZipImportResults" });
         await importArtifacts(filesToImport.value, currentHistoryId.value);
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
@@ -109,7 +122,6 @@ const breadcrumbItems = computed(() => {
         </BAlert>
 
         <GenericWizard
-            v-if="importableZipContents"
             container-component="div"
             class="zip-import-wizard"
             title="Import individual files from Zip"
@@ -121,8 +133,10 @@ const breadcrumbItems = computed(() => {
                 <BreadcrumbHeading :items="breadcrumbItems" />
             </template>
 
+            <ZipSelector v-if="wizard.isCurrent('zip-file-selector')" />
+
             <ZipFileSelector
-                v-if="wizard.isCurrent('select-items')"
+                v-if="wizard.isCurrent('select-items') && importableZipContents"
                 :zip-contents="importableZipContents"
                 :selected-items="filesToImport"
                 @update:selectedItems="onSelectionUpdate" />
@@ -137,9 +151,5 @@ const breadcrumbItems = computed(() => {
                 </div>
             </div>
         </GenericWizard>
-        <BAlert v-else variant="warning" show>
-            There is no Zip archive currently open for import. Please go to <b>Upload</b> and select
-            <b>Import from Zip</b> to start the import process.
-        </BAlert>
     </div>
 </template>

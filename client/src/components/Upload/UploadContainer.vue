@@ -21,8 +21,6 @@ import CompositeBox from "./CompositeBox";
 import DefaultBox from "./DefaultBox";
 import RulesInput from "./RulesInput";
 
-import ZipImporter from "./zip/ZipImporter.vue";
-
 const props = defineProps({
     auto: {
         type: Object,
@@ -206,9 +204,7 @@ defineExpose({
                 :history-id="currentHistoryId"
                 v-on="$listeners" />
         </BTab>
-        <BTab id="zip" title="From ZIP" button-id="tab-title-link-zip">
-            <ZipImporter :has-callback="hasCallback" v-on="$listeners" />
-        </BTab>
+
         <DefaultBox
             v-if="showRegular || showCollection"
             v-show="regularTabActive || collectionTabActive"
