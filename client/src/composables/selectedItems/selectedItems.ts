@@ -13,7 +13,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     filterText,
     totalItemsInQuery,
     allItems,
-    filterClass,
+    filterClass = undefined,
     selectable,
     querySelectionBreak = () => {},
     onDelete,
@@ -37,7 +37,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
 
     const selectionSize = computed(() => (isQuerySelection.value ? totalItemsInQuery.value : selectedItems.value.size));
     const isQuerySelection = computed(() => allSelected.value && totalItemsInQuery.value !== selectedItems.value.size);
-    const currentFilters = computed(() => filterClass.getFiltersForText(filterText.value));
+    const currentFilters = computed(() => filterClass?.getFiltersForText(filterText.value) ?? []);
     const initSelectedKey = computed(() => (initSelectedItem.value ? getItemKey(initSelectedItem.value as T) : null)); // TODO: Weird Unwrap ref type
     const lastInRangeIndex = computed(() =>
         lastInRange.value ? allItems.value.indexOf(lastInRange.value as T) : null
@@ -66,7 +66,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     }
 
     function isSelected(item: T) {
-        if (isQuerySelection.value) {
+        if (isQuerySelection.value && filterClass) {
             return filterClass.testFilters(currentFilters.value, item as Record<string, unknown>);
         }
         const key = getItemKey(item as T);
@@ -448,6 +448,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         initSelectedItem,
         isQuerySelection,
         itemRefs,
+        allSelected,
         arrowNavigate,
         setShowSelection,
         selectAllInCurrentQuery,
