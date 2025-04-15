@@ -1,34 +1,60 @@
 <script setup lang="ts">
+import { faDatabase, faFile } from "@fortawesome/free-solid-svg-icons";
+
+import type { CardBadge } from "@/components/Common/GCard.types";
 import type { ImportableFile } from "@/composables/zipExplorer";
 import { bytesToString } from "@/utils/utils";
 
-import UtcDate from "@/components/UtcDate.vue";
+import GCard from "@/components/Common/GCard.vue";
 
-defineProps<{
+interface Props {
     file: ImportableFile;
+    gridView?: boolean;
+    selected?: boolean;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "select"): void;
 }>();
+
+const titleBadges: CardBadge[] = [
+    {
+        id: "file-path",
+        label: props.file.path,
+        title: "File Path",
+        icon: faFile,
+        type: "badge",
+        variant: "secondary",
+        visible: true,
+    },
+];
+
+const badges = [
+    {
+        id: "file-size",
+        label: bytesToString(props.file.size, true, undefined),
+        title: "File Size",
+        icon: faDatabase,
+        visible: true,
+    },
+];
 </script>
 
 <template>
-    <!-- TODO: Replace with GCard -->
-    <div class="zip-file-entry-card">
-        <span>{{ file.path }}</span>
-        <br />
-        <strong>{{ file.name }}</strong>
-        <span>({{ bytesToString(file.size, true, undefined) }})</span>
-        <UtcDate :date="file.dateTime.toISOString()" mode="elapsed" />
-        <span v-if="file.description">
-            <br />
-            {{ file.description }}
-        </span>
-    </div>
+    <GCard
+        :id="file.path"
+        :title="file.name"
+        :title-badges="titleBadges"
+        :badges="badges"
+        :description="file.description"
+        clickable
+        :update-time="file.dateTime.toISOString()"
+        selectable
+        :grid-view="props.gridView"
+        :selected="props.selected"
+        @select="emit('select')"
+        @click="emit('select')">
+    </GCard>
 </template>
-
-<style scoped lang="scss">
-.zip-file-entry-card {
-    padding: 1rem;
-    border: 1px solid #000000;
-    border-radius: 0.2rem;
-    background-color: #f9f9f9;
-}
-</style>

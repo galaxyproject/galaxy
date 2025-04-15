@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
 
+import Heading from "@/components/Common/Heading.vue";
+import ListHeader from "@/components/Common/ListHeader.vue";
 import ZipFileEntryCard from "@/components/ImportData/zip/ZipFileEntryCard.vue";
 
 interface Props {
@@ -33,39 +35,47 @@ function toggleSelection(item: ImportableFile) {
     }
     emit("update:selectedItems", localSelectedItems.value);
 }
+
+const currentFilesListView = computed(() => userStore.currentListViewPreferences.zipFileSelector || "list");
+const currentWorkflowsListView = computed(() => userStore.currentListViewPreferences.zipWorkflowSelector || "list");
 </script>
 
 <template>
-    <div class="zip-file-selector">
-        <div v-if="props.zipContents.workflows.length > 0">
-            <h3>Workflows</h3>
+    <div class="zip-file-selector w-100">
+        <div v-if="props.zipContents.workflows.length > 0" class="d-flex flex-column w-100">
+            <Heading h3 separator> Workflows </Heading>
+
             <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
             <p>Here you can select workflows compatible with Galaxy and import them into your account.</p>
-            <div v-for="workflow in props.zipContents.workflows" :key="workflow.path" class="d-flex flex-column">
-                <label v-b-tooltip.hover title="Select this workflow to import">
-                    <input
-                        type="checkbox"
-                        :value="workflow"
-                        :disabled="isAnonymous"
-                        :checked="localSelectedItems.includes(workflow)"
-                        @change="toggleSelection(workflow)" />
-                    <ZipFileEntryCard :file="workflow" />
-                </label>
+
+            <ListHeader list-id="zipWorkflowSelector" show-view-toggle />
+
+            <div class="d-flex flex-wrap">
+                <ZipFileEntryCard
+                    v-for="workflow in props.zipContents.workflows"
+                    :key="workflow.path"
+                    :file="workflow"
+                    :grid-view="currentWorkflowsListView === 'grid'"
+                    :selected="localSelectedItems.includes(workflow)"
+                    @select="toggleSelection(workflow)" />
             </div>
         </div>
 
-        <div v-if="props.zipContents.files.length > 0">
-            <h3>Files</h3>
+        <div v-if="props.zipContents.files.length > 0" class="d-flex flex-column w-100">
+            <Heading h3 separator> Files </Heading>
+
             <p>Here you can select individual files to import into your <b>current history</b>.</p>
-            <div v-for="dataset in props.zipContents.files" :key="dataset.path" class="d-flex flex-column">
-                <label v-b-tooltip.hover title="Select this file to import">
-                    <input
-                        type="checkbox"
-                        :value="dataset"
-                        :checked="localSelectedItems.includes(dataset)"
-                        @change="toggleSelection(dataset)" />
-                    <ZipFileEntryCard :file="dataset" />
-                </label>
+
+            <ListHeader list-id="zipFileSelector" show-view-toggle />
+
+            <div class="d-flex flex-wrap">
+                <ZipFileEntryCard
+                    v-for="dataset in props.zipContents.files"
+                    :key="dataset.path"
+                    :file="dataset"
+                    :grid-view="currentFilesListView === 'grid'"
+                    :selected="localSelectedItems.includes(dataset)"
+                    @select="toggleSelection(dataset)" />
             </div>
         </div>
     </div>
