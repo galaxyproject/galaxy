@@ -37,6 +37,15 @@ interface Props {
      * @default false
      */
     isBusy?: boolean;
+
+    /**
+     * The component to use as the container for the wizard.
+     *
+     * Can be either a BootstrapVue card or a div.
+     *
+     * @default "BCard"
+     */
+    containerComponent?: "BCard" | "div";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
     title: "Generic Wizard",
     submitButtonLabel: "Submit",
     isBusy: false,
+    containerComponent: "BCard",
 });
 
 const emit = defineEmits(["submit"]);
@@ -116,10 +126,13 @@ const steps = computed<[string, WizardStep][]>(() => {
 </script>
 
 <template>
-    <BCard class="wizard-container">
-        <BCardTitle>
-            <h2>{{ title }}</h2>
-        </BCardTitle>
+    <component :is="props.containerComponent" class="wizard-container">
+        <slot name="header">
+            <BCardTitle>
+                <h2>{{ title }}</h2>
+            </BCardTitle>
+        </slot>
+
         <BCardBody v-if="props.use?.steps?.value" class="wizard">
             <BCard>
                 <BCardBody class="wizard-steps">
@@ -146,7 +159,7 @@ const steps = computed<[string, WizardStep][]>(() => {
             <div class="step-content">
                 <span class="h-md step-instructions" v-text="props.use.current.value.instructions" />
 
-                <div class="step-body">
+                <div class="step-body w-100">
                     <slot>
                         <p>
                             Missing body for step <b>{{ props.use.current.value.label }}</b>
@@ -168,7 +181,7 @@ const steps = computed<[string, WizardStep][]>(() => {
                 </button>
             </div>
         </BCardBody>
-    </BCard>
+    </component>
 </template>
 
 <style scoped lang="scss">
