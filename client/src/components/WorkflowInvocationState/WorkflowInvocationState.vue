@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
-import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -35,7 +35,6 @@ interface Props {
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
-    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -79,8 +78,8 @@ const disabledTabTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
         return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete any disabled tabs will become available.`;
-    } else if (runningCount.value != 0) {
-        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed any disabled tabs will become available.`;
+    } else if (stateCounts.value && stateCounts.value.runningCount != 0) {
+        return `The workflow invocation still contains ${stateCounts.value.runningCount} running job(s). Once these jobs have completed any disabled tabs will become available.`;
     } else {
         return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
     }
@@ -108,18 +107,23 @@ const invocationSchedulingTerminal = computed(() => {
     );
 });
 const jobStatesTerminal = computed(() => {
+    // If the job states summary is null, we haven't fetched it yet
+    // If the `populated_state` for the summary is `new`, we haven't finished scheduling all jobs
+    if (jobStatesSummary.value === null || jobStatesSummary.value.populated_state === "new") {
+        return false;
+    }
+
     if (invocationSchedulingTerminal.value && jobCount.value === 0) {
-        // no jobs for this invocation (think subworkflow or just inputs)
+        // no jobs for this invocation (think it has just subworkflows/inputs)
         return true;
     }
-    return !!jobStatesSummary.value && isTerminal(jobStatesSummary.value as InvocationJobsSummary);
+    return isTerminal(jobStatesSummary.value);
 });
-const jobStatesSummary = computed(() => {
-    const jobsSummary = invocationStore.getInvocationJobsSummaryById(props.invocationId);
-    return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
-});
+const jobStatesSummary = computed(() => invocationStore.getInvocationJobsSummaryById(props.invocationId));
 const invocationStateSuccess = computed(() => {
-    return invocationState.value == "scheduled" && runningCount.value === 0 && invocationAndJobTerminal.value;
+    return (
+        invocationState.value == "scheduled" && stateCounts.value?.runningCount === 0 && invocationAndJobTerminal.value
+    );
 });
 
 type StepStateType = { [state: string]: number };
@@ -150,27 +154,31 @@ const stepStatesStr = computed<string>(() => {
     return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
 });
 
-const okCount = computed<number>(() => {
-    return jobStatesSummaryOkCount(jobStatesSummary.value);
-});
-
-const errorCount = computed<number>(() => {
-    return jobStatesSummaryErrorCount(jobStatesSummary.value);
-});
-
-const runningCount = computed<number>(() => {
-    return jobStatesSummaryRunningCount(jobStatesSummary.value);
+const stateCounts = computed<{
+    okCount: number;
+    errorCount: number;
+    runningCount: number;
+    newCount: number;
+} | null>(() => {
+    if (jobStatesSummary.value === null) {
+        return null;
+    }
+    const okCount = jobStatesSummaryOkCount(jobStatesSummary.value);
+    const errorCount = jobStatesSummaryErrorCount(jobStatesSummary.value);
+    const runningCount = jobStatesSummaryRunningCount(jobStatesSummary.value);
+    const newCount = jobCount.value - okCount - runningCount - errorCount;
+    return { okCount, errorCount, runningCount, newCount };
 });
 
 const jobCount = computed<number>(() => {
     return jobStatesSummaryJobCount(jobStatesSummary.value);
 });
 
-const newCount = computed<number>(() => {
-    return jobCount.value - okCount.value - runningCount.value - errorCount.value;
-});
-
 const jobStatesStr = computed(() => {
+    if (jobStatesSummary.value === null) {
+        return "No jobs summary available yet.";
+    }
+
     let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
     if (!invocationSchedulingTerminal.value) {
         jobStr += " (total number of jobs will change until all steps fully scheduled)";
@@ -269,8 +277,7 @@ async function onCancel() {
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
             :invocation-update-time="invocation.update_time"
-            :history-id="invocation.history_id"
-            :new-history-target="props.newHistoryTarget">
+            :history-id="invocation.history_id">
             <template v-slot:middle-content>
                 <div class="progress-bars mx-1">
                     <ProgressBar
@@ -296,12 +303,13 @@ async function onCancel() {
                         :loading="!invocationSchedulingTerminal"
                         class="steps-progress" />
                     <ProgressBar
+                        v-if="stateCounts"
                         :note="jobStatesStr"
                         :total="jobCount"
-                        :ok-count="okCount"
-                        :running-count="runningCount"
-                        :new-count="newCount"
-                        :error-count="errorCount"
+                        :ok-count="stateCounts.okCount"
+                        :running-count="stateCounts.runningCount"
+                        :new-count="stateCounts.newCount"
+                        :error-count="stateCounts.errorCount"
                         :loading="!invocationAndJobTerminal"
                         class="jobs-progress" />
                 </div>
