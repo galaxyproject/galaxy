@@ -69,7 +69,7 @@ export function useKeyedCache<T>(
 
     const isLoadingItem = computed(() => {
         return (id: string) => {
-            return loadingRequests.value[id] ?? false;
+            return Boolean(loadingRequests.value[id]);
         };
     });
 
