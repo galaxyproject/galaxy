@@ -42,7 +42,7 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
             <div v-if="parameters.length">
                 <Heading size="text" bold separator>Parameter Values</Heading>
                 <div class="mx-1">
-                    <ParameterStep :parameters="parameters" />
+                    <ParameterStep :parameters="parameters" styled-table />
                 </div>
             </div>
             <div v-for="([key, input], index) in inputData" :key="index" :data-label="dataInputStepLabel(key, input)">
