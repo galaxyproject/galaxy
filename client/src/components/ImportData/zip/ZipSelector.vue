@@ -1,32 +1,19 @@
 <script setup lang="ts">
-import { faArchive, faLaptop } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref, watch } from "vue";
+import { faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { ref, watch } from "vue";
 
-import { isGalaxyZipExport, isRoCrateZip, isZipFile, useZipExplorer } from "@/composables/zipExplorer";
+import { isZipFile, useZipExplorer } from "@/composables/zipExplorer";
 
-import GalaxyZipView from "./views/GalaxyZipView.vue";
-import RegularZipView from "./views/RegularZipView.vue";
-import RoCrateZipView from "./views/RoCrateZipView.vue";
-import ZipDropZone from "./ZipDropZone.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import GCard from "@/components/Common/GCard.vue";
 
-const {
-    openZip,
-    isLoading: loadingPreview,
-    zipExplorer,
-    errorMessage,
-    reset: resetExplorer,
-    isValidUrl,
-} = useZipExplorer();
+const { errorMessage, isValidUrl } = useZipExplorer();
 
 const fileInputRef = ref<HTMLInputElement>();
-const localZipFile = ref<File>();
 const zipUrl = ref<string>();
 
-const canOpenUrl = computed(() => isValidUrl(zipUrl.value));
-const showDropZone = computed(() => !loadingPreview.value && !zipExplorer.value);
+const emit = defineEmits<{
+    (e: "zipSourceChanged", source?: File | string): void;
+}>();
 
 function browseZipFile() {
     fileInputRef.value?.click();
@@ -37,84 +24,64 @@ async function onFileChange(event: Event) {
     const file = input.files?.[0] ?? null;
 
     errorMessage.value = isZipFile(file);
-    if (!errorMessage.value) {
-        await exploreLocalZip(file!);
+    if (!errorMessage.value && file) {
+        emit("zipSourceChanged", file);
     }
 }
 
-function reset() {
-    localZipFile.value = undefined;
-    zipUrl.value = undefined;
-    resetExplorer();
-}
-
-function onDropError(message: string) {
-    errorMessage.value = message;
-}
-
-async function exploreLocalZip(file: File) {
-    localZipFile.value = file;
-    return openZip(file);
-}
-
-async function exploreRemoteZip() {
-    if (!zipUrl.value) {
+function onUrlChange() {
+    if (!isValidUrl(zipUrl.value)) {
+        errorMessage.value = "Invalid URL provided.";
         return;
     }
-    return openZip(zipUrl.value);
+    emit("zipSourceChanged", zipUrl.value);
 }
 
-watch(canOpenUrl, (newValue, oldValue) => {
-    // Clear error message when URL becomes valid
-    if (oldValue === false && newValue === true) {
-        errorMessage.value = undefined;
+watch(
+    () => zipUrl.value,
+    (val) => {
+        if (val === "" || val === undefined) {
+            errorMessage.value = undefined;
+        }
     }
-});
+);
+
+const primaryActions = [
+    {
+        id: "btn-local",
+        title: "",
+        label: "Browse local ZIP",
+        icon: faLaptop,
+        handler: browseZipFile,
+        visible: true,
+    },
+];
 </script>
 
 <template>
-    <div class="upload-wrapper">
-        <div class="upload-header">
-            <div v-if="errorMessage" v-localize class="text-danger">{{ errorMessage }}</div>
-            <div v-else v-localize>
-                Browse the contents of a Zip archive and select individual files to import without uploading the whole
-                archive
-            </div>
-        </div>
-
-        <div class="upload-box">
-            <ZipDropZone v-if="showDropZone" @dropError="onDropError" @dropSuccess="exploreLocalZip" />
-            <div v-else>
-                <LoadingSpan v-if="loadingPreview" message="Checking ZIP contents..." />
-                <RoCrateZipView v-else-if="isRoCrateZip(zipExplorer)" :explorer="zipExplorer" />
-                <GalaxyZipView v-else-if="isGalaxyZipExport(zipExplorer)" :explorer="zipExplorer" />
-                <RegularZipView v-else-if="zipExplorer" :explorer="zipExplorer" />
-            </div>
-        </div>
-
-        <div class="upload-footer">
-            <label v-localize class="upload-footer-title" for="rocrate-zip-url">RO-Crate Zip URL:</label>
-            <input id="rocrate-zip-url" v-model="zipUrl" type="text" size="50" />
-
-            <GButton id="btn-open" title="Open ZIP URL" size="small" :disabled="!canOpenUrl" @click="exploreRemoteZip">
-                <FontAwesomeIcon :icon="faArchive" />
-                <span v-localize>Open Zip URL</span>
-            </GButton>
-        </div>
-
-        <div class="upload-buttons d-flex justify-content-end">
-            <GButton id="btn-local" @click="browseZipFile">
-                <FontAwesomeIcon :icon="faLaptop" />
-                <span v-localize>Choose local file</span>
-            </GButton>
+    <div class="w-100">
+        <div class="d-flex flex-grow-1">
+            <GCard
+                id="zip-file-local"
+                :primary-actions="primaryActions"
+                class="wizard-selection-card"
+                title="Option A: Select Local ZIP file"
+                description="Click on the `Browse local ZIP` button to select a ZIP file from your computer. Then you can preview and select files to import from it. This is useful when you are only interested in a few files from a large ZIP file." />
 
             <label style="display: none">
                 <input ref="fileInputRef" type="file" accept=".zip" @change="onFileChange" />
             </label>
 
-            <GButton id="btn-reset" title="Reset" @click="reset">
-                <span v-localize>Reset</span>
-            </GButton>
+            <GCard id="zip-file-remote" class="wizard-selection-card" title="Option B: Select Remote ZIP file">
+                <template v-slot:description>
+                    <p v-localize>Enter the URL of a ZIP file.</p>
+                    <label v-localize class="w-100" for="rocrate-zip-url">
+                        <input id="rocrate-zip-url" v-model="zipUrl" type="text" class="w-100" @change="onUrlChange" />
+                    </label>
+                    <strong>Note:</strong> The URL must be publicly accessible and should point to a ZIP file.
+                    <div v-if="errorMessage" v-localize class="text-danger">{{ errorMessage }}</div>
+                </template>
+            </GCard>
         </div>
     </div>
 </template>

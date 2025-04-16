@@ -16,13 +16,14 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
+import ZipPreview from "./ZipPreview.vue";
 import ZipSelector from "./ZipSelector.vue";
-import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import Heading from "@/components/Common/Heading.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
 const router = useRouter();
 
-const { importArtifacts, isZipArchiveAvailable, zipExplorer } = useZipExplorer();
+const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplorer, isValidUrl } = useZipExplorer();
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -32,14 +33,34 @@ const errorMessage = ref<string>();
 const importableZipContents = ref<ImportableZipContents>();
 
 const filesToImport = ref<ImportableFile[]>([]);
+const zipSource = ref<File | string>();
+
+const isValidSource = computed(() => {
+    if (zipSource.value) {
+        if (typeof zipSource.value === "string") {
+            return isValidUrl(zipSource.value);
+        } else if (zipSource.value instanceof File) {
+            return true;
+        }
+    }
+    return false;
+});
 
 const wizard = useWizard({
     "zip-file-selector": {
         label: "Select ZIP archive",
         instructions: computed(() => {
-            return `Open a local ZIP archive or paste a URL to a ZIP archive. Then see a preview of the contents.`;
+            return `Please select either a local file or a URL to a ZIP archive to proceed.`;
         }),
-        isValid: () => Boolean(importableZipContents.value),
+        isValid: () => isValidSource.value,
+        isSkippable: () => false,
+    },
+    "zip-file-preview": {
+        label: "Preview ZIP archive",
+        instructions: computed(() => {
+            return `Here you can preview the contents of the ZIP archive. You can go back to select a different ZIP archive if needed or proceed to select the items you want to import in the next step.`;
+        }),
+        isValid: () => Boolean(zipExplorer.value),
         isSkippable: () => false,
     },
     "select-items": {
@@ -74,7 +95,6 @@ async function importItems() {
 
 function resetWizard() {
     filesToImport.value = [];
-    wizard.goBackTo("select-items");
 }
 
 function isAnythingSelected() {
@@ -106,13 +126,21 @@ watch(
     { immediate: true }
 );
 
-const breadcrumbItems = computed(() => {
-    return [
-        {
-            title: "Import Files from Zip",
-        },
-    ];
-});
+async function onZipSourceChanged(source?: File | string) {
+    console.log("onZipSourceChanged", source);
+
+    errorMessage.value = undefined;
+    resetExplorer();
+    zipSource.value = source;
+    if (source) {
+        // Skip the next button if the source is a local file
+        if (source instanceof File) {
+            wizard.goTo("zip-file-preview");
+        }
+    } else {
+        errorMessage.value = "Invalid ZIP source.";
+    }
+}
 </script>
 
 <template>
@@ -130,16 +158,19 @@ const breadcrumbItems = computed(() => {
             :is-busy="isWizardBusy"
             @submit="importItems">
             <template v-slot:header>
-                <BreadcrumbHeading :items="breadcrumbItems" />
+                <Heading h1 separator inline size="md">Import Files from Zip</Heading>
             </template>
 
-            <ZipSelector v-if="wizard.isCurrent('zip-file-selector')" />
+            <ZipSelector v-if="wizard.isCurrent('zip-file-selector')" @zipSourceChanged="onZipSourceChanged" />
+
+            <ZipPreview v-if="wizard.isCurrent('zip-file-preview') && zipSource" :zip-source="zipSource" />
 
             <ZipFileSelector
                 v-if="wizard.isCurrent('select-items') && importableZipContents"
                 :zip-contents="importableZipContents"
                 :selected-items="filesToImport"
                 @update:selectedItems="onSelectionUpdate" />
+
             <div v-else-if="wizard.isCurrent('import-summary')">
                 <div>
                     <ul>
