@@ -5,7 +5,9 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">plyascii</test>
             <test test_attr="ext" result_type="datatype">plybinary</test>
+            <test test_attr="ext" result_type="datatype">vtpascii</test>
             <test test_attr="ext" result_type="datatype">vtpbinary</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
