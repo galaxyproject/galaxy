@@ -264,6 +264,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars["embedded"] = self._parse_embedded(embedded)
+        render_vars["host_url"] = trans.request.host_url
         render_vars["static_url"] = url_for(f"/{self.static_path}/")
         render_vars.update(vars={})
         render_vars.update({"script_attributes": self.config["entry_point"]["attr"]})
