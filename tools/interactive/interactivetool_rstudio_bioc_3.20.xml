@@ -44,6 +44,8 @@
 
         ## Required because of the above usermod command, but before linking the input files
         chown -R rstudio:rstudio /home/rstudio/ &&
+        chown -R rstudio:rstudio /usr/local/lib/R/library &&
+        chown -R rstudio:rstudio /usr/local/lib/R/doc &&
 
         #if $input:
             echo "[`date`] - Linking input files to '/home/rstudio/galaxy_inputs/'" &&
