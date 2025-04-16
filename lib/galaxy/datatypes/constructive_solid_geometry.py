@@ -901,6 +901,15 @@ class Vtp:
         raise NotImplementedError
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.plyascii')
+        >>> VtpAscii().sniff(fname)
+        False
+        >>> fname = get_test_fname('test.vtpascii')
+        >>> VtpAscii().sniff(fname)
+        True
+        """
         return self._is_vtp_header(file_prefix.text_io(errors="ignore"), self.subtype)
 
     def _is_vtp_header(self, fh: "TextIOBase", subtype: str) -> bool:
