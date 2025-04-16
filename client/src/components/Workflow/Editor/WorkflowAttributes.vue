@@ -106,20 +106,6 @@
             </div>
         </div>
         <div class="mt-2">
-            <b
-                >Readme
-                <FontAwesomeIcon :icon="faEye" @click="showReadmePreview = true" />
-            </b>
-            <b-textarea
-                id="workflow-readme"
-                v-model="readmeCurrent"
-                @keyup="$emit('update:readmeCurrent', readmeCurrent)" />
-            <div class="form-text text-muted">
-                A detailed description of what the workflow does. It is best to include descriptions of what kinds of
-                data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
-            </div>
-        </div>
-        <div class="mt-2">
             <b>Help</b>
             <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
             <div class="form-text text-muted">
@@ -137,16 +123,10 @@
                 An logo image used when generating publication artifacts for your workflow. This is completely optional.
             </div>
         </div>
-        <BModal v-model="showReadmePreview" hide-header centered ok-only>
-            <ToolHelpMarkdown :content="readmePreviewMarkdown" />
-        </BModal>
     </ActivityPanel>
 </template>
 
 <script>
-import { faEye } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
 import { format, parseISO } from "date-fns";
 
 import { Services } from "@/components/Workflow/services";
@@ -164,21 +144,17 @@ import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
 const bestPracticeHighlightTime = 10000;
 
 export default {
     name: "WorkflowAttributes",
     components: {
-        FontAwesomeIcon,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
         ItemListEditor,
         ActivityPanel,
-        BModal,
-        ToolHelpMarkdown,
     },
     props: {
         id: {
@@ -217,10 +193,6 @@ export default {
             type: String,
             default: null,
         },
-        readme: {
-            type: String,
-            default: null,
-        },
         help: {
             type: String,
             default: null,
@@ -248,13 +220,10 @@ export default {
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
             logoUrlCurrent: this.logoUrl,
-            readmeCurrent: this.readme,
             helpCurrent: this.help,
             showAnnotationHightlight: false,
             showLicenseHightlight: false,
             showCreatorHightlight: false,
-            showReadmePreview: false,
-            faEye,
             doiDescription: `
 Acceptable format:
 <ul>
@@ -277,19 +246,6 @@ Acceptable format:
         },
         hasParameters() {
             return this.parameters && this.parameters.parameters.length > 0;
-        },
-        readmePreviewMarkdown() {
-            let content = "";
-            if (this.nameCurrent) {
-                content += `# ${this.nameCurrent}\n\n`;
-            }
-            if (this.logoUrlCurrent) {
-                content += `![${this.nameCurrent || "workflow"} logo](${this.logoUrlCurrent})\n\n`;
-            }
-            if (this.readmeCurrent) {
-                content += this.readmeCurrent;
-            }
-            return content;
         },
         versionOptions() {
             const versions = [];
@@ -343,9 +299,6 @@ Acceptable format:
         name() {
             this.nameCurrent = this.name;
         },
-        readme() {
-            this.readmeCurrent = this.readme;
-        },
         help() {
             this.helpCurrent = this.help;
         },
@@ -362,7 +315,7 @@ Acceptable format:
                     this.showAnnotationHightlight = true;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = false;
-                    this.showReadmeHightlight = false;
+                    // this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showAnnotationHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -370,7 +323,7 @@ Acceptable format:
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = true;
                     this.showLicenseHightlight = false;
-                    this.showReadmeHightlight = false;
+                    // this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showCreatorHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -378,19 +331,21 @@ Acceptable format:
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = true;
-                    this.showReadmeHightlight = false;
+                    // this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showLicenseHightlight = false;
                     }, bestPracticeHighlightTime);
-                } else if (newHighlight == "readme") {
-                    this.showAnnotationHighlight = false;
-                    this.showCreatorHightlight = false;
-                    this.showLicenseHightlight = false;
-                    this.showReadmeHightlight = true;
-                    setTimeout(() => {
-                        this.showReadmeHightlight = false;
-                    }, bestPracticeHighlightTime);
                 }
+                // } else if (newHighlight == "readme") {
+                //     this.showAnnotationHighlight = false;
+                //     this.showCreatorHightlight = false;
+                //     this.showLicenseHightlight = false;
+                //     this.showReadmeHightlight = true;
+                //     setTimeout(() => {
+                //         this.showReadmeHightlight = false;
+                //     }, bestPracticeHighlightTime);
+                // }
+                // TODO: Add readme highlight in parent Index.vue
             },
         },
     },

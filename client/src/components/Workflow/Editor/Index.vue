@@ -93,7 +93,6 @@
                     :creator="creator"
                     :doi="doi"
                     :logo-url="logoUrl"
-                    :readme="readme"
                     :help="help"
                     @version="onVersion"
                     @tags="setTags"
@@ -103,8 +102,17 @@
                     @update:nameCurrent="setName"
                     @update:annotationCurrent="setAnnotation"
                     @update:logoUrlCurrent="setLogoUrl"
-                    @update:readmeCurrent="setReadme"
                     @update:helpCurrent="setHelp" />
+                <ActivityPanel v-else-if="isActiveSideBar('workflow-editor-readme')" title="Workflow Readme">
+                    <b-button-group vertical>
+                        <b-button :pressed="readmeEdit === true" @click="readmeEdit = true">
+                            Edit Readme Markdown
+                        </b-button>
+                        <b-button :pressed="readmeEdit === false" @click="readmeEdit = false">
+                            View Readme Markdown
+                        </b-button>
+                    </b-button-group>
+                </ActivityPanel>
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -165,8 +173,27 @@
                         </b-button>
                     </b-button-group>
                 </div>
+
+                <template v-if="readmeActive">
+                    <div v-if="readmeEdit" class="mt-2 h-100 d-flex flex-column">
+                        <b-textarea
+                            id="workflow-readme"
+                            v-model="readmeCurrent"
+                            size="lg"
+                            class="flex-grow-1"
+                            no-resize
+                            @keyup="setReadme(readmeCurrent)" />
+                        <div v-localize class="form-text text-muted">
+                            A detailed description of what the workflow does. It is best to include descriptions of what
+                            kinds of data are required. Researchers looking for the workflow will see this text.
+                            Markdown is enabled.
+                        </div>
+                    </div>
+                    <ToolHelpMarkdown v-else class="p-2" :content="readmeCurrent" />
+                </template>
+
                 <WorkflowGraph
-                    v-if="!datatypesMapperLoading"
+                    v-else-if="!datatypesMapperLoading"
                     ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
@@ -243,9 +270,11 @@ import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
+import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 
 library.add(faArrowLeft, faArrowRight, faHistory);
@@ -253,9 +282,11 @@ library.add(faArrowLeft, faArrowRight, faHistory);
 export default {
     components: {
         ActivityBar,
+        ActivityPanel,
         MarkdownEditor,
         SaveChangesModal,
         StateUpgradeModal,
+        ToolHelpMarkdown,
         ToolPanel,
         WorkflowAttributes,
         WorkflowLint,
@@ -310,6 +341,7 @@ export default {
         const activityBar = ref(null);
         const workflowGraph = ref(null);
         const reportActive = computed(() => activityBar.value?.isActiveSideBar("workflow-editor-report"));
+        const readmeActive = computed(() => activityBar.value?.isActiveSideBar("workflow-editor-readme"));
 
         const parameters = ref(null);
 
@@ -405,6 +437,15 @@ export default {
                 setReadmeHandler.set(readme.value, newReadme);
             }
         }
+        // computed with getter and setter
+        const readmeCurrent = computed({
+            get() {
+                return readme.value;
+            },
+            set(newReadme) {
+                setReadme(newReadme);
+            },
+        });
 
         const help = ref(null);
         const setHelpHandler = new SetValueActionHandler(
@@ -562,6 +603,8 @@ export default {
             annotation,
             setAnnotation,
             readme,
+            readmeActive,
+            readmeCurrent,
             setReadme,
             help,
             setHelp,
@@ -614,6 +657,7 @@ export default {
             messageBody: null,
             messageIsError: false,
             version: this.initialVersion,
+            readmeEdit: true,
             saveAsName: null,
             saveAsAnnotation: null,
             showSaveAsModal: false,
