@@ -339,7 +339,7 @@ async function onCancel() {
                     :store-id="storeId"
                     :is-full-page="props.isFullPage" />
             </BTab>
-            <WorkflowInvocationInputOutputTabs :invocation="invocation" />
+            <WorkflowInvocationInputOutputTabs :invocation="invocation" :not-lazy="invocationAndJobTerminal" />
             <!-- <BTab title="Workflow Overview">
                 <p>TODO: Insert readonly version of workflow editor here</p>
             </BTab> -->

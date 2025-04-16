@@ -10,6 +10,7 @@ import GenericHistoryItem from "components/History/Content/GenericItem.vue";
 
 const props = defineProps<{
     invocation: WorkflowInvocationElementView;
+    notLazy?: boolean;
 }>();
 
 const inputData = computed(() => Object.entries(props.invocation.inputs));
@@ -38,7 +39,7 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
 </script>
 <template>
     <span v-if="invocation">
-        <BTab v-if="inputData.length || parameters.length" title="Inputs" lazy>
+        <BTab v-if="inputData.length || parameters.length" title="Inputs">
             <div v-if="parameters.length">
                 <Heading size="text" bold separator>Parameter Values</Heading>
                 <div class="mx-1">
@@ -52,7 +53,7 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
                 <GenericHistoryItem :item-id="input.id" :item-src="input.src" />
             </div>
         </BTab>
-        <BTab v-if="outputs.length" title="Outputs" lazy>
+        <BTab v-if="outputs.length" title="Outputs" :lazy="!props.notLazy">
             <div v-for="([key, output], index) in outputs" :key="index">
                 <Heading size="text" bold separator>{{ key }}</Heading>
                 <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
