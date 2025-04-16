@@ -172,3 +172,17 @@ galaxy:
       dataset’s datatype. This extension can match a file’s actual disk suffix (e.g., ".vcf") but may also be more
       specialized (e.g., "fastqsanger"). Understanding these distinctions ensures that datasets are processed
       correctly within Galaxy, maintaining the integrity and reproducibility of analyses.
+
+  workflows:
+    runtimeSettings:
+      sendToNewHistory:
+        Enabling this option will create a new history for the workflow invocation. This is useful if you want to
+        keep the results of the workflow separate from your current history. The inputs to the workflow will also be
+        copied to the new history.
+      useCachedJobs:
+        Enabling this option will use cached jobs for the workflow invocation. This is useful if you want to
+        reuse the results of a previous job for the same input data.
+      splitObjectStore:
+        Enabling this option allows you to select and send outputs and intermediate datasets to different storage
+        locations independently of each other.
+
