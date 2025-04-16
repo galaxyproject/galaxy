@@ -1,5 +1,5 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
-import { computed, type Ref, ref, set, unref } from "vue";
+import { computed, del, type Ref, ref, set, unref } from "vue";
 
 import { LastQueue } from "@/utils/lastQueue";
 
@@ -46,7 +46,7 @@ export function useKeyedCache<T>(
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingErrors = ref<{ [key: string]: Error }>({});
 
-    const loadingRequests = new Map<string, Promise<T | undefined>>();
+    const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
 
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
@@ -69,7 +69,7 @@ export function useKeyedCache<T>(
 
     const isLoadingItem = computed(() => {
         return (id: string) => {
-            return loadingRequests.has(id);
+            return loadingRequests.value[id] ?? false;
         };
     });
 
@@ -82,8 +82,8 @@ export function useKeyedCache<T>(
     async function fetchItemById(params: FetchParams): Promise<T | undefined> {
         const itemId = params.id;
 
-        if (loadingRequests.has(itemId)) {
-            return loadingRequests.get(itemId);
+        if (loadingRequests.value[itemId]) {
+            return loadingRequests.value[itemId];
         }
 
         const fetchPromise = (async () => {
@@ -95,11 +95,11 @@ export function useKeyedCache<T>(
             } catch (error) {
                 set(loadingErrors.value, itemId, error as Error);
             } finally {
-                loadingRequests.delete(itemId);
+                del(loadingRequests.value, itemId);
             }
         })();
 
-        loadingRequests.set(itemId, fetchPromise);
+        set(loadingRequests.value, itemId, fetchPromise);
         return fetchPromise;
     }
 
