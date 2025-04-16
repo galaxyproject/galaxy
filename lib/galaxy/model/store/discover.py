@@ -385,6 +385,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             designation = fields_match.designation
             visible = fields_match.visible
             ext = ext_override or fields_match.ext
+            ext = ext.lower()
             dbkey = fields_match.dbkey
             extra_files = fields_match.extra_files
             # galaxy.tools.parser.output_collection_def.INPUT_DBKEY_TOKEN
