@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { faArrowRight, faCog, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCard, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
-import { useMarkdown } from "@/composables/markdown";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -18,6 +18,7 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
+import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
 import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -59,21 +60,28 @@ const splitObjectStore = ref(false);
 const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
-const showRightPanel = ref<"help" | "graph" | null>(!showPanels.value && props.model.runData.help ? "help" : null);
+const showRightPanel = ref<"help" | "graph" | null>(null);
 
 const showGraph = computed(() => showRightPanel.value === "graph");
 const showHelp = computed(() => showRightPanel.value === "help");
-
-const { renderMarkdown } = useMarkdown({
-    openLinksInNewPage: true,
-    removeNewlinesAfterList: true,
-    increaseHeadingLevelBy: 2,
-});
 
 const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
     usePersistentToggle("workflow-run-settings-panel");
 
 const { changingCurrentHistory } = storeToRefs(useHistoryStore());
+
+// Workflow REAME/help panel setup
+const { workflow, loading: workflowLoading } = useWorkflowInstance(props.model.runData.workflow_id);
+watch(
+    () => workflow.value,
+    (workflow) => {
+        if (workflow) {
+            // once the workflow loads, and if we are not showing panels, show the help if it exists by default
+            showRightPanel.value = !showPanels.value && workflow.readme ? "help" : null;
+        }
+    },
+    { immediate: true }
+);
 
 watch(
     () => showGraph.value,
@@ -232,7 +240,7 @@ async function onExecute() {
                                 <FontAwesomeIcon :icon="faSitemap" fixed-width />
                             </BButton>
                             <BButton
-                                v-if="model.runData.help"
+                                v-if="workflow?.readme || workflow?.help"
                                 v-b-tooltip.hover.noninteractive.html
                                 size="sm"
                                 :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
@@ -305,7 +313,11 @@ async function onExecute() {
             </div>
         </div>
 
-        <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
+        <WorkflowAnnotation
+            :workflow-id="model.runData.workflow_id"
+            :history-id="model.historyId"
+            show-details
+            :hide-hr="Boolean(showRightPanel)" />
 
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">
@@ -340,11 +352,7 @@ async function onExecute() {
                         :form-inputs="formInputs" />
                     <div v-else-if="showHelp" class="d-flex flex-column">
                         <Heading class="sticky-top" h2 separator bold size="sm"> Help </Heading>
-                        <BCard class="mx-1 flex-grow-1 overflow-auto">
-                            <!-- eslint-disable-next-line vue/no-v-html -->
-                            <p class="container" v-html="renderMarkdown(model.runData.help)" />
-                            <div class="py-2 text-center">- End of help -</div>
-                        </BCard>
+                        <WorkflowHelpDisplay :workflow="workflow" :loading="workflowLoading" />
                     </div>
                 </div>
             </div>

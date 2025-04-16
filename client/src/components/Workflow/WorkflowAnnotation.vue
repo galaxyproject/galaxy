@@ -3,13 +3,11 @@ import { faClock } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
-import { useMarkdown } from "@/composables/markdown";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import Heading from "../Common/Heading.vue";
 import TextSummary from "../Common/TextSummary.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import StatelessTags from "../TagsMultiselect/StatelessTags.vue";
@@ -22,6 +20,7 @@ interface Props {
     invocationUpdateTime?: string;
     historyId: string;
     showDetails?: boolean;
+    hideHr?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,14 +43,6 @@ const timeElapsed = computed(() => {
 
 const workflowTags = computed(() => {
     return workflow.value?.tags || [];
-});
-
-const readmeShown = ref(false);
-
-const { renderMarkdown } = useMarkdown({
-    openLinksInNewPage: true,
-    removeNewlinesAfterList: true,
-    increaseHeadingLevelBy: 1,
 });
 </script>
 
@@ -91,20 +82,7 @@ const { renderMarkdown } = useMarkdown({
         <div v-if="props.showDetails">
             <TextSummary v-if="description" class="my-1" :description="description" one-line-summary component="span" />
             <StatelessTags v-if="workflowTags.length" :value="workflowTags" :disabled="true" />
-            <div v-if="workflow.readme" class="mt-2">
-                <Heading
-                    h2
-                    separator
-                    bold
-                    size="sm"
-                    :collapse="readmeShown ? 'open' : 'closed'"
-                    @click="readmeShown = !readmeShown">
-                    <span v-localize>Readme</span>
-                </Heading>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <p v-if="readmeShown" v-html="renderMarkdown(workflow.readme)" />
-            </div>
-            <hr v-if="!workflow.readme" class="mb-0 mt-2" />
+            <hr v-if="!props.hideHr" class="mb-0 mt-2" />
         </div>
     </div>
 </template>
