@@ -380,7 +380,6 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     quota_bytes: Optional[int] = Field(
         default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
     )
-    tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 
 class UserUpdatePayload(Model):

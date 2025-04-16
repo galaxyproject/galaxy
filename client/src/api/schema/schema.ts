@@ -8630,11 +8630,6 @@ export interface components {
              */
             quota_percent?: number | null;
             /**
-             * Tags used
-             * @description Tags used by the user
-             */
-            tags_used: string[];
-            /**
              * Total disk usage
              * @description Size of all non-purged, unique datasets of the user in bytes.
              */
