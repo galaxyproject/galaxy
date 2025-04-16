@@ -641,7 +641,7 @@ class VitessceJson(Json):
             is_vitesscejson = self._looks_like_is_vitesscejson(file_prefix)
         return is_vitesscejson
 
-    def _looks_like_is_vitesscejson(self, file_prefix: FilePrefix, load_size: int = 5000) -> bool:
+    def _looks_like_is_vitesscejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
         """
         Expects version, datasets, layout and coordinationSpace to be specified.
         """
