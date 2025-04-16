@@ -249,6 +249,17 @@ export function useZipExplorer() {
         await clearDatabaseStore();
     }
 
+    function isSameSource(zipSource: File | string): boolean {
+        if (!zipExplorer.value) {
+            return false;
+        }
+        const currentSource = zipExplorer.value.zipArchive.source;
+        if (isRemoteZip(currentSource) && isRemoteZip(zipSource)) {
+            return currentSource === getProxiedUrl(zipSource);
+        }
+        return zipSource === currentSource;
+    }
+
     return {
         zipExplorer,
         errorMessage: zipExplorerError,
@@ -258,6 +269,7 @@ export function useZipExplorer() {
         reset,
         isValidUrl,
         importArtifacts,
+        isSameSource,
     };
 }
 
