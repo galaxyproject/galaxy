@@ -441,7 +441,7 @@ class MockTemplateHelpers:
         pass
 
     def dumps(*kwargs):
-        return {}
+        return kwargs
 
     def js(*js_files):
         pass
