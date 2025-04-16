@@ -127,6 +127,7 @@
     <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="imgt.json" type="galaxy.datatypes.text:ImgtJson" mimetype="application/json" display_in_upload="True"/>
     <datatype extension="geojson" type="galaxy.datatypes.text:GeoJson" mimetype="application/json" display_in_upload="True"/>
+    <datatype extension="vitesscejson" type="galaxy.datatypes.text:VitessceJson" mimetype="application/json" display_in_upload="True"/>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:DataManagerJson" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
     <datatype extension="fai" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description="A Fasta Index File is a text file consisting of lines each with five TAB-delimited columns : Name, Length, offset, linebases, Linewidth" description_url="http://www.htslib.org/doc/faidx.html"/>
@@ -1229,6 +1230,7 @@
     <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:ImgtJson"/>
     <sniffer type="galaxy.datatypes.text:GeoJson"/>
+    <sniffer type="galaxy.datatypes.text:VitessceJson"/>
     <sniffer type="galaxy.datatypes.text:PithyaResult"/>
     <sniffer type="galaxy.datatypes.text:BCSLts"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
