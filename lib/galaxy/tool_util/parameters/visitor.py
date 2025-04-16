@@ -11,7 +11,7 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from .models import (
+from galaxy.tool_util_models.parameters import (
     ConditionalParameterModel,
     ConditionalWhen,
     simple_input_models,
