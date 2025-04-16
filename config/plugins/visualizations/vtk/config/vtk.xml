@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/vtk"/>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/vtk"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
 </visualization>
