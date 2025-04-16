@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { faArrowRight, faCog, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faReadme } from "@fortawesome/free-brands-svg-icons";
+import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -247,7 +248,7 @@ async function onExecute() {
                                 variant="link"
                                 :pressed="showHelp"
                                 @click="showRightPanel = showHelp ? null : 'help'">
-                                <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+                                <FontAwesomeIcon :icon="faReadme" fixed-width />
                             </BButton>
                             <BButton
                                 v-b-tooltip.hover.noninteractive
