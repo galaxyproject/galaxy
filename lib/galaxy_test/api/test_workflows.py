@@ -1236,9 +1236,11 @@ steps:
         readme = "This is the body of my readme..."
         logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
         help = "This is my instruction for the workflow!"
+        doi = ["test-doi-1", "test-doi-2"]
         base_workflow_json["readme"] = readme
         base_workflow_json["logo_url"] = logo_url
         base_workflow_json["help"] = help
+        base_workflow_json["doi"] = doi
         workflow_with_metadata_str = json.dumps(base_workflow_json)
         base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
         response = self._post("workflows", data={"archive_source": base64_url})
@@ -1249,6 +1251,7 @@ steps:
         assert workflow["readme"] == readme
         assert workflow["help"] == help
         assert workflow["logo_url"] == logo_url
+        assert workflow["doi"] == doi
 
     def test_readme_too_large(self):
         big_but_valid_readme = "READ_" * 3999
