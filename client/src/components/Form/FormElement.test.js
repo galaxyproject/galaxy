@@ -51,7 +51,7 @@ describe("FormElement", () => {
         expect(wrapper.find(".ui-form-title-text").text()).toEqual("title_text");
         expect(wrapper.findAll("button[data-title='Disable']").length).toEqual(1);
 
-        await wrapper.find(".ui-form-collapsible-icon").trigger("click");
+        await wrapper.find("[data-collapsible]").trigger("click");
         expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");
         expect(wrapper.emitted().input[0][1]).toEqual("input");
 
@@ -62,7 +62,7 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[title='Enable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("button[title='Disable Collapsible']").length).toEqual(0);
 
-        await wrapper.find(".ui-form-collapsible-icon").trigger("click");
+        await wrapper.find("[data-collapsible]").trigger("click");
         expect(wrapper.emitted().input[1][0]).toEqual("default_value");
         expect(wrapper.findAll("button[title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("button[title='Enable Collapsible']").length).toEqual(0);
