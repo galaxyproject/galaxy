@@ -59,13 +59,13 @@ describe("FormElement", () => {
             collapsedEnableText: "Enable Collapsible",
             collapsedDisableText: "Disable Collapsible",
         });
-        expect(wrapper.findAll("button[title='Enable Collapsible']").length).toEqual(1);
-        expect(wrapper.findAll("button[title='Disable Collapsible']").length).toEqual(0);
+        expect(wrapper.findAll("button[data-title='Enable Collapsible']").length).toEqual(1);
+        expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(0);
 
         await wrapper.find("[data-collapsible]").trigger("click");
         expect(wrapper.emitted().input[1][0]).toEqual("default_value");
-        expect(wrapper.findAll("button[title='Disable Collapsible']").length).toEqual(1);
-        expect(wrapper.findAll("button[title='Enable Collapsible']").length).toEqual(0);
+        expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(1);
+        expect(wrapper.findAll("button[data-title='Enable Collapsible']").length).toEqual(0);
     });
 
     it("check type matching", async () => {
