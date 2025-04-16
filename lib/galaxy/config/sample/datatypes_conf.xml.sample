@@ -747,6 +747,7 @@
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true"/>
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true"/>
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true"/>
+    <datatype extension="vtpascii" type="galaxy.datatypes.constructive_solid_geometry:VtpAscii" display_in_upload="true"/>
     <datatype extension="vtpbinary" type="galaxy.datatypes.constructive_solid_geometry:VtpBinary" display_in_upload="true"/>
     <!-- Metagenomic Datatypes -->
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="true" mimetype="application/json">
@@ -1051,10 +1052,11 @@
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpAscii"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkXml"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
-    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTess"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTesr"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:GmshMsh"/>

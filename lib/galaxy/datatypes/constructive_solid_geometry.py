@@ -881,11 +881,16 @@ class Vtp:
     subtype = ""
     # Add metadata elements.
     MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
+    MetadataElement(name="lines", default=0, desc="Number of lines", readonly=True, optional=True, visible=True)
     MetadataElement(name="points", default=0, desc="Number of points", readonly=True, optional=True, visible=True)
     MetadataElement(name="polys", default=0, desc="Number of polygons", readonly=True, optional=True, visible=True)
+    MetadataElement(
+        name="strips", default=0, desc="Number of triangle strips", readonly=True, optional=True, visible=True
+    )
+    MetadataElement(
+        name="version", default=None, desc="VTK file format version", readonly=True, optional=True, visible=True
+    )
     MetadataElement(name="verts", default=0, desc="Number of vertices", readonly=True, optional=True, visible=True)
-    MetadataElement(name="lines", default=0, desc="Number of lines", readonly=True, optional=True, visible=True)
-    MetadataElement(name="strips", default=0, desc="Number of triangle strips", readonly=True, optional=True, visible=True)
 
     @abc.abstractmethod
     def __init__(self, **kwd):
@@ -901,32 +906,37 @@ class Vtp:
 
     def _is_vtp_header(self, fh: "TextIOBase", subtype: str) -> bool:
         """
-        Sniff whether the file is a VTK PolyData (.vtp) file in binary (appended) format.
+        Sniff whether the file is a VTK PolyData (.vtp) file in the given format subtype.
+        Valid subtypes are: 'appended' or 'ascii'.
         """
-        # First line should be the VTKFile opening tag
         line = get_next_line(fh)
         if not line.startswith("<VTKFile"):
             return False
-        if f'type="{subtype}"' not in line:
+        if 'type="PolyData"' not in line:
             return False
         stop_index = 0
         found_polydata = False
-        found_format_appended = False
+        found_format = False
         found_offset = False
         for line in util.iter_start_of_line(fh, MAX_LINE_LEN):
             line = line.strip()
             stop_index += 1
-            if f"<{subtype}" in line:
+            if "<PolyData" in line:
                 found_polydata = True
-            if 'format="appended"' in line:
-                found_format_appended = True
+            if f'format="{subtype}"' in line:
+                found_format = True
             if "offset=" in line:
                 found_offset = True
             if "</VTKFile>" in line:
                 break
             if stop_index > MAX_HEADER_LINES:
                 break
-        return found_polydata and found_format_appended and found_offset
+        if subtype == "appended":
+            return found_polydata and found_format and found_offset
+        elif subtype == "ascii":
+            return found_polydata and found_format
+        else:
+            return False
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
@@ -979,7 +989,15 @@ class Vtp:
 
 class VtpBinary(Vtp, Binary):
     file_ext = "vtpbinary"
-    subtype = "PolyData"
+    subtype = "appended"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
+
+
+class VtpAscii(Vtp, data.Text):
+    file_ext = "vtpascii"
+    subtype = "ascii"
+
+    def __init__(self, **kwd):
+        data.Text.__init__(self, **kwd)
