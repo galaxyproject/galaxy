@@ -44,10 +44,9 @@ export function useKeyedCache<T>(
     shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
-    const loadingItem = ref<{ [key: string]: boolean }>({});
     const loadingErrors = ref<{ [key: string]: Error }>({});
 
-    const loadingRequests = new Map<string, Promise<T | undefined>>();
+    const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
 
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
@@ -70,7 +69,7 @@ export function useKeyedCache<T>(
 
     const isLoadingItem = computed(() => {
         return (id: string) => {
-            return loadingItem.value[id] ?? false;
+            return Boolean(loadingRequests.value[id]);
         };
     });
 
@@ -83,12 +82,11 @@ export function useKeyedCache<T>(
     async function fetchItemById(params: FetchParams): Promise<T | undefined> {
         const itemId = params.id;
 
-        if (loadingRequests.has(itemId)) {
-            return loadingRequests.get(itemId);
+        if (loadingRequests.value[itemId]) {
+            return loadingRequests.value[itemId];
         }
 
         const fetchPromise = (async () => {
-            set(loadingItem.value, itemId, true);
             try {
                 const fetchItem = unref(fetchItemHandler);
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
@@ -97,11 +95,11 @@ export function useKeyedCache<T>(
             } catch (error) {
                 set(loadingErrors.value, itemId, error as Error);
             } finally {
-                del(loadingItem.value, itemId);
+                del(loadingRequests.value, itemId);
             }
         })();
 
-        loadingRequests.set(itemId, fetchPromise);
+        set(loadingRequests.value, itemId, fetchPromise);
         return fetchPromise;
     }
 
