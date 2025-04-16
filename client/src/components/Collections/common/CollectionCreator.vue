@@ -139,7 +139,10 @@ watch(
             </div>
         </span>
         <BTabs v-else v-model="currentTab" fill justified>
-            <BTab class="collection-creator" :title="localize('Create Collection')">
+            <BTab
+                class="collection-creator"
+                :title="localize('Create Collection')"
+                :title-link-attributes="{ 'data-description': 'collection create tab build' }">
                 <div v-if="props.noItems">
                     <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
                 </div>
@@ -175,7 +178,7 @@ watch(
                     </div>
                 </div>
             </BTab>
-            <BTab>
+            <BTab :title-link-attributes="{ 'data-description': 'collection create tab upload' }">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>

@@ -364,7 +364,7 @@ defineExpose({
     <div class="upload-wrapper">
         <div class="upload-header">
             <div v-if="props.emitUploaded && historyItemsStateInfo">
-                <BAlert show :variant="historyItemsStateInfo.variant">
+                <BAlert show :variant="historyItemsStateInfo.variant" data-description="upload state alert">
                     <LoadingSpan v-if="historyItemsStateInfo.spin" :message="historyItemsStateInfo.message" />
                     <span v-else>{{ historyItemsStateInfo.message }}</span>
                 </BAlert>

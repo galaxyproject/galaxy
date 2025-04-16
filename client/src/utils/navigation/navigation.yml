@@ -683,7 +683,33 @@ trs_import:
     url_input: "#trs-import-url-input"
     url_import_button: "#trs-url-import-button"
 
+# not meant as a stand-alone component - just using for the anchor
+upload_mixin:
+  selectors: &upload_mixin
+    create_button: '${_} #btn-new'
+    paste_option: '${_} #upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
+    paste_content: '${_} #upload-row-${n} .upload-text-content'
+    row: '${_} #upload-row-${n}'
+    status: '${_} [data-description="upload state alert"]'
+    embedded_start_button: '${_} #btn-start'
+    use_button: '${_} #btn-emit'
+
 workflow_run:
+  input:
+    selectors:
+      _: '[data-label="${label}"]'
+      upload: '${_} [data-description="upload"]'
+      collection_tab_build_link: '${_} [data-description="collection create tab build"]'
+      collection_tab_upload_link: '${_} [data-description="collection create tab upload"]'
+      # data inputs
+      <<: *upload_mixin
+
+    collection_builder:
+      selectors:
+        _: '[data-label="${label}"] .tabs'
+        create: '${_} .create-collection'
+        <<: *upload_mixin
+
   selectors:
     warning: '[data-description="workflow run warning"]'
     run_error: '[data-description="workflow run error"]'
@@ -1154,6 +1180,7 @@ upload:
     paste_option: '#upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
     paste_content: '#upload-row-${n} .upload-text-content'
     row: '#upload-row-${n}'
+    status: '[data-description="upload state alert"]'
     rule_dataset_dialog: '[data-description="rules dataset dialog"]'
     rule_dataset_selector:
       selector: '.selection-dialog-modal'
