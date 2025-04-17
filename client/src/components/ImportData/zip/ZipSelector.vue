@@ -98,7 +98,7 @@ const localFileActions = [
                 id="zip-file-local"
                 :primary-actions="localFileActions"
                 class="wizard-selection-card"
-                title="Option A: Select Local ZIP file">
+                title="🖥️ Option A: Select Local ZIP file">
                 <template v-slot:description>
                     <p v-localize>
                         Click on the `Browse local ZIP` button to select a ZIP file from your computer. Then you can
@@ -115,7 +115,7 @@ const localFileActions = [
                 <input ref="fileInputRef" type="file" accept=".zip" @change="onFileChange" />
             </label>
 
-            <GCard id="zip-file-remote" class="wizard-selection-card" title="Option B: Select Remote ZIP file">
+            <GCard id="zip-file-remote" class="wizard-selection-card" title="🌐 Option B: Select Remote ZIP file">
                 <template v-slot:description>
                     <p v-localize>
                         Enter or paste the URL of a ZIP file. You will be able to preview and select files to import

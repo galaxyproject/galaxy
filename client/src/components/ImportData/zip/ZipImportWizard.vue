@@ -150,13 +150,13 @@ async function onZipSourceChanged(source?: File | string) {
         <GenericWizard
             container-component="div"
             class="zip-import-wizard"
-            title="Import individual files from Zip"
-            :use="wizard"
             submit-button-label="Import"
+            description="You can import **individual files** directly from a .zip archive —whether it's stored on your local machine 🖥️ or hosted remotely 🌐— **without needing to fully extract, download, or upload the entire archive**. Follow the steps below to get started:"
+            :use="wizard"
             :is-busy="isWizardBusy"
             @submit="importItems">
             <template v-slot:header>
-                <Heading h1 separator inline size="md">Import Files from Zip</Heading>
+                <Heading h1 separator inline size="md">Import individual files from Zip</Heading>
             </template>
 
             <ZipSelector
