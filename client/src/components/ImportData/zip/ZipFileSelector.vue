@@ -36,26 +36,25 @@ function toggleSelection(item: ImportableFile) {
     emit("update:selectedItems", localSelectedItems.value);
 }
 
-const currentFilesListView = computed(() => userStore.currentListViewPreferences.zipFileSelector || "list");
-const currentWorkflowsListView = computed(() => userStore.currentListViewPreferences.zipWorkflowSelector || "list");
+const currentListView = computed(() => userStore.currentListViewPreferences.zipFileSelector || "list");
 </script>
 
 <template>
     <div class="zip-file-selector w-100">
+        <ListHeader list-id="zipFileSelector" show-view-toggle />
+
         <div v-if="props.zipContents.workflows.length > 0" class="d-flex flex-column w-100">
             <Heading h3 separator> Workflows </Heading>
 
             <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
             <p>Here you can select workflows compatible with Galaxy and import them into your account.</p>
 
-            <ListHeader list-id="zipWorkflowSelector" show-view-toggle />
-
             <div class="d-flex flex-wrap">
                 <ZipFileEntryCard
                     v-for="workflow in props.zipContents.workflows"
                     :key="workflow.path"
                     :file="workflow"
-                    :grid-view="currentWorkflowsListView === 'grid'"
+                    :grid-view="currentListView === 'grid'"
                     :selected="localSelectedItems.includes(workflow)"
                     @select="toggleSelection(workflow)" />
             </div>
@@ -66,14 +65,12 @@ const currentWorkflowsListView = computed(() => userStore.currentListViewPrefere
 
             <p>Here you can select individual files to import into your <b>current history</b>.</p>
 
-            <ListHeader list-id="zipFileSelector" show-view-toggle />
-
             <div class="d-flex flex-wrap">
                 <ZipFileEntryCard
                     v-for="dataset in props.zipContents.files"
                     :key="dataset.path"
                     :file="dataset"
-                    :grid-view="currentFilesListView === 'grid'"
+                    :grid-view="currentListView === 'grid'"
                     :selected="localSelectedItems.includes(dataset)"
                     @select="toggleSelection(dataset)" />
             </div>
