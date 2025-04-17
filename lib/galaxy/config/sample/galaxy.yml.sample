@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -189,9 +189,9 @@ gravity:
     # Public-facing port of the proxy
     # port: 4002
 
-    # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set``.
+    # Database to monitor.
+    # Should be set to the same value as ``interactivetools_map`` (or ``interactivetoolsproxy_map``) in the ``galaxy:`` section. This is
+    # ignored if either ``interactivetools_map`` or ``interactivetoolsproxy_map`` are set.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -2934,12 +2934,15 @@ galaxy:
   # as threshold (above threshold: regular select fields will be used)
   #select_type_workflow_threshold: -1
 
-  # API key for OpenAI (https://openai.com/) to enable the wizard (or
-  # more?)
-  #openai_api_key: null
+  # API key for an AI provider. AI provider is Openai By default
+  # (https://openai.com/) to enable the wizard (or more?)
+  #ai_api_key: null
 
-  # OpenAI model to enable the wizard.
-  #openai_model: gpt-4o
+  # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
+  #ai_api_base_url: null
+
+  # AI model to enable the wizard.
+  #ai_model: gpt-4o
 
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please

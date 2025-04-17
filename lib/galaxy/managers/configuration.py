@@ -229,7 +229,7 @@ class ConfigSerializer(base.ModelSerializer):
             "fixed_delegated_auth": _defaults_to(False),
             "help_forum_api_url": _use_config,
             "enable_help_forum_tool_panel_integration": _use_config,
-            "llm_api_configured": lambda item, key, **context: bool(item.openai_api_key),
+            "llm_api_configured": lambda item, key, **context: bool(item.ai_api_key),
         }
 
 

@@ -124,9 +124,11 @@ class ChatAPI:
         """Ensure OpenAI is available and configured with an API key."""
         if openai is None:
             raise ConfigurationError("OpenAI is not installed. Please install openai to use this feature.")
-        if self.config.openai_api_key is None:
+        if self.config.ai_api_key is None:
             raise ConfigurationError("OpenAI is not configured for this instance.")
-        openai.api_key = self.config.openai_api_key
+        openai.api_key = self.config.ai_api_key
+        if self.config.ai_api_base_url is not None:
+            openai.base_url = self.config.ai_api_base_url
 
     def _get_system_prompt(self) -> str:
         """Get the system prompt for OpenAI."""
@@ -144,7 +146,7 @@ class ChatAPI:
         """Send a chat request to OpenAI and handle exceptions."""
         try:
             return openai.chat.completions.create(
-                model=self.config.openai_model,
+                model=self.config.ai_model,
                 messages=messages,
             )
         except openai.APIConnectionError:

@@ -5431,23 +5431,33 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~
-``openai_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+``ai_api_key``
+~~~~~~~~~~~~~~
 
 :Description:
-    API key for OpenAI (https://openai.com/) to enable the wizard (or
-    more?)
+    API key for an AI provider. AI provider is Openai By default
+    (https://openai.com/) to enable the wizard (or more?)
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~
-``openai_model``
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+``ai_api_base_url``
+~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    OpenAI model to enable the wizard.
+    AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~
+``ai_model``
+~~~~~~~~~~~~
+
+:Description:
+    AI model to enable the wizard.
 :Default: ``gpt-4o``
 :Type: str
 
