@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 import { fetchPlugins, type Plugin } from "@/api/plugins";
 import { absPath } from "@/utils/redirect";
 
+import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -51,7 +52,7 @@ onMounted(() => {
             <LoadingSpan v-if="isLoading" message="Loading visualizations" />
             <div v-else-if="filteredPlugins.length > 0">
                 <div v-for="plugin in filteredPlugins" :key="plugin.name">
-                    <button class="plugin-item" :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
+                    <ButtonPlain class="plugin-item rounded p-2" :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
                         <div class="d-flex">
                             <div class="plugin-thumbnail mr-2">
                                 <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
@@ -62,7 +63,7 @@ onMounted(() => {
                                 <div class="plugin-list-text text-muted">{{ plugin.description }}</div>
                             </div>
                         </div>
-                    </button>
+                    </ButtonPlain>
                 </div>
             </div>
             <BAlert v-else v-localize variant="info" show> No matching visualization found. </BAlert>
