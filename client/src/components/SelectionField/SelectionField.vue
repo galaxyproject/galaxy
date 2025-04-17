@@ -24,9 +24,6 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
-// WorkflowLabel-specific logic (optional)
-import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
 import {
     getDataset,
     getDatasetCollection,
@@ -43,6 +40,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 export interface OptionType {
     id: string;
     name: string;
+    data: any;
 }
 export type ApiResponse = Array<any> | undefined;
 
@@ -53,14 +51,14 @@ const DELAY = 300;
 
 const props = withDefaults(
     defineProps<{
-        labels?: Array<WorkflowLabel>;
+        doQuery?: (query: string) => Promise<ApiResponse>;
         objectId?: string;
         objectName?: string;
         objectTitle?: string;
         objectType: string;
     }>(),
     {
-        labels: undefined,
+        doQuery: undefined,
         objectId: "",
         objectName: "...",
         objectTitle: undefined,
@@ -87,25 +85,9 @@ const currentValue = computed({
     },
 });
 
-// WorkflowLabel conditional logic
-const hasLabels = computed(() => props.labels !== undefined);
-
-const mappedLabels = computed(() =>
-    props.labels
-        ?.filter((workflowLabel) => getRequiredLabels(props.objectType).includes(workflowLabel.type))
-        .map((workflowLabel) => ({
-            id: workflowLabel.label,
-            name: `${workflowLabel.label} (${workflowLabel.type})`,
-            label: {
-                invocation_id: "",
-                [workflowLabel.type]: workflowLabel.label,
-            },
-        }))
-);
-
 // Drag-and-drop only when labels are not used
 const droppable = computed(
-    () => !hasLabels.value && ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
+    () => ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
 );
 
 const title = computed(
@@ -117,10 +99,10 @@ const title = computed(
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
-            const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
+            const data = await (props.doQuery ? props.doQuery(query) : doQuery(query));
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, label: d.label }));
+                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, data: d }));
             } else {
                 options.value = [];
             }
