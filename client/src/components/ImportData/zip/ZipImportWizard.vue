@@ -58,7 +58,7 @@ const wizard = useWizard({
         isSkippable: () => false,
     },
     "zip-file-preview": {
-        label: "Preview ZIP archive",
+        label: "Preview Contents",
         instructions: computed(() => {
             return `Here you can preview the contents of the ZIP archive. You can go back to select a different ZIP archive if needed or proceed to select the items you want to import in the next step.`;
         }),

@@ -172,7 +172,7 @@ export function useZipExplorer() {
         clearDatabaseStore();
     }
 
-    function isValidUrl(inputUrl?: string) {
+    function isValidUrl(inputUrl?: string | null) {
         if (!inputUrl) {
             return false;
         }
