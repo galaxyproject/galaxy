@@ -702,6 +702,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             workflowId: route.query.id,
                             version: route.query.version,
+                            instance: route.query.instance,
                             preferSimpleForm: Galaxy.config.simplified_workflow_run_ui === "prefer",
                             simpleFormTargetHistory: Galaxy.config.simplified_workflow_run_ui_target_history,
                             simpleFormUseJobCache: Galaxy.config.simplified_workflow_run_ui_job_cache === "on",
