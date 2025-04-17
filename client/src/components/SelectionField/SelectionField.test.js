@@ -1,12 +1,13 @@
-import { ref } from "vue";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { ref } from "vue";
 import Multiselect from "vue-multiselect";
 
-import SelectionField from "./SelectionField.vue";
 import { getDataset } from "./services";
+
+import SelectionField from "./SelectionField.vue";
 
 jest.mock("@/stores/eventStore", () => ({
     useEventStore: () => ({
