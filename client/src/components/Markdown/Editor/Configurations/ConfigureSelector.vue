@@ -15,12 +15,7 @@ import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
 
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
-
-export interface OptionType {
-    id: string;
-    name: string;
-}
-export type ApiResponse = Array<any> | undefined;
+import type { OptionType } from "@/components/SelectionField/types";
 
 const props = withDefaults(
     defineProps<{

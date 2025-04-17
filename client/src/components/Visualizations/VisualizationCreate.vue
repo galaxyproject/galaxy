@@ -10,6 +10,8 @@ import VisualizationHeader from "./VisualizationHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
+import type { OptionType } from "@/components/SelectionField/types";
+
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const props = defineProps<{
@@ -34,6 +36,10 @@ async function getPlugin() {
     isLoading.value = false;
 }
 
+function onSelect(value: OptionType) {
+    console.log(value);
+}
+
 onMounted(() => {
     getPlugin();
 });
@@ -44,6 +50,6 @@ onMounted(() => {
     <LoadingSpan v-else-if="!currentHistoryId || isLoading" message="Loading visualization" />
     <div v-else>
         <VisualizationHeader :plugin="plugin" class="mb-2" />
-        <SelectionField object-title="Dataset" object-type="history_dataset_id" :object-query="doQuery" />
+        <SelectionField object-title="Dataset" object-type="history_dataset_id" :object-query="doQuery" @change="onSelect"/>
     </div>
 </template>

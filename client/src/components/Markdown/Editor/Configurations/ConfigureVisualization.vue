@@ -23,7 +23,8 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { OptionType } from "@/components/SelectionField/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
@@ -62,8 +63,8 @@ const objectName = computed(() => contentObject.value.dataset_name || "...");
 
 function onChange(option: OptionType) {
     if (contentObject.value) {
-        if (hasLabels.value) {
-            contentObject.value.dataset_label = option.label;
+        if (hasLabels.value && option.data && option.data.label) {
+            contentObject.value.dataset_label = option.data.label;
             contentObject.value.dataset_id = undefined;
             contentObject.value.dataset_url = undefined;
         } else {
