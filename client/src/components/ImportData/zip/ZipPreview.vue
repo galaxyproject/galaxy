@@ -3,26 +3,21 @@ import { faCircleNotch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { isGalaxyZipExport, isRoCrateZip, useZipExplorer } from "@/composables/zipExplorer";
-import { errorMessageAsString } from "@/utils/simple-error";
 
 import GalaxyZipView from "./views/GalaxyZipView.vue";
 import RegularZipView from "./views/RegularZipView.vue";
 import RoCrateZipView from "./views/RoCrateZipView.vue";
 import GCard from "@/components/Common/GCard.vue";
 
-const { isLoading: loadingPreview, zipExplorer, errorMessage, openZip, isSameSource } = useZipExplorer();
+const { isLoading: loadingPreview, zipExplorer, errorMessage, openZip, isZipOpen } = useZipExplorer();
 
 const props = defineProps<{
     zipSource: File | string;
 }>();
 
 async function loadZip() {
-    if (!isSameSource(props.zipSource)) {
-        try {
-            await openZip(props.zipSource);
-        } catch (error) {
-            errorMessage.value = errorMessageAsString(error);
-        }
+    if (!isZipOpen(props.zipSource)) {
+        return openZip(props.zipSource);
     }
 }
 

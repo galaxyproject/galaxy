@@ -249,7 +249,7 @@ export function useZipExplorer() {
         await clearDatabaseStore();
     }
 
-    function isSameSource(zipSource: File | string): boolean {
+    function isZipOpen(zipSource: File | string): boolean {
         if (!zipExplorer.value) {
             return false;
         }
@@ -269,7 +269,7 @@ export function useZipExplorer() {
         reset,
         isValidUrl,
         importArtifacts,
-        isSameSource,
+        isZipOpen,
     };
 }
 
