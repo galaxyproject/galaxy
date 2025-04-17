@@ -4,21 +4,12 @@ import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { fetchPlugins, type Plugin } from "@/api/plugins";
 import { absPath } from "@/utils/redirect";
-import { urlData } from "@/utils/url";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
-
-interface Plugin {
-    description: string;
-    href: string;
-    html: string;
-    logo?: string;
-    name: string;
-    target?: string;
-}
 
 const router = useRouter();
 
@@ -41,7 +32,7 @@ async function selectVisualization(plugin: Plugin) {
 }
 
 async function getPlugins() {
-    plugins.value = await urlData({ url: "/api/plugins" });
+    plugins.value = await fetchPlugins();
     isLoading.value = false;
 }
 
