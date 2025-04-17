@@ -2,7 +2,7 @@
     <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
     <div v-else class="p-2">
         <ConfigureHeader :has-changed="hasChanged" @ok="onOk" @cancel="$emit('cancel')" />
-        <ConfigureSelector
+        <SelectionField
             :labels="labels"
             :object-name="objectName"
             object-type="history_dataset_id"
@@ -27,9 +27,9 @@ import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markd
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
-import ConfigureSelector from "./ConfigureSelector.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
+import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 interface contentType {
     dataset_id?: string;

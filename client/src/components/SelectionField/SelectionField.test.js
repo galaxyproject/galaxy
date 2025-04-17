@@ -3,9 +3,9 @@ import { createPinia, defineStore, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import Multiselect from "vue-multiselect";
 
-import { getDataset } from "@/components/Markdown/services";
+import { getDataset } from "./services";
 
-import ConfigureSelector from "./ConfigureSelector.vue";
+import SelectionField from "./SelectionField.vue";
 
 jest.mock("@/stores/eventStore", () => ({
     useEventStore: () => ({
@@ -13,7 +13,7 @@ jest.mock("@/stores/eventStore", () => ({
     }),
 }));
 
-jest.mock("@/components/Markdown/services", () => ({
+jest.mock("./services", () => ({
     getHistories: jest.fn(() => Promise.resolve([{ id: "1", name: "History One" }])),
     getDataset: jest.fn(() => Promise.resolve([{ id: "ds1", name: "Dataset A" }])),
     getInvocations: jest.fn(),
@@ -31,7 +31,7 @@ jest.mock("@/stores/historyStore", () => {
 });
 
 function mountComponent(props = {}) {
-    return mount(ConfigureSelector, {
+    return mount(SelectionField, {
         localVue,
         propsData: {
             objectType: "history_dataset_id",
@@ -50,7 +50,7 @@ beforeEach(() => {
     mockedStore = useFakeHistoryStore();
 });
 
-describe("ConfigureSelector.vue", () => {
+describe("SelectionField.vue", () => {
     it("renders label and multiselect when ready", async () => {
         const wrapper = mountComponent({ objectName: "My Dataset", objectId: "ds1" });
         expect(wrapper.find("label").text()).toContain("Select a History Dataset Id");

@@ -5,7 +5,7 @@
         <BAlert v-else-if="!requiredObject || requirementFulfilled" v-localize variant="info" show>
             No inputs required for <b>`{{ contentName }}`</b>.
         </BAlert>
-        <ConfigureSelector v-else :labels="labels" :object-type="requiredObject" @change="onChange" />
+        <SelectionField v-else :labels="labels" :object-type="requiredObject" @change="onChange" />
     </div>
 </template>
 
@@ -18,7 +18,7 @@ import { getArgs } from "@/components/Markdown/parse";
 import { getRequiredObject } from "@/components/Markdown/Utilities/requirements";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
-import ConfigureSelector from "./ConfigureSelector.vue";
+import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 const props = defineProps<{
     content: string;

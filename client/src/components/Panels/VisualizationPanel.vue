@@ -52,7 +52,10 @@ onMounted(() => {
             <LoadingSpan v-if="isLoading" message="Loading visualizations" />
             <div v-else-if="filteredPlugins.length > 0">
                 <div v-for="plugin in filteredPlugins" :key="plugin.name">
-                    <ButtonPlain class="plugin-item rounded p-2" :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
+                    <ButtonPlain
+                        class="plugin-item rounded p-2"
+                        :data-plugin-name="plugin.name"
+                        @click="selectVisualization(plugin)">
                         <div class="d-flex">
                             <div class="plugin-thumbnail mr-2">
                                 <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />

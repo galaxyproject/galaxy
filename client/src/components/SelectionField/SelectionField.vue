@@ -23,6 +23,10 @@ import { debounce } from "lodash";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
+
+import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
+// WorkflowLabel-specific logic (optional)
+import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
 import {
     getDataset,
     getDatasetCollection,
@@ -43,13 +47,13 @@ export interface OptionType {
 export type ApiResponse = Array<any> | undefined;
 
 const eventStore = useEventStore();
-
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const DELAY = 300;
 
 const props = withDefaults(
     defineProps<{
+        labels?: Array<WorkflowLabel>;
         objectId?: string;
         objectName?: string;
         objectTitle?: string;
@@ -83,8 +87,25 @@ const currentValue = computed({
     },
 });
 
+// WorkflowLabel conditional logic
+const hasLabels = computed(() => props.labels !== undefined);
+
+const mappedLabels = computed(() =>
+    props.labels
+        ?.filter((workflowLabel) => getRequiredLabels(props.objectType).includes(workflowLabel.type))
+        .map((workflowLabel) => ({
+            id: workflowLabel.label,
+            name: `${workflowLabel.label} (${workflowLabel.type})`,
+            label: {
+                invocation_id: "",
+                [workflowLabel.type]: workflowLabel.label,
+            },
+        }))
+);
+
+// Drag-and-drop only when labels are not used
 const droppable = computed(
-    () => ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
+    () => !hasLabels.value && ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
 );
 
 const title = computed(
@@ -92,10 +113,11 @@ const title = computed(
         props.objectTitle || `Select a ${props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`
 );
 
+// Unified search behavior
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
-            const data = await doQuery(query);
+            const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
             errorMessage.value = "";
             if (data) {
                 options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, label: d.label }));

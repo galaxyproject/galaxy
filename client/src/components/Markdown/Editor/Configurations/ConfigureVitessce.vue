@@ -6,7 +6,7 @@
             <div v-for="(dataset, datasetIndex) in contentObject.datasets" :key="datasetIndex">
                 <Heading size="sm">{{ dataset.name }} ({{ dataset.uid || "n/a" }})</Heading>
                 <div v-for="(file, fileIndex) in dataset.files" :key="fileIndex">
-                    <ConfigureSelector
+                    <SelectionField
                         :labels="labels"
                         :object-name="getObjectName(file)"
                         :object-title="`${fileIndex + 1}: ${getFileName(file)}`"
@@ -30,10 +30,10 @@ import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markd
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
-import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
+import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 interface DatasetEntryType {
     files?: Array<FileEntryType>;

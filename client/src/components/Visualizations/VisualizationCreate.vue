@@ -4,6 +4,7 @@ import { onMounted, ref } from "vue";
 
 import { fetchPlugin } from "@/api/plugins";
 import { absPath } from "@/utils/redirect";
+
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 const props = defineProps<{
