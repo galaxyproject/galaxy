@@ -10,6 +10,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.util import string_as_bool
 from galaxy.util.commands import shell
 from . import ContainerResolver
 from .mulled import CliContainerResolver
@@ -79,7 +80,12 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
     container_type = "singularity"
     cli = "singularity"
 
-    def __init__(self, app_info: "AppInfo", **kwargs) -> None:
+    def __init__(
+        self,
+        app_info: "AppInfo",
+        auto_install: bool = True,
+        **kwargs,
+    ) -> None:
         super().__init__(app_info=app_info, **kwargs)
         cache_directory_path = kwargs.get("cache_directory")
         if not cache_directory_path:
@@ -87,6 +93,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "explicit")
         self.cache_directory_path = cache_directory_path
         os.makedirs(self.cache_directory_path, exist_ok=True)
+        self.auto_install = string_as_bool(auto_install)
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", install: bool = False, **kwds
@@ -108,7 +115,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 return container_description
             image_id = cast(str, container_description.identifier)
             cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
-            if install and not os.path.exists(cache_path):
+            if (self.auto_install or install) and not os.path.exists(cache_path):
                 destination_info = {}
                 destination_for_container_type = kwds.get("destination_for_container_type")
                 if destination_for_container_type:
@@ -123,6 +130,8 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 )
                 command = container.build_singularity_pull_command(cache_path=cache_path)
                 shell(command)
+            elif not os.path.exists(cache_path):
+                return None
             # Point to container in the cache in stead.
             container_description.identifier = cache_path
             return container_description
