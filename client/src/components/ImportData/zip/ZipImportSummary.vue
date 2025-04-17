@@ -5,6 +5,7 @@ import { computed } from "vue";
 import { type ImportableFile } from "@/composables/zipExplorer";
 import { bytesToString } from "@/utils/utils";
 
+import ZipFileEntrySummaryCard from "./ZipFileEntrySummaryCard.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 interface Props {
@@ -21,9 +22,9 @@ const regularFiles = computed(() => {
     return props.filesToImport.filter((file) => file.type === "file");
 });
 
-function fileToIcon(file: ImportableFile) {
-    return file.type === "workflow" ? faNetworkWired : faFile;
-}
+const totalFileSize = computed(() => {
+    return regularFiles.value.reduce((total, file) => total + file.size, 0);
+});
 
 const workflowBadges = [
     {
@@ -43,11 +44,7 @@ const fileBadges = [
     },
     {
         id: "total-size",
-        label: bytesToString(
-            regularFiles.value.reduce((total, file) => total + file.size, 0),
-            true,
-            undefined
-        ),
+        label: bytesToString(totalFileSize.value, true, undefined),
         title: "Total Size of Files to import",
         variant: "info",
         visible: true,
@@ -62,49 +59,31 @@ const fileBadges = [
                 v-if="workflowFiles.length > 0"
                 id="zip-workflows-summary"
                 title="Workflows to Import"
+                title-size="md"
+                :title-icon="{ icon: faNetworkWired }"
                 :badges="workflowBadges">
                 <template v-slot:description>
                     <p v-localize>The following workflows will be imported from the ZIP file into your account.</p>
                     <div class="d-flex flex-wrap">
-                        <GCard
-                            v-for="file in workflowFiles"
-                            :id="file.path"
-                            :key="file.path"
-                            :title="file.name"
-                            :icon="fileToIcon(file)"
-                            class="zip-file-summary-card">
-                            <template v-slot:description>
-                                <div v-if="file.path !== file.name" class="zip-file-path text-muted">
-                                    {{ file.path }}
-                                </div>
-                                <div v-if="file.description">{{ file.description }}</div>
-                            </template>
-                        </GCard>
+                        <ZipFileEntrySummaryCard v-for="file in workflowFiles" :key="file.path" :file="file" />
                     </div>
                 </template>
             </GCard>
 
-            <GCard v-if="regularFiles.length > 0" id="zip-files-summary" title="Files to Import" :badges="fileBadges">
+            <GCard
+                v-if="regularFiles.length > 0"
+                id="zip-files-summary"
+                title="Files to Import"
+                title-size="md"
+                :title-icon="{ icon: faFile }"
+                :badges="fileBadges">
                 <template v-slot:description>
                     <p v-localize>
                         The following files will be imported from the ZIP file into your
                         <b>currently active Galaxy history</b>.
                     </p>
                     <div class="d-flex flex-wrap">
-                        <GCard
-                            v-for="file in regularFiles"
-                            :id="file.path"
-                            :key="file.path"
-                            :title="file.name"
-                            :icon="fileToIcon(file)"
-                            class="zip-file-summary-card">
-                            <template v-slot:description>
-                                <div v-if="file.path !== file.name" class="zip-file-path text-muted">
-                                    {{ file.path }}
-                                </div>
-                                <div v-if="file.description">{{ file.description }}</div>
-                            </template>
-                        </GCard>
+                        <ZipFileEntrySummaryCard v-for="file in regularFiles" :key="file.path" :file="file" />
                     </div>
                 </template>
             </GCard>
