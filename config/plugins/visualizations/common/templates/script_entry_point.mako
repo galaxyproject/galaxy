@@ -26,7 +26,7 @@
 
     ## Create a container with default identifier `app`
     <% container = script_attributes.get("container") or "app" %>
-    <div id="${container}" data-incoming='${h.dumps(data_incoming)}'></div>
+    <div id="${container}" data-incoming='${h.dumps(data_incoming) | h}'></div>
 
     ## Add script tag
     <% script_src = script_attributes.get("src") %>
