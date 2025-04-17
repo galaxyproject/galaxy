@@ -19,4 +19,21 @@
         <requirement type="npm" version="0.0.1" package="@galaxyproject/vtk"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
+    <help>
+### What is VTK?
+
+VTK (The Visualization Toolkit) is a powerful library for 3D computer graphics, image processing, and scientific visualization. In this interface, it enables interactive visual exploration of structured scientific data such as volumes and meshes.
+
+After selecting a dataset, a 3D viewport will display the data, allowing you to explore it with zoom, rotation, and slicing tools.
+
+#### Key Features
+
+- **Volume and Surface Rendering**: Visualize image volumes, meshes, and geometry with multiple rendering modes.
+- **Interactive Controls**: Rotate, zoom, and pan the view to explore data from any angle.
+- **Data Slicing and Probing**: Inspect cross-sections and internal structures with slicing and probe tools.
+- **High Performance**: Designed to efficiently handle large-scale scientific and medical datasets.
+
+To learn more about VTK and its capabilities, visit:
+[https://vtk.org/documentation/](https://vtk.org/documentation/)
+    </help>
 </visualization>
