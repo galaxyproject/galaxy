@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchPlugins, type Plugin } from "@/api/plugins";
-import { absPath } from "@/utils/redirect";
 
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import VisualizationHeader from "@/components/Visualizations/VisualizationHeader.vue";
 
 const router = useRouter();
 
@@ -56,16 +55,7 @@ onMounted(() => {
                         class="plugin-item rounded p-2"
                         :data-plugin-name="plugin.name"
                         @click="selectVisualization(plugin)">
-                        <div class="d-flex">
-                            <div class="plugin-thumbnail mr-2">
-                                <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
-                                <icon v-else :icon="faEye" class="plugin-icon" />
-                            </div>
-                            <div class="text-break">
-                                <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
-                                <div class="plugin-list-text text-muted">{{ plugin.description }}</div>
-                            </div>
-                        </div>
+                        <VisualizationHeader :plugin="plugin" />
                     </ButtonPlain>
                 </div>
             </div>
@@ -77,25 +67,7 @@ onMounted(() => {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.plugin-item {
-    background: none;
-    border: none;
-    text-align: left;
-    transition: none;
-    width: 100%;
-}
-
 .plugin-item:hover {
     background: $gray-200;
-}
-
-.plugin-thumbnail {
-    img {
-        width: 2rem;
-    }
-    .plugin-icon {
-        font-size: 1.3rem;
-        padding: 0.3rem;
-    }
 }
 </style>
