@@ -1,4 +1,3 @@
-import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faSave as farSave } from "@fortawesome/free-regular-svg-icons";
 import {
     faDownload,
@@ -65,16 +64,6 @@ export const workflowEditorActivities = [
         description: "Edit the report for this workflow.",
         tooltip: "Edit workflow report",
         icon: faEdit,
-        panel: true,
-        visible: true,
-        optional: true,
-    },
-    {
-        title: "README",
-        id: "workflow-editor-readme",
-        description: "Edit and View the README for this workflow.",
-        tooltip: "Create/Modify workflow README",
-        icon: faReadme,
         panel: true,
         visible: true,
         optional: true,

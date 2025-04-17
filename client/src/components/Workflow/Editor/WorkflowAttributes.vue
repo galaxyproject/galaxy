@@ -106,6 +106,23 @@
             </div>
         </div>
         <div class="mt-2">
+            <div>
+                <b>Readme</b>
+            </div>
+            <b-button
+                id="workflow-readme"
+                class="w-100"
+                size="sm"
+                :pressed="readmeActive"
+                @click="$emit('update:readme-active', !readmeActive)">
+                {{ readmeActive ? "Hide" : "Show" }} Readme
+            </b-button>
+            <div class="form-text text-muted">
+                A detailed description of what the workflow does. It is best to include descriptions of what kinds of
+                data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
+            </div>
+        </div>
+        <div class="mt-2">
             <b>Help</b>
             <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
             <div class="form-text text-muted">
@@ -192,6 +209,10 @@ export default {
         logoUrl: {
             type: String,
             default: null,
+        },
+        readmeActive: {
+            type: Boolean,
+            default: false,
         },
         help: {
             type: String,
