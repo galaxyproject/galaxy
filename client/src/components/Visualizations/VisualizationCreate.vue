@@ -8,9 +8,11 @@ import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import VisualizationHeader from "./VisualizationHeader.vue";
+import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
+
+import VisualizationHeader from "./VisualizationHeader.vue";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -54,11 +56,14 @@ onMounted(() => {
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     <LoadingSpan v-else-if="!currentHistoryId || isLoading" message="Loading visualization" />
     <div v-else>
-        <VisualizationHeader :plugin="plugin" class="mb-2" />
+        <VisualizationHeader :plugin="plugin" />
         <SelectionField
-            object-title="Select a Dataset"
+            class="my-3"
+            object-name="Select a dataset..."
+            object-title="Select to Visualize"
             object-type="history_dataset_id"
             :object-query="doQuery"
             @change="onSelect" />
+        <MarkdownDefault v-if="plugin.help" :content="plugin.help" />
     </div>
 </template>

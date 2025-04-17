@@ -1,12 +1,13 @@
 <template>
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-    <LoadingSpan v-else-if="!currentHistoryId || isLoading" />
+    <BAlert v-else-if="!currentHistoryId || isLoading" variant="info" show>
+        <LoadingSpan message="Please wait" />
+    </BAlert>
     <BAlert v-else-if="options.length === 0" variant="info" show>
         No datasets found in your current history that are compatible. Please upload a compatible dataset.
     </BAlert>
     <div
         v-else
-        class="mb-2"
         :class="droppable && dragState && `ui-dragover-${dragState}`"
         role="presentation"
         aria-roledescription="drop zone"
@@ -15,7 +16,7 @@
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <label class="form-label font-weight-bold" for="multiselect">{{ title }}:</label>
+        <label class="form-label font-weight-bold mb-2" for="multiselect">{{ title }}:</label>
         <Multiselect id="multiselect" v-model="currentValue" label="name" :options="options" @search-change="search" />
     </div>
 </template>
