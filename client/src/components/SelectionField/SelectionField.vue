@@ -1,6 +1,9 @@
 <template>
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-    <LoadingSpan v-else-if="!currentHistoryId" />
+    <LoadingSpan v-else-if="!currentHistoryId || isLoading" />
+    <BAlert v-else-if="options.length === 0" variant="info" show>
+        No datasets found in your current history that are compatible. Please upload a compatible dataset.
+    </BAlert>
     <div
         v-else
         class="mb-2"
@@ -73,6 +76,7 @@ const errorMessage = ref("");
 const dragData: Ref<EventData[]> = ref([]);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 const dragState: Ref<"danger" | "success" | "warning" | null> = ref(null);
+const isLoading = ref(true);
 const options: Ref<Array<OptionType>> = ref([]);
 
 const currentValue = computed({
@@ -98,6 +102,7 @@ const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
             const data = await (props.objectQuery ? props.objectQuery(query) : doQuery(query));
+            isLoading.value = false;
             errorMessage.value = "";
             if (data) {
                 options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, data: d }));
