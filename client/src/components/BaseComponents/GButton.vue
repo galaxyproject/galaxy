@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { Placement } from "@popperjs/core";
 import { computed, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { type RouterLink } from "vue-router";
 
+import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
+import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
 import { useAccessibleHover } from "@/composables/accessibleHover";
 import { useResolveElement } from "@/composables/resolveElement";
 import { useUid } from "@/composables/utils/uid";
@@ -62,41 +64,9 @@ const styleClasses = computed(() => {
     };
 });
 
-const baseComponent = computed(() => {
-    if (props.to) {
-        return RouterLink;
-    } else if (props.href) {
-        return "a" as const;
-    } else {
-        return "button" as const;
-    }
-});
-
-const currentTooltip = computed(() => {
-    if (props.disabled) {
-        return props.disabledTitle ?? props.title;
-    } else {
-        return props.title;
-    }
-});
-
-const currentTitle = computed(() => {
-    if (props.tooltip) {
-        return false;
-    } else {
-        return currentTooltip.value;
-    }
-});
-
+const baseComponent = useClickableElement(props);
+const currentTitle = useCurrentTitle(props);
 const tooltipId = useUid("g-tooltip");
-
-const describedBy = computed(() => {
-    if (props.tooltip && props.title) {
-        return tooltipId.value;
-    } else {
-        return false;
-    }
-});
 
 const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
 const tooltipRef = ref<InstanceType<typeof GTooltip>>();
@@ -119,12 +89,12 @@ useAccessibleHover(
         :is="baseComponent"
         ref="buttonRef"
         class="g-button"
-        :data-title="currentTooltip"
+        :data-title="currentTitle"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? props.to ?? props.href : ''"
-        :title="currentTitle"
-        :aria-describedby="describedBy"
+        :title="props.tooltip ? false : currentTitle"
+        :aria-describedby="props.tooltip ? tooltipId : false"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
@@ -136,7 +106,7 @@ useAccessibleHover(
             :id="tooltipId"
             ref="tooltipRef"
             :reference="buttonElementRef"
-            :text="currentTooltip"
+            :text="currentTitle"
             :placement="props.tooltipPlacement" />
     </component>
 </template>
