@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -16,6 +14,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ZipFileSelector from "./ZipFileSelector.vue";
+import ZipImportSummary from "./ZipImportSummary.vue";
 import ZipPreview from "./ZipPreview.vue";
 import ZipSelector from "./ZipSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -107,10 +106,6 @@ function onSelectionUpdate(selectedItems: ImportableFile[]) {
     filesToImport.value = selectedItems;
 }
 
-function fileToIcon(file: ImportableFile) {
-    return file.type === "workflow" ? faNetworkWired : faFile;
-}
-
 watch(
     [isZipArchiveAvailable, zipExplorer],
     (isAvailable) => {
@@ -172,16 +167,7 @@ async function onZipSourceChanged(source?: File | string) {
                 :selected-items="filesToImport"
                 @update:selectedItems="onSelectionUpdate" />
 
-            <div v-else-if="wizard.isCurrent('import-summary')">
-                <div>
-                    <ul>
-                        <li v-for="item in filesToImport" :key="item.path">
-                            <FontAwesomeIcon :icon="fileToIcon(item)" :title="`This is a ${item.type}`" />
-                            {{ item.name }}
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <ZipImportSummary v-if="wizard.isCurrent('import-summary')" :files-to-import="filesToImport" />
         </GenericWizard>
     </div>
 </template>
