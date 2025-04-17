@@ -27,13 +27,15 @@ const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplore
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
-const isWizardBusy = ref<boolean>(false);
-const errorMessage = ref<string>();
+const zipSource = ref<File | string>();
+
+const filesToImport = ref<ImportableFile[]>([]);
 
 const importableZipContents = ref<ImportableZipContents>();
 
-const filesToImport = ref<ImportableFile[]>([]);
-const zipSource = ref<File | string>();
+const isWizardBusy = ref<boolean>(false);
+
+const errorMessage = ref<string>();
 
 const isValidSource = computed(() => {
     if (zipSource.value) {
@@ -127,8 +129,6 @@ watch(
 );
 
 async function onZipSourceChanged(source?: File | string) {
-    console.log("onZipSourceChanged", source);
-
     errorMessage.value = undefined;
     resetExplorer();
     zipSource.value = source;
@@ -137,8 +137,6 @@ async function onZipSourceChanged(source?: File | string) {
         if (source instanceof File) {
             wizard.goTo("zip-file-preview");
         }
-    } else {
-        errorMessage.value = "Invalid ZIP source.";
     }
 }
 </script>
@@ -161,7 +159,10 @@ async function onZipSourceChanged(source?: File | string) {
                 <Heading h1 separator inline size="md">Import Files from Zip</Heading>
             </template>
 
-            <ZipSelector v-if="wizard.isCurrent('zip-file-selector')" @zipSourceChanged="onZipSourceChanged" />
+            <ZipSelector
+                v-if="wizard.isCurrent('zip-file-selector')"
+                :zip-source="zipSource"
+                @zipSourceChanged="onZipSourceChanged" />
 
             <ZipPreview v-if="wizard.isCurrent('zip-file-preview') && zipSource" :zip-source="zipSource" />
 
