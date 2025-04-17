@@ -3,10 +3,10 @@ import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import { getHistories, getInvocations, getJobs, getWorkflows } from "@/components/SelectionField/services";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { type WorkflowLabel } from "./Editor/types";
-import { getHistories, getInvocations, getJobs, getWorkflows } from "./services";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
