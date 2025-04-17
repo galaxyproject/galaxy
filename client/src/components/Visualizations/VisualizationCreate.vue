@@ -4,6 +4,7 @@ import { onMounted, ref } from "vue";
 
 import { fetchPlugin } from "@/api/plugins";
 import { absPath } from "@/utils/redirect";
+import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 const props = defineProps<{
     visualization: string;
@@ -38,6 +39,7 @@ onMounted(() => {
                 <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
                 <div class="plugin-list-text text-muted">{{ plugin.description }}</div>
             </div>
+            <SelectionField object-title="Dataset" object-type="history_dataset_id" />
         </div>
     </div>
 </template>

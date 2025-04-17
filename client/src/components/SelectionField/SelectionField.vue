@@ -23,8 +23,6 @@ import { debounce } from "lodash";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
-
-import type { ApiResponse, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import {
     getDataset,
     getDatasetCollection,
@@ -33,11 +31,16 @@ import {
     getJobs,
     getWorkflows,
 } from "@/components/SelectionField/services";
-import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+export interface OptionType {
+    id: string;
+    name: string;
+}
+export type ApiResponse = Array<any> | undefined;
 
 const eventStore = useEventStore();
 
@@ -47,7 +50,6 @@ const DELAY = 300;
 
 const props = withDefaults(
     defineProps<{
-        labels?: Array<WorkflowLabel>;
         objectId?: string;
         objectName?: string;
         objectTitle?: string;
@@ -82,21 +84,7 @@ const currentValue = computed({
 });
 
 const droppable = computed(
-    () => !hasLabels.value && ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
-);
-
-const hasLabels = computed(() => props.labels !== undefined);
-
-const mappedLabels = computed(() =>
-    props.labels
-        ?.filter((workflowLabel) => getRequiredLabels(props.objectType).includes(workflowLabel.type))
-        .map((workflowLabel) => ({
-            name: `${workflowLabel.label} (${workflowLabel.type})`,
-            label: {
-                invocation_id: "",
-                [workflowLabel.type]: workflowLabel.label,
-            },
-        }))
+    () => ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
 );
 
 const title = computed(
@@ -107,7 +95,7 @@ const title = computed(
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
-            const data = hasLabels.value ? mappedLabels.value : await doQuery(query);
+            const data = await doQuery(query);
             errorMessage.value = "";
             if (data) {
                 options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, label: d.label }));
