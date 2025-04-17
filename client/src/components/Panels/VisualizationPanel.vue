@@ -37,7 +37,7 @@ const filteredPlugins = computed(() => {
 });
 
 async function selectVisualization(plugin: Plugin) {
-    console.log(plugin);
+    router.push(`/visualizations/create?visualization=${plugin.name}`);
 }
 
 async function getPlugins() {

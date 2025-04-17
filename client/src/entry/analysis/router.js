@@ -34,9 +34,10 @@ import { ExternalIdentities } from "components/User/ExternalIdentities";
 import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
-import VisualizationsList from "components/Visualizations/Index";
+import VisualizationCreate from "components/Visualizations/VisualizationCreate";
 import VisualizationFrame from "components/Visualizations/VisualizationFrame";
 import VisualizationPublished from "components/Visualizations/VisualizationPublished";
+import VisualizationsList from "components/Visualizations/Index";
 import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import TrsImport from "components/Workflow/Import/TrsImport";
 import TrsSearch from "components/Workflow/Import/TrsSearch";
@@ -568,6 +569,14 @@ export function getRouter(Galaxy) {
                         component: VisualizationsList,
                         props: (route) => ({
                             datasetId: route.query.dataset_id,
+                        }),
+                    },
+                    {
+                        path: "visualizations/create",
+                        component: VisualizationCreate,
+                        name: "VisualizationsCreate",
+                        props: (route) => ({
+                            visualization: route.query.visualization,
                         }),
                     },
                     {
