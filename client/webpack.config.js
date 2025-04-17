@@ -303,7 +303,7 @@ module.exports = (env = {}, argv = {}) => {
     };
 
     // Only include CircularDependencyPlugin in development mode
-    if (targetEnv === "development") {
+    if (targetEnv === "development" && !process.env.SKIP_CIRCULAR_DEPENDENCY_CHECK) {
         buildconfig.plugins.push(
             new CircularDependencyPlugin({
                 // exclude detection of files based on a RegExp
