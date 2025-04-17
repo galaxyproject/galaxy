@@ -1,19 +1,19 @@
 <template>
     <SelectionField
-        :do-query="hasLabels ? doQuery : undefined"
         :object-id="objectId"
         :object-name="objectName"
+        :object-query="hasLabels ? doQuery : undefined"
         :object-title="objectTitle"
         :object-type="objectType"
-        @change="$emit('change', $event)"
-    />
+        @change="$emit('change', $event)" />
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
 
+import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
+
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 export interface OptionType {

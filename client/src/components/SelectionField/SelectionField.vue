@@ -40,7 +40,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 export interface OptionType {
     id: string;
     name: string;
-    data: any;
+    data?: any;
 }
 export type ApiResponse = Array<any> | undefined;
 
@@ -51,16 +51,16 @@ const DELAY = 300;
 
 const props = withDefaults(
     defineProps<{
-        doQuery?: (query: string) => Promise<ApiResponse>;
         objectId?: string;
         objectName?: string;
+        objectQuery?: (query: string) => Promise<ApiResponse>;
         objectTitle?: string;
         objectType: string;
     }>(),
     {
-        doQuery: undefined,
         objectId: "",
         objectName: "...",
+        objectQuery: undefined,
         objectTitle: undefined,
     }
 );
@@ -86,9 +86,7 @@ const currentValue = computed({
 });
 
 // Drag-and-drop only when labels are not used
-const droppable = computed(
-    () => ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType)
-);
+const droppable = computed(() => ["history_dataset_id", "history_dataset_collection_id"].includes(props.objectType));
 
 const title = computed(
     () =>
@@ -99,7 +97,7 @@ const title = computed(
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
-            const data = await (props.doQuery ? props.doQuery(query) : doQuery(query));
+            const data = await (props.objectQuery ? props.objectQuery(query) : doQuery(query));
             errorMessage.value = "";
             if (data) {
                 options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, data: d }));

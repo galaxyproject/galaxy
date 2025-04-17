@@ -29,12 +29,11 @@ import Vue, { computed, type Ref, ref, watch } from "vue";
 import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 
+import ConfigureHeader from "./ConfigureHeader.vue";
+import ConfigureSelector from "./ConfigureSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
-
-import ConfigureHeader from "./ConfigureHeader.vue";
-import ConfigureSelector from "./ConfigureSelector.vue";
 
 interface DatasetEntryType {
     files?: Array<FileEntryType>;
