@@ -2,17 +2,19 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
+import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import VisualizationHeader from "./VisualizationHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
-import type { OptionType } from "@/components/SelectionField/types";
-
 const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+const router = useRouter();
 
 const props = defineProps<{
     visualization: string;
@@ -36,8 +38,11 @@ async function getPlugin() {
     isLoading.value = false;
 }
 
-function onSelect(value: OptionType) {
-    console.log(value);
+function onSelect(dataset: OptionType) {
+    router.push(`/visualizations/display?visualization=${plugin.value.name}&dataset_id=${dataset.id}`, {
+        // @ts-ignore
+        title: dataset.name,
+    });
 }
 
 onMounted(() => {
@@ -50,6 +55,10 @@ onMounted(() => {
     <LoadingSpan v-else-if="!currentHistoryId || isLoading" message="Loading visualization" />
     <div v-else>
         <VisualizationHeader :plugin="plugin" class="mb-2" />
-        <SelectionField object-title="Dataset" object-type="history_dataset_id" :object-query="doQuery" @change="onSelect"/>
+        <SelectionField
+            object-title="Select a Dataset"
+            object-type="history_dataset_id"
+            :object-query="doQuery"
+            @change="onSelect" />
     </div>
 </template>

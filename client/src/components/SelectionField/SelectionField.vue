@@ -38,8 +38,9 @@ import {
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import type { ApiResponse, OptionType } from "./types";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const eventStore = useEventStore();
 const { currentHistoryId } = storeToRefs(useHistoryStore());

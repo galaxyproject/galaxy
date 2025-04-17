@@ -27,8 +27,8 @@ import { BAlert } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
-import type { OptionType } from "@/components/SelectionField/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
+import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";

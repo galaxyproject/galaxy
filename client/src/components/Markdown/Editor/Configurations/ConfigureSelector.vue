@@ -13,9 +13,9 @@ import { computed } from "vue";
 
 import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getRequiredLabels } from "@/components/Markdown/Utilities/requirements";
+import type { OptionType } from "@/components/SelectionField/types";
 
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
-import type { OptionType } from "@/components/SelectionField/types";
 
 const props = withDefaults(
     defineProps<{

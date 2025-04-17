@@ -14,9 +14,9 @@ import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
-import type { OptionType } from "@/components/SelectionField/types";
 import { getArgs } from "@/components/Markdown/parse";
 import { getRequiredObject } from "@/components/Markdown/Utilities/requirements";
+import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
