@@ -8,11 +8,10 @@ import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import SelectionField from "@/components/SelectionField/SelectionField.vue";
-
 import VisualizationHeader from "./VisualizationHeader.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
+import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
