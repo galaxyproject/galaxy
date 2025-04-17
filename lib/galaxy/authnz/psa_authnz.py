@@ -179,7 +179,11 @@ class PSAAuthnz(IdentityProvider):
         else:
             log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh")
             return False
-        if int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2 <= int(time.time()):
+        if (
+            int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2
+            <= int(time.time())
+            < int(user_authnz_token.extra_data["auth_time"]) + int(expires)
+        ):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
                 self.refresh_azure(user_authnz_token)
