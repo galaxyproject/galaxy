@@ -93,4 +93,19 @@ describe("SelectionField.vue", () => {
         expect(wrapper.classes()).not.toContain("ui-dragover-success");
         expect(wrapper.emitted("change")).toEqual([[{ id: "item1", name: "Item One" }]]);
     });
+
+    it("uses custom objectQuery function when provided", async () => {
+        const mockQuery = jest.fn(() =>
+            Promise.resolve([{ id: "custom1", name: "Custom Result" }])
+        );
+        const wrapper = mountComponent({
+            objectQuery: mockQuery,
+        });
+        await wrapper.vm.$nextTick();
+        // Trigger search
+        const multiselect = wrapper.findComponent(Multiselect);
+        multiselect.vm.$emit("search-change", "test");
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        expect(mockQuery).toHaveBeenCalledWith("test");
+    });
 });
