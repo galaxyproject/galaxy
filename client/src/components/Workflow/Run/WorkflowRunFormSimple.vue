@@ -6,6 +6,7 @@ import { BAlert, BButton, BButtonGroup, BFormCheckbox, BOverlay } from "bootstra
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
@@ -32,13 +33,15 @@ interface Props {
     targetHistory?: string;
     useJobCache?: boolean;
     canMutateCurrentHistory: boolean;
-    requestState?: Record<string, any>;
+    requestState?: WorkflowInvocationRequestInputs;
+    appendStepLabelsForRequest?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     targetHistory: "current",
     useJobCache: false,
     requestState: undefined,
+    appendStepLabelsForRequest: true,
 });
 
 const emit = defineEmits<{
@@ -117,6 +120,12 @@ const formInputs = computed(() => {
         if (isWorkflowInput(step.step_type)) {
             const stepName = new String(step.step_index) as any;
             const stepLabel = step.step_label || new String(step.step_index + 1);
+
+            // For the `WorkflowInvocationRequestModel`, (used in `WorkflowRerun`) if there is no step_label, it does not have
+            // `step.step_index + 1` as a label, and has `step.step_index` instead.
+            const requestStateIndex =
+                !props.appendStepLabelsForRequest && !step.step_label ? new String(step.step_index) : stepLabel;
+
             const stepType = step.step_type;
             const help = step.annotation;
             const longFormInput = step.inputs[0];
@@ -125,9 +134,17 @@ const formInputs = computed(() => {
                 help: help,
                 label: stepLabel,
             });
-            if (props.requestState && props.requestState[stepLabel]) {
-                const value = props.requestState[stepLabel];
-                stepAsInput.value = value;
+            if (props.requestState && props.requestState[requestStateIndex]) {
+                const value = props.requestState[requestStateIndex];
+                // TODO: Will this break workflow landings? Done for `WorkflowRereun` since
+                //       `WorkflowInvocationRequestModel` does not provide an object with `values` property.
+                if (stepType === "data_input" || stepType === "data_collection_input") {
+                    stepAsInput.value = {
+                        values: !Array.isArray(value) ? [value] : value,
+                    };
+                } else {
+                    stepAsInput.value = value;
+                }
             }
             // disable collection mapping...
             stepAsInput.flavor = "module";

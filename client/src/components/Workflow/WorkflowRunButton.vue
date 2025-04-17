@@ -13,19 +13,23 @@ interface Props {
     version?: number;
     force?: boolean;
     variant?: string;
+    invocationId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     title: undefined,
     version: undefined,
     variant: "primary",
+    invocationId: undefined,
 });
 
 const route = useRoute();
 const router = useRouter();
 
-const runPath = computed(
-    () => `/workflows/run?id=${props.id}${props.version !== undefined ? `&version=${props.version}` : ""}`
+const runPath = computed(() =>
+    !props.invocationId
+        ? `/workflows/run?id=${props.id}${props.version !== undefined ? `&version=${props.version}` : ""}`
+        : `/workflows/rerun?invocation_id=${props.invocationId}`
 );
 
 function routeToPath() {
@@ -45,7 +49,7 @@ function routeToPath() {
     <BButton
         id="workflow-run-button"
         v-b-tooltip.hover.top.html.noninteractive
-        :title="title ?? 'Run workflow'"
+        :title="title ?? `${props.invocationId ? 'Rerun' : 'Run'} Workflow`"
         :data-workflow-run="id"
         :variant="variant"
         size="sm"
@@ -55,6 +59,6 @@ function routeToPath() {
         @click="routeToPath">
         <FontAwesomeIcon :icon="faPlay" fixed-width />
 
-        <span v-if="full" v-localize>Run Workflow</span>
+        <span v-if="full" v-localize> {{ props.invocationId ? "Rerun" : "Run" }} Workflow </span>
     </BButton>
 </template>

@@ -143,12 +143,12 @@ const workflowImportTitle = computed(() => {
                         variant="primary"
                         :title="
                             !workflow.deleted
-                                ? `<b>Rerun</b><br>${getWorkflowName()}`
+                                ? `<b>Rerun</b><br>${getWorkflowName()}<br><b>with same inputs</b>`
                                 : 'This workflow has been deleted.'
                         "
                         :disabled="workflow.deleted"
-                        force
                         full
+                        :invocation-id="props.invocation.id"
                         :version="workflow.version" />
                 </div>
             </div>
