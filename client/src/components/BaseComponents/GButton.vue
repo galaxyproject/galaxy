@@ -68,6 +68,8 @@ const baseComponent = useClickableElement(props);
 const currentTitle = useCurrentTitle(props);
 const tooltipId = useUid("g-tooltip");
 
+const showTooltip = computed(() => props.tooltip && currentTitle.value);
+
 const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
 const tooltipRef = ref<InstanceType<typeof GTooltip>>();
 
@@ -94,7 +96,7 @@ useAccessibleHover(
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? props.to ?? props.href : ''"
         :title="props.tooltip ? false : currentTitle"
-        :aria-describedby="props.tooltip ? tooltipId : false"
+        :aria-describedby="showTooltip ? tooltipId : false"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
@@ -102,7 +104,7 @@ useAccessibleHover(
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
-            v-if="props.tooltip && props.title"
+            v-if="showTooltip"
             :id="tooltipId"
             ref="tooltipRef"
             :reference="buttonElementRef"
