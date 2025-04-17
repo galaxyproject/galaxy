@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardTitle } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { useMarkdown } from "@/composables/markdown";
+
 import type { WizardReturnType, WizardStep } from "./useWizard";
 
 interface Props {
@@ -17,9 +19,22 @@ interface Props {
     /**
      * The title of the wizard.
      *
+     * This is displayed at the top of the wizard.
+     *
+     * The default component can be replaced by a slot named `header`.
+     *
      * @default "Generic Wizard"
      */
     title?: string;
+
+    /**
+     * Optional description of the wizard.
+     *
+     * This is displayed below the title. It supports Markdown.
+     *
+     * The default description behavior can be replaced by a slot named `description`.
+     */
+    description?: string;
 
     /**
      * The label for the submit button.
@@ -51,10 +66,13 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     use: undefined,
     title: "Generic Wizard",
+    description: undefined,
     submitButtonLabel: "Submit",
     isBusy: false,
     containerComponent: "BCard",
 });
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const emit = defineEmits(["submit"]);
 
@@ -131,6 +149,10 @@ const steps = computed<[string, WizardStep][]>(() => {
             <BCardTitle>
                 <h2>{{ title }}</h2>
             </BCardTitle>
+        </slot>
+
+        <slot name="description">
+            <div v-if="props.description" v-html="renderMarkdown(props.description)" />
         </slot>
 
         <BCardBody v-if="props.use?.steps?.value" class="wizard">
