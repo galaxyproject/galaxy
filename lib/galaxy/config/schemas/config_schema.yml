@@ -4029,6 +4029,7 @@ mapping:
       ai_api_key:
         type: str
         required: false
+        deprecated_alias: openai_api_key
         desc: |
           API key for an AI provider. AI provider is Openai By default (https://openai.com/) to enable the wizard (or more?)
 
@@ -4042,6 +4043,7 @@ mapping:
         type: str
         default: gpt-4o
         required: false
+        deprecated_alias: openai_model
         desc: |
           AI model to enable the wizard.
 
