@@ -163,6 +163,10 @@ class VisualizationsConfigParser:
         if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
 
+        # load optional tags specifiers
+        if (tag_section := xml_tree.find("tags")) is not None:
+            returned["tags"] = ListParser(tag_section)
+
         # load tracks specifiers (allow 'groups' section for backward compatibility)
         if (tracks_section := xml_tree.find("tracks") or xml_tree.find("groups")) is not None:
             returned["tracks"] = ListParser(tracks_section)

@@ -2,6 +2,11 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="VTK" embeddable="true">
     <description>Visualization Toolkit</description>
+    <tags>
+        <tag>Computational Geometry</tag>
+        <tag>Mesh Processing</tag>
+        <tag>OpenGL</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>

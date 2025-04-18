@@ -16,7 +16,7 @@
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <label class="form-label font-weight-bold mb-2" for="multiselect">{{ title }}:</label>
+        <Heading separator size="sm">{{ title }}</Heading>
         <Multiselect id="multiselect" v-model="currentValue" label="name" :options="options" @search-change="search" />
     </div>
 </template>
@@ -41,6 +41,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import type { OptionType } from "./types";
 
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const eventStore = useEventStore();

@@ -16,6 +16,7 @@ export interface Plugin {
     logo?: string;
     name: string;
     target?: string;
+    tags?: Array<string>;
     tests?: Array<any>;
 }
 

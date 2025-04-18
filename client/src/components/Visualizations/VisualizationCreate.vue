@@ -79,7 +79,10 @@ onMounted(() => {
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     <LoadingSpan v-else-if="!currentHistoryId || !plugin" message="Loading visualization" />
     <div v-else>
-        <VisualizationHeader :plugin="plugin" />
+        <VisualizationHeader class="my-3" :plugin="plugin" />
+        <div v-for="(tag, index) in plugin.tags" :key="index" class="badge badge-info text-capitalize mr-1">
+            {{ tag }}
+        </div>
         <SelectionField
             class="my-3"
             object-name="Select a dataset..."
@@ -87,9 +90,12 @@ onMounted(() => {
             object-type="history_dataset_id"
             :object-query="doQuery"
             @change="onSelect" />
-        <MarkdownDefault v-if="plugin.help" :content="plugin.help" />
-        <div v-if="urlTuples && urlTuples.length > 0">
-            <Heading separator size="sm">Sample Datasets</Heading>
+        <div v-if="plugin.help">
+            <Heading separator size="sm">Help</Heading>
+            <MarkdownDefault :content="plugin.help" />
+        </div>
+        <div v-if="urlTuples && urlTuples.length > 0" class="my-3">
+            <Heading separator size="sm">Samples</Heading>
             <div class="d-flex flex-wrap">
                 <JobRunner
                     v-for="([url, name], index) in urlTuples"
