@@ -27,17 +27,18 @@ const props = defineProps<{
 const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
-const urlTuples = computed(() => (
-    plugin.value?.tests
-        ?.map((item) => {
-            const url = item.param?.name === "dataset_id" ? item.param?.value : null;
-            if (url) {
-                const filename = getFilename(url);
-                return filename.trim() ? ([filename, url] as [string, string]) : null;
-            }
-        })
-        .filter((tuple): tuple is [string, string] => Boolean(tuple)) ?? []
-));
+const urlTuples = computed(
+    () =>
+        plugin.value?.tests
+            ?.map((item) => {
+                const url = item.param?.name === "dataset_id" ? item.param?.value : null;
+                if (url) {
+                    const filename = getFilename(url);
+                    return filename.trim() ? ([filename, url] as [string, string]) : null;
+                }
+            })
+            .filter((tuple): tuple is [string, string] => Boolean(tuple)) ?? []
+);
 
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
@@ -89,8 +90,15 @@ onMounted(() => {
         <MarkdownDefault v-if="plugin.help" :content="plugin.help" />
         <div v-if="urlTuples && urlTuples.length > 0">
             <Heading separator size="sm">Sample Datasets</Heading>
-            <div v-for="(url, urlIndex) in urlTuples" :key="urlIndex" class="my-2">
-                <JobRunner :icon="faEye" :title="`Load '${url[0]}'`" :payload="{ url: url[1] }" @ok="onSelect" />
+            <div class="d-flex flex-wrap">
+                <JobRunner
+                    v-for="([url, name], index) in urlTuples"
+                    :key="index"
+                    class="m-1"
+                    :icon="faEye"
+                    :title="url"
+                    :payload="{ url: name }"
+                    @ok="onSelect" />
             </div>
         </div>
     </div>
