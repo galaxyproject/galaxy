@@ -304,6 +304,11 @@
             <value>1.0</value>
         </input>
     </settings>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/newbox.pdb" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is NGL?
 
