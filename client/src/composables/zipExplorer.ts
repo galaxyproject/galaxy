@@ -290,7 +290,23 @@ export function getImportableFiles(explorer: IZipExplorer): ImportableFile[] {
             type: isGalaxyWorkflow(entry) ? "workflow" : "file",
         });
     }
+    files.sort(orderByPath);
     return files;
+}
+
+/**
+ * Order files by their path putting root files first.
+ */
+function orderByPath(a: ZipEntryMetadata, b: ZipEntryMetadata) {
+    const aPath = a.path.split("/");
+    const bPath = b.path.split("/");
+    if (aPath.length === 1 && bPath.length > 1) {
+        return -1;
+    }
+    if (aPath.length > 1 && bPath.length === 1) {
+        return 1;
+    }
+    return a.path.localeCompare(b.path);
 }
 
 function shouldSkipZipEntry(entry: ZipFileEntry) {
