@@ -91,6 +91,7 @@
                     :versions="versions"
                     :license="license"
                     :creator="creator"
+                    :doi="doi"
                     :logo-url="logoUrl"
                     :readme="readme"
                     :help="help"
@@ -98,6 +99,7 @@
                     @tags="setTags"
                     @license="onLicense"
                     @creator="onCreator"
+                    @doi="onDoi"
                     @update:nameCurrent="setName"
                     @update:annotationCurrent="setAnnotation"
                     @update:logoUrlCurrent="setLogoUrl"
@@ -366,6 +368,17 @@ export default {
             setCreatorHandler.set(creator.value, newCreator);
         }
 
+        const doi = ref(null);
+        const setDoiHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (doi.value = value),
+            showAttributes,
+            "set DOI"
+        );
+        function setDoi(newDoi) {
+            setDoiHandler.set(doi.value, newDoi);
+        }
+
         const annotation = ref(null);
         const setAnnotationHandler = new SetValueActionHandler(
             undoRedoStore,
@@ -544,6 +557,8 @@ export default {
             setLicense,
             creator,
             setCreator,
+            doi,
+            setDoi,
             annotation,
             setAnnotation,
             readme,
@@ -1068,6 +1083,7 @@ export default {
             const has_changes = this.stateMessages.length > 0;
             this.license = data.license;
             this.creator = data.creator;
+            this.doi = data.doi;
             getVersions(this.id).then((versions) => {
                 this.versions = versions;
             });
@@ -1103,6 +1119,12 @@ export default {
             if (this.creator != creator) {
                 this.hasChanges = true;
                 this.setCreator(creator);
+            }
+        },
+        onDoi(doi) {
+            if (this.doi != doi) {
+                this.hasChanges = true;
+                this.setDoi(doi);
             }
         },
         onInsertedStateMessages(insertedStateMessages) {
