@@ -35,7 +35,8 @@
                     trim
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
-                    @keydown.8.capture="removeLastPath" />
+                    @keydown.8.capture="removeLastPath"
+                    @blur="handleBlur" />
             </b-breadcrumb-item>
         </b-breadcrumb>
 
@@ -157,6 +158,14 @@ export default {
                 url = decodeURI(url);
             }
             this.$emit("input", url);
+        },
+        handleBlur() {
+            if (this.currentDirectoryName && this.isValidName) {
+                const newFolder = this.currentDirectoryName;
+                this.pathChunks.push({ pathChunk: newFolder, editable: true });
+                this.currentDirectoryName = "";
+            }
+            this.updateURL();
         },
     },
 };
