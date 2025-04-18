@@ -140,11 +140,22 @@ export default {
         },
         addPath({ key }) {
             if ((key === "Enter" || key === "/") && this.isValidName) {
-                const newFolder = this.currentDirectoryName;
-                this.pathChunks.push({ pathChunk: newFolder, editable: true });
-                this.currentDirectoryName = "";
+                this.addDirectoryToPath();
+            }
+        },
+        handleBlur() {
+            if (this.currentDirectoryName && this.isValidName) {
+                this.addDirectoryToPath();
+            } else {
+                // If the input was touched let's propagate the change either way.
                 this.updateURL();
             }
+        },
+        addDirectoryToPath() {
+            const newFolder = this.currentDirectoryName;
+            this.pathChunks.push({ pathChunk: newFolder, editable: true });
+            this.currentDirectoryName = "";
+            this.updateURL();
         },
         updateURL(isReset = false) {
             let url = undefined;
@@ -158,14 +169,6 @@ export default {
                 url = decodeURI(url);
             }
             this.$emit("input", url);
-        },
-        handleBlur() {
-            if (this.currentDirectoryName && this.isValidName) {
-                const newFolder = this.currentDirectoryName;
-                this.pathChunks.push({ pathChunk: newFolder, editable: true });
-                this.currentDirectoryName = "";
-            }
-            this.updateURL();
         },
     },
 };
