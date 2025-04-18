@@ -922,7 +922,7 @@ class Vtp:
         found_format = False
         found_offset = False
 
-        for line in util.iter_start_of_line(fh, MAX_LINE_LEN):
+        for stop_index, line in enumerate(util.iter_start_of_line(fh, MAX_LINE_LEN)):
             line = line.strip()
             stop_index += 1
             if "<PolyData" in line:
