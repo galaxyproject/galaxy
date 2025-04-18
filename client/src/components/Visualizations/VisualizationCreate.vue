@@ -9,6 +9,7 @@ import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import VisualizationHeader from "./VisualizationHeader.vue";
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
@@ -66,8 +67,11 @@ onMounted(() => {
             :object-query="doQuery"
             @change="onSelect" />
         <MarkdownDefault v-if="plugin.help" :content="plugin.help" />
-        <div v-for="(sample, sampleIndex) in samples" :key="sampleIndex">
-            {{ sample }}
+        <div v-if="samples && samples.length > 0" class="pb-2">
+            <Heading separator size="sm">Sample Datasets</Heading>
+            <div v-for="(sample, sampleIndex) in samples" :key="sampleIndex" class="font-italic">
+                {{ sampleIndex + 1 }}. {{ sample }}
+            </div>
         </div>
     </div>
 </template>
