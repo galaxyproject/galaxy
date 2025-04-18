@@ -39,6 +39,7 @@ interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
     height?: string;
@@ -324,13 +325,18 @@ function addUploadedFiles(files: HDASummary[]) {
             addedFiles.push(file);
         }
     });
-    const summary = splitIntoPairedAndUnpaired(
-        files,
-        currentForwardFilter.value || "",
-        currentReverseFilter.value || "",
-        removeExtensions.value
-    );
-    syncPairingToRowData(summary, rowData.value);
+    if (currentForwardFilter.value === undefined) {
+        // Auto-pairing hasn't paired anything yet - just take all the files and try them...
+        initialize();
+    } else {
+        const summary = splitIntoPairedAndUnpaired(
+            files,
+            currentForwardFilter.value || "",
+            currentReverseFilter.value || "",
+            removeExtensions.value
+        );
+        syncPairingToRowData(summary, rowData.value);
+    }
     _refresh();
 }
 
@@ -485,7 +491,7 @@ async function attemptCreate() {
     onCollectionCreate(props.collectionType, listIdentifiers);
 }
 
-defineExpose({ attemptCreate });
+defineExpose({ attemptCreate, redraw: resize });
 
 function applyFilters(forwardFilter: string, reverseFilter: string) {
     currentForwardFilter.value = forwardFilter;

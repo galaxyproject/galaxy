@@ -707,6 +707,7 @@ upload_mixin:
     create_button: '${_} #btn-new'
     paste_option: '${_} #upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
     paste_content: '${_} #upload-row-${n} .upload-text-content'
+    title: '${_} #upload-row-${n} .upload-title'
     row: '${_} #upload-row-${n}'
     status: '${_} [data-description="upload state alert"]'
     embedded_start_button: '${_} #btn-start'
@@ -1196,6 +1197,7 @@ gies:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
 
+# TODO: use the newer upload_mixin to avoid duplication
 upload:
   selectors:
     build_button: '#rule-based #btn-build'

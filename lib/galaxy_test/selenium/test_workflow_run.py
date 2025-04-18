@@ -7,7 +7,7 @@ from typing_extensions import Literal
 
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
-    WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE,
+    WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -466,7 +466,8 @@ steps: {}
     @selenium_test
     @managed_history
     def test_upload_list_paired_from_workflow(self):
-        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)
+        history_id = self.current_history_id()
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED)
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input_list")
         input.upload.wait_for_and_click()
@@ -477,15 +478,17 @@ steps: {}
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+        assert content.strip() == "hello world\nhello world"
 
     def _upload_hello_world_for_input(self, workflow_input, count=1, from_hid=1):
         # assumes fresh history...
-        workflow_input.create_button.wait_for_and_click()
-        url = self.dataset_populator.base64_url_for_string("hello world")
-        content = ""
-        for _ in range(count):
-            content += url + "\n"
-        workflow_input.paste_content(n=0).wait_for_and_send_keys(content)
+        for i in range(count):
+            workflow_input.create_button.wait_for_and_click()
+            url = self.dataset_populator.base64_url_for_string("hello world")
+            workflow_input.paste_content(n=i).wait_for_and_send_keys(url)
+            workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i+1}.fastq")
+
         workflow_input.embedded_start_button.wait_for_and_click()
         workflow_input.status.wait_for_present()
         for i in range(from_hid, from_hid + count):

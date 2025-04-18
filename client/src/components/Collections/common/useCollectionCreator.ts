@@ -15,6 +15,7 @@ export type Mode = "modal" | "wizard";
 interface CommonCollectionBuilderProps {
     extensions?: string[];
     defaultHideSourceItems?: boolean;
+    suggestedName?: string;
     mode: Mode;
 }
 
@@ -52,7 +53,7 @@ export const showHid = true;
 export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?: EmitsName) {
     const removeExtensions = ref(true);
     const hideSourceItems = ref(props.defaultHideSourceItems || false);
-    const collectionName = ref("");
+    const collectionName = ref(props.suggestedName ?? "");
 
     const showButtonsForModal = computed(() => {
         return props.mode === "modal";

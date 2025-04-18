@@ -878,6 +878,21 @@ steps:
       input_collect: input_list
 """
 
+
+WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED = """
+class: GalaxyWorkflow
+inputs:
+  - id: input_list
+    type: collection
+    collection_type: "list:paired"
+steps:
+  - tool_id: collection_paired_test
+    in:
+      f1: input_list
+"""
+
+
+
 WORKFLOW_WITH_OUTPUTS = """
 class: GalaxyWorkflow
 inputs:

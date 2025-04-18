@@ -218,6 +218,16 @@ function resetCreator() {
     createCollectionError.value = null;
     createdCollection.value = null;
 }
+
+const creator = ref();
+
+function redrawCreator() {
+    if (creator.value) {
+        creator.value.redraw();
+    }
+}
+
+defineExpose({ redrawCreator });
 </script>
 
 <template>
@@ -293,6 +303,7 @@ function resetCreator() {
             @on-cancel="hideCreator" />
         <PairedOrUnpairedListCollectionCreator
             v-else-if="pairedOrUnpairedSupportedCollectionType"
+            ref="creator"
             :history-id="props.historyId"
             :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
