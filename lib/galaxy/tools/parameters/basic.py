@@ -2495,6 +2495,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         tag = input_source.get("tag")
         if collection_types:
             collection_types = [t.strip() for t in collection_types.split(",")]
+        else:
+            collection_types = None
         self._collection_types = collection_types
         self.tag = tag
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future

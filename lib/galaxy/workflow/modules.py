@@ -2035,13 +2035,18 @@ class ToolModule(WorkflowModule):
                             )
                         )
                     elif isinstance(input, DataCollectionToolParameter):
+                        raw_collection_types = input.collection_types
+                        if not raw_collection_types:
+                            # we have some "" strings in the database and coming from the form
+                            # that we should probably want to represent as a None.
+                            raw_collection_types = None
                         inputs.append(
                             dict(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=input.multiple,
                                 input_type="dataset_collection",
-                                collection_types=input.collection_types,
+                                collection_types=raw_collection_types,
                                 optional=input.optional,
                                 extensions=input.extensions,
                             )
