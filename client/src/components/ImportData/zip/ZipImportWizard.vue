@@ -50,33 +50,25 @@ const isValidSource = computed(() => {
 const wizard = useWizard({
     "zip-file-selector": {
         label: "Select ZIP archive",
-        instructions: computed(() => {
-            return `Please select either a local file or a URL to a ZIP archive to proceed.`;
-        }),
+        instructions: `Please select an option:`,
         isValid: () => isValidSource.value,
         isSkippable: () => false,
     },
     "zip-file-preview": {
         label: "Preview Contents",
-        instructions: computed(() => {
-            return `Here you can preview the contents of the ZIP archive. You can go back to select a different ZIP archive if needed or proceed to select the items you want to import in the next step.`;
-        }),
+        instructions: `Here you can preview the contents of the selected ZIP archive. You can go back to select a different ZIP archive if needed or proceed to select the items you want to import in the next step:`,
         isValid: () => Boolean(zipExplorer.value),
         isSkippable: () => false,
     },
     "select-items": {
         label: "Select items to import",
-        instructions: computed(() => {
-            return `Review the contents of the Zip archive and select the items you wish to extract and import:`;
-        }),
+        instructions: `Review the contents of the Zip archive and select the items you wish to extract and import:`,
         isValid: () => isAnythingSelected(),
         isSkippable: () => false,
     },
     "import-summary": {
         label: "Summary",
-        instructions: computed(() => {
-            return `Review your selections before starting the import process:`;
-        }),
+        instructions: `Review and confirm the items you are about to import. You can go back to select different items if needed:`,
         isValid: () => true,
         isSkippable: () => false,
     },
@@ -151,7 +143,7 @@ async function onZipSourceChanged(source?: File | string) {
             :is-busy="isWizardBusy"
             @submit="importItems">
             <template v-slot:header>
-                <Heading h1 separator inline size="md">Import individual files from Zip</Heading>
+                <Heading h1 separator inline>Import individual files from a ZIP archive</Heading>
             </template>
 
             <ZipSelector

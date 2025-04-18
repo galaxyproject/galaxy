@@ -124,9 +124,10 @@ const localFileActions = [
                     <label class="w-100" for="zip-url">
                         <input id="zip-url" v-model="zipUrl" type="text" class="w-100" />
                     </label>
-                    <strong>Note:</strong> The URL must be publicly accessible and should point to a ZIP file. In
-                    addition, the remote host must support byte-range requests. This is required to allow the preview of
-                    the ZIP file contents without downloading the entire file.
+                    <strong>Note:</strong> The URL must be
+                    <strong>publicly accessible and should point to a ZIP file</strong>. In addition,
+                    <strong>the remote host must support byte-range requests</strong>. This is required to allow the
+                    preview and access to the ZIP file contents without downloading the entire archive.
                     <div v-if="errorMessage" v-localize class="text-danger">{{ errorMessage }}</div>
                 </template>
             </GCard>
