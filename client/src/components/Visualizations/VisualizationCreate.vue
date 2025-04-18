@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -13,6 +13,8 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
+import { uploadPayload } from "@/utils/upload-payload.js";
+import { uploadSubmit } from "@/utils/upload-submit.js";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -49,6 +51,17 @@ function onSelect(dataset: OptionType) {
     });
 }
 
+function onUpload(url: string) {
+    const payload = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
+    uploadSubmit({
+        data: payload,
+        success: (result: any) => {
+            console.log(result);
+            console.log(result.id);
+        },
+    });
+}
+
 onMounted(() => {
     getPlugin();
 });
@@ -70,7 +83,7 @@ onMounted(() => {
         <div v-if="samples && samples.length > 0" class="pb-2">
             <Heading separator size="sm">Sample Datasets</Heading>
             <div v-for="(sample, sampleIndex) in samples" :key="sampleIndex" class="font-italic">
-                {{ sampleIndex + 1 }}. {{ sample }}
+                <BButton @click="onUpload(sample)">{{ sampleIndex + 1 }}. {{ sample }}</BButton>
             </div>
         </div>
     </div>
