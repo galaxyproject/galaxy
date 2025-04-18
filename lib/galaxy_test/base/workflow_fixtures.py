@@ -863,7 +863,7 @@ steps:
         default: 6
 """
 
-WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE ="""
+WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE = """
 class: GalaxyWorkflow
 inputs:
   - id: input_header
