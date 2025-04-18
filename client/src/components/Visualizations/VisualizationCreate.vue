@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { BAlert, BButton } from "bootstrap-vue";
+import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -10,11 +11,10 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import VisualizationHeader from "./VisualizationHeader.vue";
 import Heading from "@/components/Common/Heading.vue";
+import JobRunner from "@/components/JobRunner/JobRunner.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
-import { uploadPayload } from "@/utils/upload-payload.js";
-import { uploadSubmit } from "@/utils/upload-submit.js";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -27,9 +27,17 @@ const props = defineProps<{
 const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
-const samples = computed(() =>
-    plugin.value?.tests?.filter((item) => item.param?.name === "dataset_id").map((item) => item.param.value)
-);
+const urlTuples = computed(() => (
+    plugin.value?.tests
+        ?.map((item) => {
+            const url = item.param?.name === "dataset_id" ? item.param?.value : null;
+            if (url) {
+                const filename = getFilename(url);
+                return filename.trim() ? ([filename, url] as [string, string]) : null;
+            }
+        })
+        .filter((tuple): tuple is [string, string] => Boolean(tuple)) ?? []
+));
 
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
@@ -37,6 +45,16 @@ async function doQuery() {
         return data.hdas;
     } else {
         return [];
+    }
+}
+
+function getFilename(url: string): string {
+    try {
+        const pathname = new URL(url).pathname;
+        const parts = pathname.split("/").filter(Boolean);
+        return parts.length ? parts.pop()! : "";
+    } catch {
+        return "";
     }
 }
 
@@ -48,17 +66,6 @@ function onSelect(dataset: OptionType) {
     router.push(`/visualizations/display?visualization=${plugin.value?.name}&dataset_id=${dataset.id}`, {
         // @ts-ignore
         title: dataset.name,
-    });
-}
-
-function onUpload(url: string) {
-    const payload = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
-    uploadSubmit({
-        data: payload,
-        success: (result: any) => {
-            console.log(result);
-            console.log(result.id);
-        },
     });
 }
 
@@ -80,10 +87,10 @@ onMounted(() => {
             :object-query="doQuery"
             @change="onSelect" />
         <MarkdownDefault v-if="plugin.help" :content="plugin.help" />
-        <div v-if="samples && samples.length > 0" class="pb-2">
+        <div v-if="urlTuples && urlTuples.length > 0">
             <Heading separator size="sm">Sample Datasets</Heading>
-            <div v-for="(sample, sampleIndex) in samples" :key="sampleIndex" class="font-italic">
-                <BButton @click="onUpload(sample)">{{ sampleIndex + 1 }}. {{ sample }}</BButton>
+            <div v-for="(url, urlIndex) in urlTuples" :key="urlIndex" class="my-2">
+                <JobRunner :icon="faEye" :title="`Load '${url[0]}'`" :payload="{ url: url[1] }" @ok="onSelect" />
             </div>
         </div>
     </div>
