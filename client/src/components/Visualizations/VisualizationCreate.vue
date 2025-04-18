@@ -8,7 +8,9 @@ import { useRouter } from "vue-router/composables";
 import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
+import { absPath } from "@/utils/redirect";
 
+import FormCard from "../Form/FormCard.vue";
 import VisualizationHeader from "./VisualizationHeader.vue";
 import Heading from "@/components/Common/Heading.vue";
 import JobRunner from "@/components/JobRunner/JobRunner.vue";
@@ -79,33 +81,49 @@ onMounted(() => {
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     <LoadingSpan v-else-if="!currentHistoryId || !plugin" message="Loading visualization" />
     <div v-else>
-        <VisualizationHeader class="my-3" :plugin="plugin" />
-        <div v-for="(tag, index) in plugin.tags" :key="index" class="badge badge-info text-capitalize mr-1">
-            {{ tag }}
-        </div>
-        <SelectionField
-            class="my-3"
-            object-name="Select a dataset..."
-            object-title="Select to Visualize"
-            object-type="history_dataset_id"
-            :object-query="doQuery"
-            @change="onSelect" />
-        <div v-if="plugin.help">
-            <Heading separator size="sm">Help</Heading>
-            <MarkdownDefault :content="plugin.help" />
-        </div>
-        <div v-if="urlTuples && urlTuples.length > 0" class="my-3">
-            <Heading separator size="sm">Samples</Heading>
-            <div class="d-flex flex-wrap">
-                <JobRunner
-                    v-for="([url, name], index) in urlTuples"
-                    :key="index"
-                    class="m-1"
-                    :icon="faEye"
-                    :title="url"
-                    :payload="{ url: name }"
-                    @ok="onSelect" />
+
+
+        <div class="position-relative">
+        <div class="ui-form-header-underlay sticky-top" />
+        <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
+            <div class="d-flex justify-content-between">
+                <div class="py-1 d-flex flex-wrap flex-gapx-1">
+                    <span>
+                        <img v-if="plugin.logo" class="fa-fw" alt="visualization" :src="absPath(plugin.logo)" />
+                        <icon v-else :icon="faEye" class="fa-fw"  />
+                        <Heading h1 inline bold size="text" itemprop="name">{{ plugin.html }}</Heading>
+                    </span>
+                    <span itemprop="description">{{ plugin.description }}</span>
+                </div>
+                <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
+                    <b-button-group class="tool-card-buttons">
+                    </b-button-group>
+                    <slot name="header-buttons" />
+                </div>
             </div>
+        </div>
+
+        <div id="tool-card-body">
+            <div v-for="(tag, index) in plugin.tags" :key="index" class="badge badge-info text-capitalize mr-1">
+                {{ tag }}
+            </div>
+            <SelectionField
+                class="my-3"
+                object-name="Select a dataset..."
+                object-title="Select to Visualize"
+                object-type="history_dataset_id"
+                :object-query="doQuery"
+                @change="onSelect" />
+        </div>
+
+        <slot name="buttons" />
+
+        <div>
+            <div v-if="plugin.help" class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Help </Heading>
+                <MarkdownDefault :content="plugin.help" />
+            </div>
+        </div>
         </div>
     </div>
 </template>
