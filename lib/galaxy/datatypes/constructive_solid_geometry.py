@@ -890,7 +890,6 @@ class Vtp:
     MetadataElement(
         name="strips", default=0, desc="Number of triangle strips", readonly=True, optional=True, visible=True
     )
-    MetadataElement(name="type", default=None, desc="Type", readonly=True, optional=True, visible=True)
     MetadataElement(
         name="version", default=None, desc="VTK file format version", readonly=True, optional=True, visible=True
     )
@@ -964,7 +963,6 @@ class Vtp:
                         break
                     if line.startswith("<VTKFile"):
                         attrs = self._parse_attrs(line)
-                        dataset.metadata.type = attrs.get("type")
                         dataset.metadata.version = attrs.get("version")
                     elif line.startswith("<Piece"):
                         attrs = self._parse_attrs(line)
@@ -981,8 +979,21 @@ class Vtp:
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
+            parts = []
+            if dataset.metadata.points:
+                parts.append(f"Points: {dataset.metadata.points}")
+            if dataset.metadata.lines:
+                parts.append(f"Lines: {dataset.metadata.lines}")
+            if dataset.metadata.polys:
+                parts.append(f"Polygons: {dataset.metadata.polys}")
+            if dataset.metadata.strips:
+                parts.append(f"Strips: {dataset.metadata.strips}")
+            if dataset.metadata.verts:
+                parts.append(f"Vertices: {dataset.metadata.verts}")
+            if dataset.metadata.version:
+                parts.append(f"Version: {dataset.metadata.version}")
             dataset.peek = "VTP Dataset file"
-            dataset.blurb = f"Type: {str(dataset.metadata.type)}, version: {str(dataset.metadata.version)}"
+            dataset.blurb = ", ".join(parts) if parts else "VTP Dataset file (empty metadata)"
         else:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
