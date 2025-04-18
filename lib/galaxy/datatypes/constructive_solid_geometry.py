@@ -917,14 +917,12 @@ class Vtp:
         if not line.startswith("<VTKFile") or 'type="PolyData"' not in line:
             return False
 
-        stop_index = 0
         found_polydata = False
         found_format = False
         found_offset = False
 
         for stop_index, line in enumerate(util.iter_start_of_line(fh, MAX_LINE_LEN)):
             line = line.strip()
-            stop_index += 1
             if "<PolyData" in line:
                 found_polydata = True
             if f'format="{subtype}"' in line:
