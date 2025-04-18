@@ -10,11 +10,13 @@ export interface Dataset {
 
 export interface Plugin {
     description: string;
+    help?: string;
     href: string;
     html: string;
     logo?: string;
     name: string;
     target?: string;
+    tests?: Array<any>;
 }
 
 export interface PluginData {
@@ -30,7 +32,7 @@ export async function fetchPlugins(): Promise<Array<Plugin>> {
     }
 }
 
-export async function fetchPlugin(id: string): Promise<Array<Plugin>> {
+export async function fetchPlugin(id: string): Promise<Plugin> {
     try {
         const { data } = await axios.get(withPrefix(`/api/plugins/${id}`));
         return data;

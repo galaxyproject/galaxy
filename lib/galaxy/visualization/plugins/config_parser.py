@@ -171,6 +171,10 @@ class VisualizationsConfigParser:
         if (settings_section := xml_tree.find("settings")) is not None:
             returned["settings"] = ListParser(settings_section)
 
+        # load tests specifiers
+        if (test_section := xml_tree.find("tests")) is not None:
+            returned["tests"] = ListParser(test_section)
+
         return returned
 
     def parse_entry_point(self, xml_tree):

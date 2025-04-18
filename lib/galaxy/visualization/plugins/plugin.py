@@ -127,6 +127,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "settings": self.config.get("settings"),
             "specs": self.config.get("specs"),
             "tracks": self.config.get("tracks"),
+            "tests": self.config.get("tests"),
             "href": self._get_url(),
         }
 

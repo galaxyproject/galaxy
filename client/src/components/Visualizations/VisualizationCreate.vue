@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
+import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -22,11 +22,14 @@ const props = defineProps<{
 }>();
 
 const errorMessage = ref("");
-const isLoading = ref(true);
-const plugin = ref();
+const plugin: Ref<Plugin | undefined> = ref();
+
+const samples = computed(() =>
+    plugin.value?.tests?.filter((item) => item.param?.name === "dataset_id").map((item) => item.param.value)
+);
 
 async function doQuery() {
-    if (currentHistoryId.value) {
+    if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
         return data.hdas;
     } else {
@@ -36,11 +39,10 @@ async function doQuery() {
 
 async function getPlugin() {
     plugin.value = await fetchPlugin(props.visualization);
-    isLoading.value = false;
 }
 
 function onSelect(dataset: OptionType) {
-    router.push(`/visualizations/display?visualization=${plugin.value.name}&dataset_id=${dataset.id}`, {
+    router.push(`/visualizations/display?visualization=${plugin.value?.name}&dataset_id=${dataset.id}`, {
         // @ts-ignore
         title: dataset.name,
     });
@@ -53,7 +55,7 @@ onMounted(() => {
 
 <template>
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-    <LoadingSpan v-else-if="!currentHistoryId || isLoading" message="Loading visualization" />
+    <LoadingSpan v-else-if="!currentHistoryId || !plugin" message="Loading visualization" />
     <div v-else>
         <VisualizationHeader :plugin="plugin" />
         <SelectionField
@@ -64,5 +66,8 @@ onMounted(() => {
             :object-query="doQuery"
             @change="onSelect" />
         <MarkdownDefault v-if="plugin.help" :content="plugin.help" />
+        <div v-for="(sample, sampleIndex) in samples" :key="sampleIndex">
+            {{ sample }}
+        </div>
     </div>
 </template>

@@ -19,6 +19,20 @@
         <requirement type="npm" version="0.0.1" package="@galaxyproject/vtk"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/square.plyascii" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/horse.plybinary" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/square.vtpascii" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/human.vtpbinary" />
+        </test>
+    </tests>
     <help>
 ### What is VTK?
 
