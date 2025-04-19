@@ -22,6 +22,7 @@ import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
+import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -260,21 +261,27 @@ async function onExecute() {
                     <div class="d-flex flex-wrap align-items-center">
                         <div class="mr-4">
                             <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
-                                Send results to a new history
+                                <HelpText
+                                    uri="galaxy.workflows.runtimeSettings.sendToNewHistory"
+                                    text="Send results to a new history" />
                             </BFormCheckbox>
                         </div>
                         <div class="mr-4">
                             <BFormCheckbox
                                 v-model="useCachedJobs"
                                 title="This may skip executing jobs that you have already run.">
-                                Attempt to re-use jobs with identical parameters?
+                                <HelpText
+                                    uri="galaxy.workflows.runtimeSettings.useCachedJobs"
+                                    text="Attempt to re-use jobs with identical parameters?" />
                             </BFormCheckbox>
                         </div>
 
                         <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
                             <div class="mr-4">
                                 <BFormCheckbox v-model="splitObjectStore">
-                                    Send outputs and intermediate to different storage locations?
+                                    <HelpText
+                                        uri="galaxy.workflows.runtimeSettings.splitObjectStore"
+                                        text="Send outputs and intermediate to different storage locations?" />
                                 </BFormCheckbox>
                             </div>
                             <div class="mr-4">
