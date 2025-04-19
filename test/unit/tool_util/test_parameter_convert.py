@@ -232,7 +232,7 @@ def test_fill_defaults():
 
 
 def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:
-    return DataRequestInternalHda(id=EXAMPLE_ID_1)
+    return DataRequestInternalHda(id=EXAMPLE_ID_1, src="hda")
 
 
 def _fake_decode(input: str) -> int:

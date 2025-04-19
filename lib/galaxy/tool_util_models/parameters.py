@@ -355,6 +355,11 @@ class DataRequestLdda(StrictModel):
     hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
+class DataRequestLd(StrictModel):
+    src: Literal["ld"] = Field(deprecated=True)
+    id: StrictStr
+
+
 class DataRequestHdca(StrictModel):
     src: Literal["hdca"] = "hdca"
     id: StrictStr
@@ -451,12 +456,15 @@ class DataRequestCollectionUri(StrictModel):
     src: None = Field(None, exclude=True)
 
 
-_DataRequest = Annotated[Union[DataRequestHda, DataRequestLdda, DataRequestUri], Field(discriminator="src")]
+_DataRequest = Annotated[
+    Union[DataRequestHda, DataRequestLdda, DataRequestLd, DataRequestUri], Field(discriminator="src")
+]
 DataRequest: Type = cast(Type, _DataRequest)
 
 DataOrCollectionRequest = Union[_DataRequest, FileRequestUri, DataRequestCollectionUri, DataRequestHdca]
 
 DataRequestHda.model_rebuild()
+DataRequestLd.model_rebuild()
 DataRequestLdda.model_rebuild()
 DataRequestUri.model_rebuild()
 DataRequestHdca.model_rebuild()
@@ -480,17 +488,17 @@ MultiDataRequest: Type = union_type([MultiDataInstance, list_type(MultiDataInsta
 
 
 class DataRequestInternalHda(StrictModel):
-    src: Literal["hda"] = "hda"
+    src: Literal["hda"]
     id: StrictInt
 
 
 class DataRequestInternalLdda(StrictModel):
-    src: Literal["ldda"] = "ldda"
+    src: Literal["ldda"]
     id: StrictInt
 
 
 class DataRequestInternalHdca(StrictModel):
-    src: Literal["hdca"] = "hdca"
+    src: Literal["hdca"]
     id: StrictInt
 
 
@@ -498,7 +506,8 @@ DataRequestInternal: Type = cast(
     Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestUri], Field(discriminator="src")]
 )
 DataRequestInternalDereferenced: Type = cast(
-    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")]
+    Type,
+    Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")],
 )
 DataJobInternal = DataRequestInternalDereferenced
 

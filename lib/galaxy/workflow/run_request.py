@@ -21,6 +21,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     InputWithRequest,
+    LibraryDataset,
     LibraryDatasetDatasetAssociation,
     WorkflowInvocation,
     WorkflowRequestInputParameter,
@@ -386,7 +387,6 @@ def build_workflow_run_configs(
                         f"{step.label or step.order_index + 1}: {e.message_suffix}"
                     )
                 continue
-            input_id = input_dict.get("id")
             try:
                 added_to_history = False
                 try:
@@ -394,22 +394,33 @@ def build_workflow_run_configs(
                 except ValidationError as e:
                     raise validation_error_to_message_exception(e)
                 if data_request.src == "ldda":
-                    assert input_id
-                    ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
+                    ldda = trans.sa_session.get(
+                        LibraryDatasetDatasetAssociation, trans.security.decode_id(data_request.id)
+                    )
                     assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif data_request.src == "hda":
-                    assert input_id
                     # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(input_id))
+                    content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(data_request.id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
+                elif data_request.src == "ld":
+                    library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(data_request.id))
+                    assert library_dataset
+                    ldda = library_dataset.library_dataset_dataset_association
+                    assert ldda
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
+                        trans.get_current_user_roles(), ldda.dataset
+                    )
+                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif data_request.src == "hdca":
-                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(
+                        trans, "history", data_request.id
+                    )
                 elif data_request.src == "url" or data_request.class_ == "File" or data_request.class_ == "Collection":
                     request_input = dereference_input(trans, data_request, history)
                     added_to_history = True
@@ -431,7 +442,9 @@ def build_workflow_run_configs(
                     history.stage_addition(content)
                 input_dict["content"] = content
             except AssertionError:
-                raise exceptions.ItemAccessibilityException(f"Invalid workflow input '{input_id}' specified")
+                raise exceptions.ItemAccessibilityException(
+                    f"Invalid workflow input '{input_dict.get('id')}' specified"
+                )
         for key in set(normalized_inputs.keys()):
             value = normalized_inputs[key]
             if isinstance(value, dict) and "content" in value:
