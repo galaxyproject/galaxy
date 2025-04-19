@@ -5,6 +5,7 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
+import logging
 import re
 from typing import (
     List,
@@ -38,6 +39,8 @@ if TYPE_CHECKING:
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
 COLOR_OPTS = ["COLOR_SCALARS", "red", "green", "blue"]
+
+log = logging.getLogger(__name__)
 
 
 @build_sniff_from_prefix
@@ -868,3 +871,151 @@ class VtkXml(GenericXml):
         False
         """
         return self._has_root_element_in_prefix(file_prefix, "VTKFile")
+
+
+@build_sniff_from_prefix
+class Vtp:
+    """
+    A VTP file is a Visualization Toolkit (VTK) file format that specifically stores polygonal data
+    (surface meshes) in a hierarchical, XML-based format. It's designed to efficiently represent and
+    communicate 3D geometric models with associated data attributes.
+    """
+
+    subtype = ""
+
+    # Add metadata elements (sorted alphabetically by name).
+    MetadataElement(name="lines", default=0, desc="Number of lines", readonly=True, optional=True, visible=True)
+    MetadataElement(name="points", default=0, desc="Number of points", readonly=True, optional=True, visible=True)
+    MetadataElement(name="polys", default=0, desc="Number of polygons", readonly=True, optional=True, visible=True)
+    MetadataElement(
+        name="strips", default=0, desc="Number of triangle strips", readonly=True, optional=True, visible=True
+    )
+    MetadataElement(
+        name="version", default=None, desc="VTK file format version", readonly=True, optional=True, visible=True
+    )
+    MetadataElement(name="verts", default=0, desc="Number of vertices", readonly=True, optional=True, visible=True)
+
+    @abc.abstractmethod
+    def __init__(self, **kwd):
+        raise NotImplementedError
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.plyascii')
+        >>> VtpAscii().sniff(fname)
+        False
+        >>> fname = get_test_fname('test.vtpascii')
+        >>> VtpAscii().sniff(fname)
+        True
+        """
+        return self._is_vtp_header(file_prefix.text_io(errors="ignore"), self.subtype)
+
+    def _is_vtp_header(self, fh: "TextIOBase", subtype: str) -> bool:
+        line = get_next_line(fh)
+        if not line.startswith("<VTKFile") or 'type="PolyData"' not in line:
+            return False
+
+        found_polydata = False
+        found_format = False
+        found_offset = False
+
+        for stop_index, line in enumerate(util.iter_start_of_line(fh, MAX_LINE_LEN)):
+            line = line.strip()
+            if "<PolyData" in line:
+                found_polydata = True
+            if f'format="{subtype}"' in line:
+                found_format = True
+            if "offset=" in line:
+                found_offset = True
+            if "</VTKFile>" in line or stop_index > MAX_HEADER_LINES:
+                break
+
+        if subtype == "appended":
+            return found_polydata and found_format and found_offset
+        elif subtype == "ascii":
+            return found_polydata and found_format
+        return False
+
+    def _parse_attrs(self, line: str) -> dict:
+        """Parse key="value" attributes from an XML tag line."""
+        attrs = {}
+        for part in line.split():
+            if "=" in part:
+                try:
+                    key, val = part.split("=", 1)
+                    val = val.strip().strip('"').rstrip('">')
+                    attrs[key] = val
+                except Exception:
+                    continue
+        return attrs
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if dataset.has_data():
+            with open(dataset.get_file_name(), errors="ignore") as fh:
+                line_count = 0
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    line_count += 1
+                    if line_count > MAX_HEADER_LINES:
+                        break
+                    if line.startswith("<VTKFile"):
+                        attrs = self._parse_attrs(line)
+                        dataset.metadata.version = attrs.get("version")
+                    elif line.startswith("<Piece"):
+                        attrs = self._parse_attrs(line)
+                        try:
+                            dataset.metadata.lines = int(attrs.get("NumberOfLines", 0))
+                            dataset.metadata.points = int(attrs.get("NumberOfPoints", 0))
+                            dataset.metadata.polys = int(attrs.get("NumberOfPolys", 0))
+                            dataset.metadata.strips = int(attrs.get("NumberOfStrips", 0))
+                            dataset.metadata.verts = int(attrs.get("NumberOfVerts", 0))
+                        except ValueError as e:
+                            log.error(f"Failed to parse numeric metadata from VTP file: {e}")
+                    elif line.startswith("</VTKFile>"):
+                        break
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            parts = []
+            if dataset.metadata.points:
+                parts.append(f"Points: {dataset.metadata.points}")
+            if dataset.metadata.lines:
+                parts.append(f"Lines: {dataset.metadata.lines}")
+            if dataset.metadata.polys:
+                parts.append(f"Polygons: {dataset.metadata.polys}")
+            if dataset.metadata.strips:
+                parts.append(f"Strips: {dataset.metadata.strips}")
+            if dataset.metadata.verts:
+                parts.append(f"Vertices: {dataset.metadata.verts}")
+            if dataset.metadata.version:
+                parts.append(f"Version: {dataset.metadata.version}")
+            dataset.peek = "VTP Dataset file"
+            dataset.blurb = ", ".join(parts) if parts else "VTP Dataset file (empty metadata)"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disc"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Vtp file ({nice_size(dataset.get_size())})"
+
+
+class VtpBinary(Vtp, Binary):
+    file_ext = "vtpbinary"
+    subtype = "appended"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+
+class VtpAscii(Vtp, data.Text):
+    file_ext = "vtpascii"
+    subtype = "ascii"
+
+    def __init__(self, **kwd):
+        data.Text.__init__(self, **kwd)

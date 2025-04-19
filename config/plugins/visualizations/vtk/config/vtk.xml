@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="VTK" embeddable="true">
+    <description>Visualization Toolkit</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">plyascii</test>
+            <test test_attr="ext" result_type="datatype">plybinary</test>
+            <test test_attr="ext" result_type="datatype">vtpascii</test>
+            <test test_attr="ext" result_type="datatype">vtpbinary</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <requirements>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/vtk"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" />
+</visualization>

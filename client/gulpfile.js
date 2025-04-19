@@ -46,6 +46,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "venn",
     "vitessce",
     "vizarr",
+    "vtk",
 ]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
