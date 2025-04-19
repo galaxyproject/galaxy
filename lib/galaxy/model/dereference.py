@@ -31,6 +31,7 @@ def dereference_to_model(
     history: History,
     data_request_uri: Union[DataRequestUri, FileRequestUri, CollectionElementDataRequestUri],
     add_to_history=True,
+    visible=True,
 ) -> HistoryDatasetAssociation:
     if isinstance(data_request_uri, CollectionElementDataRequestUri):
         name = data_request_uri.identifier
@@ -44,6 +45,7 @@ def dereference_to_model(
         history=history,
         create_dataset=True,
         sa_session=sa_session,
+        visible=visible,
         flush=False,
     )
     hda.state = hda.states.DEFERRED
@@ -110,7 +112,7 @@ def dereference_collection_dataset_element(
     parent_dataset_collection: DatasetCollection,
     element_index: int,
 ):
-    hda = dereference_to_model(sa_session, user, history, element, add_to_history=False)
+    hda = dereference_to_model(sa_session, user, history, element, add_to_history=False, visible=False)
     history.stage_addition(hda)
     dce = DatasetCollectionElement(
         collection=parent_dataset_collection,
