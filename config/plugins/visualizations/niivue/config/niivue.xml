@@ -7,7 +7,6 @@
             <model_class>HistoryDatasetAssociation</model_class>
             <test test_attr="ext" result_type="datatype">nii1</test>
             <test test_attr="ext" result_type="datatype">nii1.gz</test>
-            <test test_attr="ext" result_type="datatype">png</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
@@ -15,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.10" package="@galaxyproject/niivue"/>
+        <requirement type="npm" version="0.0.11" package="@galaxyproject/niivue"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
