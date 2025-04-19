@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Niivue" embeddable="true">
-    <description>WebGL2 based medical image viewer</description>
+    <description>Interactive viewer for medical and neuroimaging data</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -19,41 +19,41 @@
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
-    <input>
-        <label>Colorbar</label>
-        <help>Display a gradient color bar legend.​</help>
-        <name>is_colorbar</name>
-        <type>boolean</type>
-    </input>
-    <input>
-        <label>Colormap</label>
-        <help>Select the color mapping used to render the volume</help>
-        <name>colormap</name>
-        <type>select</type>
-        <value>gray</value>
-        <data>
-            <data><label>Autumn</label><value>autumn</value></data>
-            <data><label>Blue</label><value>blue</value></data>
-            <data><label>Bone</label><value>bone</value></data>
-            <data><label>Copper</label><value>copper</value></data>
-            <data><label>Cool</label><value>cool</value></data>
-            <data><label>Glasbey</label><value>glasbey</value></data>
-            <data><label>Gray</label><value>gray</value></data>
-            <data><label>Green</label><value>green</value></data>
-            <data><label>Hot</label><value>hot</value></data>
-            <data><label>HSV</label><value>hsv</value></data>
-            <data><label>Inferno</label><value>inferno</value></data>
-            <data><label>Jet</label><value>jet</value></data>
-            <data><label>Magma</label><value>magma</value></data>
-            <data><label>Parula</label><value>parula</value></data>
-            <data><label>Plasma</label><value>plasma</value></data>
-            <data><label>Red</label><value>red</value></data>
-            <data><label>Spring</label><value>spring</value></data>
-            <data><label>Summer</label><value>summer</value></data>
-            <data><label>Turbo</label><value>turbo</value></data>
-            <data><label>Viridis</label><value>viridis</value></data>
-            <data><label>Winter</label><value>winter</value></data>
-        </data>
+        <input>
+            <label>Colorbar</label>
+            <help>Display a gradient color bar legend.​</help>
+            <name>is_colorbar</name>
+            <type>boolean</type>
+        </input>
+        <input>
+            <label>Colormap</label>
+            <help>Select the color mapping used to render the volume</help>
+            <name>colormap</name>
+            <type>select</type>
+            <value>gray</value>
+            <data>
+                <data><label>Autumn</label><value>autumn</value></data>
+                <data><label>Blue</label><value>blue</value></data>
+                <data><label>Bone</label><value>bone</value></data>
+                <data><label>Copper</label><value>copper</value></data>
+                <data><label>Cool</label><value>cool</value></data>
+                <data><label>Glasbey</label><value>glasbey</value></data>
+                <data><label>Gray</label><value>gray</value></data>
+                <data><label>Green</label><value>green</value></data>
+                <data><label>Hot</label><value>hot</value></data>
+                <data><label>HSV</label><value>hsv</value></data>
+                <data><label>Inferno</label><value>inferno</value></data>
+                <data><label>Jet</label><value>jet</value></data>
+                <data><label>Magma</label><value>magma</value></data>
+                <data><label>Parula</label><value>parula</value></data>
+                <data><label>Plasma</label><value>plasma</value></data>
+                <data><label>Red</label><value>red</value></data>
+                <data><label>Spring</label><value>spring</value></data>
+                <data><label>Summer</label><value>summer</value></data>
+                <data><label>Turbo</label><value>turbo</value></data>
+                <data><label>Viridis</label><value>viridis</value></data>
+                <data><label>Winter</label><value>winter</value></data>
+            </data>
         </input>
         <input>
             <label>Gamma</label>
