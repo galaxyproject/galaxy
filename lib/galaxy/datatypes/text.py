@@ -611,6 +611,51 @@ class GeoJson(Json):
 
 
 @build_sniff_from_prefix
+class VitessceJson(Json):
+    """
+    Vitessce Visual integration tool for exploration of spatial single cell experiments format based on JavaScript Object Notation (JSON).
+    https://www.npmjs.com/package/@vitessce/json-schema
+    """
+
+    file_ext = "vitesscejson"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "VitessceJSON"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in json format with imgt elements
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> VitessceJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.vitesscejson' )
+        >>> VitessceJson().sniff( fname )
+        True
+        """
+        is_vitesscejson = False
+        if self._looks_like_json(file_prefix):
+            is_vitesscejson = self._looks_like_is_vitesscejson(file_prefix)
+        return is_vitesscejson
+
+    def _looks_like_is_vitesscejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects version, datasets, layout and coordinationSpace to be specified.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                if all(x in segment_str for x in ["version", "datasets", "layout", "coordinationSpace"]):
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
 class Obo(Text):
     """
     OBO file format description

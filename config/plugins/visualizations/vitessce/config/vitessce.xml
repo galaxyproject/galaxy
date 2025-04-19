@@ -5,7 +5,7 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">json</test>
+            <test test_attr="ext" result_type="datatype">vitesscejson</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
