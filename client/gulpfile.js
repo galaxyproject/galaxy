@@ -40,6 +40,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "kepler",
     "ngl",
     "msa",
+    "niivue",
     "openlayers",
     "phylocanvas",
     "plotly",
