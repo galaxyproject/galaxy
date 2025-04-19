@@ -33,7 +33,7 @@
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/human.vtpbinary" />
         </test>
     </tests>
-    <help>
+    <help format="markdown"><![CDATA[
 ### What is VTK?
 
 VTK (The Visualization Toolkit) is a powerful library for 3D computer graphics, image processing, and scientific visualization. In this interface, it enables interactive visual exploration of structured scientific data such as volumes and meshes.
@@ -49,5 +49,5 @@ After selecting a dataset, a 3D viewport will display the data, allowing you to 
 
 To learn more about VTK and its capabilities, visit:
 [https://vtk.org/documentation/](https://vtk.org/documentation/)
-    </help>
+    ]]></help>
 </visualization>

@@ -16,7 +16,7 @@
         <requirement type="npm" version="0.0.2" package="@galaxyproject/vitessce"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
-    <help>
+    <help format="markdown"><![CDATA[
 ### What is Vitessce?
 
 Vitessce is a flexible visualization tool for single-cell datasets, with strong support for spatial and multi-modal data. It helps you explore complex biological information—such as gene expression, cell types, and tissue structure—through interactive, coordinated views.
@@ -33,5 +33,5 @@ After selecting a dataset, Vitessce will display a grid of visual components tha
 
 To dive deeper into configuration, data formats, and examples, visit:
 [http://vitessce.io/docs/](http://vitessce.io/docs/)
-    </help>
+    ]]></help>
 </visualization>

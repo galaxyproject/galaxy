@@ -304,7 +304,7 @@
             <value>1.0</value>
         </input>
     </settings>
-    <help>
+    <help format="markdown"><![CDATA[
 ### What is NGL?
 
 NGL is an interactive 3D viewer for exploring molecular structures such as proteins, nucleic acids, and small molecules. It runs directly in your browser and makes it easy to inspect structural data in detail.
@@ -320,5 +320,5 @@ Currently, NGL in this interface supports **PDB** structure files. After selecti
 
 To learn more about NGL and its capabilities, visit:
 [http://nglviewer.org/ngl/api/](http://nglviewer.org/ngl/api/)
-    </help>
+    ]]></help>
 </visualization>
