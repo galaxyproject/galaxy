@@ -41,7 +41,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import type { OptionType } from "./types";
 
-import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const eventStore = useEventStore();
