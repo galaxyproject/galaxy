@@ -341,30 +341,32 @@ CollectionStrT = Literal["hdca"]
 TestCaseDataSrcT = Literal["File"]
 
 
-class DataRequestHda(StrictModel):
+class LegacyRequestModelAttributes(StrictModel):
+    # Here for bioblend's sake, should be stripped
+    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)
+    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)
+    workflow_step_id: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)
+    label: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)
+
+
+class DataRequestHda(LegacyRequestModelAttributes):
     src: Literal["hda"] = "hda"
     id: StrictStr
-    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)  # Drop this ?
-    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
-class DataRequestLdda(StrictModel):
+class DataRequestLdda(LegacyRequestModelAttributes):
     src: Literal["ldda"] = "ldda"
     id: StrictStr
-    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)  # Drop this ?
-    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
-class DataRequestLd(StrictModel):
+class DataRequestLd(LegacyRequestModelAttributes):
     src: Literal["ld"] = Field(deprecated=True)
     id: StrictStr
 
 
-class DataRequestHdca(StrictModel):
+class DataRequestHdca(LegacyRequestModelAttributes):
     src: Literal["hdca"] = "hdca"
     id: StrictStr
-    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)  # Drop this ?
-    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)  # Drop this ?
 
 
 class DatasetHash(StrictModel):
