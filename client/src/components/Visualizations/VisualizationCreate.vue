@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { faEye } from "@fortawesome/free-solid-svg-icons";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -8,11 +6,10 @@ import { useRouter } from "vue-router/composables";
 import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
-import { absPath } from "@/utils/redirect";
-import FormCardSticky from "@/components/Form/FormCardSticky.vue";
+
 import Heading from "@/components/Common/Heading.vue";
+import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 //import JobRunner from "@/components/JobRunner/JobRunner.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
@@ -95,4 +92,3 @@ onMounted(() => {
         </div>
     </FormCardSticky>
 </template>
-

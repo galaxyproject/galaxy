@@ -39,51 +39,49 @@
             itemtype="https://schema.org/CreativeWork"
             @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
             @onChangeVersion="onChangeVersion">
-            <template v-slot:body>
-                <div class="mt-2 mb-4">
-                    <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
-                    <FormDisplay
-                        :id="toolId"
-                        :inputs="formConfig.inputs"
-                        :errors="formConfig.errors"
-                        :loading="loading"
-                        :validation-scroll-to="validationScrollTo"
-                        :warnings="formConfig.warnings"
-                        @onChange="onChange"
-                        @onValidation="onValidation" />
-                </div>
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                <FormDisplay
+                    :id="toolId"
+                    :inputs="formConfig.inputs"
+                    :errors="formConfig.errors"
+                    :loading="loading"
+                    :validation-scroll-to="validationScrollTo"
+                    :warnings="formConfig.warnings"
+                    @onChange="onChange"
+                    @onValidation="onValidation" />
+            </div>
 
-                <div class="mt-2 mb-4">
-                    <Heading h2 separator bold size="sm"> Additional Options </Heading>
-                    <FormElement
-                        v-if="emailAllowed(config, currentUser)"
-                        id="send_email_notification"
-                        v-model="useEmail"
-                        title="Email notification"
-                        help="Send an email notification when the job completes."
-                        type="boolean" />
-                    <FormElement
-                        v-if="remapAllowed"
-                        id="rerun_remap_job_id"
-                        v-model="useJobRemapping"
-                        :title="remapTitle"
-                        :help="remapHelp"
-                        type="boolean" />
-                    <FormElement
-                        id="use_cached_job"
-                        v-model="useCachedJobs"
-                        title="Attempt to re-use jobs with identical parameters?"
-                        help="This may skip executing jobs that you have already run."
-                        type="boolean" />
-                    <FormSelect
-                        v-if="formConfig.model_class === 'DataManagerTool'"
-                        id="data_manager_mode"
-                        v-model="dataManagerMode"
-                        :options="bundleOptions"
-                        title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
-                </div>
-            </template>
-            <template v-slot:header-buttons>
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                <FormElement
+                    v-if="emailAllowed(config, currentUser)"
+                    id="send_email_notification"
+                    v-model="useEmail"
+                    title="Email notification"
+                    help="Send an email notification when the job completes."
+                    type="boolean" />
+                <FormElement
+                    v-if="remapAllowed"
+                    id="rerun_remap_job_id"
+                    v-model="useJobRemapping"
+                    :title="remapTitle"
+                    :help="remapHelp"
+                    type="boolean" />
+                <FormElement
+                    id="use_cached_job"
+                    v-model="useCachedJobs"
+                    title="Attempt to re-use jobs with identical parameters?"
+                    help="This may skip executing jobs that you have already run."
+                    type="boolean" />
+                <FormSelect
+                    v-if="formConfig.model_class === 'DataManagerTool'"
+                    id="data_manager_mode"
+                    v-model="dataManagerMode"
+                    :options="bundleOptions"
+                    title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+            </div>
+            <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
                     title="Run Tool"
@@ -93,7 +91,7 @@
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
-            <template v-slot:buttons>
+            <template v-slot:footer>
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
