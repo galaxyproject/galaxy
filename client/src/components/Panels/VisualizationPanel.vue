@@ -44,8 +44,7 @@ onMounted(() => {
 <template>
     <ActivityPanel title="Visualizations" go-to-all-title="Saved Visualizations" href="/visualizations/list">
         <template v-slot:header>
-            <h3>Create Visualization</h3>
-            <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
+            <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />
         </template>
         <div>
             <LoadingSpan v-if="isLoading" message="Loading visualizations" />
