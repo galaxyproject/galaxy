@@ -1644,7 +1644,8 @@ class NavigatesGalaxy(HasDriver):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
             input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            self.select_set_value(input_div_element, "{}: ".format(value["hid"]))
+            hid = value.pop("hid")
+            self.select_set_value(input_div_element, f"{hid}: ")
 
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow.wait_for_and_click()

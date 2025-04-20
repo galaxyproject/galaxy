@@ -635,6 +635,22 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
             inputs, _, _ = load_data_dict(
                 history_id, test_data, self.dataset_populator, self.dataset_collection_populator
             )
+            for input_value in inputs.values():
+                if (
+                    isinstance(input_value, dict)
+                    and (src := input_value.get("src"))
+                    and (content_id := input_value.get("id"))
+                ):
+                    if src == "hda":
+                        content_item = self.dataset_populator.get_history_dataset_details(
+                            history_id, content_id=content_id
+                        )
+                        input_value["hid"] = content_item["hid"]
+                    elif src == "hdca":
+                        content_item = self.dataset_populator.get_history_collection_details(
+                            history_id=history_id, content_id=content_id
+                        )
+                        input_value["hid"] = content_item["hid"]
             self.dataset_populator.wait_for_history(history_id)
         else:
             inputs = {}
