@@ -331,7 +331,13 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host", url_path="mock/url/path")
+        self.request: Any = Bunch(
+            headers={},
+            is_body_readable=False,
+            host="request.host",
+            host_url="request.host_url",
+            url_path="mock/url/path",
+        )
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property
@@ -435,7 +441,7 @@ class MockTemplateHelpers:
         pass
 
     def dumps(*kwargs):
-        return {}
+        return kwargs
 
     def js(*js_files):
         pass

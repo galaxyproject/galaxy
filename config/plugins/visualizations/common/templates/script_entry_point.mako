@@ -16,7 +16,7 @@
     <%
         from markupsafe import escape
         data_incoming = {
-            "root": h.url_for("/"),
+            "root": host_url + h.url_for("/"),
             "visualization_id": visualization_id,
             "visualization_name": visualization_name,
             "visualization_plugin": visualization_plugin,
