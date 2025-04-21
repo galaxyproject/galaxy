@@ -67,13 +67,15 @@ const validInput = computed(() => {
     return collectionName.value.length > 0;
 });
 
+const defaultWhatIsBeingCreated = "collection";
+
 /** Plain language for what is being created */
 const shortWhatIsBeingCreated = computed<string>(() => {
     const collectionType: string | undefined = props.collectionType;
     if (collectionType && collectionType in COLLECTION_TYPE_TO_LABEL) {
         return COLLECTION_TYPE_TO_LABEL[collectionType] as string;
     } else {
-        return "collection";
+        return defaultWhatIsBeingCreated;
     }
 });
 
