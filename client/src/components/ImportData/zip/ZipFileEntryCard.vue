@@ -8,11 +8,16 @@ import GCard from "@/components/Common/GCard.vue";
 
 interface Props {
     file: ImportableFile;
-    gridView?: boolean;
+    selectable?: boolean;
     selected?: boolean;
+    gridView?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    selectable: true,
+    selected: undefined,
+    gridView: undefined,
+});
 
 const emit = defineEmits<{
     (e: "select"): void;
@@ -34,9 +39,9 @@ const badges = [
         :id="file.path"
         :title="file.name"
         :badges="badges"
-        clickable
+        :clickable="selectable"
+        :selectable="selectable"
         :update-time="file.dateTime.toISOString()"
-        selectable
         :grid-view="props.gridView"
         :selected="props.selected"
         @select="emit('select')"
