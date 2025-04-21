@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faEdit, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BFormTextarea } from "bootstrap-vue";
+import { BButton, BButtonGroup, BCard, BFormTextarea } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -74,18 +74,21 @@ watch(
                 <span v-localize>Exit</span>
             </BButton>
         </div>
-        <div v-if="readmeEdit" class="mt-2 d-flex flex-column">
+        <div class="mt-2 d-flex flex-column">
             <BFormTextarea
+                v-if="readmeEdit"
                 id="workflow-readme"
                 v-model="readmeCurrent"
                 size="lg"
-                class="flex-grow-1 workflow-readme-textarea"
+                class="flex-grow-1 workflow-readme-textarea card-body"
                 :state="readmeCurrent.length > 0 ? null : false"
                 no-resize
                 :placeholder="PLACEHOLDER_TEXT"
                 @keyup="emit('update:readmeCurrent', readmeCurrent)" />
+            <BCard v-else class="overflow-auto h-100" body-class="position-absolute">
+                <ToolHelpMarkdown :content="readmePreviewMarkdown" />
+            </BCard>
         </div>
-        <ToolHelpMarkdown v-else class="mt-2 overflow-auto" :content="readmePreviewMarkdown" />
     </div>
 </template>
 
