@@ -79,7 +79,8 @@ watch(
                 id="workflow-readme"
                 v-model="readmeCurrent"
                 size="lg"
-                class="flex-grow-1"
+                class="flex-grow-1 workflow-readme-textarea"
+                :state="readmeCurrent.length > 0 ? null : false"
                 no-resize
                 :placeholder="PLACEHOLDER_TEXT"
                 @keyup="emit('update:readmeCurrent', readmeCurrent)" />
@@ -87,3 +88,9 @@ watch(
         <ToolHelpMarkdown v-else class="mt-2 overflow-auto" :content="readmePreviewMarkdown" />
     </div>
 </template>
+
+<style scoped>
+.workflow-readme-textarea {
+    font: 14px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
+}
+</style>
