@@ -421,6 +421,16 @@ export default {
                 setReadmeHandler.set(readme.value, newReadme);
             }
         }
+        // If we switch to the report, we want to close the readme editor
+        // TODO: Maybe do this for other activities as well? E.g. inputs, tools...
+        watch(
+            () => reportActive.value,
+            (newReportActive) => {
+                if (newReportActive) {
+                    readmeActive.value = false;
+                }
+            }
+        );
 
         const help = ref(null);
         const setHelpHandler = new SetValueActionHandler(
