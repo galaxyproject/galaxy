@@ -64,7 +64,12 @@ watch(
                     <span v-localize>Preview</span>
                 </BButton>
             </BButtonGroup>
-            <BButton size="sm" variant="outline-danger" :disabled="!readmeEdit" @click="emit('exit')">
+            <BButton
+                v-b-tooltip.hover.noninteractive
+                size="sm"
+                variant="outline-danger"
+                title="Return to Workflow"
+                @click="emit('exit')">
                 <FontAwesomeIcon :icon="faTimes" />
                 <span v-localize>Exit</span>
             </BButton>
