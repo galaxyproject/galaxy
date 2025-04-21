@@ -78,7 +78,7 @@ class ValidDatatypes(Linter):
         for attrib in ["format", "ftype", "ext"]:
             for elem in tool_xml.findall(f".//*[@{attrib}]"):
                 # skip help section, "format" in help has a different meaning
-                if elem.tag == 'help':
+                if elem.tag == "help":
                     return
                 formats = elem.get(attrib, "").split(",")
                 # Certain elements (e.g. `data`) can only have one format. This
