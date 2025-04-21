@@ -958,14 +958,14 @@
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
     <!-- media datatypes -->
-    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav"/>
-    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
-    <datatype extension="ogg" type="galaxy.datatypes.media:Ogg" display_in_upload="true" mimetype="audio/ogg"/>
+    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav" description="Waveform Audio File Format"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3" description="MP3 is a lossy coding format for digital audio" />
+    <datatype extension="ogg" type="galaxy.datatypes.media:Ogg" display_in_upload="true" mimetype="audio/ogg" description="Ogg is a digital multimedia container format designed to provide for efficient streaming and manipulation of digital multimedia." description_url="https://xiph.org/ogg/"/>
     <datatype extension="wma" type="galaxy.datatypes.media:Wma" display_in_upload="true" mimetype="audio/x-ms-wma"/>
     <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
     <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
     <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
-    <datatype extension="flac" type="galaxy.datatypes.media:Flac" display_in_upload="true" mimetype="audio/flac"/>
+    <datatype extension="flac" type="galaxy.datatypes.media:Flac" display_in_upload="true" mimetype="audio/flac" description="Free Lossless Audio Codec" description_url="https://xiph.org/flac/"/>
     <datatype extension="webm" type="galaxy.datatypes.media:Webm" display_in_upload="true" mimetype="video/webm"/>
     <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
     <datatype extension="mov" type="galaxy.datatypes.media:Mov" display_in_upload="true" mimetype="video/quicktime"/>
