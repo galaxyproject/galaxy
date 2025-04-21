@@ -15,9 +15,9 @@ const PLACEHOLDER_TEXT = [
 ].join(" ");
 
 const props = defineProps<{
-    readme: string;
-    name: string;
-    logoUrl: string | null;
+    readme?: string;
+    name?: string;
+    logoUrl?: string;
 }>();
 
 const emit = defineEmits<{
@@ -42,7 +42,7 @@ const readmePreviewMarkdown = computed(() => {
 watch(
     () => props.readme,
     (newValue) => {
-        readmeCurrent.value = newValue;
+        readmeCurrent.value = newValue ?? "";
     },
     { immediate: true }
 );
