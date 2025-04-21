@@ -175,16 +175,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")
 
     def _wait_for_and_select(self, hids):
-        """
-        Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
-        depending on how fast the upload goes compared to the history polling updates, it might just
-        skip to the end for a really fast upload
-        """
-        for hid in hids:
-            self.history_panel_wait_for_hid_ok(hid)
-        self.history_panel_multi_operations_show()
-        for hid in hids:
-            self.history_panel_muli_operation_select_hid(hid)
+        self.history_panel_wait_for_and_select(hids)
 
     def _show_hidden_content(self):
         """Switches the hidden filter toggle on"""

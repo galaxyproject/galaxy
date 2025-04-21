@@ -605,6 +605,18 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def history_panel_wait_for_and_select(self, hids: List[int]):
+        """
+        Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
+        depending on how fast the upload goes compared to the history polling updates, it might just
+        skip to the end for a really fast upload
+        """
+        for hid in hids:
+            self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_multi_operations_show()
+        for hid in hids:
+            self.history_panel_muli_operation_select_hid(hid)
+
     @retry_during_transitions
     def get_grid_entry_names(self, selector):
         self.sleep_for(self.wait_types.UX_RENDER)

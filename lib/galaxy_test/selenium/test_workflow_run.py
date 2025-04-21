@@ -8,6 +8,7 @@ from typing_extensions import Literal
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED,
+    WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -404,6 +405,70 @@ steps: {}
 
     @selenium_test
     @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+            }
+        )
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_build_list_of_pairs()
+        self.collection_builder_set_name("my awesome paired list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(5)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        assert content.strip() == "forward content\nreverse content"
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+            }
+        )
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_build_list_advanced_and_select_builder("list")
+        self.collection_builder_set_name("my awesome flat list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(5)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        assert content.strip() == "reverse content\nforward content"
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+                "other.fasta": "unpaired content",
+            }
+        )
+        self.history_panel_wait_for_and_select([1, 2, 3])
+        self.history_panel_build_list_of_paired_or_unpaireds()
+        self.collection_builder_set_name("my awesome flat list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(7)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(8)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
+        assert content.strip() == "forward content\nreverse content\nunpaired content"
+
+    @selenium_test
+    @managed_history
     def test_upload_dataset_from_workflow_simple(self):
         history_id = self.current_history_id()
         self._create_and_run_workflow_with_unique_name(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -487,7 +552,7 @@ steps: {}
             workflow_input.create_button.wait_for_and_click()
             url = self.dataset_populator.base64_url_for_string("hello world")
             workflow_input.paste_content(n=i).wait_for_and_send_keys(url)
-            workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i+1}.fastq")
+            workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i + 1}.fastq")
 
         workflow_input.embedded_start_button.wait_for_and_click()
         workflow_input.status.wait_for_present()

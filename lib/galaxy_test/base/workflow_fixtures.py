@@ -892,6 +892,18 @@ steps:
 """
 
 
+WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  - id: input_list
+    type: collection
+    collection_type: "list:paired_or_unpaired"
+steps:
+  - tool_id: collection_list_paired_or_unpaired
+    in:
+      f1: input_list
+"""
+
 
 WORKFLOW_WITH_OUTPUTS = """
 class: GalaxyWorkflow
