@@ -20,7 +20,7 @@
             :okay="checkReadme"
             success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
             :warning-message="bestPracticeWarningReadme"
-            attribute-link="Provider Readme for your Workflow."
+            attribute-link="Provide Readme for your Workflow."
             @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
