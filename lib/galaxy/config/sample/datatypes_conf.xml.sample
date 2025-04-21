@@ -605,8 +605,8 @@
     <datatype extension="sbol" type="galaxy.datatypes.triples:Sbol" description="The SBOL (Synthetic Biology Open Language) standard was developed by the synthetic biology community to create a standardized format for the electronic exchange of information on the structural and functional aspects of biological designs." description_url="https://sbolstandard.org" display_in_upload="true"/>
     <!-- Excel datatypes -->
     <datatype extension="excel.xls" type="galaxy.datatypes.binary:ExcelXls" display_in_upload="true"/>
-    <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true"/>
-    <datatype extension="docx" type="galaxy.datatypes.binary:Binary" subclass="true"/>
+    <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" decription="XLSX is an XML-based file format that is natively used for Microsoft Excel spreadsheets" description_url="https://www.iso.org/standard/71691.html" />
+    <datatype extension="docx" type="galaxy.datatypes.binary:Docx" display_in_upload="true" decription="DOCX is an XML-based file format that is natively used for Microsoft Word documents" description_url="https://www.iso.org/standard/71691.html" />
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cat_db" type="galaxy.datatypes.data:Text" subclass="true"/>

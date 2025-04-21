@@ -3178,6 +3178,21 @@ class NcbiTaxonomySQlite(SQlite):
 
 
 @build_sniff_from_prefix
+class Docx(Binary):
+    """Class for Word 2007 (docx) files"""
+
+    file_ext = "docx"
+    compressed = True
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # Docx is compressed in zip format and must not be uncompressed in Galaxy.
+        return (
+            file_prefix.compressed_mime_type
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+
+@build_sniff_from_prefix
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
 
