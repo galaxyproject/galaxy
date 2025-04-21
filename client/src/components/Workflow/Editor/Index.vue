@@ -59,6 +59,7 @@
                     v-else-if="isActiveSideBar('workflow-best-practices')"
                     :untyped-parameters="parameters"
                     :annotation="annotation"
+                    :readme="readme"
                     :creator="creator"
                     :license="license"
                     :steps="steps"
@@ -405,10 +406,14 @@ export default {
         }
 
         const readme = ref(null);
+        const readmeActive = ref(false);
         const setReadmeHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (readme.value = value),
-            showAttributes,
+            (args) => {
+                readmeActive.value = true;
+                showAttributes(args);
+            },
             "modify readme"
         );
         function setReadme(newReadme) {
@@ -574,6 +579,7 @@ export default {
             setAnnotation,
             readme,
             setReadme,
+            readmeActive,
             help,
             setHelp,
             logoUrl,
@@ -625,7 +631,6 @@ export default {
             messageBody: null,
             messageIsError: false,
             version: this.initialVersion,
-            readmeActive: false,
             saveAsName: null,
             saveAsAnnotation: null,
             showSaveAsModal: false,

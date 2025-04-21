@@ -128,6 +128,10 @@ export default {
             type: String,
             default: null,
         },
+        readme: {
+            type: String,
+            default: null,
+        },
         license: {
             type: String,
             default: null,
@@ -180,7 +184,7 @@ export default {
             }
         },
         checkReadme() {
-            return !!this.annotation;
+            return !!this.readme;
         },
         checkLicense() {
             return !!this.license;

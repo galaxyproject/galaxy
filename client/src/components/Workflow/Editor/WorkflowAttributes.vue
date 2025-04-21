@@ -121,6 +121,16 @@
                 A detailed description of what the workflow does. It is best to include descriptions of what kinds of
                 data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
             </div>
+            <b-popover
+                custom-class="best-practice-popover"
+                target="workflow-readme"
+                boundary="window"
+                placement="right"
+                :show.sync="showReadmeHightlight"
+                triggers="manual"
+                title="Best Practice"
+                :content="bestPracticeWarningReadme">
+            </b-popover>
         </div>
         <div class="mt-2">
             <b>Help</b>
@@ -153,6 +163,7 @@ import {
     bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
 } from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
@@ -235,6 +246,7 @@ export default {
         return {
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
             message: null,
             messageVariant: null,
             versionCurrent: this.version,
@@ -245,6 +257,7 @@ export default {
             showAnnotationHightlight: false,
             showLicenseHightlight: false,
             showCreatorHightlight: false,
+            showReadmeHightlight: false,
             doiDescription: `
 Acceptable format:
 <ul>
@@ -336,7 +349,7 @@ Acceptable format:
                     this.showAnnotationHightlight = true;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = false;
-                    // this.showReadmeHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showAnnotationHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -344,7 +357,7 @@ Acceptable format:
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = true;
                     this.showLicenseHightlight = false;
-                    // this.showReadmeHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showCreatorHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -352,21 +365,19 @@ Acceptable format:
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = true;
-                    // this.showReadmeHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showLicenseHightlight = false;
                     }, bestPracticeHighlightTime);
+                } else if (newHighlight == "readme") {
+                    this.showAnnotationHighlight = false;
+                    this.showCreatorHightlight = false;
+                    this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = true;
+                    setTimeout(() => {
+                        this.showReadmeHightlight = false;
+                    }, bestPracticeHighlightTime);
                 }
-                // } else if (newHighlight == "readme") {
-                //     this.showAnnotationHighlight = false;
-                //     this.showCreatorHightlight = false;
-                //     this.showLicenseHightlight = false;
-                //     this.showReadmeHightlight = true;
-                //     setTimeout(() => {
-                //         this.showReadmeHightlight = false;
-                //     }, bestPracticeHighlightTime);
-                // }
-                // TODO: Add readme highlight in parent Index.vue
             },
         },
     },
