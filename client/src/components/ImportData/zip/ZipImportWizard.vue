@@ -77,7 +77,13 @@ const wizard = useWizard({
 async function importItems() {
     isWizardBusy.value = true;
     try {
-        router.push({ name: "ZipImportResults" });
+        router.push({
+            name: "ZipImportResults",
+            params: {
+                workflowFileCount: String(filesToImport.value.filter((file) => file.type === "workflow").length),
+                regularFileCount: String(filesToImport.value.filter((file) => file.type === "file").length),
+            },
+        });
         await importArtifacts(filesToImport.value, currentHistoryId.value);
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
