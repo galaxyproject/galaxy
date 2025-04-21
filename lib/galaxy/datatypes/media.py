@@ -43,6 +43,7 @@ magic_number = {
     "webm": {"offset": 0, "hex": ["1A 45 DF A3"]},
     "mov": {"offset": 4, "string": ["ftypqt", "moov"]},
     "wav": {"offset": 8, "string": ["WAVE"]},
+    "flac": {"offset": 0, "string": ["fLaC"]},
     "mp3": {
         "offset": 0,
         "hex": [
@@ -112,6 +113,7 @@ def _get_file_format_from_magic_number(filename: str, file_ext: str):
     with open(filename, "rb") as f:
         f.seek(cast(int, magic_number[file_ext]["offset"]))
         head = f.read(8)
+        string_check, hex_check = False, False
         if "string" in magic_number[file_ext]:
             string_check = any(
                 head.startswith(string_code.encode("iso-8859-1"))
@@ -391,6 +393,16 @@ class Ogg(Audio):
             metadata, streams = ffprobe(filename)
             return "ogg" in metadata["format_name"].split(",")
         return _get_file_format_from_magic_number(filename, "ogg")
+
+
+class Flac(Audio):
+    file_ext = "flac"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "flac" in metadata["format_name"].split(",")
+        return _get_file_format_from_magic_number(filename, "flac")
 
 
 class Webm(Video):

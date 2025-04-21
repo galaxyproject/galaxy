@@ -965,6 +965,7 @@
     <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
     <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
     <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
+    <datatype extension="flac" type="galaxy.datatypes.media:Flac" display_in_upload="true" mimetype="audio/flac"/>
     <datatype extension="webm" type="galaxy.datatypes.media:Webm" display_in_upload="true" mimetype="video/webm"/>
     <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
     <datatype extension="mov" type="galaxy.datatypes.media:Mov" display_in_upload="true" mimetype="video/quicktime"/>
