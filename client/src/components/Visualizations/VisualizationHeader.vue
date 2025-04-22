@@ -13,7 +13,7 @@ defineProps<{
     <div class="d-flex">
         <div class="plugin-thumbnail mr-2">
             <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
-            <icon v-else :icon="faEye" class="plugin-icon" />
+            <FontAwesomeIcon v-else :icon="faEye" size="xl" class="p-1" />
         </div>
         <div class="text-break">
             <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
