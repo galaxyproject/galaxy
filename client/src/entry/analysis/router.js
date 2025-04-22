@@ -572,11 +572,11 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "visualizations/create",
+                        path: "visualizations/create/:visualization",
                         component: VisualizationCreate,
                         name: "VisualizationsCreate",
                         props: (route) => ({
-                            visualization: route.query.visualization,
+                            visualization: route.params.visualization,
                         }),
                     },
                     {
