@@ -75,6 +75,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.wizard_next_button.wait_for_and_click()
         export_button = invocations.wizard_export_button
         export_button.wait_for_present()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("invocation_export_native_download_options")
         export_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)

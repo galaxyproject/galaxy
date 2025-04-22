@@ -353,12 +353,14 @@ class NavigatesGalaxy(HasDriver):
         finally:
             self.driver.switch_to.default_content()
 
-    def api_get(self, endpoint, data=None, raw=False):
+    def api_get(self, endpoint, data=None, raw=False, assert_ok: bool = False):
         data = data or {}
         full_url = self.build_url(f"api/{endpoint}", for_selenium=False)
         response = requests.get(
             full_url, data=data, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT
         )
+        if assert_ok:
+            response.raise_for_status()
         return self._handle_response(response, raw)
 
     def api_post(self, endpoint, data=None):
@@ -504,7 +506,7 @@ class NavigatesGalaxy(HasDriver):
 
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
-            contents = self.api_get(f"histories/{history_id}/contents")
+            contents = self.api_get(f"histories/{history_id}/contents", assert_ok=True)
             return [d["hid"] for d in contents]
 
         def history_has_hid(driver):
