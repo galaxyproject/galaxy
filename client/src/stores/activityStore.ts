@@ -33,6 +33,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     const isSideBarOpen = computed(() => toggledSideBar.value !== "" && toggledSideBar.value !== "closed");
 
     const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
+    const sidePanelWidth = useUserLocalStorage(`activity-store-side-panel-width-${scope}`, 300);
 
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
@@ -170,6 +171,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
 
     return {
         toggledSideBar,
+        sidePanelWidth,
         toggleSideBar,
         closeSideBar,
         isSideBarOpen,
