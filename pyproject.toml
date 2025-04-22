@@ -247,6 +247,7 @@ keep-runtime-typing = true
 
 [tool.uv]
 constraint-dependencies = [
+    "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
 ]
 default-groups = []
