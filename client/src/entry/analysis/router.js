@@ -742,6 +742,7 @@ export function getRouter(Galaxy) {
                         name: "ZipImportWizard",
                         component: ZipImportWizard,
                         props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "import/zip/results",
@@ -751,6 +752,7 @@ export function getRouter(Galaxy) {
                             workflowFileCount: Number(route.params.workflowFileCount),
                             regularFileCount: Number(route.params.regularFileCount),
                         }),
+                        redirect: redirectAnon(),
                     },
                 ],
             },

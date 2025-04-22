@@ -18,7 +18,11 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
-from . import Router
+from galaxy.managers.context import ProvidesUserContext
+from . import (
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
@@ -34,10 +38,13 @@ URLQueryParam: str = Query(
 class FastAPIRemoteZip:
 
     @router.api_route("/api/proxy", methods=["GET", "HEAD"])
-    async def proxy(self, request: Request, url: str = URLQueryParam):
+    async def proxy(self, request: Request, url: str = URLQueryParam, trans: ProvidesUserContext = DependsOnTrans):
         """
         Proxy a remote file to the client to avoid CORS issues.
         """
+        if trans.anonymous:
+            raise RequestParameterInvalidException("Anonymous users are not allowed to access this endpoint")
+
         if not url:
             raise RequestParameterMissingException("The 'url' parameter is required")
 

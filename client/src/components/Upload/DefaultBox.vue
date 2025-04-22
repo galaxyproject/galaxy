@@ -2,6 +2,7 @@
 import { faCopy, faEdit, faFileArchive, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -9,12 +10,14 @@ import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
+import { useUserStore } from "@/stores/userStore";
 import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import { defaultModel, type UploadFile, type UploadItem } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
+import GButton from "../BaseComponents/GButton.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -23,6 +26,8 @@ import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIn
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
+
+const { isAnonymous } = storeToRefs(useUserStore());
 
 interface Props {
     chunkUploadSize: number;
@@ -488,14 +493,16 @@ defineExpose({
                 <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
-            <BButton
+            <GButton
                 id="btn-explore-zip"
-                :size="size"
+                size="medium"
                 title="Explore the contents of a remote or local Zip archive and upload individual files"
+                :disabled="isAnonymous"
+                disabled-title="You must be logged in to use this feature"
                 @click="exploreZipContents">
                 <FontAwesomeIcon :icon="faFileArchive" />
                 <span v-localize>Explore ZIP</span>
-            </BButton>
+            </GButton>
             <BButton
                 id="btn-start"
                 :size="size"
