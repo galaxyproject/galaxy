@@ -1,6 +1,8 @@
 import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
+const LIMIT = 50;
+
 export async function getDataset(query: string, historyId: string) {
     const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
@@ -9,7 +11,7 @@ export async function getDataset(query: string, historyId: string) {
                 q: ["name-contains"],
                 qv: [query],
                 offset: 0,
-                limit: 50,
+                limit: LIMIT,
             },
         },
     });
@@ -29,7 +31,7 @@ export async function getDatasetCollection(query: string, historyId: string) {
                 q: ["name-contains", "history_content_type-eq"],
                 qv: [query, "dataset_collection"],
                 offset: 0,
-                limit: 50,
+                limit: LIMIT,
                 v: "dev",
                 order: "hid",
             },
