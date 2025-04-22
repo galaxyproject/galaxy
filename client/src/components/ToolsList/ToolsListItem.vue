@@ -15,6 +15,8 @@ import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
 import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
+
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 
 const props = defineProps({
@@ -54,12 +56,12 @@ const formattedToolHelp = computed(() => {
                     <FontAwesomeIcon v-if="props.local" icon="fa-wrench" fixed-width />
                     <FontAwesomeIcon v-else icon="fa-external-link-alt" fixed-width />
 
-                    <b-button v-if="props.local" class="ui-link text-dark" @click="() => emit('open')">
+                    <GLink v-if="props.local" dark @click="() => emit('open')">
                         <b>{{ props.name }}</b>
-                    </b-button>
-                    <b-button v-else class="ui-link text-dark" :href="props.link">
+                    </GLink>
+                    <GLink v-else dark :href="props.link">
                         <b>{{ props.name }}</b>
-                    </b-button>
+                    </GLink>
                 </span>
                 <span itemprop="description">{{ props.description }}</span>
                 <span>(Galaxy Version {{ props.version }})</span>
@@ -114,14 +116,14 @@ const formattedToolHelp = computed(() => {
             <div v-if="props.summary" v-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
-                <b-button v-if="!showHelp" class="ui-link" @click="() => (showHelp = true)">
+                <GLink v-if="!showHelp" @click="() => (showHelp = true)">
                     <FontAwesomeIcon icon="fa-angle-down" />
                     Show tool help
-                </b-button>
-                <b-button v-else class="ui-link" @click="() => (showHelp = false)">
+                </GLink>
+                <GLink v-else @click="() => (showHelp = false)">
                     <FontAwesomeIcon icon="fa-angle-up" />
                     Hide tool help
-                </b-button>
+                </GLink>
 
                 <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>
             </div>
