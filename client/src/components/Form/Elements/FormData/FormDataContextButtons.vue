@@ -123,6 +123,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType"
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex"
+            data-description="upload"
             :title="createTitle"
             split
             text="Create"

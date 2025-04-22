@@ -41,6 +41,7 @@ export type GenericPair<T extends HasName> = {
 export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     list: "list",
     "list:paired": "list of pairs",
+    "list:paired_or_unpaired": "mixed list of paired and unpaired",
     paired: "dataset pair",
 };
 
