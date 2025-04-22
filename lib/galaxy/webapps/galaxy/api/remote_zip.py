@@ -14,10 +14,8 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from galaxy.exceptions import (
-    RequestParameterInvalidException,
-    RequestParameterMissingException,
-)
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.files.uris import validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
 from . import (
     DependsOnTrans,
@@ -46,11 +44,7 @@ class FastAPIRemoteZip:
         if trans.anonymous:
             raise RequestParameterInvalidException("Anonymous users are not allowed to access this endpoint")
 
-        if not url:
-            raise RequestParameterMissingException("The 'url' parameter is required")
-
-        if not url.startswith("https://"):
-            raise RequestParameterInvalidException("Only HTTPS URLs are allowed")
+        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
 
         headers = {}
         if "range" in request.headers:
