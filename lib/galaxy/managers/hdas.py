@@ -29,6 +29,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.session import object_session
 
 from galaxy import (
@@ -169,13 +170,15 @@ class HDAManager(
             session.commit()
         return hda
 
-    def materialize(self, request: MaterializeDatasetInstanceTaskRequest, in_place: bool = False) -> bool:
+    def materialize(
+        self, request: MaterializeDatasetInstanceTaskRequest, session: Session, in_place: bool = False
+    ) -> bool:
         request_user: RequestUser = request.user
         materializer = materializer_factory(
             True,  # attached...
             object_store=self.app.object_store,
             file_sources=self.app.file_sources,
-            sa_session=self.app.model.session(),
+            sa_session=session,
         )
         user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
@@ -188,7 +191,6 @@ class HDAManager(
             history.add_dataset(new_hda, set_hid=True)
         else:
             new_hda.set_total_size()
-        session = self.session()
         session.commit()
         return new_hda.is_ok
 

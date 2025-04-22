@@ -112,10 +112,11 @@ def purge_datasets(
 def materialize(
     hda_manager: HDAManager,
     request: MaterializeDatasetInstanceTaskRequest,
+    sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
     """Materialize datasets using HDAManager."""
-    hda_manager.materialize(request)
+    hda_manager.materialize(request, sa_session())
 
 
 @galaxy_task(action="set metadata for job")

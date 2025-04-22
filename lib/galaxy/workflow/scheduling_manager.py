@@ -2,6 +2,8 @@ import os
 from functools import partial
 from typing import Optional
 
+from sqlalchemy.orm import Session
+
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
@@ -16,6 +18,7 @@ from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     RequestUser,
 )
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -285,7 +288,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
 
 class WorkflowRequestMonitor(Monitors):
-    def __init__(self, app, workflow_scheduling_manager):
+
+    def __init__(self, app: MinimalManagerApp, workflow_scheduling_manager):
         self.app = app
         self.workflow_scheduling_manager = workflow_scheduling_manager
         self._init_monitor_thread(
@@ -335,7 +339,7 @@ class WorkflowRequestMonitor(Monitors):
             if not self.monitor_running:
                 return
 
-    def __attempt_materialize(self, workflow_invocation, session) -> bool:
+    def __attempt_materialize(self, workflow_invocation: model.WorkflowInvocation, session: Session) -> bool:
         try:
             inputs_to_materialize = workflow_invocation.inputs_requiring_materialization()
             for input_to_materialize in inputs_to_materialize:
@@ -347,9 +351,10 @@ class WorkflowRequestMonitor(Monitors):
                     source="hda",
                     content=hda.id,
                 )
-                materialized_okay = self.app.hda_manager.materialize(task_request, in_place=True)
+                materialized_okay = self.app.hda_manager.materialize(task_request, session, in_place=True)
                 if not materialized_okay:
                     workflow_invocation.fail()
+                    assert input_to_materialize.input_dataset.workflow_step
                     workflow_invocation.add_message(
                         InvocationFailureDatasetFailed(
                             workflow_step_id=input_to_materialize.input_dataset.workflow_step.id,
