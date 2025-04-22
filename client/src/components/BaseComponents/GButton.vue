@@ -5,7 +5,6 @@ import { type RouterLink } from "vue-router";
 
 import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
 import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
-import { useAccessibleHover } from "@/composables/accessibleHover";
 import { useResolveElement } from "@/composables/resolveElement";
 import { useUid } from "@/composables/utils/uid";
 
@@ -71,19 +70,7 @@ const tooltipId = useUid("g-tooltip");
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
 const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
-const tooltipRef = ref<InstanceType<typeof GTooltip>>();
-
 const buttonElementRef = useResolveElement(buttonRef);
-
-useAccessibleHover(
-    buttonElementRef,
-    () => {
-        tooltipRef.value?.show();
-    },
-    () => {
-        tooltipRef.value?.hide();
-    }
-);
 </script>
 
 <template>
@@ -106,7 +93,6 @@ useAccessibleHover(
         <GTooltip
             v-if="showTooltip"
             :id="tooltipId"
-            ref="tooltipRef"
             :reference="buttonElementRef"
             :text="currentTitle"
             :placement="props.tooltipPlacement" />
