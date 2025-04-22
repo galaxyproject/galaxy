@@ -28,7 +28,7 @@ const filteredPlugins = computed(() => {
 });
 
 async function selectVisualization(plugin: Plugin) {
-    router.push(`/visualizations/create?visualization=${plugin.name}`);
+    router.push(`/visualizations/create/${plugin.name}`);
 }
 
 async function getPlugins() {
