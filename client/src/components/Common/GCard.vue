@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
 import { ref } from "vue";
 
+import { useMarkdown } from "@/composables/markdown";
+import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
 
 import { type CardAttributes, type CardBadge, type Title, type TitleIcon } from "./GCard.types";
@@ -16,7 +18,7 @@ import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
     /** Unique identifier for the card */
-    id: string;
+    id?: string;
     /** Array of badges to display on the card */
     badges?: CardBadge[];
     /** Indicates if the card is bookmarked */
@@ -33,6 +35,8 @@ interface Props {
     description?: string;
     /** Array of extra actions available for the card */
     extraActions?: CardAttributes[];
+    /** Indicates if the card is expanded to show full description */
+    fullDescription?: boolean;
     /** Indicates if the card is displayed in grid view mode */
     gridView?: boolean;
     /** Array of indicators to display on the card */
@@ -78,6 +82,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    id: () => useUid("g-card-").value,
     badges: () => [],
     containerClass: "",
     contentClass: "",
@@ -124,6 +129,8 @@ async function toggleBookmark() {
     await emit("bookmark");
     bookmarkLoading.value = false;
 }
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const getElementId = (cardId: string, element: string) => `g-card-${element}-${cardId}`;
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
@@ -214,7 +221,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 </div>
                             </div>
 
-                            <div class="align-items-center d-flex">
+                            <div class="align-items-center d-flex flex-gapx-1">
                                 <slot name="titleBadges">
                                     <template v-for="badge in props.titleBadges">
                                         <BBadge
@@ -378,9 +385,13 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                     <div :id="getElementId(props.id, 'description')">
                         <slot name="description">
                             <TextSummary
-                                v-if="props.description"
+                                v-if="props.description && !props.fullDescription"
                                 :id="getElementId(props.id, 'text-summary')"
                                 :description="props.description" />
+                            <div
+                                v-else-if="props.description && props.fullDescription"
+                                class="mb-2"
+                                v-html="renderMarkdown(props.description)" />
                         </slot>
                     </div>
                 </div>
