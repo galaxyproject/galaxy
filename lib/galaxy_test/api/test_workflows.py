@@ -1749,8 +1749,33 @@ steps:
     @skip_without_tool("multi_data_optional")
     def test_run_workflow_with_url_collection(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow_id = self._upload_yaml_workflow(
-                """
+            invocation = self._run_multi_data_workflow(history_id)
+            assert invocation["state"] == "scheduled", invocation
+            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation["id"])
+            assert len(invocation_jobs) == 1
+            job = invocation_jobs[0]
+            assert job["state"] == "ok"
+            job = self.dataset_populator.get_job_details(job_id=job["id"], full=True).json()
+            assert (
+                self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=job["outputs"]["out1"]["id"]
+                ).strip()
+                == "1 2 3"
+            )
+
+    @skip_without_tool("multi_data_optional")
+    def test_run_workflow_with_url_invalid_hash_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            invocation = self._run_multi_data_workflow(history_id, invalid_hash=True)
+            assert invocation["state"] == "failed", invocation
+            assert invocation["state"] == "failed"
+            assert len(invocation["messages"]) == 1
+            message = invocation["messages"][0]
+            assert message["reason"] == "dataset_failed"
+
+    def _run_multi_data_workflow(self, history_id, invalid_hash=False):
+        workflow_id = self._upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 inputs:
   input:
@@ -1762,47 +1787,37 @@ steps:
     in:
       input1: input
     """
-            )
-            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
-            deferred = False
-            hashes_1 = [{"hash_function": "MD5", "hash_value": "5ba48b6e5a7c4d4930fda256f411e55b"}]
-            inputs = {
-                "input": {
-                    "class": "Collection",
-                    "collection_type": "list",
-                    "elements": [
-                        {
-                            "class": "File",
-                            "identifier": "my cool element",
-                            "url": f"base64://{input_b64_1}",
-                            "ext": "txt",
-                            "deferred": deferred,
-                            "hashes": hashes_1,
-                        }
-                    ],
-                },
-            }
-            workflow_request = dict(
-                history=f"hist_id={history_id}",
-            )
-            workflow_request["inputs"] = json.dumps(inputs)
-            workflow_request["inputs_by"] = "name"
-            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-                workflow_id, request=workflow_request
-            ).json()["id"]
-            invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled", invocation
-            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
-            assert len(invocation_jobs) == 1
-            job = invocation_jobs[0]
-            assert job["state"] == "ok"
-            job = self.dataset_populator.get_job_details(job_id=job["id"], full=True).json()
-            assert (
-                self.dataset_populator.get_history_dataset_content(
-                    history_id=history_id, content_id=job["outputs"]["out1"]["id"]
-                ).strip()
-                == "1 2 3"
-            )
+        )
+        input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
+        deferred = False
+        hashes_1 = [
+            {"hash_function": "MD5", "hash_value": "abcdef" if invalid_hash else "5ba48b6e5a7c4d4930fda256f411e55b"}
+        ]
+        inputs = {
+            "input": {
+                "class": "Collection",
+                "collection_type": "list",
+                "elements": [
+                    {
+                        "class": "File",
+                        "identifier": "my cool element",
+                        "url": f"base64://{input_b64_1}",
+                        "ext": "txt",
+                        "deferred": deferred,
+                        "hashes": hashes_1,
+                    }
+                ],
+            },
+        }
+        workflow_request = dict(
+            history=f"hist_id={history_id}",
+        )
+        workflow_request["inputs"] = json.dumps(inputs)
+        workflow_request["inputs_by"] = "name"
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id, request=workflow_request, assert_ok=not invalid_hash
+        ).json()["id"]
+        return self._invocation_details(workflow_id, invocation_id)
 
     @skip_without_tool("collection_paired_default")
     def test_run_workflow_with_url_paired_collection(self):
