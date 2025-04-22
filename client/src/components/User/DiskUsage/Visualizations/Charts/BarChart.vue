@@ -5,6 +5,8 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
 
+import GCard from "@/components/Common/GCard.vue";
+
 interface BarChartProps {
     data: DataValuePoint[];
     title?: string;
@@ -325,9 +327,9 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
             <div class="chart-area">
                 <div ref="barChart" class="bar-chart"></div>
                 <div ref="legend" class="legend"></div>
-                <div v-if="selectedDataPoint" class="selection-info">
+                <div v-if="selectedDataPoint" class="selection-info w-100">
                     <slot name="selection" :data="selectedDataPoint">
-                        Selected: <b>{{ selectedDataPoint.label }}</b>
+                        <GCard :title="`Selected: ${selectedDataPoint.label}`" />
                     </slot>
                 </div>
             </div>
@@ -397,19 +399,13 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 }
 
 .selection-info {
-    background-color: #fff;
-    border: 1px solid #000;
-    border-radius: 5px;
-    padding: 5px;
     z-index: 100;
-    display: block;
-    float: right;
     position: absolute;
     bottom: 0;
     right: 0;
     margin-bottom: 2rem;
     margin-right: 2rem;
     text-align: left;
-    max-width: 300px;
+    max-width: max(250px, 35%);
 }
 </style>
