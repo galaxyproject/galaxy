@@ -97,7 +97,7 @@ const title = computed(
 const search = debounce(async (query: string = "") => {
     if (!errorMessage.value) {
         try {
-            const data = await (props.objectQuery ? props.objectQuery(query) : doQuery(query));
+            const data = await (props.objectQuery ? props.objectQuery(query) : doQuery(query)) as Array<OptionType>;
             isLoading.value = false;
             errorMessage.value = "";
             if (data) {
