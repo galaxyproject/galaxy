@@ -246,7 +246,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/file_source_templates/{template_id}/new")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
-    webapp.add_client_route("/visualizations/create")
+    webapp.add_client_route("/visualizations/create/{visualization}")
     webapp.add_client_route("/visualizations/display{path:.*?}")
     webapp.add_client_route("/visualizations/edit")
     webapp.add_client_route("/visualizations/sharing")
