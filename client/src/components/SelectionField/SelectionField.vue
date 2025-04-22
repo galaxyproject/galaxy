@@ -39,7 +39,7 @@ import {
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { ApiResponse, OptionType } from "./types";
+import type { OptionType } from "./types";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -52,7 +52,7 @@ const props = withDefaults(
     defineProps<{
         objectId?: string;
         objectName?: string;
-        objectQuery?: (query: string) => Promise<ApiResponse>;
+        objectQuery?: (query: string) => Promise<Array<OptionType>>;
         objectTitle?: string;
         objectType: string;
     }>(),
@@ -101,7 +101,7 @@ const search = debounce(async (query: string = "") => {
             isLoading.value = false;
             errorMessage.value = "";
             if (data) {
-                options.value = data.map((d: any) => ({ id: d.id, name: d.name ?? d.id, data: d }));
+                options.value = data.map((d: OptionType) => ({ id: d.id, name: d.name ?? d.id, data: d }));
             } else {
                 options.value = [];
             }
@@ -111,7 +111,7 @@ const search = debounce(async (query: string = "") => {
     }
 }, DELAY);
 
-async function doQuery(query: string = ""): Promise<ApiResponse> {
+async function doQuery(query: string = "") {
     switch (props.objectType) {
         case "history_id":
             return getHistories();
