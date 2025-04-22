@@ -340,9 +340,6 @@ async function onCancel() {
                     :is-full-page="props.isFullPage" />
             </BTab>
             <WorkflowInvocationInputOutputTabs :invocation="invocation" :terminal="invocationAndJobTerminal" />
-            <!-- <BTab title="Workflow Overview">
-                <p>TODO: Insert readonly version of workflow editor here</p>
-            </BTab> -->
             <BTab
                 v-if="!props.isSubworkflow"
                 title="Report"
