@@ -1,8 +1,8 @@
-import { rethrowSimple } from "utils/simple-error";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "@/api";
 
-export async function getDataset(query, historyId) {
+export async function getDataset(query: string, historyId: string) {
     const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
             query: {
@@ -20,11 +20,11 @@ export async function getDataset(query, historyId) {
     return data;
 }
 
-export async function getDatasetCollection(query, historyId) {
-    const { data, error } = await GalaxyApi().GET("/api/histories/{id}/contents", {
+export async function getDatasetCollection(query: string, historyId: string) {
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
         params: {
             path: {
-                id: historyId,
+                history_id: historyId,
             },
             query: {
                 q: ["name-contains", "history_content_type-eq"],
