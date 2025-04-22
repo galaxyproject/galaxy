@@ -309,8 +309,15 @@ function orderByPath(a: ZipEntryMetadata, b: ZipEntryMetadata) {
     return a.path.localeCompare(b.path);
 }
 
+/**
+ * Check if the entry should be skipped based on its path.
+ * This includes common known files to skip, hidden files (starting with a dot),
+ * and files from the __MACOSX directory.
+ */
 function shouldSkipZipEntry(entry: ZipFileEntry) {
-    return GALAXY_EXPORT_METADATA_FILES.some((ignoredFile) => entry.path.includes(ignoredFile));
+    return (
+        COMMON_KNOWN_FILES_TO_SKIP.has(entry.path) || entry.path.startsWith(".") || entry.path.startsWith("__MACOSX")
+    );
 }
 
 function isGalaxyWorkflow(entry: AnyZipEntry) {
@@ -341,12 +348,11 @@ export function isGalaxyHistoryExport(explorer?: IZipExplorer): explorer is Gala
     return explorer !== undefined && hasGalaxyHistoryExportMetadata(explorer);
 }
 
-const ROCRATE_METADATA_FILE = "ro-crate-metadata.json";
 const GALAXY_EXPORT_ATTRS_FILE = "export_attrs.txt";
 const GALAXY_HISTORY_EXPORT_ATTRS_FILE = "history_attrs.txt";
 const GALAXY_DATASET_ATTRS_FILE = "datasets_attrs.txt";
 
-export const GALAXY_EXPORT_METADATA_FILES = [
+const GALAXY_EXPORT_METADATA_FILES = new Set([
     GALAXY_EXPORT_ATTRS_FILE,
     GALAXY_HISTORY_EXPORT_ATTRS_FILE,
     GALAXY_DATASET_ATTRS_FILE,
@@ -358,7 +364,12 @@ export const GALAXY_EXPORT_METADATA_FILES = [
     "jobs_attrs.txt",
     "libraries_attrs.txt",
     "library_folders_attrs.txt",
-];
+]);
+
+const ROCRATE_METADATA_FILE = "ro-crate-metadata.json";
+const ROCRATE_METADATA_FILES = new Set([ROCRATE_METADATA_FILE, "ro-crate-preview.html"]);
+
+const COMMON_KNOWN_FILES_TO_SKIP = new Set([...GALAXY_EXPORT_METADATA_FILES, ...ROCRATE_METADATA_FILES]);
 
 export interface ImportableFile extends ZipEntryMetadata {
     type: "workflow" | "file";
