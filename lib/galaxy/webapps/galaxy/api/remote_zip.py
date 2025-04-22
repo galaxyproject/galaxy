@@ -14,7 +14,10 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from galaxy.exceptions import RequestParameterMissingException
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
 from . import Router
 
 log = logging.getLogger(__name__)
@@ -38,11 +41,18 @@ class FastAPIRemoteZip:
         if not url:
             raise RequestParameterMissingException("The 'url' parameter is required")
 
+        if not url.startswith("https://"):
+            raise RequestParameterInvalidException("Only HTTPS URLs are allowed")
+
         headers = {}
         if "range" in request.headers:
-            headers["Range"] = request.headers["range"]  # Forward Range requests
+            headers["Range"] = self._validate_range_header(request.headers["range"])
 
-        async with httpx.AsyncClient() as client:
+        # Set the timeout for the request to 10 seconds and connection timeout to 60 seconds
+        # This is to prevent the server from hanging indefinitely
+        timeout = httpx.Timeout(10.0, connect=60.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
             try:
                 response = await client.request(method=request.method, url=url, headers=headers, follow_redirects=True)
 
@@ -65,3 +75,17 @@ class FastAPIRemoteZip:
 
             except httpx.RequestError as e:
                 raise Exception(f"Request error: {e}")
+
+    def _validate_range_header(self, range_header: str) -> str:
+        """
+        Validate the Range header format and values.
+        """
+        if not range_header.startswith("bytes="):
+            raise RequestParameterInvalidException("Invalid Range header format")
+        try:
+            start, end = range_header[6:].split("-")
+            if not start.isdigit() or (end and not end.isdigit()):
+                raise RequestParameterInvalidException("Invalid Range header values")
+        except ValueError:
+            raise RequestParameterInvalidException("Invalid Range header format")
+        return f"bytes={start}-{end}" if end else f"bytes={start}-"
