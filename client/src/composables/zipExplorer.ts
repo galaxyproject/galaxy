@@ -315,9 +315,8 @@ function orderByPath(a: ZipEntryMetadata, b: ZipEntryMetadata) {
  * and files from the __MACOSX directory.
  */
 function shouldSkipZipEntry(entry: ZipFileEntry) {
-    return (
-        COMMON_KNOWN_FILES_TO_SKIP.has(entry.path) || entry.path.startsWith(".") || entry.path.startsWith("__MACOSX")
-    );
+    const fileName = entry.path.split("/").pop() ?? "";
+    return COMMON_KNOWN_FILES_TO_SKIP.has(fileName) || fileName.startsWith(".") || entry.path.startsWith("__MACOSX");
 }
 
 function isGalaxyWorkflow(entry: AnyZipEntry) {
