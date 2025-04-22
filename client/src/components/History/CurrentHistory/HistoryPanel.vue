@@ -306,9 +306,11 @@ async function loadHistoryItems() {
     }
 }
 
-async function onDelete(item: HistoryItemSummary, recursive = false) {
+async function onDelete(item: HistoryItemSummary, recursive = false, isSubItem = false) {
     isLoading.value = true;
-    setInvisible(item);
+    if (!isSubItem) {
+        setInvisible(item);
+    }
 
     try {
         await deleteContent(item, { recursive: recursive });
@@ -328,8 +330,10 @@ function onScroll(newOffset: number) {
     offsetQueryParam.value = newOffset;
 }
 
-async function onUndelete(item: HistoryItemSummary) {
-    setInvisible(item);
+async function onUndelete(item: HistoryItemSummary, isSubItem = false) {
+    if (!isSubItem) {
+        setInvisible(item);
+    }
     isLoading.value = true;
 
     try {
@@ -340,8 +344,10 @@ async function onUndelete(item: HistoryItemSummary) {
     }
 }
 
-async function onUnhide(item: HistoryItemSummary) {
-    setInvisible(item);
+async function onUnhide(item: HistoryItemSummary, isSubItem = false) {
+    if (!isSubItem) {
+        setInvisible(item);
+    }
     isLoading.value = true;
 
     try {
@@ -605,10 +611,15 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
                                                 :key="subItem.id"
                                                 :item="subItem"
                                                 :name="subItem.name"
+                                                :writable="canEditHistory"
+                                                is-history-item
                                                 :expand-dataset="isExpanded(subItem)"
                                                 :is-dataset="isDataset(subItem)"
                                                 :is-sub-item="true"
-                                                @update:expand-dataset="setExpanded(subItem, $event)" />
+                                                @update:expand-dataset="setExpanded(subItem, $event)"
+                                                @delete="(subItem, recursive) => onDelete(subItem, recursive, true)"
+                                                @undelete="onUndelete(subItem, true)"
+                                                @unhide="onUnhide(subItem, true)" />
                                         </div>
                                     </template>
                                 </ContentItem>
