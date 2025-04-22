@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Multiple Sequence Alignment">
+<visualization name="Multiple Sequence Alignment" hidden="true">
     <description>The MSA viewer is a modular, reusable component to visualize large MSAs interactively on the web.</description>
     <data_sources>
         <data_source>
