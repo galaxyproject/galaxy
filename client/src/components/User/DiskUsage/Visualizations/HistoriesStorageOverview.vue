@@ -4,7 +4,6 @@ import { useRouter } from "vue-router/composables";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
-import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
@@ -18,7 +17,6 @@ import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedHistories from "./WarnDeletedHistories.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const historyStore = useHistoryStore();
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();
 const { confirm } = useConfirmDialog();
@@ -100,11 +98,6 @@ function isArchivedDataPoint(dataPoint: DataValuePoint): boolean {
     return false;
 }
 
-async function onSetCurrentHistory(historyId: string) {
-    await historyStore.setCurrentHistory(historyId);
-    router.push({ path: "/" });
-}
-
 function onViewHistory(historyId: string) {
     router.push({ name: "HistoryOverview", params: { historyId } });
 }
@@ -132,6 +125,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             okVariant: "danger",
             okTitle: localize("Permanently delete"),
             cancelTitle: localize("Cancel"),
+            cancelVariant: "outline-primary",
         }
     );
     if (!confirmed) {
@@ -197,7 +191,6 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                         :is-recoverable="isRecoverableDataPoint(data)"
                         :is-archived="isArchivedDataPoint(data)"
                         :can-edit="!isArchivedDataPoint(data)"
-                        @set-current-history="onSetCurrentHistory"
                         @view-item="onViewHistory"
                         @undelete-item="onUndeleteHistory"
                         @permanently-delete-item="onPermanentlyDeleteHistory" />
