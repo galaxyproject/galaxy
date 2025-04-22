@@ -37,7 +37,8 @@ URLQueryParam: str = Query(
 @router.cbv
 class FastAPIRemoteZip:
 
-    @router.api_route("/api/proxy", methods=["GET", "HEAD"])
+    @router.get("/api/proxy")
+    @router.head("/api/proxy")
     async def proxy(self, request: Request, url: str = URLQueryParam, trans: ProvidesUserContext = DependsOnTrans):
         """
         Proxy a remote file to the client to avoid CORS issues.
