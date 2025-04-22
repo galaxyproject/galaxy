@@ -17,6 +17,7 @@ import { useUserStore } from "@/stores/userStore";
 import type { SelectedWorkflow } from "./types";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -447,18 +448,15 @@ onMounted(() => {
                         >: {{ value }}
                     </li>
                 </ul>
-                <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
-                    Remove invalid filters from query
-                </a>
+                <GLink @click="filterText = validatedFilterText()"> Remove invalid filters from query </GLink>
                 or
-                <a
-                    v-b-tooltip.noninteractive.hover
+                <GLink
                     title="Note that this might produce inaccurate results"
-                    href="javascript:void(0)"
+                    tooltip
                     class="ui-link"
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
-                </a>
+                </GLink>
             </BAlert>
         </span>
         <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list">
