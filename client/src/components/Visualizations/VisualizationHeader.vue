@@ -28,9 +28,5 @@ defineProps<{
     img {
         width: 2rem;
     }
-    .plugin-icon {
-        font-size: 1.3rem;
-        padding: 0.3rem;
-    }
 }
 </style>
