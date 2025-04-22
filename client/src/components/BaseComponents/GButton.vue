@@ -101,7 +101,9 @@ const buttonElementRef = useResolveElement(buttonRef);
 
 <style scoped lang="scss">
 .g-button {
-    display: inline-block;
+    display: inline-flex;
+    gap: var(--spacing-1);
+    align-items: center;
     margin: 0;
     border: 1px solid;
     border-radius: var(--spacing-1);
