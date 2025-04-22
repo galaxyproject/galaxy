@@ -20,6 +20,7 @@ const props = defineProps<{
     size?: ComponentSize;
     tooltip?: boolean;
     tooltipPlacement?: Placement;
+    dark?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -33,6 +34,12 @@ function onClick(event: PointerEvent) {
         emit("click", event);
     }
 }
+
+const styleClasses = computed(() => {
+    return {
+        "g-dark": props.dark,
+    };
+});
 
 const baseComponent = useClickableElement(props);
 const currentTitle = useCurrentTitle(props);
@@ -49,6 +56,7 @@ const linkElementRef = useResolveElement(linkRef);
         :is="baseComponent"
         ref="linkRef"
         class="g-link"
+        :class="styleClasses"
         :data-title="currentTitle"
         :to="props.to"
         :href="props.to ?? props.href"
@@ -71,8 +79,8 @@ const linkElementRef = useResolveElement(linkRef);
 
 <style scoped lang="scss">
 .g-link {
-    border: none;
-    background: none;
+    border: none !important;
+    background: none !important;
     padding: 0;
     color: var(--color-blue-600);
     display: inline;
@@ -87,8 +95,19 @@ const linkElementRef = useResolveElement(linkRef);
         text-decoration: underline;
     }
 
+    // bootstrap override
+    &:focus,
+    &:active:focus {
+        box-shadow: none !important;
+    }
+
     &:focus-visible {
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
+        // this important is there because of bootstrap. todo: remove
+        box-shadow: 0 0 0 0.2rem var(--color-blue-400) !important;
+    }
+
+    &.g-dark {
+        color: var(--color-grey-700);
     }
 }
 </style>
