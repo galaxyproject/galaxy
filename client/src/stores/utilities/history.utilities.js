@@ -46,7 +46,15 @@ function pushSubItem(item, subItem) {
     if (!item.sub_items) {
         item["sub_items"] = [];
     }
-    if (!item["sub_items"].find((i) => i.id === subItem.id)) {
+    const foundItem = item["sub_items"].find((i) => i.id === subItem.id);
+    if (!foundItem) {
         item["sub_items"].push(subItem);
+    } else {
+        // item already exists in sub_items, so we need to update it
+        Object.keys(foundItem).forEach((key) => {
+            if (key !== "sub_items") {
+                foundItem[key] = subItem[key];
+            }
+        });
     }
 }
