@@ -21,6 +21,7 @@ const props = defineProps<{
     tooltip?: boolean;
     tooltipPlacement?: Placement;
     dark?: boolean;
+    thin?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +39,7 @@ function onClick(event: PointerEvent) {
 const styleClasses = computed(() => {
     return {
         "g-dark": props.dark,
+        "g-thin": props.thin,
     };
 });
 
@@ -108,6 +110,10 @@ const linkElementRef = useResolveElement(linkRef);
 
     &.g-dark {
         color: var(--color-grey-700);
+    }
+
+    &.g-thin {
+        font-weight: normal;
     }
 }
 </style>
