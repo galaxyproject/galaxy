@@ -52,7 +52,7 @@ const mappedLabels = computed(() =>
         }))
 );
 
-async function doQuery(): Promise<any> {
+async function doQuery(): Promise<OptionType[]> {
     return mappedLabels.value;
 }
 </script>
