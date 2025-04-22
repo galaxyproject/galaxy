@@ -1,6 +1,5 @@
-import { rethrowSimple } from "@/utils/simple-error";
-
 import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export async function getDataset(query: string, historyId: string) {
     const { data, error } = await GalaxyApi().GET("/api/datasets", {
