@@ -453,7 +453,6 @@ onMounted(() => {
                 <GLink
                     title="Note that this might produce inaccurate results"
                     tooltip
-                    class="ui-link"
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
                 </GLink>

@@ -1,7 +1,7 @@
 <template>
     <ActivityPanel title="Best Practices Review">
         <template v-if="showRefactor" v-slot:header>
-            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
+            <GLink class="refactor-button" @click="onRefactor"> Try to automatically fix issues. </GLink>
         </template>
         <LintSection
             :okay="checkAnnotation"
@@ -101,6 +101,7 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
@@ -114,6 +115,7 @@ export default {
         FontAwesomeIcon,
         LintSection,
         ActivityPanel,
+        GLink,
     },
     props: {
         untypedParameters: {
