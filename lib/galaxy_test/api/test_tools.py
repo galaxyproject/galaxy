@@ -1154,6 +1154,81 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
             assert job_details["copied_from_job_id"] is None
 
+    @skip_without_tool("collection_creates_dynamic_list_of_pairs")
+    @requires_new_history
+    def test_run_collection_creates_dynamic_list_of_pairs_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_collection_creates_dynamic_list_of_pairs_use_cached_job
+        ) as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id, content="123")
+            outputs_one = self._run(
+                "collection_creates_dynamic_list_of_pairs",
+                history_id,
+                inputs={"file": {"src": "hda", "id": dataset["id"]}, "foo": "abc"},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=False,
+            )
+            self.dataset_populator.rename_dataset(dataset["id"])
+            outputs_two = self._run(
+                "collection_creates_dynamic_list_of_pairs",
+                history_id,
+                inputs={"file": {"src": "hda", "id": dataset["id"]}, "foo": "abc"},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+            contents = self.dataset_populator.get_history_contents(history_id)
+            # Make sure we add the correct number of output to the history
+            # 1 input dataset
+            # 2 output collections
+            # with 6 HDAs each
+            assert len(contents) == 15
+            hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=outputs_two["output_collections"][0]["id"]
+            )
+            assert hdca_details["collection_type"] == "list:paired"
+            assert hdca_details["element_count"] == 3
+            assert hdca_details["populated"]
+            assert hdca_details["populated_state"] == "ok"
+            assert hdca_details["elements_datatypes"] == ["fastqsanger"]
+
+    @skip_without_tool("multi_output_assign_primary_ext_dbkey")
+    @requires_new_history
+    def test_run_multi_output_assign_primary_ext_dbkey_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_multi_output_assign_primary_ext_dbkey_use_cached_job
+        ) as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id, content="123")
+            outputs_one = self._run(
+                "multi_output_assign_primary_ext_dbkey",
+                history_id,
+                inputs={"input": {"src": "hda", "id": dataset["id"]}, "num_param": 1},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=False,
+            )
+            self.dataset_populator.rename_dataset(dataset["id"])
+            outputs_two = self._run(
+                "multi_output_assign_primary_ext_dbkey",
+                history_id,
+                inputs={"input": {"src": "hda", "id": dataset["id"]}, "num_param": 1},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+            contents = self.dataset_populator.get_history_contents(history_id)
+            # Make sure we add the correct number of output to the history
+            # 1 input dataset
+            # 2 output datasets each
+            assert len(contents) == 5
+
     @skip_without_tool("cat1")
     def test_run_cat1_listified_param(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_listified_param) as history_id:
