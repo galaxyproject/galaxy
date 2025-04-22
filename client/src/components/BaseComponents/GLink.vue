@@ -18,7 +18,7 @@ const props = defineProps<{
     title?: string;
     disabledTitle?: string;
     size?: ComponentSize;
-    tooltip?: Boolean;
+    tooltip?: boolean;
     tooltipPlacement?: Placement;
 }>();
 
@@ -69,4 +69,26 @@ const linkElementRef = useResolveElement(linkRef);
     </component>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.g-link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--color-blue-600);
+    display: inline;
+    line-height: unset;
+    vertical-align: unset;
+    user-select: text;
+    font-weight: bold;
+
+    &:hover,
+    &:focus,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+
+    &:focus-visible {
+        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
+    }
+}
+</style>
