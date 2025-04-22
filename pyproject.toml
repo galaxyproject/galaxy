@@ -145,7 +145,7 @@ dev = [
     "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
     "pytest-shard",
     "responses",
-    "rucio-clients>=33.6.0",
+    "rucio-clients>=33.6.0,!=37.0.*,!=37.1.0,!=37.1.0.post1",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
     "Sphinx>=4.0",  # support docutils 0.17
