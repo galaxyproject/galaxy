@@ -116,9 +116,9 @@ async function doQuery(query: string = ""): Promise<ApiResponse> {
         case "history_id":
             return getHistories();
         case "history_dataset_id":
-            return getDataset(query, currentHistoryId.value);
+            return currentHistoryId.value ? getDataset(query, currentHistoryId.value) : [];
         case "history_dataset_collection_id":
-            return getDatasetCollection(query, currentHistoryId.value);
+            return currentHistoryId.value ? getDatasetCollection(query, currentHistoryId.value) : [];
         case "invocation_id":
             return getInvocations();
         case "job_id":
