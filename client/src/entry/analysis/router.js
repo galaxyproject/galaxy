@@ -575,9 +575,7 @@ export function getRouter(Galaxy) {
                         path: "visualizations/create/:visualization",
                         component: VisualizationCreate,
                         name: "VisualizationsCreate",
-                        props: (route) => ({
-                            visualization: route.params.visualization,
-                        }),
+                        props: true,
                     },
                     {
                         path: "visualizations/display",
