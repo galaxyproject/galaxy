@@ -13,7 +13,6 @@ import FormDataExtensions from "../Form/Elements/FormData/FormDataExtensions.vue
 import VisualizationDropdown from "./VisualizationDropdown.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
-//import JobRunner from "@/components/JobRunner/JobRunner.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
 
@@ -30,6 +29,7 @@ const plugin: Ref<Plugin | undefined> = ref();
 
 const tests = computed(() => getTestUrls(plugin.value));
 const formatsVisible = ref(false);
+
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
@@ -82,7 +82,7 @@ onMounted(() => {
             <Heading h2 separator bold size="sm">Help</Heading>
             <MarkdownDefault :content="plugin.help" />
         </div>
-        <div class="my-2">
+        <div class="my-2 pb-2">
             <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">
                 {{ tag }}
             </div>
