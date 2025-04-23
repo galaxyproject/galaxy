@@ -9,6 +9,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import { getTestUrls } from "./utilities";
 
+import FormDataExtensions from "../Form/Elements/FormData/FormDataExtensions.vue";
 import VisualizationDropdown from "./VisualizationDropdown.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -28,7 +29,7 @@ const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
 const tests = computed(() => getTestUrls(plugin.value));
-
+const formatsVisible = ref(false);
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
@@ -61,25 +62,30 @@ onMounted(() => {
         :is-loading="!currentHistoryId || !plugin"
         :logo="plugin?.logo"
         :name="plugin?.html">
-        <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">
-            {{ tag }}
-        </div>
         <template v-slot:buttons>
             <VisualizationDropdown :tests="tests" />
         </template>
-        <SelectionField
-            class="my-3"
-            object-name="Select a dataset..."
-            object-title="Select to Visualize"
-            object-type="history_dataset_id"
-            :object-query="doQuery"
-            @change="onSelect" />
-        <div>
-            <Heading h2 separator bold size="sm">Accepted Formats</Heading>
+        <div class="my-3">
+            <SelectionField
+                object-name="Select a dataset..."
+                object-title="Select to Visualize"
+                object-type="history_dataset_id"
+                :object-query="doQuery"
+                @change="onSelect" />
+            <FormDataExtensions
+                v-if="tests.length > 0"
+                :extensions="tests.map((t) => t.extension)"
+                formats-button-id="vis"
+                :formats-visible.sync="formatsVisible" />
         </div>
-        <div v-if="plugin?.help" class="mt-2 mb-4">
+        <div v-if="plugin?.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>
             <MarkdownDefault :content="plugin.help" />
+        </div>
+        <div class="my-2">
+            <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">
+                {{ tag }}
+            </div>
         </div>
     </FormCardSticky>
 </template>
