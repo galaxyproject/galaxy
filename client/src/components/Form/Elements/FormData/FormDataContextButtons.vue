@@ -47,6 +47,10 @@ function createCollectionType(colType: string) {
     emit("create-collection-type", colType as CollectionType);
     emit("update:workflow-tab", "create");
 }
+
+const sourceIsCollection = computed(() => {
+    return props.currentSource === "hdca";
+});
 </script>
 
 <template>
@@ -89,7 +93,7 @@ function createCollectionType(colType: string) {
             <span v-if="!props.compact" v-localize>View</span>
         </BButton>
         <BDropdown
-            v-if="props.showViewCreateOptions && props.currentSource === 'hdca' && !props.collectionType"
+            v-if="props.showViewCreateOptions && sourceIsCollection && !props.collectionType"
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
             title="Create a new collection"
