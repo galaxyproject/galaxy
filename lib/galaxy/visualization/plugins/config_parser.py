@@ -390,21 +390,10 @@ class DataSourceParser:
             if assign is not None:
                 param["assign"] = assign
 
-            # param_attr is the attribute of the object (that the visualization will be applied to)
-            #   that should be converted into a query param (e.g. param_attr="id" -> dataset_id)
-            # TODO:?? use the build attr getter here?
-            # simple (1 lvl) attrs for now
+            # param_attr is the attribute of the object that the visualization will be applied to
             param_attr = element.get("param_attr")
             if param_attr is not None:
                 param["param_attr"] = param_attr
-            # element must have either param_attr or assign? what about no params (the object itself)
-            if not param_attr and not assign:
-                raise ParsingException("to_param requires either assign or param_attr attributes: %s", param_name)
-
-            # TODO: consider making the to_param name an attribute (param="hda_ldda") and the text what would
-            #           be used for the conversion - this would allow CDATA values to be passed
-            # <to_param param="json" type="assign"><![CDATA[{ "one": 1, "two": 2 }]]></to_param>
-
             if param:
                 to_param_dict[param_name] = param
 
