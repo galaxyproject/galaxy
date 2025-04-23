@@ -110,7 +110,13 @@ async function icons() {
 }
 
 function stagePlugins() {
-    return src(PATHS.pluginDirs).pipe(dest("../static/plugins/"));
+    // Add exclusion pattern to avoid problematic node_modules paths
+    const exclusionPattern = ["**/node_modules/**/.bin/**"];
+
+    return src(PATHS.pluginDirs, {
+        base: PATHS.pluginBaseDir,
+        ignore: exclusionPattern,
+    }).pipe(dest("../static/plugins/"));
 }
 
 function buildPlugins(callback, forceRebuild) {
