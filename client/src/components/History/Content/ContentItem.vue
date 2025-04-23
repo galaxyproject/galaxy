@@ -48,6 +48,7 @@ interface Props {
     filterable?: boolean;
     isPlaceholder?: boolean;
     isSubItem?: boolean;
+    hasPurgeOption?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -63,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: false,
     isPlaceholder: false,
     isSubItem: false,
+    hasPurgeOption: false,
 });
 
 const emit = defineEmits<{
@@ -75,6 +77,7 @@ const emit = defineEmits<{
     (e: "select-all"): void;
     (e: "selected-to"): void;
     (e: "delete", item: any, recursive: boolean): void;
+    (e: "purge"): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
     (e: "view-collection", item: any, name: string): void;
@@ -414,7 +417,9 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :has-purge-option="hasPurgeOption"
                         @delete="onDelete"
+                        @purge="emit('purge')"
                         @display="onDisplay"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"

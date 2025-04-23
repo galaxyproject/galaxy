@@ -320,6 +320,20 @@ async function onDelete(item: HistoryItemSummary, recursive = false, isSubItem =
     }
 }
 
+async function onPurge(item: HistoryItemSummary, recursive = false, isSubItem = false) {
+    isLoading.value = true;
+    if (!isSubItem) {
+        setInvisible(item);
+    }
+
+    try {
+        await deleteContent(item, { recursive: recursive, purge: true });
+        updateContentStats();
+    } finally {
+        isLoading.value = false;
+    }
+}
+
 function onHideSelection(selectedItems: HistoryItemSummary[]) {
     for (const item of selectedItems) {
         setInvisible(item);
@@ -615,9 +629,11 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
                                                 is-history-item
                                                 :expand-dataset="isExpanded(subItem)"
                                                 :is-dataset="isDataset(subItem)"
+                                                :has-purge-option="item.purged"
                                                 :is-sub-item="true"
                                                 @update:expand-dataset="setExpanded(subItem, $event)"
                                                 @delete="(subItem, recursive) => onDelete(subItem, recursive, true)"
+                                                @purge="onPurge(subItem, false, true)"
                                                 @undelete="onUndelete(subItem, true)"
                                                 @unhide="onUnhide(subItem, true)" />
                                         </div>
