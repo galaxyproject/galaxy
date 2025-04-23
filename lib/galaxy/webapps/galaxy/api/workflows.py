@@ -525,15 +525,22 @@ class WorkflowsAPIController(
         # payload is tool state
         if payload is None:
             payload = {}
+        module_type = payload.get("type", "tool")
         inputs = payload.get("inputs", {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        module = module_factory.from_dict(trans, payload, from_tool_form=True)
-
+        from_tool_form = True if module_type != "data_collection_input" else False
+        if not from_tool_form and "tool_state" not in payload and "inputs" in payload:
+            # tool state not sent, use the manually constructed inputs
+            payload["tool_state"] = payload["inputs"]
+        module = module_factory.from_dict(trans, payload, from_tool_form=from_tool_form)
         module_state: Dict[str, Any] = {}
         errors: ParameterValidationErrorsT = {}
-        populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
-        module.recover_state(module_state, from_tool_form=True)
-        module.check_and_update_state()
+        if from_tool_form:
+            populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
+            module.recover_state(module_state, from_tool_form=True)
+            module.check_and_update_state()
+        else:
+            module_state = module.get_export_state()
         step_dict = {
             "name": module.get_name(),
             "tool_state": module_state,
@@ -543,7 +550,7 @@ class WorkflowsAPIController(
             "config_form": module.get_config_form(),
             "errors": errors or None,
         }
-        if payload["type"] == "tool":
+        if module_type == "tool":
             step_dict["tool_version"] = module.get_version()
         return step_dict
 
