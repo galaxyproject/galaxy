@@ -102,8 +102,8 @@ const localFileActions = [
                 <template v-slot:description>
                     <p v-localize>
                         Click on the `Browse local ZIP` button to select a ZIP file from your computer. Then you can
-                        preview and select files to import from it. This is useful when you are only interested in a few
-                        files from a large ZIP file.
+                        preview and select files to import from it. This is
+                        <b>useful when you are only interested in a few small files from a large ZIP archive</b>.
                     </p>
                     <label class="w-100" for="zip-file-path">
                         <input id="zip-file-path" v-model="zipFilePath" type="text" class="w-100" readonly />
