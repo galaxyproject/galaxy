@@ -6,9 +6,10 @@ import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { type CollectionType } from "@/api/datasetCollections";
-import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
+import { COLLECTION_TYPE_TO_LABEL, type CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";
 import type { VariantInterface } from "./variants";
 
 const props = defineProps<{
@@ -19,7 +20,7 @@ const props = defineProps<{
     workflowRun?: boolean;
     workflowTab: string;
     compact?: boolean;
-    collectionType?: string;
+    collectionTypes?: string[];
     currentSource?: string;
     isPopulated?: boolean;
     showFieldOptions?: boolean;
@@ -34,8 +35,9 @@ const emit = defineEmits<{
 }>();
 
 const createTitle = computed(() => {
-    return props.collectionType
-        ? `Create a new ${COLLECTION_TYPE_TO_LABEL[props.collectionType]}`
+    const defaultBuilderType = defaultCollectionBuilderType.value;
+    return sourceIsCollection.value
+        ? `Create a new ${COLLECTION_TYPE_TO_LABEL[defaultBuilderType]}`
         : "Upload dataset(s)";
 });
 
@@ -43,13 +45,33 @@ function clickedTab(tab: string) {
     emit("update:workflow-tab", props.workflowTab === tab ? "" : tab);
 }
 
-function createCollectionType(colType: string) {
-    emit("create-collection-type", colType as CollectionType);
+function createCollectionType(colType: CollectionBuilderType) {
+    emit("create-collection-type", colType);
     emit("update:workflow-tab", "create");
 }
 
 const sourceIsCollection = computed(() => {
     return props.currentSource === "hdca";
+});
+
+const availableCollectionBuilders = computed(() => {
+    if (props.collectionTypes && props.collectionTypes.length > 0) {
+        return buildersForCollectionTypes(props.collectionTypes);
+    } else {
+        return unconstrainedCollectionTypeBuilders;
+    }
+})
+
+const hasSingleAvailableCollectionBuilderType = computed(() => {
+    return availableCollectionBuilders.value.length === 1;
+});
+
+const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
+    if (availableCollectionBuilders.value.length > 0) {
+        return availableCollectionBuilders.value[0] as CollectionBuilderType;
+    } else {
+        return "list";
+    }
 });
 </script>
 
@@ -92,11 +114,13 @@ const sourceIsCollection = computed(() => {
             <FontAwesomeIcon :icon="faEye" />
             <span v-if="!props.compact" v-localize>View</span>
         </BButton>
+        <!-- three options here - source is a collection that has multiple builders exposed, source is a collection
+             that has a single builder exposed, or source is dataset(s). -->
         <BDropdown
-            v-if="props.showViewCreateOptions && sourceIsCollection && !props.collectionType"
+            v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType"
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
-            title="Create a new collection"
+            :title="createTitle"
             no-caret
             toggle-class="d-flex flex-gapx-1 align-items-center">
             <template v-slot:button-content>
@@ -104,7 +128,7 @@ const sourceIsCollection = computed(() => {
                 <span v-localize>Create</span>
             </template>
             <BDropdownItem
-                v-for="colType in Object.keys(COLLECTION_TYPE_TO_LABEL)"
+                v-for="colType in availableCollectionBuilders"
                 :key="colType"
                 @click="createCollectionType(colType)">
                 {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
@@ -112,7 +136,7 @@ const sourceIsCollection = computed(() => {
         </BDropdown>
         <BButton
             v-else-if="
-                props.showViewCreateOptions && (!props.collectionType || COLLECTION_TYPE_TO_LABEL[props.collectionType])
+                props.showViewCreateOptions && sourceIsCollection
             "
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
@@ -120,8 +144,21 @@ const sourceIsCollection = computed(() => {
             :title="createTitle"
             :pressed="props.workflowTab === 'create'"
             @click="clickedTab('create')">
-            <FontAwesomeIcon :icon="!props.collectionType ? faUpload : faPlus" />
-            <span v-localize>{{ !props.collectionType ? "Upload" : "Create" }}</span>
+            <FontAwesomeIcon :icon="faPlus" />
+            <span v-localize>Create</span>
+        </BButton>
+        <BButton
+            v-else-if="
+                props.showViewCreateOptions && !sourceIsCollection
+            "
+            v-b-tooltip.bottom.hover.noninteractive
+            class="d-flex flex-gapx-1 align-items-center"
+            data-description="upload"
+            :title="createTitle"
+            :pressed="props.workflowTab === 'create'"
+            @click="clickedTab('create')">
+            <FontAwesomeIcon :icon="faUpload" />
+            <span v-localize>Upload</span>
         </BButton>
     </BButtonGroup>
 </template>

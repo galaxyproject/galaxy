@@ -70,7 +70,7 @@ const validInput = computed(() => {
 /** Plain language for what is being created */
 const shortWhatIsBeingCreated = computed<string>(() => {
     const collectionType: string | undefined = props.collectionType;
-    if (collectionType in COLLECTION_TYPE_TO_LABEL) {
+    if (collectionType && collectionType in COLLECTION_TYPE_TO_LABEL) {
         return COLLECTION_TYPE_TO_LABEL[collectionType] as string;
     } else {
         return "collection";

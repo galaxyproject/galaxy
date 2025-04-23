@@ -780,7 +780,7 @@ const noOptionsWarningMessage = computed(() => {
                     :can-browse="canBrowse"
                     :loading="props.loading"
                     :workflow-run="props.workflowRun"
-                    :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                    :collection-types="props.collectionTypes"
                     :current-source="currentSource || undefined"
                     :is-populated="currentValue && currentValue.length > 0"
                     show-field-options
@@ -838,7 +838,7 @@ const noOptionsWarningMessage = computed(() => {
             <FormDataContextButtons
                 v-if="props.workflowRun && usingSimpleSelect"
                 compact
-                :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
                 show-view-create-options
