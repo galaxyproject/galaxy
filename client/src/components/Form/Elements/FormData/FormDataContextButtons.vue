@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faEye, faPlus, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faPlus, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { type CollectionType } from "@/api/datasetCollections";
-import { COLLECTION_TYPE_TO_LABEL, type CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import {
+    COLLECTION_TYPE_TO_LABEL,
+    type CollectionBuilderType,
+} from "@/components/History/adapters/buildCollectionModal";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";
@@ -60,7 +63,7 @@ const availableCollectionBuilders = computed(() => {
     } else {
         return unconstrainedCollectionTypeBuilders;
     }
-})
+});
 
 const hasSingleAvailableCollectionBuilderType = computed(() => {
     return availableCollectionBuilders.value.length === 1;
@@ -119,14 +122,11 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         <BDropdown
             v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType"
             v-b-tooltip.bottom.hover.noninteractive
-            class="d-flex flex-gapx-1 align-items-center"
+            class="d-flex"
             :title="createTitle"
-            no-caret
-            toggle-class="d-flex flex-gapx-1 align-items-center">
-            <template v-slot:button-content>
-                <FontAwesomeIcon :icon="faCaretDown" />
-                <span v-localize>Create</span>
-            </template>
+            split
+            text="Create"
+            @click="createCollectionType(defaultCollectionBuilderType)">
             <BDropdownItem
                 v-for="colType in availableCollectionBuilders"
                 :key="colType"
@@ -135,9 +135,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             </BDropdownItem>
         </BDropdown>
         <BButton
-            v-else-if="
-                props.showViewCreateOptions && sourceIsCollection
-            "
+            v-else-if="props.showViewCreateOptions && sourceIsCollection"
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
             data-description="upload"
@@ -148,9 +146,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <span v-localize>Create</span>
         </BButton>
         <BButton
-            v-else-if="
-                props.showViewCreateOptions && !sourceIsCollection
-            "
+            v-else-if="props.showViewCreateOptions && !sourceIsCollection"
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
             data-description="upload"
