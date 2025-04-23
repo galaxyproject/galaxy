@@ -6,6 +6,7 @@ import { BAlert } from "bootstrap-vue";
 import { absPath } from "@/utils/redirect";
 
 import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 withDefaults(
     defineProps<{
