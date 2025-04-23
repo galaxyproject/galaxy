@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -45,8 +45,7 @@ function getFilename(url: string): string {
 function onSubmit(name: string, url: string) {
     try {
         const data = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
-        sendPayload({
-            data,
+        sendPayload(data, {
             success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),
             error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
         });
@@ -57,8 +56,11 @@ function onSubmit(name: string, url: string) {
 </script>
 
 <template>
+    <div v-if="!currentHistoryId" class="d-flex align-items-center h-100">
+        <FontAwesomeIcon :icon="faSpinner" spin />
+    </div>
     <BDropdown
-        v-if="urlTuples.length > 0"
+        v-else-if="urlTuples.length > 0"
         v-b-tooltip.hover
         no-caret
         right
