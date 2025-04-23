@@ -3,9 +3,7 @@ import { faCaretDown, faSpinner, faUpload } from "@fortawesome/free-solid-svg-ic
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
 
-import { type Plugin } from "@/api/plugins";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
@@ -15,32 +13,15 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const toast = useToast();
 
-const props = defineProps<{
-    plugin?: Plugin;
-}>();
-
-const urlTuples = computed(
-    () =>
-        props.plugin?.tests
-            ?.map((item) => {
-                const url = item.param?.name === "dataset_id" ? item.param?.value : null;
-                if (url) {
-                    const filename = getFilename(url);
-                    return filename.trim() ? ([filename, url] as [string, string]) : null;
-                }
-            })
-            .filter((tuple): tuple is [string, string] => Boolean(tuple)) ?? []
-);
-
-function getFilename(url: string): string {
-    try {
-        const pathname = new URL(url).pathname;
-        const parts = pathname.split("/").filter(Boolean);
-        return parts.length ? parts.pop()! : "";
-    } catch {
-        return "";
-    }
+interface TestType {
+    extension: string;
+    name: string;
+    url: string;
 }
+
+defineProps<{
+    tests?: Array<TestType>;
+}>();
 
 function onSubmit(name: string, url: string) {
     try {
@@ -60,7 +41,7 @@ function onSubmit(name: string, url: string) {
         <FontAwesomeIcon :icon="faSpinner" spin />
     </div>
     <BDropdown
-        v-else-if="urlTuples.length > 0"
+        v-else-if="tests && tests.length > 0"
         v-b-tooltip.hover
         no-caret
         right
@@ -75,10 +56,10 @@ function onSubmit(name: string, url: string) {
         <BDropdownText>
             <small class="font-weight-bold text-primary text-uppercase">Upload Sample</small>
         </BDropdownText>
-        <BDropdownItem v-for="[name, url] of urlTuples" :key="url" @click="() => onSubmit(name, url)">
+        <BDropdownItem v-for="test of tests" :key="test.url" @click="() => onSubmit(test.name, test.url)">
             <span>
                 <FontAwesomeIcon :icon="faUpload" />
-                <span v-localize>{{ name }}</span>
+                <span v-localize>{{ test.name }}</span>
             </span>
         </BDropdownItem>
     </BDropdown>

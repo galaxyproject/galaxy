@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { onMounted, type Ref, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
+
+import { getTestUrls } from "./utilities";
 
 import VisualizationDropdown from "./VisualizationDropdown.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -24,6 +26,8 @@ const props = defineProps<{
 
 const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
+
+const tests = computed(() => getTestUrls(plugin.value));
 
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
@@ -57,8 +61,11 @@ onMounted(() => {
         :is-loading="!currentHistoryId || !plugin"
         :logo="plugin?.logo"
         :name="plugin?.html">
+        <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">
+            {{ tag }}
+        </div>
         <template v-slot:buttons>
-            <VisualizationDropdown :plugin="plugin" />
+            <VisualizationDropdown :tests="tests" />
         </template>
         <SelectionField
             class="my-3"
@@ -67,6 +74,9 @@ onMounted(() => {
             object-type="history_dataset_id"
             :object-query="doQuery"
             @change="onSelect" />
+        <div>
+            <Heading h2 separator bold size="sm">Accepted Formats</Heading>
+        </div>
         <div v-if="plugin?.help" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm">Help</Heading>
             <MarkdownDefault :content="plugin.help" />
