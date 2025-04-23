@@ -54,7 +54,7 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
      * reloading it from the server.
      * @param objectStore The object store to add or update
      */
-    function addOrUpdateObjectStore(objectStore: ConcreteObjectStoreModel) {
+    function addOrUpdateObjectStore(objectStore: UserConcreteObjectStoreModel) {
         if (selectableObjectStores.value) {
             const index = selectableObjectStores.value.findIndex(
                 (store) => store.object_store_id === objectStore.object_store_id
