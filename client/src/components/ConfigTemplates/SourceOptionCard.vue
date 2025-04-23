@@ -102,6 +102,7 @@ const primaryActions: CardAttributes[] = [
         :selected="props.selected">
         <template v-slot:titleActions>
             <GButton
+                v-if="props.optionType?.icon"
                 tooltip
                 transparent
                 inline
@@ -110,7 +111,7 @@ const primaryActions: CardAttributes[] = [
                 size="large"
                 :title="props.optionType?.title"
                 class="inline-icon-button">
-                <FontAwesomeIcon :icon="props.optionType?.icon" />
+                <FontAwesomeIcon :icon="props.optionType.icon" />
             </GButton>
         </template>
 
