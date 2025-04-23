@@ -65,10 +65,9 @@ function onSubmit(name: string, url: string) {
         no-caret
         right
         role="button"
-        title="Versions"
+        title="Options"
         variant="link"
-        aria-label="Select Versions"
-        class="tool-versions"
+        aria-label="Select Options"
         size="sm">
         <template v-slot:button-content>
             <FontAwesomeIcon :icon="faCaretDown" />
