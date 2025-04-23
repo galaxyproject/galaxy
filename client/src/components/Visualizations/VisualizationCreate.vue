@@ -7,6 +7,7 @@ import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import VisualizationDropdown from "./VisualizationDropdown.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 //import JobRunner from "@/components/JobRunner/JobRunner.vue";
@@ -24,19 +25,6 @@ const props = defineProps<{
 const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
-/*const urlTuples = computed(
-    () =>
-        plugin.value?.tests
-            ?.map((item) => {
-                const url = item.param?.name === "dataset_id" ? item.param?.value : null;
-                if (url) {
-                    const filename = getFilename(url);
-                    return filename.trim() ? ([filename, url] as [string, string]) : null;
-                }
-            })
-            .filter((tuple): tuple is [string, string] => Boolean(tuple)) ?? []
-);*/
-
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
@@ -45,16 +33,6 @@ async function doQuery() {
         return [];
     }
 }
-
-/*function getFilename(url: string): string {
-    try {
-        const pathname = new URL(url).pathname;
-        const parts = pathname.split("/").filter(Boolean);
-        return parts.length ? parts.pop()! : "";
-    } catch {
-        return "";
-    }
-}*/
 
 async function getPlugin() {
     plugin.value = await fetchPlugin(props.visualization);
@@ -79,6 +57,9 @@ onMounted(() => {
         :is-loading="!currentHistoryId || !plugin"
         :logo="plugin?.logo"
         :name="plugin?.html">
+        <template v-slot:buttons>
+            <VisualizationDropdown :plugin="plugin" />
+        </template>
         <SelectionField
             class="my-3"
             object-name="Select a dataset..."
