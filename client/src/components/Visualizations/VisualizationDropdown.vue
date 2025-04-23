@@ -73,7 +73,7 @@ function onSubmit(name: string, url: string) {
             <FontAwesomeIcon :icon="faCaretDown" />
         </template>
         <BDropdownText>
-            <small class="font-weight-bold text-primary text-uppercase">Sample Data</small>
+            <small class="font-weight-bold text-primary text-uppercase">Upload Sample</small>
         </BDropdownText>
         <BDropdownItem v-for="[name, url] of urlTuples" :key="url" @click="() => onSubmit(name, url)">
             <span>
