@@ -15,7 +15,7 @@ export function useExtensionFiltering(props: PropsWithOptionalExtensions) {
     // variables for datatype mapping and then filtering
     const datatypesMapperStore = useDatatypesMapperStore();
     const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-    const filterExtensions = computed(() => !!datatypesMapper.value && !!extensions.value);
+    const filterExtensions = computed(() => !!datatypesMapper.value && extensions.value && extensions.value.length > 0);
 
     function hasInvalidExtension(element: ElementHasExtension) {
         if (
