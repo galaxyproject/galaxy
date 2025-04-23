@@ -280,7 +280,7 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
             console.log(`   → Installing ${pkgName}@${version} in ${pluginDir}`);
             const installResult = child_process.spawnSync(
                 "npm",
-                ["install", "--silent", "--no-save", `--prefix=${pluginDir}`, `${pkgName}@${version}`],
+                ["install", "--silent", "--no-save", `--prefix= .`, `${pkgName}@${version}`],
                 {
                     cwd: pluginDir,
                     stdio: "inherit",
