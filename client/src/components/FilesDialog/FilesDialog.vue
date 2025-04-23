@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
@@ -25,6 +27,7 @@ import { USER_FILE_PREFIX } from "@/utils/url";
 
 import { Model } from "./model";
 
+import GButton from "../BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 const filesSources = useFileSources();
@@ -456,6 +459,13 @@ onMounted(() => {
                     form with your email to create a password for your account.</span
                 >
             </BAlert>
+        </template>
+        <template v-slot:buttons>
+            <!-- TODO: Change this to a `:to` router-link button -->
+            <GButton tooltip size="small" title="Create a new remote file source" href="/file_source_instances/create">
+                <FontAwesomeIcon :icon="faPlus" />
+                Create new
+            </GButton>
         </template>
     </SelectionDialog>
 </template>
