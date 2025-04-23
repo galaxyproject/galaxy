@@ -13,9 +13,10 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { getArgs } from "@/components/Markdown/parse";
 import { getRequiredObject } from "@/components/Markdown/Utilities/requirements";
+import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
@@ -52,8 +53,8 @@ const requirementFulfilled = computed(
 
 function onChange(option: OptionType) {
     if (contentName.value) {
-        if (hasLabels.value && option.label) {
-            const values = Object.entries(option.label)
+        if (hasLabels.value && option.data && option.data.label) {
+            const values = Object.entries(option.data.label)
                 .filter(([_, value]) => !!value)
                 .map(([key, value]) => `${key}="${value}"`)
                 .join(", ");

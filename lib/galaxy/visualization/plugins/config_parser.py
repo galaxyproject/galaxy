@@ -89,6 +89,10 @@ class VisualizationsConfigParser:
         description = xml_tree.find("description")
         returned["description"] = description.text.strip() if description is not None else None
 
+        # help text of what the visualization does
+        help = xml_tree.find("help")
+        returned["help"] = help.text if help is not None else None
+
         # data_sources are the kinds of objects/data associated with the visualization
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
         data_sources = []
@@ -166,6 +170,10 @@ class VisualizationsConfigParser:
         # load settings specifiers
         if (settings_section := xml_tree.find("settings")) is not None:
             returned["settings"] = ListParser(settings_section)
+
+        # load tests specifiers
+        if (test_section := xml_tree.find("tests")) is not None:
+            returned["tests"] = ListParser(test_section)
 
         return returned
 

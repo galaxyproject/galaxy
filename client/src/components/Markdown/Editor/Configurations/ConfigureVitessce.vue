@@ -26,8 +26,9 @@
 import { BAlert } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref, watch } from "vue";
 
-import type { DatasetLabel, OptionType, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
+import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
@@ -90,11 +91,11 @@ function getObjectName(file: FileEntryType) {
 }
 
 function onChange(file: FileEntryType, option: OptionType) {
-    if (hasLabels.value && option.label) {
+    if (hasLabels.value && option.data && option.data.label) {
         Vue.set(file, "url", undefined);
         Vue.set(file, "__gx_dataset_id", undefined);
         Vue.set(file, "__gx_dataset_name", undefined);
-        Vue.set(file, "__gx_dataset_label", option.label);
+        Vue.set(file, "__gx_dataset_label", option.data.label);
     } else if (option.id) {
         Vue.set(file, "url", undefined);
         Vue.set(file, "__gx_dataset_id", option.id);

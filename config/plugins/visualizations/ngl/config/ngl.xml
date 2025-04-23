@@ -304,4 +304,21 @@
             <value>1.0</value>
         </input>
     </settings>
+    <help format="markdown"><![CDATA[
+### What is NGL?
+
+NGL is an interactive 3D viewer for exploring molecular structures such as proteins, nucleic acids, and small molecules. It runs directly in your browser and makes it easy to inspect structural data in detail.
+
+Currently, NGL in this interface supports **PDB** structure files. After selecting a compatible dataset, you'll see a 3D view where you can rotate, zoom, and customize how the molecule is displayed.
+
+#### Key Features
+
+- **Real-Time 3D Rendering**: Explore structures from any angle with smooth, responsive controls.
+- **Flexible Representations**: Visualize the molecule as cartoons, surfaces, sticks, spheres, and more.
+- **Highlighting and Coloring**: Focus on specific chains, residues, or ligands with various color schemes.
+- **Optimized for Large Structures**: Efficiently handles large biomolecular assemblies.
+
+To learn more about NGL and its capabilities, visit:
+[http://nglviewer.org/ngl/api/](http://nglviewer.org/ngl/api/)
+    ]]></help>
 </visualization>
