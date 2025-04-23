@@ -1,5 +1,5 @@
 <tool id="interactive_tool_phinch" tool_type="interactive" name="Phinch Visualisation" version="0.1">
-    <icon src="phinch.svg" />
+    <icon src="phinch.png" />
     <requirements>
         <container type="docker">shiltemann/docker-phinch-galaxy:16.04</container>
     </requirements>
