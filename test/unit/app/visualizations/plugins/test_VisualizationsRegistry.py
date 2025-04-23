@@ -5,6 +5,8 @@ Test lib/galaxy/visualization/plugins/registry.
 import os
 import re
 
+from markupsafe import escape
+
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import (
     clean_multiline_string,
@@ -173,7 +175,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert '<script type="module" src="mysrc">' in response
         assert '<link rel="stylesheet" href="mycss">' in response
         assert re.search(r'<div id="mycontainer" data-incoming=\'.*?\'></div>', response)
-        assert "'root': 'request.host_url/'" in response
+        assert escape("'root': 'request.host_url/'") in response
         mock_app_dir.remove()
 
 
