@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { COLLECTION_TYPE_TO_LABEL, type CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import { type CollectionType } from "@/api/datasetCollections";
+import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import type { VariantInterface } from "./variants";

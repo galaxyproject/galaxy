@@ -13,9 +13,9 @@ import {
     isHDCA,
     isHistoryItem,
 } from "@/api";
+import type { CollectionType } from "@/api/datasetCollections";
 import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";

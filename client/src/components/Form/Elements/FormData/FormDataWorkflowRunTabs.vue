@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionType } from "@/api/datasetCollections";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useHistoryStore } from "@/stores/historyStore";
 

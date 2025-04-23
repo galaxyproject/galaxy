@@ -12,9 +12,14 @@
 import jQuery from "jquery";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { CollectionType } from "@/api/datasetCollections";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
-export type CollectionType = "list" | "paired" | "list:paired" | "rules";
+// This is type describes builders we know about - not valid "collection type"s
+// as the backend/model layer of Galaxy would understand them. Rules is a collection
+// builder but not a collection type, paired:paired:list is a valid collection type but
+// not something we would ever make a builder for.
+export type CollectionBuilderType = "list" | "paired" | "list:paired" | "rules";
 export type DatasetPair = {
     forward: HDASummary;
     reverse: HDASummary;
