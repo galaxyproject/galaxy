@@ -78,8 +78,8 @@ PATHS.pluginBaseDir =
         : undefined) || "../config/plugins/";
 
 PATHS.pluginDirs = [
-    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/static/**/*"),
-    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/*/static/**/*"),
+    path.join(PATHS.pluginBaseDir, "visualizations/*/static/**/*"),
+    path.join(PATHS.pluginBaseDir, "visualizations/*/*/static/**/*"),
 ];
 
 PATHS.pluginBuildModules = [
@@ -109,14 +109,48 @@ async function icons() {
     await buildIcons("./src/assets/icons.json");
 }
 
-function stagePlugins() {
-    // Add exclusion pattern to avoid problematic node_modules paths
-    const exclusionPattern = ["**/node_modules/**/.bin/**"];
+function stagePlugins(callback) {
+    // Get visualization directories
+    const visualizationDirs = [
+        path.join(PATHS.pluginBaseDir, "visualizations/*/static"),
+        path.join(PATHS.pluginBaseDir, "visualizations/*/*/static"),
+    ];
 
-    return src(PATHS.pluginDirs, {
-        base: PATHS.pluginBaseDir,
-        ignore: exclusionPattern,
-    }).pipe(dest("../static/plugins/"));
+    // Flatten the glob patterns to actual directory paths
+    const dirs = [...globSync(visualizationDirs)];
+
+    // Process each directory
+    const copyPromises = dirs.map((sourceDir) => {
+        // Get the relative path from the plugin base dir
+        const relativeDir = path.relative(PATHS.pluginBaseDir, sourceDir);
+        // The target should preserve the full path including 'static'
+        const targetDir = path.join("../static/plugins", relativeDir);
+
+        // Skip node_modules/.bin directories
+        if (sourceDir.includes("node_modules/.bin")) {
+            return Promise.resolve();
+        }
+
+        return fs
+            .copy(sourceDir, targetDir, {
+                filter: (src) => !src.includes("node_modules/.bin"),
+            })
+            .catch((err) => {
+                console.error(`Error copying ${sourceDir}:`, err);
+                // Don't fail the entire build for a single plugin
+                return Promise.resolve();
+            });
+    });
+
+    Promise.all(copyPromises)
+        .then(() => {
+            console.log("Plugin staging completed successfully");
+            callback();
+        })
+        .catch((err) => {
+            console.error("Error during plugin staging:", err);
+            callback(err);
+        });
 }
 
 function buildPlugins(callback, forceRebuild) {
@@ -316,7 +350,7 @@ function forceInstallPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
+    return del(["../static/plugins/visualizations/*"], { force: true });
 }
 
 const client = parallel(stageLibs, icons);
@@ -325,7 +359,7 @@ const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, cleanPlugi
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
-        path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
+        path.join(PATHS.pluginBaseDir, `visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
     ];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
