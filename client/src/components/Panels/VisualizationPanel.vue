@@ -37,18 +37,20 @@ const queryIndex = computed(() => {
         if (plugin.tags) {
             content += plugin.tags.join();
         }
-        result[plugin.name] = content.toLowerCase();
+        result[plugin.name] = normalize(content);
     });
     return result;
 });
 
 const filteredPlugins = computed(() => {
-    const queryLower = query.value.trim().toLowerCase();
-    if (!queryLower) {
+    const rawTokens = query.value.trim().split(/\s+/).filter(Boolean);
+    if (rawTokens.length === 0) {
         return plugins.value;
     }
+    const tokens = rawTokens.map(normalize);
     return plugins.value.filter((plugin) => {
-        return queryIndex.value[plugin.name]?.includes(queryLower);
+        const index = queryIndex.value[plugin.name];
+        return tokens.every((token) => index?.includes(token));
     });
 });
 
@@ -63,6 +65,10 @@ async function selectVisualization(plugin: Plugin) {
 async function getPlugins() {
     plugins.value = await fetchPlugins(props.datasetId);
     isLoading.value = false;
+}
+
+function normalize(text: string): string {
+    return text.toLowerCase().replace(/[^a-z0-9]/gi, "");
 }
 
 onMounted(() => {
