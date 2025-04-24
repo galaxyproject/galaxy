@@ -40,6 +40,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self._setup_simple_invocation_for_export_testing()
         invocations = self.components.invocations
         self.workflow_run_wait_for_ok(hid=2)
+        invocations.export_tab_disabled.wait_for_absent()
         invocations.export_tab.wait_for_and_click()
         self.screenshot("invocation_export_formats")
         invocations.export_output_format(type="ro-crate").wait_for_and_click()
@@ -64,6 +65,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self._setup_simple_invocation_for_export_testing()
         invocations = self.components.invocations
         self.workflow_run_wait_for_ok(hid=2)
+        invocations.export_tab_disabled.wait_for_absent()
         invocations.export_tab.wait_for_and_click()
         self.screenshot("invocation_export_formats")
         invocations.export_output_format(type="default-file").wait_for_and_click()
