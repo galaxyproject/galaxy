@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faPlay } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -57,7 +57,7 @@ function routeToPath() {
         :disabled="disabled"
         :to="runPath"
         @click="routeToPath">
-        <FontAwesomeIcon :icon="faPlay" fixed-width />
+        <FontAwesomeIcon :icon="!props.invocationId ? faPlay : faRedo" fixed-width />
 
         <span v-if="full" v-localize> {{ props.invocationId ? "Rerun" : "Run" }} Workflow </span>
     </BButton>
