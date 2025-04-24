@@ -17,18 +17,39 @@ const props = defineProps<{
     datasetId?: string;
 }>();
 
-const plugins: Ref<Array<Plugin>> = ref([]);
+const plugins: Ref<Plugin[]> = ref([]);
 const query = ref("");
 const isLoading = ref(true);
 
+const queryIndex = computed(() => {
+    const result: Record<string, string> = {};
+    plugins.value.forEach((plugin) => {
+        let content = plugin.html;
+        if (plugin.description) {
+            content += plugin.description;
+        }
+        if (plugin.ext) {
+            content += plugin.ext.join();
+        }
+        if (plugin.help) {
+            content += plugin.help;
+        }
+        if (plugin.tags) {
+            content += plugin.tags.join();
+        }
+        result[plugin.name] = content.toLowerCase();
+    });
+    return result;
+});
+
 const filteredPlugins = computed(() => {
-    const queryLower = query.value.toLowerCase();
-    return plugins.value.filter(
-        (plugin) =>
-            !query.value ||
-            plugin.html.toLowerCase().includes(queryLower) ||
-            (plugin.description && plugin.description.toLowerCase().includes(queryLower))
-    );
+    const queryLower = query.value.trim().toLowerCase();
+    if (!queryLower) {
+        return plugins.value;
+    }
+    return plugins.value.filter((plugin) => {
+        return queryIndex.value[plugin.name]?.includes(queryLower);
+    });
 });
 
 async function selectVisualization(plugin: Plugin) {
