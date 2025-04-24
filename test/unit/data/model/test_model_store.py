@@ -676,6 +676,7 @@ def validate_with_roc_validator(crate_directory, profile):
             profile_identifier=profile,
             requirement_severity=models.Severity.REQUIRED,
             abort_on_first=False,  # do not stop on first issue
+            http_cache_timeout=0,  # do not use cache
         )
 
     result = services.validate(settings)
