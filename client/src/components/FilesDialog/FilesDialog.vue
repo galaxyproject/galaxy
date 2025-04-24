@@ -22,6 +22,7 @@ import {
 } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { USER_FILE_PREFIX } from "@/utils/url";
 
@@ -102,6 +103,9 @@ const fileMode = computed(() => props.mode == "file");
 const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
+
+const fileSourceTemplatesStore = useFileSourceTemplatesStore();
+fileSourceTemplatesStore.ensureTemplates();
 
 /** Collects selected datasets in value array **/
 function clicked(record: SelectionItem) {
@@ -462,7 +466,13 @@ onMounted(() => {
         </template>
         <template v-slot:buttons>
             <!-- TODO: Change this to a `:to` router-link button -->
-            <GButton tooltip size="small" title="Create a new remote file source" href="/file_source_instances/create">
+            <GButton
+                v-if="fileSourceTemplatesStore.hasTemplates"
+                tooltip
+                size="small"
+                title="Create a new remote file source"
+                data-description="create new file source button"
+                href="/file_source_instances/create">
                 <FontAwesomeIcon :icon="faPlus" />
                 Create new
             </GButton>
