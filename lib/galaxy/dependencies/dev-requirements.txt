@@ -44,7 +44,7 @@ frozenlist==1.6.0
 galaxy-release-util==0.2.0
 graylint==1.1.1
 greenlet==3.2.0
-h11==0.14.0
+h11==0.16.0
 httpcore==1.0.8
 httpx==0.28.1
 id==1.5.0
