@@ -90,7 +90,7 @@
 
         <div id="workflow-doi-area" class="mt-2">
             <b>Digital Object Identifier (DOI)</b>
-            <ItemListEditor :items="doiAsList" item-name="DOI" @onItems="onDoi" />
+            <ItemListEditor :items="doi" item-name="DOI" @onItems="onDoi" />
         </div>
 
         <div class="mt-2">
@@ -261,15 +261,6 @@ export default {
                 creator = [creator];
             }
             return creator;
-        },
-        doiAsList() {
-            let doiList = this.doi;
-            if (!doiList) {
-                doiList = [];
-            } else if (!(doiList instanceof Array)) {
-                doiList = [doiList];
-            }
-            return doiList;
         },
         hasParameters() {
             return this.parameters && this.parameters.parameters.length > 0;

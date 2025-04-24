@@ -19,7 +19,7 @@ const emit = defineEmits<{
     (e: "onItems", items: string[]): void;
 }>();
 
-const itemsCurrent = computed(() => props.items);
+const itemsCurrent = computed(() => props.items || []);
 const showForm = ref(false);
 const editIndex = ref<number | null>(null);
 const currentItem = ref<string | null>(null);
