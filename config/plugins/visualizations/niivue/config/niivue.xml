@@ -5,13 +5,12 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">nii1</test>
-            <test test_attr="ext" result_type="datatype">nii1.gz</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">nii1</test>
+            <test test_attr="ext">nii1.gz</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
     <requirements>
         <requirement type="npm" version="0.0.16" package="@galaxyproject/niivue"/>

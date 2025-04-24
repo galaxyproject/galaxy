@@ -306,6 +306,7 @@ class VisualizationsRegistry:
 
     def _check_uri_support(self, target_object, supported_protocols: List[str]) -> bool:
         """Test if the target object is deferred and has a supported protocol."""
+
         if not self._is_deferred(target_object):
             return True  # not deferred, so no uri to check
 

@@ -57,6 +57,7 @@ onMounted(() => {
 
 <template>
     <FormCardSticky
+        v-if="plugin"
         :error-message="errorMessage"
         :description="plugin?.description"
         :is-loading="!currentHistoryId || !plugin"
@@ -73,12 +74,12 @@ onMounted(() => {
                 :object-query="doQuery"
                 @change="onSelect" />
             <FormDataExtensions
-                v-if="tests.length > 0"
-                :extensions="tests.map((t) => t.extension)"
+                v-if="plugin.extensions && plugin.extensions.length > 0"
+                :extensions="plugin.extensions"
                 formats-button-id="vis"
                 :formats-visible.sync="formatsVisible" />
         </div>
-        <div v-if="plugin?.help" class="my-2">
+        <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>
             <MarkdownDefault :content="plugin.help" />
         </div>

@@ -10,6 +10,7 @@ export interface Dataset {
 
 export interface Plugin {
     description: string;
+    extensions?: Array<string>;
     help?: string;
     href: string;
     html: string;

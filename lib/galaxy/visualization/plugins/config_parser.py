@@ -106,6 +106,14 @@ class VisualizationsConfigParser:
             raise ParsingException("No valid data_sources for visualization")
         returned["data_sources"] = data_sources
 
+        # collect valid extensions from data_sources
+        extensions = []
+        for data_source_conf in data_sources_confs.findall("data_source"):
+            for data_source_test in data_source_conf.findall("test"):
+                if data_source_test.get("test_attr") == "ext":
+                    extensions.append(data_source_test.text)
+        returned["extensions"] = extensions
+
         # TODO: this is effectively required due to param_confs.findall( 'param' )
         # parameters spell out how to convert query string params into resources and data
         #   that will be parsed, fetched, etc. and passed to the template
@@ -325,12 +333,10 @@ class DataSourceParser:
             # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
             # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
             # deferred data_sources.
-            allow_uri_if_protocol = []
+            allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
 
             # test functions should be sent an object to test, and the parsed result expected from the test
             if test_type == "isinstance":
-                allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
-
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 def test_fn(o, result, getter=getter):
