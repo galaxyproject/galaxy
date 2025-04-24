@@ -107,9 +107,7 @@ const owner = computed(() => {
 
         <div v-if="workflowInfo?.doi" class="workflow-info-box">
             <Heading h3 size="md" class="mb-0">DOI</Heading>
-            <span v-for="doi in workflowInfo?.doi" >
-                {{ doi }}<br />
-            </span>
+            <span v-for="doi in workflowInfo?.doi" :key="doi"> {{ doi }}<br /> </span>
         </div>
 
         <div class="workflow-info-box">
