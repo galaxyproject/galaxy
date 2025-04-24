@@ -74,8 +74,8 @@ onMounted(() => {
                 :object-query="doQuery"
                 @change="onSelect" />
             <FormDataExtensions
-                v-if="plugin.extensions && plugin.extensions.length > 0"
-                :extensions="plugin.extensions"
+                v-if="plugin.ext && plugin.ext.length > 0"
+                :extensions="plugin.ext"
                 formats-button-id="vis"
                 :formats-visible.sync="formatsVisible" />
         </div>
