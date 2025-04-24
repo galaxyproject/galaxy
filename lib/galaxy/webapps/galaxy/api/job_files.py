@@ -15,6 +15,7 @@ from fastapi import (
     HTTPException,
     Path,
     Query,
+    Response,
     UploadFile,
 )
 from typing_extensions import Annotated
@@ -145,6 +146,50 @@ class FastAPIJobFiles:
             raise HTTPException(status_code=400, detail="Path does not refer to a file.")
 
         return GalaxyFileResponse(path)
+
+    # The ARC remote job runner (`lib.galaxy.jobs.runners.pulsar.PulsarARCJobRunner`) expects a `PUT` endpoint to stage
+    # out result files back to Galaxy.
+    @router.put(
+        "/api/jobs/{job_id}/files",
+        summary="Populate an output file.",
+        responses={
+            201: {"description": "A new file has been created."},
+            204: {"description": "An existing file has been replaced."},
+            400: {"description": "Bad request (including no file contents provided)."},
+        },
+    )
+    async def populate(
+        self,
+        job_id: Annotated[str, Path(description="Encoded id string of the job.")],
+        path: Annotated[str, Query(description="Path to file to create/replace.")],
+        job_key: Annotated[
+            str,
+            Query(
+                description=(
+                    "A key used to authenticate this request as acting on behalf or a job runner for the specified job."
+                ),
+            ),
+        ],
+        trans: ProvidesAppContext = DependsOnTrans,
+    ):
+        path = unquote(path)
+
+        job = self.__authorize_job_access(trans, job_id, path=path, job_key=job_key)
+        self.__check_job_can_write_to_path(trans, job, path)
+
+        destination_file_exists = os.path.exists(path)
+
+        target_dir = os.path.dirname(path)
+        util.safe_makedirs(target_dir)
+        with open(path, "wb") as destination_file:
+            async for chunk in trans.request.stream():
+                destination_file.write(chunk)
+
+        return (
+            Response(status_code=201, headers={"Location": str(trans.request.url)})
+            if not destination_file_exists
+            else Response(status_code=204)
+        )
 
     @router.post(
         "/api/jobs/{job_id}/files",

@@ -242,6 +242,9 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     def base(self) -> str:
         return str(self.__request.base_url)
 
+    def stream(self) -> AsyncGenerator:
+        return self.__request.stream()
+
     @property
     def url_path(self) -> str:
         scope = self.__request.scope
