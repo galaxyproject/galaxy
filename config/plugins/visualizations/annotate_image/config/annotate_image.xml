@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Image Annotate">
+<visualization name="Image Annotate" embeddable="true">
     <description>Display and Annotate Images</description>
     <data_sources>
         <data_source>

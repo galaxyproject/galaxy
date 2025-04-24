@@ -10,6 +10,7 @@ export interface Dataset {
 
 export interface Plugin {
     description: string;
+    embeddable?: boolean;
     ext?: Array<string>;
     help?: string;
     href: string;
