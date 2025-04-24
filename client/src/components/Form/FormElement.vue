@@ -347,6 +347,9 @@ function onAlert(value: string | undefined) {
                 :is-empty="isEmpty"
                 :is-optional="isOptional"
                 :extensions="attrs.extensions">
+                <template v-slot:badges>
+                    <slot name="workflow-run-form-title-badges" />
+                </template>
                 <template v-slot:action-items>
                     <slot name="workflow-run-form-title-items" />
                 </template>

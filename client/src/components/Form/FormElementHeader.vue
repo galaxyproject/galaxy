@@ -63,6 +63,7 @@ const badgeData = computed(() => {
             :extensions="props.extensions || []"
             :formats-button-id="formatsButtonId"
             :formats-visible.sync="formatsVisible" />
+        <slot name="badges" />
         <BBadge
             v-if="badgeData.message && props.type !== 'boolean'"
             v-b-tooltip.hover.noninteractive

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
-import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faCog, faSitemap, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
+import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
@@ -23,7 +25,9 @@ import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
 import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
 import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
+import FormInputMismatchBadge from "@/components/Form/Elements/FormInputMismatchBadge.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -66,6 +70,7 @@ const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
 const showRightPanel = ref<"help" | "graph" | null>(null);
+const checkInputMatching = ref(props.requestState !== undefined);
 
 const showGraph = computed(() => showRightPanel.value === "graph");
 const showHelp = computed(() => showRightPanel.value === "help");
@@ -153,6 +158,72 @@ const formInputs = computed(() => {
         }
     });
     return inputs;
+});
+
+/**
+ * Returns the list of steps that do not match the `props.requestState`.
+ *
+ * TODO: Until form elements are typed better, this is a little shady.
+ * We do not compare values for the types in the last `else if` statement.
+ * And for the `select` type, we assume that the values are arrays of strings or numbers.
+ * @returns {string[]} The list of steps indices that do not match the request state.
+ */
+const stepsNotMatchingRequest = computed<string[]>(() => {
+    if (!checkInputMatching.value || !props.requestState) {
+        return [];
+    }
+
+    const inputs = formInputs.value;
+    const data = formData.value;
+    const notMatching: string[] = [];
+
+    for (const input of inputs) {
+        if (input.name in data) {
+            const type = input.type as FormParameterTypes;
+
+            if ((type === "data" || type === "data_collection") && input.value?.values && data[input.name]?.values) {
+                const expectedValues = input.value.values as DataOption[];
+                const actualValues = data[input.name].values as DataOption[];
+
+                const matches =
+                    Array.isArray(expectedValues) &&
+                    Array.isArray(actualValues) &&
+                    expectedValues?.length === actualValues?.length &&
+                    expectedValues.every((value, index) => {
+                        return value.src === actualValues[index]?.src && value.id === actualValues[index].id;
+                    });
+
+                if (!matches) {
+                    notMatching.push(input.name as string);
+                }
+            } else if (type === "select") {
+                const expectedValues = (Array.isArray(input.value) ? input.value : [input.value]) as (
+                    | string
+                    | number
+                )[];
+                const actualValues = (Array.isArray(data[input.name]) ? data[input.name] : [data[input.name]]) as (
+                    | string
+                    | number
+                )[];
+
+                const matches =
+                    expectedValues.length === actualValues.length &&
+                    expectedValues.every((value, index) => {
+                        return value === actualValues[index];
+                    });
+
+                if (!matches) {
+                    notMatching.push(input.name as string);
+                }
+            } else if (
+                !["drill_down", "group_tag", "ftpfile", "upload", "rules", "tags"].includes(type) &&
+                input.value !== data[input.name]
+            ) {
+                notMatching.push(input.name as string);
+            }
+        }
+    }
+    return notMatching;
 });
 
 const hasValidationErrors = computed(() => stepValidation.value !== null);
@@ -344,6 +415,31 @@ async function onExecute() {
             show-details
             :hide-hr="Boolean(showRightPanel)" />
 
+        <BAlert
+            v-if="stepsNotMatchingRequest.length > 0"
+            variant="warning"
+            show
+            fade
+            dismissible
+            @dismissed="checkInputMatching = false">
+            <template v-slot:dismiss>
+                <GButton
+                    transparent
+                    size="small"
+                    icon-only
+                    title="Stop flagging inputs that do not match the request"
+                    tooltip>
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                </GButton>
+            </template>
+            <div v-localize>
+                Steps with the
+                <FormInputMismatchBadge />
+                indicator do not match original/expected request. Click the button to the right to stop flagging these
+                inputs.
+            </div>
+        </BAlert>
+
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">
                 <div
@@ -361,6 +457,7 @@ async function onExecute() {
                             :sync-with-graph="showGraph"
                             :active-node-id="computedActiveNodeId"
                             workflow-run
+                            :steps-not-matching-request="stepsNotMatchingRequest"
                             @onChange="onChange"
                             @onValidation="onValidation"
                             @update:active-node-id="($event) => (activeNodeId = $event)" />
