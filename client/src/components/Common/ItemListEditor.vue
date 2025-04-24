@@ -3,7 +3,6 @@
  * Editable list of items: add/edit/remove (no duplictes/empty values)
  */
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { ComputedRef } from "vue";
 import { computed, ref } from "vue";
 
 interface Props {
@@ -20,11 +19,11 @@ const emit = defineEmits<{
     (e: "onItems", items: string[]): void;
 }>();
 
-const itemsCurrent: ComputedRef<string[]> = computed(() => props.items);
+const itemsCurrent = computed(() => props.items);
 const showForm = ref(false);
-const editIndex = ref(null);
-const currentItem = ref(null);
-const currentItemError = ref(null);
+const editIndex = ref<number | null>(null);
+const currentItem = ref<string | null>(null);
+const currentItemError = ref<string | null>(null);
 
 /** Start adding a new item. */
 function onAdd() {
@@ -32,30 +31,32 @@ function onAdd() {
 }
 
 /** Start editing an item. */
-function onEdit(index) {
+function onEdit(index: number) {
     showForm.value = true;
     editIndex.value = index;
-    currentItem.value = itemsCurrent.value[index];
+    currentItem.value = itemsCurrent.value[index] as string;
 }
 
 /** Remove an item. */
-function onRemove(index) {
-    const itms = [...itemsCurrent.value];
-    itms.splice(index, 1);
-    emit("onItems", itms);
+function onRemove(index: number) {
+    const items = [...itemsCurrent.value];
+    items.splice(index, 1);
+    emit("onItems", items);
 }
 
 /** Save a new or existing item. */
 function onSave() {
     if (validate()) {
-        const itms = [...itemsCurrent.value];
+        const itemValue = currentItem.value as string;
+        const items = [...itemsCurrent.value];
         if (isNewItem()) {
-            itms.push(currentItem.value);
+            items.push(itemValue);
         } else {
-            itms[editIndex.value] = currentItem.value;
+            const i = editIndex.value as number;
+            items[i] = itemValue;
         }
         resetForm();
-        emit("onItems", itms);
+        emit("onItems", items);
     }
 }
 
