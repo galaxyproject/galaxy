@@ -31,7 +31,8 @@ function onSubmit(name: string, url: string) {
             error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
         });
     } catch (err) {
-        console.log(err);
+        toast.error(`Uploading the sample dataset '${name}' has failed. ${err}`);
+        console.error(err);
     }
 }
 </script>
