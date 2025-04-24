@@ -24,16 +24,11 @@ defineProps<{
 }>();
 
 function onSubmit(name: string, url: string) {
-    try {
-        const data = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
-        sendPayload(data, {
-            success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),
-            error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
-        });
-    } catch (err) {
-        toast.error(`Uploading the sample dataset '${name}' has failed. ${err}`);
-        console.error(err);
-    }
+    const data = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
+    sendPayload(data, {
+        success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),
+        error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
+    });
 }
 </script>
 
