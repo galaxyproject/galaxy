@@ -25,9 +25,10 @@ export interface PluginData {
     hdas: Array<Dataset>;
 }
 
-export async function fetchPlugins(): Promise<Array<Plugin>> {
+export async function fetchPlugins(datasetId?: string): Promise<Array<Plugin>> {
     try {
-        const { data } = await axios.get(withPrefix(`/api/plugins`));
+        const query = datasetId ? `?dataset_id=${datasetId}` : "";
+        const { data } = await axios.get(withPrefix(`/api/plugins${query}`));
         return data;
     } catch (error) {
         rethrowSimple(error);
