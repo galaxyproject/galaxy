@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import DisplayApplications from "./DisplayApplications.vue";
-import VisualizationPanel from "@/components/Panels/VisualizationPanel.vue";
+import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
 
 defineProps<{
     datasetId: string;
