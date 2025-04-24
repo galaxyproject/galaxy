@@ -131,7 +131,7 @@ const fields: FieldArray = [
     },
     {
         key: "execute",
-        title: "Run",
+        title: "Rerun",
         type: "button",
         icon: faPlay,
         condition: (data) => {
@@ -144,8 +144,7 @@ const fields: FieldArray = [
         },
         handler: (data) => {
             const invocation = data as WorkflowInvocation;
-            const workflowStore = useWorkflowStore();
-            emit(`/workflows/run?id=${workflowStore.getStoredWorkflowIdByInstanceId(invocation.workflow_id)}`);
+            emit(`/workflows/rerun?invocation_id=${invocation.id}`);
         },
         converter: () => "",
     },
