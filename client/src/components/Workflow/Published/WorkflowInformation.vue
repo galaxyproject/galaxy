@@ -105,6 +105,13 @@ const owner = computed(() => {
             <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
         </div>
 
+        <div v-if="workflowInfo?.doi" class="workflow-info-box">
+            <Heading h3 size="md" class="mb-0">DOI</Heading>
+            <span v-for="doi in workflowInfo?.doi" >
+                {{ doi }}<br />
+            </span>
+        </div>
+
         <div class="workflow-info-box">
             <Heading h3 size="md" class="mb-0">License</Heading>
 
