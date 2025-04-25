@@ -77,7 +77,7 @@ onMounted(() => {
             <FormDataExtensions
                 v-if="extensions && extensions.length > 0"
                 :extensions="extensions"
-                formats-button-id="vis"
+                formats-button-id="vis-create-ext"
                 :formats-visible.sync="formatsVisible" />
         </div>
         <div v-if="plugin.help" class="my-2">
