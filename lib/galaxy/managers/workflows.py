@@ -819,6 +819,9 @@ class WorkflowContentsManager(UsesAnnotations):
         if "logo_url" in data:
             workflow.logo_url = data["logo_url"]
         if "doi" in data:
+            for doi in data["doi"]:
+                if not util.validate_doi(doi):
+                    raise exceptions.RequestParameterInvalidException(f"Invalid DOI format: {doi}")
             workflow.doi = data["doi"]
         try:
             if "help" in data:
