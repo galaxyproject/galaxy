@@ -930,7 +930,6 @@ class Vtp:
                 found_offset = True
             if "</VTKFile>" in line or stop_index > MAX_HEADER_LINES:
                 break
-
         if subtype == "appended":
             return found_polydata and found_format and found_offset
         elif subtype == "ascii":

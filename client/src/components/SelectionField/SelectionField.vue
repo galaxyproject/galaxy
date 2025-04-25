@@ -37,6 +37,7 @@ import {
     getWorkflows,
 } from "@/components/SelectionField/services";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { OptionType } from "./types";
@@ -45,6 +46,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const eventStore = useEventStore();
 const { currentHistoryId } = storeToRefs(useHistoryStore());
+const { lastUpdateTime } = storeToRefs(useHistoryItemsStore());
 
 const DELAY = 300;
 
@@ -173,7 +175,7 @@ function isValidContent(historyContentType: string) {
 }
 
 watch(
-    () => [props.objectType, currentHistoryId.value],
+    () => [props.objectType, currentHistoryId.value, lastUpdateTime.value],
     () => search(),
     { immediate: true }
 );
