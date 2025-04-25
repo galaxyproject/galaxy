@@ -43,6 +43,15 @@ export function useIndexedDBFileStorage(dbAccess: IndexedDBInfo) {
     async function openDB(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(dbAccess.name, dbAccess.version);
+
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                // Ensure the object store exists
+                if (!db.objectStoreNames.contains(dbAccess.store)) {
+                    db.createObjectStore(dbAccess.store, { keyPath: "name" });
+                }
+            };
+
             request.onsuccess = () => resolve(request.result);
             request.onerror = (e) => reject(e);
         });
