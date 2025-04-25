@@ -8,10 +8,15 @@ export interface Dataset {
     name: string;
 }
 
+export interface DataSource {
+    model_class?: string;
+    tests: Array<Test>;
+}
+
 export interface Plugin {
     description: string;
     embeddable?: boolean;
-    ext?: Array<string>;
+    data_sources?: Array<DataSource>;
     help?: string;
     href: string;
     html: string;
@@ -24,6 +29,12 @@ export interface Plugin {
 
 export interface PluginData {
     hdas: Array<Dataset>;
+}
+
+export interface Test {
+    attr?: string;
+    result?: string;
+    type?: string;
 }
 
 export async function fetchPlugins(datasetId?: string): Promise<Array<Plugin>> {

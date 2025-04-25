@@ -7,7 +7,7 @@ import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { getTestUrls } from "./utilities";
+import { getTestExtensions, getTestUrls } from "./utilities";
 
 import FormDataExtensions from "../Form/Elements/FormData/FormDataExtensions.vue";
 import VisualizationDropdown from "./VisualizationDropdown.vue";
@@ -28,6 +28,7 @@ const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
 const tests = computed(() => getTestUrls(plugin.value));
+const extensions = computed(() => getTestExtensions(plugin.value));
 const formatsVisible = ref(false);
 
 async function doQuery() {
@@ -74,8 +75,8 @@ onMounted(() => {
                 :object-query="doQuery"
                 @change="onSelect" />
             <FormDataExtensions
-                v-if="plugin.ext && plugin.ext.length > 0"
-                :extensions="plugin.ext"
+                v-if="extensions && extensions.length > 0"
+                :extensions="extensions"
                 formats-button-id="vis"
                 :formats-visible.sync="formatsVisible" />
         </div>
