@@ -37,8 +37,8 @@ from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
-from galaxy.tool_util.models import UserToolSource
 from galaxy.tool_util.verify import ToolTestDescriptionDict
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,

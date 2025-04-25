@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing_extensions import Literal
 
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.tool_util.models import (
+from galaxy.tool_util_models import (
     DynamicToolSources,
     UserToolSource,
 )

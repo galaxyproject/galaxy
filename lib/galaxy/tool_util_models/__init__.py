@@ -29,10 +29,10 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util_models.parameters import GalaxyToolParameterModel
-
 from .assertions import assertions
 from .parameters import ToolParameterT
 from .tool_outputs import (
+    IncomingToolOutput,
     ToolOutput,
 )
 from .tool_source import (
@@ -43,10 +43,6 @@ from .tool_source import (
     OutputCompareType,
     ResourceRequirement,
     XrefDict,
-)
-from .tool_outputs import (
-    IncomingToolOutput,
-    ToolOutput,
 )
 
 
