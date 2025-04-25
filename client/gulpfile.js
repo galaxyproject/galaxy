@@ -34,6 +34,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "ts_visjs",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
+    "aceeditor",
     "cytoscape",
     "h5web",
     "heatmap",
