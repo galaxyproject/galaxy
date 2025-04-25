@@ -19,6 +19,7 @@ from typing import (
 
 import packaging.version
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
