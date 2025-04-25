@@ -282,7 +282,7 @@ function attachDiagnosticsProvider(
         const yamlMarkers = await provideMarkerData(yamlModel);
         const models = await allModels(yamlModel);
         const worker = await monaco.languages.typescript.getTypeScriptWorker();
-        const markers = [yamlMarkers];
+        const markers = [...yamlMarkers];
         const promises = models.map(async (modelData) => {
             const languageService = await worker(modelData.model.uri);
             const diagnostics = await languageService.getSemanticDiagnostics(modelData.model.uri.toString());
