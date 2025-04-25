@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFileUpload, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faFileUpload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
