@@ -1,32 +1,35 @@
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 import { ref } from "vue";
+
 import VisualizationCreate from "./VisualizationCreate.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 
 jest.mock("vue-router/composables", () => ({
     useRouter: () => ({
-        push: jest.fn()
+        push: jest.fn(),
     }),
 }));
 
 jest.mock("@/api/plugins", () => ({
-    fetchPlugin: jest.fn(() => Promise.resolve({
-        name: "scatterplot",
-        description: "A great scatterplot plugin.",
-        html: "Scatterplot Plugin",
-        logo: "/logo.png",
-        help: "Some help text",
-        tags: ["tag1", "tag2"]
-    })),
-    fetchPluginHistoryItems: jest.fn(() => Promise.resolve({ hdas: [] }))
+    fetchPlugin: jest.fn(() =>
+        Promise.resolve({
+            name: "scatterplot",
+            description: "A great scatterplot plugin.",
+            html: "Scatterplot Plugin",
+            logo: "/logo.png",
+            help: "Some help text",
+            tags: ["tag1", "tag2"],
+        })
+    ),
+    fetchPluginHistoryItems: jest.fn(() => Promise.resolve({ hdas: [] })),
 }));
 
 jest.mock("./utilities", () => ({
     getTestExtensions: jest.fn(() => ["txt"]),
-    getTestUrls: jest.fn(() => [{ name: "Example", url: "https://example.com/data.txt" }])
+    getTestUrls: jest.fn(() => [{ name: "Example", url: "https://example.com/data.txt" }]),
 }));
 
 let mockedStore;
@@ -55,7 +58,7 @@ it("renders plugin info after load", async () => {
     const wrapper = mount(VisualizationCreate, {
         localVue,
         propsData: {
-            visualization: "scatterplot"
+            visualization: "scatterplot",
         },
     });
     await flushPromises();
