@@ -220,7 +220,6 @@ class DataSourceParser:
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
     ALLOWED_MODEL_CLASSES = ["Visualization", "HistoryDatasetAssociation", "LibraryDatasetDatasetAssociation"]
-    ATTRIBUTE_SPLIT_CHAR = "."
     # these are the allowed object attributes to use in data source tests
     #   any attribute element not in this list will throw a parsing ParsingExcepion
     ALLOWED_DATA_SOURCE_ATTRIBUTES = ["datatype"]

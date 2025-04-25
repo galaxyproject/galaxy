@@ -23,6 +23,7 @@ from galaxy.visualization.plugins import (
     config_parser,
     plugin as vis_plugins,
 )
+from galaxy.visualization.plugins.datasource_testing import is_object_applicable
 
 log = logging.getLogger(__name__)
 
@@ -256,5 +257,5 @@ class VisualizationsRegistry:
                 model_class = getattr(galaxy.model, model_class, None)
                 if isinstance(target_object, model_class):
                     tests = data_source["tests"]
-                    if tests is None or self.is_object_applicable(trans, target_object, tests):
+                    if tests is None or is_object_applicable(trans, target_object, tests):
                         return visualization.to_dict()
