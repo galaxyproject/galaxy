@@ -31579,7 +31579,7 @@ export interface operations {
     proxy_api_proxy_get: {
         parameters: {
             query: {
-                /** @description The URL of the remote zip file */
+                /** @description The URL of the remote file */
                 url: string;
             };
             header?: {
@@ -31623,7 +31623,7 @@ export interface operations {
     proxy_api_proxy_head: {
         parameters: {
             query: {
-                /** @description The URL of the remote zip file */
+                /** @description The URL of the remote file */
                 url: string;
             };
             header?: {

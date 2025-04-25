@@ -24,16 +24,16 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=["remote zip handling"])
+router = Router(tags=["utilities"])
 
 URLQueryParam: str = Query(
     title="URL",
-    description="The URL of the remote zip file",
+    description="The URL of the remote file",
 )
 
 
 @router.cbv
-class FastAPIRemoteZip:
+class FastAPIProxy:
 
     @router.get("/api/proxy")
     @router.head("/api/proxy")
