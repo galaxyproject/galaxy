@@ -10,7 +10,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { getTestExtensions, getTestUrls } from "./utilities";
 
 import FormDataExtensions from "../Form/Elements/FormData/FormDataExtensions.vue";
-import VisualizationDropdown from "./VisualizationDropdown.vue";
+import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
@@ -65,7 +65,7 @@ onMounted(() => {
         :logo="plugin?.logo"
         :name="plugin?.html">
         <template v-slot:buttons>
-            <VisualizationDropdown :tests="tests" />
+            <VisualizationExamples :tests="tests" />
         </template>
         <div class="my-3">
             <SelectionField

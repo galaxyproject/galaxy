@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faFileUpload, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -42,19 +42,19 @@ function onSubmit(name: string, url: string) {
         no-caret
         right
         role="button"
-        title="Options"
+        title="Upload Examples"
         variant="link"
-        aria-label="Select Options"
+        aria-label="Upload Examples"
         size="sm">
         <template v-slot:button-content>
-            <FontAwesomeIcon :icon="faCaretDown" />
+            <FontAwesomeIcon :icon="faFileUpload" />
         </template>
         <BDropdownText>
-            <small class="font-weight-bold text-primary text-uppercase">Upload Sample</small>
+            <small class="text-primary text-uppercase">Upload Examples</small>
         </BDropdownText>
         <BDropdownItem v-for="test of tests" :key="test.url" @click="() => onSubmit(test.name, test.url)">
             <span>
-                <FontAwesomeIcon :icon="faUpload" />
+                <FontAwesomeIcon :icon="faFileUpload" />
                 <span v-localize>{{ test.name }}</span>
             </span>
         </BDropdownItem>
