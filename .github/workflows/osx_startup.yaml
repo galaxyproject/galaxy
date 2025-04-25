@@ -31,9 +31,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
       - uses: actions/setup-node@v4
         with:
-          node-version: '18.12.1'
+          node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Cache pip dir
