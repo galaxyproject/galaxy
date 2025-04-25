@@ -995,8 +995,8 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_select"] = "gx_select"
     type: Literal["select"]
     options: Optional[List[LabelValue]] = None
-    multiple: bool
-    validators: List[SelectCompatiableValidators]
+    multiple: bool = False
+    validators: List[SelectCompatiableValidators] = []
 
     @staticmethod
     def split_str(cls, data: Any) -> Any:
