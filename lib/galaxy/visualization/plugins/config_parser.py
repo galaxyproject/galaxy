@@ -321,11 +321,11 @@ class DataSourceParser:
             # TODO: too dangerous - constrain these to some allowed list
             # TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get("test_attr")
-            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
+            test_attr_array = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
             # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
 
             # build a lambda function that gets the desired attribute to test
-            getter = self._build_getattr_lambda(test_attr)
+            getter = self._build_getattr_lambda(test_attr_array)
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
@@ -364,6 +364,7 @@ class DataSourceParser:
 
             tests.append(
                 {
+                    "attr": test_attr,
                     "type": test_type,
                     "result": test_result,
                     "result_type": test_result_type,

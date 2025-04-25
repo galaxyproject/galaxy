@@ -264,6 +264,7 @@ class VisualizationsRegistry:
         """
         # log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
+            test_attr = test["attr"]
             test_type = test["type"]
             result_type = test["result_type"]
             test_result = test["result"]
@@ -271,7 +272,6 @@ class VisualizationsRegistry:
             supported_protocols = test.get("allow_uri_if_protocol", [])
             # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
             #           test_type, result_type, test_result, test_fn )
-
             if test_type == "isinstance":
                 # parse test_result based on result_type (curr: only datatype has to do this)
                 if result_type == "datatype":
@@ -285,6 +285,13 @@ class VisualizationsRegistry:
                         #              ' for applicability test on: %s, id: %s', datatype_class_name,
                         #              target_object, getattr( target_object, 'id', '' ) )
                         continue
+            # moving forward all tests should be explicitly handled here instead of collecting test functions in the config_parser
+            elif test_attr == "ext":
+                test_result = trans.app.datatypes_registry.get_datatype_by_extension(test_result)
+                if isinstance(target_object.datatype, type(test_result)) and self._check_uri_support(target_object, supported_protocols):
+                    return True
+                else:
+                    continue
 
             # NOTE: tests are OR'd, if any test passes - the visualization can be applied
             if test_fn(target_object, test_result) and self._check_uri_support(target_object, supported_protocols):
