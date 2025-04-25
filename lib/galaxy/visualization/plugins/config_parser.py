@@ -106,14 +106,6 @@ class VisualizationsConfigParser:
             raise ParsingException("No valid data_sources for visualization")
         returned["data_sources"] = data_sources
 
-        # collect valid extensions from data_sources
-        returned["ext"] = [
-            test.text
-            for data_source_conf in data_sources_confs.findall("data_source")
-            for test in data_source_conf.findall("test")
-            if test.get("test_attr") == "ext"
-        ]
-
         # TODO: this is effectively required due to param_confs.findall( 'param' )
         # parameters spell out how to convert query string params into resources and data
         #   that will be parsed, fetched, etc. and passed to the template
