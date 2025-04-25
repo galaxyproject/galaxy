@@ -7,11 +7,15 @@ import { computed, ref } from "vue";
 
 interface Props {
     itemName?: string;
+    description?: string | null;
+    itemFormat?: string | null;
     items?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     itemName: "item",
+    description: null,
+    itemFormat: null,
     items: () => [],
 });
 
@@ -81,6 +85,14 @@ function validate() {
             return false;
         }
     }
+    // Check format if regexp provided.
+    if (props.itemFormat) {
+        const re = new RegExp(props.itemFormat);
+        if (!re.exec(item)) {
+            currentItemError.value = `This ${props.itemName} has an invalid format`;
+            return false;
+        }
+    }
     return true;
 }
 
@@ -109,6 +121,7 @@ function resetForm() {
             <b-input v-model="currentItem" :state="currentItemError ? false : null" @click="removeErrorMessage" />
             <div class="spacer"></div>
             <div v-if="currentItemError" class="error">{{ currentItemError }}</div>
+            <div v-if="props.description" v-html="description"></div>
             <b-button variant="primary" @click="onSave">Save</b-button>
             <b-button variant="danger" @click="onReset">Cancel</b-button>
         </div>

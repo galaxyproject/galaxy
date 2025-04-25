@@ -90,7 +90,12 @@
 
         <div id="workflow-doi-area" class="mt-2">
             <b>Digital Object Identifier (DOI)</b>
-            <ItemListEditor :items="doi" item-name="DOI" @onItems="onDoi" />
+            <ItemListEditor
+                :items="doi"
+                item-name="DOI"
+                :description="doiDescription"
+                :item-format="doiRegex"
+                @onItems="onDoi" />
         </div>
 
         <div class="mt-2">
@@ -250,6 +255,14 @@ export default {
             showCreatorHightlight: false,
             showReadmePreview: false,
             faEye,
+            doiDescription: `
+Acceptable format:
+<ul>
+    <li>https://doi.org/DOI-VALUE</li>
+    <li>doi.org/DOI-VALUE</li>
+    <li>doi:DOI-VALUE</li>
+</ul>`,
+            doiRegex: "^(https://doi.org/|doi.org/|doi:)10\\.\\d+/\\S+$",
         };
     },
     computed: {
