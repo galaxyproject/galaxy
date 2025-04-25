@@ -20,14 +20,13 @@ export async function fetchAndConvertSchemaToInterface(yamlString: string) {
     let toolSource = {};
     try {
         toolSource = parse(yamlString);
-    } catch {
-        return "";
+    } catch (error) {
+        return { schemaInterface: "", error };
     }
     const { data, error } = await fetchRuntimeSchema(toolSource);
     if (error) {
-        console.log(error);
-        return "";
+        return { schemaInterface: "", error };
     }
-    const contents = await schemaToInterface(data as any);
-    return contents;
+    const schemaInterface = await schemaToInterface(data as any);
+    return { schemaInterface, error };
 }

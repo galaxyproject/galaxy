@@ -146,11 +146,15 @@ declare global {
 
 async function addExtraLibs(yamlContent?: string) {
     if (yamlContent) {
-        const schemaInterface = await fetchAndConvertSchemaToInterface(yamlContent);
-        const runtimeFragment = `${schemaInterface}\n${fragment}`;
-        const runtimeModel = editor.getModel(defModelUri) || editor.createModel("", "typescript", defModelUri);
-        if (runtimeModel.getValue() != runtimeFragment) {
-            runtimeModel.setValue(runtimeFragment);
+        const { schemaInterface, error } = await fetchAndConvertSchemaToInterface(yamlContent);
+        if (error) {
+            console.error(error);
+        } else {
+            const runtimeFragment = `${schemaInterface}\n${fragment}`;
+            const runtimeModel = editor.getModel(defModelUri) || editor.createModel("", "typescript", defModelUri);
+            if (runtimeModel.getValue() != runtimeFragment) {
+                runtimeModel.setValue(runtimeFragment);
+            }
         }
     }
 }
