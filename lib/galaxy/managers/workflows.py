@@ -315,7 +315,12 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.importable:
+        if (
+            stored_workflow.user != trans.user
+            and not trans.user_is_admin
+            and not stored_workflow.importable
+            and not stored_workflow.published
+        ):
             stmt = select(StoredWorkflowUserShareAssociation).filter_by(
                 user=trans.user, stored_workflow=stored_workflow
             )

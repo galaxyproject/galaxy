@@ -655,7 +655,7 @@ class WorkflowsAPIController(
             stored_workflow = self.get_stored_workflow(trans, workflow_id, check_ownership=False)
         except Exception:
             raise exceptions.ObjectNotFound("Malformed workflow id specified.")
-        if stored_workflow.importable is False:
+        if stored_workflow.published is False and stored_workflow.importable is False:
             raise exceptions.ItemAccessibilityException(
                 "The owner of this workflow has disabled imports via this link."
             )
