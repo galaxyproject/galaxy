@@ -128,8 +128,7 @@ def is_object_applicable(trans, target_object, data_source_tests):
                     #              ' for applicability test on: %s, id: %s', datatype_class_name,
                     #              target_object, getattr( target_object, 'id', '' ) )
                     continue
-        # moving forward all tests should be explicitly handled here instead of collecting test functions in the config_parser
-        elif test_attr == "ext":
+        elif test_attr == "ext" and test_type == "eq":
             test_result = trans.app.datatypes_registry.get_datatype_by_extension(test_result)
             if isinstance(target_object.datatype, type(test_result)) and _check_uri_support(
                 target_object, supported_protocols
