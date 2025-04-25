@@ -60,7 +60,7 @@ onMounted(() => {
     <FormCardSticky
         v-if="plugin"
         :error-message="errorMessage"
-        :description="plugin?.description"
+        :description="plugin.description"
         :is-loading="!currentHistoryId || !plugin"
         :logo="plugin?.logo"
         :name="plugin?.html">
