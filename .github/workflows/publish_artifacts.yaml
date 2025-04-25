@@ -31,9 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat client/.node_version)" >> $GITHUB_OUTPUT
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.15.0'
+          node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
           cache-dependency-path: 'client/yarn.lock'
           registry-url: 'https://registry.npmjs.org'
