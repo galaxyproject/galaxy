@@ -5,6 +5,8 @@ import { useRouter } from "vue-router/composables";
 
 import { fetchPlugins, type Plugin } from "@/api/plugins";
 
+import { getTestExtensions } from "./utilities";
+
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -28,8 +30,9 @@ const queryIndex = computed(() => {
         if (plugin.description) {
             content += plugin.description;
         }
-        if (plugin.ext) {
-            content += plugin.ext.join();
+        const extensions = getTestExtensions(plugin);
+        if (extensions) {
+            content += extensions.join();
         }
         if (plugin.help) {
             content += plugin.help;
