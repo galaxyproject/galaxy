@@ -65,8 +65,12 @@ async function selectVisualization(plugin: Plugin) {
 async function getPlugins() {
     plugins.value = await fetchPlugins(props.datasetId);
     plugins.value.sort((a, b) => {
-        if (b.embeddable === true && a.embeddable !== true) {return 1;}
-        if (a.embeddable === true && b.embeddable !== true) {return -1;}
+        if (b.embeddable === true && a.embeddable !== true) {
+            return 1;
+        }
+        if (a.embeddable === true && b.embeddable !== true) {
+            return -1;
+        }
         return a.html.localeCompare(b.html);
     });
     isLoading.value = false;

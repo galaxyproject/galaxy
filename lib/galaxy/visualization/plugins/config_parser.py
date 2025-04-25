@@ -5,7 +5,6 @@ from typing import (
     List,
 )
 
-import galaxy.model
 from galaxy.util import (
     asbool,
     listify,

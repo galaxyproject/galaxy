@@ -1,12 +1,13 @@
 import logging
 from typing import (
-    Optional,
     List,
+    Optional,
 )
 
 ATTRIBUTE_SPLIT_CHAR = "."
 
 log = logging.getLogger(__name__)
+
 
 def _build_getattr_lambda(attr_name_list):
     """
@@ -81,6 +82,7 @@ def _get_test_function(test_attr, test_type):
             return hasattr(getter(o), result)
 
     elif test_type == "not_eq":
+
         def test_fn(o, result, getter=getter):
             return str(getter(o)) != result
 
@@ -88,6 +90,7 @@ def _get_test_function(test_attr, test_type):
         # default to simple (string) equilavance (coercing the test_attr to a string)
         def test_fn(o, result, getter=getter):
             return str(getter(o)) == result
+
     return test_fn
 
 
