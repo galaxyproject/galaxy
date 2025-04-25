@@ -14,7 +14,6 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 const toast = useToast();
 
 interface UrlDataType {
-    extension: string;
     name: string;
     url: string;
 }
