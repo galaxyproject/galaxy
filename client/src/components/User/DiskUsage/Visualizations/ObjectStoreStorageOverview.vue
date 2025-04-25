@@ -118,6 +118,7 @@ function onUndelete(datasetId: string) {
                         :data="data"
                         item-type="dataset"
                         :is-recoverable="isRecoverableDataPoint(data)"
+                        :can-edit="!isRecoverableDataPoint(data)"
                         @view-item="onViewDataset"
                         @permanently-delete-item="onPermDelete"
                         @undelete-item="onUndelete" />
