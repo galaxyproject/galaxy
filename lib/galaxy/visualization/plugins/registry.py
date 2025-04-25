@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+import galaxy.model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
     config_directories_from_setting,
@@ -252,79 +253,8 @@ class VisualizationsRegistry:
             data_sources = visualization.config["data_sources"]
             for data_source in data_sources:
                 model_class = data_source["model_class"]
+                model_class = getattr(galaxy.model, model_class, None)
                 if isinstance(target_object, model_class):
                     tests = data_source["tests"]
                     if tests is None or self.is_object_applicable(trans, target_object, tests):
                         return visualization.to_dict()
-
-    def is_object_applicable(self, trans, target_object, data_source_tests):
-        """
-        Run a visualization's data_source tests to find out if
-        it can be applied to the target_object.
-        """
-        # log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
-        for test in data_source_tests:
-            test_attr = test["attr"]
-            test_type = test["type"]
-            result_type = test["result_type"]
-            test_result = test["result"]
-            test_fn = test["fn"]
-            supported_protocols = test.get("allow_uri_if_protocol", [])
-            # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
-            #           test_type, result_type, test_result, test_fn )
-            if test_type == "isinstance":
-                # parse test_result based on result_type (curr: only datatype has to do this)
-                if result_type == "datatype":
-                    # convert datatypes to their actual classes (for use with isinstance)
-                    datatype_class_name = test_result
-                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name(datatype_class_name)
-                    if not test_result:
-                        # but continue (with other tests) if can't find class by that name
-                        # if self.debug:
-                        #    log.warning( 'visualizations_registry cannot find class (%s)' +
-                        #              ' for applicability test on: %s, id: %s', datatype_class_name,
-                        #              target_object, getattr( target_object, 'id', '' ) )
-                        continue
-            # moving forward all tests should be explicitly handled here instead of collecting test functions in the config_parser
-            elif test_attr == "ext":
-                test_result = trans.app.datatypes_registry.get_datatype_by_extension(test_result)
-                if isinstance(target_object.datatype, type(test_result)) and self._check_uri_support(target_object, supported_protocols):
-                    return True
-                else:
-                    continue
-
-            # NOTE: tests are OR'd, if any test passes - the visualization can be applied
-            if test_fn(target_object, test_result) and self._check_uri_support(target_object, supported_protocols):
-                # log.debug( '\t test passed' )
-                return True
-
-        return False
-
-    def _is_deferred(self, target_object) -> bool:
-        """Whether the target object is a deferred object."""
-        return getattr(target_object, "state", None) == "deferred"
-
-    def _deferred_source_uri(self, target_object) -> Optional[str]:
-        """Get the source uri from a deferred object."""
-        sources = getattr(target_object, "sources", None)
-        if sources and sources[0]:
-            return sources[0].source_uri
-        return None
-
-    def _check_uri_support(self, target_object, supported_protocols: List[str]) -> bool:
-        """Test if the target object is deferred and has a supported protocol."""
-
-        if not self._is_deferred(target_object):
-            return True  # not deferred, so no uri to check
-
-        if not supported_protocols:
-            return False  # no protocols defined, means no support for deferred objects
-
-        if "*" in supported_protocols:
-            return True  # wildcard support for all protocols
-
-        deferred_source_uri = self._deferred_source_uri(target_object)
-        if deferred_source_uri:
-            protocol = deferred_source_uri.split("://")[0]
-            return protocol in supported_protocols
-        return False

@@ -118,6 +118,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "name": self.name,
             "html": self.config.get("name"),
             "description": self.config.get("description"),
+            "data_sources": self.config.get("data_sources"),
             "ext": self.config.get("ext"),
             "help": self.config.get("help"),
             "logo": self.config.get("logo"),

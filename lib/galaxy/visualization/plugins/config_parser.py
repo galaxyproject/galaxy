@@ -268,29 +268,9 @@ class DataSourceParser:
             raise ParsingException("data_source entry requires a model_class")
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
-            # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
             raise ParsingException(f"Invalid data_source model_class: {xml_tree.text}")
 
-        # look up the model from the model module returning an empty data_source if not found
-        model_class = getattr(galaxy.model, xml_tree.text, None)
-        return model_class
-
-    def _build_getattr_lambda(self, attr_name_list):
-        """
-        Recursively builds a compound lambda function of getattr's
-        from the attribute names given in `attr_name_list`.
-        """
-        if len(attr_name_list) == 0:
-            # identity - if list is empty, return object itself
-            return lambda o: o
-
-        next_attr_name = attr_name_list[-1]
-        if len(attr_name_list) == 1:
-            # recursive base case
-            return lambda o: getattr(o, next_attr_name)
-
-        # recursive case
-        return lambda o: getattr(self._build_getattr_lambda(attr_name_list[:-1])(o), next_attr_name)
+        return xml_tree.text
 
     def parse_tests(self, xml_tree_list):
         """
@@ -315,17 +295,13 @@ class DataSourceParser:
                     test_elem.text,
                 )
                 continue
+
+            # collect test attribute
+            test_attr = test_elem.get("test_attr")
+
+            # collect expected test result
             test_result = test_result.strip()
 
-            # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
-            # TODO: too dangerous - constrain these to some allowed list
-            # TODO: does this err if no test_attr - it should...
-            test_attr = test_elem.get("test_attr")
-            test_attr_array = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
-            # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
-
-            # build a lambda function that gets the desired attribute to test
-            getter = self._build_getattr_lambda(test_attr_array)
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
@@ -335,40 +311,13 @@ class DataSourceParser:
             # deferred data_sources.
             allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
 
-            # test functions should be sent an object to test, and the parsed result expected from the test
-            if test_type == "isinstance":
-                # is test_attr attribute an instance of result
-                # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-                def test_fn(o, result, getter=getter):
-                    return isinstance(getter(o), result)
-
-            elif test_type == "has_dataprovider":
-                # does the object itself have a datatype attr and does that datatype have the given dataprovider
-                def test_fn(o, result, getter=getter):
-                    return hasattr(getter(o), "has_dataprovider") and getter(o).has_dataprovider(result)
-
-            elif test_type == "has_attribute":
-                # does the object itself have attr in 'result' (no equivalence checking)
-                def test_fn(o, result, getter=getter):
-                    return hasattr(getter(o), result)
-
-            elif test_type == "not_eq":
-
-                def test_fn(o, result, getter=getter):
-                    return str(getter(o)) != result
-
-            else:
-                # default to simple (string) equilavance (coercing the test_attr to a string)
-                def test_fn(o, result, getter=getter):
-                    return str(getter(o)) == result
-
+            # append serializable test details for evaluation in registry
             tests.append(
                 {
                     "attr": test_attr,
                     "type": test_type,
                     "result": test_result,
                     "result_type": test_result_type,
-                    "fn": test_fn,
                     "allow_uri_if_protocol": allow_uri_if_protocol,
                 }
             )
