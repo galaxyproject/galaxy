@@ -67,14 +67,16 @@ function cardClicked(tool: UnprivilegedToolResponse) {
     }
 }
 
-function newTool(toolUuid?: string) {
-    let route = "/tools/editor";
-    if (toolUuid) {
-        route = `${route}/${toolUuid}`;
-    }
+function editTool(toolUuid: string) {
+    const route = `/tools/editor/${toolUuid}`;
     if (props.inWorkflowEditor && toolUuid) {
         emit("onEditTool");
     }
+    router.push(route);
+}
+
+function newTool() {
+    const route = "/tools/editor";
     if (props.inWorkflowEditor) {
         emit("onCreateTool");
     }
@@ -128,7 +130,7 @@ function newTool(toolUuid?: string) {
                             <BBadge v-b-tooltip.noninteractive.hover pill>
                                 {{ tool.representation.version }}
                             </BBadge>
-                            <BBadge @click.stop="() => newTool(tool.uuid)">
+                            <BBadge @click.stop="() => editTool(tool.uuid)">
                                 <FontAwesomeIcon icon="fa-edit" />
                                 <span v-localize>Edit</span>
                             </BBadge>
