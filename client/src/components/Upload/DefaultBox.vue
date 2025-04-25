@@ -501,7 +501,7 @@ defineExpose({
                 disabled-title="You must be logged in to use this feature"
                 @click="exploreZipContents">
                 <FontAwesomeIcon :icon="faFileArchive" />
-                <span v-localize>Explore ZIP</span>
+                <span v-localize>Explore Archive</span>
             </GButton>
             <BButton
                 id="btn-start"
