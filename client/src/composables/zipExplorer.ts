@@ -56,7 +56,8 @@ export function useZipExplorer() {
         const zipSource = zipExplorer.value.zipArchive.source;
 
         if (isRemoteZip(zipSource)) {
-            return handleRemoteZip(zipSource, filesToImport, historyId, zipExplorer.value);
+            const originalUrl = getOriginalUrl(zipSource);
+            return handleRemoteZip(originalUrl, filesToImport, historyId, zipExplorer.value);
         }
 
         return handleLocalZip(filesToImport, historyId, zipExplorer.value);
@@ -192,6 +193,16 @@ export function useZipExplorer() {
     function getProxiedUrl(url: string) {
         const proxyUrl = getFullAppUrl(`api/proxy?url=${encodeURIComponent(url)}`);
         return proxyUrl;
+    }
+
+    function getOriginalUrl(maybeProxyUrl: string) {
+        if (!maybeProxyUrl.startsWith(getFullAppUrl("api/proxy"))) {
+            return maybeProxyUrl;
+        }
+        // Extract the original URL from the proxied URL
+        const url = new URL(maybeProxyUrl);
+        const originalUrl = decodeURIComponent(url.searchParams.get("url") ?? "");
+        return originalUrl;
     }
 
     const { storeFile, getAllStoredFiles, clearDatabaseStore } = useIndexedDBFileStorage({
