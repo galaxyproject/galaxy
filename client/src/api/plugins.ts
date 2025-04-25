@@ -47,7 +47,7 @@ export async function fetchPlugin(id: string): Promise<Plugin> {
 
 export async function fetchPluginHistoryItems(id: string, history_id: string): Promise<PluginData> {
     try {
-        const { data } = await axios.get(`/api/plugins/${id}?history_id=${history_id}`);
+        const { data } = await axios.get(withPrefix(`/api/plugins/${id}?history_id=${history_id}`));
         return data;
     } catch (error) {
         rethrowSimple(error);
