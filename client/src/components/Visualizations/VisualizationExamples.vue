@@ -13,14 +13,14 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const toast = useToast();
 
-interface TestType {
+interface UrlDataType {
     extension: string;
     name: string;
     url: string;
 }
 
 defineProps<{
-    tests?: Array<TestType>;
+    urlData?: Array<UrlDataType>;
 }>();
 
 function onSubmit(name: string, url: string) {
@@ -37,7 +37,7 @@ function onSubmit(name: string, url: string) {
         <FontAwesomeIcon :icon="faSpinner" spin />
     </div>
     <BDropdown
-        v-else-if="tests && tests.length > 0"
+        v-else-if="urlData && urlData.length > 0"
         v-b-tooltip.hover
         no-caret
         right
@@ -52,10 +52,10 @@ function onSubmit(name: string, url: string) {
         <BDropdownText>
             <small class="text-primary text-uppercase">Upload Examples</small>
         </BDropdownText>
-        <BDropdownItem v-for="test of tests" :key="test.url" @click="() => onSubmit(test.name, test.url)">
+        <BDropdownItem v-for="ud of urlData" :key="ud.url" @click="() => onSubmit(ud.name, ud.url)">
             <span>
                 <FontAwesomeIcon :icon="faFileUpload" />
-                <span v-localize>{{ test.name }}</span>
+                <span v-localize>{{ ud.name }}</span>
             </span>
         </BDropdownItem>
     </BDropdown>

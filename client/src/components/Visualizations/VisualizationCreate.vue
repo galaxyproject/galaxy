@@ -27,7 +27,7 @@ const props = defineProps<{
 const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
-const tests = computed(() => getTestUrls(plugin.value));
+const urlData = computed(() => getTestUrls(plugin.value));
 const extensions = computed(() => getTestExtensions(plugin.value));
 const formatsVisible = ref(false);
 
@@ -65,7 +65,7 @@ onMounted(() => {
         :logo="plugin?.logo"
         :name="plugin?.html">
         <template v-slot:buttons>
-            <VisualizationExamples :tests="tests" />
+            <VisualizationExamples :url-data="urlData" />
         </template>
         <div class="my-3">
             <SelectionField
