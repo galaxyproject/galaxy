@@ -44,6 +44,11 @@ beforeEach(() => {
         }),
     });
     mockedStore = useFakeHistoryStore();
+
+    // prevent tooltip from throwing warning
+    const el = document.createElement("div");
+    el.id = "vis-create-ext";
+    document.body.appendChild(el);
 });
 
 it("renders plugin info after load", async () => {
@@ -52,9 +57,6 @@ it("renders plugin info after load", async () => {
         propsData: {
             visualization: "scatterplot"
         },
-        stubs: {
-            FormDataExtensions: false,
-        }
     });
     await flushPromises();
     await wrapper.vm.$nextTick();
