@@ -21,6 +21,11 @@
         <requirement type="npm" version="0.0.1" package="@galaxyproject/kepler"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geojson" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is Kepler.gl Viewer?
 
