@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faInfoCircle, faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -94,12 +94,12 @@ function cardClicked(invocation: WorkflowInvocation) {
                 :active="invocation.id === currentItemId"
                 @click="() => cardClicked(invocation)">
                 <div class="overflow-auto w-100">
-                    <Heading bold size="text" icon="fa-sitemap">
+                    <Heading bold size="text" :icon="faSitemap">
                         <span class="truncate-n-lines three-lines">
                             {{ workflowName(invocation.workflow_id) }}
                         </span>
                     </Heading>
-                    <Heading size="text" icon="fa-hdd">
+                    <Heading size="text" :icon="faHdd">
                         <small class="text-muted truncate-n-lines two-lines">
                             {{ historyName(invocation.history_id) }}
                         </small>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faInfoCircle, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faInfoCircle, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -113,7 +113,7 @@ function newTool() {
                     }"
                     :active="tool.uuid === currentItemId">
                     <div class="overflow-auto w-100" @click="() => cardClicked(tool)">
-                        <Heading bold size="text" icon="fa-wrench">
+                        <Heading bold size="text" :icon="faWrench">
                             <div style="flex-direction: column">
                                 <span class="truncate-n-lines three-lines">
                                     {{ tool.representation.name }}
