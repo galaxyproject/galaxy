@@ -87,32 +87,36 @@ onMounted(async () => {
 
             <div><strong>License:</strong> {{ crateSummary.license }}</div>
 
-            <strong>Creators</strong>
-            <div v-if="crateSummary.creators.length > 0" class="d-flex flex-wrap flex-gapx-1 flex-gapy-1 px-1">
-                <BBadge
-                    v-for="creator in crateSummary.creators"
-                    :key="creator.id"
-                    variant="outline-secondary"
-                    class="outline-badge">
-                    <span v-if="creator.type === 'Person'">
-                        <FontAwesomeIcon :icon="faUser" />
-                    </span>
-                    <span v-else-if="creator.type === 'Organization'">
-                        <FontAwesomeIcon :icon="faUniversity" />
-                    </span>
-                    {{ creator.name }}
-                </BBadge>
+            <div v-if="crateSummary.creators.length > 0">
+                <strong>Creators</strong>
+                <div class="d-flex flex-wrap flex-gapx-1 flex-gapy-1 px-1">
+                    <BBadge
+                        v-for="creator in crateSummary.creators"
+                        :key="creator.id"
+                        variant="outline-secondary"
+                        class="outline-badge">
+                        <span v-if="creator.type === 'Person'">
+                            <FontAwesomeIcon :icon="faUser" />
+                        </span>
+                        <span v-else-if="creator.type === 'Organization'">
+                            <FontAwesomeIcon :icon="faUniversity" />
+                        </span>
+                        {{ creator.name }}
+                    </BBadge>
+                </div>
             </div>
 
-            <strong>Conforms To</strong>
-            <div v-if="crateSummary.conformsTo.length > 0" class="d-flex flex-wrap flex-gapx-1 flex-gapy-1 px-1">
-                <BBadge
-                    v-for="conform in crateSummary.conformsTo"
-                    :key="conform.id"
-                    variant="outline-secondary"
-                    class="outline-badge">
-                    <ExternalLink :href="conform.id"> {{ conform.name }} {{ conform.version }} </ExternalLink>
-                </BBadge>
+            <div v-if="crateSummary.conformsTo.length > 0">
+                <strong>Conforms To</strong>
+                <div class="d-flex flex-wrap flex-gapx-1 flex-gapy-1 px-1">
+                    <BBadge
+                        v-for="conform in crateSummary.conformsTo"
+                        :key="conform.id"
+                        variant="outline-secondary"
+                        class="outline-badge">
+                        <ExternalLink :href="conform.id"> {{ conform.name }} {{ conform.version }} </ExternalLink>
+                    </BBadge>
+                </div>
             </div>
         </template>
     </GCard>
