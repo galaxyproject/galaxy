@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="OpenLayers map" embeddable="true">
-    <description>A viewer to show maps using OpenLayers from https://openlayers.org/</description>
+    <description>Display Geospatial Data on a Map</description>
+    <tags>
+        <tag>OpenLayers</tag>
+        <tag>Map</tag>
+        <tag>GeoJSON</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">geojson</test>
-            <test test_attr="ext" result_type="datatype">shp</test>
+            <test test_attr="ext">geojson</test>
+            <test test_attr="ext">shp</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
     <requirements>
         <requirement type="npm" version="0.0.4" package="@galaxyproject/openlayers"/>
@@ -50,24 +55,21 @@
             <type>color</type>
             <value>#ec1515</value>
         </input>
-        <input>
-            <label>Export map</label>
-            <name>export_map</name>
-            <help>Select to export</help>
-            <type>select</type>
-            <display>radio</display>
-            <value>no_export</value>
-            <data>
-                <data>
-                    <label>Export</label>
-                    <value>export</value>
-                </data>
-                <data>
-                    <label>Do not export</label>
-                    <value>no_export</value>
-                </data>
-            </data>
-        </input>
-        
     </settings>
+<help format="markdown"><![CDATA[
+### What is the OpenLayers Map Viewer?
+
+The OpenLayers Map Viewer provides a simple and fast way to visualize geospatial data in your browser using [OpenLayers](https://openlayers.org/).
+
+After selecting a dataset (GeoJSON or SHP), the map will be displayed. You can choose basic geometry types for simple drawings and adjust colors.
+
+#### Key Features
+
+- **Map Display**: View spatial datasets quickly without needing additional tools.
+- **Geometry Options**: Select and draw basic shapes like lines, circles, and polygons.
+- **Simple Customization**: Change geometry colors to highlight features.
+
+This tool is ideal for basic inspection of geospatial files without the need for heavy GIS software.
+
+    ]]></help>
 </visualization>
