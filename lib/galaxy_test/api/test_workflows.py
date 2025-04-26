@@ -1236,7 +1236,7 @@ steps:
         readme = "This is the body of my readme..."
         logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
         help = "This is my instruction for the workflow!"
-        doi = ["test-doi-1", "test-doi-2"]
+        doi = ["doi:10.1000/1", "doi:10.1000/2"]
         base_workflow_json["readme"] = readme
         base_workflow_json["logo_url"] = logo_url
         base_workflow_json["help"] = help
