@@ -14,7 +14,10 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    UserRequiredException,
+)
 from galaxy.files.uris import validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
 from . import (
@@ -42,7 +45,7 @@ class FastAPIProxy:
         Proxy a remote file to the client to avoid CORS issues.
         """
         if trans.anonymous:
-            raise RequestParameterInvalidException("Anonymous users are not allowed to access this endpoint")
+            raise UserRequiredException("Anonymous users are not allowed to access this endpoint")
 
         validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
 
