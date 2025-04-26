@@ -24,6 +24,9 @@
         <test>
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.csv" />
         </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.tabular" />
+        </test>
     </tests>
     <help format="markdown"><![CDATA[
 ### What is Tabulator?
