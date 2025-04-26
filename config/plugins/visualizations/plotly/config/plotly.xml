@@ -120,4 +120,9 @@ This tool is ideal for quick summaries, trend visualization, and comparative dat
 To learn more about Plotly, visit:
 [https://plotly.com/](https://plotly.com/)
     ]]></help>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.tabular" />
+        </test>
+    </tests>
 </visualization>
