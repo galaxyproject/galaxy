@@ -17,7 +17,7 @@
         <param required="true">dataset_id</param>
     </params>
     <entry_point entry_point_type="script" src="script.js"/>
-<help format="markdown"><![CDATA[
+    <help format="markdown"><![CDATA[
 ### What is the FITS Graph Viewer?
 
 The FITS Graph Viewer provides a simple way to inspect table data from FITS (Flexible Image Transport System) files directly in your browser.
