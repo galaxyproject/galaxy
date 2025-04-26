@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Histogram" embeddable="true">
-    <description>Histogram from http://plotly.com</description>
+    <description>based on Plotly</description>
     <tags>
         <tag>Plotly</tag>
         <tag>Histogram</tag>
