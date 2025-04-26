@@ -4,8 +4,7 @@
     <description>Table Viewer</description>
     <tags>
         <tag>Spreadsheet</tag>
-        <tag>Tab Delimited</tag>
-        <tag>Tabular</tag>
+        <tag>Table</tag>
     </tags>
     <data_sources>
         <data_source>
@@ -21,4 +20,26 @@
         <requirement type="npm" version="0.0.1" package="@galaxyproject/tabulator"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.csv" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is Tabulator?
+
+Tabulator is an interactive table viewer for exploring tabular data such as CSV or tab-delimited files. It provides an easy way to look through rows and columns of your dataset directly in your browser.
+
+After selecting a dataset, the table will be displayed. You can click on column headers to sort the data, or use the search box to quickly find specific rows.
+
+#### Key Features
+
+- **Sorting**: Click on any column header to sort the data ascending or descending.
+- **Filtering**: Use the search box to filter and find specific values in the table.
+- **Scrolling**: Browse through all your data easily, even if the table is very large.
+- **Exploration**: Review and explore your dataset without needing any setup or configuration.
+
+To learn more about Tabulator and its capabilities, visit:
+[http://tabulator.info/](http://tabulator.info/)
+    ]]></help>
 </visualization>
