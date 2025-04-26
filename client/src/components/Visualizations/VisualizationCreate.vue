@@ -10,7 +10,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { getTestExtensions, getTestUrls } from "./utilities";
 
 import FormDataExtensions from "../Form/Elements/FormData/FormDataExtensions.vue";
-import VisualizationDropdown from "./VisualizationDropdown.vue";
+import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
@@ -27,7 +27,7 @@ const props = defineProps<{
 const errorMessage = ref("");
 const plugin: Ref<Plugin | undefined> = ref();
 
-const tests = computed(() => getTestUrls(plugin.value));
+const urlData = computed(() => getTestUrls(plugin.value));
 const extensions = computed(() => getTestExtensions(plugin.value));
 const formatsVisible = ref(false);
 
@@ -65,7 +65,7 @@ onMounted(() => {
         :logo="plugin?.logo"
         :name="plugin?.html">
         <template v-slot:buttons>
-            <VisualizationDropdown :tests="tests" />
+            <VisualizationExamples :url-data="urlData" />
         </template>
         <div class="my-3">
             <SelectionField
@@ -77,7 +77,7 @@ onMounted(() => {
             <FormDataExtensions
                 v-if="extensions && extensions.length > 0"
                 :extensions="extensions"
-                formats-button-id="vis"
+                formats-button-id="vis-create-ext"
                 :formats-visible.sync="formatsVisible" />
         </div>
         <div v-if="plugin.help" class="my-2">

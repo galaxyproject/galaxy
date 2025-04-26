@@ -10,7 +10,13 @@ export interface Dataset {
 
 export interface DataSource {
     model_class?: string;
-    tests: Array<Test>;
+    tests: Array<DataSourceTest>;
+}
+
+export interface DataSourceTest {
+    attr?: string;
+    result?: string;
+    type?: string;
 }
 
 export interface Plugin {
@@ -24,17 +30,20 @@ export interface Plugin {
     name: string;
     target?: string;
     tags?: Array<string>;
-    tests?: Array<any>;
+    tests?: Array<TestType>;
 }
 
 export interface PluginData {
     hdas: Array<Dataset>;
 }
 
-export interface Test {
-    attr?: string;
-    result?: string;
-    type?: string;
+export interface ParamType {
+    name: string;
+    value: string;
+}
+
+export interface TestType {
+    param: ParamType;
 }
 
 export async function fetchPlugins(datasetId?: string): Promise<Array<Plugin>> {

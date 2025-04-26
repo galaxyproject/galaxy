@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faFileUpload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -13,14 +13,13 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const toast = useToast();
 
-interface TestType {
-    extension: string;
+interface UrlDataType {
     name: string;
     url: string;
 }
 
 defineProps<{
-    tests?: Array<TestType>;
+    urlData?: Array<UrlDataType>;
 }>();
 
 function onSubmit(name: string, url: string) {
@@ -37,25 +36,25 @@ function onSubmit(name: string, url: string) {
         <FontAwesomeIcon :icon="faSpinner" spin />
     </div>
     <BDropdown
-        v-else-if="tests && tests.length > 0"
+        v-else-if="urlData && urlData.length > 0"
         v-b-tooltip.hover
         no-caret
         right
         role="button"
-        title="Options"
+        title="Upload Examples"
         variant="link"
-        aria-label="Select Options"
+        aria-label="Upload Examples"
         size="sm">
         <template v-slot:button-content>
-            <FontAwesomeIcon :icon="faCaretDown" />
+            <FontAwesomeIcon :icon="faFileUpload" />
         </template>
         <BDropdownText>
-            <small class="font-weight-bold text-primary text-uppercase">Upload Sample</small>
+            <small class="text-primary text-uppercase">Upload Examples</small>
         </BDropdownText>
-        <BDropdownItem v-for="test of tests" :key="test.url" @click="() => onSubmit(test.name, test.url)">
+        <BDropdownItem v-for="ud of urlData" :key="ud.url" @click="() => onSubmit(ud.name, ud.url)">
             <span>
-                <FontAwesomeIcon :icon="faUpload" />
-                <span v-localize>{{ test.name }}</span>
+                <FontAwesomeIcon :icon="faFileUpload" />
+                <span v-localize>{{ ud.name }}</span>
             </span>
         </BDropdownItem>
     </BDropdown>
