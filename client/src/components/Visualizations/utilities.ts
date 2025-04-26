@@ -18,7 +18,7 @@ export function getTestUrls(plugin?: Plugin) {
     return (
         plugin?.tests?.flatMap((item) => {
             const url = item.param?.name === "dataset_id" ? item.param?.value : "";
-            const name = getFilename(url).trim();
+            const name = item.param?.label ?? getFilename(url);
             if (url && name) {
                 return [{ name, url }];
             } else {
@@ -31,7 +31,8 @@ export function getTestUrls(plugin?: Plugin) {
 export function getFilename(url: string): string {
     try {
         const { pathname } = new URL(url);
-        return pathname.split("/").filter(Boolean).pop() ?? "";
+        const name = pathname.split("/").filter(Boolean).pop() ?? "";
+        return name.trim();
     } catch {
         return "";
     }
