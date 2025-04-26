@@ -149,7 +149,14 @@ async function onZipSourceChanged(source?: File | string) {
             :is-busy="isWizardBusy"
             @submit="importItems">
             <template v-slot:header>
-                <Heading h1 separator inline>Import individual files from a ZIP archive</Heading>
+                <Heading h1 separator inline>
+                    Import individual files from a ZIP archive
+                    <sup
+                        title="This feature is experimental and in some cases may not work as expected. Please report any issues you encounter to the Galaxy team."
+                        class="text-muted">
+                        ⚠️Experimental
+                    </sup>
+                </Heading>
             </template>
 
             <ZipSelector
