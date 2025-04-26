@@ -18,7 +18,6 @@ const PLUGIN_BUILD_IDS = [
     "drawrna",
     "example",
     "fits_graph_viewer",
-    "fits_image_viewer",
     "hyphyvision",
     "jqplot/jqplot_bar",
     "mvpapp",
@@ -32,6 +31,7 @@ const PLUGIN_BUILD_IDS = [
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
     "aceeditor",
+    "aladin",
     "cytoscape",
     "h5web",
     "heatmap",
