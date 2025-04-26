@@ -2030,7 +2030,7 @@ def validate_doi(doi: str) -> bool:
     if len(doi) > DOI_MAX_LENGTH:
         return False
     prefix = "https://doi.org/|doi.org/|doi:"
-    doi_prefix = "10\.\d+"
-    doi_suffix = "\S+"
+    doi_prefix = r"10\.\d+"
+    doi_suffix = r"\S+"
     doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
     return doi_re.match(doi)
