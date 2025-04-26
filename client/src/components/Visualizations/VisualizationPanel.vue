@@ -59,7 +59,10 @@ const filteredPlugins = computed(() => {
 
 async function selectVisualization(plugin: Plugin) {
     if (props.datasetId) {
-        router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`);
+        router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`, {
+            // @ts-ignore
+            title: plugin.name,
+        });
     } else {
         router.push(`/visualizations/create/${plugin.name}`);
     }
