@@ -177,7 +177,7 @@
             <value>#C00000</value>
         </input>
     </settings>
-<help format="markdown"><![CDATA[
+    <help format="markdown"><![CDATA[
 ### What is Cytoscape Viewer?
 
 Cytoscape Viewer lets you explore graph and network data directly in your browser using the powerful [Cytoscape.js](https://js.cytoscape.org/) library.
