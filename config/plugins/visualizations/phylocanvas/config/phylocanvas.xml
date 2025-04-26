@@ -111,6 +111,11 @@
             <value>false</value>
         </input>
     </settings>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/newick.nwk" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is the Phylogenetic Tree Viewer?
 
