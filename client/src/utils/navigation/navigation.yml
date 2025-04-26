@@ -652,9 +652,8 @@ workflows:
 
 visualization:
   selectors:
-    _: '#center div.plugin-list'
     activity: '#activity-visualizations'
-    plugin_item: '[data-plugin-name*="${id}"]'
+    matched_plugin: '#center [data-plugin-name*="${id}"]'
 
 trs_search:
   selectors:
