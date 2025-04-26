@@ -818,8 +818,10 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "logo_url" in data:
             workflow.logo_url = data["logo_url"]
-        if "doi" in data:
-            for doi in data["doi"]:
+
+        dois = data.get("doi", None)
+        if dois:
+            for doi in dois:
                 if not util.validate_doi(doi):
                     raise exceptions.RequestParameterInvalidException(f"Invalid DOI format: {doi}")
             workflow.doi = data["doi"]
