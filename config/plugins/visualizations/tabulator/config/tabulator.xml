@@ -11,6 +11,7 @@
             <model_class>HistoryDatasetAssociation</model_class>
             <test test_attr="ext">csv</test>
             <test test_attr="ext">tabular</test>
+            <test test_attr="ext">tsv</test>
         </data_source>
     </data_sources>
     <params>
