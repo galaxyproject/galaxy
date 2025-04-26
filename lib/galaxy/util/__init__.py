@@ -2033,4 +2033,4 @@ def validate_doi(doi: str) -> bool:
     doi_prefix = r"10\.\d+"
     doi_suffix = r"\S+"
     doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
-    return doi_re.match(doi)
+    return bool(doi_re.match(doi))
