@@ -23,7 +23,7 @@ defineProps<{
 }>();
 
 function onSubmit(name: string, url: string) {
-    const data = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
+    const data = uploadPayload([{ fileName: name, fileMode: "new", fileUri: url }], currentHistoryId.value);
     sendPayload(data, {
         success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),
         error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
