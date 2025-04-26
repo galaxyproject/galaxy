@@ -45,6 +45,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "openlayers",
     "phylocanvas",
     "plotly",
+    "tabulator",
     "venn",
     "vitessce",
     "vizarr",

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Tabulator" embeddable="true">
+    <description>Table Viewer</description>
+    <tags>
+        <tag>Spreadsheet</tag>
+        <tag>Tab Delimited</tag>
+        <tag>Tabular</tag>
+    </tags>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext">csv</test>
+            <test test_attr="ext">tabular</test>
+        </data_source>
+    </data_sources>
+    <params>
+        <param required="true">dataset_id</param>
+    </params>
+    <requirements>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/tabulator"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+</visualization>
