@@ -56,7 +56,7 @@
             <value>#ec1515</value>
         </input>
     </settings>
-<help format="markdown"><![CDATA[
+    <help format="markdown"><![CDATA[
 ### What is the OpenLayers Map Viewer?
 
 The OpenLayers Map Viewer provides a simple and fast way to visualize geospatial data in your browser using [OpenLayers](https://openlayers.org/).
