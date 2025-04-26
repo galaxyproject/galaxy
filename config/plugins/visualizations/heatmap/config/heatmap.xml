@@ -498,7 +498,7 @@
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/column_matrix.csv" />
         </test>
     </tests>
-<help format="markdown"><![CDATA[
+    <help format="markdown"><![CDATA[
 ### What is the Heatmap Viewer?
 
 The Heatmap Viewer creates an interactive heatmap from simple matrix-style data stored in a 3-column tabular or CSV format (X-axis label, Y-axis label, Observation value).
