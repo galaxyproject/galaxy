@@ -21,7 +21,7 @@
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tests>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.png" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/ngs_simulation_out1.png" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[
