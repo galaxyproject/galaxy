@@ -2,16 +2,20 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Phylogenetic Tree" embeddable="true">
     <description>Phylogenetic Tree Viewer from https://www.phylocanvas.gl</description>
+    <tags>
+        <tag>Phylogenetics</tag>
+        <tag>Tree</tag>
+        <tag>Visualization</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">newick</test>
-            <test test_attr="ext" result_type="datatype">nhx</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">newick</test>
+            <test test_attr="ext">nhx</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
     <requirements>
         <requirement type="npm" version="0.0.7" package="@galaxyproject/phylocanvas"/>
@@ -107,4 +111,24 @@
             <value>false</value>
         </input>
     </settings>
+    <help format="markdown"><![CDATA[
+### What is the Phylogenetic Tree Viewer?
+
+The Phylogenetic Tree Viewer allows you to display and explore phylogenetic trees from Newick or NHX formatted files using the interactive [Phylocanvas.gl](https://phylocanvas.gl/) library.
+
+After selecting a dataset, the tree will be rendered with options to change its layout, customize colors, and adjust node and label styles.
+
+#### Key Features
+
+- **Tree Layouts**: Choose among rectangular, circular, diagonal, radial, or hierarchical views.
+- **Node Shapes**: Customize leaf nodes with circles, squares, stars, or triangles.
+- **Color Customization**: Set colors for edges, nodes, and highlighted branches.
+- **Label Controls**: Show, hide, or align labels depending on your tree type.
+- **Interactive Navigation**: Zoom, pan, and select branches for closer inspection.
+
+This tool is ideal for evolutionary biology, taxonomy, and anyone working with hierarchical data structures.
+
+To learn more about Phylocanvas.gl, visit:
+[https://phylocanvas.gl/](https://phylocanvas.gl/)
+    ]]></help>
 </visualization>

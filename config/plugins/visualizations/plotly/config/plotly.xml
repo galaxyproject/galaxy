@@ -2,6 +2,11 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Bar, Line and Scatter" embeddable="true">
     <description>Basic Diagrams from http://plotly.com</description>
+    <tags>
+        <tag>Plotly</tag>
+        <tag>Chart</tag>
+        <tag>Diagram</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -95,4 +100,24 @@
             <is_number>true</is_number>
         </input>
     </tracks>
+    <help format="markdown"><![CDATA[
+### What is the Bar, Line and Scatter Viewer?
+
+This visualization allows you to create simple and interactive bar charts, line plots, and scatter plots using the [Plotly](https://plotly.com/) library.
+
+After selecting a dataset, you can pick the plot type, choose x- and y-axis values, customize colors, and configure options like stacking bars or filling areas under lines.
+
+#### Key Features
+
+- **Chart Types**: Quickly switch between bar charts, line plots, and scatter plots.
+- **Stacking**: Stack bars or lines to better visualize cumulative values.
+- **Color Customization**: Pick custom colors for each data series.
+- **Axis Labels**: Define labels for both x-axis and y-axis easily.
+- **Interactive**: Zoom, pan, and hover over points to see detailed information.
+
+This tool is ideal for quick summaries, trend visualization, and comparative data analysis.
+
+To learn more about Plotly, visit:
+[https://plotly.com/](https://plotly.com/)
+    ]]></help>
 </visualization>

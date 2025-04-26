@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="NGL Viewer" embeddable="true">
-    <description>NGL Viewer is a WebGL based molecular visualization hosted at http://arose.github.io/ngl/.</description>
+    <description>Display Molecular Structures of Proteins, DNA and more</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>

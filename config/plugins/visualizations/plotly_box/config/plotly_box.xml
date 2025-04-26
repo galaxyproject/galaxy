@@ -2,6 +2,11 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Box Plot" embeddable="true">
     <description>Box Plot from http://plotly.com</description>
+    <tags>
+        <tag>Plotly</tag>
+        <tag>Boxplot</tag>
+        <tag>Statistics</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -54,4 +59,23 @@
             <is_number>true</is_number>
         </input>
     </tracks>
+    <help format="markdown"><![CDATA[
+### What is the Box Plot Viewer?
+
+This visualization allows you to create interactive box plots from your tabular or CSV data using the [Plotly](https://plotly.com/) library.
+
+After selecting a dataset, you can define labels for your axes, pick a series color, and easily plot statistical distributions with medians, quartiles, and outliers.
+
+#### Key Features
+
+- **Box Plot Rendering**: Visualize the distribution of your data with medians, interquartile ranges, and whiskers.
+- **Custom Labels**: Add custom labels for both x-axis and y-axis.
+- **Color Customization**: Choose a custom color for each data series.
+- **Interactive**: Hover over points to view detailed statistics and zoom into sections of the plot.
+
+This tool is ideal for comparing distributions, identifying outliers, and summarizing datasets statistically.
+
+To learn more about Plotly, visit:
+[https://plotly.com/](https://plotly.com/)
+    ]]></help>
 </visualization>

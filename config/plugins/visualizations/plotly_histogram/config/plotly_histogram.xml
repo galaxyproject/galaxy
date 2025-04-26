@@ -2,6 +2,11 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Histogram" embeddable="true">
     <description>Histogram from http://plotly.com</description>
+    <tags>
+        <tag>Plotly</tag>
+        <tag>Histogram</tag>
+        <tag>Distribution</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -54,4 +59,23 @@
             <is_number>true</is_number>
         </input>
     </tracks>
+    <help format="markdown"><![CDATA[
+### What is the Histogram Viewer?
+
+This visualization lets you create interactive histograms from your tabular or CSV data using the [Plotly](https://plotly.com/) library.
+
+After selecting a dataset, you can configure axis labels, choose a series color, and plot the frequency distribution of your data values.
+
+#### Key Features
+
+- **Histogram Plotting**: Easily visualize the distribution of numerical data.
+- **Custom Labels**: Add descriptive labels to your x-axis and y-axis.
+- **Color Customization**: Choose a custom color for your histogram bars.
+- **Interactive**: Zoom, pan, and hover over bins to see detailed counts.
+
+This tool is ideal for exploring the spread, skewness, or grouping of numeric data values.
+
+To learn more about Plotly, visit:
+[https://plotly.com/](https://plotly.com/)
+    ]]></help>
 </visualization>
