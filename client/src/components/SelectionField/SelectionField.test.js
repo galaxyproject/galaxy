@@ -115,4 +115,17 @@ describe("SelectionField.vue", () => {
         await waitForDebouncedSearch();
         expect(mockQuery).toHaveBeenCalledWith("test");
     });
+
+    it("falls back to first option if no objectId and objectName provided", async () => {
+        const wrapper = mountComponent({ objectId: "", objectName: "" });
+        await waitForDebouncedSearch();
+        const multiselect = wrapper.findComponent(Multiselect);
+        expect(multiselect.exists()).toBe(true);
+        const multiselectOptions = multiselect.props("options");
+        expect(multiselectOptions.length).toBeGreaterThan(0);
+        await wrapper.vm.$nextTick();
+        const currentValue = wrapper.vm.currentValue;
+        expect(currentValue.id).toBe("ds1");
+        expect(currentValue.name).toBe("Dataset A");
+    });
 });
