@@ -69,7 +69,7 @@ export function useZipExplorer() {
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
-        const toUploadToHistory: ZipFileEntry[] = [];
+        const toUploadToHistory: { file: ImportableFile; entry: ZipFileEntry }[] = [];
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
             if (!entry) {
@@ -87,7 +87,7 @@ export function useZipExplorer() {
                     rethrowSimple(e);
                 }
             } else {
-                toUploadToHistory.push(entry);
+                toUploadToHistory.push({ file, entry });
             }
         }
 
@@ -99,11 +99,12 @@ export function useZipExplorer() {
             throw new Error("There is no history available to upload the selected files.");
         }
 
-        const elements = toUploadToHistory.map((entry) => {
+        const elements = toUploadToHistory.map(({ file, entry }) => {
             const extractUrl = toExtractUrl(zipUrl, entry);
+            const name = file.name ?? entry.path.split("/").pop() ?? "unknown";
 
             return {
-                name: entry.path.split("/").pop() ?? "unknown",
+                name,
                 deferred: false,
                 src: "url",
                 url: extractUrl,
@@ -156,7 +157,7 @@ export function useZipExplorer() {
             }
         }
 
-        await uploadExtractedFiles(historyId);
+        await uploadExtractedFiles(historyId, filesToImport);
     }
 
     function toExtractUrl(zipUrl: string, entry: ZipFileEntry): string {
@@ -214,10 +215,10 @@ export function useZipExplorer() {
     async function extractFileToDB(entry: ZipFileEntry) {
         const fileData = await entry.data();
         const fileBlob = new Blob([fileData]);
-        await storeFile(entry.path.split("/").pop() ?? "unknown", fileBlob);
+        await storeFile(entry.path, fileBlob);
     }
 
-    async function uploadExtractedFiles(historyId: string | null) {
+    async function uploadExtractedFiles(historyId: string | null, filesToImport: ImportableFile[]) {
         const databaseFiles = await getAllStoredFiles();
         if (databaseFiles.length === 0) {
             return; // No files to upload
@@ -231,9 +232,13 @@ export function useZipExplorer() {
         const elements = [];
 
         for (const fileEntry of databaseFiles) {
+            const file = filesToImport.find((file) => file.path === fileEntry.name);
+            if (!file) {
+                continue; // File not selected for import
+            }
             files.push(fileEntry.fileData);
             elements.push({
-                name: fileEntry.name,
+                name: file.name,
                 deferred: false,
                 src: "files",
                 ext: "auto",
