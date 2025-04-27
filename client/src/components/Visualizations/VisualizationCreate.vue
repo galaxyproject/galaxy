@@ -69,6 +69,7 @@ onMounted(() => {
         </template>
         <div class="my-3">
             <SelectionField
+                object-name="Select a dataset..."
                 object-title="Select to Visualize"
                 object-type="history_dataset_id"
                 :object-query="doQuery"
