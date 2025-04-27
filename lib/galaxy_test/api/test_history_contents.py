@@ -4,6 +4,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 from galaxy_test.api._framework import ApiTestCase
@@ -425,6 +426,37 @@ class TestHistoryContentsApi(ApiTestCase):
         # we don't distinguish between this is a valid ID you don't have access to
         # and this is an invalid ID.
         assert update_response.status_code == 400, update_response.content
+
+    def test_rename_dataset(self, history_id):
+        dataset = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.rename_dataset(dataset["id"])
+        hda = self.dataset_populator.get_history_dataset_details(history_id=history_id, content_id=dataset["id"])
+        assert hda["name"] != dataset["name"]
+        with self._different_user():
+            exception: Union[Exception, None] = None
+            try:
+                self.dataset_populator.rename_dataset(dataset["id"])
+            except AssertionError as e:
+                exception = e
+        assert "HistoryDatasetAssociation is not owned by user" in str(exception)
+
+    def test_rename_dataset_collection(self, history_id):
+        dataset_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], wait=True
+        ).json()["output_collections"][0]
+        dataset_collection_id = dataset_collection["id"]
+        self.dataset_populator.rename_collection(dataset_collection_id)
+        hdca = self.dataset_populator.get_history_collection_details(
+            history_id=history_id, content_id=dataset_collection_id
+        )
+        assert hdca["name"] != dataset_collection["name"]
+        with self._different_user():
+            exception: Union[Exception, None] = None
+            try:
+                self.dataset_populator.rename_collection(dataset_collection_id)
+            except AssertionError as e:
+                exception = e
+        assert "HistoryDatasetCollectionAssociation is not owned by user" in str(exception)
 
     def test_update_batch(self, history_id):
         hda1 = self._wait_for_new_hda(history_id)

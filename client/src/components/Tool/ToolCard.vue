@@ -16,6 +16,7 @@ import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectSt
 
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
@@ -117,75 +118,61 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 </script>
 
 <template>
-    <div class="position-relative">
-        <div class="ui-form-header-underlay sticky-top" />
-        <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
-            <div class="d-flex justify-content-between">
-                <div class="py-1 d-flex flex-wrap flex-gapx-1">
-                    <span>
-                        <icon icon="wrench" class="fa-fw" />
-                        <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
-                    </span>
-                    <span itemprop="description">{{ props.description }}</span>
-                    <span>(Galaxy Version {{ props.version }})</span>
-                </div>
-                <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
-                    <b-button-group class="tool-card-buttons">
-                        <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
-                        <ToolVersionsButton
-                            v-if="showVersions"
-                            :version="props.version"
-                            :versions="versions"
-                            @onChangeVersion="onChangeVersion" />
-                        <ToolOptionsButton
-                            :id="props.id"
-                            :sharable-url="props.options.sharable_url"
-                            :options="props.options" />
-                        <b-button
-                            v-if="allowObjectStoreSelection"
-                            id="tool-storage"
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="float-right tool-storage"
-                            @click="onShowObjectStoreSelect">
-                            <span class="fa fa-hdd" />
-                        </b-button>
-                        <ToolTargetPreferredObjectStorePopover
-                            v-if="allowObjectStoreSelection"
-                            :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                            :user="currentUser">
-                        </ToolTargetPreferredObjectStorePopover>
-                        <b-modal
-                            v-model="showPreferredObjectStoreModal"
-                            :title="storageLocationModalTitle"
-                            modal-class="tool-preferred-object-store-modal"
-                            title-tag="h3"
-                            size="sm"
-                            hide-footer>
-                            <ToolSelectPreferredObjectStore
-                                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                                :root="root"
-                                @updated="onUpdatePreferredObjectStoreId" />
-                        </b-modal>
-                    </b-button-group>
-                    <slot name="header-buttons" />
-                </div>
-            </div>
-        </div>
+    <FormCardSticky
+        :error-message="errorText"
+        :description="props.description"
+        :name="props.title"
+        :version="props.version">
+        <template v-slot:buttons>
+            <b-button-group class="tool-card-buttons">
+                <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
+                <ToolVersionsButton
+                    v-if="showVersions"
+                    :version="props.version"
+                    :versions="versions"
+                    @onChangeVersion="onChangeVersion" />
+                <ToolOptionsButton :id="props.id" :sharable-url="props.options.sharable_url" :options="props.options" />
+                <b-button
+                    v-if="allowObjectStoreSelection"
+                    id="tool-storage"
+                    role="button"
+                    variant="link"
+                    size="sm"
+                    class="float-right tool-storage"
+                    @click="onShowObjectStoreSelect">
+                    <span class="fa fa-hdd" />
+                </b-button>
+                <ToolTargetPreferredObjectStorePopover
+                    v-if="allowObjectStoreSelection"
+                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                    :user="currentUser" />
+                <b-modal
+                    v-model="showPreferredObjectStoreModal"
+                    :title="storageLocationModalTitle"
+                    modal-class="tool-preferred-object-store-modal"
+                    title-tag="h3"
+                    size="sm"
+                    hide-footer>
+                    <ToolSelectPreferredObjectStore
+                        :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                        :root="root"
+                        @updated="onUpdatePreferredObjectStoreId" />
+                </b-modal>
+            </b-button-group>
+            <slot name="buttons" />
+        </template>
 
-        <div id="tool-card-body">
+        <template v-slot>
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />
-            <slot name="body" />
+            <slot name="default" />
             <div v-if="props.disabled" class="portlet-backdrop" />
-        </div>
+        </template>
 
-        <slot name="buttons" />
-
-        <div>
+        <template v-slot:footer>
+            <slot name="buttons" />
             <div v-if="props.options.help" class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Help </Heading>
+                <Heading h2 separator bold size="sm">Help</Heading>
                 <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 
@@ -204,8 +191,8 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                 :license="props.options.license"
                 :creators="props.options.creator"
                 :requirements="props.options.requirements" />
-        </div>
-    </div>
+        </template>
+    </FormCardSticky>
 </template>
 
 <style lang="scss" scoped>

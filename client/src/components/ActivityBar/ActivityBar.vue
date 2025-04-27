@@ -15,7 +15,6 @@ import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
-import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
@@ -26,6 +25,7 @@ import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
 
 const props = withDefaults(
     defineProps<{

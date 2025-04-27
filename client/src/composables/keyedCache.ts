@@ -44,8 +44,9 @@ export function useKeyedCache<T>(
     shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
-    const loadingItem = ref<{ [key: string]: boolean }>({});
     const loadingErrors = ref<{ [key: string]: Error }>({});
+
+    const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
 
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
@@ -68,7 +69,7 @@ export function useKeyedCache<T>(
 
     const isLoadingItem = computed(() => {
         return (id: string) => {
-            return loadingItem.value[id] ?? false;
+            return Boolean(loadingRequests.value[id]);
         };
     });
 
@@ -78,24 +79,28 @@ export function useKeyedCache<T>(
         };
     });
 
-    async function fetchItemById(params: FetchParams) {
+    async function fetchItemById(params: FetchParams): Promise<T | undefined> {
         const itemId = params.id;
-        const isAlreadyLoading = loadingItem.value[itemId] ?? false;
-        const failedLoading = loadingErrors.value[itemId];
-        if (isAlreadyLoading || failedLoading) {
-            return;
+
+        if (loadingRequests.value[itemId]) {
+            return loadingRequests.value[itemId];
         }
-        set(loadingItem.value, itemId, true);
-        try {
-            const fetchItem = unref(fetchItemHandler);
-            const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
-            set(storedItems.value, itemId, item);
-            return item;
-        } catch (error) {
-            set(loadingErrors.value, itemId, error);
-        } finally {
-            del(loadingItem.value, itemId);
-        }
+
+        const fetchPromise = (async () => {
+            try {
+                const fetchItem = unref(fetchItemHandler);
+                const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
+                set(storedItems.value, itemId, item);
+                return item;
+            } catch (error) {
+                set(loadingErrors.value, itemId, error as Error);
+            } finally {
+                del(loadingRequests.value, itemId);
+            }
+        })();
+
+        set(loadingRequests.value, itemId, fetchPromise);
+        return fetchPromise;
     }
 
     return {

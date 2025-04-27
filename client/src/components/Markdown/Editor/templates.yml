@@ -236,14 +236,14 @@ Vega:
         }
 
 Vitessce:
-  - title: "Hello World"
-    description: "A simple vitessce example"
+  - title: "Vitessce Template"
+    description: "Use this to insert a Vitessce configuration"
     cell:
       name: "vitessce"
       content: |
         {
           "version": "1.0.16",
-          "name": "Example configuration",
+          "name": "Vitessce Template",
           "description": "",
           "datasets": [],
           "initStrategy": "auto",
@@ -251,7 +251,7 @@ Vitessce:
           "layout": [{
             "component": "description",
             "props": {
-                "description": "Hello, world!"
+                "description": "Insert your Vitessce configuration into the code block."
             },
             "x": 0,
             "y": 0,

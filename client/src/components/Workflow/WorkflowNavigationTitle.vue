@@ -6,7 +6,6 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
-import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowSummary } from "@/api/workflows";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
@@ -37,16 +36,9 @@ const emit = defineEmits<{
     (e: "on-execute"): void;
 }>();
 
-const { workflow, loading, error } = useWorkflowInstance(props.workflowId);
+const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 
-const { currentUser, isAnonymous } = storeToRefs(useUserStore());
-const owned = computed(() => {
-    if (isRegisteredUser(currentUser.value) && workflow.value) {
-        return currentUser.value.username === workflow.value.owner;
-    } else {
-        return false;
-    }
-});
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const importErrorMessage = ref<string | null>(null);
 const importedWorkflow = ref<WorkflowSummary | null>(null);
@@ -96,7 +88,7 @@ const workflowImportTitle = computed(() => {
 
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
-        <div class="position-relative mb-2">
+        <div class="position-relative">
             <div v-if="workflow" class="bg-secondary px-2 py-1 rounded">
                 <div class="d-flex align-items-center flex-gapx-1">
                     <div class="flex-grow-1" data-description="workflow heading">

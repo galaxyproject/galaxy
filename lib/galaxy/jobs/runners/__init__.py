@@ -297,7 +297,9 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            if job_wrapper.prepare() is False:
+                # job cache
+                return False
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
@@ -603,6 +605,7 @@ class BaseJobRunner:
     def mark_as_resubmitted(self, job_state: "JobState", info: Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
+            assert self.app.job_manager.job_handler.dispatcher
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 

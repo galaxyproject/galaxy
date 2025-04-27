@@ -143,3 +143,11 @@ function scrollToCell(cellIndex: number) {
     });
 }
 </script>
+
+<style>
+.cell-dropdown {
+    max-height: 20rem;
+    max-width: 16rem;
+    min-width: 16rem;
+}
+</style>

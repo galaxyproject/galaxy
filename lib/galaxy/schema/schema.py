@@ -380,7 +380,6 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     quota_bytes: Optional[int] = Field(
         default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
     )
-    tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 
 class UserUpdatePayload(Model):
@@ -3774,6 +3773,24 @@ class ChatPayload(Model):
         default="",
         title="Context",
         description="The context for the chatbot.",
+    )
+
+
+class ChatResponse(BaseModel):
+    response: str = Field(
+        ...,
+        title="Response",
+        description="The response to the chat query.",
+    )
+    error_code: Optional[int] = Field(
+        ...,
+        title="Error Code",
+        description="The error code, if any, for the chat query.",
+    )
+    error_message: Optional[str] = Field(
+        ...,
+        title="Error Message",
+        description="The error message, if any, for the chat query.",
     )
 
 

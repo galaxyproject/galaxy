@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
-import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useHashedUserId } from "@/composables/hashedUserId";
+import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
     addFavoriteToolQuery,
@@ -28,14 +29,15 @@ type UserListViewPreferences = Record<string, ListViewMode>;
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
+    const { hashedUserId } = useHashedUserId(currentUser);
 
-    const currentListViewPreferences = useUserLocalStorage<UserListViewPreferences>(
+    const currentListViewPreferences = useUserLocalStorageFromHashId<UserListViewPreferences>(
         "user-store-list-view-preferences",
         {},
-        currentUser
+        hashedUserId
     );
 
-    const hasSeenUploadHelp = useUserLocalStorage("user-store-seen-upload-help", false, currentUser);
+    const hasSeenUploadHelp = useUserLocalStorageFromHashId("user-store-seen-upload-help", false, hashedUserId);
 
     let loadPromise: Promise<void> | null = null;
 

@@ -14,7 +14,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setItemDragstart } from "@/utils/setDrag";
-import { startWatchingHistory } from "@/watch/watchHistory";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 

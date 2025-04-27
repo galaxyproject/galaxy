@@ -627,8 +627,14 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                     any values that were different from the original and, therefore, updated
         """
         if history_id is None:
-            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
-            history_id = hda.history.id
+            if contents_type == HistoryContentType.dataset:
+                item: Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation] = (
+                    self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+                )
+            else:
+                item = self.hdca_manager.get_owned(id, trans.user, current_history=trans.history)
+            assert item.history
+            history_id = item.history.id
 
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if contents_type == HistoryContentType.dataset:
@@ -1289,7 +1295,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
             dbkey = payload.dbkey
             copy_required = dbkey is not None
-            copy_elements = payload.copy_elements
+            copy_elements = bool(payload.copy_elements)
             if copy_required and not copy_elements:
                 raise exceptions.RequestParameterInvalidException(
                     "copy_elements passed as 'false' but it is required to change specified attributes"

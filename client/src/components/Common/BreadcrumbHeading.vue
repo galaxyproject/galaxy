@@ -14,8 +14,8 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-    <div class="breadcrumb-heading">
-        <Heading h1 separator inline size="md" class="breadcrumb-heading-header">
+    <div class="breadcrumb-heading mb-2">
+        <Heading h1 separator inline size="md" class="breadcrumb-heading-header mr-2 mb-0">
             <template v-for="(item, index) in props.items">
                 <RouterLink
                     v-if="item.to"
@@ -50,7 +50,6 @@ const props = defineProps<Props>();
 
     .breadcrumb-heading-header {
         flex-grow: 1;
-        margin-bottom: 0.5rem;
 
         .breadcrumb-heading-header-active {
             overflow: hidden;

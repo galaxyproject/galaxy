@@ -832,6 +832,20 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(_wait_for_purge, "dataset to become purged", timeout=2)
         return self._get(dataset_url)
 
+    def rename_dataset(
+        self,
+        content_id: str,
+        new_name: Optional[str] = None,
+    ):
+        if not new_name:
+            new_name = self.get_random_name()
+        return self.update_dataset(content_id, {"name": new_name})
+
+    def rename_collection(self, content_id: str, new_name: Optional[str] = None):
+        if not new_name:
+            new_name = self.get_random_name()
+        self.update_dataset_collection(content_id, {"name": new_name})
+
     def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
         create_url = "tool_landings"
         json = payload.model_dump(mode="json")
@@ -1533,6 +1547,18 @@ class BaseDatasetPopulator(BasePopulator):
         put_response = self._put(update_url, payload, json=True)
         return put_response
 
+    def update_dataset(self, dataset_id: str, update_payload: Dict[str, Any]):
+        update_url = f"datasets/{dataset_id}"
+        put_response = self._put(update_url, update_payload, json=True)
+        api_asserts.assert_status_code_is_ok(put_response)
+        return put_response.json()
+
+    def update_dataset_collection(self, dataset_collection_id: str, update_payload: Dict[str, Any]):
+        update_url = f"dataset_collections/{dataset_collection_id}"
+        put_response = self._put(update_url, update_payload, json=True)
+        api_asserts.assert_status_code_is_ok(put_response)
+        return put_response.json()
+
     def get_histories(self):
         history_index_response = self._get("histories")
         api_asserts.assert_status_code_is(history_index_response, 200)
@@ -2197,6 +2223,8 @@ class BaseWorkflowPopulator(BasePopulator):
         round_trip_format_conversion: bool = False,
         invocations: int = 1,
         raw_yaml: bool = False,
+        use_cached_job: bool = False,
+        copy_inputs_to_history: bool = False,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
@@ -2237,6 +2265,10 @@ class BaseWorkflowPopulator(BasePopulator):
             history=f"hist_id={history_id}",
             workflow_id=workflow_id,
         )
+        if use_cached_job:
+            workflow_request["use_cached_job"] = True
+        if copy_inputs_to_history:
+            workflow_request["copy_inputs_to_history"] = True
         workflow_request["inputs"] = json.dumps(label_map)
         workflow_request["inputs_by"] = "name"
         if parameters:

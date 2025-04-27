@@ -128,3 +128,13 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
     }
 }
+
+const collectionTypeRegex = /^(list|paired)(:(list|paired))*$/;
+
+export function isValidCollectionTypeStr(collectionType: string | undefined) {
+    if (collectionType) {
+        return collectionTypeRegex.test(collectionType);
+    } else {
+        return true;
+    }
+}

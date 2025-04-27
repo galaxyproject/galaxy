@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import { type ConcreteObjectStoreModel } from "@/api";
 import { getSelectableObjectStores } from "@/api/objectStores";
@@ -32,6 +32,24 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
         return objectStore?.name ?? null;
     }
 
+    /**
+     * Convenience function to add or update an object store in the list of selectable object stores without
+     * reloading it from the server.
+     * @param objectStore The object store to add or update
+     */
+    function addOrUpdateObjectStore(objectStore: ConcreteObjectStoreModel) {
+        if (selectableObjectStores.value) {
+            const index = selectableObjectStores.value.findIndex(
+                (store) => store.object_store_id === objectStore.object_store_id
+            );
+            if (index !== -1) {
+                set(selectableObjectStores.value, index, objectStore);
+            } else {
+                selectableObjectStores.value.push(objectStore);
+            }
+        }
+    }
+
     loadObjectStores();
 
     return {
@@ -40,5 +58,6 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
         loadErrorMessage,
         selectableObjectStores,
         getObjectStoreNameById,
+        addOrUpdateObjectStore,
     };
 });

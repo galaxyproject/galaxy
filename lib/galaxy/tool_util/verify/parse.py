@@ -30,12 +30,12 @@ from galaxy.tool_util.parser.util import (
     parse_tool_version_with_defaults,
 )
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
-from galaxy.tool_util.verify.assertion_models import relaxed_assertion_list
 from galaxy.tool_util.verify.interactor import (
     InvalidToolTestDict,
     ToolTestDescription,
     ValidToolTestDict,
 )
+from galaxy.tool_util_models.assertions import relaxed_assertion_list
 from galaxy.util import (
     string_as_bool,
     string_as_bool_or_none,

@@ -18,7 +18,7 @@ GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR?=0
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
 NODE_OPTIONS ?= --max-old-space-size=3072
-NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)	
+NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
@@ -206,7 +206,7 @@ remove-api-schema:
 	rm _schema.yaml
 	rm _shed_schema.yaml
 
-update-client-api-schema: client-node-deps build-api-schema
+update-client-api-schema: client-node-deps build-api-schema ## Update client API schema
 	$(IN_VENV) cd client && npx openapi-typescript ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
 	$(IN_VENV) cd client && npx openapi-typescript ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema

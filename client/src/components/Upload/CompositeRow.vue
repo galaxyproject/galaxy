@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faEdit, faExclamation, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
-import { filesDialog } from "utils/data";
+import { filesDialog } from "utils/dataModals";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
 

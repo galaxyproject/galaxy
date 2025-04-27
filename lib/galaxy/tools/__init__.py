@@ -84,7 +84,6 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.interface import (
-    HelpContent,
     InputSource,
     PageSource,
     ToolSource,
@@ -113,6 +112,7 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -153,7 +153,6 @@ from galaxy.tools.parameters.dataset_matcher import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
-    Group,
     Repeat,
     Section,
     UploadDataset,
@@ -236,6 +235,7 @@ if TYPE_CHECKING:
     )
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tools.actions.metadata import SetMetadataToolAction
+    from galaxy.tools.parameters import ToolInputsT
 
 log = logging.getLogger(__name__)
 
@@ -1011,7 +1011,7 @@ class Tool(UsesDictVisibleKeys):
         self.require_login = False
         self.rerun = False
         # This will be non-None for tools loaded from the database (DynamicTool objects).
-        self.dynamic_tool = None
+        self.dynamic_tool: Optional[model.DynamicTool] = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -1021,11 +1021,11 @@ class Tool(UsesDictVisibleKeys):
         self.input_params: List[ToolParameter] = []
         # Attributes of tools installed from Galaxy tool sheds.
         self.tool_shed: Optional[str] = None
-        self.repository_name = None
-        self.repository_owner = None
-        self.changeset_revision = None
-        self.installed_changeset_revision = None
-        self.sharable_url = None
+        self.repository_name: Optional[str] = None
+        self.repository_owner: Optional[str] = None
+        self.changeset_revision: Optional[str] = None
+        self.installed_changeset_revision: Optional[str] = None
+        self.sharable_url: Optional[str] = None
         self.npages = 0
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
@@ -1625,7 +1625,7 @@ class Tool(UsesDictVisibleKeys):
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
-        self.inputs: Dict[str, Union[Group, ToolParameter]] = {}
+        self.inputs: ToolInputsT = {}
         pages = tool_source.parse_input_pages()
         enctypes: Set[str] = set()
         if pages.inputs_defined:
@@ -1716,15 +1716,13 @@ class Tool(UsesDictVisibleKeys):
                     citations.append(citation)
         return citations
 
-    def parse_input_elem(
-        self, page_source: PageSource, enctypes, context=None
-    ) -> Dict[str, Union[Group, ToolParameter]]:
+    def parse_input_elem(self, page_source: PageSource, enctypes, context=None) -> "ToolInputsT":
         """
         Parse a parent element whose children are inputs -- these could be
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
-        rval: Dict[str, Union[Group, ToolParameter]] = {}
+        rval: ToolInputsT = {}
         context = ExpressionContext(rval, context)
         for input_source in page_source.parse_input_sources():
             # Repeat group
@@ -1757,8 +1755,9 @@ class Tool(UsesDictVisibleKeys):
                     value_from = value_from.split(":")
                     temp_value_from = locals().get(value_from[0])
                     assert value_ref
-                    group_c.test_param = rval[value_ref]
-                    assert isinstance(group_c.test_param, ToolParameter)
+                    group_c_test_param = rval[value_ref]
+                    assert isinstance(group_c_test_param, ToolParameter)
+                    group_c.test_param = group_c_test_param
                     group_c.test_param.refresh_on_change = True
                     for attr in value_from[1].split("."):
                         temp_value_from = getattr(temp_value_from, attr)
@@ -1891,6 +1890,8 @@ class Tool(UsesDictVisibleKeys):
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision
             self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            assert self.repository_owner
+            assert self.repository_name
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
@@ -2121,21 +2122,25 @@ class Tool(UsesDictVisibleKeys):
             validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
 
     def completed_jobs(
-        self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
+        self,
+        trans,
+        use_cached_job: bool,
+        all_params: List[ToolStateJobInstancePopulatedT],
     ) -> Dict[int, Optional[Job]]:
         completed_jobs: Dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job:
+            if use_cached_job and trans.user:
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
+                require_name_match = param.get("__when_value__") is not False
                 completed_jobs[i] = self.job_search.by_tool_input(
-                    trans=trans,
+                    user=trans.user,
                     tool_id=tool_id,
                     tool_version=self.version,
                     param=param,
                     param_dump=param_dump,
-                    job_state=None,
+                    require_name_match=require_name_match,
                 )
             else:
                 completed_jobs[i] = None
@@ -2167,6 +2172,8 @@ class Tool(UsesDictVisibleKeys):
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
+        if use_cached_job:
+            mapping_params.param_template["__use_cached_job__"] = use_cached_job
         completed_jobs: Dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,

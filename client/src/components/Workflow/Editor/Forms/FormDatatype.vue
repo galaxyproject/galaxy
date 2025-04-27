@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 
@@ -8,16 +8,27 @@ import FormElement from "@/components/Form/FormElement.vue";
 const props = withDefaults(
     defineProps<{
         id: string;
-        value?: string;
+        value?: string | string[];
         title: string;
         help: string;
+        multiple?: boolean;
         datatypes: DatatypesMapperModel["datatypes"];
     }>(),
     {
         value: undefined,
+        multiple: false,
     }
 );
 
+const currentValue = ref<string | string[] | undefined>(undefined);
+
+watch(
+    () => props.value,
+    (newValue) => {
+        currentValue.value = newValue;
+    },
+    { immediate: true }
+);
 const emit = defineEmits(["onChange"]);
 
 const datatypeExtensions = computed(() => {
@@ -34,25 +45,28 @@ const datatypeExtensions = computed(() => {
         0: "Roadmaps",
         1: "Roadmaps",
     });
-    extensions.unshift({
-        0: "Leave unchanged",
-        1: "",
-    });
+    if (!props.multiple) {
+        extensions.unshift({
+            0: "Leave unchanged",
+            1: "",
+        });
+    }
     return extensions;
 });
 
-function onChange(newDatatype: unknown) {
-    emit("onChange", newDatatype);
+function onInput(newDatatype: string) {
+    currentValue.value = newDatatype;
+    emit("onChange", currentValue.value);
 }
 </script>
 
 <template>
     <FormElement
         :id="id"
-        :value="value"
-        :attributes="{ options: datatypeExtensions }"
+        :value="currentValue"
+        :attributes="{ options: datatypeExtensions, multiple: multiple, display: 'simple', optional: true }"
         :title="title"
         type="select"
         :help="help"
-        @input="onChange" />
+        @input="onInput" />
 </template>

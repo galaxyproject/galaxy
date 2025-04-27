@@ -3,14 +3,11 @@ import { faClock } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { isRegisteredUser } from "@/api";
 import { useMarkdown } from "@/composables/markdown";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 import Heading from "../Common/Heading.vue";
 import TextSummary from "../Common/TextSummary.vue";
@@ -25,23 +22,13 @@ interface Props {
     invocationUpdateTime?: string;
     historyId: string;
     showDetails?: boolean;
-    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     invocationUpdateTime: undefined,
 });
 
-const { workflow } = useWorkflowInstance(props.workflowId);
-
-const { currentUser } = storeToRefs(useUserStore());
-const owned = computed(() => {
-    if (isRegisteredUser(currentUser.value) && workflow.value) {
-        return currentUser.value.username === workflow.value.owner;
-    } else {
-        return false;
-    }
-});
+const { workflow, owned } = useWorkflowInstance(props.workflowId);
 
 const description = computed(() => {
     if (workflow.value?.annotation) {
@@ -83,12 +70,12 @@ const { renderMarkdown } = useMarkdown({
                     <FontAwesomeIcon :icon="faHdd" />History:
                     <SwitchToHistoryLink :history-id="props.historyId" />
                     <BBadge
-                        v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.historyId"
+                        v-if="useHistoryStore().currentHistoryId !== props.historyId"
                         v-b-tooltip.hover.noninteractive
                         data-description="new history badge"
                         role="button"
                         variant="info"
-                        title="Results generated in a new history. Click on history name to switch to that history.">
+                        title="Results generated in a different history. Click on history name to switch to that history.">
                         <FontAwesomeIcon :icon="faExclamation" />
                     </BBadge>
                 </span>

@@ -7,7 +7,7 @@ import Vue, { computed, type Ref, ref } from "vue";
 import type { HDASummary } from "@/api";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
-import { filesDialog } from "@/utils/data";
+import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import type { CollectionType } from "../History/adapters/buildCollectionModal";
@@ -364,7 +364,7 @@ defineExpose({
     <div class="upload-wrapper">
         <div class="upload-header">
             <div v-if="props.emitUploaded && historyItemsStateInfo">
-                <BAlert show :variant="historyItemsStateInfo.variant">
+                <BAlert show :variant="historyItemsStateInfo.variant" data-description="upload state alert">
                     <LoadingSpan v-if="historyItemsStateInfo.spin" :message="historyItemsStateInfo.message" />
                     <span v-else>{{ historyItemsStateInfo.message }}</span>
                 </BAlert>

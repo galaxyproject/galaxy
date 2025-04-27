@@ -12,7 +12,7 @@ function buildFingerprint(cnf) {
     };
 }
 
-export function sendPayload(payload, cnf) {
+export function sendPayload(payload, cnf = {}) {
     axios
         .post(`${getAppRoot()}api/tools/fetch`, payload)
         .then((response) => {

@@ -42,6 +42,7 @@ from galaxy.util import (
     string_as_bool,
 )
 from galaxy.util.template import fill_template
+from galaxy.work.context import WorkRequestContext
 from . import validation
 from .cancelable_request import request
 
@@ -188,9 +189,9 @@ class DataMetaFilter(Filter):
     def get_dependency_name(self):
         return self.ref_name
 
-    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: Optional[WorkRequestContext], other_values):
         options = list(options)
-        if trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+        if trans and trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
             # We're in the run form, can't possibly apply a data_meta filter.
             return options
 

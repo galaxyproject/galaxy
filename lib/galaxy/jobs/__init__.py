@@ -2,6 +2,7 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
+import abc
 import copy
 import datetime
 import errno
@@ -97,6 +98,7 @@ from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
 )
+from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
     parse_xml_string,
     RWXRWXRWX,
@@ -111,7 +113,7 @@ from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
-    from galaxy.jobs.handler import JobHandlerQueue
+    from galaxy.jobs.handler import BaseJobHandlerQueue
     from galaxy.model import DatasetInstance
     from galaxy.tools import Tool
 
@@ -1290,6 +1292,24 @@ class MinimalJobWrapper(HasResourceParameters):
             self.environment_variables,
             self.interactivetools,
         ) = tool_evaluator.build()
+        if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
+            # search again, now we know tool doesn't require name match
+            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
+            assert self.tool
+            params = self.tool.params_from_strings(param_dump, self.app)
+            json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
+            job_to_copy = self.app.job_search.by_tool_input(
+                job.user,
+                job.tool_id,
+                job.tool_version,
+                param=params,
+                param_dump=json_internal,
+                require_name_match=False,
+            )
+            if job_to_copy and isinstance(job_to_copy, model.Job):
+                job.copy_from_job(job_to_copy, copy_outputs=True)
+                self.sa_session.commit()
+                return False
         job.command_line = self.command_line
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
@@ -1754,8 +1774,12 @@ class MinimalJobWrapper(HasResourceParameters):
 
         result = self.sa_session.execute(update_stmt)
         self.sa_session.commit()
+        state_updated = result.rowcount > 0
+        if state_updated:
+            self.sa_session.refresh(job)
+            job.state_history.append(model.JobStateHistory(job=job))
 
-        return result.rowcount > 0
+        return state_updated
 
     def enqueue(self):
         job = self.get_job()
@@ -2130,7 +2154,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 final_job_state = job.states.ERROR
                 job.job_messages = [
                     {
-                        "type": "internal",
+                        "type": "max_discovered_files",
                         "desc": str(e),
                         "error_level": StdioErrorLevel.FATAL,
                     }
@@ -2743,7 +2767,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
 
 class JobWrapper(MinimalJobWrapper):
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False):
+    def __init__(self, job, queue: "BaseJobHandlerQueue", use_persisted_destination=False):
         app = queue.app
         super().__init__(
             job,
@@ -3003,15 +3027,20 @@ class TaskWrapper(JobWrapper):
         return working_directory
 
 
-class NoopQueue:
+class JobQueueI:
+    @abc.abstractmethod
+    def put(self, *args, **kwargs): ...
+
+    @abc.abstractmethod
+    def shutdown(self): ...
+
+
+class NoopQueue(JobQueueI):
     """
-    Implements the JobQueue / JobStopQueue interface but does nothing
+    Implements the JobQueueI interface but does nothing
     """
 
     def put(self, *args, **kwargs):
-        return
-
-    def put_stop(self, *args):
         return
 
     def shutdown(self):

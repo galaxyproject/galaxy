@@ -120,6 +120,8 @@ def execute(
         params = execution_slice.param_combination
         if "__data_manager_mode" in mapping_params.param_template:
             params["__data_manager_mode"] = mapping_params.param_template["__data_manager_mode"]
+        if "__use_cached_job__" in mapping_params.param_template:
+            params["__use_cached_job__"] = mapping_params.param_template["__use_cached_job__"]
         if workflow_invocation_uuid:
             params["__workflow_invocation_uuid__"] = workflow_invocation_uuid
         elif "__workflow_invocation_uuid__" in params:

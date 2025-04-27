@@ -497,7 +497,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if rewrite_parameters:
                 compute_environment = PulsarComputeEnvironment(client, job_wrapper, remote_job_config)
                 prepare_kwds["compute_environment"] = compute_environment
-            job_wrapper.prepare(**prepare_kwds)
+
+            if job_wrapper.prepare(**prepare_kwds) is False:
+                return command_line, client, remote_job_config, compute_environment, remote_container
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)

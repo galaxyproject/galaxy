@@ -93,9 +93,10 @@ onMounted(() => {
                             class="markdown-pdf-export"
                             :fallback-url="exportLink"
                             :download-endpoint="downloadEndpoint"
-                            size="sm"
+                            size="small"
                             title="Generate PDF"
-                            variant="outline-primary" />
+                            color="blue"
+                            outline />
                         <BButton
                             v-if="!readOnly"
                             v-b-tooltip.hover

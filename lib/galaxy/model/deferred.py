@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 from typing import (
-    cast,
     NamedTuple,
     Optional,
     Union,
@@ -171,7 +170,7 @@ class DatasetInstanceMaterializer:
             )
         else:
             assert isinstance(dataset_instance, HistoryDatasetAssociation)
-            materialized_dataset_instance = cast(HistoryDatasetAssociation, dataset_instance)
+            materialized_dataset_instance = dataset_instance
         if exception_materializing is not None:
             materialized_dataset.state = Dataset.states.ERROR
             error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"
@@ -261,11 +260,9 @@ def materialize_collection_input(
     collection_input: CollectionInputT, materializer: DatasetInstanceMaterializer
 ) -> CollectionInputT:
     if isinstance(collection_input, HistoryDatasetCollectionAssociation):
-        return materialize_collection_instance(
-            cast(HistoryDatasetCollectionAssociation, collection_input), materializer
-        )
+        return materialize_collection_instance(collection_input, materializer)
     else:
-        return _materialize_collection_element(cast(DatasetCollectionElement, collection_input), materializer)
+        return _materialize_collection_element(collection_input, materializer)
 
 
 def materialize_collection_instance(

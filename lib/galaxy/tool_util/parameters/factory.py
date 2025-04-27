@@ -14,21 +14,13 @@ from galaxy.tool_util.parser.interface import (
     PagesSource,
     ToolSource,
 )
-from galaxy.tool_util.parser.parameter_validators import (
-    EmptyFieldParameterValidatorModel,
-    ExpressionParameterValidatorModel,
-    InRangeParameterValidatorModel,
-    LengthParameterValidatorModel,
-    NoOptionsParameterValidatorModel,
-    RegexParameterValidatorModel,
-    static_validators,
-)
+from galaxy.tool_util.parser.parameter_validators import static_validators
 from galaxy.tool_util.parser.util import (
+    multiple_select_value_split,
     parse_profile_version,
     text_input_is_optional,
 )
-from galaxy.util import string_as_bool
-from .models import (
+from galaxy.tool_util_models.parameters import (
     BaseUrlParameterModel,
     BooleanParameterModel,
     ColorParameterModel,
@@ -66,6 +58,7 @@ from .models import (
     ToolParameterBundleModel,
     ToolParameterT,
 )
+from galaxy.util import string_as_bool
 
 
 class ParameterDefinitionError(Exception):
@@ -101,7 +94,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             int_validators: List[NumberCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "in_range":
-                    int_validators.append(cast(InRangeParameterValidatorModel, static_validator))
+                    int_validators.append(static_validator)
             min_raw = input_source.get("min", None)
             max_raw = input_source.get("max", None)
             min_int = int(min_raw) if min_raw is not None else None
@@ -147,7 +140,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             float_validators: List[NumberCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "in_range":
-                    float_validators.append(cast(InRangeParameterValidatorModel, static_validator))
+                    float_validators.append(static_validator)
             min_raw = input_source.get("min", None)
             max_raw = input_source.get("max", None)
             min_float = float(min_raw) if min_raw is not None else None
@@ -212,7 +205,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             select_validators: List[SelectCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "no_options":
-                    select_validators.append(cast(NoOptionsParameterValidatorModel, static_validator))
+                    select_validators.append(static_validator)
             return SelectParameterModel(
                 name=input_source.parse_name(),
                 optional=optional,
@@ -236,10 +229,24 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "data_column":
             multiple = input_source.get_bool("multiple", False)
             optional = input_source.parse_optional()
+            value = input_source.get("value")
+            # mirror basic.py logic around accept_default
+            accept_default = input_source.get_bool("accept_default", False)
+            if not optional and accept_default:
+                optional = True
+            if accept_default and value is None:
+                value = [0] if multiple else 0
+
+            if isinstance(value, str):
+                if multiple:
+                    value = [int(v) for v in multiple_select_value_split(value)]
+                else:
+                    value = int(value)
             return DataColumnParameterModel(
                 name=input_source.parse_name(),
                 multiple=multiple,
                 optional=optional,
+                value=value,
             )
         elif param_type == "group_tag":
             multiple = input_source.get_bool("multiple", False)
@@ -372,13 +379,13 @@ def _text_validators(input_source: InputSource) -> List[TextCompatiableValidator
     text_validators: List[TextCompatiableValidators] = []
     for static_validator in static_validator_models:
         if static_validator.type == "length":
-            text_validators.append(cast(LengthParameterValidatorModel, static_validator))
+            text_validators.append(static_validator)
         elif static_validator.type == "regex":
-            text_validators.append(cast(RegexParameterValidatorModel, static_validator))
+            text_validators.append(static_validator)
         elif static_validator.type == "expression":
-            text_validators.append(cast(ExpressionParameterValidatorModel, static_validator))
+            text_validators.append(static_validator)
         elif static_validator.type == "empty_field":
-            text_validators.append(cast(EmptyFieldParameterValidatorModel, static_validator))
+            text_validators.append(static_validator)
     return text_validators
 
 

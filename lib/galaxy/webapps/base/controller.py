@@ -248,7 +248,6 @@ class JSAppLauncher(BaseUIController):
         "email",
         "username",
         "is_admin",
-        "tags_used",
         "total_disk_usage",
         "nice_total_disk_usage",
         "quota_percent",
@@ -1088,38 +1087,6 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
         return trans.tag_handler.set_tags_from_list(user, item, new_tags_list)
-
-    def get_user_tags_used(self, trans, user=None):
-        """
-        Return a list of distinct 'user_tname:user_value' strings that the
-        given user has used.
-
-        user defaults to trans.user.
-        Returns an empty list if no user is given and trans.user is anonymous.
-        """
-        # TODO: for lack of a UsesUserMixin - placing this here - maybe into UsesTags, tho
-        user = user or trans.user
-        if not user:
-            return []
-
-        # get all the taggable model TagAssociations
-        tag_models = [v.tag_assoc_class for v in trans.tag_handler.item_tag_assoc_info.values()]
-        # create a union of subqueries for each for this user - getting only the tname and user_value
-        all_tags_query = None
-        for tag_model in tag_models:
-            subq = trans.sa_session.query(tag_model.user_tname, tag_model.user_value).filter(
-                tag_model.user == trans.user
-            )
-            all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
-
-        # if nothing init'd the query, bail
-        if all_tags_query is None:
-            return []
-
-        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tags = all_tags_query.distinct().all()
-        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
 
 
 class UsesExtendedMetadataMixin(SharableItemSecurityMixin):

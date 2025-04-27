@@ -22,7 +22,6 @@ from typing import (
     Any,
     BinaryIO,
     Callable,
-    cast,
     Dict,
     List,
     Optional,
@@ -652,8 +651,7 @@ class TabularToolDataTable(ToolDataTable):
                     source_repo_info_model = source
                 else:
                     # we have a data manager, use its repo_info method
-                    source_data_manager = cast("DataManager", source)
-                    source_repo_info_model = source_data_manager.repo_info
+                    source_repo_info_model = source.repo_info
                 source_repo_info = source_repo_info_model.model_dump() if source_repo_info_model else None
         filename = default
         for name, value in self.filenames.items():

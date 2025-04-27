@@ -2,11 +2,17 @@ import re
 from enum import Enum
 from logging import getLogger
 from typing import (
-    Any,
-    Dict,
     List,
+    Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
+)
+
+from typing_extensions import (
+    Literal,
+    NotRequired,
+    TypedDict,
 )
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
@@ -29,8 +35,35 @@ class DETECTED_JOB_STATE(str, Enum):
 ERROR_PEEK_SIZE = 2000
 
 
+JobMessageTypeLiteral = Literal["regex", "exit_code", "max_discovered_files"]
+
+
+class JobMessage(TypedDict):
+    desc: Optional[str]
+    code_desc: NotRequired[Optional[str]]
+    error_level: float  # Literal[0, 1, 1.1, 2, 3, 4] - mypy doesn't like literal floats.
+
+
+class RegexJobMessage(JobMessage):
+    type: Literal["regex"]
+    stream: Optional[str]
+    match: Optional[str]
+
+
+class ExitCodeJobMessage(JobMessage):
+    type: Literal["exit_code"]
+    exit_code: int
+
+
+class MaxDiscoveredFilesJobMessage(JobMessage):
+    type: Literal["max_discovered_files"]
+
+
+AnyJobMessage = Union[ExitCodeJobMessage, RegexJobMessage, MaxDiscoveredFilesJobMessage]
+
+
 def check_output_regex(
-    regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: List[Dict[str, Any]], max_error_level: int
+    regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: List[AnyJobMessage], max_error_level: int
 ) -> int:
     """
     check a single regex against a stream
@@ -55,10 +88,10 @@ def check_output(
     stdout: str,
     stderr: str,
     tool_exit_code: int,
-) -> Tuple[str, str, str, List[Dict[str, Any]]]:
+) -> Tuple[str, str, str, List[AnyJobMessage]]:
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
-    exit code, return DETECTED_JOB_STATE.OK if the tool exited succesfully or
+    exit code, return DETECTED_JOB_STATE.OK if the tool exited successfully or
     error type otherwise. No exceptions should be thrown. If this code encounters
     an exception, it returns OK so that the workflow can continue;
     otherwise, a bug in this code could halt workflow progress.
@@ -77,7 +110,7 @@ def check_output(
     # messages are added it the order of detection
 
     # If job is failed, track why.
-    job_messages = []
+    job_messages: List[AnyJobMessage] = []
 
     try:
         # Check exit codes and match regular expressions against stdout and
@@ -103,7 +136,7 @@ def check_output(
                         if None is code_desc:
                             code_desc = ""
                         desc = f"{StdioErrorLevel.desc(stdio_exit_code.error_level)}: Exit code {tool_exit_code} ({code_desc})"
-                        reason = {
+                        reason: ExitCodeJobMessage = {
                             "type": "exit_code",
                             "desc": desc,
                             "exit_code": tool_exit_code,
@@ -168,7 +201,7 @@ def check_output(
     return state, stdout, stderr, job_messages
 
 
-def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex"):
+def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex") -> RegexJobMessage:
     """
     Return a message about the match on tool output using the given
     ToolStdioRegex regex object. The regex_match is a MatchObject

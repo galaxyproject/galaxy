@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BAlert } from "bootstrap-vue";
 import { debounce } from "lodash";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
 const DELAY = 300;
 
-const props = defineProps<{
-    config: Object;
-    name: String;
-    title: String;
-}>();
+const props = withDefaults(
+    defineProps<{
+        config: object;
+        name: string;
+        title: string;
+        height?: number;
+    }>(),
+    {
+        height: 400,
+    }
+);
 
 const emit = defineEmits(["change"]);
 
@@ -21,6 +28,8 @@ const emitChange = debounce((newValue: string) => {
 
 const errorMessage = ref("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
+
+const minMaxHeight = computed(() => `max-height: ${props.height}px; min-height: ${props.height}px`);
 
 async function render() {
     if (!props.name) {
@@ -94,9 +103,9 @@ onMounted(() => render());
 
 <template>
     <div v-if="errorMessage">
-        <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
+        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     </div>
-    <iframe v-else ref="iframeRef" title="visualization" class="visualization-wrapper"></iframe>
+    <iframe v-else ref="iframeRef" class="visualization-wrapper" title="visualization" :style="minMaxHeight"></iframe>
 </template>
 
 <style>

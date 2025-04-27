@@ -132,6 +132,12 @@ RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
+class OptionDict(TypedDict):
+    label: str
+    value: str
+    selected: bool
+
+
 class ConditionalStepWhen(BooleanToolParameter):
     pass
 
@@ -1117,34 +1123,8 @@ class InputDataCollectionModule(InputModule):
     collection_type = default_collection_type
 
     def get_inputs(self):
-        parameter_def = self._parse_state_into_dict()
-        collection_type = parameter_def["collection_type"]
-        tag = parameter_def["tag"]
-        optional = parameter_def["optional"]
-        collection_type_source = dict(
-            name="collection_type", label="Collection type", type="text", value=collection_type
-        )
-        collection_type_source["options"] = [
-            {"value": "list", "label": "List of Datasets"},
-            {"value": "paired", "label": "Dataset Pair"},
-            {"value": "list:paired", "label": "List of Dataset Pairs"},
-        ]
-        input_collection_type = TextToolParameter(None, collection_type_source)
-        tag_source = dict(
-            name="tag",
-            label="Tag filter",
-            type="text",
-            optional="true",
-            value=tag,
-            help="Tags to automatically filter inputs",
-        )
-        input_tag = TextToolParameter(None, tag_source)
-        inputs = {}
-        inputs["collection_type"] = input_collection_type
-        inputs["optional"] = optional_param(optional)
-        inputs["format"] = format_param(self.trans, parameter_def.get("format"))
-        inputs["tag"] = input_tag
-        return inputs
+        # migrated to frontend
+        return {}
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
@@ -1479,7 +1459,7 @@ class InputParameterModule(WorkflowModule):
                                 ].static_options
                             )
 
-            options = None
+            options: Optional[List[OptionDict]] = None
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
@@ -1501,6 +1481,7 @@ class InputParameterModule(WorkflowModule):
                     }
                     for value, labels in collapsed_labels.items()
                 ]
+                options.sort(key=lambda x: x["label"])
 
             return options
         except Exception:
@@ -2401,9 +2382,15 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
-        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(trans, use_cached_job, param_combinations)
+        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(
+            trans,
+            use_cached_job,
+            param_combinations,
+        )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
+            if use_cached_job:
+                mapping_params.param_template["__use_cached_job__"] = use_cached_job
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
 
             validate_outputs = False

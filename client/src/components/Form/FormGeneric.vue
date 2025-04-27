@@ -72,6 +72,10 @@ export default {
             type: String,
             default: null,
         },
+        trimInputs: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -103,7 +107,18 @@ export default {
             window.location = withPrefix(this.cancelRedirect);
         },
         onSubmit() {
-            submitData(this.url, this.formData).then((response) => {
+            const formData = { ...this.formData };
+
+            if (this.trimInputs) {
+                // Trim string values in form data
+                Object.keys(formData).forEach((key) => {
+                    if (typeof formData[key] === "string") {
+                        formData[key] = formData[key].trim();
+                    }
+                });
+            }
+
+            submitData(this.url, formData).then((response) => {
                 let params = {};
                 if (response.id) {
                     params.id = response.id;

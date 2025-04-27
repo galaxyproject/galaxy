@@ -15,7 +15,6 @@ from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import (
     parsed_tool_model_cached_for,
     search,
-    ShedParsedTool,
 )
 from tool_shed.managers.trs import (
     get_tool,
@@ -24,7 +23,10 @@ from tool_shed.managers.trs import (
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.shed_index import build_index
-from tool_shed_client.schema import BuildSearchIndexResponse
+from tool_shed_client.schema import (
+    BuildSearchIndexResponse,
+    ShedParsedTool,
+)
 from tool_shed_client.schema.trs import (
     Tool,
     ToolClass,

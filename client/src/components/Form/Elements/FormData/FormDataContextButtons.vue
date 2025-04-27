@@ -106,9 +106,12 @@ function createCollectionType(colType: string) {
             </BDropdownItem>
         </BDropdown>
         <BButton
-            v-else-if="props.showViewCreateOptions"
+            v-else-if="
+                props.showViewCreateOptions && (!props.collectionType || COLLECTION_TYPE_TO_LABEL[props.collectionType])
+            "
             v-b-tooltip.bottom.hover.noninteractive
             class="d-flex flex-gapx-1 align-items-center"
+            data-description="upload"
             :title="createTitle"
             :pressed="props.workflowTab === 'create'"
             @click="clickedTab('create')">
