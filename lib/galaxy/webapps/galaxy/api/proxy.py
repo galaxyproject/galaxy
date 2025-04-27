@@ -66,11 +66,7 @@ class FastAPIProxy:
                     return StreamingResponse(
                         response.aiter_bytes(),
                         status_code=response.status_code,
-                        headers={
-                            key: value
-                            for key, value in response.headers.items()
-                            if key.lower() in ["content-length", "content-range", "accept-ranges"]
-                        },
+                        headers=response.headers,
                     )
                 else:
                     return Response(
