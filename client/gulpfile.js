@@ -45,6 +45,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "plotly",
     "plyr",
     "tabulator",
+    "unipept",
     "venn",
     "vitessce",
     "vizarr",

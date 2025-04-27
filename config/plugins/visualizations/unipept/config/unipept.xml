@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Unipept Taxonomy Viewer">
+<visualization name="Unipept Taxonomy Viewer" embeddable="true">
     <description>Interactive Tree, Burst and Map View</description>
     <data_sources>
         <data_source>
