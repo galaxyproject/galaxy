@@ -12,9 +12,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
+import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
-import UtcDate from "@/components/UtcDate.vue";
 
 const currentUser = computed(() => useUserStore().currentUser);
 
@@ -79,44 +79,52 @@ function cardClicked(invocation: WorkflowInvocation) {
     }
     router.push(`/workflows/invocations/${invocation.id}`);
 }
+
+function getInvocationBadges(invocation: WorkflowInvocation) {
+    return [
+        {
+            id: "state",
+            label: invocation.state,
+            title: invocation.state,
+            class: stateClass(invocation.state),
+            visible: true,
+        },
+    ];
+}
 </script>
 
 <template>
     <ScrollList :loader="loadInvocations" :item-key="(invocation) => invocation.id" :in-panel="inPanel">
         <template v-slot:item="{ item: invocation }">
-            <BListGroupItem
+            <GCard
+                :id="`invocation-${invocation.id}`"
+                clickable
                 button
-                class="d-flex"
-                :class="{
-                    current: invocation.id === currentItemId,
-                    'panel-item': props.inPanel,
-                }"
+                :current="invocation.id === currentItemId"
                 :active="invocation.id === currentItemId"
+                :badges="getInvocationBadges(invocation)"
+                :title="workflowName(invocation.workflow_id)"
+                :title-icon="{ icon: faSitemap }"
+                title-size="text"
+                :update-time="invocation.create_time"
+                @title-click="workflowName(invocation.workflow_id)"
                 @click="() => cardClicked(invocation)">
-                <div class="overflow-auto w-100">
-                    <Heading bold size="text" :icon="faSitemap">
-                        <span class="truncate-n-lines three-lines">
-                            {{ workflowName(invocation.workflow_id) }}
-                        </span>
-                    </Heading>
-                    <Heading size="text" :icon="faHdd">
+                <template v-slot:description>
+                    <Heading class="m-0" size="text">
+                        <FontAwesomeIcon :icon="faHdd" fixed-width />
+
                         <small class="text-muted truncate-n-lines two-lines">
                             {{ historyName(invocation.history_id) }}
                         </small>
                     </Heading>
-                    <div class="d-flex justify-content-between">
-                        <BBadge v-b-tooltip.noninteractive.hover pill>
-                            <UtcDate :date="invocation.create_time" mode="elapsed" />
-                        </BBadge>
-                        <BBadge v-b-tooltip.noninteractive.hover pill :class="stateClass(invocation.state)">
-                            {{ invocation.state }}
-                        </BBadge>
+                </template>
+
+                <template v-slot:extra-actions>
+                    <div v-if="props.inPanel">
+                        <FontAwesomeIcon v-if="invocation.id === currentItemId" :icon="faEye" />
                     </div>
-                </div>
-                <div v-if="props.inPanel" class="position-absolute mr-3" style="right: 0">
-                    <FontAwesomeIcon v-if="invocation.id === currentItemId" :icon="faEye" size="lg" />
-                </div>
-            </BListGroupItem>
+                </template>
+            </GCard>
         </template>
 
         <template v-slot:loading>
