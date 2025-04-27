@@ -82,8 +82,8 @@ watch(
 const localFileActions = [
     {
         id: "btn-local",
-        title: "Select a ZIP file from your computer",
-        label: "Browse local ZIP",
+        title: "Select a compressed archive from your computer",
+        label: "Browse local archive",
         icon: faLaptop,
         handler: browseZipFile,
         visible: true,
@@ -98,12 +98,13 @@ const localFileActions = [
                 id="zip-file-local"
                 :primary-actions="localFileActions"
                 class="wizard-selection-card"
-                title="🖥️ Option A: Select Local ZIP file">
+                title="🖥️ Option A: Select local archive">
                 <template v-slot:description>
                     <p v-localize>
-                        Click on the `Browse local ZIP` button to select a ZIP file from your computer. Then you can
-                        preview and select files to import from it. This is
-                        <b>useful when you are only interested in a few small files from a large ZIP archive</b>.
+                        Click on the `Browse local archive` button to select a compressed archive file from your
+                        computer (<b>only ZIP files are supported</b> for now). Then you can preview and select files to
+                        import from it. This is
+                        <b>useful when you are only interested in a few small files from a large compressed archive</b>.
                     </p>
                     <label class="w-100" for="zip-file-path">
                         <input id="zip-file-path" v-model="zipFilePath" type="text" class="w-100" readonly />
@@ -115,7 +116,7 @@ const localFileActions = [
                 <input ref="fileInputRef" type="file" accept=".zip" @change="onFileChange" />
             </label>
 
-            <GCard id="zip-file-remote" class="wizard-selection-card" title="🌐 Option B: Select Remote ZIP file">
+            <GCard id="zip-file-remote" class="wizard-selection-card" title="🌐 Option B: Select remote archive">
                 <template v-slot:description>
                     <p v-localize>
                         Enter or paste the URL of a ZIP file. You will be able to preview and select files to import

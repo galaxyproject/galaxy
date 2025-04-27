@@ -63,7 +63,7 @@ const fileBadges = [
                 :title-icon="{ icon: faNetworkWired }"
                 :badges="workflowBadges">
                 <template v-slot:description>
-                    <p v-localize>The following workflows will be imported from the ZIP file into your account.</p>
+                    <p v-localize>The following workflows will be imported from the archive into your account.</p>
                     <div class="d-flex flex-wrap">
                         <ZipFileEntrySummaryCard v-for="file in workflowFiles" :key="file.path" :file="file" />
                     </div>
@@ -79,7 +79,7 @@ const fileBadges = [
                 :badges="fileBadges">
                 <template v-slot:description>
                     <p v-localize>
-                        The following files will be imported from the ZIP file into your
+                        The following files will be imported from the archive into your
                         <b>currently active Galaxy history</b>.
                     </p>
                     <div class="d-flex flex-wrap">

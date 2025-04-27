@@ -7,7 +7,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const breadcrumbItems = [
-    { title: "Import individual files from a ZIP archive", to: "/import/zip" },
+    { title: "Import individual files from archive", to: "/import/zip" },
     { title: "Results", active: true },
 ];
 

@@ -31,7 +31,7 @@ loadZip();
         <GCard
             v-if="loadingPreview"
             id="zip-preview-loading-indicator"
-            title="Loading ZIP archive preview..."
+            title="Loading archive preview..."
             class="d-flex flex-column align-items-center justify-content-center">
             <template v-slot:description>
                 <div class="text-center">

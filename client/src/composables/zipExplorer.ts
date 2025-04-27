@@ -51,7 +51,7 @@ export function useZipExplorer() {
 
     async function importArtifacts(filesToImport: ImportableFile[], historyId: string | null) {
         if (!zipExplorer.value) {
-            throw new Error("No ZIP archive loaded. You must call openZip() first.");
+            throw new Error("No archive loaded. You must call openZip() first.");
         }
         const zipSource = zipExplorer.value.zipArchive.source;
 
@@ -73,7 +73,7 @@ export function useZipExplorer() {
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
             if (!entry) {
-                throw new Error(`Selected file not found in ZIP archive: ${file.path}`);
+                throw new Error(`Selected file not found in archive: ${file.path}`);
             }
             if (!isFileEntry(entry)) {
                 throw new Error(`Selected file is not a valid file entry: ${file.path}`);
@@ -135,7 +135,7 @@ export function useZipExplorer() {
             const entry = zipExplorer.entries.get(file.path);
 
             if (!entry) {
-                throw new Error(`Selected file not found in ZIP archive: ${file.path}`);
+                throw new Error(`Selected file not found in archive: ${file.path}`);
             }
 
             if (!isFileEntry(entry)) {

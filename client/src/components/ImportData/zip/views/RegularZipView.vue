@@ -25,7 +25,7 @@ const zipFileBadges = [
 <template>
     <GCard
         id="regular-zip-summary-card"
-        title="List of files contained in the ZIP archive"
+        title="List of files contained in the archive"
         title-size="md"
         :badges="zipFileBadges">
         <template v-slot:description>

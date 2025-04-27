@@ -49,20 +49,20 @@ const isValidSource = computed(() => {
 
 const wizard = useWizard({
     "zip-file-selector": {
-        label: "Select ZIP archive",
+        label: "Select archive",
         instructions: `Please select an option:`,
         isValid: () => isValidSource.value,
         isSkippable: () => false,
     },
     "zip-file-preview": {
         label: "Preview Contents",
-        instructions: `Here you can preview the contents of the selected ZIP archive. You can go back to select a different ZIP archive if needed or proceed to select the items you want to import in the next step:`,
+        instructions: `Here you can preview the contents of the selected archive. You can go back to select a different archive if needed or proceed to select the items you want to import in the next step:`,
         isValid: () => Boolean(zipExplorer.value),
         isSkippable: () => false,
     },
     "select-items": {
         label: "Select items to import",
-        instructions: `Review the contents of the Zip archive and select the items you wish to extract and import:`,
+        instructions: `Review the contents of the archive and select the items you wish to extract and import:`,
         isValid: () => isAnythingSelected(),
         isSkippable: () => false,
     },
@@ -150,7 +150,7 @@ async function onZipSourceChanged(source?: File | string) {
             @submit="importItems">
             <template v-slot:header>
                 <Heading h1 separator inline>
-                    Import individual files from a ZIP archive
+                    Import individual files from archive
                     <sup
                         title="This feature is experimental and in some cases may not work as expected. Please report any issues you encounter to the Galaxy team."
                         class="text-muted">
