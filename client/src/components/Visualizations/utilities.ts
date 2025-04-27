@@ -19,8 +19,9 @@ export function getTestUrls(plugin?: Plugin) {
         plugin?.tests?.flatMap((item) => {
             const url = item.param?.name === "dataset_id" ? item.param?.value : "";
             const name = item.param?.label ?? getFilename(url);
+            const ftype = item.param?.ftype;
             if (url && name) {
-                return [{ name, url }];
+                return [{ ftype, name, url }];
             } else {
                 return [];
             }

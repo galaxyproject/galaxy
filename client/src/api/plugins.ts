@@ -38,6 +38,7 @@ export interface PluginData {
 }
 
 export interface ParamType {
+    ftype?: string;
     label?: string;
     name: string;
     value: string;

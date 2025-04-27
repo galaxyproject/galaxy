@@ -17,7 +17,7 @@
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tests>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.d3_hierarchy" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.d3_hierarchy" ftype="d3_hierarchy" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[
