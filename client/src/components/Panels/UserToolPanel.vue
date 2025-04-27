@@ -35,6 +35,7 @@ async function loadUnprivilegedTools(offset: number, limit: number) {
     const { data, error } = await GalaxyApi().GET("/api/unprivileged_tools");
     if (error) {
         errorMsg.value = error;
+        return { items: [], total: 0 };
     } else {
         return {
             items: data,

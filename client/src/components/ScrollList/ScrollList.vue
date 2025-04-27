@@ -27,7 +27,7 @@ export default defineComponent({
     },
     props: {
         loader: {
-            type: Function as PropType<(offset: number, limit: number) => Promise<LoaderResult<unknown>>>,
+            type: Function as PropType<(offset: number, limit: number) => Promise<LoaderResult<any>>>, // we'll override `any` later
             required: true,
         },
         limit: {
@@ -35,7 +35,7 @@ export default defineComponent({
             default: 20,
         },
         itemKey: {
-            type: Function as PropType<(item: unknown) => string | number>,
+            type: Function as PropType<(item: any) => string | number>, // override later
             required: true,
         },
         inPanel: {

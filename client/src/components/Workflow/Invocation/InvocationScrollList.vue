@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faInfoCircle, faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faHdd, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -43,8 +43,8 @@ async function loadInvocations(offset: number, limit: number) {
         return { items: [], total: 0 };
     }
     const extraProps = { user_id: currentUser.value.id };
-    const [responseData, responseTotal] = await getData(offset, limit, "", "create_time", true, extraProps);
-    return { items: responseData, total: responseTotal };
+    const [data, totalMatches] = await getData(offset, limit, "", "create_time", true, extraProps);
+    return { items: data, total: totalMatches! };
 }
 
 function historyName(historyId: string) {
