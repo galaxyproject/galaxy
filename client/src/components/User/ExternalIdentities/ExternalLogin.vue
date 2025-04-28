@@ -9,6 +9,7 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Idp {
@@ -180,15 +181,13 @@ function getIdpPreference() {
 </script>
 
 <template>
-    <div>
-        <BAlert :show="messageText" :variant="messageVariant">
+    <div class="h-100">
+        <BAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
             {{ messageText }}
         </BAlert>
 
-        <BForm id="externalLogin">
+        <BForm id="externalLogin" :class="{ 'h-100': !messageText, 'd-flex': loginPage }">
             <!-- OIDC login-->
-            <hr class="my-4" />
-
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="props.loginPage">
                     <!--Only Display if CILogon/Custos is configured-->
@@ -264,21 +263,47 @@ function getIdpPreference() {
                 </p>
             </div>
 
-            <span v-if="isConfigLoaded">
-                <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp" class="m-1">
+            <VerticalSeparator v-if="loginPage && cilogonListShow && Object.keys(filteredOIDCIdps).length > 0">
+                <span v-localize>or</span>
+            </VerticalSeparator>
+
+            <span
+                v-if="isConfigLoaded"
+                class="d-flex flex-column h-100"
+                :class="loginPage && !messageText ? 'justify-content-center' : ''"
+                style="row-gap: 1rem">
+                <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
                     <span v-if="iDPInfo['icon']">
-                        <BButton variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <img :src="iDPInfo['icon']" height="45" :alt="idp" />
+                        <BButton
+                            variant="link"
+                            class="d-block p-0 text-decoration-none"
+                            :class="loginPage && !messageText ? 'w-100' : ''"
+                            :disabled="loading"
+                            @click="submitOIDCLogin(idp)">
+                            <img
+                                :src="iDPInfo['icon']"
+                                height="35"
+                                :alt="`Sign in with ${capitalizeFirstLetter(idp)}`" />
                         </BButton>
                     </span>
                     <span v-else-if="iDPInfo['custom_button_text']">
-                        <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                        <BButton
+                            variant="outline-primary"
+                            class="d-block"
+                            :class="loginPage && !messageText ? 'w-100' : ''"
+                            :disabled="loading"
+                            @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
                             Sign in with {{ iDPInfo["custom_button_text"] }}
                         </BButton>
                     </span>
                     <span v-else>
-                        <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                        <BButton
+                            variant="outline-primary"
+                            class="d-block"
+                            :class="loginPage && !messageText ? 'w-100' : ''"
+                            :disabled="loading"
+                            @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
                             Sign in with
                             <span v-if="iDPInfo['label']">

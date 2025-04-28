@@ -20,6 +20,7 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import VerticalSeparator from "../Common/VerticalSeparator.vue";
 import NewUserConfirmation from "@/components/Login/NewUserConfirmation.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -148,7 +149,7 @@ function returnToLogin() {
     <div class="container">
         <div class="row justify-content-md-center">
             <template v-if="!confirmURL">
-                <div class="col col-lg-6">
+                <div>
                     <BAlert :show="!!messageText" :variant="messageVariant">
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <span v-html="messageText" />
@@ -161,12 +162,12 @@ function returnToLogin() {
                     </BAlert>
 
                     <BForm id="login" @submit.prevent="submitLogin()">
-                        <BCard no-body>
+                        <BCard no-body style="width: fit-content">
                             <BCardHeader v-if="!connectExternalProvider">
                                 <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
                             </BCardHeader>
 
-                            <BCardBody>
+                            <BCardBody class="d-flex">
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <BFormGroup
@@ -198,7 +199,7 @@ function returnToLogin() {
                                             type="password"
                                             autocomplete="current-password" />
 
-                                        <BFormText v-if="showResetLink">
+                                        <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
                                             <a
@@ -211,11 +212,21 @@ function returnToLogin() {
                                         </BFormText>
                                     </BFormGroup>
 
-                                    <BButton v-localize name="login" type="submit" :disabled="loading">
+                                    <BButton
+                                        v-localize
+                                        name="login"
+                                        type="submit"
+                                        :disabled="loading"
+                                        class="w-100 mt-1">
                                         {{ localize("Login") }}
                                     </BButton>
                                 </div>
-                                <div v-if="enableOidc">
+
+                                <VerticalSeparator v-if="enableOidc">
+                                    <span v-localize>or</span>
+                                </VerticalSeparator>
+
+                                <div v-if="enableOidc" class="m-1">
                                     <!-- OIDC login-->
                                     <ExternalLogin login-page :exclude-idps="excludeIdps" />
                                 </div>

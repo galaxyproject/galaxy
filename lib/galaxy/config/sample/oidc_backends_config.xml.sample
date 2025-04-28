@@ -77,7 +77,7 @@ Please mind `http` and `https`.
          does NOT show consent screen for this scope, hence user will only see a login page when they try to
          login to Galaxy using their Google account.
         -->
-        <icon>https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png</icon>
+        <icon>https://developers.google.com/static/identity/images/branding_guideline_sample_lt_sq_lg.svg</icon>
         <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
