@@ -23,6 +23,7 @@ from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
 )
+from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
 from galaxy.util.search import (
@@ -36,6 +37,9 @@ from galaxy.web.framework.helpers import (
     time_ago,
 )
 from galaxy.webapps.base import controller
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.roles import RolesService
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -363,6 +367,7 @@ class DatatypesEntryT(TypedDict):
 
 
 class AdminGalaxy(controller.JSAppLauncher):
+    roles_service: RolesService = depends(RolesService)
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
@@ -645,20 +650,20 @@ class AdminGalaxy(controller.JSAppLauncher):
     def roles_list(self, trans, **kwargs):
         return self.role_list_grid(trans, **kwargs)
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_admin
-    def create_role(self, trans, payload=None, **kwd):
+    def create_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         if trans.request.method == "GET":
             all_users = []
             all_groups = []
             for user in (
-                trans.sa_session.query(trans.app.model.User)
+                trans.sa_session.query(model.User)
                 .filter(trans.app.model.User.table.c.deleted == false())
                 .order_by(trans.app.model.User.table.c.email)
             ):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in (
-                trans.sa_session.query(trans.app.model.Group)
+                trans.sa_session.query(model.Group)
                 .filter(trans.app.model.Group.deleted == false())
                 .order_by(trans.app.model.Group.name)
             ):
@@ -669,7 +674,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     {"name": "name", "label": "Name"},
                     {"name": "description", "label": "Description"},
                     build_select_input("in_groups", "Groups", all_groups, []),
-                    build_select_input("in_users", "Users", all_users, []),
+                    build_select_input("user_ids", "Users", all_users, []),
                     {
                         "name": "auto_create",
                         "label": "Create a new group of the same name for this role:",
@@ -679,60 +684,34 @@ class AdminGalaxy(controller.JSAppLauncher):
                 ],
             }
         else:
-            name = util.restore_text(payload.get("name", ""))
-            description = util.restore_text(payload.get("description", ""))
-            auto_create_checked = payload.get("auto_create")
-            in_users = [
-                trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_users"))
-            ]
-            in_groups = [
-                trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_groups"))
-            ]
-            if not name or not description:
-                return self.message_exception(trans, "Enter a valid name and a description.")
-            elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == name).first():
-                return self.message_exception(
-                    trans, "Role names must be unique and a role with that name already exists, so choose another name."
-                )
-            elif None in in_users or None in in_groups:
-                return self.message_exception(trans, "One or more invalid user/group id has been provided.")
-            else:
-                # Create the role
-                role = trans.app.model.Role(name=name, description=description, type=trans.app.model.Role.types.ADMIN)
-                trans.sa_session.add(role)
-                # Create the UserRoleAssociations
-                for user in in_users:
-                    ura = trans.app.model.UserRoleAssociation(user, role)
-                    trans.sa_session.add(ura)
-                # Create the GroupRoleAssociations
-                for group in in_groups:
-                    gra = trans.app.model.GroupRoleAssociation(group, role)
-                    trans.sa_session.add(gra)
-                if auto_create_checked:
-                    # Check if role with same name already exists
-                    if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == name).first():
-                        return self.message_exception(
-                            trans,
-                            "A group with that name already exists, so choose another name or disable group creation.",
-                        )
-                    # Create the group
-                    group = trans.app.model.Group(name=name)
-                    trans.sa_session.add(group)
-                    # Associate the group with the role
-                    gra = trans.model.GroupRoleAssociation(group, role)
-                    trans.sa_session.add(gra)
-                    num_in_groups = len(in_groups) + 1
-                else:
-                    num_in_groups = len(in_groups)
-                trans.sa_session.commit()
-                message = f"Role '{role.name}' has been created with {len(in_users)} associated users and {num_in_groups} associated groups."
-                if auto_create_checked:
-                    message += (
-                        "One of the groups associated with this role is the newly created group with the same name."
+            if not isinstance(payload, dict):
+                raise RequestParameterInvalidException("Invalid payload. Expected a dictionary with role properties.")
+            auto_create = payload.pop("auto_create", None)
+            role_defintion_model = RoleDefinitionModel(**payload)
+            response = self.roles_service.create(trans, role_defintion_model)
+            if auto_create:
+                # Check if role with same name already exists
+                if (
+                    trans.sa_session.query(model.Group)
+                    .filter(trans.app.model.Group.name == role_defintion_model.name)
+                    .first()
+                ):
+                    raise RequestParameterInvalidException(
+                        "A group with that name already exists, so choose another name or disable group creation."
                     )
-                return {"message": message}
+                # Create the group
+                group = model.Group(name=role_defintion_model.name)
+                trans.sa_session.add(group)
+                # Associate the group with the role
+                role = (
+                    trans.sa_session.query(model.Role)
+                    .where(model.Role.id == trans.security.decode_id(response.id))
+                    .one()
+                )
+                gra = model.GroupRoleAssociation(group, role)
+                trans.sa_session.add(gra)
+                trans.sa_session.commit()
+            return response.model_dump()
 
     @web.legacy_expose_api
     @web.require_admin
