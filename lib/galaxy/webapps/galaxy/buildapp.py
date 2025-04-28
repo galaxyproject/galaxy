@@ -984,6 +984,17 @@ def populate_api_routes(webapp, app):
         parent_resources=dict(member_name="tool_shed_repository", collection_name="tool_shed_repositories"),
     )
 
+    # Galaxy API for Async mode
+    webapp.mapper.connect('/api/async/{tool_id}',
+                          action='default',
+                          controller="async",
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('/api/async/{tool_id}/{data_id}/{data_secret}',
+                          action='index',
+                          controller="async",
+                          conditions=dict(method=["GET"]))
+
     # ==== Trace/Metrics Logger
     # Connect logger from app
     if app.trace_logger:
