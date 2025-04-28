@@ -83,6 +83,7 @@ from sqlalchemy import (
     inspect,
     Integer,
     join,
+    JSON,
     MetaData,
     not_,
     Numeric,
@@ -8051,6 +8052,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     logo_url: Mapped[Optional[str]] = mapped_column(Text)
     help: Mapped[Optional[str]] = mapped_column(Text)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
+    doi: Mapped[Optional[List[str]]] = mapped_column(JSON)
 
     steps: Mapped[List["WorkflowStep"]] = relationship(
         "WorkflowStep",

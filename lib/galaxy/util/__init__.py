@@ -181,6 +181,8 @@ defaultdict = collections.defaultdict
 
 UNKNOWN = "unknown"
 
+DOI_MAX_LENGTH = 200  # This is a reasonable limit. The DOI spec does not set a limit.
+
 
 def str_removeprefix(s: str, prefix: str):
     """
@@ -2022,3 +2024,13 @@ def to_content_disposition(target: str) -> str:
     sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
     utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
     return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
+
+
+def validate_doi(doi: str) -> bool:
+    if len(doi) > DOI_MAX_LENGTH:
+        return False
+    prefix = "https://doi.org/|doi.org/|doi:"
+    doi_prefix = r"10\.\d+"
+    doi_suffix = r"\S+"
+    doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
+    return bool(doi_re.match(doi))

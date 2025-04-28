@@ -16610,6 +16610,11 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * DOI
+             * @description A list of Digital Object Identifiers associated with this workflow.
+             */
+            doi?: string[] | null;
+            /**
              * Email Hash
              * @description The hash of the email of the creator of this workflow
              */

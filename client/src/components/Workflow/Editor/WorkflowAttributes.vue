@@ -87,6 +87,17 @@
                 :content="bestPracticeWarningCreator">
             </b-popover>
         </div>
+
+        <div id="workflow-doi-area" class="mt-2">
+            <b>Digital Object Identifier (DOI)</b>
+            <ItemListEditor
+                :items="doi"
+                item-name="DOI"
+                :description="doiDescription"
+                :item-format="doiRegex"
+                @onItems="onDoi" />
+        </div>
+
         <div class="mt-2">
             <b>Tags</b>
             <StatelessTags :value="tags" @input="onTags" />
@@ -148,6 +159,7 @@ import {
 } from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
+import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
@@ -163,6 +175,7 @@ export default {
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
+        ItemListEditor,
         ActivityPanel,
         BModal,
         ToolHelpMarkdown,
@@ -193,6 +206,10 @@ export default {
             default: "",
         },
         creator: {
+            type: Array,
+            default: null,
+        },
+        doi: {
             type: Array,
             default: null,
         },
@@ -238,6 +255,14 @@ export default {
             showCreatorHightlight: false,
             showReadmePreview: false,
             faEye,
+            doiDescription: `
+Acceptable format:
+<ul>
+    <li>https://doi.org/DOI-VALUE</li>
+    <li>doi.org/DOI-VALUE</li>
+    <li>doi:DOI-VALUE</li>
+</ul>`,
+            doiRegex: "^(https://doi.org/|doi.org/|doi:)10\\.\\d+/\\S+$",
         };
     },
     computed: {
@@ -385,6 +410,9 @@ export default {
         },
         onCreator(creator) {
             this.$emit("creator", creator);
+        },
+        onDoi(doiItems) {
+            this.$emit("doi", doiItems);
         },
         onError(error) {
             this.message = error;

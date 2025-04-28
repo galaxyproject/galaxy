@@ -228,6 +228,9 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Creator deleted",
         description="Whether the creator of this Workflow has been deleted.",
     )
+    doi: Optional[List[str]] = Field(
+        None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
+    )
     steps: Dict[
         int,
         Annotated[
