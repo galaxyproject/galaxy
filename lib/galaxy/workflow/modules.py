@@ -586,7 +586,8 @@ class WorkflowModule:
                         elif input_dict.get("collection_type"):
                             effective_input_collection_type = [input_dict.get("collection_type")]
                 type_list = []
-                if progress.subworkflow_structure:
+                subworkflow_structure = progress.subworkflow_structure
+                if subworkflow_structure:
                     # If we have progress.subworkflow_structure were mapping a subworkflow invocation over a higher-dimension input
                     # e.g an outer list:list over an inner list. Whatever we do, the inner workflow cannot reduce the outer list.
                     # This is what we're setting up here.
@@ -598,7 +599,7 @@ class WorkflowModule:
                     effective_input_collection_type,
                     dataset_collection_type_descriptions,
                 )
-                if history_query.direct_match(data):
+                if not subworkflow_structure and history_query.direct_match(data):
                     continue
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
