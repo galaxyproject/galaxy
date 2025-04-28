@@ -633,7 +633,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InsufficientPermissionsException(
                 "Only administrators may display tool sources on this Galaxy server."
             )
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"))
+        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=id)
         trans.response.headers["language"] = tool.tool_source.language
         if dynamic_tool := getattr(tool, "dynamic_tool", None):
             if dynamic_tool.value.get("class") == "GalaxyUserTool":
