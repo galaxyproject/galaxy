@@ -903,6 +903,12 @@ class BaseDatasetPopulator(BasePopulator):
             assert response.status_code == 200, response.text
         return response.json()
 
+    def deactivate_unprivileged_tool(self, uuid: str, assert_ok=True):
+        response = self._delete(f"unprivileged_tools/{uuid}", json=True)
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
+
     def build_unprivileged_tool(
         self,
         representation: UserToolSource,
@@ -1433,16 +1439,26 @@ class BaseDatasetPopulator(BasePopulator):
         update_response.raise_for_status()
         return update_response
 
-    def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
+    def create_role(self, user_ids: list, description: Optional[str] = None, role_type="admin") -> dict:
         using_requirement("admin")
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
             "user_ids": user_ids,
+            "role_type": role_type,
         }
         role_response = self._post("roles", data=payload, admin=True, json=True)
         assert role_response.status_code == 200
         return role_response.json()
+
+    @contextlib.contextmanager
+    def user_tool_execute_permissions(self):
+        role = self.create_role([self.user_id()], role_type="user_tool_execute")
+        try:
+            yield
+        finally:
+            self._delete(f"roles/{role['id']}", admin=True).raise_for_status()
+            self._post(f"roles/{role['id']}/purge", admin=True).raise_for_status()
 
     def create_quota(self, quota_payload: dict) -> dict:
         using_requirement("admin")

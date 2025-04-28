@@ -2743,6 +2743,7 @@ class RoleDefinitionModel(Model):
     description: RoleDescriptionField
     user_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="User IDs", default=[])
     group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
+    role_type: Literal["admin", "user_tool_create", "user_tool_execute"] = "admin"
 
 
 class RoleListResponse(RootModel):

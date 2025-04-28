@@ -79,17 +79,14 @@ class UnprivilegedToolsApi:
             return tool.to_json(trans=trans, history=history or trans.history)
 
     @router.post("/api/unprivileged_tools/runtime_model")
-    def runtime_model(
-        self,
-        payload: DynamicUnprivilegedToolCreatePayload,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    def runtime_model(self, payload: DynamicUnprivilegedToolCreatePayload, user: User = DependsOnUser):
+        self.dynamic_tools_manager.ensure_can_use_unprivileged_tool(user)
         represention = payload.representation.model_dump(by_alias=True)
         tool_source = YamlToolSource(root_dict=represention)
         input_bundle = input_models_for_tool_source(tool_source)
         return cwl_runtime_model(input_bundle)
 
-    @router.delete("/api/unprivileged_tools/{uuid}", response_model_exclude_defaults=True)
+    @router.delete("/api/unprivileged_tools/{uuid}")
     def delete(self, uuid: str, user: User = DependsOnUser):
         """
         DELETE /api/unprivileged_tools/{encoded_dynamic_tool_id|tool_uuid}
@@ -100,8 +97,7 @@ class UnprivilegedToolsApi:
         dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_uuid(user, uuid)
         if not dynamic_tool:
             raise ObjectNotFound()
-        updated_dynamic_tool = self.dynamic_tools_manager.deactivate_unprivileged_tool(user, dynamic_tool)
-        return UnprivilegedToolResponse(**updated_dynamic_tool.to_dict())
+        self.dynamic_tools_manager.deactivate_unprivileged_tool(user, dynamic_tool)
 
 
 @router.cbv

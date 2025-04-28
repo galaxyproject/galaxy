@@ -9,6 +9,8 @@ from typing import (
 from uuid import UUID
 
 from sqlalchemy import (
+    exists,
+    false,
     select,
     sql,
     true,
@@ -57,6 +59,18 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
     """Manages dynamic tools stored in Galaxy's database."""
 
     model_class = model.DynamicTool
+
+    def ensure_can_use_unprivileged_tool(self, user: model.User):
+        stmt = select(
+            exists().where(
+                model.UserRoleAssociation.user_id == user.id,
+                model.UserRoleAssociation.role_id == model.Role.id,
+                model.Role.type == model.Role.types.USER_TOOL_EXECUTE,
+                model.Role.deleted == false(),
+            )
+        )
+        if not self.session().execute(stmt).scalar():
+            raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
 
     def get_tool_by_id_or_uuid(self, id_or_uuid: Union[int, str]):
         if isinstance(id_or_uuid, int):
@@ -164,7 +178,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
             )
-
+        self.ensure_can_use_unprivileged_tool(user)
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
             tool_id=tool_payload.representation.id,
@@ -185,6 +199,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         return self.session().scalars(stmt)
 
     def list_unprivileged_tools(self, user: model.User, active=True):
+        self.ensure_can_use_unprivileged_tool(user)
         owned_statement = self.owned_unprivileged_statement(user=user)
         stmt = owned_statement.where(
             DynamicTool.active == active,
@@ -193,6 +208,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         return self.session().scalars(stmt)
 
     def owned_unprivileged_statement(self, user: model.User):
+        self.ensure_can_use_unprivileged_tool(user)
         return (
             select(DynamicTool)
             .join(UserDynamicToolAssociation, DynamicTool.id == UserDynamicToolAssociation.dynamic_tool_id)
@@ -211,7 +227,9 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             )
             .values(active=False)
         )
-        self.session().execute(update_stmt)
+        session = self.session()
+        session.execute(update_stmt)
+        session.commit()
 
     def deactivate(self, dynamic_tool):
         self.update(dynamic_tool, {"active": False})

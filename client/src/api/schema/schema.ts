@@ -15915,6 +15915,12 @@ export interface components {
              */
             name: string;
             /**
+             * Role Type
+             * @default admin
+             * @enum {string}
+             */
+            role_type: "admin" | "user_tool_create" | "user_tool_execute";
+            /**
              * User IDs
              * @default []
              */
