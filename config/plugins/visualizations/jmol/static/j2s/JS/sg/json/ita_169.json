@@ -1,0 +1,1 @@
+{ "its": [ { "clegId": "169:a,b,c","det": 1.0,"gen": [ "x,y,z","-y,x-y,z+1/3","-x,-y,z+1/2" ],"gp": [ "x,y,z","-y,x-y,z+1/3","-x+y,-x,z+2/3","-x,-y,z+1/2","y,-x+y,z+5/6","x-y,x,z+1/6" ],"hall": "P 61","hm": "P 61","id": "P_61","jmolId": "169","set": 1,"sg": 169,"trm": "a,b,c","wpos": { "pos": [ { "desc": "1","geom": "general","label": "a","mult": 6 } ] } } ],"n": 1,"sg": 169 }
