@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
-import { BAlert, BButton, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -45,7 +45,7 @@ const messageVariant = ref<string | null>(null);
 const cILogonIdps = ref<Idp[]>([]);
 const selected = ref<Idp | null>(null);
 const rememberIdp = ref(false);
-const cilogonOrCustos = ref<string | null>(null);
+const cilogonOrCustos = ref<"cilogon" | "custos" | null>(null);
 const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
@@ -77,8 +77,10 @@ onMounted(async () => {
     }
 });
 
-function toggleCILogon(idp: string) {
-    toggleCilogon.value = !toggleCilogon.value;
+function toggleCILogon(idp: "cilogon" | "custos") {
+    if (cilogonOrCustos.value === idp || cilogonOrCustos.value === null) {
+        toggleCilogon.value = !toggleCilogon.value;
+    }
     cilogonOrCustos.value = toggleCilogon.value ? idp : null;
 }
 
@@ -227,13 +229,23 @@ function getIdpPreference() {
                 </div>
 
                 <div v-else>
-                    <BButton v-if="cILogonEnabled" @click="toggleCILogon('cilogon')">
-                        Sign in with Institutional Credentials*
-                    </BButton>
+                    <BButtonGroup class="w-100">
+                        <BButton
+                            v-if="cILogonEnabled"
+                            :pressed="cilogonOrCustos === 'cilogon'"
+                            @click="toggleCILogon('cilogon')">
+                            Sign in with Institutional Credentials*
+                        </BButton>
 
-                    <BButton v-if="custosEnabled" @click="toggleCILogon('custos')">Sign in with Custos*</BButton>
+                        <BButton
+                            v-if="custosEnabled"
+                            :pressed="cilogonOrCustos === 'custos'"
+                            @click="toggleCILogon('custos')">
+                            Sign in with Custos*
+                        </BButton>
+                    </BButtonGroup>
 
-                    <BFormGroup v-if="toggleCilogon">
+                    <BFormGroup v-if="toggleCilogon" class="mt-1">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -246,9 +258,10 @@ function getIdpPreference() {
 
                         <BButton
                             v-if="toggleCilogon"
+                            class="mt-1"
                             :disabled="loading || selected === null"
                             @click="submitCILogon(cilogonOrCustos)">
-                            Login*
+                            Login via {{ cilogonOrCustos === "cilogon" ? "CILogon" : "Custos" }} *
                         </BButton>
                     </BFormGroup>
                 </div>
