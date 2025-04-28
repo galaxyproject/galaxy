@@ -496,7 +496,7 @@ defineExpose({
             <GButton
                 id="btn-explore-archive"
                 size="medium"
-                title="Explore the contents of a remote or local Zip archive and upload individual files"
+                title="Explore the contents of a remote or local compressed archive and upload individual files"
                 :disabled="isAnonymous"
                 disabled-title="You must be logged in to use this feature"
                 @click="exploreZipContents">
