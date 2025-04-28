@@ -1,0 +1,10 @@
+- doc: | 
+    Test to verify a tool that takes in a list or nested list is sent the most
+    specific list possible during workflow execution (the nested list). This should
+    not trigger subcollection mapping.
+  job: {}
+  outputs:
+    out:
+      asserts:
+      - that: has_text
+        text: "Nested List"

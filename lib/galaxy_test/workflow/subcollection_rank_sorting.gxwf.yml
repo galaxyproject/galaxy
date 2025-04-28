@@ -1,0 +1,12 @@
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: list_handling/out1
+steps:
+  create_list:
+    tool_id: collection_creates_dynamic_nested
+  list_handling:
+    tool_id: collection_list_or_nested_list_input
+    in:
+      f1: create_list/list_output

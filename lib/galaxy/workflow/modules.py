@@ -598,6 +598,8 @@ class WorkflowModule:
                     effective_input_collection_type,
                     dataset_collection_type_descriptions,
                 )
+                if history_query.direct_match(data):
+                    continue
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")
