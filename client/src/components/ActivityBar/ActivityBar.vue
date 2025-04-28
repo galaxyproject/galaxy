@@ -327,7 +327,7 @@ defineExpose({
         </div>
         <FlexPanel v-if="isSideBarOpen && !hidePanel" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
