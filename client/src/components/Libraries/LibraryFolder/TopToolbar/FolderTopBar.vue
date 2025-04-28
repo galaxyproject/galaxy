@@ -14,7 +14,7 @@ import {
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
@@ -100,7 +100,7 @@ const totalRows = computed(() => {
 });
 
 // Variables for Collection Creation
-const collectionModalType = ref<CollectionType | null>(null);
+const collectionModalType = ref<CollectionBuilderType | null>(null);
 const collectionModalShow = ref(false);
 const collectionSelection = ref<any[]>([]);
 const collectionHistoryId = ref<string | null>(null);
@@ -209,7 +209,7 @@ async function importToHistoryModal(isCollection: boolean) {
                 ) => {
                     try {
                         collectionHistoryId.value = historyId;
-                        collectionModalType.value = collectionType as CollectionType;
+                        collectionModalType.value = collectionType as CollectionBuilderType;
                         collectionSelection.value = selection.models;
                         collectionModalShow.value = true;
                     } catch (err) {

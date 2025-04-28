@@ -3,6 +3,8 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
 
+export type CollectionType = string;
+
 /**
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
