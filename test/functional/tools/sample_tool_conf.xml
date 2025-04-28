@@ -210,6 +210,7 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_list_or_nested_list_input.xml" />
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="discover_sort_by.xml" />
