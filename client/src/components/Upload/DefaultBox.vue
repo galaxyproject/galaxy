@@ -494,7 +494,7 @@ defineExpose({
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
             <GButton
-                id="btn-explore-zip"
+                id="btn-explore-archive"
                 size="medium"
                 title="Explore the contents of a remote or local Zip archive and upload individual files"
                 :disabled="isAnonymous"

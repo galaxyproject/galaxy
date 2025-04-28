@@ -81,7 +81,7 @@ watch(
 
 const localFileActions = [
     {
-        id: "btn-local",
+        id: "btn-browse-local",
         title: "Select a compressed archive from your computer",
         label: "Browse local archive",
         icon: faLaptop,

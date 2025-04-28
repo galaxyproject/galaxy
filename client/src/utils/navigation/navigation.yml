@@ -1200,6 +1200,7 @@ upload:
     start: '#activity-upload'
     start_button: '#regular #btn-start'
     local_button: '#btn-local'
+    explore_archive_button: '#btn-explore-archive'
 
 new_user_welcome:
   selectors:
@@ -1244,3 +1245,14 @@ job_details:
       type: xpath
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
+
+zip_import_wizard:
+  selectors:
+    _: '.zip-import-wizard'
+    zip_file_count_badge: '#g-card-badge-file-count-regular-zip-summary-card'
+    selected_to_import_count_badge: '#g-card-badge-file-count-zip-files-summary'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_import_button: '.wizard-actions .go-next-btn.btn-primary'
+    select_file:
+      type: xpath
+      selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"
