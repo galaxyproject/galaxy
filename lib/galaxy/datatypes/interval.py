@@ -12,7 +12,8 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
+from urllib.request import urlopen
 
 import pysam
 from bx.intervals.io import (
@@ -494,7 +495,7 @@ class Bed(Interval):
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(
         name="viz_filter_cols",
-        desc="Score column for visualization",
+        desc="Score columns for visualization",
         default=[4],
         param=metadata.ColumnParameter,
         optional=True,
@@ -1628,6 +1629,392 @@ class CustomTrack(Tabular):
                 except Exception:
                     return False
         return found_at_least_one_track
+
+
+class GTrack(Interval):
+    edam_format = "format_3164"
+    file_ext = "gtrack"
+
+    # Add metadata elements
+    MetadataElement(
+        name="header_lines",
+        desc="Number of header lines",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="bounding_regions",
+        desc="Number of bounding regions",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="comment_lines",
+        desc="Number of comment lines",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="data_lines",
+        desc="Number of data lines",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="track_type",
+        desc="GTrack track type",
+        default="",
+        no_value="",
+        visible=False,
+        optional=False,
+        readonly=True,
+    )
+    MetadataElement(
+        name="columns",
+        desc="Number of columns",
+        default=0,
+        no_value=0,
+        visible=False,
+        readonly=True,
+    )
+    MetadataElement(
+        name="column_names",
+        desc="Column names",
+        default=(),
+        no_value=(),
+        visible=False,
+        readonly=True,
+    )
+    MetadataElement(
+        name="column_types",
+        desc="Column types",
+        param=metadata.ColumnTypesParameter,
+        default=(),
+        no_value=(),
+        visible=False,
+        readonly=True,
+    )
+    MetadataElement(
+        name="delimiter",
+        desc="Data delimiter",
+        default="\t",
+        no_value=[],
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="chromCol",
+        desc="Sequence id (chrom) column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="startCol",
+        desc="Start column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="endCol",
+        desc="End column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="strandCol",
+        desc="Strand column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="nameCol",
+        desc="Name/Identifier column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="viz_filter_cols",
+        desc="Score columns for visualization",
+        param=metadata.ColumnParameter,
+        default=[],
+        no_value=[],
+        visible=True,
+        optional=True,
+        readonly=True,
+        multiple=True,
+    )
+
+    SEQID = "seqid"
+    START = "start"
+    END = "end"
+    STRAND = "strand"
+    VALUE = "value"
+    EDGES = "edges"
+    GENOME = "genome"
+    ID = "id"
+    NAME = "name"
+
+    SUBTYPE_URL = "subtype url"
+    GTRACK_VERSION = "gtrack version"
+    GTRACK_SUBTYPE = "gtrack subtype"
+    VALUE_COLUMN_DEF = "value column"
+    VALUE_TYPE_DEF = "value type"
+    VALUE_DIMENSION = "value dimension"
+    EDGES_COLUMN_DEF = "edges column"
+    FIXED_GAP_SIZE = "fixed gap size"
+    FIXED_LENGTH = "fixed length"
+
+    GTRACK_STD_COLUMN_TYPES = {
+        GENOME: "str",
+        SEQID: "str",
+        START: "int",
+        END: "int",
+        NAME: "str",
+        STRAND: "str",
+        ID: "str",
+        EDGES: "str",
+    }
+
+    GTRACK_COLUMN_NAMES_MAPPING = {VALUE_COLUMN_DEF: VALUE, EDGES_COLUMN_DEF: EDGES}
+
+    SCALAR = "scalar"
+    GTRACK_VALUE_TYPE = {
+        "number": "float",
+        "character": "str",
+        "binary": "int",
+        "category": "str",
+        "list": "str",
+        "vector": "str",
+        "pair": "str",
+    }
+
+    METADATA_COLUMNS_MAPPING = {
+        SEQID: "chromCol",
+        START: "startCol",
+        END: "endCol",
+        NAME: "nameCol",
+        VALUE: "viz_filter_cols",
+        STRAND: "strandCol",
+        ID: "nameCol",
+    }
+
+    TRACK_TYPE_FROM_COLS = {
+        (END,): "genome partition",
+        (END, ID, EDGES): "linked genome partition",
+        (END, VALUE): "step function",
+        (END, VALUE, ID, EDGES): "linked step function",
+        (ID, EDGES): "linked base pairs",
+        (START,): "points",
+        (START, END): "segments",
+        (START, END, ID, EDGES): "linked segments",
+        (START, END, VALUE): "valued segments",
+        (START, END, VALUE, ID, EDGES): "linked valued segments",
+        (START, ID, EDGES): "linked points",
+        (START, VALUE): "valued points",
+        (START, VALUE, ID, EDGES): "linked valued points",
+        (VALUE,): "function",
+        (VALUE, ID, EDGES): "linked function",
+    }
+
+    STD_COLUMNS = [START, END, VALUE, EDGES]
+    DEFAULT_COLUMNS = [SEQID, START, END]
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
+        cols, headers = self._parse_column_and_header_lines(hash_count_to_lines)
+
+        if any(header in headers for header in [self.GTRACK_VERSION, self.GTRACK_SUBTYPE]):
+            return True
+
+        if self.SUBTYPE_URL in headers and self._check_url(headers[self.SUBTYPE_URL]):
+            return True
+
+        if not cols:
+            return False
+
+        for header, column_name in self.GTRACK_COLUMN_NAMES_MAPPING.items():
+            if header in headers:
+                mapped_column_name = headers[header]
+                # WE ARE HERE
+                col_idx = cols.index(mapped_column_name)
+                cols[col_idx] = column_name
+
+        if any(std_column in cols for std_column in self.STD_COLUMNS):
+            for line in data_lines[:-1]:
+                if len(line.split("\t")) != len(cols):
+                    return False
+            return True
+
+        return False
+
+    @staticmethod
+    def _parse_column_and_header_lines(hash_count_to_lines):
+        headers = {}
+        for line in hash_count_to_lines[2]:
+            header, val = line.split(":", 1)
+            headers[header.lower().strip()] = val.lower().strip()
+
+        column_lines = hash_count_to_lines[3]
+        column_line = column_lines[0] if column_lines else None
+        if column_line is not None:
+            cols = column_line.split("\t")
+        else:
+            cols = None
+        return cols, headers
+
+    def set_meta(self, dataset, **kwd):
+        with open(dataset.get_file_name()) as input_file:
+            hash_count_to_lines, num_data_lines = self._parse_file(input_file)
+        self._set_meta_for_counts(dataset, hash_count_to_lines, num_data_lines)
+
+        cols, headers = self._parse_column_and_header_lines(hash_count_to_lines)
+        if self.SUBTYPE_URL in headers:
+            cols, headers = self._update_cols_and_headers_from_subtype(cols, headers)
+
+        if not cols:
+            cols = self.DEFAULT_COLUMNS
+        self._set_meta_for_cols(dataset, cols, headers)
+
+    def _update_cols_and_headers_from_subtype(self, cols, headers):
+        subtype_file = urlopen(headers[self.SUBTYPE_URL])
+        subtype_hash_count_to_lines = self._parse_file(subtype_file)[0]
+        subtype_cols, subtype_headers = self._parse_column_and_header_lines(subtype_hash_count_to_lines)
+        subtype_headers.update(headers)
+        return subtype_cols if not cols else cols, subtype_headers
+
+    def _set_meta_for_counts(self, dataset, hash_count_to_lines, num_data_lines):
+        dataset.metadata.comment_lines = len(hash_count_to_lines[1])
+        dataset.metadata.data_lines = num_data_lines
+        dataset.metadata.header_lines = sum(len(hash_count_to_lines[i]) for i in (2, 3))
+        dataset.metadata.bounding_regions = len(hash_count_to_lines[4])
+
+    def _set_meta_for_cols(self, dataset, cols, headers):
+        dataset.metadata.columns = len(cols)
+        dataset.metadata.column_names = tuple(cols)
+        dataset.metadata.delimiter = "\t"
+
+        header_val_dim = headers.get(self.VALUE_DIMENSION)
+
+        if not header_val_dim or header_val_dim == self.SCALAR:
+            header_val_type = headers.get(self.VALUE_TYPE_DEF)
+            value_type = self.GTRACK_VALUE_TYPE.get(header_val_type)
+        else:
+            value_type = self.GTRACK_VALUE_TYPE.get(header_val_dim)
+
+        value_column_name = headers.get(self.VALUE_COLUMN_DEF, self.VALUE)
+        col_types = self._get_column_types(cols, value_type, value_column_name)
+        dataset.metadata.column_types = col_types
+
+        edges_column_name = headers.get(self.EDGES_COLUMN_DEF, self.EDGES)
+
+        for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.items():
+            if metadata_col == "viz_filter_cols":
+                col_name = value_column_name
+
+            if col_name in cols:
+                value = cols.index(col_name) + 1
+                if metadata_col == "viz_filter_cols":
+                    value = [value]
+                setattr(dataset.metadata, metadata_col, value)
+
+        track_type_cols_present = []
+        for col in (self.START, self.END, self.VALUE, self.ID, self.EDGES):
+            col_to_find = col
+
+            if col == self.VALUE and value_column_name != self.VALUE:
+                col_to_find = value_column_name
+
+            if col == self.EDGES and edges_column_name != self.EDGES:
+                col_to_find = edges_column_name
+
+            if col_to_find in cols:
+                track_type_cols_present.append(col)
+            elif col_to_find == self.START and int(headers.get(self.FIXED_GAP_SIZE, 0)) != 0:
+                track_type_cols_present.append(self.START)
+            elif col_to_find == self.END and int(headers.get(self.FIXED_LENGTH, 1)) > 1:
+                track_type_cols_present.append(self.END)
+
+        dataset.metadata.track_type = self.TRACK_TYPE_FROM_COLS[tuple(track_type_cols_present)]
+
+    def _check_url(self, url):
+        try:
+            parsed_url = urlparse(url)
+            if parsed_url.netloc:
+                return True
+        except:
+            pass
+        return False
+
+    def _get_column_types(self, cols, value_type, value_column_name):
+        col_types = []
+        for col in cols:
+            col_type = self.GTRACK_STD_COLUMN_TYPES.get(col)
+            if not col_type:
+                if col == value_column_name:
+                    if value_type:
+                        col_type = value_type
+                    else:
+                        col_type = "float"
+                else:
+                    col_type = "str"
+            col_types.append(col_type)
+
+        return tuple(col_types)
+
+    def set_peek(self, dataset, **kwd):
+        if not dataset.dataset.purged:
+            dataset.blurb = (
+                f"{dataset.metadata.header_lines} header lines, "
+                f"{dataset.metadata.bounding_regions} bounding regions, "
+                f"{dataset.metadata.comment_lines} comment lines, "
+                f"and {dataset.metadata.data_lines} data lines "
+                f"of {dataset.metadata.columns} columns"
+            )
+            dataset.peek = data.get_file_peek(dataset.get_file_name(), skipchars=["#"], **kwd)
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _parse_file(self, input_file, include_data=False):
+        from galaxy.datatypes.tabular import GSuite
+
+        return GSuite._parse_file(input_file, include_data)
+
+    def get_mime(self):
+        return "text/plain"
 
 
 class ENCODEPeak(Interval):

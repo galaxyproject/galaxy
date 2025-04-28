@@ -199,6 +199,8 @@
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="igb/gtf.xml"/>
     </datatype>
+    <datatype extension="gtrack" type="galaxy.datatypes.interval:GTrack" display_in_upload="true" description="GTrack is a tabular format that provides a uniform representation of most types of genomic datasets. GTrack is able to replace common formats such as WIG, GFF, BED, FASTA, in addition to represent chromatin capture datasets, such as Hi-C and ChIA-PET." description_url="http://gtrack.no"/>
+    <datatype extension="gsuite" type="galaxy.datatypes.tabular:GSuite" display_in_upload="true" description="GSuite is a simple tabular text format for use in specifying a suite (ie. a  set or collection) of genomic annotation tracks " description_url="http://gtrack.no"/>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true"/>
     <datatype extension="hdf4" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -1217,6 +1219,7 @@
     <sniffer type="galaxy.datatypes.images:Pdf"/>
     <sniffer type="galaxy.datatypes.sequence:Axt"/>
     <sniffer type="galaxy.datatypes.sequence:Genbank"/>
+    <sniffer type="galaxy.datatypes.interval:GTrack"/>
     <sniffer type="galaxy.datatypes.interval:Bed"/>
     <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
     <sniffer type="galaxy.datatypes.interval:Gtf"/>
@@ -1252,6 +1255,7 @@
     <sniffer type="galaxy.datatypes.metacyto:mSummary"/>
     <sniffer type="galaxy.datatypes.metacyto:mStats"/>
     <sniffer type="galaxy.datatypes.tabular:TSV"/>
+    <sniffer type="galaxy.datatypes.tabular:GSuite"/>
     <sniffer type="galaxy.datatypes.tabular:MatrixMarket"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer3"/>

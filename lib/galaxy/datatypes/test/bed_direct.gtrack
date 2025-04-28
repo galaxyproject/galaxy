@@ -1,0 +1,31 @@
+#
+# GTrack subtype for BED data (linked version)
+#
+# Works directly with BED data [1]. Note that the GTrack format itself do not
+# understand the division of segments into blocks, but GTrack parsers
+# specialized for this GTrack subtype should understand it. It requires minor
+# modifications for a BED parser to support this GTrack subtype. See [2] for
+# more details on GTrack and the concepts of track types. The GTrack
+# specification and GTrack subtypes and example files are found at [3].
+#
+# To use, add the following line to the beginning of your GTrack file (excluding
+# the preceding '# ' characters):
+#
+# ##subtype url: gtrack.no/bed_direct.gtrack
+#
+#
+# [1] http://genome.ucsc.edu/FAQ/FAQformat.html
+#
+# [2] Gundersen S, Kalas M, Abul O, Frigessi A, Hovig E, Sandve GK: Identifying
+#     elemental genomic track types and representing them uniformly.
+#     BMC Bioinformatics 2011, 12:494.
+#
+# [3] www.gtrack.no
+#
+##gtrack version: 1.0
+##gtrack subtype: BED direct
+##subtype version: 1.0
+##subtype adherence: extensible
+##track type: valued segments
+##uninterrupted data lines: true
+###seqid	start	end	name	value	strand	thickStart	thickEnd	itemRgb	blockCount	blockSizes	blockStarts
