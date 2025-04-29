@@ -2,7 +2,6 @@ from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
-# URL_TO_TEST = "https://raw.githubusercontent.com/galaxyproject/galaxy/refs/heads/dev/test-data/simple_line.txt"
 URL_TO_TEST = "https://github.com/galaxyproject/galaxy/raw/6e7427e8e2e070d4ab491a6cce5a59b6b6a62a08/test-data/4.bed.zip"
 EXPECTED_HEADERS = {
     "content-length": "198",
