@@ -82,7 +82,7 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
             <div v-if="parameters.length">
                 <Heading size="text" bold separator>Parameter Values</Heading>
                 <div class="mx-1">
-                    <ParameterStep :parameters="parameters" styled-table />
+                    <ParameterStep data-description="input parameters table" :parameters="parameters" styled-table />
                 </div>
             </div>
             <div v-if="inputData.length">
@@ -100,15 +100,29 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
         </BTab>
         <BTab title="Outputs">
             <div v-if="outputs.length">
-                <div v-for="([key, output], index) in outputs" :key="index">
+                <div
+                    v-for="([key, output], index) in outputs"
+                    :key="index"
+                    data-description="terminal invocation output">
                     <Heading size="text" bold separator>{{ key }}</Heading>
-                    <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
+                    <GenericHistoryItem
+                        :item-id="output.id"
+                        :item-src="output.src"
+                        data-description="terminal invocation output item" />
                 </div>
             </div>
             <div v-else-if="workflowOutputLabels.length">
-                <div v-for="(label, index) in workflowOutputLabels" :key="index">
+                <div
+                    v-for="(label, index) in workflowOutputLabels"
+                    :key="index"
+                    data-description="non-terminal invocation output">
                     <Heading size="text" bold separator>{{ label }}</Heading>
-                    <BAlert v-if="!props.terminal" class="m-1 py-2" show variant="info">
+                    <BAlert
+                        v-if="!props.terminal"
+                        class="m-1 py-2"
+                        show
+                        variant="info"
+                        data-description="non-terminal invocation output loading">
                         <LoadingSpan message="Output not created yet" />
                     </BAlert>
                     <BAlert v-else class="m-1 py-2" show variant="danger">
