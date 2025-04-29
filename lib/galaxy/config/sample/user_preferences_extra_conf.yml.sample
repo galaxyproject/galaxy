@@ -183,3 +183,17 @@ preferences:
               label: URL of the eLabFTW instance you want to access
               type: text
               required: True
+
+    # Used in file_sources_conf.yml
+    rspace:
+        description: Your RSpace Integration Settings
+        inputs:
+            - name: api_key
+              label: API key
+              type: secret
+              store: vault  # Requires setting up vault_config_file in your galaxy.yml
+              required: True
+            - name: endpoint
+              label: URL of the RSpace instance you want to access
+              type: text
+              required: True
