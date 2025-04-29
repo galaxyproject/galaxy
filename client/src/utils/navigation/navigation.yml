@@ -381,7 +381,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
-    edam_title: '[title="Apply analytical methods to existing data of a specific type."]'
+    edam_title: '[data-title="Apply analytical methods to existing data of a specific type."]'
     tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
@@ -717,7 +717,7 @@ workflow_run:
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
-    run_workflow_disabled: "#run-workflow.disabled"
+    run_workflow_disabled: '#run-workflow[aria-disabled="true"]'
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
@@ -811,8 +811,8 @@ workflow_editor:
       type: xpath
       selector: >
         //a/span[text()='${workflow_title}']/following-sibling::span[@title='Insert individual steps.']
-    connect_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-connected-icon'
-    collapse_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-collapsible-icon'
+    connect_icon: 'div.ui-form-element[id="form-element-${name}"] [data-connected]'
+    collapse_icon: 'div.ui-form-element[id="form-element-${name}"] [data-collapsible]'
     edit_subworkflow: 'button[title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."]'
     node_title:
       type: xpath

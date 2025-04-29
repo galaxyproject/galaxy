@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -9,6 +9,7 @@ import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast"
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -210,12 +211,12 @@ if (props.id) {
                             required />
                     </BCol>
                     <BCol cols="auto">
-                        <BButton
+                        <GButton
                             :id="`delete-action-link-${index}}`"
-                            v-b-tooltip.hover.bottom
+                            tooltip
                             title="Delete action link"
-                            variant="error-outline"
-                            role="button"
+                            outline
+                            color="red"
                             @click="
                                 broadcastData.content.action_links?.splice(
                                     broadcastData.content.action_links.indexOf(actionLink),
@@ -223,19 +224,19 @@ if (props.id) {
                                 )
                             ">
                             <FontAwesomeIcon icon="times" />
-                        </BButton>
+                        </GButton>
                     </BCol>
                 </BRow>
 
-                <BButton
+                <GButton
                     id="create-action-link"
                     title="Add new action link"
-                    variant="outline-primary"
-                    role="button"
+                    outline
+                    color="blue"
                     @click="addActionLink">
                     <FontAwesomeIcon icon="plus" />
                     Add action link
-                </BButton>
+                </GButton>
             </BFormGroup>
 
             <BRow>
@@ -270,8 +271,8 @@ if (props.id) {
                     id="broadcast-submit"
                     icon="save"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
-                    variant="primary"
-                    size="md"
+                    color="blue"
+                    size="medium"
                     :disabled="!requiredFieldsFilled"
                     :action="createOrUpdateBroadcast">
                     <span v-if="props.id" v-localize> Update Broadcast </span>

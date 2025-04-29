@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     value: string;
@@ -79,16 +81,10 @@ function revertToOriginal() {
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="revertToOriginal"
             @click.prevent.stop />
-        <BButton
-            id="save-btn"
-            class="p-0"
-            style="border: none"
-            variant="link"
-            size="sm"
-            @click.prevent.stop="editable = false">
+        <GButton id="save-btn" class="p-0" transparent color="blue" size="small" @click.prevent.stop="editable = false">
             <FontAwesomeIcon :icon="faSave" />
             <span class="sr-only">Save changes</span>
-        </BButton>
+        </GButton>
     </div>
 
     <component

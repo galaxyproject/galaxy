@@ -91,7 +91,7 @@ const currentTitle = computed(() => {
 const tooltipId = useUid("g-tooltip");
 
 const describedBy = computed(() => {
-    if (props.tooltip) {
+    if (props.tooltip && props.title) {
         return tooltipId.value;
     } else {
         return false;
@@ -120,19 +120,19 @@ useAccessibleHover(
         ref="buttonRef"
         class="g-button"
         :data-title="currentTooltip"
-        :data-disabled="props.disabled"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="props.to"
         :href="props.to ?? props.href"
         :title="currentTitle"
         :aria-describedby="describedBy"
+        :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
         <slot></slot>
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
-            v-if="props.tooltip"
+            v-if="props.tooltip && props.title"
             :id="tooltipId"
             ref="tooltipRef"
             :reference="buttonElementRef"
@@ -312,7 +312,6 @@ useAccessibleHover(
     }
 
     &.g-icon-only {
-        aspect-ratio: 1;
         display: inline-flex;
         justify-content: center;
 
@@ -330,8 +329,8 @@ useAccessibleHover(
         }
     }
 
-    &.g-transparent {
-        border: none;
+    &.g-transparent:not(.g-pressed) {
+        border: 1px solid rgb(100% 100% 100% / 0);
         background-color: rgb(100% 100% 100% / 0);
 
         @each $color in "blue", "green", "red", "yellow", "orange" {
@@ -339,7 +338,6 @@ useAccessibleHover(
                 color: var(--color-#{$color}-600);
 
                 &:hover,
-                &:focus,
                 &:focus-visible {
                     background-color: var(--color-#{$color}-600);
                     color: var(--color-#{$color}-100);

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 interface Props {
     index: number;
@@ -23,46 +25,46 @@ const emit = defineEmits<{
 
 <template>
     <span class="float-right">
-        <BButtonGroup>
-            <span v-b-tooltip.hover.bottom title="move up">
-                <BButton
-                    :id="upButtonId"
-                    v-b-tooltip.hover.bottom
-                    :disabled="index == 0"
-                    role="button"
-                    variant="link"
-                    size="sm"
-                    class="ml-0"
-                    @click="() => emit('swap-up')">
-                    <FontAwesomeIcon :icon="faCaretUp" />
-                </BButton>
-            </span>
-            <span v-b-tooltip.hover.bottom title="move down">
-                <BButton
-                    :id="downButtonId"
-                    :disabled="index >= numElements - 1"
-                    title="move down"
-                    role="button"
-                    variant="link"
-                    size="sm"
-                    class="ml-0"
-                    @click="() => emit('swap-down')">
-                    <FontAwesomeIcon :icon="faCaretDown" />
-                </BButton>
-            </span>
-        </BButtonGroup>
-
-        <span v-b-tooltip.hover.bottom :title="deleteTooltip">
-            <BButton
-                :disabled="!canDelete"
-                title="delete"
-                role="button"
-                variant="link"
-                size="sm"
+        <GButtonGroup>
+            <GButton
+                :id="upButtonId"
+                tooltip
+                tooltip-placement="bottom"
+                title="move up"
+                :disabled="index == 0"
+                color="blue"
+                transparent
+                size="small"
                 class="ml-0"
-                @click="() => emit('delete')">
-                <FontAwesomeIcon :icon="faTrashAlt" />
-            </BButton>
-        </span>
+                @click="() => emit('swap-up')">
+                <FontAwesomeIcon :icon="faCaretUp" />
+            </GButton>
+            <GButton
+                :id="downButtonId"
+                tooltip
+                tooltip-placement="bottom"
+                :disabled="index >= numElements - 1"
+                title="move down"
+                color="blue"
+                transparent
+                size="small"
+                class="ml-0"
+                @click="() => emit('swap-down')">
+                <FontAwesomeIcon :icon="faCaretDown" />
+            </GButton>
+        </GButtonGroup>
+
+        <GButton
+            :disabled="!canDelete"
+            tooltip
+            tooltip-placement="bottom"
+            :title="deleteTooltip"
+            color="blue"
+            transparent
+            size="small"
+            class="ml-0"
+            @click="() => emit('delete')">
+            <FontAwesomeIcon :icon="faTrashAlt" />
+        </GButton>
     </span>
 </template>

@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard } from "bootstrap-vue";
+import { BAlert, BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -15,6 +15,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
@@ -236,14 +237,14 @@ onMounted(async () => {
                     :area="true"
                     title="Please provide detailed information on the activities leading to this issue:" />
 
-                <BButton
+                <GButton
                     id="dataset-error-submit"
-                    variant="primary"
+                    color="blue"
                     class="mt-3"
                     @click="submit(dataset, jobDetails?.user_email)">
                     <FontAwesomeIcon :icon="faBug" class="mr-1" />
                     Report
-                </BButton>
+                </GButton>
             </div>
         </div>
     </div>

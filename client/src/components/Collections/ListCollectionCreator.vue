@@ -4,7 +4,7 @@ import "ui/hoverhighlight";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
@@ -15,6 +15,8 @@ import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import HelpText from "../Help/HelpText.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
@@ -603,21 +605,21 @@ function selectionAsHdaSummary(value: any): HDASummary {
                     <div v-else-if="fromSelection">
                         <div class="collection-elements-controls">
                             <div>
-                                <BButton
+                                <GButton
                                     class="reset"
                                     :title="localize('Reset to original state')"
-                                    size="sm"
+                                    size="small"
                                     @click="reset">
                                     <FontAwesomeIcon :icon="faUndo" fixed-width />
                                     {{ localize("Reset") }}
-                                </BButton>
-                                <BButton
+                                </GButton>
+                                <GButton
                                     class="sort-items"
                                     :title="localize('Sort datasets by name')"
-                                    size="sm"
+                                    size="small"
                                     @click="sortByName">
                                     <FontAwesomeIcon :icon="faSortAlphaDown" />
-                                </BButton>
+                                </GButton>
                             </div>
 
                             <div class="center-text">
@@ -625,37 +627,39 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             </div>
 
                             <div>
-                                <span v-if="atLeastOneDatasetIsSelected"
-                                    >{{ localize("For selection") }} ({{ selectedDatasetElements.length }}):</span
-                                >
-                                <BButtonGroup class="" size="sm">
-                                    <BButton
+                                <span v-if="atLeastOneDatasetIsSelected">
+                                    {{ localize("For selection") }} ({{ selectedDatasetElements.length }}):
+                                </span>
+                                <GButtonGroup>
+                                    <GButton
                                         v-if="atLeastOneDatasetIsSelected"
                                         :title="localize('Remove selected datasets from the list')"
+                                        size="small"
                                         @click="clickRemoveSelected">
                                         <FontAwesomeIcon :icon="faMinus" fixed-width />
                                         {{ localize("Remove") }}
-                                    </BButton>
-                                    <BButton
+                                    </GButton>
+                                    <GButton
                                         v-if="
                                             !atLeastOneDatasetIsSelected ||
                                             selectedDatasetElements.length < workingElements.length
                                         "
                                         :title="localize('Select all datasets')"
-                                        size="sm"
+                                        size="small"
                                         @click="clickSelectAll">
                                         <FontAwesomeIcon :icon="faSquare" fixed-width />
                                         {{ localize("Select all") }}
-                                    </BButton>
-                                    <BButton
+                                    </GButton>
+                                    <GButton
                                         v-if="atLeastOneDatasetIsSelected"
                                         class="clear-selected"
                                         :title="localize('De-select all selected datasets')"
+                                        size="small"
                                         @click="clickClearAll">
                                         <FontAwesomeIcon :icon="faTimes" fixed-width />
                                         {{ localize("Clear") }}
-                                    </BButton>
-                                </BButtonGroup>
+                                    </GButton>
+                                </GButtonGroup>
                             </div>
                         </div>
 

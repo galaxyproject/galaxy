@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -9,6 +8,7 @@ import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import RelocateDialog from "./RelocateDialog.vue";
 import SelectModal from "./SelectModal.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface RelocateLinkProps {
     datasetStorageDetails: DatasetStorageDetails;
@@ -99,6 +99,6 @@ async function relocate(objectStoreId: string) {
                 @relocate="relocate"
                 @closeModal="closeModal" />
         </SelectModal>
-        <BButton v-if="relocatable" @click="showModal = true">Relocate Dataset</BButton>
+        <GButton v-if="relocatable" @click="showModal = true">Relocate Dataset</GButton>
     </span>
 </template>

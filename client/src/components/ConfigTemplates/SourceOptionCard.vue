@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { type IconDefinition } from "font-awesome-6";
 
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
@@ -8,6 +7,7 @@ import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import type { CardAttributes } from "@/components/Common/GCard.types";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 type OptionType = {
@@ -50,14 +50,17 @@ const primaryActions: CardAttributes[] = [
         :primary-actions="primaryActions"
         :grid-view="props.gridView">
         <template v-slot:titleActions>
-            <BButton
-                v-b-tooltip.hover.noninteractive
-                variant="outline-primary"
-                size="lg"
+            <GButton
+                tooltip
+                transparent
+                inline
+                icon-only
+                color="blue"
+                size="large"
                 :title="props.optionType?.title"
                 class="inline-icon-button">
                 <FontAwesomeIcon :icon="props.optionType?.icon" />
-            </BButton>
+            </GButton>
         </template>
 
         <template v-slot:extra-actions>

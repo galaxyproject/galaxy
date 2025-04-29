@@ -2,13 +2,14 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal, BPopover } from "bootstrap-vue";
+import { BModal, BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
 import { computed, ref, set } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 import FilterMenuDropdown from "@/components/Common/FilterMenuDropdown.vue";
@@ -216,18 +217,20 @@ function updateFilterText(newFilterText: string) {
             @change="updateFilterText"
             @onToggle="onToggle" />
 
-        <BButton
+        <GButton
             v-if="props.menuType == 'separate' && props.showAdvanced"
-            v-b-tooltip.hover.bottom.noninteractive
+            tooltip
+            tooltip-placement="bottom"
             class="w-100"
             aria-haspopup="true"
-            size="sm"
+            size="small"
+            outline
             :pressed="props.showAdvanced"
             title="Toggle Advanced Search"
             data-description="wide toggle advanced search"
             @click="onToggle">
             <FontAwesomeIcon fixed-width :icon="faAngleDoubleUp" />
-        </BButton>
+        </GButton>
 
         <component
             :is="props.view !== 'popover' ? 'div' : BPopover"
@@ -324,22 +327,22 @@ function updateFilterText(newFilterText: string) {
 
             <!-- Perform search or cancel out (or open help modal for whole Menu if exists) -->
             <div class="mt-2">
-                <BButton
+                <GButton
                     v-if="props.view !== 'compact'"
                     :id="`${identifier}-advanced-filter-submit`"
                     class="mr-1"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     data-description="apply filters"
                     @click="onSearch">
                     <FontAwesomeIcon :icon="faSearch" />
 
                     <span v-localize>Search</span>
-                </BButton>
+                </GButton>
 
-                <BButton v-if="props.hasHelp" title="Search Help" size="sm" @click="showHelp = true">
+                <GButton v-if="props.hasHelp" title="Search Help" size="small" @click="showHelp = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
 
                 <BModal v-if="props.hasHelp" v-model="showHelp" :title="`${props.name} Advanced Search Help`" ok-only>
                     <!-- Slot for Menu help section -->

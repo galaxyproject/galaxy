@@ -8,11 +8,12 @@ import {
     faUnlink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
+import { BAlert, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
@@ -26,6 +27,8 @@ import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 import Heading from "../Common/Heading.vue";
 import PairedElementView from "./PairedElementView.vue";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
@@ -123,23 +126,23 @@ const pairableElements = computed(() => {
     return pairable;
 });
 const autoPairButton = computed(() => {
-    let variant;
+    let variant: ComponentColor;
     let icon;
     let text;
     if (!canAutoPair.value) {
-        variant = "secondary";
+        variant = "grey";
         icon = faLink;
         text = localize("Specify simple filters to divide datasets into forward and reverse reads for pairing.");
     } else if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
-        variant = "primary";
+        variant = "blue";
         icon = faExclamationCircle;
         text = localize("Click to auto-pair datasets based on the current filters");
     } else if (pairableElements.value.length > 0) {
-        variant = "secondary";
+        variant = "grey";
         icon = faLink;
         text = localize("Auto-pair possible based on current filters");
     } else {
-        variant = "secondary";
+        variant = "grey";
         icon = faLink;
         text = localize("Click to attempt auto-pairing datasets");
     }
@@ -1150,27 +1153,27 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                         </div>
                                     </div>
                                     <div class="paired-column flex-column no-flex column">
-                                        <BButtonGroup vertical>
-                                            <BButton
+                                        <GButtonGroup vertical>
+                                            <GButton
                                                 class="clear-filters-link"
                                                 :disabled="!canClearFilters"
-                                                size="sm"
-                                                :variant="hasFilter ? 'danger' : 'secondary'"
+                                                size="small"
+                                                :color="hasFilter ? 'red' : 'blue'"
                                                 @click="clickClearFilters">
                                                 <FontAwesomeIcon :icon="faTimes" fixed-width />
                                                 {{ localize("Clear Filters") }}
-                                            </BButton>
-                                            <BButton
+                                            </GButton>
+                                            <GButton
                                                 class="autopair-link"
                                                 :disabled="!canAutoPair"
-                                                size="sm"
+                                                size="small"
                                                 :title="autoPairButton.text"
                                                 :variant="autoPairButton.variant"
                                                 @click="clickAutopair">
                                                 <FontAwesomeIcon :icon="autoPairButton.icon" fixed-width />
                                                 {{ localize("Auto-pair") }}
-                                            </BButton>
-                                        </BButtonGroup>
+                                            </GButton>
+                                        </GButtonGroup>
                                     </div>
                                     <div class="reverse-column flex-column column">
                                         <div class="column-header">
@@ -1292,14 +1295,15 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     <div class="column-title paired-column-title" data-description="number of pairs">
                                         <span class="title"> {{ numOfPairs }} {{ localize("pairs") }}</span>
                                     </div>
-                                    <BButton
+                                    <GButton
                                         v-if="generatedPairs.length > 0"
-                                        variant="link"
-                                        size="sm"
+                                        color="blue"
+                                        transparent
+                                        size="small"
                                         @click.stop="unpairAll">
                                         <FontAwesomeIcon :icon="faUnlink" fixed-width />
                                         {{ localize("Unpair all") }}
-                                    </BButton>
+                                    </GButton>
                                 </div>
                                 <div class="paired-columns flex-column-container scroll-container flex-row">
                                     <ol class="column-datasets">
