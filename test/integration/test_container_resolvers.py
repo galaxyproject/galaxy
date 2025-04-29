@@ -17,7 +17,10 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
-from galaxy.util.commands import shell
+from galaxy.util.commands import (
+    execute,
+    shell,
+)
 from galaxy.util.path import safe_walk
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
@@ -77,22 +80,29 @@ def _assert_container_in_cache_singularity(
     cache_directory: str,
     cached: bool,
     container_name: str,
-    namespace: Optional[str] = None,
-    hash_func: Literal["v1", "v2"] = "v2",
+    resolver_type: str,
 ):
-    cache_dir_contents = []
-    for dirpath, _, files in safe_walk(cache_directory):
-        for f in files:
-            cache_dir_contents.append(os.path.join(dirpath, f))
+    if "mulled" in resolver_type:
+        resolver_type = "mulled"
+    elif "explicit" in resolver_type or "mapping" in resolver_type:
+        resolver_type = "explicit"
+    else:
+        raise AssertionError(f"Unknown resolver_type {resolver_type}")
+    cache_directory = os.path.join(cache_directory, resolver_type)
     # explicit containers are stored in subdirs that are included in the container_name
     container_path, container_name = os.path.split(container_name)
-    cache_directory = os.path.join(cache_directory, container_path)
+    if resolver_type == "explicit":
+        cache_directory = os.path.join(cache_directory, container_path)
 
     # it's fine if the path does not exist if not-cached is the assumption
     if not os.path.exists(cache_directory) and not cached:
         return
 
     imageid_list = os.listdir(path=cache_directory)
+    cache_dir_contents = []
+    for dirpath, _, files in safe_walk(cache_directory):
+        for f in files:
+            cache_dir_contents.append(os.path.join(dirpath, f))
     assert cached == (
         container_name in imageid_list
     ), f"did not find container {container_name} in {cache_directory} which contains {imageid_list}. [{cache_dir_contents}]"
@@ -105,6 +115,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
     cache is cleared before each test
     """
 
+    assumptions: Dict[str, Any]
     container_type: str = "docker"
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
@@ -144,15 +155,19 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
 
     def _clear_container_cache(self):
         """
-        clear all possibe container caches (ie docker and singularity)
+        Clear all possibe container caches (ie docker and singularity)
         """
-        cmd = ["docker", "system", "prune", "--all", "--force", "--volumes"]
-        shell(cmd)
-        if not os.path.exists(self._app.config.container_image_cache_path):
-            return
-        for dirpath, _, files in safe_walk(self._app.config.container_image_cache_path):
-            for f in files:
-                os.unlink(os.path.join(dirpath, f))
+        cmd1 = ["docker", "image", "ls", "--quiet", "--filter", f'reference={self.assumptions["run"]["cache_name"]}']
+        image_ids = execute(cmd1)
+        if image_ids:
+            image_id_list = image_ids.splitlines()
+            assert len(image_id_list) == 1
+            cmd2 = ["docker", "image", "rm", "--force", image_id_list[0]]
+            shell(cmd2)
+        if os.path.exists(self._app.config.container_image_cache_path):
+            for dirpath, _, files in safe_walk(self._app.config.container_image_cache_path):
+                for f in files:
+                    os.unlink(os.path.join(dirpath, f))
 
     def _assert_container_in_cache(
         self,
@@ -217,16 +232,8 @@ class SingularityContainerResolverTestCase(DockerContainerResolverTestCase):
         - resolver_type the used resolver, will use only "mulled"/"explicit"
         """
         cache_directory = os.path.join(self._app.config.container_image_cache_path, self.container_type)
-        if "resolver_type" in kwargs:
-            resolver_type = kwargs["resolver_type"]
-            if "mulled" in resolver_type:
-                resolver_type = "mulled"
-            elif "explicit" in resolver_type or "mapping" in resolver_type:
-                resolver_type = "explicit"
-            else:
-                raise AssertionError(f"Unknown resolver_type {resolver_type}")
-            cache_directory = os.path.join(cache_directory, resolver_type)
-        _assert_container_in_cache_singularity(cache_directory, cached, container_name, namespace, hash_func)
+        assert "resolver_type" in kwargs
+        _assert_container_in_cache_singularity(cache_directory, cached, container_name, kwargs["resolver_type"])
 
 
 class ContainerResolverTestProtocol(Protocol):
@@ -562,7 +569,7 @@ class TestDefaultSingularityContainerResolvers(
             ],
             "cached": True,
             "resolver_type": "mulled_singularity",  # only used to check mulled / explicit
-            "cache_name": MulledTestCase.mulled_hash,
+            "cache_name": f"quay.io/biocontainers/{MulledTestCase.mulled_hash}",
             "cache_namespace": "biocontainers",
         },
         "list": [
