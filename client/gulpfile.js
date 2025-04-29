@@ -37,6 +37,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "heatmap",
     "kepler",
     "ngl",
+    "molstar",
     "msa",
     "niivue",
     "openlayers",
