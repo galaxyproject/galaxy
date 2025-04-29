@@ -14,7 +14,11 @@ sys.path.insert(
 
 from galaxy.model.orm.scripts import get_config
 
-DESCRIPTION = """Remove old job metrics records from database."""
+DESCRIPTION = """
+Remove old job metrics records from database.
+Executing this script will permanently delete all text and numeric job metrics up to the supplied `updated` date/time argument."
+You should only do this if you need to reclaim space.
+"""
 
 
 def main():
@@ -37,12 +41,21 @@ def _get_parser():
 
 def run(engine, max_update_time):
     """Delete galaxy_session records which were updated prior to `max_update_time`."""
-    _delete_metrics(engine, max_update_time, "job_metric_text")
-    _delete_metrics(engine, max_update_time, "job_metric_numeric")
+    confirm = input(
+        f"""
+WARNING: Executing this script will permanently delete all text and numeric job metrics up to {max_update_time.strftime("%B %d, %Y")}. 
+Are your sure you want to proceed? Type "yes" to confirm: """
+    )
+    if confirm.lower() == "yes":
+        _delete_metrics(engine, max_update_time, "job_metric_text")
+        _delete_metrics(engine, max_update_time, "job_metric_numeric")
+    else:
+        print("Execution canceled")
+        sys.exit(0)
 
 
 def _delete_metrics(engine, max_update_time, metrics_table):
-    stmt = text(f"DELETE FROM {metrics_table} USING job j WHERE m.job_id = j.id AND j.update_time < :update_time")
+    stmt = text(f"DELETE FROM {metrics_table} m USING job j WHERE m.job_id = j.id AND j.update_time < :update_time")
     params = {"update_time": max_update_time}
     with engine.begin() as conn:
         conn.execute(stmt, params)
