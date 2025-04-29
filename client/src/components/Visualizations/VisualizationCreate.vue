@@ -9,9 +9,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import { getTestExtensions, getTestUrls } from "./utilities";
 
-import FormDataExtensions from "@/components/Form/Elements/FormData/FormDataExtensions.vue";
 import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
+import FormDataExtensions from "@/components/Form/Elements/FormData/FormDataExtensions.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
@@ -58,6 +58,8 @@ function onSelect(dataset: OptionType) {
 onMounted(() => {
     getPlugin();
 });
+
+defineExpose({ doQuery });
 </script>
 
 <template>
