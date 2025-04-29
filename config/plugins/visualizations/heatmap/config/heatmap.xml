@@ -2,20 +2,24 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Heatmap" embeddable="true">
     <description>Renders a heatmap from matrix data provided in 3-column format (x, y, observation).</description>
-    <requirements>
-        <requirement type="npm" version="0.0.14" package="@galaxyproject/heatmap"/>
-    </requirements>
+    <tags>
+        <tag>Heatmap</tag>
+        <tag>Matrix</tag>
+        <tag>Clustering</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">tabular</test>
+            <test test_attr="ext">csv</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
+    <requirements>
+        <requirement type="npm" version="0.0.14" package="@galaxyproject/heatmap"/>
+    </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tracks>
         <input>
@@ -489,4 +493,26 @@
             <exports>svg</exports>
         </exports>
     </specs>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/column_matrix.csv" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is the Heatmap Viewer?
+
+The Heatmap Viewer creates an interactive heatmap from simple matrix-style data stored in a 3-column tabular or CSV format (X-axis label, Y-axis label, Observation value).
+
+After selecting a dataset, you can zoom in to explore details, adjust color maps, and optionally cluster the rows and columns using R-based algorithms.
+
+#### Key Features
+
+- **Heatmap Rendering**: Visualize relationships between two categorical variables and a measured observation.
+- **Zoom and Pan**: Explore large heatmaps easily by zooming and panning.
+- **Color Maps**: Choose from a wide variety of color schemes to highlight data patterns.
+- **Clustering**: Perform hierarchical clustering of rows and/or columns to group similar patterns.
+
+This tool is ideal for visualizing correlation matrices, gene expression profiles, or any structured measurement data.
+
+    ]]></help>
 </visualization>

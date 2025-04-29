@@ -59,7 +59,10 @@ const filteredPlugins = computed(() => {
 
 async function selectVisualization(plugin: Plugin) {
     if (props.datasetId) {
-        router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`);
+        router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`, {
+            // @ts-ignore
+            title: plugin.name,
+        });
     } else {
         router.push(`/visualizations/create/${plugin.name}`);
     }
@@ -89,7 +92,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <ActivityPanel title="Visualizations" go-to-all-title="Saved Visualizations" href="/visualizations/list">
+    <ActivityPanel
+        title="Visualizations"
+        :go-to-all-title="datasetId ? undefined : 'Saved Visualizations'"
+        href="/visualizations/list">
         <template v-slot:header>
             <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />
         </template>

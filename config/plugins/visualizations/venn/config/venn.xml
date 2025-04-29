@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Venn Diagram" embeddable="true">
-    <description>Area proportional Venn and Euler Diagrams from http://github.com/benfred/venn.js</description>
+    <description>Area proportional Venn and Euler Diagrams</description>
+    <tags>
+        <tag>Venn</tag>
+        <tag>Euler</tag>
+        <tag>Diagram</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -31,4 +36,22 @@
             <is_label>true</is_label>
         </input>
     </tracks>
+    <help format="markdown"><![CDATA[
+### What is the Venn Diagram Viewer?
+
+This visualization lets you create area-proportional Venn and Euler diagrams using the [venn.js](https://github.com/benfred/venn.js) library.
+
+After selecting a dataset, you can plot overlaps between different sets based on your selected observations.
+
+#### Key Features
+
+- **Venn and Euler Diagrams**: Automatically draw diagrams based on your data.
+- **Area-Proportional**: Sizes of circles are proportional to set sizes and intersections.
+- **Simple Setup**: Choose your observations and generate the diagram easily.
+
+This tool is ideal for visualizing relationships and overlaps between two or more groups.
+
+To learn more about venn.js, visit:
+[https://github.com/benfred/venn.js](https://github.com/benfred/venn.js)
+    ]]></help>
 </visualization>

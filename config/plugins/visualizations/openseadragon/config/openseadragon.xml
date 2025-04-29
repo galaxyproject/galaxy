@@ -1,21 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="OpenSeadragon">
-    <description>Viewer for high-resolution zoomable images.</description>
+<visualization name="OpenSeadragon" embeddable="true">
+    <description>High-resolution Zoomable Images</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Gif</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Jpg</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Png</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Tiff</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">xml.Dzi</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">gif</test>
+            <test test_attr="ext">jpg</test>
+            <test test_attr="ext">png</test>
+            <test test_attr="ext">tiff</test>
+            <test test_attr="ext">dzi</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="mako">openseadragon.mako</entry_point>
-</visualization>
+    <requirements>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/openseadragon"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.gif" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.jpg" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/ngs_simulation_out1.png" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is OpenSeadragon Viewer?
 
+This visualization provides a powerful way to view high-resolution, zoomable images directly in your browser.  
+Supported formats include PNG, JPG, GIF and others.
+
+After selecting a dataset, the OpenSeadragon viewer will appear, allowing you to smoothly zoom, pan, and examine high-resolution imagery with excellent performance.
+
+This viewer is powered by [OpenSeadragon](https://openseadragon.github.io/), an open-source, web-based viewer for high-resolution zoomable images.
+
+#### Key Features
+
+- **Smooth Zooming**: Navigate gigapixel images with fluid zoom and pan controls
+- **Multi-Resolution Support**: Efficiently loads only the needed image tiles
+- **Versatile Format Support**: Works with standard images and specialized formats
+- **Advanced Controls**: Includes navigation aids, fullscreen mode, and rotation
+- **Touch-Friendly**: Works perfectly on both desktop and mobile devices
+
+For more information about OpenSeadragon and its capabilities, visit: [https://openseadragon.github.io/](https://openseadragon.github.io/)
+]]></help>
+</visualization>
