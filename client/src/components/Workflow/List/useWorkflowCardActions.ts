@@ -315,5 +315,6 @@ export function useWorkflowCardActions(
         workflowCardSecondaryActions,
         workflowCardPrimaryActions,
         toggleBookmark,
+        deleteWorkflow,
     };
 }

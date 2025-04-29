@@ -21,6 +21,7 @@ interface Props {
     current?: boolean;
     selected?: boolean;
     selectable?: boolean;
+    clickable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
     current: false,
     selected: false,
     selectable: false,
+    clickable: false,
 });
 
 const emit = defineEmits<{
@@ -43,6 +45,8 @@ const emit = defineEmits<{
     (e: "preview", id: string): void;
     (e: "insert"): void;
     (e: "insertSteps"): void;
+    (e: "on-key-down", workflow: WorkflowSummary, event: KeyboardEvent): void;
+    (e: "on-workflow-card-click", workflow: WorkflowSummary, event: Event): void;
 }>();
 
 const userStore = useUserStore();
@@ -105,9 +109,22 @@ const workflowCardTitle = computed(() => {
         handler: () => emit("preview", props.workflow.id),
     };
 });
+
+function onClick(event: Event) {
+    if (props.clickable) {
+        emit("on-workflow-card-click", workflow.value, event);
+    }
+}
+
+function onKeyDown(event: KeyboardEvent) {
+    if (props.clickable) {
+        emit("on-key-down", workflow.value, event);
+    }
+}
 </script>
 
 <template>
+    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
     <GCard
         :id="workflow.id"
         class="workflow-card"
@@ -130,11 +147,14 @@ const workflowCardTitle = computed(() => {
         :max-visible-tags="props.gridView ? 2 : 8"
         :update-time="workflow.update_time"
         :bookmarked="!!workflow.show_in_tool_panel"
+        :clickable="props.clickable"
         @bookmark="() => toggleBookmark(!workflow?.show_in_tool_panel)"
         @rename="emit('rename', props.workflow.id, props.workflow.name)"
         @select="emit('select', workflow)"
         @tagsUpdate="onTagsUpdate"
-        @tagClick="onTagClick">
+        @tagClick="onTagClick"
+        @click="onClick"
+        @keydown="onKeyDown">
         <template v-if="props.current" v-slot:primary-actions>
             <i class="mr-2"> current workflow </i>
         </template>

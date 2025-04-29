@@ -112,7 +112,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "click"): void;
+    (e: "click", event: MouseEvent | KeyboardEvent): void;
     (e: "bookmark"): void;
     (e: "dropdown", open: boolean): void;
     (e: "rename"): void;
@@ -120,6 +120,7 @@ const emit = defineEmits<{
     (e: "titleClick"): void;
     (e: "tagClick", tag: string): void;
     (e: "tagsUpdate", tags: string[]): void;
+    (e: "keydown", event: KeyboardEvent): void;
 }>();
 
 const bookmarkLoading = ref(false);
@@ -136,6 +137,14 @@ const getElementId = (cardId: string, element: string) => `g-card-${element}-${c
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
+
+function onKeyDown(event: KeyboardEvent) {
+    if ((props.clickable && event.key === "Enter") || event.key === " ") {
+        emit("click", event);
+    } else if (props.clickable) {
+        emit("keydown", event);
+    }
+}
 </script>
 
 <template>
@@ -152,8 +161,8 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
-        @click="props.clickable ? emit('click') : undefined"
-        @keydown.enter="props.clickable ? emit('click') : undefined">
+        @click="props.clickable ? emit('click', $event) : undefined"
+        @keydown="onKeyDown">
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
