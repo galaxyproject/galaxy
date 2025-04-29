@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { BAlert, BTab } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { InvocationInput, WorkflowInvocationElementView } from "@/api/invocations";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import Heading from "../Common/Heading.vue";
 import LoadingSpan from "../LoadingSpan.vue";
@@ -17,6 +20,37 @@ const props = defineProps<{
     invocation: WorkflowInvocationElementView;
     terminal?: boolean;
 }>();
+
+// Fetching full workflow to get the workflow output labels (for when invocation is not terminal)
+const workflowOutputLabels = ref<string[]>([]);
+const workflow = computed(() => {
+    if (!props.terminal) {
+        const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
+        return workflow.value;
+    }
+    return undefined;
+});
+const workflowStore = useWorkflowStore();
+watch(
+    workflow,
+    async (newWorkflow) => {
+        if (newWorkflow) {
+            try {
+                const wf = await workflowStore.getFullWorkflowCached(newWorkflow.id, newWorkflow.version);
+                if (wf) {
+                    const fullWorkflowSteps = (wf.steps ? Object.values(wf.steps) : []) as Step[];
+                    workflowOutputLabels.value = fullWorkflowSteps
+                        .flatMap((step) => step.workflow_outputs || [])
+                        .map((output) => output.label)
+                        .filter((label) => label !== null && label !== undefined);
+                }
+            } catch (error) {
+                console.error("Error fetching full workflow:", error);
+            }
+        }
+    },
+    { immediate: true }
+);
 
 const inputData = computed(() => Object.entries(props.invocation.inputs));
 
@@ -69,6 +103,17 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
                 <div v-for="([key, output], index) in outputs" :key="index">
                     <Heading size="text" bold separator>{{ key }}</Heading>
                     <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
+                </div>
+            </div>
+            <div v-else-if="workflowOutputLabels.length">
+                <div v-for="(label, index) in workflowOutputLabels" :key="index">
+                    <Heading size="text" bold separator>{{ label }}</Heading>
+                    <BAlert v-if="!props.terminal" class="m-1 py-2" show variant="info">
+                        <LoadingSpan message="Output not created yet" />
+                    </BAlert>
+                    <BAlert v-else class="m-1 py-2" show variant="danger">
+                        <LoadingSpan message="Output not available" />
+                    </BAlert>
                 </div>
             </div>
             <BAlert v-else show variant="info">
