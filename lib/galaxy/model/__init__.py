@@ -3242,9 +3242,9 @@ class HistoryAudit(Base):
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), primary_key=True)
     update_time: Mapped[datetime] = mapped_column(default=now, primary_key=True)
 
-    # This class should never be instantiated.
-    # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
-    __init__ = None  # type: ignore[assignment]
+    def __init__(self):
+        # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
+        raise RuntimeError("This class should never be instantiated")
 
     def __repr__(self):
         try:
@@ -10448,9 +10448,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     extra_data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
-    user: Mapped[Optional["User"]] = relationship(
-        back_populates="social_auth"
-    )  # type:ignore[assignment, unused-ignore]
+    user: Mapped[Optional["User"]] = relationship(back_populates="social_auth")
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
