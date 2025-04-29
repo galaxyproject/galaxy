@@ -98,7 +98,7 @@ function dataInputStepLabel(key: string, input: InvocationInput) {
             </div>
             <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
         </BTab>
-        <BTab title="Outputs" :lazy="!props.terminal">
+        <BTab title="Outputs">
             <div v-if="outputs.length">
                 <div v-for="([key, output], index) in outputs" :key="index">
                     <Heading size="text" bold separator>{{ key }}</Heading>
