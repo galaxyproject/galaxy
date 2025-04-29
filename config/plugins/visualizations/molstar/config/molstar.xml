@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Molstar Viewer" embeddable="true">
-    <description>Complex Biomolecular Structures with High-Performance 3D Rendering</description>
+    <description>Complex Biomolecular Structures</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
