@@ -42,6 +42,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -90,7 +91,6 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat,
 )
-from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
