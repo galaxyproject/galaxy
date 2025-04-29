@@ -3,6 +3,7 @@
 import argparse
 import json
 import logging
+import os
 import sys
 import tempfile
 from typing import (
@@ -29,7 +30,10 @@ try:
         STORED,
         TEXT,
     )
-    from whoosh.index import create_in
+    from whoosh.index import (
+        create_in,
+        open_dir,
+    )
     from whoosh.qparser import QueryParser
 except ImportError:
     Schema = TEXT = STORED = create_in = QueryParser = None
@@ -42,32 +46,56 @@ class QuaySearch:
     """
     Tool to search within a quay organization for a given software name.
     """
+    tmp_dir_prefix = "mulled_search.quay."
 
     def __init__(self, organization):
         self.index = None
         self.organization = organization
 
+    def paginator(self):
+        # download all information about the repositories from the
+        # given organization in self.organization
+        json_decoder = json.JSONDecoder()
+        parameters = {"public": "true", "namespace": self.organization}
+        next_page = ""
+        while next_page is not None:
+            if next_page:
+                parameters["next_page"] = next_page
+            r = requests.get(
+                QUAY_API_URL, headers={"Accept-encoding": "gzip"}, params=parameters, timeout=MULLED_SOCKET_TIMEOUT
+            )
+            decoded_request = json_decoder.decode(r.text)
+            next_page = decoded_request.get("next_page")
+            yield decoded_request
+
     def build_index(self):
         """
         Create an index to quickly examine the repositories of a given quay.io organization.
         """
-        # download all information about the repositories from the
-        # given organization in self.organization
-
-        parameters = {"public": "true", "namespace": self.organization}
-        r = requests.get(
-            QUAY_API_URL, headers={"Accept-encoding": "gzip"}, params=parameters, timeout=MULLED_SOCKET_TIMEOUT
-        )
-        tmp_dir = tempfile.mkdtemp()
-        schema = Schema(title=TEXT(stored=True), content=STORED)
-        self.index = create_in(tmp_dir, schema)
-
-        json_decoder = json.JSONDecoder()
-        decoded_request = json_decoder.decode(r.text)
-        writer = self.index.writer()
-        for repository in decoded_request["repositories"]:
-            writer.add_document(title=repository["name"], content=repository["description"])
-        writer.commit()
+        entries = []
+        uid = os.getuid()
+        for entry in os.scandir(tempfile.gettempdir()):
+            if not entry.name.startswith(QuaySearch.tmp_dir_prefix):
+                continue
+            if not entry.is_dir() or entry.is_symlink():
+                continue
+            entry_st = entry.stat()
+            if entry_st.st_uid != uid:
+                continue
+            entries.append((entry_st.st_mtime, entry.path))
+        if entries:
+            tmp_dir = sorted(entries)[-1][1]
+            print(f"Using existing quay.io index, remove to regenerate: {tmp_dir}", file=sys.stderr)
+            self.index = open_dir(tmp_dir)
+        else:
+            tmp_dir = tempfile.mkdtemp(prefix=QuaySearch.tmp_dir_prefix)
+            schema = Schema(title=TEXT(stored=True), content=STORED)
+            self.index = create_in(tmp_dir, schema)
+            writer = self.index.writer()
+            for decoded_request in self.paginator():
+                for repository in decoded_request["repositories"]:
+                    writer.add_document(title=repository["name"], content=repository["description"])
+            writer.commit()
 
     def search_repository(self, search_string, non_strict):
         """
