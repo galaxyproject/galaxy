@@ -1402,6 +1402,17 @@ class ToolRequest(Base, Dictifiable, RepresentById):
     history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
 
 
+class UserDynamicToolAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = "user_dynamic_tool_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    dynamic_tool_id: Mapped[int] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    hidden: Mapped[Optional[bool]] = mapped_column(default=False)
+    active: Mapped[Optional[bool]] = mapped_column(default=True)
+
+
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = "dynamic_tool"
 
@@ -1417,6 +1428,7 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     hidden: Mapped[Optional[bool]] = mapped_column(default=True)
     active: Mapped[Optional[bool]] = mapped_column(default=True)
     value: Mapped[Optional[Dict[str, Any]]] = mapped_column(MutableJSONType)
+    public: Mapped[bool] = mapped_column(default=False, server_default=false())
 
     dict_collection_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
     dict_element_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
