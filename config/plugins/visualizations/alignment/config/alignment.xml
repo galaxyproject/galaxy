@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Multiple Sequence Alignment" embeddable="true">
+    <tags>
+        <tag>multiple</tag>
+        <tag>sequence</tag>
+        <tag>alignment</tag>
+    </tags>
     <description>Large-scale Sequence Alignment Browser</description>
     <data_sources>
         <data_source>
