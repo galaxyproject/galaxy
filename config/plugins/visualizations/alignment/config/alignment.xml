@@ -27,10 +27,8 @@ This tool provides an **interactive multiple sequence alignment (MSA) viewer** p
 
 #### Key Features
 
-- **Interactive Zoom & Scroll**: Navigate large alignments efficiently.
 - **Axis Labels & Site Indexing**: Visual indicators for sequence names and site positions.
 - **Color-Coding**: Residues are color-coded by type for easy interpretation.
-- **Sequence Centering**: Automatically centers the view on a selected sequence or site.
 - **Linked Scrolling**: Labels, sites, and sequences stay synchronized when scrolling.
 
 #### Supported Input
