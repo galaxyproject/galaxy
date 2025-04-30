@@ -3,15 +3,15 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
+import { type Dataset, fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { getTestExtensions, getTestUrls } from "./utilities";
 
-import FormDataExtensions from "../Form/Elements/FormData/FormDataExtensions.vue";
 import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
+import FormDataExtensions from "@/components/Form/Elements/FormData/FormDataExtensions.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
@@ -31,10 +31,14 @@ const urlData = computed(() => getTestUrls(plugin.value));
 const extensions = computed(() => getTestExtensions(plugin.value));
 const formatsVisible = ref(false);
 
+function addHidToName(hdas: Array<Dataset>) {
+    return hdas.map((entry) => ({ id: entry.id, name: `${entry.hid}: ${entry.name}` }));
+}
+
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
-        return data.hdas;
+        return addHidToName(data.hdas);
     } else {
         return [];
     }
@@ -54,6 +58,8 @@ function onSelect(dataset: OptionType) {
 onMounted(() => {
     getPlugin();
 });
+
+defineExpose({ doQuery });
 </script>
 
 <template>

@@ -4,6 +4,8 @@ import { createPinia, defineStore, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { ref } from "vue";
 
+import { fetchPluginHistoryItems } from "@/api/plugins";
+
 import VisualizationCreate from "./VisualizationCreate.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 
@@ -71,4 +73,25 @@ it("renders plugin info after load", async () => {
     expect(wrapper.text()).toContain("Help");
     expect(wrapper.text()).toContain("tag1");
     expect(wrapper.text()).toContain("tag2");
+});
+
+it("adds hid to dataset names when fetching history items", async () => {
+    fetchPluginHistoryItems.mockResolvedValueOnce({
+        hdas: [
+            { id: "dataset1", hid: 101, name: "First Dataset" },
+            { id: "dataset2", hid: 102, name: "Second Dataset" },
+        ],
+    });
+    const wrapper = mount(VisualizationCreate, {
+        localVue,
+        propsData: {
+            visualization: "scatterplot",
+        },
+    });
+    await wrapper.vm.$nextTick();
+    const results = await wrapper.vm.doQuery();
+    expect(results).toEqual([
+        { id: "dataset1", name: "101: First Dataset" },
+        { id: "dataset2", name: "102: Second Dataset" },
+    ]);
 });

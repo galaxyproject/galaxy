@@ -5,6 +5,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 export interface Dataset {
     id: string;
+    hid: string;
     name: string;
 }
 
