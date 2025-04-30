@@ -19,6 +19,14 @@
         <requirement type="npm" version="0.0.1" package="@galaxyproject/aceeditor"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/2.txt" ftype="txt" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/cytoscape.json" ftype="json" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is the Editor?
 
