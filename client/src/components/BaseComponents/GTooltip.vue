@@ -8,7 +8,7 @@
 import type { Instance as PopperInstance, Placement } from "@popperjs/core";
 import { createPopper } from "@popperjs/core";
 import { watchImmediate } from "@vueuse/core";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 
 import { useAccessibleHover } from "@/composables/accessibleHover";
 import { useUid } from "@/composables/utils/uid";
@@ -83,7 +83,7 @@ watchImmediate(
     }
 );
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
     props.reference?.removeAttribute("aria-describedby");
 });
 
