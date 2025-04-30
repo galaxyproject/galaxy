@@ -27,9 +27,6 @@
                             :multiple="true"
                             :optional="true" />
                     </FormElementLabel>
-                    <FormElementLabel title="Create a new group of the same name for this role:">
-                        <FormBoolean id="role-auto-create" v-model="autoCreate" />
-                    </FormElementLabel>
                 </template>
             </FormCard>
             <BButton id="role-submit" class="my-2" variant="primary" @click="onSubmit">
@@ -49,14 +46,12 @@ import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 
-import FormBoolean from "@/components/Form/Elements/FormBoolean.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormSelection from "@/components/Form/Elements/FormSelection.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const autoCreate = ref(false);
 const errorMessage = ref("");
 const description = ref("");
 const groupIds = ref();
@@ -99,7 +94,7 @@ async function onSubmit() {
             },
         });
         if (error) {
-            errorMessage.value = error.err_msg;
+            errorMessage.value = `Failed to create role: ${error.err_msg}`;
         } else {
             router.push("/admin/roles");
         }
