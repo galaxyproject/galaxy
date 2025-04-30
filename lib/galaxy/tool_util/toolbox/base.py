@@ -735,7 +735,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     ) -> Union[Optional["Tool"], List["Tool"]]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
         if tool_uuid and user:
-            unprivileged_tool = self.get_unprivileged_tool(user, tool_uuid=tool_uuid)
+            unprivileged_tool = self.get_unprivileged_tool_or_none(user, tool_uuid=tool_uuid)
             if unprivileged_tool:
                 return unprivileged_tool
         if tool_version:

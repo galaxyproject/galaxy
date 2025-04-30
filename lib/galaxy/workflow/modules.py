@@ -1859,9 +1859,12 @@ class ToolModule(WorkflowModule):
         self.tool_uuid = tool_uuid
         self.tool: Optional[Tool] = None
         if getattr(trans.app, "toolbox", None):
-            self.tool = trans.app.toolbox.get_tool(
-                tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid, user=trans.user
-            )
+            if trans.user and tool_uuid:
+                self.tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
+            if not self.tool:
+                self.tool = trans.app.toolbox.get_tool(
+                    tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
+                )
         if self.tool:
             current_tool_version = str(self.tool.version)
             if exact_tools and self.tool_version and self.tool_version != current_tool_version:

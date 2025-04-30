@@ -124,8 +124,8 @@ class ToolsService(ServiceBase):
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
         tool: Optional[Tool] = None
-        if tool_uuid:
-            tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
+        if tool_uuid and trans.user:
+            tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
         if not tool:
             tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool:

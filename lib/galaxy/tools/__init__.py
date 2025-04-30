@@ -625,6 +625,12 @@ class ToolBox(AbstractToolBox):
         dynamic_tool = self.app.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, tool_uuid)
         return self.dynamic_tool_to_tool(dynamic_tool)
 
+    def get_unprivileged_tool_or_none(self, user: model.User, tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        try:
+            return self.get_unprivileged_tool(user, tool_uuid=tool_uuid)
+        except exceptions.InsufficientPermissionsException:
+            return None
+
     def dynamic_tool_to_tool(self, dynamic_tool: Optional[model.DynamicTool]) -> Optional["Tool"]:
         if dynamic_tool and dynamic_tool.active and dynamic_tool.value:
             tool_source = YamlToolSource(dynamic_tool.value)
