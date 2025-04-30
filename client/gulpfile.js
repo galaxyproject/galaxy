@@ -32,6 +32,7 @@ const PLUGIN_BUILD_IDS = [
 const INSTALL_PLUGIN_BUILD_IDS = [
     "aceeditor",
     "aladin",
+    "alignment",
     "cytoscape",
     "h5web",
     "heatmap",
