@@ -190,7 +190,7 @@ function getIdpPreference() {
             {{ messageText }}
         </BAlert>
 
-        <BForm id="externalLogin" :class="{ 'h-100': !messageText, 'd-flex': !props.columnDisplay }">
+        <BForm id="externalLogin" :class="{ 'd-flex h-100': !props.columnDisplay }">
             <!-- OIDC login-->
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="props.loginPage">
@@ -286,12 +286,14 @@ function getIdpPreference() {
                 <hr v-else class="w-100" />
             </template>
 
-            <span v-if="isConfigLoaded" class="oidc-idps-grid">
+            <span
+                v-if="isConfigLoaded"
+                :class="!props.columnDisplay && props.loginPage ? 'oidc-idps-column' : 'oidc-idps-grid'">
                 <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
                     <BButton
                         v-if="iDPInfo['icon']"
                         variant="link"
-                        class="d-block p-0 text-decoration-none"
+                        class="d-block oidc-button p-0 text-decoration-none"
                         :disabled="loading"
                         @click="submitOIDCLogin(idp)">
                         <img :src="iDPInfo['icon']" height="35" :alt="`Sign in with ${capitalizeFirstLetter(idp)}`" />
@@ -299,7 +301,7 @@ function getIdpPreference() {
                     <BButton
                         v-else-if="iDPInfo['custom_button_text']"
                         variant="outline-primary"
-                        class="d-block"
+                        class="d-block oidc-button"
                         :disabled="loading"
                         @click="submitOIDCLogin(idp)">
                         <i :class="oIDCIdps[idp]" />
@@ -308,7 +310,7 @@ function getIdpPreference() {
                     <BButton
                         v-else
                         variant="outline-primary"
-                        class="d-block"
+                        class="d-block oidc-button"
                         :disabled="loading"
                         @click="submitOIDCLogin(idp)">
                         <i :class="oIDCIdps[idp]" />
@@ -330,6 +332,18 @@ function getIdpPreference() {
 .card-body {
     overflow: visible;
 }
+/* Enforce idps to appear in a column */
+.oidc-idps-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: 100%;
+    justify-items: center;
+    .oidc-button {
+        width: 100%;
+    }
+}
+/* Flexible grid for idps */
 .oidc-idps-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
