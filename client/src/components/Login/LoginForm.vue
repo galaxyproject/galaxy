@@ -66,6 +66,11 @@ const confirmURL = ref(urlParams.has("confirm") && urlParams.get("confirm") == "
 
 const excludeIdps = computed(() => (connectExternalProvider.value ? [connectExternalProvider.value] : undefined));
 
+/** This decides if all login options should be displayed in column style
+ * (one below the other) or horizontally.
+ */
+const loginColumnDisplay = computed(() => Boolean(props.showWelcomeWithLogin && props.welcomeUrl));
+
 function toggleLogin() {
     emit("toggle-login");
 }
@@ -146,8 +151,8 @@ function returnToLogin() {
 </script>
 
 <template>
-    <div class="container">
-        <div class="row justify-content-md-center">
+    <div class="login-form">
+        <div class="d-flex justify-content-md-center">
             <template v-if="!confirmURL">
                 <div>
                     <BAlert :show="!!messageText" :variant="messageVariant">
@@ -167,7 +172,7 @@ function returnToLogin() {
                                 <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
                             </BCardHeader>
 
-                            <BCardBody class="d-flex">
+                            <BCardBody :class="{ 'd-flex w-100': !loginColumnDisplay }">
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <BFormGroup
@@ -222,14 +227,21 @@ function returnToLogin() {
                                     </BButton>
                                 </div>
 
-                                <VerticalSeparator v-if="enableOidc">
-                                    <span v-localize>or</span>
-                                </VerticalSeparator>
+                                <template v-if="enableOidc">
+                                    <VerticalSeparator v-if="!loginColumnDisplay">
+                                        <span v-localize>or</span>
+                                    </VerticalSeparator>
 
-                                <div v-if="enableOidc" class="m-1">
-                                    <!-- OIDC login-->
-                                    <ExternalLogin login-page :exclude-idps="excludeIdps" />
-                                </div>
+                                    <hr v-else class="w-100" />
+
+                                    <div class="m-1 w-100">
+                                        <!-- OIDC login-->
+                                        <ExternalLogin
+                                            login-page
+                                            :exclude-idps="excludeIdps"
+                                            :column-display="loginColumnDisplay" />
+                                    </div>
+                                </template>
                             </BCardBody>
 
                             <BCardFooter>
@@ -268,7 +280,7 @@ function returnToLogin() {
                     @setRedirect="setRedirect" />
             </template>
 
-            <div v-if="showWelcomeWithLogin && props.welcomeUrl" class="col">
+            <div v-if="showWelcomeWithLogin && props.welcomeUrl" class="w-100">
                 <BEmbed type="iframe" :src="withPrefix(props.welcomeUrl)" aspect="1by1" />
             </div>
         </div>
@@ -278,5 +290,8 @@ function returnToLogin() {
 <style scoped lang="scss">
 .card-body {
     overflow: visible;
+}
+.login-form {
+    margin: 0rem 10rem;
 }
 </style>
