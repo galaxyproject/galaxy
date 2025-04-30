@@ -10,7 +10,7 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext">csv</test>
+            <test test_attr="ext">geocsv</test>
             <test test_attr="ext">geojson</test>
         </data_source>
     </data_sources>
@@ -24,6 +24,9 @@
     <tests>
         <test>
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geojson" label="Hurricane Irma (geojson)" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geocsv" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[
