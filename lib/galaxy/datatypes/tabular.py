@@ -1527,6 +1527,48 @@ class TSV(BaseCSV):
 
 
 @build_sniff_from_prefix
+class GeoCSV(BaseCSV):
+    """
+    CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields.
+    https://docs.kepler.gl/docs/keplergl-schema
+    """
+
+    file_ext = "geocsv"
+    dialect = csv.excel  # This is the default
+    strict_width = True  # Previous csv type did not check column width
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "GeoCSV"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Looks for CSV with latitude/longitude headers.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.csv')
+        >>> GeoCSV().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.geocsv')
+        >>> GeoCSV().sniff(fname)
+        True
+        """
+        try:
+            with open(file_prefix.filename) as f:
+                # Read first line as header
+                header = f.readline().strip()
+                if not header or "," not in header:
+                    return False
+                fields = [col.strip().lower() for col in header.split(",")]
+                has_lat = any(col in fields for col in ["lat", "latitude"])
+                has_lon = any(col in fields for col in ["lon", "lng", "longitude"])
+                return has_lat and has_lon
+        except Exception:
+            return False
+
+
+@build_sniff_from_prefix
 class ConnectivityTable(Tabular):
     edam_format = "format_3309"
     file_ext = "ct"

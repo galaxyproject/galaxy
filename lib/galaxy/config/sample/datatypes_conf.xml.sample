@@ -108,6 +108,7 @@
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true">
       <converter file="csv_to_tabular.xml" target_datatype="tabular"/>
     </datatype>
+    <datatype extension="geocsv" type="galaxy.datatypes.tabular:GeoCSV" description="CSV containing location data."/>
     <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
     </datatype>
