@@ -16,7 +16,7 @@
         <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/aceeditor"/>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/aceeditor"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <help format="markdown"><![CDATA[
