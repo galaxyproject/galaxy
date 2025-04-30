@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { BTab, BTabs } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { BLink, BTab, BTabs } from "bootstrap-vue";
+import { computed } from "vue";
 
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -18,23 +18,22 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    // Move toplevel routes to this component with subrouting?
 });
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
 
 const stateText = computed(() => dataset.value && STATES[dataset.value.state] && STATES[dataset.value.state].text);
-const activeTab = ref("activeTab");
 const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview=true`);
 
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
+
 </script>
 <template>
-    <div v-if="dataset && !isLoading">
-        <header class="dataset-header">
+    <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
+        <header class="dataset-header flex-shrink-0">
             <Heading h1 separator>{{ dataset.name }}</Heading>
             <div v-if="stateText" class="mb-1">{{ stateText }}</div>
             <div v-else-if="dataset.misc_blurb" class="blurb">
@@ -46,23 +45,24 @@ const showError = computed(
             </span>
             <span v-if="dataset.genome_build" class="dbkey">
                 <span v-localize class="prompt">database</span>
-                <BLink class="value" data-label="Database/Build" @click.stop="activeTab = 'edit'">{{
-                    dataset.genome_build
-                }}</BLink>
+                <!-- Consider making this link actually switch to the Edit tab -->
+                <BLink class="value" data-label="Database/Build">{{ dataset.genome_build }}</BLink>
             </span>
             <div v-if="dataset.misc_info" class="info">
                 <span class="value">{{ dataset.misc_info }}</span>
             </div>
         </header>
-        <div class="dataset-tabs h-100">
-            <BTabs pills card>
-                <BTab title="Preview" active class="h-100">
+
+        <!-- Tab container - make it grow to fill remaining space and handle overflow -->
+        <div class="dataset-tabs-container flex-grow-1 overflow-hidden">
+            <!-- Make BTabs fill its container and use flex column layout internally -->
+            <BTabs pills card lazy class="h-100 d-flex flex-column">
+                <BTab title="Preview" active>
+                    <!-- Iframe for dataset preview -->
                     <iframe
                         :src="displayUrl"
                         title="galaxy dataset display frame"
-                        class="center-frame h-100"
-                        width="100%"
-                        height="100%"
+                        class="dataset-preview-iframe"
                         frameborder="0"></iframe>
                 </BTab>
                 <BTab title="Details">
@@ -80,10 +80,73 @@ const showError = computed(
             </BTabs>
         </div>
     </div>
+    <!-- Loading state indicator -->
+    <div v-else class="loading-message">Loading dataset details...</div>
 </template>
 
 <style scoped>
+.dataset-view {
+    height: 100%;
+}
+
 .dataset-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.dataset-tabs-container {
+    min-height: 0; /* fix for flex-grow behavior in some contexts */
+}
+
+.dataset-tabs-container :deep(.nav-tabs) {
+    flex-shrink: 0;
+}
+
+.dataset-tabs-container :deep(.tab-content) {
+    flex-grow: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.dataset-tabs-container :deep(.tab-pane) {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.dataset-tabs-container :deep(.card-body) {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    /* Remove padding for the iframe tab, we add back for others */
+    padding: 0;
+    overflow: hidden;
+}
+
+/* --- Styling specific to the iframe and other tabs --- */
+
+.dataset-preview-iframe {
+    flex-grow: 1;
+    border: none;
+    width: 100%;
+    height: 100%;
+}
+
+.dataset-tabs-container :deep(.tab-pane:not(:first-child) .card-body) {
+    padding: 1.25rem;
+    overflow: auto;
+}
+
+/* Ensure the active preview tab's card-body remains without padding */
+.dataset-tabs-container :deep(.tab-pane.active:first-child .card-body) {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* --- Optional: Loading state --- */
+.loading-message {
+    padding: 2rem;
+    text-align: center;
+    font-style: italic;
 }
 </style>
