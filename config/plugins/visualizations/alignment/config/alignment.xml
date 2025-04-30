@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Multiple Sequence Alignment" embeddable="true">
-    <description>Alignments for large-scale MSAs</description>
+    <description>Large-scale Sequence Alignment Browser</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -9,7 +9,7 @@
         </data_source>
     </data_sources>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/alignment"/>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/alignment"/>
     </requirements>
     <params>
         <param required="true">dataset_id</param>
