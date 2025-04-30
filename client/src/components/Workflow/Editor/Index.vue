@@ -59,6 +59,7 @@
                     v-else-if="isActiveSideBar('workflow-best-practices')"
                     :untyped-parameters="parameters"
                     :annotation="annotation"
+                    :readme="readme"
                     :creator="creator"
                     :license="license"
                     :steps="steps"
@@ -93,8 +94,8 @@
                     :creator="creator"
                     :doi="doi"
                     :logo-url="logoUrl"
-                    :readme="readme"
                     :help="help"
+                    :readme-active.sync="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"
@@ -103,7 +104,6 @@
                     @update:nameCurrent="setName"
                     @update:annotationCurrent="setAnnotation"
                     @update:logoUrlCurrent="setLogoUrl"
-                    @update:readmeCurrent="setReadme"
                     @update:helpCurrent="setHelp" />
             </template>
         </ActivityBar>
@@ -165,8 +165,18 @@
                         </b-button>
                     </b-button-group>
                 </div>
+
+                <ReadmeEditor
+                    v-if="readmeActive"
+                    class="p-2"
+                    :readme="readme"
+                    :name="name"
+                    :logo-url="logoUrl"
+                    @exit="readmeActive = false"
+                    @update:readmeCurrent="setReadme" />
+
                 <WorkflowGraph
-                    v-if="!datatypesMapperLoading"
+                    v-else-if="!datatypesMapperLoading"
                     ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
@@ -236,6 +246,7 @@ import reportDefault from "./reportDefault";
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
 import NodeInspector from "./NodeInspector.vue";
+import ReadmeEditor from "./ReadmeEditor.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
@@ -256,6 +267,7 @@ export default {
         MarkdownEditor,
         SaveChangesModal,
         StateUpgradeModal,
+        ReadmeEditor,
         ToolPanel,
         WorkflowAttributes,
         WorkflowLint,
@@ -394,10 +406,14 @@ export default {
         }
 
         const readme = ref(null);
+        const readmeActive = ref(false);
         const setReadmeHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (readme.value = value),
-            showAttributes,
+            (args) => {
+                readmeActive.value = true;
+                showAttributes(args);
+            },
             "modify readme"
         );
         function setReadme(newReadme) {
@@ -405,6 +421,16 @@ export default {
                 setReadmeHandler.set(readme.value, newReadme);
             }
         }
+        // If we switch to the report, we want to close the readme editor
+        // TODO: Maybe do this for other activities as well? E.g. inputs, tools...
+        watch(
+            () => reportActive.value,
+            (newReportActive) => {
+                if (newReportActive) {
+                    readmeActive.value = false;
+                }
+            }
+        );
 
         const help = ref(null);
         const setHelpHandler = new SetValueActionHandler(
@@ -563,6 +589,7 @@ export default {
             setAnnotation,
             readme,
             setReadme,
+            readmeActive,
             help,
             setHelp,
             logoUrl,
@@ -1179,7 +1206,8 @@ export default {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
     width: 100%;
 }
 </style>

@@ -20,7 +20,7 @@
             :okay="checkReadme"
             success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
             :warning-message="bestPracticeWarningReadme"
-            attribute-link="Provider Readme for your Workflow."
+            attribute-link="Provide Readme for your Workflow."
             @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
@@ -128,6 +128,10 @@ export default {
             type: String,
             default: null,
         },
+        readme: {
+            type: String,
+            default: null,
+        },
         license: {
             type: String,
             default: null,
@@ -180,7 +184,7 @@ export default {
             }
         },
         checkReadme() {
-            return !!this.annotation;
+            return !!this.readme;
         },
         checkLicense() {
             return !!this.license;

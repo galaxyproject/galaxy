@@ -106,18 +106,31 @@
             </div>
         </div>
         <div class="mt-2">
-            <b
-                >Readme
-                <FontAwesomeIcon :icon="faEye" @click="showReadmePreview = true" />
-            </b>
-            <b-textarea
+            <div>
+                <b>Readme</b>
+            </div>
+            <b-button
                 id="workflow-readme"
-                v-model="readmeCurrent"
-                @keyup="$emit('update:readmeCurrent', readmeCurrent)" />
+                class="w-100"
+                size="sm"
+                :pressed="readmeActive"
+                @click="$emit('update:readme-active', !readmeActive)">
+                {{ readmeActive ? "Hide" : "Show" }} Readme
+            </b-button>
             <div class="form-text text-muted">
                 A detailed description of what the workflow does. It is best to include descriptions of what kinds of
                 data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
             </div>
+            <b-popover
+                custom-class="best-practice-popover"
+                target="workflow-readme"
+                boundary="window"
+                placement="right"
+                :show.sync="showReadmeHightlight"
+                triggers="manual"
+                title="Best Practice"
+                :content="bestPracticeWarningReadme">
+            </b-popover>
         </div>
         <div class="mt-2">
             <b>Help</b>
@@ -137,16 +150,10 @@
                 An logo image used when generating publication artifacts for your workflow. This is completely optional.
             </div>
         </div>
-        <BModal v-model="showReadmePreview" hide-header centered ok-only>
-            <ToolHelpMarkdown :content="readmePreviewMarkdown" />
-        </BModal>
     </ActivityPanel>
 </template>
 
 <script>
-import { faEye } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
 import { format, parseISO } from "date-fns";
 
 import { Services } from "@/components/Workflow/services";
@@ -156,6 +163,7 @@ import {
     bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
 } from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
@@ -164,21 +172,17 @@ import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
 const bestPracticeHighlightTime = 10000;
 
 export default {
     name: "WorkflowAttributes",
     components: {
-        FontAwesomeIcon,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
         ItemListEditor,
         ActivityPanel,
-        BModal,
-        ToolHelpMarkdown,
     },
     props: {
         id: {
@@ -217,9 +221,9 @@ export default {
             type: String,
             default: null,
         },
-        readme: {
-            type: String,
-            default: null,
+        readmeActive: {
+            type: Boolean,
+            default: false,
         },
         help: {
             type: String,
@@ -242,19 +246,18 @@ export default {
         return {
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
             message: null,
             messageVariant: null,
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
             logoUrlCurrent: this.logoUrl,
-            readmeCurrent: this.readme,
             helpCurrent: this.help,
             showAnnotationHightlight: false,
             showLicenseHightlight: false,
             showCreatorHightlight: false,
-            showReadmePreview: false,
-            faEye,
+            showReadmeHightlight: false,
             doiDescription: `
 Acceptable format:
 <ul>
@@ -277,19 +280,6 @@ Acceptable format:
         },
         hasParameters() {
             return this.parameters && this.parameters.parameters.length > 0;
-        },
-        readmePreviewMarkdown() {
-            let content = "";
-            if (this.nameCurrent) {
-                content += `# ${this.nameCurrent}\n\n`;
-            }
-            if (this.logoUrlCurrent) {
-                content += `![${this.nameCurrent || "workflow"} logo](${this.logoUrlCurrent})\n\n`;
-            }
-            if (this.readmeCurrent) {
-                content += this.readmeCurrent;
-            }
-            return content;
         },
         versionOptions() {
             const versions = [];
@@ -342,9 +332,6 @@ Acceptable format:
         },
         name() {
             this.nameCurrent = this.name;
-        },
-        readme() {
-            this.readmeCurrent = this.readme;
         },
         help() {
             this.helpCurrent = this.help;
