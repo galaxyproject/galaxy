@@ -36,7 +36,7 @@ const currentTitle = computed(() => (props.wait ? "Please wait..." : props.toolt
         tooltip
         tooltip-placement="bottom"
         :color="props.color"
-        :title="props.tooltip"
+        :title="currentTitle"
         :disabled="props.wait || props.disabled"
         :size="props.size"
         @click="$emit('onClick')">
