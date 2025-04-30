@@ -8,6 +8,28 @@
                     <FormElementLabel title="Title" :required="true" :condition="!!name">
                         <FormInput id="role-name" v-model="name" />
                     </FormElementLabel>
+                    <FormElementLabel title="Description" :required="true" :condition="!!description">
+                        <FormInput id="role-description" v-model="description" />
+                    </FormElementLabel>
+                    <FormElementLabel title="Groups">
+                        <FormSelection
+                            id="role-groups"
+                            v-model="groups"
+                            :data="groupsOptions"
+                            :multiple="true"
+                            :optional="true" />
+                    </FormElementLabel>
+                    <FormElementLabel title="Users">
+                        <FormSelection
+                            id="role-users"
+                            v-model="roles"
+                            :data="rolesOptions"
+                            :multiple="true"
+                            :optional="true" />
+                    </FormElementLabel>
+                    <FormElementLabel title="Create a new group of the same name for this role:">
+                        <FormBoolean id="role-auto-create" v-model="autoCreate" />
+                    </FormElementLabel>
                 </template>
             </FormCard>
             <BButton id="role-submit" class="my-2" variant="primary" @click="onSubmit">
@@ -23,45 +45,55 @@ import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
+//import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 
+import FormBoolean from "../Form/Elements/FormBoolean.vue";
+import FormSelection from "../Form/Elements/FormSelection.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const autoCreate = ref(false);
 const errorMessage = ref("");
+const description = ref("");
+const groups = ref();
+const groupsOptions = ref();
+const roles = ref();
+const rolesOptions = ref();
 const loading = ref(false);
 const name = ref("");
 
-const router = useRouter();
+//const router = useRouter();
 
 async function fetchData() {
     loading.value = true;
-    const { data: groups, error: groupsError } = await GalaxyApi().GET("/api/groups");
+    const { data: groupsList, error: groupsError } = await GalaxyApi().GET("/api/groups");
     if (groupsError) {
         errorMessage.value = groupsError.err_msg;
     } else {
-        const { data: roles, error: rolesError } = await GalaxyApi().GET("/api/roles");
+        const { data: rolesList, error: rolesError } = await GalaxyApi().GET("/api/roles");
         if (rolesError) {
             errorMessage.value = rolesError.err_msg;
         } else {
             errorMessage.value = "";
-            
+            groupsOptions.value = groupsList.map((g) => ({ value: g.id, label: g.name }));
+            rolesOptions.value = rolesList.map((r) => ({ value: r.id, label: r.name }));
         }
     }
     loading.value = false;
 }
 
 async function onSubmit() {
-    if (false) {
+    console.log("ok");
+    /*if (false) {
         errorMessage.value = "Please complete all required inputs.";
         return;
     }
 
-    /*const { data, error } = await GalaxyApi().POST("/api/roles", {
+    const { data, error } = await GalaxyApi().POST("/api/roles", {
         body: {
             name: name.value,
         },
@@ -70,7 +102,7 @@ async function onSubmit() {
         errorMessage.value = error.err_msg;
     } else {
         router.push("/admin/roles");
-    }*/ 
+    }*/
 }
 
 fetchData();
