@@ -1251,6 +1251,7 @@
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:CMAP"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
+    <sniffer type="galaxy.datatypes.tabular:GeoCSV"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
     <sniffer type="galaxy.datatypes.metacyto:mSummary"/>
     <sniffer type="galaxy.datatypes.metacyto:mStats"/>
