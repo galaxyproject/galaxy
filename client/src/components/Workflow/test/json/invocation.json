@@ -19,7 +19,10 @@
             "action": null,
             "order_index": 0,
             "workflow_step_label": "input dataset",
-            "workflow_step_uuid": "161efd0b-9cdb-42eb-bc9a-fc529b1bb638"
+            "jobs": [],
+            "workflow_step_uuid": "161efd0b-9cdb-42eb-bc9a-fc529b1bb638",
+            "outputs": {},
+            "output_collections": {}
         }
     ],
     "inputs": {
@@ -30,9 +33,27 @@
             "workflow_step_id": "84e9a019416adb3d"
         }
     },
-    "input_step_parameters": {},
-    "outputs": {},
-    "output_collections": {},
+    "input_step_parameters": {
+        "Workflow Input Parameter": {
+            "parameter_value": true,
+            "label": "Workflow Input Parameter",
+            "workflow_step_id": "22bdbe9d6e0775fe" 
+        }
+    },
+    "outputs": {
+        "Workflow Output Dataset": {
+            "id": "4f352876a933b584",
+            "workflow_step_id": "05f39d2a289deb5a",
+            "src": "hda"
+        }
+    },
+    "output_collections": {
+        "Workflow Output Collection": {
+            "id": "ecbc86ac41da8f7b",
+            "workflow_step_id": "c486c1d29a0743d3",
+            "src": "hdca"
+        }
+    },
     "output_values": {},
     "messages": []
 }

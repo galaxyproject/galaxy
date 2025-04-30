@@ -3,9 +3,11 @@ import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
     const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
+    const fullWorkflowsByIdAndVersion = ref(new Map<string, any>());
 
     const getStoredWorkflowByInstanceId = computed(() => (workflowId: string) => {
         return workflowsByInstanceId.value[workflowId];
@@ -24,6 +26,22 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
             return defaultName;
         }
     });
+
+    // TODO: A better way? Could use ref<{ [id: string]: { [version: string]: any } }>({});
+    function uniqueIdAndVersionKey(workflowId: string, version?: number) {
+        return `${workflowId}${version ? `_${version}` : "_latest"}`;
+    }
+    async function getFullWorkflowCached(workflowId: string, version?: number) {
+        const key = uniqueIdAndVersionKey(workflowId, version);
+        if (fullWorkflowsByIdAndVersion.value.has(key)) {
+            return fullWorkflowsByIdAndVersion.value.get(key);
+        }
+        const storedWorkflow = await getWorkflowFull(workflowId, version);
+        if (storedWorkflow) {
+            fullWorkflowsByIdAndVersion.value.set(key, storedWorkflow);
+        }
+        return storedWorkflow;
+    }
 
     // stores in progress promises to avoid overlapping requests
     const workflowDetailPromises = new Map<string, Promise<unknown>>();
@@ -68,6 +86,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     return {
         fetchWorkflowForInstanceId,
         fetchWorkflowForInstanceIdCached,
+        getFullWorkflowCached,
         getStoredWorkflowByInstanceId,
         getStoredWorkflowIdByInstanceId,
         getStoredWorkflowNameByInstanceId,
