@@ -1506,36 +1506,14 @@ class CSV(BaseCSV):
     strict_width = False  # Previous csv type did not check column width
 
 
-@dataproviders.decorators.has_dataproviders
-class TSV(BaseCSV):
-    """
-    Tab-separated table data.
-    Only sniff tab-separated files with at least 2 rows and 2 columns.
-
-    Note: Use of this datatype is optional as the general tabular datatype will
-    handle most tab-separated files. This datatype is only required for datasets
-    with tabs INSIDE double quotes.
-
-    This datatype currently does not support TSV files where the header has one
-    column less to indicate first column is row names. This kind of file is
-    handled fine by the tabular datatype.
-    """
-
-    file_ext = "tsv"
-    dialect = csv.excel_tab
-    strict_width = True  # Leave files with different width to tabular
-
-
 @build_sniff_from_prefix
-class GeoCSV(BaseCSV):
+class GeoCSV(CSV):
     """
     CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields.
     https://docs.kepler.gl/docs/keplergl-schema
     """
 
     file_ext = "geocsv"
-    dialect = csv.excel  # This is the default
-    strict_width = True  # Previous csv type did not check column width
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         super().set_peek(dataset)
@@ -1566,6 +1544,26 @@ class GeoCSV(BaseCSV):
                 return has_lat and has_lon
         except Exception:
             return False
+
+
+@dataproviders.decorators.has_dataproviders
+class TSV(BaseCSV):
+    """
+    Tab-separated table data.
+    Only sniff tab-separated files with at least 2 rows and 2 columns.
+
+    Note: Use of this datatype is optional as the general tabular datatype will
+    handle most tab-separated files. This datatype is only required for datasets
+    with tabs INSIDE double quotes.
+
+    This datatype currently does not support TSV files where the header has one
+    column less to indicate first column is row names. This kind of file is
+    handled fine by the tabular datatype.
+    """
+
+    file_ext = "tsv"
+    dialect = csv.excel_tab
+    strict_width = True  # Leave files with different width to tabular
 
 
 @build_sniff_from_prefix
