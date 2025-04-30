@@ -14,7 +14,7 @@
         </data_source>
     </data_sources>
     <requirements>
-        <requirement type="npm" version="0.0.1" package="@galaxyproject/alignment"/>
+        <requirement type="npm" version="0.0.8" package="@galaxyproject/alignment"/>
     </requirements>
     <params>
         <param required="true">dataset_id</param>
