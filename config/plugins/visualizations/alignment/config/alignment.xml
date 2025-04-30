@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Multiple Sequence Alignment">
+<visualization name="Multiple Sequence Alignment" embeddable="true">
     <description>Alignments for large-scale MSAs</description>
     <data_sources>
         <data_source>
@@ -17,7 +17,7 @@
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tests>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/newbox.pdb" ftype="pdb" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/3.fasta" ftype="fasta" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[
