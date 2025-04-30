@@ -42,14 +42,14 @@ import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { ref } from "vue";
-
 import { useRouter } from "vue-router/composables";
+
 import { GalaxyApi } from "@/api";
 
-import FormCard from "@/components/Form/FormCard.vue";
-import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormSelection from "@/components/Form/Elements/FormSelection.vue";
+import FormCard from "@/components/Form/FormCard.vue";
+import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const errorMessage = ref("");
