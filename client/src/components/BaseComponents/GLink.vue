@@ -6,7 +6,6 @@ import type { RouterLink } from "vue-router";
 import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
 import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
 import { useResolveElement } from "@/composables/resolveElement";
-import { useUid } from "@/composables/utils/uid";
 
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
@@ -44,7 +43,6 @@ const styleClasses = computed(() => {
 
 const baseComponent = useClickableElement(props);
 const currentTitle = useCurrentTitle(props);
-const tooltipId = useUid("g-tooltip");
 
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
@@ -62,7 +60,6 @@ const linkElementRef = useResolveElement(linkRef);
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? props.to ?? props.href : ''"
         :title="props.tooltip ? false : currentTitle"
-        :aria-describedby="showTooltip ? tooltipId : false"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
@@ -71,7 +68,6 @@ const linkElementRef = useResolveElement(linkRef);
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
             v-if="showTooltip"
-            :id="tooltipId"
             :reference="linkElementRef"
             :text="currentTitle"
             :placement="props.tooltipPlacement" />

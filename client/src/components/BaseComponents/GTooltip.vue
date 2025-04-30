@@ -2,13 +2,14 @@
 import type { Instance as PopperInstance, Placement } from "@popperjs/core";
 import { createPopper } from "@popperjs/core";
 import { watchImmediate } from "@vueuse/core";
-import { ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 
 import { useAccessibleHover } from "@/composables/accessibleHover";
+import { useUid } from "@/composables/utils/uid";
 import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
-    id: string;
+    id?: string;
     reference: HTMLElement | null;
     text?: string;
     placement?: Placement;
@@ -17,11 +18,25 @@ const props = defineProps<{
 const tooltip = ref<HTMLDivElement>();
 const popperInstance = ref<PopperInstance | null>(null);
 const isShowing = ref(false);
+const uid = useUid("g-tooltip");
+const elementId = computed(() => props.id ?? uid.value);
+
+let previousReference: HTMLElement | null = null;
 
 watchImmediate(
-    () => [props.id, props.reference],
+    () => [props.reference, elementId.value],
     () => {
         popperInstance.value?.destroy();
+
+        if (previousReference !== null) {
+            previousReference.removeAttribute("aria-describedby");
+        }
+
+        if (props.reference !== null) {
+            props.reference.setAttribute("aria-describedby", elementId.value);
+        }
+
+        previousReference = props.reference;
 
         if (!props.reference) {
             return;
@@ -57,6 +72,10 @@ watchImmediate(
         });
     }
 );
+
+onUnmounted(() => {
+    props.reference?.removeAttribute("aria-describedby");
+});
 
 function show() {
     isShowing.value = true;
