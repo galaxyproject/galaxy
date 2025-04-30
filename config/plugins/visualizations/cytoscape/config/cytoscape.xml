@@ -178,7 +178,7 @@
     </settings>
     <tests>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.cytoscapejson" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.cytoscapejson" ftype="cytoscapejson" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[

@@ -23,10 +23,10 @@
     <entry_point entry_point_type="script" src="dist/index.js" />
     <tests>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geojson" label="Hurricane Irma (geojson)" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geojson" ftype="geojson" label="Hurricane Irma" />
         </test>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geocsv" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geocsv" ftype="geocsv" label="Dotted Line" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[
