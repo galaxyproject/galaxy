@@ -43,7 +43,7 @@ def run(engine, max_update_time):
     """Delete galaxy_session records which were updated prior to `max_update_time`."""
     confirm = input(
         f"""
-WARNING: Executing this script will permanently delete all text and numeric job metrics up to {max_update_time.strftime("%B %d, %Y")}. 
+WARNING: Executing this script will permanently delete all text and numeric job metrics up to {max_update_time.strftime("%B %d, %Y")}.
 Are your sure you want to proceed? Type "yes" to confirm: """
     )
     if confirm.lower() == "yes":
