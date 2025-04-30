@@ -5,7 +5,7 @@
             <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
             <FormCard title="Create a new Role" icon="fa-file-contract">
                 <template v-slot:body>
-                    <FormElementLabel title="Title" :required="true" :condition="!!name">
+                    <FormElementLabel title="Name" :required="true" :condition="!!name">
                         <FormInput id="role-name" v-model="name" />
                     </FormElementLabel>
                     <FormElementLabel title="Description" :required="true" :condition="!!description">
