@@ -49,3 +49,9 @@ class TestProxyApi(ApiTestCase):
         response = self._get(f"proxy?url={URL_TO_TEST}", anon=True)
         self._assert_status_code_is(response, 403)
         assert response.json()["err_msg"] == "Anonymous users are not allowed to access this endpoint"
+
+    def test_user_cannot_access_local_file(self):
+        local_file_url = "file://etc/passwd"
+        response = self._get(f"proxy?url={local_file_url}")
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "Action requires admin account."
