@@ -131,7 +131,11 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self._clear_container_cache()
+        self._remove_tested_docker_image_from_cache()
+
+    def tearDown(self) -> None:
+        self._clear_singularity_image_cache()
+        return super().tearDown()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
@@ -153,10 +157,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
             config["conda_auto_install"] = True
             config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, "conda")
 
-    def _clear_container_cache(self):
-        """
-        Clear all possibe container caches (ie docker and singularity)
-        """
+    def _remove_tested_docker_image_from_cache(self):
         cmd1 = ["docker", "image", "ls", "--quiet", "--filter", f'reference={self.assumptions["run"]["cache_name"]}']
         image_ids = execute(cmd1)
         if image_ids:
@@ -164,6 +165,8 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
             assert len(image_id_list) == 1
             cmd2 = ["docker", "image", "rm", "--force", image_id_list[0]]
             shell(cmd2)
+
+    def _clear_singularity_image_cache(self):
         if os.path.exists(self._app.config.container_image_cache_path):
             for dirpath, _, files in safe_walk(self._app.config.container_image_cache_path):
                 for f in files:
