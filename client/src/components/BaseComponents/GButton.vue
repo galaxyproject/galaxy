@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * Button-like element that can be used for buttons, anchors, or router-links.
+ * Defaults to button behavior.
+ */
+
 import type { Placement } from "@popperjs/core";
 import { computed, ref } from "vue";
 import { type RouterLink } from "vue-router";
@@ -12,20 +17,35 @@ import { type ComponentColor, type ComponentSize, type ComponentVariantClassList
 import GTooltip from "./GTooltip.vue";
 
 const props = defineProps<{
+    /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
     href?: string;
+    /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
     to?: string;
+    /** Which color scheme to use for the component. Not setting this will make the button appear grey */
     color?: ComponentColor;
+    /** Outline variant of the button. Can be used together with the `pressed` state */
     outline?: boolean;
+    /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
     disabled?: boolean;
+    /** Title attribute, or tooltip text */
     title?: string;
+    /** Alternative title to be displayed in a disabled state */
     disabledTitle?: string;
+    /** Displayed size of the component */
     size?: ComponentSize;
+    /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
     tooltip?: boolean;
+    /** Controls the positioning of the tooltip, if a tooltip is active */
     tooltipPlacement?: Placement;
+    /** Inline variant of the button. Affects buttons size, and positioning */
     inline?: boolean;
+    /** Small, icon-only variant of the button */
     iconOnly?: boolean;
+    /** Variant of the button without background or outline. Can be used together with the `pressed` state */
     transparent?: boolean;
+    /** Variant of the button with more rounded corners */
     pill?: boolean;
+    /** Pressed state allows for a toggle-like behavior of the button. For use with the outline and transparent variants */
     pressed?: boolean;
 }>();
 

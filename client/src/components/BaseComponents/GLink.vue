@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * Clickable inline text element that can be used for router links, anchors, or inline text buttons.
+ * Defaults to button behavior.
+ */
+
 import type { Placement } from "@popperjs/core";
 import { computed, ref } from "vue";
 import type { RouterLink } from "vue-router";
@@ -10,14 +15,23 @@ import { useResolveElement } from "@/composables/resolveElement";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
 const props = defineProps<{
+    /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
     href?: string;
+    /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
     to?: string;
+    /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
     disabled?: boolean;
+    /** Title attribute, or tooltip text */
     title?: string;
+    /** Alternative title to be displayed in a disabled state */
     disabledTitle?: string;
+    /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
     tooltip?: boolean;
+    /** Controls the positioning of the tooltip, if a tooltip is active */
     tooltipPlacement?: Placement;
+    /** Dark variant, instead of default blue */
     dark?: boolean;
+    /** Disables the default bold look of the link */
     thin?: boolean;
 }>();
 

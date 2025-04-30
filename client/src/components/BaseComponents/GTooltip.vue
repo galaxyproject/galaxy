@@ -1,4 +1,10 @@
 <script setup lang="ts">
+/**
+ * Tooltip component integrated into most interactive galaxy base components.
+ * Can be used separately. Accepts rich content via slot.
+ * Will set "aria-describedby" property on linked element.
+ */
+
 import type { Instance as PopperInstance, Placement } from "@popperjs/core";
 import { createPopper } from "@popperjs/core";
 import { watchImmediate } from "@vueuse/core";
@@ -9,9 +15,13 @@ import { useUid } from "@/composables/utils/uid";
 import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
+    /** Optional id override. Will auto generate an id if none is provided */
     id?: string;
+    /** Element to listen to on hover state. Will also set "aria-describedby" attribute of linked element to this tooltip */
     reference: HTMLElement | null;
+    /** Optional text. Alternative to using the elements slot */
     text?: string;
+    /** Position of the tooltip relative to reference element */
     placement?: Placement;
 }>();
 
@@ -107,7 +117,7 @@ defineExpose({
 
 <template>
     <div
-        :id="props.id"
+        :id="elementId"
         ref="tooltip"
         role="tooltip"
         class="g-tooltip"
