@@ -102,4 +102,6 @@ async function onSubmit() {
 }
 
 fetchData();
+
+defineExpose({ groupIds, userIds });
 </script>
