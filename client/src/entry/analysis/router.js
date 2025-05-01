@@ -4,7 +4,6 @@ import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import DatasetList from "components/Dataset/DatasetList";
 import DatasetView from "components/Dataset/DatasetView";
-import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";

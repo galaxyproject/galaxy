@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BLink, BTab, BTabs } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import { STATES } from "@/components/History/Content/model/states";
@@ -23,70 +23,96 @@ const props = defineProps({
     },
 });
 
-// Map tab names to their index positions
-const tabNameToIndex = {
-    "preview": 0,
-    "details": 1,
-    "visualize": 2,
-    "edit": 3,
-    "error": 4
+const TABS = {
+    PREVIEW: 0,
+    DETAILS: 1,
+    VISUALIZE: 2,
+    EDIT: 3,
+    ERROR: 4,
+} as const;
+
+const tabIndexToName: Record<number, string> = {
+    [TABS.PREVIEW]: "preview",
+    [TABS.DETAILS]: "details",
+    [TABS.VISUALIZE]: "visualize",
+    [TABS.EDIT]: "edit",
+    [TABS.ERROR]: "error",
 };
 
-// Track the currently active tab
-const activeTab = ref(0);
+const tabNameToIndex = {
+    preview: TABS.PREVIEW,
+    details: TABS.DETAILS,
+    visualize: TABS.VISUALIZE,
+    edit: TABS.EDIT,
+    error: TABS.ERROR,
+};
+
+const activeTab = ref(TABS.PREVIEW);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
-
 const stateText = computed(() => dataset.value && STATES[dataset.value.state] && STATES[dataset.value.state].text);
 const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview=true`);
-
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
 
-// Handle tab changes
+// Handle tab changes by navigating
 function onTabChange(tabIndex: number) {
-    const tabNames = ["preview", "details", "visualize", "edit", "error"];
-    const tabName = tabNames[tabIndex];
-    
-    // Only navigate to error tab if it's available
-    if (tabName === "error" && !showError.value) {
+    // Ensure the index is valid before proceeding
+    if (!(tabIndex in tabIndexToName)) {
+        console.error("Invalid tab index received:", tabIndex);
         return;
     }
-    
-    // Update the URL without reloading the page
-    if (tabName === "preview") {
-        router.push(`/datasets/${props.datasetId}`);
-    } else {
-        router.push(`/datasets/${props.datasetId}/${tabName}`);
+
+    const tabName = tabIndexToName[tabIndex];
+
+    // Prevent navigation to error tab if not applicable
+    if (tabIndex === TABS.ERROR && !showError.value) {
+        return;
+    }
+
+    const basePath = `/datasets/${props.datasetId}`;
+    const targetPath = (tabIndex === TABS.PREVIEW) ? basePath : `${basePath}/${tabName}`;
+
+    if (route.path !== targetPath) {
+        router.push(targetPath);
     }
 }
 
 // Set the active tab based on the current route
 function setActiveTabFromRoute() {
     const path = route.path;
-    
-    if (path.includes("/details")) {
-        activeTab.value = tabNameToIndex.details;
-    } else if (path.includes("/visualize")) {
-        activeTab.value = tabNameToIndex.visualize;
-    } else if (path.includes("/edit")) {
-        activeTab.value = tabNameToIndex.edit;
-    } else if (path.includes("/error") && showError.value) {
-        activeTab.value = tabNameToIndex.error;
-    } else {
-        activeTab.value = tabNameToIndex.preview;
+
+    // Expected path format: /datasets/{id}/{tabName} or /datasets/{id} for preview
+    const pathSegments = path.split('/');
+    const potentialTabName = pathSegments.length > 3 ? pathSegments[3] : 'preview';
+
+    let newActiveTab = tabNameToIndex[potentialTabName];
+
+    // Handle cases where the tab name from URL isn't valid or available
+    if (newActiveTab === undefined) {
+        console.warn(`Invalid tab name '${potentialTabName}' in route, defaulting to preview.`);
+        newActiveTab = TABS.PREVIEW;
+    } else if (newActiveTab === TABS.ERROR && !showError.value) {
+        console.warn("Route requested error tab, but dataset is not in error state. Defaulting to preview.");
+        newActiveTab = TABS.PREVIEW;
+        // If the URL explicitly contains /error but shouldn't, redirect to the base dataset URL
+        if (potentialTabName === 'error') {
+            const previewPath = `/datasets/${props.datasetId}`;
+            // Use replace to avoid adding the invalid error path to history
+            router.replace(previewPath);
+            // Exit early; the watch will run again for the new path and set the correct tab
+            return;
+        }
     }
+
+    console.debug(`Setting active tab from route '${path}' to index: ${newActiveTab}`);
+    activeTab.value = newActiveTab;
 }
 
-// Watch for route changes
-watch(() => route.path, setActiveTabFromRoute);
+watch(() => route.path, setActiveTabFromRoute, { immediate: true });
 
-// Set initial active tab on mount
-onMounted(() => {
-    setActiveTabFromRoute();
-});
 </script>
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
@@ -102,8 +128,9 @@ onMounted(() => {
             </span>
             <span v-if="dataset.genome_build" class="dbkey">
                 <span v-localize class="prompt">database</span>
-                <!-- Consider making this link actually switch to the Edit tab -->
-                <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange(3)">{{ dataset.genome_build }}</BLink>
+                <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange(TABS.EDIT)">{{
+                    dataset.genome_build
+                }}</BLink>
             </span>
             <div v-if="dataset.misc_info" class="info">
                 <span class="value">{{ dataset.misc_info }}</span>
@@ -113,13 +140,7 @@ onMounted(() => {
         <!-- Tab container - make it grow to fill remaining space and handle overflow -->
         <div class="dataset-tabs-container flex-grow-1 overflow-hidden">
             <!-- Make BTabs fill its container and use flex column layout internally -->
-            <BTabs 
-                pills 
-                card 
-                lazy 
-                class="h-100 d-flex flex-column" 
-                :value="activeTab" 
-                @input="onTabChange">
+            <BTabs pills card lazy class="h-100 d-flex flex-column" :value="activeTab" @input="onTabChange">
                 <BTab title="Preview" class="iframe-card">
                     <!-- Iframe for dataset preview -->
                     <iframe
