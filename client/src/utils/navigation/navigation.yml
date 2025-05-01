@@ -711,6 +711,13 @@ workflow_run:
         element_by_hid: "${_} .collection-element[data-hid='${hid}']"
         <<: *upload_mixin
 
+  form_element:
+    selectors:
+      _: 'div.workflow-run-element[id="form-element-${index}"]'
+      select: '${_} .multiselect'
+      select_value: '${_} .multiselect__single'
+      changed_value_badge: '${_} .form-input-changed-input-badge'
+
   selectors:
     warning: '[data-description="workflow run warning"]'
     run_error: '[data-description="workflow run error"]'
@@ -907,6 +914,7 @@ invocations:
     state_details: '[data-description="workflow invocation state"]'
     progress_steps_note: '[data-description="workflow invocation state"] .steps-progress .progress-note'
     progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
+    workflow_rerun_button: '[data-button-rerun][data-title="Rerun Workflow with same inputs"]'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
