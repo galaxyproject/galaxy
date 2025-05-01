@@ -27,6 +27,7 @@ interface Props {
     runDisabled?: boolean;
     runWaiting?: boolean;
     success?: boolean;
+    validRerun?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -72,6 +73,16 @@ const workflowImportTitle = computed(() => {
         return localize("This workflow has been deleted");
     } else {
         return localize("Import this workflow");
+    }
+});
+
+const executeButtonTooltip = computed(() => {
+    if (props.runDisabled) {
+        return localize("Fix the errors in the workflow before running it");
+    } else if (props.validRerun) {
+        return localize("Rerun this workflow with the original inputs");
+    } else {
+        return localize("Execute this workflow");
     }
 });
 </script>
@@ -136,7 +147,8 @@ const workflowImportTitle = computed(() => {
                         :wait="runWaiting"
                         :disabled="runDisabled"
                         size="small"
-                        title="Run Workflow"
+                        :tooltip="executeButtonTooltip"
+                        :title="!props.validRerun ? 'Run Workflow' : 'Rerun Workflow'"
                         @onClick="emit('on-execute')" />
                     <GButton
                         v-else

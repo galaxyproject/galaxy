@@ -42,7 +42,7 @@ watch(
         :workflow-id="requestData.workflow_id"
         :instance="requestData.instance"
         :request-state="requestData.inputs"
-        :append-step-labels-for-request="false"
         prefer-simple-form
+        is-rerun
         :simple-form-use-job-cache="requestData.use_cached_job" />
 </template>

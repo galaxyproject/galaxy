@@ -38,14 +38,14 @@ interface Props {
     useJobCache?: boolean;
     canMutateCurrentHistory: boolean;
     requestState?: WorkflowInvocationRequestInputs;
-    appendStepLabelsForRequest?: boolean;
+    isRerun?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     targetHistory: "current",
     useJobCache: false,
     requestState: undefined,
-    appendStepLabelsForRequest: true,
+    isRerun: false,
 });
 
 const emit = defineEmits<{
@@ -128,8 +128,7 @@ const formInputs = computed(() => {
 
             // For the `WorkflowInvocationRequestModel`, (used in `WorkflowRerun`) if there is no step_label, it does not have
             // `step.step_index + 1` as a label, and has `step.step_index` instead.
-            const requestStateIndex =
-                !props.appendStepLabelsForRequest && !step.step_label ? new String(step.step_index) : stepLabel;
+            const rerunStateIndex = !step.step_label ? new String(step.step_index) : stepLabel;
 
             const stepType = step.step_type;
             const help = step.annotation;
@@ -139,18 +138,25 @@ const formInputs = computed(() => {
                 help: help,
                 label: stepLabel,
             });
-            if (props.requestState && props.requestState[requestStateIndex]) {
-                const value = props.requestState[requestStateIndex];
-                // TODO: Will this break workflow landings? Done for `WorkflowRereun` since
-                //       `WorkflowInvocationRequestModel` does not provide an object with `values` property.
-                if (stepType === "data_input" || stepType === "data_collection_input") {
-                    stepAsInput.value = {
-                        values: !Array.isArray(value) ? [value] : value,
-                    };
-                } else {
+
+            if (props.requestState) {
+                if (props.isRerun && props.requestState[rerunStateIndex]) {
+                    const value = props.requestState[rerunStateIndex];
+                    if (stepType === "data_input" || stepType === "data_collection_input") {
+                        // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
+                        //       does not provide an object with `values` property.
+                        stepAsInput.value = {
+                            values: !Array.isArray(value) ? [value] : value,
+                        };
+                    } else {
+                        stepAsInput.value = value;
+                    }
+                } else if (props.requestState[stepLabel]) {
+                    const value = props.requestState[stepLabel];
                     stepAsInput.value = value;
                 }
             }
+
             // disable collection mapping...
             stepAsInput.flavor = "module";
             inputs.push(stepAsInput);
@@ -161,7 +167,7 @@ const formInputs = computed(() => {
 });
 
 /**
- * Returns the list of steps that do not match the `props.requestState`.
+ * Returns the list of steps that do not match the workflow rerun `props.requestState`.
  *
  * TODO: Until form elements are typed better, this is a little shady.
  * We do not compare values for the types in the last `else if` statement.
@@ -169,7 +175,7 @@ const formInputs = computed(() => {
  * @returns {string[]} The list of steps indices that do not match the request state.
  */
 const stepsNotMatchingRequest = computed<string[]>(() => {
-    if (!checkInputMatching.value || !props.requestState) {
+    if (!props.isRerun || !checkInputMatching.value || !props.requestState) {
         return [];
     }
 
@@ -225,6 +231,10 @@ const stepsNotMatchingRequest = computed<string[]>(() => {
     }
     return notMatching;
 });
+
+const isValidRerun = computed(
+    () => Boolean(props.isRerun) && checkInputMatching.value && stepsNotMatchingRequest.value.length === 0
+);
 
 const hasValidationErrors = computed(() => stepValidation.value !== null);
 
@@ -317,6 +327,7 @@ async function onExecute() {
                     :workflow-id="model.runData.workflow_id"
                     :run-disabled="hasValidationErrors || !canRunOnHistory"
                     :run-waiting="waitingForRequest"
+                    :valid-rerun="isValidRerun"
                     @on-execute="onExecute">
                     <template v-slot:workflow-title-actions>
                         <GButtonGroup>

@@ -35,7 +35,7 @@ interface Props {
     simpleFormUseJobCache?: boolean;
     requestState?: WorkflowInvocationRequestInputs;
     instance?: boolean;
-    appendStepLabelsForRequest?: boolean;
+    isRerun?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
     simpleFormUseJobCache: false,
     requestState: undefined,
     instance: false,
-    appendStepLabelsForRequest: true,
+    isRerun: false,
 });
 
 const loading = ref(true);
@@ -251,7 +251,7 @@ defineExpose({
                         :use-job-cache="simpleFormUseJobCache"
                         :can-mutate-current-history="canRunOnHistory"
                         :request-state="requestState"
-                        :append-step-labels-for-request="appendStepLabelsForRequest"
+                        :is-rerun="props.isRerun"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showAdvanced="showAdvanced" />

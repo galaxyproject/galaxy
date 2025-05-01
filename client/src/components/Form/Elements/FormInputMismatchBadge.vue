@@ -13,7 +13,7 @@ const emit = defineEmits(["stop-flagging"]);
         <span
             v-localize
             v-b-tooltip.hover.noninteractive
-            title="The value of this input does not match the original/expected request">
+            title="This input has a different value than in the original run">
             Changed Input
         </span>
         <GButton
@@ -22,7 +22,7 @@ const emit = defineEmits(["stop-flagging"]);
             size="small"
             icon-only
             pill
-            title="Stop flagging inputs that do not match the request"
+            title="Stop flagging inputs that do not match the original run"
             tooltip
             @click="emit('stop-flagging')">
             <FontAwesomeIcon :icon="faTimes" fixed-width />
