@@ -21,7 +21,6 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-<help format="markdown"><![CDATA[
 ### What is the Transition System Visualization?
 
 The **Transition System Visualization** displays datasets as dynamic flow diagrams, showing how one system state transitions into another. Each state is represented as a labeled node, and transitions are shown as directional arrows with optional rates.
