@@ -232,19 +232,8 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "datasets/:datasetId/edit",
-                        component: DatasetAttributes,
-                        props: true,
-                    },
-                    {
                         path: "datasets/list",
                         component: DatasetList,
-                    },
-                    {
-                        path: "datasets/:datasetId/details",
-                        name: "DatasetDetails",
-                        component: DatasetDetails,
-                        props: true,
                     },
                     {
                         path: "datasets/:datasetId/preview",
@@ -268,6 +257,21 @@ export function getRouter(Galaxy) {
                     {
                         path: "datasets/:datasetId/error",
                         component: DatasetError,
+                        props: true,
+                    },
+                    {
+                        path: "datasets/:datasetId/details",
+                        component: DatasetView,
+                        props: true,
+                    },
+                    {
+                        path: "datasets/:datasetId/visualize",
+                        component: DatasetView,
+                        props: true,
+                    },
+                    {
+                        path: "datasets/:datasetId/edit",
+                        component: DatasetView,
                         props: true,
                     },
                     {
