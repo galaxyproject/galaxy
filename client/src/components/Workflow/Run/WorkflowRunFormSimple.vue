@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
-import { faArrowRight, faCog, faSitemap, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -28,7 +28,6 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
-import FormInputMismatchBadge from "@/components/Form/Elements/FormInputMismatchBadge.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -420,31 +419,6 @@ async function onExecute() {
             show-details
             :hide-hr="Boolean(showRightPanel)" />
 
-        <BAlert
-            v-if="stepsNotMatchingRequest.length > 0"
-            variant="warning"
-            show
-            fade
-            dismissible
-            @dismissed="checkInputMatching = false">
-            <template v-slot:dismiss>
-                <GButton
-                    transparent
-                    size="small"
-                    icon-only
-                    title="Stop flagging inputs that do not match the request"
-                    tooltip>
-                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                </GButton>
-            </template>
-            <div v-localize>
-                Steps with the
-                <FormInputMismatchBadge />
-                indicator do not match original/expected request. Click the button to the right to stop flagging these
-                inputs.
-            </div>
-        </BAlert>
-
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">
                 <div
@@ -465,6 +439,7 @@ async function onExecute() {
                             :steps-not-matching-request="stepsNotMatchingRequest"
                             @onChange="onChange"
                             @onValidation="onValidation"
+                            @stop-flagging="checkInputMatching = false"
                             @update:active-node-id="($event) => (activeNodeId = $event)" />
                     </BOverlay>
                 </div>

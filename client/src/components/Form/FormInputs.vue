@@ -67,7 +67,7 @@
                 :workflow-run="workflowRun"
                 @change="onChange">
                 <template v-slot:workflow-run-form-title-badges>
-                    <FormInputMismatchBadge v-if="valMismatches(input.name)" />
+                    <FormInputMismatchBadge v-if="valMismatches(input.name)" @stop-flagging="$emit('stop-flagging')" />
                 </template>
                 <template v-slot:workflow-run-form-title-items>
                     <GButton

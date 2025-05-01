@@ -17,6 +17,7 @@
         :active-node-id="activeNodeId"
         :sync-with-graph="syncWithGraph"
         :steps-not-matching-request="stepsNotMatchingRequest"
+        @stop-flagging="$emit('stop-flagging')"
         @update:active-node-id="updateActiveNode" />
 </template>
 
