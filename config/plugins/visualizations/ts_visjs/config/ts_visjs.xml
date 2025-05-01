@@ -12,7 +12,7 @@
         <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/ts_visjs"/>
+        <requirement type="npm" version="0.0.3" package="@galaxyproject/ts_visjs"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tests>
