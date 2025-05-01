@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faEdit, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faRedo, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -20,7 +20,6 @@ import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import LoadingSpan from "../LoadingSpan.vue";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 interface Props {
     invocation?: WorkflowInvocationElementView;
@@ -69,6 +68,8 @@ const workflowImportTitle = computed(() => {
         return localize("Login to import this workflow");
     } else if (workflowImportedAttempted.value) {
         return localize("Workflow imported");
+    } else if (workflow.value?.deleted) {
+        return localize("This workflow has been deleted");
     } else {
         return localize("Import this workflow");
     }
@@ -108,7 +109,8 @@ const workflowImportTitle = computed(() => {
                             transparent
                             color="blue"
                             size="small"
-                            :title="!workflow.deleted ? `Edit ${getWorkflowName()}` : 'This workflow has been deleted.'"
+                            title="Edit Workflow"
+                            disabled-title="This workflow has been deleted."
                             :disabled="workflow.deleted"
                             :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
@@ -136,20 +138,19 @@ const workflowImportTitle = computed(() => {
                         size="small"
                         title="Run Workflow"
                         @onClick="emit('on-execute')" />
-                    <WorkflowRunButton
+                    <GButton
                         v-else
-                        :id="workflow.id"
-                        data-description="route to workflow run button"
-                        variant="primary"
-                        :title="
-                            !workflow.deleted
-                                ? `<b>Rerun</b><br>${getWorkflowName()}<br><b>with same inputs</b>`
-                                : 'This workflow has been deleted.'
-                        "
+                        title="Rerun Workflow with same inputs"
+                        disabled-title="This workflow has been deleted."
+                        data-button-rerun
+                        tooltip
+                        color="blue"
+                        size="small"
                         :disabled="workflow.deleted"
-                        full
-                        :invocation-id="props.invocation.id"
-                        :version="workflow.version" />
+                        :to="`/workflows/rerun?invocation_id=${props.invocation.id}`">
+                        <FontAwesomeIcon :icon="faRedo" fixed-width />
+                        <span v-localize>Rerun Workflow</span>
+                    </GButton>
                 </div>
             </div>
             <div v-if="props.success" class="donemessagelarge">

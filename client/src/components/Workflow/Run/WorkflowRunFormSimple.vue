@@ -2,7 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -26,6 +26,7 @@ import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
 import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormInputMismatchBadge from "@/components/Form/Elements/FormInputMismatchBadge.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
@@ -319,37 +320,40 @@ async function onExecute() {
                     :run-waiting="waitingForRequest"
                     @on-execute="onExecute">
                     <template v-slot:workflow-title-actions>
-                        <BButtonGroup>
-                            <BButton
-                                v-b-tooltip.hover.noninteractive.html
-                                size="sm"
+                        <GButtonGroup>
+                            <GButton
+                                tooltip
+                                size="small"
                                 :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
-                                variant="link"
+                                transparent
+                                color="blue"
                                 :pressed="showGraph"
                                 @click="showRightPanel = showGraph ? null : 'graph'">
                                 <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-if="workflow?.readme || workflow?.help"
-                                v-b-tooltip.hover.noninteractive.html
-                                size="sm"
+                                tooltip
+                                size="small"
                                 :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
-                                variant="link"
+                                transparent
+                                color="blue"
                                 :pressed="showHelp"
                                 @click="showRightPanel = showHelp ? null : 'help'">
                                 <FontAwesomeIcon :icon="faReadme" fixed-width />
-                            </BButton>
-                            <BButton
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                title="Workflow Run Settings"
-                                variant="link"
-                                class="workflow-run-settings"
-                                :pressed="showRuntimeSettingsPanel"
-                                @click="toggleRuntimeSettings">
-                                <FontAwesomeIcon :icon="faCog" fixed-width />
-                            </BButton>
-                        </BButtonGroup>
+                            </GButton>
+                        </GButtonGroup>
+                        <GButton
+                            tooltip
+                            size="small"
+                            title="Workflow Run Settings"
+                            transparent
+                            color="blue"
+                            class="workflow-run-settings"
+                            :pressed="showRuntimeSettingsPanel"
+                            @click="toggleRuntimeSettings">
+                            <FontAwesomeIcon :icon="faCog" fixed-width />
+                        </GButton>
                     </template>
                 </WorkflowNavigationTitle>
 
@@ -394,15 +398,16 @@ async function onExecute() {
                         </template>
 
                         <div class="mr-4">
-                            <BButton
-                                v-b-tooltip.hover.noninteractive
-                                variant="link"
-                                size="sm"
-                                class="text-decoration-none workflow-expand-form-link"
+                            <GButton
+                                tooltip
+                                transparent
+                                color="blue"
+                                size="small"
+                                class="workflow-expand-form-link"
                                 title="Switch to the legacy workflow form"
                                 @click="$emit('showAdvanced')">
                                 Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
-                            </BButton>
+                            </GButton>
                         </div>
                     </div>
                 </div>

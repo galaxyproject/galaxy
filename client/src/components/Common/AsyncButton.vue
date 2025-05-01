@@ -40,6 +40,7 @@ async function onClick() {
         :title="loading ? loadingTitle : title"
         :size="size"
         :color="color"
+        :transparent="transparent"
         :disabled="loading || disabled"
         @click="onClick">
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" />
