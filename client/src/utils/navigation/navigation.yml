@@ -334,7 +334,7 @@ history_panel:
 
   text:
     tooltip_name: 'Rename history...'
-    new_name: 'Unnamed history'
+    new_name: '新历史记录'
 
 history_storage:
   selectors:

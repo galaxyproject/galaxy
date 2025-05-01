@@ -3306,7 +3306,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "update_time",
         "username",
     ]
-    default_name = "Unnamed history"
+    default_name = "新历史记录"
 
     def __init__(self, id=None, name=None, user=None):
         self.id = id

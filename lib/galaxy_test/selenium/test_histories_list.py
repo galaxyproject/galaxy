@@ -57,7 +57,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.select_grid_operation("Unnamed history", "Rename")
+        self.select_grid_operation("新历史记录", "Rename")
 
         # Rename the history
         history_name_input = self.wait_for_selector(".ui-form-element input.ui-input")

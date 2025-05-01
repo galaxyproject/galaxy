@@ -1,0 +1,91 @@
+<tool id="tabpfn_classifier" name="TabPFN 二分类" version="1.0.0">
+    <description>使用TabPFN进行二分类分析</description>
+    <requirements>
+        <requirement type="package" version="1.2.0">scikit-learn</requirement>
+        <requirement type="package" version="1.5.3">pandas</requirement>
+        <requirement type="package" version="1.23.5">numpy</requirement>
+    </requirements>
+    <command detect_errors="exit_code">
+        python '$__tool_directory__/tabpfn.py'
+        '$input'
+        '$output_metrics'
+        '$output_train'
+        '$output_test'
+        '$output_train_y'
+        '$output_test_y'
+        '$output_predictions'
+        -l '$target_column'
+        -s '$test_split'
+        -r '$random_seed'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="csv,tabular" label="输入数据集" help="输入CSV格式的数据集，包含特征和目标列"/>
+        <param name="target_column" type="text" label="目标列名称" help="指定包含目标变量(y)的列名"/>
+        <param name="test_split" type="float" value="0.3" min="0.1" max="0.9" label="测试集比例" help="指定用于测试的数据比例（0.1-0.9之间）"/>
+        <param name="random_seed" type="integer" value="42" label="随机种子" help="用于数据集分割的随机种子"/>
+    </inputs>
+    <outputs>
+        <data name="output_metrics" format="tabular" label="${tool.name} on ${on_string}: 评估指标"/>
+        <data name="output_train" format="csv" label="${tool.name} on ${on_string}: 训练数据集特征"/>
+        <data name="output_test" format="csv" label="${tool.name} on ${on_string}: 测试数据集特征"/>
+        <data name="output_train_y" format="csv" label="${tool.name} on ${on_string}: 训练数据集目标值"/>
+        <data name="output_test_y" format="csv" label="${tool.name} on ${on_string}: 测试数据集目标值"/>
+        <data name="output_predictions" format="csv" label="${tool.name} on ${on_string}: 预测结果"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="sample_data.csv"/>
+            <param name="target_column" value="label"/>
+            <param name="test_split" value="0.3"/>
+            <param name="random_seed" value="42"/>
+            <output name="output_metrics" file="expected_metrics.tabular"/>
+        </test>
+    </tests>
+    <help>
+**TabPFN 二分类工具**
+
+该工具使用TabPFN（Tabular Prior-data Fitted Networks）进行二分类任务。TabPFN是一种先验数据拟合的神经网络，它在小型表格数据集上表现出色。
+
+-----
+
+**使用说明**
+
+1. 选择包含特征和目标变量的CSV或表格文件
+2. 指定包含目标变量的列名（必须是数据集中的一列）
+3. 设置训练集和测试集的分割比例（0.1-0.9之间）
+4. 设置随机种子以确保结果可重现
+5. 运行工具
+
+-----
+
+**输出文件**
+
+该工具会生成以下输出文件：
+
+1. **评估指标**：包含模型性能指标（准确率、ROC AUC、精确率、召回率、F1分数等）
+2. **训练数据集特征**：分割后的训练集特征
+3. **测试数据集特征**：分割后的测试集特征
+4. **训练数据集目标值**：训练集对应的目标值
+5. **测试数据集目标值**：测试集对应的目标值
+6. **预测结果**：包含测试集的实际值、预测值和预测概率（对于二分类）
+
+-----
+
+**注意事项**
+
+- 输入数据必须是CSV格式，且目标列名必须与数据集中的列名一致
+- 对于二分类问题，该工具会计算ROC AUC、精确率、召回率和F1分数
+- TabPFN适用于小型数据集（特征数小于100，样本数小于1000）
+
+    </help>
+    <citations>
+        <citation type="bibtex">
+            @article{hollmann2022tabpfn,
+              title={TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second},
+              author={Hollmann, Noah and Müller, Samuel and Eggensperger, Katharina and Hutter, Frank},
+              journal={arXiv preprint arXiv:2207.01848},
+              year={2022}
+            }
+        </citation>
+    </citations>
+</tool>

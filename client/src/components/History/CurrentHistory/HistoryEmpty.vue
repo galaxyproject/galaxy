@@ -18,7 +18,7 @@ const props = withDefaults(
         writable?: boolean;
     }>(),
     {
-        message: "This history is empty.",
+        message: "该历史记录为空。",
         writable: true,
     }
 );
@@ -37,9 +37,9 @@ function clickDataLink() {
         </h4>
 
         <p v-if="props.writable">
-            <a v-localize href="#" @click.prevent="openGlobalUploadModal">You can load your own data</a>
-            <span v-localize>or</span>
-            <a v-localize href="#" @click.prevent="clickDataLink">get data from an external source</a>.
+            <a v-localize href="#" @click.prevent="openGlobalUploadModal">您可以上传自己的数据</a>
+            <span v-localize>或</span>
+            <a v-localize href="#" @click.prevent="clickDataLink">从外部来源获取数据</a>。
         </p>
     </BAlert>
 </template>

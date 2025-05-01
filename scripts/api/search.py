@@ -54,8 +54,8 @@ if __name__ == "__main__":
     print("select * from workflow")
     print(rg.post("/api/search", {"query": "select * from workflow"}))
 
-    print("select id, name from history where name='Unnamed history'")
-    print(rg.post("/api/search", {"query": "select id, name from history where name='Unnamed history'"}))
+    print("select id, name from history where name='新历史记录'")
+    print(rg.post("/api/search", {"query": "select id, name from history where name='新历史记录'"}))
 
-    print("select * from history where name='Unnamed history'")
-    print(rg.post("/api/search", {"query": "select * from history where name='Unnamed history'"}))
+    print("select * from history where name='新历史记录'")
+    print(rg.post("/api/search", {"query": "select * from history where name='新历史记录'"}))
