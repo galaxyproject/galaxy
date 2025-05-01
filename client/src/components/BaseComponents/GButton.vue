@@ -45,7 +45,7 @@ function onClick(event: PointerEvent) {
 
 const variantClasses = computed(() => {
     const classObject = {} as ComponentVariantClassList;
-    classObject[prefix(props.color ?? "grey")] = true;
+    classObject[prefix(!props.color || (props.transparent && props.disabled) ? "grey" : props.color)] = true;
     classObject[prefix(props.size ?? "medium")] = true;
     return classObject;
 });
