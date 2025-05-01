@@ -211,6 +211,8 @@
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="collection_list_or_nested_list_input.xml" />
+  <tool file="collection_list_2x_or_3x_nested.xml" />
+  <tool file="collection_paired_or_list_paired_input.xml" />
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="discover_sort_by.xml" />
