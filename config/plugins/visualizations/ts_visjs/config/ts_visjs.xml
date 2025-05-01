@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Transition System Visualization" embeddable="true">
+<visualization name="Transition System" embeddable="true">
     <description>Interactive Flow Graph Diagram</description>
     <data_sources>
         <data_source>
@@ -21,7 +21,7 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Transition System Visualization?
+### What is the Transition System?
 
 The **Transition System Visualization** displays datasets as dynamic flow diagrams, showing how one system state transitions into another. Each state is represented as a labeled node, and transitions are shown as directional arrows with optional rates.
 
