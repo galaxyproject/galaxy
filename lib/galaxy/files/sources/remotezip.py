@@ -19,6 +19,7 @@ import requests
 from typing_extensions import Unpack
 
 from galaxy.files import OptionalUserContext
+from galaxy.files.uris import validate_uri_access
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
@@ -67,6 +68,10 @@ class RemoteZipFilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwds)
         self._props = props
 
+    @property
+    def _allowlist(self):
+        return self._file_sources_config.fetch_url_allowlist
+
     def _realize_to(
         self,
         source_path: str,
@@ -76,6 +81,11 @@ class RemoteZipFilesSource(BaseFilesSource):
     ):
         params = extract_query_parameters(source_path)
         file_extract_params = validate_params(params)
+        validate_uri_access(
+            file_extract_params.source,
+            user_context.is_admin if user_context else False,
+            self._allowlist or [],
+        )
         stream_and_decompress(file_extract_params, native_path)
 
     def _write_from(
