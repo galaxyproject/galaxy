@@ -24,7 +24,7 @@
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/2.txt" ftype="txt" />
         </test>
         <test>
-            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/cytoscape.json" ftype="json" />
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.cytoscapejson" ftype="json" />
         </test>
     </tests>
     <help format="markdown"><![CDATA[
