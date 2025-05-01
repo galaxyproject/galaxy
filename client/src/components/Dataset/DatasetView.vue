@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BLink, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router/composables";
 
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -13,7 +13,6 @@ import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 
 const datasetStore = useDatasetStore();
-const route = useRoute();
 const router = useRouter();
 
 const props = defineProps({
@@ -37,6 +36,8 @@ const TABS = {
     ERROR: 4,
 } as const;
 
+type TabIndex = (typeof TABS)[keyof typeof TABS];
+
 const tabIndexToName: Record<number, TabNames> = {
     [TABS.PREVIEW]: "preview",
     [TABS.DETAILS]: "details",
@@ -53,7 +54,7 @@ const tabNameToIndex: Record<TabNames, number> = {
     error: TABS.ERROR,
 };
 
-const activeTab = ref(TABS.PREVIEW);
+const activeTab = ref<TabIndex>(TABS.PREVIEW);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
@@ -63,9 +64,7 @@ const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
 
-// Handle tab changes by navigating
 function onTabChange(tabIndex: number) {
-    // Ensure the index is valid before proceeding
     if (!(tabIndex in tabIndexToName)) {
         console.error("Invalid tab index received:", tabIndex);
         return;
@@ -73,13 +72,12 @@ function onTabChange(tabIndex: number) {
 
     const tabName = tabIndexToName[tabIndex];
 
-    // Prevent navigation to error tab if not applicable
     if (tabIndex === TABS.ERROR && !showError.value) {
         return;
     }
 
     const basePath = `/datasets/${props.datasetId}`;
-    const targetPath = (tabIndex === TABS.PREVIEW) ? basePath : `${basePath}/${tabName}`;
+    const targetPath = tabIndex === TABS.PREVIEW ? basePath : `${basePath}/${tabName}`;
 
     // Always push the navigation request; vue-router handles duplicates if the path is identical.
     router.push(targetPath);
@@ -88,18 +86,18 @@ function onTabChange(tabIndex: number) {
 // Set the active tab based on the current route
 function setActiveTabFromProp() {
     const currentTabName = props.tab as string; // Use the prop value
-    let targetIndex = tabNameToIndex[currentTabName as TabNames];
+    let targetIndex = tabNameToIndex[currentTabName as TabNames] as TabIndex;
 
     if (targetIndex === undefined) {
         targetIndex = TABS.PREVIEW;
-        if (currentTabName !== 'preview') {
-             const previewPath = `/datasets/${props.datasetId}`;
-             router.replace(previewPath);
-             return;
+        if (currentTabName !== "preview") {
+            const previewPath = `/datasets/${props.datasetId}`;
+            router.replace(previewPath);
+            return;
         }
     } else if (targetIndex === TABS.ERROR && !showError.value) {
         targetIndex = TABS.PREVIEW;
-        if (currentTabName === 'error') {
+        if (currentTabName === "error") {
             const previewPath = `/datasets/${props.datasetId}`;
             router.replace(previewPath);
             return;
@@ -113,7 +111,6 @@ function setActiveTabFromProp() {
 
 // Watch the 'tab' prop instead of the route path
 watch(() => props.tab, setActiveTabFromProp, { immediate: true });
-
 </script>
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
