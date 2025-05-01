@@ -1,8 +1,8 @@
 <template>
     <span v-if="link" class="tool-panel-links">
         <a :href="link" target="_blank" style="display: inline">
-            <FontAwesomeIcon v-b-tooltip.hover title="Link" icon="external-link-alt" />
-            <span class="sr-only">Link</span>
+            <FontAwesomeIcon v-b-tooltip.hover title="链接" icon="external-link-alt" />
+            <span class="sr-only">链接</span>
         </a>
     </span>
 </template>

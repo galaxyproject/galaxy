@@ -48,11 +48,11 @@ const username = ref(null);
 const subscribe = ref(null);
 const messageText: Ref<string | null> = ref(null);
 const disableCreate = ref(false);
-const labelPassword = ref(localize("Password"));
-const labelPublicName = ref(localize("Public name"));
-const labelEmailAddress = ref(localize("Email address"));
-const labelConfirmPassword = ref(localize("Confirm password"));
-const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announce mailing list."));
+const labelPassword = ref(localize("密码"));
+const labelPublicName = ref(localize("公开名称"));
+const labelEmailAddress = ref(localize("邮箱地址"));
+const labelConfirmPassword = ref(localize("确认密码"));
+const labelSubscribe = ref(localize("加入 galaxy-announce 邮件列表以获取最新资讯。"));
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
@@ -82,7 +82,7 @@ async function submit() {
         window.location.href = props.redirect ? withPrefix(props.redirect) : withPrefix("/");
     } catch (error: any) {
         disableCreate.value = false;
-        messageText.value = errorMessageAsString(error, "Registration failed for an unknown reason.");
+        messageText.value = errorMessageAsString(error, "由于未知原因，注册失败。");
     }
 }
 </script>
@@ -105,22 +105,21 @@ async function submit() {
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="custosPreferred">
                             <BCardHeader v-b-toggle.accordion-oidc role="button">
-                                Register using institutional account
+                                使用机构账户注册
                             </BCardHeader>
 
                             <BCollapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
                                 <BCardBody>
-                                    Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
-                                    redirect you to your institutional login through Custos.
+                                    使用机构账户（例如：Google/JHU）创建Galaxy账户。这将通过Custos将您重定向到您的机构登录页面。
                                     <ExternalLogin />
                                 </BCardBody>
                             </BCollapse>
                         </span>
 
                         <!-- Local Galaxy Registration -->
-                        <BCardHeader v-if="!custosPreferred" v-localize>Create a Galaxy account</BCardHeader>
+                        <BCardHeader v-if="!custosPreferred" v-localize>创建Galaxy账户</BCardHeader>
                         <BCardHeader v-else v-localize v-b-toggle.accordion-register role="button">
-                            Or, register with email
+                            或者，使用邮箱注册
                         </BCardHeader>
 
                         <BCollapse
@@ -167,10 +166,7 @@ async function submit() {
                                         required />
 
                                     <BFormText v-localize>
-                                        Your public name is an identifier that will be used to generate addresses for
-                                        information you share publicly. Public names must be at least three characters
-                                        in length and contain only lower-case letters, numbers, dots, underscores, and
-                                        dashes ('.', '_', '-').
+                                        您的公开名称是一个标识符，将用于生成您公开分享信息的地址。公开名称必须至少包含三个字符，并且只能包含小写字母、数字、点、下划线和短横线('.', '_', '-')。
                                     </BFormText>
                                 </BFormGroup>
 
@@ -183,19 +179,18 @@ async function submit() {
                                         {{ labelSubscribe }}
                                     </BFormCheckbox>
                                     <BFormText v-localize>
-                                        This list is used for important Galaxy updates and newsletter access. We keep it
-                                        streamlined, you should expect only 2-3 emails per month.
+                                        此列表用于发送重要的Galaxy更新和新闻简报。我们会精简内容，您每月大约只会收到2-3封电子邮件。
                                     </BFormText>
                                 </BFormGroup>
 
                                 <BButton v-localize name="create" type="submit" :disabled="disableCreate">
-                                    Create
+                                    创建
                                 </BButton>
                             </BCardBody>
                         </BCollapse>
 
                         <BCardFooter v-if="showLoginLink">
-                            <span v-localize>Already have an account?</span>
+                            <span v-localize>已有账户？</span>
 
                             <a
                                 id="login-toggle"
@@ -203,7 +198,7 @@ async function submit() {
                                 href="javascript:void(0)"
                                 role="button"
                                 @click.prevent="toggleLogin">
-                                Log in here.
+                                点此登录。
                             </a>
                         </BCardFooter>
                     </BCard>
@@ -212,7 +207,7 @@ async function submit() {
 
             <div v-if="termsUrl" class="col position-relative embed-container">
                 <iframe title="terms-of-use" :src="termsUrl" frameborder="0" class="terms-iframe"></iframe>
-                <div v-localize class="scroll-hint">↓ Scroll to review ↓</div>
+                <div v-localize class="scroll-hint">↓ 向下滚动以查看 ↓</div>
             </div>
         </div>
     </div>

@@ -6,7 +6,7 @@ export function onError(error) {
     if (typeof error.responseJSON !== "undefined") {
         Toast.error(error.responseJSON.err_msg);
     } else {
-        Toast.error("An error occurred during with the last library interaction");
+        Toast.error("最近一次库操作过程中发生了一个错误");
     }
 }
 

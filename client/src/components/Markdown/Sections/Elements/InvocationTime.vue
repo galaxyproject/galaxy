@@ -17,7 +17,7 @@ async function fetchInvocation(invocationId: string) {
             invocationTime.value = new Date(data.create_time).toUTCString();
         }
     } catch (error) {
-        console.error("Error fetching invocation time:", error);
+        console.error("获取调用时间出错:", error);
         invocationTime.value = "";
     }
 }

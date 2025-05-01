@@ -62,7 +62,7 @@ watch(
                     loading.value = false;
                 });
         } else {
-            errorContent.value = "Workflow id is missing.";
+            errorContent.value = "缺失工作流id.";
             itemContent.value = null;
             loading.value = false;
         }
@@ -87,10 +87,10 @@ watch(
                     variant="link"
                     size="sm"
                     role="button"
-                    title="Download Workflow"
+                    title="下载工作流"
                     type="button"
                     class="py-0 px-1"
-                    data-description="workflow download">
+                    data-description="工作流下载">
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
@@ -98,20 +98,20 @@ watch(
                     :href="importUrl"
                     role="button"
                     variant="link"
-                    title="Import Workflow"
+                    title="导入工作流"
                     type="button"
                     class="py-0 px-1"
-                    data-description="workflow import">
+                    data-description="工作流导入">
                     <span class="fa fa-upload" />
                 </b-button>
             </span>
             <span>
-                <span>Workflow:</span>
-                <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
+                <span>工作流：</span>
+                <span class="font-weight-light" data-description="工作流名称">{{ workflowName }}</span>
             </span>
         </b-card-header>
         <b-card-body>
-            <LoadingSpan v-if="loading" message="Loading Workflow" />
+            <LoadingSpan v-if="loading" message="正在加载工作流" />
             <div v-else :class="!expanded && 'content-height'">
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">

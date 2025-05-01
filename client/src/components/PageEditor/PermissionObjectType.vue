@@ -9,11 +9,11 @@ const props = defineProps<PermissionObjectTypeProps>();
 
 const typeTitle = computed(() => {
     if (props.type == "history") {
-        return "History";
+        return "历史";
     } else if (props.type == "historyDataset") {
-        return "Dataset";
+        return "数据集";
     } else {
-        return "Workflow";
+        return "工作流";
     }
 });
 </script>

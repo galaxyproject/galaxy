@@ -37,17 +37,16 @@ async function onMarkAllAsRead() {
     }
 }
 </script>
-
 <template>
-    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" href="/user/notifications">
+    <ActivityPanel title="未读通知" go-to-all-title="所有通知" href="/user/notifications">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.bottom.hover
-                    data-description="mark all as read"
+                    data-description="标记所有为已读"
                     size="sm"
                     variant="link"
-                    title="Mark all as read"
+                    title="标记所有为已读"
                     @click="onMarkAllAsRead">
                     <FontAwesomeIcon :icon="faCheckDouble" fixed-width />
                 </BButton>
@@ -56,16 +55,16 @@ async function onMarkAllAsRead() {
 
         <template v-slot:header>
             <div v-if="!loadingNotifications && unreadNotifications.length">
-                You have {{ unreadNotifications.length }} unread notifications.
+                您有 {{ unreadNotifications.length }} 条未读通知。
             </div>
         </template>
 
         <BAlert v-if="loadingNotifications" key="loading-notifications" show>
-            <LoadingSpan message="Loading notifications" />
+            <LoadingSpan message="正在加载通知" />
         </BAlert>
 
         <BAlert v-else-if="!unreadNotifications.length" key="no-notifications-message" show>
-            No unread notifications to show.
+            没有未读通知可显示。
         </BAlert>
 
         <TransitionGroup class="notifications-box-list" name="notifications-box-list" tag="div">

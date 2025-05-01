@@ -35,13 +35,12 @@ const selectableAndVisibleObjectStores = computed(() => {
         return [];
     }
 });
-
-const loadingObjectStoreInfoMessage = ref("Loading storage location information");
+const loadingObjectStoreInfoMessage = ref("正在加载存储位置信息");
 const whyIsSelectionPreferredText = ref(`
-Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
-this Galaxy a different storage location may be ultimately used. After a dataset is created,
-click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the place you want, contact Galaxy administrator for more information.
+为新的数据集选择首选存储位置。根据此Galaxy的作业和工作流执行配置，
+最终可能会使用不同的存储位置。创建数据集后，
+点击历史面板中的信息图标，查看其存储位置的相关信息。如果
+数据集未存储在您期望的位置，请联系Galaxy管理员获取更多信息。
 `);
 
 function variant(objectStoreId: string | null) {

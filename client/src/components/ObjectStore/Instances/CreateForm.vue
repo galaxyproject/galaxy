@@ -13,7 +13,7 @@ interface CreateFormProps {
     uuid?: string;
 }
 const props = defineProps<CreateFormProps>();
-const title = "Create a new storage location for your data";
+const title = "创建新的数据存储位置";
 
 const emit = defineEmits<{
     (e: "created", objectStore: UserConcreteObjectStore): void;
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadingMessage, testRunning, testResults } =
     useConfigurationTemplateCreation(
-        "storage location",
+        "存储位置",
         toRef(props, "template"),
         toRef(props, "uuid"),
         createTestUrl,

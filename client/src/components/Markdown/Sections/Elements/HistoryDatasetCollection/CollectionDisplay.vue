@@ -8,7 +8,7 @@
                     variant="link"
                     size="sm"
                     role="button"
-                    title="Download Collection"
+                    title="下载集合"
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
@@ -19,7 +19,7 @@
                     href="#"
                     role="button"
                     variant="link"
-                    title="Import Collection"
+                    title="导入集合"
                     type="button"
                     class="py-0 px-1"
                     @click="onCopyCollection(currentHistoryId)">
@@ -27,12 +27,12 @@
                 </b-button>
             </span>
             <span>
-                <span>Dataset Collection:</span>
+                <span>数据集合：</span>
                 <span class="font-weight-light">{{ itemName }}</span>
             </span>
         </b-card-header>
         <b-card-body>
-            <LoadingSpan v-if="loading" message="Loading Collection" />
+            <LoadingSpan v-if="loading" message="正在加载集合" />
             <div v-else class="content-height">
                 <b-alert v-if="!!messageText" :variant="messageVariant" show>
                     {{ messageText }}
@@ -77,7 +77,7 @@ const onCopyCollection = async (currentHistoryId: string) => {
     try {
         await copyCollection(props.collectionId, currentHistoryId);
         messageVariant.value = "success";
-        messageText.value = "Successfully copied to current history.";
+        messageText.value = "已成功复制到当前历史记录。";
     } catch (error) {
         messageVariant.value = "danger";
         messageText.value = error as string;
@@ -92,7 +92,7 @@ const getContent = async () => {
     });
     if (error) {
         messageVariant.value = "danger";
-        messageText.value = `Failed to retrieve content. ${error}`;
+        messageText.value = `获取内容失败。${error}`;
     } else {
         messageText.value = "";
     }

@@ -24,7 +24,7 @@ function update(index: number) {
 
 <template>
     <div>
-        <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
+        <h2 class="mb-3 h-text">选择 {{ labelTitle }} 标签：</h2>
         <div v-if="hasLabels">
             <b-form-radio
                 v-for="(label, index) in labels"
@@ -36,10 +36,9 @@ function update(index: number) {
                 {{ label.label }}
             </b-form-radio>
         </div>
-        <b-alert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </b-alert>
+        <b-alert v-else show variant="info"> 未找到标签。请在工作流编辑器中指定标签。 </b-alert>
         <p class="mt-3 text-muted">
-            You may add new labels by selecting a step in the workflow editor and then editing the corresponding label
-            field in the step form.
+            您可以通过在工作流编辑器中选择一个步骤，然后在步骤表单中编辑相应的标签字段来添加新标签。
         </p>
     </div>
 </template>

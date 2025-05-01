@@ -29,13 +29,13 @@ export function directiveEntry(
 ): SidePanelEntry {
     const directiveMetadataData: DirectiveMetadata | undefined = DIRECTIVE_METADATA[directiveId];
     if (directiveMetadataData == undefined) {
-        throw Error(`Client logic error, cannot find directive metadata for ${directiveId}`);
+        throw Error(`客户端逻辑错误，无法找到指令 ${directiveId} 的元数据`);
     }
     let name = directiveMetadataData.side_panel_name;
     if (name && !(typeof name == "string")) {
         const modeName = name[mode];
         if (modeName == undefined) {
-            throw Error(`Client logic error, cannot find directive metadata for ${directiveId}`);
+            throw Error(`客户端逻辑错误，无法找到指令 ${directiveId} 的元数据`);
         }
         name = modeName;
     }

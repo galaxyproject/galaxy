@@ -1,152 +1,135 @@
 ---
 history_dataset_display:
-  side_panel_name: Dataset
+  side_panel_name: 数据集
   help: |
-    Display a dataset and relevant options for viewing, importing, downloading,
-    and visualization in the resulting document. To embed a dataset directly
-    into the document use the "history_dataset_embedded" / "Embedded Dataset"
-    directive.
+    在结果文档中显示数据集和查看、导入、下载以及可视化的相关选项。要将数据集直接嵌入到文档中，请使用"history_dataset_embedded"/"嵌入式数据集"指令。
 
 history_dataset_collection_display:
-  side_panel_name: Collection
+  side_panel_name: 集合
   help: |
-    Display a dataset collection and relevant options for viewing, importing, downloading
-    in the resulting documenting.
+    在结果文档中显示数据集集合和查看、导入、下载的相关选项。
 
 history_dataset_as_image:
-  side_panel_name: Image
+  side_panel_name: 图像
   help: |
-    Embed a dataset in the resulting document as an image. This only works for simple image
-    types. This can be used to present graphs and other visual summaries of an analysis into
-    a Galaxy Markdown document summary.
+    将数据集作为图像嵌入到结果文档中。这仅适用于简单的图像类型。可用于将分析的图表和其他视觉摘要呈现到Galaxy Markdown文档摘要中。
 
 history_dataset_index:
-  side_panel_name: Dataset Index
+  side_panel_name: 数据集索引
   help: |
-    For Galaxy composite datasets (datasets that consist on multiple files), this option will
-    display the contents of the composite dataset as files and folders in the resulting document.
+    对于Galaxy复合数据集（由多个文件组成的数据集），此选项将在结果文档中以文件和文件夹的形式显示复合数据集的内容。
 history_dataset_embedded:
-  side_panel_name: Embedded Dataset
+  side_panel_name: 嵌入式数据集
 history_dataset_as_table:
-  side_panel_name: Embedded Dataset as table
+  side_panel_name: 嵌入式数据集表格
   help: |
-    Embed a dataset in the resulting document as a table. This only works for datasets with tabular
-    datatypes. This command works a lot like "history_dataset_embedded" but provides specialized options
-    for controlling the way tabular data is displayed in the resulting document.
+    将数据集作为表格嵌入到结果文档中。这仅适用于表格数据类型的数据集。此命令与"history_dataset_embedded"类似，但提供了专门用于控制表格数据在结果文档中显示方式的选项。
 history_dataset_type:
-  side_panel_name: Dataset Type
+  side_panel_name: 数据集类型
 history_dataset_link:
-  side_panel_name: Link to Dataset
+  side_panel_name: 数据集链接
 history_dataset_name:
-  side_panel_name: Name of Dataset
+  side_panel_name: 数据集名称
 history_dataset_peek:
-  side_panel_name: Peek into Dataset
+  side_panel_name: 数据集预览
   help: |
-    Display a dataset metadata's "peek" field in the resulting document - this is datatype dependent
-    metadata but usually this is a few lines from the start of a file.
+    在结果文档中显示数据集元数据的"预览"字段 - 这是依赖于数据类型的元数据，通常是文件开头的几行内容。
 
 history_dataset_info:
-  side_panel_name: Dataset Details
+  side_panel_name: 数据集详情
   help: |
-    Display a dataset metadata's "info" field in the resulting document. This info field is
-    usually based on the output of the tool run and sometimes contains useful metadata about a
-    dataset.
+    在结果文档中显示数据集元数据的"信息"字段。这个信息字段通常基于工具运行的输出，有时包含关于数据集的有用元数据。
 
 history_link:
-  side_panel_name: Link to Import
+  side_panel_name: 导入链接
   help:
     report: |
-      Add a link to import the history the workflow invocation was executed in.
+      添加一个链接以导入执行工作流调用的历史记录。
     page: |
-      Add a link to import the target history referenced by the directive.
+      添加一个链接以导入指令引用的目标历史记录。
 
 invocation_time:
   side_panel_name:
-    report: Time Workflow
-    page: Time a Workflow
+    report: 工作流时间
+    page: 工作流时间
 
-  side_panel_description: was invoked
+  side_panel_description: 被调用
   help:
     report: |
-      Display this workflow run's invocation time in the resulting document.
+      在结果文档中显示此工作流运行的调用时间。
     page: |
-      Display a workflow run's invocation time in the resulting document.
+      在结果文档中显示工作流运行的调用时间。
 
 invocation_inputs:
-  side_panel_name: Invocation Inputs
+  side_panel_name: 调用输入
 
 invocation_outputs:
-  side_panel_name: Invocation Output
+  side_panel_name: 调用输出
 
 workflow_license:
-  side_panel_name: Workflow License
+  side_panel_name: 工作流许可证
   help:
     report: |
-      Display this workflow's license in the resulting document.
+      在结果文档中显示此工作流的许可证。
     page: |
-      Display a workflow's license in the resulting document.
+      在结果文档中显示工作流的许可证。
 
 workflow_image:
-  side_panel_name: Workflow (as image)
+  side_panel_name: 工作流（图像）
   help:
     report: |
-      Embed a rough image this workflow in the resulting document.
+      在结果文档中嵌入此工作流的粗略图像。
     page: |
-      Embed a rough image a workflow in the resulting document.
+      在结果文档中嵌入工作流的粗略图像。
 
 workflow_display:
   side_panel_name:
-    report: Current Workflow
-    page: Display a Workflow
-  side_panel_description: containing all steps
+    report: 当前工作流
+    page: 显示工作流
+  side_panel_description: 包含所有步骤
   help:
     report: |
-      Embed a text description of this workflow's steps in the resulting document.
+      在结果文档中嵌入此工作流步骤的文本描述。
     page: |
-      Embed a text description of a workflow's steps in the resulting document.
+      在结果文档中嵌入工作流步骤的文本描述。
 
 generate_galaxy_version:
-  side_panel_name: Galaxy Version
-  side_panel_description: as text
+  side_panel_name: Galaxy版本
+  side_panel_description: 文本形式
 
   help: |
-    Report the current Galaxy version at the time %MODE% generation.
+    报告%MODE%生成时的当前Galaxy版本。
 
-    Warning: This is the Galaxy version at the time the %MODE% was generated and
-    not the time of an analysis. This option makes the most sense for PDF generation
-    of %MODE%s designed for external archiving or printing.
+    警告：这是生成%MODE%时的Galaxy版本，而不是分析时的版本。此选项最适合用于为外部存档或打印而设计的%MODE%的PDF生成。
 
 generate_time:
-  side_panel_name: Current Time
-  side_panel_description: as text
+  side_panel_name: 当前时间
+  side_panel_description: 文本形式
   help: |
-    Report the current time of %MODE% generation.
+    报告%MODE%生成的当前时间。
 
-    Warning: This is the time the %MODE% was generated and not the time of
-    an analysis. This option makes the most sense for PDF generation of %MODE%s
-    designed for external archiving or printing.
+    警告：这是生成%MODE%的时间，而不是分析的时间。此选项最适合用于为外部存档或打印而设计的%MODE%的PDF生成。
 
 job_metrics:
-  side_panel_name: Job Metrics
-  side_panel_description: as table
+  side_panel_name: 作业指标
+  side_panel_description: 表格形式
   help: |
-    Embed the job metrics for this job in the resulting document (if Galaxy is configured and you have
-    permission).
+    在结果文档中嵌入此作业的作业指标（如果Galaxy已配置且您有权限）。
 
 job_parameters:
-  side_panel_name: Job Parameters
-  side_panel_description: as table
+  side_panel_name: 作业参数
+  side_panel_description: 表格形式
   help: |
-    Embed the tool parameters for a job in the resulting document.
+    在结果文档中嵌入作业的工具参数。
 
 tool_stdout:
-  side_panel_name: Tool Output
-  side_panel_description: of job run
+  side_panel_name: 工具输出
+  side_panel_description: 作业运行的
   help: |
-    Embed the tool standard output stream for a job in the resulting document.
+    在结果文档中嵌入作业的工具标准输出流。
 
 tool_stderr:
-  side_panel_name: Tool Error
-  side_panel_description: of job run
+  side_panel_name: 工具错误
+  side_panel_description: 作业运行的
   help: |
-    Embed the tool standard error stream for a job in the resulting document.
+    在结果文档中嵌入作业的工具标准错误流。

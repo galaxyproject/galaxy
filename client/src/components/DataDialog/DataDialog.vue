@@ -66,15 +66,19 @@ let urlTracker = new UrlTracker(getHistoryUrl());
 const fields = [
     {
         key: "label",
+        label: "名称",
     },
     {
         key: "extension",
+        label: "扩展名",
     },
     {
         key: "tags",
+        label: "标签",
     },
     {
         key: "update_time",
+        label: "更新时间",
     },
 ];
 

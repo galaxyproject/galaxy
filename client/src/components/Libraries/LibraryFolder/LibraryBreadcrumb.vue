@@ -1,12 +1,12 @@
 <template>
     <b-breadcrumb>
-        <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/libraries` }">
-            Libraries
+        <b-breadcrumb-item title="返回库列表" :to="{ path: `/libraries` }">
+            库
         </b-breadcrumb-item>
         <template v-for="path_item in full_path">
             <b-breadcrumb-item
                 :key="path_item[0]"
-                :title="isCurrentId(path_item[0]) ? `You are here` : `Return to this folder`"
+                :title="isCurrentId(path_item[0]) ? `您在这里` : `返回此文件夹`"
                 :active="isCurrentId(path_item[0])"
                 :to="{ path: `/libraries/folders/${path_item[0]}` }"
                 href="#"

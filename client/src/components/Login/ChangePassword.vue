@@ -37,7 +37,7 @@ async function submit() {
         router.push("/");
     } catch (error: any) {
         variant.value = "danger";
-        message.value = errorMessageAsString(error, "Password change failed for an unknown reason.");
+        message.value = errorMessageAsString(error, "密码修改失败，原因未知。");
     }
 }
 </script>
@@ -48,20 +48,20 @@ async function submit() {
             {{ message }}
         </BAlert>
 
-        <BCard header="Change your password">
-            <BFormGroup v-if="expiredUser" label="Current Password">
+        <BCard header="修改密码">
+            <BFormGroup v-if="expiredUser" label="当前密码">
                 <BFormInput v-model="current" type="password" autocomplete="current-password" />
             </BFormGroup>
 
-            <BFormGroup label="New Password">
+            <BFormGroup label="新密码">
                 <BFormInput v-model="password" type="password" autocomplete="new-password" />
             </BFormGroup>
 
-            <BFormGroup label="Confirm password">
+            <BFormGroup label="确认密码">
                 <BFormInput v-model="confirm" type="password" autocomplete="new-password" />
             </BFormGroup>
 
-            <BButton type="submit">Save new password</BButton>
+            <BButton type="submit">保存新密码</BButton>
         </BCard>
     </BForm>
 </template>

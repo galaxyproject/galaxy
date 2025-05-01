@@ -1,14 +1,14 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
+            <b-button class="mr-1" title="跳转到第一页" @click="gotoFirstPage">
                 <FontAwesomeIcon icon="home" />
             </b-button>
             <b-button
                 v-if="currentUser && currentUser.is_admin"
                 id="create-new-lib"
                 v-b-toggle.collapse-2
-                title="Create new folder"
+                title="创建新文件夹"
                 class="mr-1">
                 <FontAwesomeIcon icon="plus" />
                 {{ titleLibrary }}
@@ -19,10 +19,10 @@
                 v-localize
                 class="mr-1"
                 @input="toggle_include_deleted($event)">
-                include deleted
+                包含已删除项
             </b-form-checkbox>
             <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
-                exclude restricted
+                排除受限项
             </b-form-checkbox>
         </div>
         <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
@@ -61,7 +61,7 @@
                 <textarea
                     v-if="row.item.editMode"
                     v-model="row.item.name"
-                    aria-label="Library name"
+                    aria-label="库名称"
                     class="form-control input_library_name"
                     rows="3" />
 
@@ -89,13 +89,13 @@
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
+                <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="公共库" icon="globe" />
             </template>
             <template v-slot:cell(buttons)="row">
                 <b-button
                     v-if="row.item.deleted"
                     size="sm"
-                    :title="'Undelete ' + row.item.name"
+                    :title="'恢复 ' + row.item.name"
                     @click="undelete(row.item)">
                     <FontAwesomeIcon icon="unlock" />
                     {{ titleUndelete }}
@@ -104,7 +104,7 @@
                     v-if="row.item.can_user_modify && row.item.editMode"
                     size="sm"
                     class="lib-btn permission_folder_btn"
-                    :title="'Permissions of ' + row.item.name"
+                    :title="'权限设置 ' + row.item.name"
                     @click="saveChanges(row.item)">
                     <FontAwesomeIcon :icon="['far', 'save']" />
                     {{ titleSave }}
@@ -113,7 +113,7 @@
                     v-if="row.item.can_user_modify && !row.item.deleted"
                     size="sm"
                     class="lib-btn edit_library_btn save_library_btn"
-                    :title="`Edit ${row.item.name}`"
+                    :title="`编辑 ${row.item.name}`"
                     @click="toggleEditMode(row.item)">
                     <div v-if="!row.item.editMode">
                         <FontAwesomeIcon icon="pencil-alt" />
@@ -128,16 +128,16 @@
                     v-if="currentUser && currentUser.is_admin && !row.item.deleted"
                     size="sm"
                     class="lib-btn permission_library_btn"
-                    :title="'Permissions of ' + row.item.name"
+                    :title="'权限设置 ' + row.item.name"
                     :to="{ path: `/libraries/${row.item.id}/permissions` }">
                     <FontAwesomeIcon icon="users" />
-                    Manage
+                    管理
                 </b-button>
                 <b-button
                     v-if="currentUser && currentUser.is_admin && row.item.editMode && !row.item.deleted"
                     size="sm"
                     class="lib-btn delete-lib-btn"
-                    :title="`Delete ${row.item.name}`"
+                    :title="`删除 ${row.item.name}`"
                     @click="deleteLibrary(row.item)">
                     <FontAwesomeIcon icon="trash" />
                     {{ titleDelete }}
@@ -169,7 +169,7 @@
                             </td>
                             <td class="text-muted ml-1 paginator-text">
                                 <span class="pagination-total-pages-text"
-                                    >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
+                                    >{{ titlePerPage }}，{{ rows }} {{ titleTotal }}</span
                                 >
                             </td>
                         </tr>
@@ -228,17 +228,17 @@ export default {
                 description: "",
                 synopsis: "",
             },
-            titleLibrary: _l("Library"),
-            titleName: _l("Name"),
-            titleDescription: _l("Description"),
-            titleSynopsis: _l("Synopsis"),
-            titleSave: _l("Save"),
-            titleUndelete: _l("Undelete"),
-            titleEdit: _l("Edit"),
-            titleCancel: _l("Cancel"),
-            titleDelete: _l("Delete"),
-            titlePerPage: _l("per page"),
-            titleTotal: _l("total"),
+            titleLibrary: _l("文件夹"),
+            titleName: _l("名称"),
+            titleDescription: _l("描述"),
+            titleSynopsis: _l("摘要"),
+            titleSave: _l("保存"),
+            titleUndelete: _l("恢复"),
+            titleEdit: _l("编辑"),
+            titleCancel: _l("取消"),
+            titleDelete: _l("删除"),
+            titlePerPage: _l("每页"),
+            titleTotal: _l("条总计"),
             sortBy: "name",
         };
     },
@@ -277,7 +277,7 @@ export default {
             this.services.saveChanges(
                 item,
                 () => {
-                    Toast.success("Changes to library saved");
+                    Toast.success("文件夹更改已保存");
                 },
                 (error) => onError(error)
             );
@@ -287,7 +287,7 @@ export default {
             this.services.deleteLibrary(
                 deletedLib,
                 () => {
-                    Toast.success("Library has been marked deleted.");
+                    Toast.success("文件夹已被标记为删除。");
                     deletedLib.deleted = true;
                     this.toggleEditMode(deletedLib);
                     if (!this.includeDeleted) {
@@ -343,7 +343,7 @@ export default {
                 item,
                 () => {
                     item.deleted = false;
-                    Toast.success("Library has been undeleted.");
+                    Toast.success("文件夹已恢复。");
                     this.$refs.libraries_list.refresh();
                 },
                 (error) => onError(error),
@@ -361,7 +361,7 @@ export default {
                     this.newLibraryForm.description = "";
                     this.newLibraryForm.synopsis = "";
                     this.isNewLibFormVisible = false;
-                    Toast.success("Library created.");
+                    Toast.success("文件夹已创建.");
                 },
                 (error) => onError(error)
             );

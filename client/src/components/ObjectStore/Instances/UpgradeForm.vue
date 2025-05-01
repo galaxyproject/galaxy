@@ -17,7 +17,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const title = computed(() => `Upgrade Object Store ${props.instance.name}`);
+const title = computed(() => `升级对象存储 ${props.instance.name}`);
 
 const {
     error,
@@ -32,7 +32,7 @@ const {
     testResults,
     submitTitle,
 } = useConfigurationTemplateUpgrade(
-    "storage location",
+    "存储位置",
     toRef(props, "instance"),
     toRef(props, "latestTemplate"),
     editTestUrl,

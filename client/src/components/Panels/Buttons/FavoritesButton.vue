@@ -21,7 +21,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     value: false,
     query: undefined,
-    tooltip: "Show favorites",
+    tooltip: "显示收藏",
 });
 
 const currentValue = computed(() => props.value ?? false);
@@ -43,10 +43,10 @@ const FAVORITES = ["#favorites", "#favs", "#favourites"];
 
 const tooltipText = computed(() => {
     if (isAnonymous.value) {
-        return "Log in to Favorite Tools";
+        return "登录以收藏工具";
     } else {
         if (toggle.value) {
-            return "Clear";
+            return "清除";
         } else {
             return props.tooltip;
         }
@@ -73,7 +73,7 @@ function toggleFavorites() {
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"
-        aria-label="Show favorite tools"
+        aria-label="显示收藏工具"
         :disabled="isAnonymous"
         :title="tooltipText"
         @click="toggleFavorites">

@@ -35,22 +35,21 @@ const { historiesLoading, currentHistoryId } = storeToRefs(historyStore);
 const pinnedHistoryCount = computed(() => {
     return Object.keys(historyStore.pinnedHistories).length;
 });
-
 const pinRecentTitle = computed(() => {
     if (pinnedHistoryCount.value > 0) {
-        return localize("Reset selection to show 4 most recently updated histories instead");
+        return localize("重置选择以显示4个最近更新的历史记录");
     } else {
-        return localize("Currently showing 4 most recently updated histories in Multiview");
+        return localize("当前在多视图中显示4个最近更新的历史记录");
     }
 });
 
 const pinRecentText = computed(() => {
     if (pinnedHistoryCount.value > 1) {
-        return localize(`${pinnedHistoryCount.value} histories pinned. Click here to reset`);
+        return localize(`已固定${pinnedHistoryCount.value}个历史记录。点击此处重置`);
     } else if (pinnedHistoryCount.value == 1) {
-        return localize("1 history pinned. Click here to reset");
+        return localize("已固定1个历史记录。点击此处重置");
     } else {
-        return localize("Select histories to pin to Multiview");
+        return localize("选择历史记录以固定到多视图");
     }
 });
 
@@ -59,7 +58,7 @@ async function createAndPin() {
         loading.value = true;
         await historyStore.createNewHistory();
         if (!currentHistoryId.value) {
-            throw new Error("Error creating history");
+            throw new Error("创建历史记录时出错");
         }
         if (pinnedHistoryCount.value > 0) {
             historyStore.pinHistory(currentHistoryId.value);
@@ -67,7 +66,7 @@ async function createAndPin() {
         router.push("/histories/view_multiple");
     } catch (error: any) {
         console.error(error);
-        Toast.error(errorMessageAsString(error), "Error creating and pinning history");
+        Toast.error(errorMessageAsString(error), "创建并固定历史记录时出错");
     } finally {
         loading.value = false;
     }
@@ -77,8 +76,8 @@ async function createAndPin() {
 function pinRecent() {
     historyStore.pinnedHistories = [];
     Toast.info(
-        "Showing the 4 most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
-        "History Multiview"
+        "在多视图中显示4个最近更新的历史记录。通过在面板中选择历史记录来将它们固定到历史记录多视图。",
+        "历史记录多视图"
     );
 }
 
@@ -88,7 +87,7 @@ function setFilter(newFilter: string, newValue: string) {
 
 function userTitle(title: string) {
     if (isAnonymous.value == true) {
-        return `Log in to ${title}`;
+        return `登录以${title}`;
     } else {
         return title;
     }
@@ -96,15 +95,15 @@ function userTitle(title: string) {
 </script>
 
 <template>
-    <ActivityPanel title="Select Histories">
+    <ActivityPanel title="选择历史记录">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.bottom.hover
-                    data-description="create new history for multiview"
+                    data-description="为多视图创建新历史记录"
                     size="sm"
                     variant="link"
-                    :title="userTitle('Create new history and show in multiview')"
+                    :title="userTitle('创建新历史记录并在多视图中显示')"
                     :disabled="isAnonymous"
                     @click="createAndPin">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
@@ -114,8 +113,8 @@ function userTitle(title: string) {
 
         <template v-slot:header>
             <FilterMenu
-                name="Histories"
-                placeholder="search histories"
+                name="历史记录"
+                placeholder="搜索历史记录"
                 :filter-class="HistoriesFilters"
                 :filter-text.sync="filter"
                 :loading="historiesLoading || loading"
@@ -139,7 +138,7 @@ function userTitle(title: string) {
 
         <div v-if="isAnonymous">
             <BBadge class="alert-info w-100 mx-2">
-                Please <a :href="withPrefix('/login')">log in or register</a> to create multiple histories.
+                请<a :href="withPrefix('/login')">登录或注册</a>以创建多个历史记录。
             </BBadge>
         </div>
 

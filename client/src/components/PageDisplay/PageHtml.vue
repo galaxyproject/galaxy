@@ -40,7 +40,7 @@ export default {
                             const [modelClass, modelId] = splitId;
                             this.childList.push(this.processItem(modelClass, modelId));
                         } else {
-                            this.childList.push(`Could not resolve item identifier: ${child.id}.`);
+                            this.childList.push(`无法解析项目标识符: ${child.id}.`);
                         }
                     } else {
                         this.childList.push(child.innerHTML);
@@ -52,18 +52,18 @@ export default {
             let html = null;
             if (modelClass == "StoredWorkflow") {
                 const url = withPrefix(`/published/workflow?id=${modelId}`);
-                html = `<a href='${url}'>View Workflow<a>`;
+                html = `<a href='${url}'>查看工作流<a>`;
             } else if (modelClass == "History") {
                 const url = withPrefix(`/published/history?id=${modelId}`);
-                html = `<a href='${url}'>View History<a>`;
+                html = `<a href='${url}'>查看历史<a>`;
             } else if (modelClass == "HistoryDatasetAssociation") {
                 const url = withPrefix(`/datasets/${modelId}/preview`);
-                html = `<a href='${url}'>View Dataset<a>`;
+                html = `<a href='${url}'>查看数据集<a>`;
             } else if (modelClass == "Visualization") {
                 const url = withPrefix(`/published/history?id=${modelId}`);
-                html = `<a href='${url}'>View Visualization<a>`;
+                html = `<a href='${url}'>查看可视化<a>`;
             } else {
-                html = `Item of type '${modelClass}' cannot be embedded.`;
+                html = `类型为'${modelClass}'的项目无法嵌入。`;
             }
             return `<p>${html}</p>`;
         },

@@ -74,11 +74,11 @@ export default {
     },
     methods: {
         onClick(evt) {
-            ariaAlert(`${this.tool.name} selected from panel`);
+            ariaAlert(`已从面板中选择${this.tool.name}`);
             this.$emit("onClick", this.tool, evt);
         },
         onOperation(evt) {
-            ariaAlert(`${this.tool.name} operation selected from panel`);
+            ariaAlert(`已从面板中选择${this.tool.name}操作`);
             this.$emit("onOperation", this.tool, evt);
         },
     },

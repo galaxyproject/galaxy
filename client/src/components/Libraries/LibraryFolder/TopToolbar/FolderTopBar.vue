@@ -179,7 +179,7 @@ async function downloadData(format: string) {
         const { datasets, folders } = await findCheckedItems();
 
         if (props.selected.length === 0) {
-            Toast.info("You must select at least one dataset to download");
+            Toast.info("您必须选择至少一个数据集进行下载");
 
             return;
         }
@@ -246,7 +246,7 @@ async function addDatasets(
 
     progress.value = true;
     progressStatus.total = selectedDatasets.length;
-    progressNote.value = "Adding datasets to the folder";
+    progressNote.value = "正在向文件夹添加数据集";
 
     emit("setBusy", true);
 
@@ -265,15 +265,9 @@ async function addDatasets(
     }
 
     if (progressStatus.errorCount > 0) {
-        progressNote.value = `Added ${progressStatus.okCount} dataset${
-            progressStatus.okCount > 1 ? "s" : ""
-        }, but failed to add ${progressStatus.errorCount} dataset${
-            progressStatus.errorCount > 1 ? "s" : ""
-        } to the folder`;
+        progressNote.value = `已添加 ${progressStatus.okCount} 个数据集，但有 ${progressStatus.errorCount} 个数据集添加失败`;
     } else {
-        progressNote.value = `Added ${progressStatus.okCount} dataset${
-            progressStatus.okCount > 1 ? "s" : ""
-        } to the folder`;
+        progressNote.value = `已成功添加 ${progressStatus.okCount} 个数据集到文件夹`;
     }
 
     emit("setBusy", false);
@@ -308,7 +302,6 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
     addDatasets(selectedDatasets, datasetApiCall);
 }
 </script>
-
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
@@ -316,7 +309,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                 class="mr-1 btn btn-secondary"
                 :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
-                title="Go to libraries list">
+                title="前往数据库列表">
                 <FontAwesomeIcon :icon="faHome" />
             </BButton>
 
@@ -326,12 +319,12 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 
                     <BButton
                         v-if="props.canAddLibraryItem"
-                        title="Create new folder"
+                        title="创建新文件夹"
                         class="add-library-items-folder mr-1"
                         type="button"
                         @click="newFolder">
                         <FontAwesomeIcon :icon="faPlus" />
-                        Folder
+                        文件夹
                     </BButton>
 
                     <BDropdown
@@ -342,25 +335,25 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         class="add-library-items-datasets mr-1">
                         <template v-slot:button-content>
                             <FontAwesomeIcon :icon="faPlus" />
-                            Datasets
+                            数据集
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
-                        <BDropdownItem @click="onAddDatasets('history')"> from History </BDropdownItem>
+                        <BDropdownItem @click="onAddDatasets('history')"> 从历史记录 </BDropdownItem>
 
                         <BDropdownItem v-if="userLibraryImportDirAvailable" @click="onAddDatasets('userdir')">
-                            from User Directory
+                            从用户目录
                         </BDropdownItem>
 
                         <BDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
 
-                        <BDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
+                        <BDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="仅管理员">
                             <BDropdownItem v-if="libraryImportDir" @click="onAddDatasets('importdir')">
-                                from Import Directory
+                                从导入目录
                             </BDropdownItem>
 
                             <BDropdownItem v-if="allowLibraryPathPaste" @click="onAddDatasets('path')">
-                                from Path
+                                从路径
                             </BDropdownItem>
                         </BDropdownGroup>
                     </BDropdown>
@@ -368,45 +361,45 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                     <BDropdown v-b-tooltip.top.noninteractive right no-caret class="add-to-history mr-1">
                         <template v-slot:button-content>
                             <FontAwesomeIcon :icon="faBook" />
-                            Add to History
+                            添加到历史记录
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
                         <BDropdownItem class="add-to-history-datasets" @click="importToHistoryModal(false)">
-                            as Datasets
+                            作为数据集
                         </BDropdownItem>
 
                         <BDropdownItem class="add-to-history-collection" @click="importToHistoryModal(true)">
-                            as a Collection
+                            作为集合
                         </BDropdownItem>
                     </BDropdown>
 
                     <div
                         v-if="datasetManipulation"
-                        title="Download items as archive"
+                        title="以归档形式下载项目"
                         class="dropdown dataset-manipulation mr-1">
                         <BButton id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
                             <FontAwesomeIcon :icon="faDownload" />
-                            Download
+                            下载
                         </BButton>
                     </div>
 
                     <BButton
                         v-if="canDelete"
                         data-toggle="tooltip"
-                        title="Mark items deleted"
+                        title="标记项目为已删除"
                         class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
                         type="button"
                         @click="deleteSelected">
                         <FontAwesomeIcon :icon="faTrash" />
-                        Delete
+                        删除
                     </BButton>
 
                     <FolderDetails :id="props.folderId" class="mr-1" :metadata="props.metadata" />
 
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
                         <BFormCheckbox :checked="props.includeDeleted" @change="$emit('update:includeDeleted', $event)">
-                            include deleted
+                            包含已删除
                         </BFormCheckbox>
                     </div>
                 </div>

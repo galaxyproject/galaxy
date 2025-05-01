@@ -34,7 +34,7 @@ const usage = computed(() => {
 const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
 
 const quotaTitle = computed(() =>
-    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"
+    isAnonymous.value ? "登录以查看存储详情" : "存储和使用详情"
 );
 
 const variant = computed(() => {
@@ -49,15 +49,15 @@ const variant = computed(() => {
 
 <template>
     <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
-        <BLink class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
+        <BLink class="quota-progress" :to="quotaLink" data-description="存储仪表盘链接">
             <BProgress :max="100">
-                <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
+                <BProgressBar aria-label="配额使用情况" :value="usage" :variant="variant" />
             </BProgress>
             <span>
-                <span v-localize>Using</span>
+                <span v-localize>已使用</span>
                 <span v-if="hasQuota">
                     <span>{{ usage.toFixed(0) }}%</span>
-                    <span v-if="quotaLimit !== null">of {{ quotaLimit }}</span>
+                    <span v-if="quotaLimit !== null">，总额 {{ quotaLimit }}</span>
                 </span>
                 <span v-else>{{ totalUsageString }}</span>
             </span>

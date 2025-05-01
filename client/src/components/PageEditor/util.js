@@ -5,7 +5,7 @@ import _l from "utils/localization";
 import { rethrowSimple } from "utils/simple-error";
 
 export async function save(pageId, content, showProgress = true) {
-    showProgress && show_modal(_l("Saving page"), _l("progress"));
+    showProgress && show_modal(_l("保存页面"), _l("进行中"));
     try {
         const response = await axios
             .post(`${getAppRoot()}api/pages/${pageId}/revisions`, { content: content })

@@ -25,7 +25,7 @@ defineProps<JobSelectionProps>();
             <b-navbar>
                 <b-collapse id="nav-text-collapse" is-nav>
                     <b-navbar-nav>
-                        <b-nav-text>Select Job</b-nav-text>
+                        <b-nav-text>选择任务</b-nav-text>
                     </b-navbar-nav>
                     <b-nav-form>
                         <b-input-group size="sm">

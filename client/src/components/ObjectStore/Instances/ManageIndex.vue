@@ -49,7 +49,7 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 
 <template>
     <div>
-        <ManageIndexHeader header="Storage Locations" :message="message" create-route="/object_store_instances/create">
+        <ManageIndexHeader header="存储位置" :message="message" create-route="/object_store_instances/create">
         </ManageIndexHeader>
         <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
         <BTable
@@ -63,9 +63,9 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
             :fixed="true"
             :show-empty="true">
             <template v-slot:empty>
-                <LoadingSpan v-if="loading" message="Loading storage location instances" />
+                <LoadingSpan v-if="loading" message="正在加载存储位置实例" />
                 <b-alert v-else id="no-object-store-instances" variant="info" show>
-                    <div>No storage location instances found, click the create button to configure a new one.</div>
+                    <div>未找到存储位置实例，点击创建按钮配置一个新的实例。</div>
                 </b-alert>
             </template>
             <template v-slot:cell(badges)="row">

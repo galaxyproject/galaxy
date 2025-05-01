@@ -23,16 +23,15 @@ const { goToIndex } = useInstanceRouting();
 const props = defineProps<Props>();
 
 const template = computed(() => objectStoreTemplatesStore.getLatestTemplate(props.templateId));
-
 const breadcrumbItems = computed(() => [
-    { title: "User Preferences", to: "/user" },
-    { title: "Storage Locations", to: "/object_store_instances/index" },
-    { title: "Create New", to: "/object_store_instances/create" },
-    { title: template.value?.name || "Option" },
+    { title: "用户偏好", to: "/user" },
+    { title: "存储位置", to: "/object_store_instances/index" },
+    { title: "创建新位置", to: "/object_store_instances/create" },
+    { title: template.value?.name || "选项" },
 ]);
 
 async function onCreated(objectStore: UserConcreteObjectStore) {
-    const message = `Created storage location ${objectStore.name}`;
+    const message = `已创建存储位置 ${objectStore.name}`;
     goToIndex({ message });
 }
 </script>
@@ -44,7 +43,7 @@ async function onCreated(objectStore: UserConcreteObjectStore) {
         </div>
 
         <BAlert v-if="!template" variant="info" show>
-            <LoadingSpan :message="localize('Loading storage location options')" />
+            <LoadingSpan :message="localize('加载存储位置选项')" />
         </BAlert>
         <CreateForm v-else :template="template" @created="onCreated"></CreateForm>
     </div>

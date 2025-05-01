@@ -24,11 +24,11 @@ const notificationsStore = useNotificationsStore();
 function getNotificationExpirationTitle(notification: UserNotification) {
     if (notification.expiration_time) {
         const expirationTime = parseISO(notification.expiration_time);
-        return `This notification will be automatically deleted ${formatDistanceToNow(expirationTime, {
+        return `此通知将在${formatDistanceToNow(expirationTime, {
             addSuffix: true,
-        })}`;
+        })}自动删除`;
     } else {
-        return "This notification will never be automatically deleted";
+        return "此通知永不会自动删除";
     }
 }
 </script>
@@ -44,7 +44,7 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                 <AsyncButton
                     v-if="!notification.seen_time"
                     id="mark-as-read-button"
-                    title="Mark as read"
+                    title="标记为已读"
                     icon="check"
                     size="sm"
                     class="inline-icon-button"
@@ -64,7 +64,7 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                 <AsyncButton
                     id="delete-button"
                     icon="trash"
-                    title="Delete"
+                    title="删除"
                     size="sm"
                     class="inline-icon-button"
                     :action="() => notificationsStore.updateNotification(notification, { deleted: true })" />

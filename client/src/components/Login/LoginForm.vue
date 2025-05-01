@@ -108,14 +108,14 @@ async function submitLogin() {
     } catch (e) {
         loading.value = false;
         messageVariant.value = "danger";
-        const message = errorMessageAsString(e, "Login failed for an unknown reason.");
+        const message = errorMessageAsString(e, "登录失败，原因未知。");
 
         if (connectExternalProvider.value && message && message.toLowerCase().includes("invalid")) {
-            messageText.value = message + " Try logging in to the existing account through an external provider below.";
+            messageText.value = message + " 尝试通过以下外部提供商登录到现有帐户。";
         } else {
             messageText.value = message;
         }
-        if (message === "Invalid password.") {
+        if (message === "密码无效。") {
             passwordState.value = false;
         }
     }
@@ -143,7 +143,6 @@ function returnToLogin() {
     router.push("/login/start");
 }
 </script>
-
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
@@ -155,22 +154,20 @@ function returnToLogin() {
                     </BAlert>
 
                     <BAlert :show="!!connectExternalProvider" variant="info">
-                        There already exists a user with the email <i>{{ connectExternalEmail }}</i
-                        >. In order to associate this account with <i>{{ connectExternalLabel }}</i
-                        >, you must first login to your existing account.
+                        已存在一个使用邮箱 <i>{{ connectExternalEmail }}</i> 的用户。为了将此账户与 <i>{{ connectExternalLabel }}</i> 关联，您必须先登录到您的现有账户。
                     </BAlert>
 
                     <BForm id="login" @submit.prevent="submitLogin()">
                         <BCard no-body>
                             <BCardHeader v-if="!connectExternalProvider">
-                                <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
+                                <span>{{ localize("欢迎使用Galaxy，请登录") }}</span>
                             </BCardHeader>
 
                             <BCardBody>
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <BFormGroup
-                                        :label="localize('Public Name or Email Address')"
+                                        :label="localize('用户名或电子邮箱')"
                                         label-for="login-form-name">
                                         <BFormInput
                                             v-if="!connectExternalProvider"
@@ -188,7 +185,7 @@ function returnToLogin() {
                                             type="text" />
                                     </BFormGroup>
 
-                                    <BFormGroup :label="localize('Password')" label-for="login-form-password">
+                                    <BFormGroup :label="localize('密码')" label-for="login-form-password">
                                         <BFormInput
                                             id="login-form-password"
                                             v-model="password"
@@ -199,20 +196,20 @@ function returnToLogin() {
                                             autocomplete="current-password" />
 
                                         <BFormText v-if="showResetLink">
-                                            <span v-localize>Forgot password?</span>
+                                            <span v-localize>忘记密码？</span>
 
                                             <a
                                                 v-localize
                                                 href="javascript:void(0)"
                                                 role="button"
                                                 @click.prevent="resetLogin">
-                                                Click here to reset your password.
+                                                点击此处重置您的密码。
                                             </a>
                                         </BFormText>
                                     </BFormGroup>
 
                                     <BButton v-localize name="login" type="submit" :disabled="loading">
-                                        {{ localize("Login") }}
+                                        {{ localize("登录") }}
                                     </BButton>
                                 </div>
                                 <div v-if="enableOidc">
@@ -223,7 +220,7 @@ function returnToLogin() {
 
                             <BCardFooter>
                                 <span v-if="!connectExternalProvider">
-                                    Don't have an account?
+                                    没有账户？
                                     <span v-if="allowUserCreation">
                                         <a
                                             id="register-toggle"
@@ -231,18 +228,17 @@ function returnToLogin() {
                                             href="javascript:void(0)"
                                             role="button"
                                             @click.prevent="toggleLogin">
-                                            Register here.
+                                            在此注册。
                                         </a>
                                     </span>
                                     <span v-else>
-                                        Registration for this Galaxy instance is disabled. Please contact an
-                                        administrator for assistance.
+                                        此Galaxy实例的注册功能已禁用。请联系管理员获取帮助。
                                     </span>
                                 </span>
                                 <span v-else>
-                                    Do not wish to connect to an external provider?
+                                    不想连接到外部提供商？
                                     <a href="javascript:void(0)" role="button" @click.prevent="returnToLogin">
-                                        Return to login here.
+                                        点此返回登录。
                                     </a>
                                 </span>
                             </BCardFooter>

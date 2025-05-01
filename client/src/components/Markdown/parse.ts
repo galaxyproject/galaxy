@@ -146,7 +146,6 @@ function getQuoteChar(argMatch: string): string {
     }
     return quoteChar;
 }
-
 export function getArgs(content: string): GalaxySection {
     const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
     if (galaxy_function == null) {

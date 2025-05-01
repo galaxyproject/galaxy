@@ -154,7 +154,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         redirect = payload.get("redirect")
         status = None
         if not login or not password:
-            return self.message_exception(trans, "Please specify a username and password.")
+            return self.message_exception(trans, "请指定用户名和密码。")
         user = self.user_manager.get_user_by_identity(login)
         log.debug(f"trans.app.config.auth_config_file: {trans.app.config.auth_config_file}")
         if user is None:
@@ -162,22 +162,22 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             if message:
                 return self.message_exception(trans, message)
         elif user.purged:
-            message = "This account has been permanently deleted."
+            message = "此账户已被永久删除。"
             return self.message_exception(trans, message, sanitize=False)
         elif user.deleted:
             message = (
-                "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+                "此账户已被标记为删除，请联系您的Galaxy管理员恢复账户。"
             )
             if trans.app.config.error_email_to is not None:
-                message += f" Contact: {trans.app.config.error_email_to}."
+                message += f" 联系方式: {trans.app.config.error_email_to}。"
             return self.message_exception(trans, message, sanitize=False)
         elif user.external:
-            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
+            message = "此账户是为使用外部认证方法而创建的，请联系您的Galaxy管理员激活它。"
             if trans.app.config.error_email_to is not None:
-                message += f" Contact: {trans.app.config.error_email_to}."
+                message += f" 联系方式: {trans.app.config.error_email_to}。"
             return self.message_exception(trans, message, sanitize=False)
         elif not trans.app.auth_manager.check_password(user, password, trans.request):
-            return self.message_exception(trans, "Invalid password.")
+            return self.message_exception(trans, "密码无效。")
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if trans.app.config.activation_grace_period != 0:  # grace period is ON
                 if self.is_outside_grace_period(
@@ -187,7 +187,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                     return self.message_exception(trans, message, sanitize=False)
                 else:  # User is within the grace period, let him log in.
                     trans.handle_user_login(user)
-                    trans.log_event("User logged in")
+                    trans.log_event("用户已登录")
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_activation_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
@@ -196,17 +196,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
                 return {
-                    "message": "Your password has expired. Please reset or change it to access Galaxy.",
+                    "message": "您的密码已过期。请重置或更改密码以访问Galaxy。",
                     "status": "warning",
                     "expired_user": trans.security.encode_id(user.id),
                 }
             trans.handle_user_login(user)
-            trans.log_event("User logged in")
+            trans.log_event("用户已登录")
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
-                return {"message": f"Your password will expire in {expiredate.days} day(s).", "status": "warning"}
-        return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
+                return {"message": f"您的密码将在{expiredate.days}天后过期。", "status": "warning"}
+        return {"message": "成功。", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
     def resend_verification(self, trans, **kwargs):

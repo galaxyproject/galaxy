@@ -17,7 +17,7 @@ const selectedValue = ref<WorkflowLabel | undefined>(undefined);
 const modalShow = ref(true);
 
 const title = computed(() => {
-    return `Insert '${props.argumentName}'`;
+    return `插入 '${props.argumentName}'`;
 });
 const hasLabels = computed(() => {
     return props.labels && props.labels.length > 0;

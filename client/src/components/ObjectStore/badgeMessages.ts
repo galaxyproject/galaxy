@@ -1,21 +1,21 @@
 export const MESSAGES = {
     restricted:
-        "This dataset is stored on storage restricted to a single user. It can not be shared, published, or added to Galaxy data libraries.",
-    user_defined: "This storage was user defined and is not managed by the Galaxy administrator.",
-    quota: "A Galaxy quota is enabled for this storage location.",
-    no_quota: "No Galaxy quota is enabled for this storage location.",
-    faster: "This storage has been marked as a faster option by the Galaxy administrator.",
-    slower: "This storage has been marked as a slower option by the Galaxy administrator.",
-    short_term: "This storage has been marked as routinely purged by the Galaxy administrator.",
-    backed_up: "This storage has been marked as backed up by the Galaxy administrator.",
-    not_backed_up: "This storage has been marked as not backed up by the Galaxy administrator.",
+        "此数据集储存在仅限单个用户访问的存储位置中。它不能被共享、发布或添加到Galaxy数据库中。",
+    user_defined: "这个存储位置是用户自定义的，不受Galaxy管理员管理。",
+    quota: "此存储位置已启用Galaxy配额。",
+    no_quota: "此存储位置未启用Galaxy配额。",
+    faster: "Galaxy管理员已将此存储位置标记为速度较快的选项。",
+    slower: "Galaxy管理员已将此存储位置标记为速度较慢的选项。",
+    short_term: "Galaxy管理员已将此存储位置标记为定期清除。",
+    backed_up: "Galaxy管理员已将此存储位置标记为已备份。",
+    not_backed_up: "Galaxy管理员已将此存储位置标记为未备份。",
     more_secure:
-        "This storage has been marked as more secure by the Galaxy administrator. The Galaxy web application doesn't make any additional promises regarding security for this storage.",
+        "Galaxy管理员已将此存储位置标记为安全性较高。Galaxy网页应用不对此存储的安全性做任何额外承诺。",
     less_secure:
-        "This storage has been marked as less secure by the Galaxy administrator. The Galaxy web application doesn't make any additional promises regarding security for this storage.",
+        "Galaxy管理员已将此存储位置标记为安全性较低。Galaxy网页应用不对此存储的安全性做任何额外承诺。",
     more_stable:
-        "This storage has been marked as more stable by the Galaxy administrator - expect jobs to fail less because of storage issues for this storage.",
+        "Galaxy管理员已将此存储位置标记为稳定性较高 - 使用此存储位置时，因存储问题导致任务失败的可能性较低。",
     less_stable:
-        "This storage has been marked as less stable by the Galaxy administrator - expect jobs to fail more because of storage issues for this storage.",
-    cloud: "This is cloud storage.",
+        "Galaxy管理员已将此存储位置标记为稳定性较低 - 使用此存储位置时，因存储问题导致任务失败的可能性较高。",
+    cloud: "这是云存储。",
 };

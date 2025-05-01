@@ -83,7 +83,7 @@ const sideClasses = computed(() => ({
             v-if="props.collapsible"
             class="collapse-button open"
             :class="{ ...sideClasses, show: showToggle }"
-            title="Close panel"
+            title="关闭面板"
             @click="show = false"
             @mouseenter="hoverToggle = true"
             @focusin="hoverToggle = true"
@@ -101,7 +101,7 @@ const sideClasses = computed(() => ({
         <button
             class="collapse-button closed"
             :class="{ ...sideClasses, show: true }"
-            title="Open panel"
+            title="打开面板"
             @click="
                 show = true;
                 hoverToggle = false;

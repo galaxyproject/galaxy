@@ -34,16 +34,16 @@ const onImport = async () => {
 
 <template>
     <div>
-        <b-link v-if="showLink" data-description="history import link" :data-history-id="historyId" @click="onImport">
-            Click to Import History: {{ name }}
+        <b-link v-if="showLink" data-description="历史导入链接" :data-history-id="historyId" @click="onImport">
+            点击导入历史: {{ name }}
         </b-link>
         <div v-if="imported" class="text-success">
             <FontAwesomeIcon icon="check" class="mr-1" />
-            <span>Successfully Imported History: {{ name }}!</span>
+            <span>成功导入历史: {{ name }}!</span>
         </div>
         <div v-if="!!error" class="text-danger">
             <FontAwesomeIcon icon="exclamation-triangle" class="mr-1" />
-            <span>Failed to handle History: {{ name || "n/a" }}!</span>
+            <span>处理历史失败: {{ name || "n/a" }}!</span>
             <span>{{ error }}</span>
         </div>
     </div>

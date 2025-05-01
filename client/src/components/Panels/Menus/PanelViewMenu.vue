@@ -5,7 +5,7 @@
         class="w-100 text-decoration-none"
         size="sm"
         @click="$emit('update:show-advanced', !showAdvanced)">
-        <slot name="panel-view-selector"></slot><span class="sr-only">Close advanced tool search menu</span>
+        <slot name="panel-view-selector"></slot><span class="sr-only">关闭高级工具搜索菜单</span>
     </b-button>
     <b-dropdown
         v-else
@@ -14,15 +14,15 @@
         block
         no-caret
         :disabled="storeLoading"
-        :title="!storeLoading ? 'Show panel options' : 'Loading panel view'"
+        :title="!storeLoading ? '显示面板选项' : '加载面板视图中'"
         variant="link"
         toggle-class="text-decoration-none"
         role="menu"
-        aria-label="View all tool panel configurations"
+        aria-label="查看所有工具面板配置"
         class="tool-panel-dropdown w-100"
         size="sm">
         <template v-slot:button-content>
-            <slot name="panel-view-selector"></slot><span class="sr-only">View all tool panel configurations</span>
+            <slot name="panel-view-selector"></slot><span class="sr-only">查看所有工具面板配置</span>
         </template>
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"
@@ -53,10 +53,10 @@
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
 const groupsDefinitions = [
-    { type: "ontology", title: "...by Ontology" },
-    { type: "activity", title: "...for Activity" },
-    { type: "publication", title: "...from Publication" },
-    { type: "training", title: "...for Training" },
+    { type: "ontology", title: "...按本体论分类" },
+    { type: "activity", title: "...按活动分类" },
+    { type: "publication", title: "...来自出版物" },
+    { type: "training", title: "...用于培训" },
 ];
 
 export default {

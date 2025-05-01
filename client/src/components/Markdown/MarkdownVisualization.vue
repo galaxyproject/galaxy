@@ -11,8 +11,8 @@
             v-if="formShow"
             v-model="formShow"
             modal-class="visualization-dialog-modal"
-            title="Configure Visualization"
-            ok-title="Continue"
+            title="配置可视化"
+            ok-title="继续"
             @ok="onOk"
             @cancel="onCancel">
             <FormDisplay :inputs="formInputs" @onChange="onChange" />
@@ -77,7 +77,7 @@ export default {
                 settings = settings || [];
                 settings.push({
                     type: "repeat",
-                    title: "Columns",
+                    title: "列",
                     name: "tracks",
                     min: 1,
                     inputs: this.argumentPayload.tracks.map((x) => {

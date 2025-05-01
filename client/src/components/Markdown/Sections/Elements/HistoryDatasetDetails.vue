@@ -31,7 +31,7 @@ const attributeValue = computed(() => {
     if (dataset.value) {
         const attributeName = ATTRIBUTES[props.name] || "";
         if (attributeName) {
-            return dataset.value[attributeName] || `Dataset attribute '${attributeName}' unavailable.`;
+            return dataset.value[attributeName] || `数据集属性'${attributeName}'不可用。`;
         }
     }
     return "";

@@ -19,7 +19,7 @@ function processDownload(url, data, method) {
             .submit()
             .remove();
 
-        Toast.info("Your download will begin soon.");
+        Toast.info("你的下载将于不久开始.");
     }
 }
 /**

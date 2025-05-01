@@ -1,7 +1,7 @@
 <template>
     <div id="columns" class="d-flex">
         <ActivityBar />
-        <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
+        <LoadingSpan v-if="loading" message="正在加载页面" class="m-3" />
         <PageEditorMarkdown
             v-else
             :title="title"
@@ -56,7 +56,7 @@ export default {
                 this.loading = false;
             })
             .catch((error) => {
-                Toast.error(`Failed to load page: ${error}`);
+                Toast.error(`未能加载页面: ${error}`);
             });
     },
     methods: {

@@ -54,10 +54,9 @@ type AccessibleMapRef = Ref<{ [key: string]: AccessibleState }>;
 const historyAccessible: AccessibleMapRef = ref({});
 const workflowAccessible: AccessibleMapRef = ref({});
 const historyDatasetAccessible: AccessibleMapRef = ref({});
-
 function catchErrorToToast(title: string, prolog: string) {
     function handleError(e: Error | MessageException) {
-        toast.error(`${prolog} Reason: ${errorMessageAsString(e)}.`, title);
+        toast.error(`${prolog} 原因: ${errorMessageAsString(e)}.`, title);
     }
     return handleError;
 }
@@ -69,8 +68,8 @@ watch(referencedJobIds, async () => {
         }
 
         const handleError = catchErrorToToast(
-            "Failed to job information",
-            "Some referenced objects may not be listed."
+            "获取作业信息失败",
+            "某些引用的对象可能不会被列出。"
         );
         const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: { path: { job_id: jobId } },
@@ -95,8 +94,8 @@ watch(referencedInvocationIds, async () => {
         }
 
         const handleError = catchErrorToToast(
-            "Failed to fetch workflow information",
-            "Some referenced objects may not be listed."
+            "获取工作流信息失败",
+            "某些引用的对象可能不会被列出。"
         );
 
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
@@ -121,8 +120,8 @@ watch(referencedHistoryDatasetCollectionIds, async () => {
             return;
         }
         const handleError = catchErrorToToast(
-            "Failed to fetch collection information",
-            "Some referenced objects may not be listed."
+            "获取集合信息失败",
+            "某些引用的对象可能不会被列出。"
         );
         fetchCollectionSummary({ id: historyDatasetCollectionId })
             .then((data) => {
@@ -167,7 +166,7 @@ const datasets = computed<ItemInterface[]>(() => {
         return {
             id: historyDatasetId,
             type: "historyDataset",
-            name: getDataset(historyDatasetId)?.name || "Fetching dataset name...",
+            name: getDataset(historyDatasetId)?.name || "正在获取数据集名称...",
             accessible: historyDatasetAccessible.value[historyDatasetId],
         } as ItemInterface;
     });
@@ -175,9 +174,9 @@ const datasets = computed<ItemInterface[]>(() => {
 
 const loading = ref(false);
 
-const SHARING_FIELD = { key: "accessible", label: _l("Accessible"), sortable: false, thStyle: { width: "10%" } };
-const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
-const TYPE_FIELD = { key: "type", label: _l("Type"), sortable: true, thStyle: { width: "10%" } };
+const SHARING_FIELD = { key: "accessible", label: _l("可访问性"), sortable: false, thStyle: { width: "10%" } };
+const NAME_FIELD = { key: "name", label: _l("名称"), sortable: true };
+const TYPE_FIELD = { key: "type", label: _l("类型"), sortable: true, thStyle: { width: "10%" } };
 
 const tableFields = [SHARING_FIELD, TYPE_FIELD, NAME_FIELD];
 
@@ -203,9 +202,9 @@ watch(historyIds, async () => {
 
             if (error) {
                 const errorMessage = errorMessageAsString(error);
-                const title = "Failed to fetch history metadata.";
+                const title = "获取历史记录元数据失败。";
                 toast.error(errorMessage, title);
-                Vue.set(historyAccessible.value, historyId, `${title} Reason: ${errorMessage}.`);
+                Vue.set(historyAccessible.value, historyId, `${title} 原因: ${errorMessage}.`);
                 return;
             }
 
@@ -227,9 +226,9 @@ async function initWorkflowData() {
 
             if (error) {
                 const errorMessage = errorMessageAsString(error);
-                const title = "Failed to fetch workflow metadata.";
+                const title = "获取工作流元数据失败。";
                 toast.error(errorMessage, title);
-                Vue.set(workflowAccessible.value, workflowId, `${title} Reason: ${errorMessage}.`);
+                Vue.set(workflowAccessible.value, workflowId, `${title} 原因: ${errorMessage}.`);
                 return;
             }
 
@@ -249,7 +248,7 @@ function initHistoryDatasetData() {
                     const permissionDisable = response.data.permission_disable;
                     const permissionInputs = response.data.permission_inputs;
                     if (permissionDisable) {
-                        const errorStr = `Cannot modify permissions of this dataset. Reason: ${permissionInputs[0].label}`;
+                        const errorStr = `无法修改此数据集的权限。原因: ${permissionInputs[0].label}`;
                         Vue.set(historyDatasetAccessible.value, historyDatasetId, errorStr);
                         return;
                     }
@@ -262,9 +261,9 @@ function initHistoryDatasetData() {
                 })
                 .catch((e) => {
                     const errorMessage = errorMessageAsString(e);
-                    const title = "Failed to fetch dataset metadata.";
+                    const title = "获取数据集元数据失败。";
                     toast.error(errorMessage, title);
-                    Vue.set(historyDatasetAccessible.value, historyDatasetId, `${title} Reason: ${errorMessage}.`);
+                    Vue.set(historyDatasetAccessible.value, historyDatasetId, `${title} 原因: ${errorMessage}.`);
                 });
         }
     }
@@ -306,14 +305,14 @@ async function makeAccessible(item: ItemInterface) {
         accessibleResult = data !== undefined;
         accessibleMap = historyDatasetAccessible;
     } else {
-        console.log("Serious client programming error - unknown object type encountered.");
+        console.log("严重的客户端编程错误 - 遇到未知对象类型。");
         return;
     }
     if (errorResult) {
         const errorMessage = errorMessageAsString(errorResult);
-        const title = "Failed update object accessibility.";
+        const title = "更新对象可访问性失败。";
         toast.error(errorMessage, title);
-        Vue.set(accessibleMap.value, item.id, `${title} Reason: ${errorMessage}.`);
+        Vue.set(accessibleMap.value, item.id, `${title} 原因: ${errorMessage}.`);
         return;
     }
     Vue.set(accessibleMap.value, item.id, accessibleResult);
@@ -324,9 +323,9 @@ async function makeAccessible(item: ItemInterface) {
     <div>
         <b-table :items="tableItems" show-empty :fields="tableFields">
             <template v-slot:empty>
-                <LoadingSpan v-if="loading" message="Loading objects" />
+                <LoadingSpan v-if="loading" message="加载对象中" />
                 <b-alert v-else variant="info" show>
-                    <div>No objects found in referenced Galaxy markdown content.</div>
+                    <div>在引用的Galaxy markdown内容中未找到对象。</div>
                 </b-alert>
             </template>
             <template v-slot:cell(name)="row">

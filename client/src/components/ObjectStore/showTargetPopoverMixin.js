@@ -20,11 +20,11 @@ export default {
             if (this.config?.object_store_always_respect_user_selection) {
                 return "";
             } else {
-                return "Preferred";
+                return "首选";
             }
         },
         title() {
-            return this.l(`${this.preferredOrEmptyString} Target Storage Location ${this.titleSuffix || ""}`);
+            return this.l(`${this.preferredOrEmptyString} 目标存储位置 ${this.titleSuffix || ""}`);
         },
     },
 };

@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
     operationTitle: "",
     operationIcon: "",
     toolKey: "",
-    sectionName: "default",
+    sectionName: "默认",
     expanded: false,
     sortItems: true,
     hasFilterButton: false,
@@ -122,8 +122,8 @@ watch(
     () => opened.value,
     (newVal: boolean, oldVal: boolean) => {
         if (newVal !== oldVal) {
-            const currentState = newVal ? "opened" : "closed";
-            ariaAlert(`${name.value} tools menu ${currentState}`);
+            const currentState = newVal ? "已打开" : "已关闭";
+            ariaAlert(`${name.value} 工具菜单 ${currentState}`);
         }
     }
 );
@@ -174,7 +174,7 @@ function toggleMenu(nextState = !opened.value) {
                 <button
                     v-if="isSection && props.hasFilterButton"
                     v-b-tooltip.hover.noninteractive.bottom
-                    title="Show full section"
+                    title="显示完整部分"
                     class="inline-icon-button"
                     @click.stop="emit('onFilter', `section:${toolSection.name}`)">
                     <FontAwesomeIcon :icon="faFilter" />
@@ -182,7 +182,7 @@ function toggleMenu(nextState = !opened.value) {
             </a>
         </div>
         <transition name="slide">
-            <div v-if="opened" data-description="opened tool panel section">
+            <div v-if="opened" data-description="已打开的工具面板部分">
                 <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel
                         v-if="toolSectionLabel.text || el.model_class === 'ToolSectionLabel'"

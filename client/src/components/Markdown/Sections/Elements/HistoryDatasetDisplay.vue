@@ -8,7 +8,7 @@
                     variant="link"
                     size="sm"
                     role="button"
-                    title="Download Dataset"
+                    title="下载数据集"
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
@@ -18,7 +18,7 @@
                     :href="importUrl"
                     role="button"
                     variant="link"
-                    title="Import Dataset"
+                    title="导入数据集"
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-file-import" />
@@ -29,7 +29,7 @@
                     href="#"
                     role="button"
                     variant="link"
-                    title="Collapse"
+                    title="收起"
                     type="button"
                     class="py-0 px-1"
                     @click="onExpand">
@@ -41,7 +41,7 @@
                     href="#"
                     role="button"
                     variant="link"
-                    title="Expand"
+                    title="展开"
                     type="button"
                     class="py-0 px-1"
                     @click="onExpand">
@@ -49,17 +49,17 @@
                 </b-button>
             </span>
             <span>
-                <span>Dataset:</span>
+                <span>数据集：</span>
                 <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
             </span>
         </b-card-header>
         <b-card-body>
             <div v-if="metaError">{{ metaError }}</div>
-            <LoadingSpan v-else-if="!metaType" message="Loading Metadata" />
-            <LoadingSpan v-else-if="dataLoading" message="Loading Dataset" />
+            <LoadingSpan v-else-if="!metaType" message="正在加载元数据" />
+            <LoadingSpan v-else-if="dataLoading" message="正在加载数据集" />
             <div v-else-if="dataError">{{ dataError }}</div>
-            <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
-            <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
+            <LoadingSpan v-else-if="datatypesLoading" message="正在加载数据类型" />
+            <div v-else-if="!datatypesMapper">数据类型未加载。</div>
             <div v-else>
                 <b-embed
                     v-if="datatypesMapper.isSubTypeOfAny(metaType, ['pdf', 'html'])"
@@ -92,8 +92,8 @@
                         <code class="word-wrap-normal">{{ dataContent.item_data }}</code>
                     </pre>
                 </div>
-                <div v-else>No content found.</div>
-                <b-link v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </b-link>
+                <div v-else>未找到内容。</div>
+                <b-link v-if="dataContent?.truncated" :href="dataContent?.item_url">显示更多...</b-link>
             </div>
         </b-card-body>
     </b-card>

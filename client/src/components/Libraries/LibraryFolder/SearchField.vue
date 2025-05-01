@@ -26,7 +26,7 @@ export default {
         return {
             search: "",
             awaitingSearch: false,
-            titleSearch: _l("Search"),
+            titleSearch: _l("搜索"),
         };
     },
     watch: {

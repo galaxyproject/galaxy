@@ -77,12 +77,12 @@ function togglePreferences() {
     <div aria-labelledby="notifications-list" class="notifications-list-container">
         <div class="notifications-list-header">
             <Heading id="notifications-title" h1 separator inline size="xl" class="flex-grow-1 mb-2">
-                Notifications
+                通知
             </Heading>
 
             <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
                 <FontAwesomeIcon :icon="faCog" />
-                Notifications preferences
+                通知偏好设置
             </BButton>
         </div>
 
@@ -93,11 +93,11 @@ function togglePreferences() {
         </BCollapse>
 
         <BAlert v-if="loadingNotifications" show>
-            <LoadingSpan message="Loading notifications" />
+            <LoadingSpan message="正在加载通知" />
         </BAlert>
 
         <BAlert v-else-if="notifications.length === 0" id="no-notifications" show variant="info">
-            No notifications to show.
+            没有通知可显示。
         </BAlert>
 
         <div v-else class="notifications-list-body">
@@ -111,25 +111,25 @@ function togglePreferences() {
                                 selectedNotificationIds.length < notifications.length
                             "
                             @change="selectOrDeselectNotification(notifications)">
-                            {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
+                            {{ haveSelected ? `已选择 ${selectedNotificationIds.length} 项` : "全选" }}
                         </BFormCheckbox>
                     </div>
 
                     <div v-if="haveSelected">
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
                             <FontAwesomeIcon icon="check" />
-                            Mark as read
+                            标记为已读
                         </BButton>
 
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
                             <FontAwesomeIcon icon="trash" />
-                            Delete
+                            删除
                         </BButton>
                     </div>
                 </div>
 
                 <div align-h="end" align-v="center">
-                    <span class="mx-2"> Filters: </span>
+                    <span class="mx-2"> 筛选器: </span>
 
                     <BButtonGroup>
                         <BButton
@@ -139,7 +139,7 @@ function togglePreferences() {
                             variant="outline-primary"
                             @click="showUnread = !showUnread">
                             <FontAwesomeIcon icon="check" />
-                            Unread
+                            未读
                         </BButton>
 
                         <BButton
@@ -149,14 +149,14 @@ function togglePreferences() {
                             variant="outline-primary"
                             @click="showShared = !showShared">
                             <FontAwesomeIcon icon="retweet" />
-                            Shared
+                            共享
                         </BButton>
                     </BButtonGroup>
                 </div>
             </div>
 
             <BAlert v-show="filteredNotifications.length === 0" show variant="info">
-                No matching notifications with current filters.
+                当前筛选条件下没有匹配的通知。
             </BAlert>
 
             <TransitionGroup

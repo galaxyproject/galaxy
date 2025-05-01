@@ -40,8 +40,8 @@ function onClick() {
         <div class="px-2 py-1">
             {{
                 totalUnreadCount
-                    ? `You have ${totalUnreadCount} unread notifications`
-                    : "You have no unread notifications"
+                    ? `您有 ${totalUnreadCount} 条未读通知`
+                    : "您没有未读通知"
             }}
         </div>
     </Popper>

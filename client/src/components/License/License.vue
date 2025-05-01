@@ -1,5 +1,5 @@
 <template>
-    <LoadingSpan v-if="license == null" message="Loading license information"> </LoadingSpan>
+    <LoadingSpan v-if="license == null" message="正在加载许可证信息"> </LoadingSpan>
     <span v-else-if="license.name" class="text-muted">
         <link itemprop="license" :href="license.licenseId" />
         <span v-if="title">
@@ -11,7 +11,7 @@
         <slot name="buttons"></slot>
     </span>
     <span v-else>
-        Unknown License (<i>{{ license.url }}</i
+        未知许可证 (<i>{{ license.url }}</i
         >)
         <slot name="buttons"></slot>
     </span>

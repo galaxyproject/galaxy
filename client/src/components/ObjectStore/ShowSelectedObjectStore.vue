@@ -39,7 +39,7 @@ watch(
     }
 );
 fetch();
-const loadingMessage = localize("Loading storage location details");
+const loadingMessage = localize("正在加载存储位置详情");
 </script>
 
 <template>

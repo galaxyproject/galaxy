@@ -1,16 +1,16 @@
 export const fields = [
     {
-        label: "Name",
+        label: "名称",
         key: "name",
         sortable: true,
     },
     {
-        label: "Description",
+        label: "描述",
         key: "description",
         sortable: false,
     },
     {
-        label: "Synopsis",
+        label: "摘要",
         key: "synopsis",
         sortable: false,
     },

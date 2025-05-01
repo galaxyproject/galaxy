@@ -41,22 +41,21 @@ export default {
     name: "DescribeObjectStore",
 };
 </script>
-
 <template>
     <div>
         <div>
             <span v-localize>{{ what }}</span>
             <span v-if="storageInfo.name" class="display-os-by-name">
-                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> storage location named
+                一个Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> 存储位置，名为
                 <b>{{ storageInfo.name }}</b>
             </span>
             <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
-                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> storage location with id
+                一个Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> 存储位置，ID为
                 <b>{{ storageInfo.object_store_id }}</b>
             </span>
             <span v-else class="display-os-default">
-                the default configured Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> storage location </span
-            >.
+                默认配置的Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> 存储位置</span
+            >。
         </div>
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>
         <QuotaSourceUsageProvider
@@ -67,7 +66,7 @@ export default {
             <b-spinner v-if="isLoadingUsage" />
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
-        <div v-else>Galaxy has no quota configured for this storage location.</div>
+        <div v-else>Galaxy没有为此存储位置配置配额。</div>
         <ConfigurationMarkdown
             v-if="storageInfo.description"
             :markdown="storageInfo.description"

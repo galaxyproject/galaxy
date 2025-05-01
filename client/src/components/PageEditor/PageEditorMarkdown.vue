@@ -14,7 +14,7 @@
                 id="permissions-button"
                 v-b-tooltip.hover.bottom
                 v-b-modal:object-permissions-modal
-                title="Permissions"
+                title="权限"
                 variant="link"
                 role="button"
                 @click="showPermissions = true">
@@ -23,7 +23,7 @@
             <b-button
                 id="save-button"
                 v-b-tooltip.hover.bottom
-                title="Save"
+                title="保存"
                 variant="link"
                 role="button"
                 @click="saveContent(false)">
@@ -32,7 +32,7 @@
             <b-button
                 id="view-button"
                 v-b-tooltip.hover.bottom
-                title="Save & View"
+                title="保存并查看"
                 variant="link"
                 role="button"
                 @click="saveContent(true)">
@@ -105,7 +105,7 @@ export default {
                     }
                 })
                 .catch((error) => {
-                    Toast.error(`Failed to save page: ${error}`);
+                    Toast.error(`未能保存页面: ${error}`);
                 });
         },
     },

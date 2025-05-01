@@ -12,7 +12,7 @@
                     @onEdit="onEdit" />
                 <PageHtml v-else :page="page" />
             </div>
-            <LoadingSpan v-else message="Loading Galaxy configuration" />
+            <LoadingSpan v-else message="正在加载Galaxy配置" />
         </template>
     </PublishedItem>
 </template>

@@ -8,7 +8,7 @@
                     </div>
                     <div>
                         <slot name="buttons" />
-                        <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                        <b-button v-b-tooltip.hover.bottom title="帮助" variant="link" role="button" @click="onHelp">
                             <FontAwesomeIcon icon="question" />
                         </b-button>
                     </div>
@@ -25,8 +25,8 @@
         </div>
         <b-modal v-model="showHelpModal" hide-footer>
             <template v-slot:modal-title>
-                <h2 v-if="mode === 'page'" class="mb-0">Markdown Help for Pages</h2>
-                <h2 v-else class="mb-0">Markdown Help for Invocation Reports</h2>
+                <h2 v-if="mode === 'page'" class="mb-0">页面的Markdown帮助</h2>
+                <h2 v-else class="mb-0">调用报告的Markdown帮助</h2>
             </template>
             <MarkdownHelp :mode="mode" />
         </b-modal>

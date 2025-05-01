@@ -47,7 +47,7 @@ function login() {
 async function submit() {
     if (!provider.value || !token.value) {
         messageVariant.value = "danger";
-        messageText.value = "Missing provider and/or token.";
+        messageText.value = "缺少提供商和/或令牌。";
     } else {
         try {
             const response = await axios.post(withPrefix(`/authnz/${provider.value}/create_user?token=${token.value}`));
@@ -59,7 +59,7 @@ async function submit() {
             }
         } catch (error: any) {
             messageVariant.value = "danger";
-            messageText.value = errorMessageAsString(error, "Login failed for an unknown reason.");
+            messageText.value = errorMessageAsString(error, "登录失败，原因未知。");
         }
     }
 }
@@ -78,49 +78,46 @@ async function submit() {
                 </BAlert>
 
                 <BForm id="confirmation" @submit.prevent="submit()">
-                    <BCard no-body header="Confirm new account creation">
+                    <BCard no-body header="确认创建新账户">
                         <BCardBody>
-                            <p>Looks like you are about to create a new account!</p>
+                            <p>看起来您即将创建一个新账户！</p>
 
                             <p>
-                                Do you already have a Galaxy account? If so, click
-                                <em>'No, go back to login'</em> to log in using your existing username and password to
-                                connect this account via <strong>User Preferences</strong>.
+                                您是否已经拥有Galaxy账户？如果有，请点击
+                                <em>"否，返回登录页面"</em>使用您现有的用户名和密码登录，然后通过<strong>用户偏好设置</strong>关联此账户。
                                 <a
                                     href="https://galaxyproject.org/authnz/use/oidc/idps/custos/#link-an-existing-galaxy-account"
                                     target="_blank">
-                                    More details here.
+                                    点此查看更多详情。
                                 </a>
                             </p>
 
                             <p>
-                                If you wish to continue and create a new account, select
-                                <em>'Yes, create new account'</em>.
+                                如果您希望继续并创建一个新账户，请选择
+                                <em>"是，创建新账户"</em>。
                             </p>
 
                             <p>
-                                Reminder: Registration and usage of multiple accounts is tracked and such accounts are
-                                subject to termination and data deletion on public Galaxy servers. Connect existing
-                                account now to continue to use your existing data and avoid possible loss of data.
+                                提醒：公共Galaxy服务器会跟踪注册和使用多个账户的行为，此类账户可能会被终止并删除数据。现在关联现有账户以继续使用您的现有数据，避免可能的数据丢失。
                             </p>
 
                             <BFormGroup>
                                 <BFormCheckbox v-model="termsRead">
-                                    I have read and accept these terms to create a new Galaxy account.
+                                    我已阅读并接受这些条款以创建新的Galaxy账户。
                                 </BFormCheckbox>
                             </BFormGroup>
 
                             <BButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
-                                Yes, create new account
+                                是，创建新账户
                             </BButton>
 
-                            <BButton name="cancel" type="submit" @click.prevent="login"> No, go back to login </BButton>
+                            <BButton name="cancel" type="submit" @click.prevent="login"> 否，返回登录页面 </BButton>
                         </BCardBody>
 
                         <BCardFooter>
-                            Already have an account?
+                            已有账户？
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="login">
-                                Log in here.
+                                点此登录。
                             </a>
                         </BCardFooter>
                     </BCard>

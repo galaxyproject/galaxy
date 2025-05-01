@@ -55,8 +55,7 @@ const time = computed(() => {
     }
     return "unavailable";
 });
-
-const version = computed(() => props.markdownConfig.generate_version || "Unknown Galaxy Version");
+const version = computed(() => props.markdownConfig.generate_version || "未知 Galaxy 版本");
 
 // Methods
 function initConfig() {
@@ -77,7 +76,6 @@ onMounted(() => {
     initConfig();
 });
 </script>
-
 <template>
     <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
@@ -89,33 +87,33 @@ onMounted(() => {
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     size="sm"
-                    title="Generate PDF" />
+                    title="生成PDF" />
                 <b-button
                     v-if="!readOnly"
                     v-b-tooltip.hover
                     class="float-right markdown-edit mr-2"
                     role="button"
                     size="sm"
-                    title="Edit Markdown"
+                    title="编辑Markdown"
                     @click="$emit('onEdit')">
-                    Edit
+                    编辑
                     <FontAwesomeIcon :icon="faEdit" />
                 </b-button>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
                     <h1 class="text-break align-middle">
-                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
+                        标题: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
-                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
-                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
+                <div class="float-left m-1 text-break">使用 Galaxy {{ version }} 生成于 {{ time }}</div>
+                <div class="float-right m-1">标识符: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
-                        <h2 class="h-text">{{ obj.error || "Error" }}</h2>
+                        <h2 class="h-text">{{ obj.error || "错误" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>

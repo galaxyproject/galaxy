@@ -19,8 +19,8 @@ interface Props {
 const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
-const title = computed(() => `Edit Storage Location ${instance.value?.name} Settings`);
-const errorDataDescription = "object-store-update-error";
+const title = computed(() => `编辑存储位置 ${instance.value?.name} 设置`);
+const errorDataDescription = "对象存储更新错误";
 
 const {
     error,
@@ -35,7 +35,7 @@ const {
     testResults,
     showForceActionButton,
     submitTitle,
-} = useConfigurationTemplateEdit("storage location", instance, template, editTestUrl, editUrl, useInstanceRouting);
+} = useConfigurationTemplateEdit("存储位置", instance, template, editTestUrl, editUrl, useInstanceRouting);
 </script>
 <template>
     <div>

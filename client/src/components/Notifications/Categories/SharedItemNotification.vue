@@ -56,19 +56,19 @@ function markNotificationAsSeen() {
             <div :class="!props.notification.seen_time ? 'font-weight-bold' : ''" class="notification-title">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" :icon="faRetweet" fixed-width size="sm" />
                 {{ sharedItemType }}
-                shared with you by <em>{{ content.owner_name }}</em>
+                被 <em>{{ content.owner_name }}</em> 与您共享
             </div>
         </div>
 
         <NotificationActions class="notification-actions" :notification="notification" />
 
         <p id="notification-message" class="notification-message">
-            <span>The user</span>
+            <span>用户</span>
             <b>{{ content.owner_name }}</b>
-            <span>shared </span>
+            <span>已与您共享</span>
             <BLink
                 v-b-tooltip.bottom
-                :title="`View ${content.item_type} in new tab`"
+                :title="`在新标签页中查看${content.item_type}`"
                 class="text-primary"
                 :href="sharedItemUrl"
                 target="_blank"
@@ -77,7 +77,7 @@ function markNotificationAsSeen() {
                 <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
             </BLink>
             <em>{{ content.item_type }}</em>
-            <span> with you.</span>
+            <span>。</span>
         </p>
     </div>
 </template>

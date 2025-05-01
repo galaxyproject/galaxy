@@ -84,7 +84,7 @@ function getItems(textData: any, metaData: any) {
             <b>{{ title }}</b>
         </b-card-title>
         <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
-            <LoadingSpan v-if="loading" message="Loading Dataset" />
+            <LoadingSpan v-if="loading" message="加载数据集" />
             <div v-else-if="error">{{ error }}</div>
             <div v-else :class="contentClass">
                 <div v-if="itemContent.item_data">
@@ -92,7 +92,7 @@ function getItems(textData: any, metaData: any) {
                         <UrlDataProvider
                             v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
                             :url="metaUrl">
-                            <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                            <LoadingSpan v-if="metaLoading" message="加载元数据" />
                             <div v-else-if="metaError">{{ metaError }}</div>
                             <b-table
                                 v-else
@@ -104,8 +104,8 @@ function getItems(textData: any, metaData: any) {
                         </UrlDataProvider>
                     </div>
                 </div>
-                <div v-else>No content found.</div>
-                <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                <div v-else>未找到内容。</div>
+                <b-link v-if="itemContent.truncated" :href="itemContent.item_url">显示更多...</b-link>
             </div>
         </UrlDataProvider>
         <b-card-footer v-if="footer">

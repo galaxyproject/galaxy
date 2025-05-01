@@ -80,7 +80,7 @@ function handleAttributes() {
         error.value = "";
         attributes.value = getArgs(props.content);
     } catch (e) {
-        error.value = "The directive provided below is invalid. Please review it for errors.";
+        error.value = "提供的指令无效，请检查是否存在错误。";
         attributes.value = {};
     }
 }

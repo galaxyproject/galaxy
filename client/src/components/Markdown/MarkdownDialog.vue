@@ -61,16 +61,16 @@ const effectiveLabels = computed<WorkflowLabels>(() => {
 
 const selectorConfig = {
     job_id: {
-        labelTitle: "Step",
+        labelTitle: "步骤",
     },
     invocation_id: {
-        labelTitle: "Step",
+        labelTitle: "步骤",
     },
     history_dataset_id: {
-        labelTitle: "Dataset (Input/Output)",
+        labelTitle: "数据集（输入/输出）",
     },
     history_dataset_collection_id: {
-        labelTitle: "Dataset Collection (Input/Output)",
+        labelTitle: "数据集合（输入/输出）",
     },
 };
 
@@ -86,7 +86,7 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const selectedLabelTitle = computed(() => {
     const config: SelectTitles = selectorConfig[props.argumentType as SelectType] as SelectTitles;
-    return (config && config.labelTitle) || "Select Label";
+    return (config && config.labelTitle) || "选择标签";
 });
 
 async function getInvocations() {
@@ -159,11 +159,10 @@ function onVisualization(response: string) {
     visualizationShow.value = false;
     emit("onInsert", response);
 }
-
 function onOk(selectedLabel: WorkflowLabel | undefined) {
     const defaultLabelType: string =
         ["history_dataset_id", "history_dataset_collection_id"].indexOf(props.argumentType) >= 0 ? "output" : "step";
-    const labelText: string = selectedLabel ? selectedLabel.label : "<ENTER LABEL>";
+    const labelText: string = selectedLabel ? selectedLabel.label : "<输入标签>";
     const labelType: string = selectedLabel ? selectedLabel.type : defaultLabelType;
     selectedShow.value = false;
 
@@ -277,7 +276,7 @@ if (props.argumentType == "workflow_id") {
             v-else-if="jobShow"
             :get-data="getJobs"
             :is-encoded="true"
-            title="Job"
+            title="任务"
             label-key="id"
             @onOk="onJob"
             @onCancel="onCancel" />
@@ -285,14 +284,14 @@ if (props.argumentType == "workflow_id") {
             v-else-if="invocationShow"
             :get-data="getInvocations"
             :is-encoded="true"
-            title="Invocation"
+            title="调用"
             label-key="id"
             @onOk="onInvocation"
             @onCancel="onCancel" />
         <BasicSelectionDialog
             v-else-if="workflowShow"
             :get-data="getWorkflows"
-            title="Workflow"
+            title="工作流"
             leaf-icon="fa fa-sitemap fa-rotate-270"
             label-key="name"
             @onOk="onWorkflow"
@@ -300,7 +299,7 @@ if (props.argumentType == "workflow_id") {
         <BasicSelectionDialog
             v-else-if="historyShow"
             :get-data="getHistories"
-            title="History"
+            title="历史记录"
             label-key="name"
             @onOk="onHistory"
             @onCancel="onCancel" />

@@ -27,6 +27,6 @@ objectStoreTemplatesStore.ensureTemplates();
             </span>
             <TemplateSummaryPopover :template="template" :target="target" />
         </span>
-        <span v-else> Loading template information for {{ templateId }} {{ templateVersion }} </span>
+        <span v-else> 正在加载模板信息： {{ templateId }} {{ templateVersion }} </span>
     </span>
 </template>

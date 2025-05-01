@@ -46,9 +46,9 @@ const jobContent = computed(() => {
         content = job && job[props.name];
     }
     if (!content && props.name == "tool_stdout") {
-        content = "*No Standard Output Available*";
+        content = "*无标准输出可用*";
     } else if (!content) {
-        content = "*No Standard Error Available*";
+        content = "*无标准错误可用*";
     }
     return content;
 });

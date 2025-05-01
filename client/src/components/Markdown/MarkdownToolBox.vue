@@ -1,5 +1,5 @@
 <template>
-    <ActivityPanel title="Insert Markdown Objects">
+    <ActivityPanel title="插入Markdown对象">
         <div class="toolMenuContainer">
             <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                 {{ error }}

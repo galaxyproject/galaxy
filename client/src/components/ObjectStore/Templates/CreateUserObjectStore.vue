@@ -8,9 +8,9 @@ import { useUserStore } from "@/stores/userStore";
 import SourceOptionsList from "@/components/ConfigTemplates/SourceOptionsList.vue";
 
 const breadcrumbItems = [
-    { title: "User Preferences", to: "/user" },
-    { title: "Storage Locations", to: "/object_store_instances/index" },
-    { title: "Create New" },
+    { title: "用户偏好", to: "/user" },
+    { title: "存储位置", to: "/object_store_instances/index" },
+    { title: "创建新存储" },
 ];
 
 const userStore = useUserStore();
@@ -24,7 +24,7 @@ const templates = computed(() => objectStoreTemplatesStore.latestTemplates);
 
 <template>
     <SourceOptionsList
-        title="storage location option"
+        title="存储位置选项"
         list-id="objectStoreOptions"
         show-badges
         :grid-view="currentListView === 'grid'"

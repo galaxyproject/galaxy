@@ -11,7 +11,7 @@ var View = Backbone.View.extend({
     // options
     optionsDefault: {
         css: "",
-        placeholder: "No data available",
+        placeholder: "无可用数据",
         data: [],
         value: null,
         multiple: false,

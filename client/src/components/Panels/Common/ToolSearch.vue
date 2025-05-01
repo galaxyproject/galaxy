@@ -36,7 +36,7 @@ const props = defineProps({
     },
     placeholder: {
         type: String,
-        default: "search tools",
+        default: "搜索工具",
     },
     query: {
         type: String,
@@ -96,24 +96,24 @@ const propShowAdvanced = computed({
 });
 const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(() => {
     return {
-        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        name: { placeholder: "名称", type: String, handler: contains("name"), menuItem: true },
         section: {
-            placeholder: "section",
+            placeholder: "分类",
             type: String,
             handler: contains("section"),
             datalist: sectionNames,
             menuItem: true,
         },
         ontology: {
-            placeholder: "EDAM ontology",
+            placeholder: "EDAM 本体",
             type: String,
             handler: contains("ontology"),
             datalist: ontologyList.value,
             menuItem: true,
         },
-        id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
-        owner: { placeholder: "repository owner", type: String, handler: contains("owner"), menuItem: true },
-        help: { placeholder: "help text", type: String, handler: contains("help"), menuItem: true },
+        id: { placeholder: "ID", type: String, handler: contains("id"), menuItem: true },
+        owner: { placeholder: "仓库所有者", type: String, handler: contains("owner"), menuItem: true },
+        help: { placeholder: "帮助文本", type: String, handler: contains("help"), menuItem: true },
     };
 });
 const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering(validFilters.value));
@@ -282,7 +282,7 @@ function onAdvancedSearch(filters: any) {
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"
-            name="Tools"
+            name="工具"
             :placeholder="props.placeholder"
             :debounce-delay="200"
             :filter-class="ToolFilters"
@@ -295,41 +295,37 @@ function onAdvancedSearch(filters: any) {
             <template v-slot:menu-help-text>
                 <div>
                     <p>
-                        You can use this Advanced Tool Search Panel to find tools by applying search filters, with the
-                        results showing up in the center panel.
+                        您可以使用此高级工具搜索面板通过应用搜索过滤器来查找工具，搜索结果将显示在中央面板中。
                     </p>
 
                     <p>
                         <i>
-                            (Clicking on the Section, Repo or Owner labels in the Search Results will activate the
-                            according filter)
+                            （在搜索结果中点击分类、仓库或所有者标签将激活相应的过滤器）
                         </i>
                     </p>
 
-                    <p>The available tool search filters are:</p>
+                    <p>可用的工具搜索过滤器有：</p>
                     <dl>
-                        <dt><code>name</code></dt>
-                        <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
-                        <dt><code>section</code></dt>
-                        <dd>The tool section is based on the default tool panel view</dd>
-                        <dt><code>ontology</code></dt>
+                        <dt><code>名称</code></dt>
+                        <dd>工具名称（在XML中存储为tool.name + tool.description）</dd>
+                        <dt><code>分类</code></dt>
+                        <dd>工具分类基于默认工具面板视图</dd>
+                        <dt><code>本体</code></dt>
                         <dd>
-                            This is the EDAM ontology term that is associated with the tool. Example inputs:
-                            <i>"topic_3174"</i> or <i>"operation_0324"</i>
+                            这是与工具相关联的EDAM本体术语。输入示例：
+                            <i>"topic_3174"</i> 或 <i>"operation_0324"</i>
                         </dd>
-                        <dt><code>id</code></dt>
-                        <dd>The tool id (taken from its XML)</dd>
-                        <dt><code>owner</code></dt>
+                        <dt><code>ID</code></dt>
+                        <dd>工具ID（取自其XML）</dd>
+                        <dt><code>所有者</code></dt>
                         <dd>
-                            For the tools that have been installed from the
+                            对于从
                             <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
-                            , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
-                            repository <b>owner</b>.
+                            安装的工具，此<i>所有者</i>过滤器允许您搜索特定ToolShed仓库<b>所有者</b>的工具。
                         </dd>
-                        <dt><code>help text</code></dt>
+                        <dt><code>帮助文本</code></dt>
                         <dd>
-                            This is like a keyword search: you can search for keywords that might exist in a tool's help
-                            text. An example input:
+                            这类似于关键词搜索：您可以搜索可能存在于工具帮助文本中的关键词。输入示例：
                             <i>"genome, RNA, minimap"</i>
                         </dd>
                     </dl>
@@ -346,6 +342,6 @@ function onAdvancedSearch(filters: any) {
             @change="checkQuery" />
     </div>
     <BAlert v-else class="mb-3" variant="info" show>
-        <LoadingSpan message="Loading Tool Search" />
+        <LoadingSpan message="正在加载工具搜索" />
     </BAlert>
 </template>

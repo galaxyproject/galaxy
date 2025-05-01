@@ -21,7 +21,7 @@ const objectStoreType = computed(() => props.template.type);
 <template>
     <div>
         <ObjectStoreBadges :badges="badges" size="lg" />
-        <div>This template produces storage locations of type <ObjectStoreTypeSpan :type="objectStoreType" />.</div>
+        <div>此模板生成类型为 <ObjectStoreTypeSpan :type="objectStoreType" /> 的存储位置。</div>
         <ConfigurationMarkdown :markdown="template.description || ''" :admin="true" />
     </div>
 </template>

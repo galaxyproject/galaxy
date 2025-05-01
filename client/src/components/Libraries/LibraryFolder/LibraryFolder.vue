@@ -34,13 +34,12 @@
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
                     <b-spinner class="align-middle"></b-spinner>
-                    <strong>Loading...</strong>
+                    <strong>加载中...</strong>
                 </div>
                 <div v-else class="empty-folder-message">
-                    This folder is either empty or you do not have proper access permissions to see the contents. If you
-                    expected something to show up please consult the
+                    此文件夹为空或您没有适当的权限查看内容。如果您预期应该看到内容，请参阅
                     <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
-                        library security wikipage
+                        库安全维基页面
                     </a>
                 </div>
             </template>
@@ -49,14 +48,14 @@
                     v-if="isAllSelectedMode && !isAllSelectedOnPage()"
                     class="select-checkbox cursor-pointer"
                     size="lg"
-                    title="Check to select all datasets"
+                    title="勾选以选择所有数据集"
                     icon="minus-square"
                     @click="toggleSelect" />
                 <FontAwesomeIcon
                     v-else
                     class="select-checkbox cursor-pointer"
                     size="lg"
-                    title="Check to select all datasets"
+                    title="勾选以选择所有数据集"
                     :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
                     @click="toggleSelect" />
             </template>
@@ -133,7 +132,7 @@
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
                             <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)">
-                                (more)
+                                (更多)
                             </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
@@ -142,11 +141,11 @@
                 </div>
             </template>
             <template v-slot:cell(type_icon)="row">
-                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
-                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="文件夹" />
+                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="数据集" :icon="['far', 'file']" />
             </template>
             <template v-slot:cell(type)="row">
-                <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
+                <div v-if="row.item.type === 'folder'">{{ row.item.type === 'folder' ? '文件夹' : row.item.type }}</div>
                 <div v-else-if="row.item.type === 'file'">{{ row.item.file_ext }}</div>
             </template>
             <template v-slot:cell(raw_size)="row">
@@ -161,12 +160,12 @@
                 <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></FontAwesomeIcon>
-                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="无限制数据集" icon="globe" />
+                <FontAwesomeIcon v-else-if="row.item.deleted" title="已标记删除" icon="ban"></FontAwesomeIcon>
+                <FontAwesomeIcon v-else-if="row.item.is_private" title="私有数据集" icon="key" />
                 <FontAwesomeIcon
                     v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
-                    title="Restricted dataset"
+                    title="受限数据集"
                     icon="shield-alt" />
             </template>
 
@@ -174,17 +173,17 @@
                 <div v-if="row.item.editMode">
                     <button
                         class="primary-button btn-sm permission_folder_btn save_folder_btn"
-                        :title="'save ' + row.item.name"
+                        :title="'保存 ' + row.item.name"
                         @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
                         <FontAwesomeIcon :icon="['far', 'save']" />
-                        Save
+                        保存
                     </button>
                     <button
                         class="primary-button btn-sm permission_folder_btn"
-                        title="Discard Changes"
+                        title="放弃更改"
                         @click="toggleEditMode(row.item)">
                         <FontAwesomeIcon :icon="['fas', 'times']" />
-                        Cancel
+                        取消
                     </button>
                 </div>
                 <div v-else>
@@ -194,28 +193,28 @@
                         data-placement="top"
                         size="sm"
                         class="lib-btn permission_folder_btn edit_folder_btn"
-                        :title="'Edit ' + row.item.name"
+                        :title="'编辑 ' + row.item.name"
                         @click="toggleEditMode(row.item)">
                         <FontAwesomeIcon icon="pencil-alt" />
-                        Edit
+                        编辑
                     </b-button>
                     <b-button
                         v-if="currentUser.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
-                        :title="`Permissions of ${row.item.name}`"
+                        :title="`${row.item.name}的权限`"
                         :to="{ path: `${navigateToPermission(row.item)}` }">
                         <FontAwesomeIcon icon="users" />
-                        Manage
+                        管理
                     </b-button>
                     <button
                         v-if="row.item.deleted"
-                        :title="'Undelete ' + row.item.name"
+                        :title="'恢复 ' + row.item.name"
                         class="lib-btn primary-button btn-sm undelete_dataset_btn"
                         type="button"
                         @click="undelete(row.item, folder_id)">
                         <FontAwesomeIcon icon="unlock" />
-                        Undelete
+                        恢复
                     </button>
                 </div>
             </template>
@@ -251,7 +250,7 @@
                                     type="number" />
                             </td>
                             <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
+                                <span class="pagination-total-pages-text">每页，共 {{ total_rows }} 条</span>
                             </td>
                         </tr>
                     </table>
@@ -550,9 +549,9 @@ export default {
         },
         createNewFolder: function (folder) {
             if (!folder.name) {
-                Toast.error("Folder's name is missing.");
+                Toast.error("缺少文件夹名称。");
             } else if (folder.name.length < 3) {
-                Toast.warning("Folder name has to be at least 3 characters long.");
+                Toast.warning("文件夹名称至少需要3个字符。");
             } else {
                 this.services.newFolder(
                     {
@@ -568,21 +567,21 @@ export default {
                         folder.isNewFolder = false;
 
                         this.refreshTable();
-                        Toast.success("Folder created.");
+                        Toast.success("文件夹已创建。");
                     },
                     () => {
-                        Toast.error("An error occurred.");
+                        Toast.error("发生错误。");
                     }
                 );
             }
         },
         undelete: function (element, parent_folder) {
             const onError = (response) => {
-                const message = `${element.type === "folder" ? "Folder" : "Dataset"}`;
+                const message = `${element.type === "folder" ? "文件夹" : "数据集"}`;
                 if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(`${message} was not undeleted. ${response.responseJSON.err_msg}`);
+                    Toast.error(`${message}未恢复。${response.responseJSON.err_msg}`);
                 } else {
-                    Toast.error(`An error occurred! ${message} was not undeleted. Please try again.`);
+                    Toast.error(`发生错误！${message}未恢复。请重试。`);
                 }
             };
             if (element.type === "folder") {
@@ -591,7 +590,7 @@ export default {
                     (response) => {
                         element.deleted = response.deleted;
                         this.refreshTable();
-                        Toast.success("Folder undeleted.");
+                        Toast.success("文件夹已恢复。");
                     },
                     onError
                 );
@@ -601,7 +600,7 @@ export default {
                     (response) => {
                         element.deleted = response.deleted;
                         this.refreshTable();
-                        Toast.success("Dataset undeleted. Click here to see it.", "", {
+                        Toast.success("数据集已恢复。点击此处查看。", "", {
                             onclick: function () {
                                 window.location = `${getAppRoot()}libraries/folders/${parent_folder}/dataset/${
                                     element.id
@@ -628,7 +627,7 @@ export default {
                     folder.name = new_name;
                     is_changed = true;
                 } else {
-                    Toast.warning("Folder name has to be at least 3 characters long.");
+                    Toast.warning("文件夹名称至少需要3个字符。");
                     return;
                 }
             }
@@ -641,7 +640,7 @@ export default {
                 this.services.updateFolder(
                     folder,
                     () => {
-                        Toast.success("Changes to folder saved.");
+                        Toast.success("文件夹更改已保存。");
                         folder.editMode = false;
                         this.refreshTable();
                     },
@@ -649,12 +648,12 @@ export default {
                         if (error.data && error.data.err_msg) {
                             Toast.error(error.data.err_msg);
                         } else {
-                            Toast.error("An error occurred while attempting to update the folder.");
+                            Toast.error("尝试更新文件夹时发生错误。");
                         }
                     }
                 );
             } else {
-                Toast.info("Nothing has changed.");
+                Toast.info("没有任何更改。");
             }
         },
     },
