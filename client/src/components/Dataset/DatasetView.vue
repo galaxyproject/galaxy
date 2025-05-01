@@ -29,7 +29,6 @@ const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
-
 </script>
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
@@ -41,12 +40,12 @@ const showError = computed(
             </div>
             <span v-if="dataset.file_ext" class="datatype">
                 <span v-localize class="prompt">format</span>
-                <span class="value">{{ dataset.file_ext }}</span>
+                <span class="value font-weight-bold">{{ dataset.file_ext }}</span>
             </span>
             <span v-if="dataset.genome_build" class="dbkey">
                 <span v-localize class="prompt">database</span>
                 <!-- Consider making this link actually switch to the Edit tab -->
-                <BLink class="value" data-label="Database/Build">{{ dataset.genome_build }}</BLink>
+                <BLink class="value font-weight-bold" data-label="Database/Build">{{ dataset.genome_build }}</BLink>
             </span>
             <div v-if="dataset.misc_info" class="info">
                 <span class="value">{{ dataset.misc_info }}</span>
