@@ -259,24 +259,14 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "datasets/:datasetId/details",
+                        // Consolidated route for dataset view with optional tab
+                        // Handles /datasets/{id}, /datasets/{id}/details, /datasets/{id}/visualize, etc.
+                        path: "datasets/:datasetId/:tab?",
                         component: DatasetView,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/:datasetId/visualize",
-                        component: DatasetView,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/:datasetId/edit",
-                        component: DatasetView,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/:datasetId",
-                        component: DatasetView,
-                        props: true,
+                        props: (route) => ({
+                            datasetId: route.params.datasetId,
+                            tab: route.params.tab,
+                        }),
                     },
                     {
                         path: "datatypes",

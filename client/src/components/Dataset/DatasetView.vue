@@ -21,7 +21,13 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    tab: {
+        type: String,
+        default: "preview",
+    },
 });
+
+type TabNames = "preview" | "details" | "visualize" | "edit" | "error";
 
 const TABS = {
     PREVIEW: 0,
@@ -31,7 +37,7 @@ const TABS = {
     ERROR: 4,
 } as const;
 
-const tabIndexToName: Record<number, string> = {
+const tabIndexToName: Record<number, TabNames> = {
     [TABS.PREVIEW]: "preview",
     [TABS.DETAILS]: "details",
     [TABS.VISUALIZE]: "visualize",
@@ -39,7 +45,7 @@ const tabIndexToName: Record<number, string> = {
     [TABS.ERROR]: "error",
 };
 
-const tabNameToIndex = {
+const tabNameToIndex: Record<TabNames, number> = {
     preview: TABS.PREVIEW,
     details: TABS.DETAILS,
     visualize: TABS.VISUALIZE,
@@ -75,43 +81,38 @@ function onTabChange(tabIndex: number) {
     const basePath = `/datasets/${props.datasetId}`;
     const targetPath = (tabIndex === TABS.PREVIEW) ? basePath : `${basePath}/${tabName}`;
 
-    if (route.path !== targetPath) {
-        router.push(targetPath);
-    }
+    // Always push the navigation request; vue-router handles duplicates if the path is identical.
+    router.push(targetPath);
 }
 
 // Set the active tab based on the current route
-function setActiveTabFromRoute() {
-    const path = route.path;
+function setActiveTabFromProp() {
+    const currentTabName = props.tab as string; // Use the prop value
+    let targetIndex = tabNameToIndex[currentTabName as TabNames];
 
-    // Expected path format: /datasets/{id}/{tabName} or /datasets/{id} for preview
-    const pathSegments = path.split('/');
-    const potentialTabName = pathSegments.length > 3 ? pathSegments[3] : 'preview';
-
-    let newActiveTab = tabNameToIndex[potentialTabName];
-
-    // Handle cases where the tab name from URL isn't valid or available
-    if (newActiveTab === undefined) {
-        console.warn(`Invalid tab name '${potentialTabName}' in route, defaulting to preview.`);
-        newActiveTab = TABS.PREVIEW;
-    } else if (newActiveTab === TABS.ERROR && !showError.value) {
-        console.warn("Route requested error tab, but dataset is not in error state. Defaulting to preview.");
-        newActiveTab = TABS.PREVIEW;
-        // If the URL explicitly contains /error but shouldn't, redirect to the base dataset URL
-        if (potentialTabName === 'error') {
+    if (targetIndex === undefined) {
+        targetIndex = TABS.PREVIEW;
+        if (currentTabName !== 'preview') {
+             const previewPath = `/datasets/${props.datasetId}`;
+             router.replace(previewPath);
+             return;
+        }
+    } else if (targetIndex === TABS.ERROR && !showError.value) {
+        targetIndex = TABS.PREVIEW;
+        if (currentTabName === 'error') {
             const previewPath = `/datasets/${props.datasetId}`;
-            // Use replace to avoid adding the invalid error path to history
             router.replace(previewPath);
-            // Exit early; the watch will run again for the new path and set the correct tab
             return;
         }
     }
 
-    console.debug(`Setting active tab from route '${path}' to index: ${newActiveTab}`);
-    activeTab.value = newActiveTab;
+    if (activeTab.value !== targetIndex) {
+        activeTab.value = targetIndex;
+    }
 }
 
-watch(() => route.path, setActiveTabFromRoute, { immediate: true });
+// Watch the 'tab' prop instead of the route path
+watch(() => props.tab, setActiveTabFromProp, { immediate: true });
 
 </script>
 <template>
