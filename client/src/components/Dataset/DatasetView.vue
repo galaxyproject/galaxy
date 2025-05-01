@@ -57,7 +57,7 @@ const showError = computed(
         <div class="dataset-tabs-container flex-grow-1 overflow-hidden">
             <!-- Make BTabs fill its container and use flex column layout internally -->
             <BTabs pills card lazy class="h-100 d-flex flex-column">
-                <BTab title="Preview" active>
+                <BTab title="Preview" active class="iframe-card">
                     <!-- Iframe for dataset preview -->
                     <iframe
                         :src="displayUrl"
@@ -103,7 +103,6 @@ const showError = computed(
 
 .dataset-tabs-container :deep(.tab-content) {
     flex-grow: 1;
-    overflow: hidden;
     min-height: 0;
 }
 
@@ -114,7 +113,7 @@ const showError = computed(
     flex-direction: column;
 }
 
-.dataset-tabs-container :deep(.card-body) {
+.dataset-tabs-container :deep(.iframe-card) {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -123,8 +122,6 @@ const showError = computed(
     overflow: hidden;
 }
 
-/* --- Styling specific to the iframe and other tabs --- */
-
 .dataset-preview-iframe {
     flex-grow: 1;
     border: none;
@@ -132,18 +129,6 @@ const showError = computed(
     height: 100%;
 }
 
-.dataset-tabs-container :deep(.tab-pane:not(:first-child) .card-body) {
-    padding: 1.25rem;
-    overflow: auto;
-}
-
-/* Ensure the active preview tab's card-body remains without padding */
-.dataset-tabs-container :deep(.tab-pane.active:first-child .card-body) {
-    padding: 0;
-    overflow: hidden;
-}
-
-/* --- Optional: Loading state --- */
 .loading-message {
     padding: 2rem;
     text-align: center;
