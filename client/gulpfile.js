@@ -27,7 +27,6 @@ const PLUGIN_BUILD_IDS = [
     "pv",
     "scatterplot",
     "tiffviewer",
-    "ts_visjs",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
     "aceeditor",
@@ -47,6 +46,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "plotly",
     "plyr",
     "tabulator",
+    "ts_visjs",
     "unipept",
     "venn",
     "vitessce",
