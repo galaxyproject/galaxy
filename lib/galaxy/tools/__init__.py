@@ -3864,10 +3864,13 @@ class FilterDatasetsTool(DatabaseOperationTool):
     require_terminal_states = True
     require_dataset_ok = False
 
-    def _get_new_elements(self, history, elements_to_copy):
+    def _get_new_elements(self, history, elements_to_copy, element_identifiers_to_replace, replacement_dataset):
         new_elements = {}
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
+            if element_identifier in element_identifiers_to_replace:
+                new_elements[element_identifier] = replacement_dataset.copy(copy_tags=dce.element_object.tags, flush=False)
+                continue
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
             else:
@@ -3883,7 +3886,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
-
+        replacement_dataset = incoming["replacement"]
         if hasattr(collection, "element_object"):
             # A list
             elements = collection.element_object.elements
@@ -3896,11 +3899,18 @@ class FilterDatasetsTool(DatabaseOperationTool):
         assert collection_type in ("list", "list:paired")
 
         elements_to_copy = []
+        element_identifiers_to_replace = []
         for element in elements:
             if collection_type == "list":
                 if self.element_is_valid(element):
                     elements_to_copy.append(element)
+                elif replacement_dataset:
+                    element_identifiers_to_replace.append(element.element_identifier)
+                    elements_to_copy.append(element)
             else:
+                if replacement_dataset:
+                    message = f"Input collection has type {collection_type}, but replacing invalid elements with another dataset is only supported for simple list collections"
+                    raise Exception(message)
                 valid = True
                 for child_element in element.child_collection.elements:
                     if not self.element_is_valid(child_element):
@@ -3908,7 +3918,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
                 if valid:
                     elements_to_copy.append(element)
 
-        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
+        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy, element_identifiers_to_replace=element_identifiers_to_replace, replacement_dataset=replacement_dataset)
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
