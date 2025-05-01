@@ -15,6 +15,7 @@ import BroadcastForm from "components/admin/Notifications/BroadcastForm";
 import NotificationForm from "components/admin/Notifications/NotificationForm";
 import NotificationsManagement from "components/admin/Notifications/NotificationsManagement";
 import ResetMetadata from "components/admin/ResetMetadata";
+import RoleForm from "components/admin/RoleForm";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
 import adminFormsGridConfig from "components/Grid/configs/adminForms";
@@ -226,11 +227,7 @@ export default [
             },
             {
                 path: "form/create_role",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_role",
-                    redirect: "/admin/roles",
-                },
+                component: RoleForm,
             },
             {
                 path: "form/create_group",
