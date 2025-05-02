@@ -1510,7 +1510,7 @@ class CSV(BaseCSV):
 class GeoCSV(CSV):
     """
     CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields.
-    https://docs.kepler.gl/docs/keplergl-schema
+    https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#csv
     """
 
     file_ext = "geocsv"
