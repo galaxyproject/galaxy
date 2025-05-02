@@ -98,7 +98,7 @@ object_store_instances:
     selectors:
       select: '#g-card-action-select-${template_id}'
       _: '#create-object-store-landing'
-      submit: '#submit'
+      submit: '#submit:not([aria-disabled])'
 
 file_source_instances:
   index:
@@ -110,22 +110,22 @@ file_source_instances:
     selectors:
       select: '#g-card-action-select-${template_id}'
       _: '#create-file-source-landing'
-      submit: '#submit'
+      submit: '#submit:not([aria-disabled])'
 
 toolbox_filters:
   selectors:
     input:
       type: xpath
       selector: "//span[contains(., '${description}')]/../div/div/label[@class='custom-control-label']"
-    submit: '#submit'
+    submit: '#submit:not([aria-disabled])'
 
 change_user_email:
   selectors:
-    submit: '#submit'
+    submit: '#submit:not([aria-disabled])'
 
 change_user_password:
   selectors:
-    submit: '#submit'
+    submit: '#submit:not([aria-disabled])'
 
 change_user_address:
   selectors:
@@ -529,7 +529,7 @@ history_import:
 pages:
   selectors:
     activity: '#activity-pages'
-    create: '#page-create'
+    create: '#page-create:not([aria-disabled])'
     export: '.markdown-pdf-export'
     slug_input: '#page-slug'
     submit: '#page-submit'
@@ -648,7 +648,7 @@ workflows:
     selectors:
       name: '#workflow_name'
       annotation: '#workflow_annotation'
-      submit: '#submit'
+      submit: '#submit:not([aria-disabled])'
 
 visualization:
   selectors:
@@ -925,7 +925,7 @@ invocations:
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
     export_tab: '.invocation-export-tab'
-    export_tab_disabled: '.invocation-export-tab .nav-link.disabled'
+    export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
     export_output_format: '[data-invocation-export-type="${type}"] .card-body'
     export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
     wizard_next_button: '.wizard-actions .go-next-btn'
@@ -1007,7 +1007,7 @@ admin:
       add_new: '[data-description="grid action create new quota"]'
       items: '#quotas-grid table tr'
       add_form: "[url='/admin/create_quota']"
-      add_form_submit: "[url='/admin/create_quota'] #submit"
+      add_form_submit: "[url='/admin/create_quota'] #submit:not([aria-disabled])"
 
   index:
     selectors:
@@ -1055,7 +1055,7 @@ admin:
     registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
-    groups_create_view: '#submit'
+    groups_create_view: '#submit:not([aria-disabled])'
 
 libraries:
 
