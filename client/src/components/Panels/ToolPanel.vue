@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
@@ -16,6 +17,7 @@ import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
 
+const userStore = useUserStore();
 const props = defineProps({
     workflow: { type: Boolean, default: false },
     dataManagers: { type: Array, default: null },
@@ -117,6 +119,7 @@ const showFavorites = computed({
 
 async function initializeTools() {
     try {
+        await userStore.loadUser(false);
         await toolStore.fetchTools();
         await toolStore.initCurrentPanelView(defaultPanelView.value);
     } catch (error: any) {
