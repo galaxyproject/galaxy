@@ -6,3 +6,4 @@ CONVERTER_archive_to_directory
 CONVERTER_bam_to_bigwig_0
 CONVERTER_bam_to_coodinate_sorted_bam
 CONVERTER_bam_to_qname_sorted_bam
+CONVERTER_fasta_to_2bit
