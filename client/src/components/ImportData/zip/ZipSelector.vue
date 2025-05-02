@@ -2,12 +2,12 @@
 import { faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, watch } from "vue";
 
-import { isZipFile, useZipExplorer } from "@/composables/zipExplorer";
+import { isValidUrl, isZipFile, useZipExplorer } from "@/composables/zipExplorer";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 
-const { isValidUrl, reset: resetExplorer } = useZipExplorer();
+const { reset: resetExplorer } = useZipExplorer();
 
 const props = defineProps<{
     zipSource?: File | string;

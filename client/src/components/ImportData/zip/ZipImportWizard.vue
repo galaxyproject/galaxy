@@ -8,6 +8,7 @@ import {
     getImportableFiles,
     type ImportableFile,
     type ImportableZipContents,
+    isValidUrl,
     useZipExplorer,
 } from "@/composables/zipExplorer";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -22,7 +23,7 @@ import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
 const router = useRouter();
 
-const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplorer, isValidUrl } = useZipExplorer();
+const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplorer } = useZipExplorer();
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 

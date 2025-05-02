@@ -174,28 +174,6 @@ export function useZipExplorer() {
         clearDatabaseStore();
     }
 
-    function isValidUrl(inputUrl?: string | null) {
-        if (!inputUrl) {
-            return false;
-        }
-        let url;
-        try {
-            url = new URL(inputUrl);
-        } catch {
-            return false;
-        }
-
-        return url.protocol === "http:" || url.protocol === "https:";
-    }
-
-    /**
-     * To avoid CORS issues, we proxy the URL through the Galaxy server.
-     */
-    function getProxiedUrl(url: string) {
-        const proxyUrl = getFullAppUrl(`api/proxy?url=${encodeURIComponent(url)}`);
-        return proxyUrl;
-    }
-
     function getOriginalUrl(maybeProxyUrl: string) {
         if (!maybeProxyUrl.startsWith(getFullAppUrl("api/proxy"))) {
             return maybeProxyUrl;
@@ -283,7 +261,6 @@ export function useZipExplorer() {
         isZipArchiveAvailable,
         openZip,
         reset,
-        isValidUrl,
         importArtifacts,
         isZipOpen,
     };
@@ -339,6 +316,14 @@ function isGalaxyWorkflow(entry: AnyZipEntry) {
     return entry.path.endsWith(".gxwf.yml");
 }
 
+/**
+ * To avoid CORS issues, we proxy the URL through the Galaxy server.
+ */
+function getProxiedUrl(url: string) {
+    const proxyUrl = getFullAppUrl(`api/proxy?url=${encodeURIComponent(url)}`);
+    return proxyUrl;
+}
+
 export function isZipFile(file?: File | null): string {
     if (!file) {
         return "No file selected";
@@ -349,6 +334,18 @@ export function isZipFile(file?: File | null): string {
     }
 
     return "";
+}
+
+export function isValidUrl(inputUrl?: string | null): boolean {
+    if (!inputUrl) {
+        return false;
+    }
+    try {
+        const url = new URL(inputUrl);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch (_) {
+        return false;
+    }
 }
 
 export function isRoCrateZip(explorer?: IZipExplorer): explorer is ROCrateZipExplorer {
