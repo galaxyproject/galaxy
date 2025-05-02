@@ -508,7 +508,7 @@ class ToolBox(AbstractToolBox):
 
     def load_builtin_converters(self):
         id = "builtin_converters"
-        section = ToolSection({"name": "Built-in Converters", "id": id})
+        section = ToolSection({"name": "内置转换器", "id": id})
         self._tool_panel[id] = section
 
         converters = {
