@@ -1647,6 +1647,7 @@ class NavigatesGalaxy(HasDriver):
             self.select_set_value(input_div_element, "{}: ".format(value["hid"]))
 
     def workflow_run_submit(self):
+        self.components.workflow_run.run_workflow_disabled.wait_for_absent()
         self.components.workflow_run.run_workflow.wait_for_and_click()
 
     def workflow_run_ensure_expanded(self):
