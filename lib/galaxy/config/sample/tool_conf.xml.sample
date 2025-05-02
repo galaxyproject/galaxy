@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox monitor="true">
-  <section id="machine_learning" name="Machine Learning">
-    <tool file="phenotype_association/ldtools.xml" />
+  <section id="machine_learning" name="机器/深度学习">
+    <tool file="machine_learning/tabfpn2.xml" />
   </section>
   <!-- <section id="hgv" name="测试">
     <tool file="phenotype_association/ldtools.xml" />
