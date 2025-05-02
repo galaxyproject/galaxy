@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
 import { reactive, ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
@@ -8,6 +7,7 @@ import type { SelectedWorkflow } from "./types";
 
 import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowRename from "./WorkflowRename.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 interface Props {
@@ -108,15 +108,14 @@ function onInsertSteps(workflow: WorkflowSummary) {
             :name="modalOptions.rename.name"
             @close="onRenameClose" />
 
-        <BModal
-            v-model="showPreview"
-            ok-only
-            size="xl"
+        <GModal
+            :show.sync="showPreview"
+            size="large"
             hide-header
             dialog-class="workflow-card-preview-modal w-auto"
             centered>
             <WorkflowPublished v-if="showPreview" :id="modalOptions.preview.id" quick-view />
-        </BModal>
+        </GModal>
     </div>
 </template>
 
