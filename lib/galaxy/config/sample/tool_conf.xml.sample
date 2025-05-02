@@ -3,9 +3,9 @@
   <section id="machine_learning" name="机器/深度学习">
     <tool file="machine_learning/tabfpn.xml" />
   </section>
-  <section id="hgv" name="测试">
+  <!-- <section id="hgv" name="测试">
     <tool file="phenotype_association/ldtools.xml" />
-  </section>
+  </section> -->
   <!--
   <section id="interactivetools" name="Interactive tools">
     <tool file="interactive/interactivetool_askomics.xml" />
