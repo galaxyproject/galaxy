@@ -15,6 +15,7 @@ import localize from "@/utils/localization";
 
 import { stripExtension } from "./common/stripExtension";
 import { useCollectionCreator } from "./common/useCollectionCreator";
+import { useExtensionFiltering } from "./common/useExtensionFilter";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
@@ -40,6 +41,8 @@ const emit = defineEmits<{
     (e: "on-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
     (e: "on-cancel"): void;
 }>();
+
+const { showElementExtension } = useExtensionFiltering(props);
 
 const state = ref("build");
 const duplicateNames = ref<string[]>([]);
