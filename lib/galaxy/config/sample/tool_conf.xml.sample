@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox monitor="true">
-  <section id="machine_learning" name="机器/深度学习">
+  <section id="machine_learning" name="Machine Learning">
     <tool file="machine_learning/tabfpn.xml" />
   </section>
   <!-- <section id="hgv" name="测试">
