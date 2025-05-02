@@ -707,6 +707,8 @@ workflow_run:
       selectors:
         _: '[data-label="${label}"] .tabs'
         create: '${_} .create-collection'
+        select_all: "${_} [data-description='select many select all']"
+        element_by_hid: "${_} .collection-element[data-hid='${hid}']"
         <<: *upload_mixin
 
   selectors:
