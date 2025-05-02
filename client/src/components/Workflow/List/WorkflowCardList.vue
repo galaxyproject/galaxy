@@ -111,10 +111,11 @@ function onInsertSteps(workflow: WorkflowSummary) {
         <GModal
             :show.sync="showPreview"
             size="large"
+            title="Workflow Preview"
             hide-header
             dialog-class="workflow-card-preview-modal w-auto"
             centered>
-            <WorkflowPublished v-if="showPreview" :id="modalOptions.preview.id" quick-view />
+            <WorkflowPublished v-if="showPreview" :id="modalOptions.preview.id" :show-heading="false" quick-view />
         </GModal>
     </div>
 </template>

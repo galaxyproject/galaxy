@@ -107,23 +107,35 @@ defineExpose({ showModal, hideModal });
     <!-- This is a convenience shortcut for mouse-users to close the dialog, so disabling this warning is fine here -->
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -->
     <dialog ref="dialog" class="g-dialog" :class="sizeClass" @click="onClickDialog">
-        <header>
-            <Heading v-if="props.title" h2 size="md"> {{ Heading }} </Heading>
-            <slot name="header"></slot>
-            <GButton icon-only inline class="g-modal-close-button" size="large" transparent @click="hideModal(false)">
-                <FontAwesomeIcon :icon="faXmark" />
-            </GButton>
-        </header>
+        <section>
+            <header>
+                <Heading v-if="props.title" h2 separator size="lg" class="g-modal-title mb-0">
+                    {{ props.title }}
+                </Heading>
+                <slot name="header"></slot>
+                <GButton
+                    icon-only
+                    inline
+                    class="g-modal-close-button"
+                    size="large"
+                    transparent
+                    @click="hideModal(false)">
+                    <FontAwesomeIcon :icon="faXmark" />
+                </GButton>
+            </header>
 
-        <slot></slot>
-
-        <footer v-if="props.footer || props.confirm">
-            <slot name="footer"></slot>
-            <div v-if="props.confirm" class="g-modal-confirm-buttons">
-                <GButton @click="hideModal(false)"> Cancel </GButton>
-                <GButton color="blue" @click="hideModal(true)"> Ok </GButton>
+            <div class="g-modal-content">
+                <slot></slot>
             </div>
-        </footer>
+
+            <footer v-if="props.footer || props.confirm">
+                <slot name="footer"></slot>
+                <div v-if="props.confirm" class="g-modal-confirm-buttons">
+                    <GButton @click="hideModal(false)"> Cancel </GButton>
+                    <GButton color="blue" @click="hideModal(true)"> Ok </GButton>
+                </div>
+            </footer>
+        </section>
     </dialog>
 </template>
 
@@ -133,26 +145,48 @@ defineExpose({ showModal, hideModal });
     border-radius: var(--spacing-2);
     border: none;
 
+    section {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-2);
+
+        .g-modal-content {
+            flex-grow: 1;
+            overflow: auto;
+            max-height: 100%;
+        }
+    }
+
     &::backdrop {
         background-color: var(--color-blue-800);
-        opacity: 0.2;
+        opacity: 0.33;
     }
 
     &.g-small {
-        width: 600px;
+        width: var(--g-modal-width, 600px);
+        height: var(--g-modal-height, 400px);
     }
 
     &.g-medium {
-        width: 900px;
+        width: var(--g-modal-width, 900px);
+        height: var(--g-modal-height, 600px);
     }
 
     &.g-large {
-        width: 1200px;
+        width: var(--g-modal-width, 1450px);
+        height: var(--g-modal-height, 800px);
     }
 
     header {
         display: flex;
         justify-content: flex-end;
+        gap: var(--spacing-1);
+
+        .g-modal-title {
+            flex-grow: 1;
+        }
     }
 }
 </style>
