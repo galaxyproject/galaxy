@@ -28,7 +28,7 @@ def populate_model(request_context, inputs, state_inputs, group_inputs: List[Dic
                 group_cache[i] = []
                 populate_model(request_context, input.inputs, group_state[i], group_cache[i], other_values)
         elif input.type == "conditional":
-            tool_dict = input.to_dict(request_context)
+            tool_dict = input.to_dict(request_context, other_values=other_values)
             if "test_param" in tool_dict:
                 test_param = tool_dict["test_param"]
                 test_param["value"] = input.test_param.value_to_basic(

@@ -89,7 +89,7 @@ class Group(UsesDictVisibleKeys):
         """
         raise TypeError("Not implemented")
 
-    def to_dict(self, trans):
+    def to_dict(self, trans, other_values=None):
         group_dict = self._dictify_view_keys()
         return group_dict
 
@@ -177,13 +177,13 @@ class Repeat(Group):
             rval.append(rval_dict)
         return rval
 
-    def to_dict(self, trans):
+    def to_dict(self, trans, other_values=None):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         repeat_dict = super().to_dict(trans)
 
         def input_to_dict(input):
-            return input.to_dict(trans)
+            return input.to_dict(trans, other_values)
 
         repeat_dict["inputs"] = list(map(input_to_dict, self.inputs.values()))
         return repeat_dict
@@ -240,13 +240,13 @@ class Section(Group):
             rval[child_input.name] = child_input.get_initial_value(trans, child_context)
         return rval
 
-    def to_dict(self, trans):
+    def to_dict(self, trans, other_values=None):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         section_dict = super().to_dict(trans)
 
         def input_to_dict(input):
-            return input.to_dict(trans)
+            return input.to_dict(trans, other_values)
 
         section_dict["inputs"] = list(map(input_to_dict, self.inputs.values()))
         return section_dict
@@ -818,13 +818,13 @@ class Conditional(Group):
             rval[child_input.name] = child_input.get_initial_value(trans, child_context)
         return rval
 
-    def to_dict(self, trans):
+    def to_dict(self, trans, other_values=None):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        cond_dict = super().to_dict(trans)
+        cond_dict = super().to_dict(trans, other_values=other_values)
 
         def nested_to_dict(input):
-            return input.to_dict(trans)
+            return input.to_dict(trans, other_values=other_values)
 
         cond_dict["cases"] = list(map(nested_to_dict, self.cases))
         cond_dict["test_param"] = nested_to_dict(self.test_param)
@@ -838,13 +838,13 @@ class ConditionalWhen(UsesDictVisibleKeys):
         self.value = None
         self.inputs = None
 
-    def to_dict(self, trans):
+    def to_dict(self, trans, other_values=None):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         when_dict = self._dictify_view_keys()
 
         def input_to_dict(input):
-            return input.to_dict(trans)
+            return input.to_dict(trans, other_values=other_values)
 
         when_dict["inputs"] = list(map(input_to_dict, self.inputs.values()))
         return when_dict
