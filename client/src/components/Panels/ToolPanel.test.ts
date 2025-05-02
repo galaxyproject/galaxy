@@ -1,5 +1,6 @@
 import "jest-location-mock";
 
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -8,6 +9,7 @@ import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { ref } from "vue";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import toolsList from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -28,6 +30,7 @@ interface ToolPanelView {
 }
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 const TEST_PANELS_URI = "/api/tool_panels";
 const DEFAULT_VIEW_ID = "default";
@@ -89,6 +92,12 @@ describe("ToolPanel", () => {
             // mock response for all panel views
             axiosMock.onGet(/\/api\/tool_panels\/.*/).reply(200, toolsListInPanel);
         }
+
+        server.use(
+            http.get("/api/users/{user_id}", ({ response }) => {
+                return response(200).json(getFakeRegisteredUser());
+            })
+        );
 
         // setting this because for the default view, we just show "Tools" as the name
         // even though the backend returns "Full Tool Panel"
