@@ -112,6 +112,7 @@ class MockEvaluator:
         self.job = job
         self.local_working_directory = local_working_directory
         self.param_dict = {}
+        self.use_cached_job = False
 
     def set_compute_environment(self, *args, **kwds):
         pass

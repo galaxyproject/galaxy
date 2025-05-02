@@ -515,9 +515,10 @@ class FastAPIJobs:
             return []
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
         jobs = []
+        assert trans.user
         for param_dump, param in zip(params_dump, all_params):
             job = self.service.job_search.by_tool_input(
-                trans=trans,
+                user=trans.user,
                 tool_id=tool_id,
                 tool_version=tool.version,
                 param=param,

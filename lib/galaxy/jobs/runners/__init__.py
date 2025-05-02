@@ -300,7 +300,9 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            if job_wrapper.prepare() is False:
+                # job cache
+                return False
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,

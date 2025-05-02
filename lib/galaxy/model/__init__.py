@@ -1613,6 +1613,79 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def finished(self):
         return self.state in self.finished_states
 
+    def copy_from_job(self, job: "Job", copy_outputs: bool = False):
+        self.copied_from_job_id = job.id
+        self.numeric_metrics = job.numeric_metrics
+        self.text_metrics = job.text_metrics
+        self.dependencies = job.dependencies
+        self.state = job.state
+        self.job_stderr = job.job_stderr
+        self.job_stdout = job.job_stdout
+        self.tool_stderr = job.tool_stderr
+        self.tool_stdout = job.tool_stdout
+        self.command_line = job.command_line
+        self.traceback = job.traceback
+        self.tool_version = job.tool_version
+        self.exit_code = job.exit_code
+        self.job_runner_name = job.job_runner_name
+        self.job_runner_external_id = job.job_runner_external_id
+        if copy_outputs:
+            assert self.history
+            requires_addition_to_history = False
+            outputs_to_copy = job.io_dicts(exclude_implicit_outputs=True)
+            self_io = self.io_dicts(exclude_implicit_outputs=True)
+            for output_name, out_data in outputs_to_copy.out_data.items():
+                if output_name in self_io.out_data:
+                    self_output = self_io.out_data[output_name]
+                    if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
+                        out_data, HistoryDatasetAssociation
+                    ):
+                        self_output.copy_from(out_data, include_metadata=True)
+                else:
+                    assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
+                    if output_name.startswith("__new_primary_file_"):
+                        # Check if output is part of a discovered collection, in which case we don't need to make a copy.
+                        # Not tracking the discoverd HDA as a job to output dataset association creates a slightly inconsistent state for the copied job outputs,
+                        # but I wonder if we ever really intended to track the discovered collection outputs like this in the first place.
+                        # Maintaining a consistent state here would require traversing the output collection and adding the job output dataset associations,
+                        # which is a little tricky and probably not worth it.
+                        split_name = output_name[len("__new_primary_file_") :].split("|")
+                        if len(split_name) > 1:
+                            collection_name = split_name[0]
+                            if collection_name in outputs_to_copy.out_collections:
+                                continue
+                    # Should be discovered primary output. The newly created job hasn't discovered this yet, so we have to copy the dataset to the job history and track it among the job outputs.
+                    requires_addition_to_history = True
+                    copied_output = out_data.copy(copy_tags=out_data.tags, flush=False)  # type: ignore[attr-defined]
+                    copied_output.history = self.history
+                    self.history.stage_addition(copied_output)
+                    self.add_output_dataset(output_name, copied_output)
+            for output_name, out_collection in outputs_to_copy.out_collections.items():
+                self_out_collection = self_io.out_collections[output_name]
+                if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
+                    # In the context of the job cache this should be unreachable.
+                    # If we have DatasetCollection here, the output was created as part of a map-over job.
+                    # If it is a map-over job, then we were working with element_identifiers instead of names.
+                    # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
+                    # and we will never get here.
+                    self_out_collection.copy_from(out_collection, history=self.history)
+                    requires_addition_to_history = True
+                elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
+                    out_collection, HistoryDatasetCollectionAssociation
+                ):
+                    self_out_collection.collection.copy_from(
+                        out_collection.collection,
+                        history=self.history,
+                    )
+                    requires_addition_to_history = True
+                else:
+                    raise NotImplementedError(
+                        f"Don't know how to copy {type(out_collection)} to {type(self_out_collection)}"
+                    )
+            if requires_addition_to_history:
+                assert job.history
+                job.history.add_pending_items()
+
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: Dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
         out_data: Dict[str, DatasetInstance] = {da.name: da.dataset for da in self.output_datasets}
@@ -6913,6 +6986,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         dataset_instance_attributes=None,
         flush=True,
         minimize_copies=False,
+        copy_hid=True,
     ):
         new_collection = DatasetCollection(collection_type=self.collection_type, element_count=self.element_count)
         for element in self.elements:
@@ -6923,6 +6997,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 dataset_instance_attributes=dataset_instance_attributes,
                 flush=flush,
                 minimize_copies=minimize_copies,
+                copy_hid=copy_hid,
             )
         object_session(self).add(new_collection)
         if flush:
@@ -6930,6 +7005,39 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             with transaction(session):
                 session.commit()
         return new_collection
+
+    def copy_from(self, other_collection: "DatasetCollection", history: "History"):
+        self.populated_state = other_collection.populated_state
+        self.populated_state_message = other_collection.populated_state_message
+        if self.element_count:
+            self.replace_elements_with_copies(other_collection.elements, history)
+        else:
+            self.element_count = other_collection.element_count
+            # this is a new collection and elements are still to be discovered
+            for element in other_collection.elements:
+                element.copy_to_collection(self, element_destination=history, flush=False, copy_hid=False)
+
+    def replace_elements_with_copies(self, replacements: List["DatasetCollectionElement"], history: "History"):
+        assert len(replacements) == len(self.elements)
+        for element, replacement in zip(self.elements, replacements):
+            assert replacement.element_object
+            if replacement.hda:
+                if element.hda:
+                    element.hda.copy_from(replacement.hda, include_metadata=True)
+                else:
+                    element.hda = replacement.hda.copy(copy_hid=False, flush=False)
+                    history.stage_addition(element.hda)
+            if replacement.child_collection:
+                if element.child_collection:
+                    element.child_collection.replace_elements_with_copies(
+                        replacement.child_collection.elements, history=history
+                    )
+                else:
+                    element.child_collection = replacement.child_collection.copy(
+                        flush=False, element_destination=history
+                    )
+            else:
+                raise ValueError("Cannot replace {type(replacement.element_object)}")
 
     def replace_failed_elements(self, replacements):
         stmt = self._build_nested_collection_attributes_stmt(
@@ -7509,7 +7617,10 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 
         self.id = id
         add_object_to_object_session(self, collection)
-        self.collection = collection
+        if collection:
+            self.collection = collection
+            if collection.id:
+                self.dataset_collection_id = collection.id
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
 
@@ -7545,6 +7656,19 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             return self.child_collection
         else:
             return None
+
+    @element_object.setter
+    def element_object(
+        self, value: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, DatasetCollection]
+    ):
+        if isinstance(value, HistoryDatasetAssociation):
+            self.hda = value
+        elif isinstance(value, LibraryDatasetDatasetAssociation):
+            self.ldda = value
+        elif isinstance(value, DatasetCollection):
+            self.child_collection = value
+        else:
+            raise AttributeError(f"Unknown element type provided: {type(value)}")
 
     @property
     def dataset_instance(self):
@@ -7584,6 +7708,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         dataset_instance_attributes=None,
         flush=True,
         minimize_copies=False,
+        copy_hid=True,
     ):
         dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
@@ -7595,6 +7720,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                     dataset_instance_attributes=dataset_instance_attributes,
                     flush=flush,
                     minimize_copies=minimize_copies,
+                    copy_hid=copy_hid,
                 )
             else:
                 new_element_object = None
@@ -7607,7 +7733,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                 ):
                     element_object = new_element_object
                 else:
-                    new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
+                    new_element_object = element_object.copy(
+                        flush=flush, copy_tags=element_object.tags, copy_hid=copy_hid
+                    )
                     for attribute, value in dataset_instance_attributes.items():
                         setattr(new_element_object, attribute, value)
 

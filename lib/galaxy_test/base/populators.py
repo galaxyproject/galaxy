@@ -832,6 +832,20 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(_wait_for_purge, "dataset to become purged", timeout=2)
         return self._get(dataset_url)
 
+    def rename_dataset(
+        self,
+        content_id: str,
+        new_name: Optional[str] = None,
+    ):
+        if not new_name:
+            new_name = self.get_random_name()
+        return self.update_dataset(content_id, {"name": new_name})
+
+    def rename_collection(self, history_id: str, content_id: str, new_name: Optional[str] = None):
+        if not new_name:
+            new_name = self.get_random_name()
+        self.update_dataset_collection(history_id, content_id, {"name": new_name})
+
     def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
         create_url = "tool_landings"
         json = payload.model_dump(mode="json")
@@ -1525,6 +1539,18 @@ class BaseDatasetPopulator(BasePopulator):
         update_url = f"histories/{history_id}"
         put_response = self._put(update_url, payload, json=True)
         return put_response
+
+    def update_dataset(self, dataset_id: str, update_payload: Dict[str, Any]):
+        update_url = f"datasets/{dataset_id}"
+        put_response = self._put(update_url, update_payload, json=True)
+        api_asserts.assert_status_code_is_ok(put_response)
+        return put_response.json()
+
+    def update_dataset_collection(self, history_id: str, dataset_collection_id: str, update_payload: Dict[str, Any]):
+        update_url = f"histories/{history_id}/contents/dataset_collections/{dataset_collection_id}"
+        put_response = self._put(update_url, update_payload, json=True)
+        api_asserts.assert_status_code_is_ok(put_response)
+        return put_response.json()
 
     def get_histories(self):
         history_index_response = self._get("histories")
