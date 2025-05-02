@@ -1,5 +1,5 @@
-<tool id="tabpfn_classifier" name="TabPFN 二分类" version="1.0.0">
-    <description>使用TabPFN进行二分类分析</description>
+<tool id="tabpfn_tool" name="TabPFN 机器学习" version="1.0.0">
+    <description>使用TabPFN进行分类或回归分析</description>
     <requirements>
         <requirement type="package" version="1.2.0">scikit-learn</requirement>
         <requirement type="package" version="1.5.3">pandas</requirement>
@@ -17,10 +17,16 @@
         -l '$target_column'
         -s '$test_split'
         -r '$random_seed'
+        -t '$task_type'
     </command>
     <inputs>
         <param name="input" type="data" format="csv,tabular" label="输入数据集" help="输入CSV格式的数据集，包含特征和目标列"/>
         <param name="target_column" type="text" label="目标列名称" help="指定包含目标变量(y)的列名"/>
+        <param name="task_type" type="select" label="任务类型" help="选择您要执行的机器学习任务类型">
+            <option value="binary_classification">二分类</option>
+            <option value="multiclass_classification">多分类</option>
+            <option value="regression">回归</option>
+        </param>
         <param name="test_split" type="float" value="0.3" min="0.1" max="0.9" label="测试集比例" help="指定用于测试的数据比例（0.1-0.9之间）"/>
         <param name="random_seed" type="integer" value="42" label="随机种子" help="用于数据集分割的随机种子"/>
     </inputs>
@@ -36,15 +42,32 @@
         <test>
             <param name="input" value="sample_data.csv"/>
             <param name="target_column" value="label"/>
+            <param name="task_type" value="binary_classification"/>
             <param name="test_split" value="0.3"/>
             <param name="random_seed" value="42"/>
             <output name="output_metrics" file="expected_metrics.tabular"/>
         </test>
     </tests>
     <help>
-**TabPFN 二分类工具**
+**TabPFN 机器学习工具**
 
-该工具使用TabPFN（Tabular Prior-data Fitted Networks）进行二分类任务。TabPFN是一种先验数据拟合的神经网络，它在小型表格数据集上表现出色。
+该工具使用TabPFN（Tabular Prior-data Fitted Networks）进行多种机器学习任务。TabPFN是一种针对表格数据的基础模型，在小型表格数据集上表现优异，同时比传统方法快速得多。
+
+-----
+
+**TabPFN优势**
+
+- **性能卓越**：在许多表格数据任务上优于传统机器学习方法
+- **极速推理**：处理小型数据集只需几秒钟
+- **无需超参数调优**：自动适应数据特征
+
+-----
+
+**任务类型**
+
+1. **二分类**：目标变量为两个类别的分类任务
+2. **多分类**：目标变量为多个类别的分类任务
+3. **回归**：预测连续数值的任务
 
 -----
 
@@ -52,9 +75,10 @@
 
 1. 选择包含特征和目标变量的CSV或表格文件
 2. 指定包含目标变量的列名（必须是数据集中的一列）
-3. 设置训练集和测试集的分割比例（0.1-0.9之间）
-4. 设置随机种子以确保结果可重现
-5. 运行工具
+3. 选择任务类型（二分类、多分类或回归）
+4. 设置训练集和测试集的分割比例（0.1-0.9之间）
+5. 设置随机种子以确保结果可重现
+6. 运行工具
 
 -----
 
@@ -62,29 +86,61 @@
 
 该工具会生成以下输出文件：
 
-1. **评估指标**：包含模型性能指标（准确率、ROC AUC、精确率、召回率、F1分数等）
+1. **评估指标**：包含模型性能指标
+    - 二分类：准确率、ROC AUC、精确率、召回率、F1分数等
+    - 多分类：准确率、精确率、召回率、F1分数等
+    - 回归：MAE、MSE、RMSE、R²等
+
 2. **训练数据集特征**：分割后的训练集特征
 3. **测试数据集特征**：分割后的测试集特征
 4. **训练数据集目标值**：训练集对应的目标值
 5. **测试数据集目标值**：测试集对应的目标值
-6. **预测结果**：包含测试集的实际值、预测值和预测概率（对于二分类）
+6. **预测结果**：包含测试集的实际值和预测值
+    - 分类：包含预测类别和预测概率
+    - 回归：包含预测值
 
 -----
 
-**注意事项**
+**系统要求与注意事项**
 
 - 输入数据必须是CSV格式，且目标列名必须与数据集中的列名一致
-- 对于二分类问题，该工具会计算ROC AUC、精确率、召回率和F1分数
-- TabPFN适用于小型数据集（特征数小于100，样本数小于1000）
+- TabPFN适用于小型数据集（特征数小于500，样本数小于10000）
+- 对于大型数据集（超过10000个样本），处理速度可能显著降低
+- 对于二分类和多分类，目标列应包含类别标签
+- 对于回归任务，目标列应包含连续数值
+
+-----
+
+**背景信息**
+
+TabPFN是由Prior Labs开发的表格数据基础模型，它在Nature期刊上发表，被证明在小数据集上能达到极高的预测准确率。该模型采用预先训练的变换器架构，能够在不进行传统超参数调优的情况下快速适应各种表格数据任务。
+
+了解更多信息，请访问：
+https://github.com/PriorLabs/TabPFN
 
     </help>
     <citations>
         <citation type="bibtex">
-            @article{hollmann2022tabpfn,
-              title={TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second},
-              author={Hollmann, Noah and Müller, Samuel and Eggensperger, Katharina and Hutter, Frank},
-              journal={arXiv preprint arXiv:2207.01848},
-              year={2022}
+            @article{hollmann2025tabpfn,
+             title={Accurate predictions on small data with a tabular foundation model},
+             author={Hollmann, Noah and M{\"u}ller, Samuel and Purucker, Lennart and
+                     Krishnakumar, Arjun and K{\"o}rfer, Max and Hoo, Shi Bin and
+                     Schirrmeister, Robin Tibor and Hutter, Frank},
+             journal={Nature},
+             year={2025},
+             month={01},
+             day={09},
+             doi={10.1038/s41586-024-08328-6},
+             publisher={Springer Nature},
+             url={https://www.nature.com/articles/s41586-024-08328-6},
+            }
+        </citation>
+        <citation type="bibtex">
+            @inproceedings{hollmann2023tabpfn,
+              title={TabPFN: A transformer that solves small tabular classification problems in a second},
+              author={Hollmann, Noah and M{\"u}ller, Samuel and Eggensperger, Katharina and Hutter, Frank},
+              booktitle={International Conference on Learning Representations 2023},
+              year={2023}
             }
         </citation>
     </citations>
