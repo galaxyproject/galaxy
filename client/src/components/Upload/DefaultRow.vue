@@ -40,7 +40,10 @@ const props = withDefaults(defineProps<Props>(), {
     listExtensions: undefined,
 });
 
-const emit = defineEmits(["input", "remove"]);
+const emit = defineEmits<{
+    (e: "input", index: string, value: Partial<UploadItem>): void;
+    (e: "remove", index: string): void;
+}>();
 
 const isDisabled = computed(() => props.status !== "init");
 function inputExtension(newExtension: string) {

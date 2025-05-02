@@ -207,7 +207,7 @@ function eventError(index: string, message: string) {
 }
 
 /** Update model */
-function eventInput(index: string, newData: UploadItem) {
+function eventInput(index: string, newData: Partial<UploadItem>) {
     const it = uploadItems.value[index];
     if (it) {
         Object.entries(newData).forEach(([key, value]) => {
