@@ -17,7 +17,7 @@
         <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.7" package="@galaxyproject/pca"/>
+        <requirement type="npm" version="0.0.8" package="@galaxyproject/pca"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <tests>
