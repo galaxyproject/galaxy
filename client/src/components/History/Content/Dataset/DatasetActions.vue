@@ -4,7 +4,6 @@ import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@for
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { type HDADetailed } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
@@ -30,8 +29,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(["toggleHighlights"]);
-
-const router = useRouter();
 
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
