@@ -15,7 +15,6 @@ const xml2js = require("xml2js");
 const PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
-    "drawrna",
     "example",
     "fits_graph_viewer",
     "hyphyvision",
@@ -33,6 +32,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "aladin",
     "alignment",
     "cytoscape",
+    "drawrna",
     "h5web",
     "heatmap",
     "kepler",
