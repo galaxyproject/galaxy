@@ -336,6 +336,32 @@ export function isZipFile(file?: File | null): string {
     return "";
 }
 
+export async function isRemoteZipFile(url: string): Promise<boolean> {
+    if (!isValidUrl(url)) {
+        return false;
+    }
+    const proxyUrl = getProxiedUrl(url);
+    try {
+        const response = await fetch(proxyUrl, {
+            method: "GET",
+            headers: {
+                Range: "bytes=0-3",
+            },
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        const buffer = new Uint8Array(await response.arrayBuffer());
+
+        // Check for ZIP magic number: 0x50 0x4B 0x03 0x04
+        return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+    } catch (err) {
+        return false;
+    }
+}
+
 export function isValidUrl(inputUrl?: string | null): boolean {
     if (!inputUrl) {
         return false;
