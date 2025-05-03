@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Phylogenetic Tree" embeddable="true">
-    <description>Phylogenetic Tree Viewer from https://www.phylocanvas.gl</description>
+    <description>Phylogenetic Tree Browser</description>
     <tags>
         <tag>Phylogenetics</tag>
         <tag>Tree</tag>
