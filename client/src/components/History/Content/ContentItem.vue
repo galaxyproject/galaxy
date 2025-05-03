@@ -303,6 +303,11 @@ function onEdit() {
 function onView() {
     router.push(itemUrls.value.view!);
 }
+
+function onRerun() {
+    router.push(itemUrls.value.rerun!);
+}
+
 function onShowCollectionInfo() {
     router.push(itemUrls.value.showDetails!);
 }
@@ -435,6 +440,7 @@ function unexpandedClick(event: Event) {
                         @view="onView"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
+                        @rerun="onRerun"
                         @undelete="onUndelete"
                         @unhide="emit('unhide')" />
                 </span>

@@ -255,7 +255,7 @@ describe("DatasetView", () => {
             expect(wrapper.exists()).toBe(true);
             expect(wrapper.vm.$props.datasetId).toBe(DATASET_ID);
             expect(wrapper.vm.$props.tab).toBe("preview");
-            
+
             // Test running state, make sure it doesn't blow up.
             wrapper = await mountDatasetView("preview", { dataset: runningDataset });
             expect(wrapper.exists()).toBe(true);

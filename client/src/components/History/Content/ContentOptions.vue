@@ -28,6 +28,7 @@ const emit = defineEmits<{
     (e: "delete", recursive?: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
+    (e: "rerun"): void;
 }>();
 
 const entryPointStore = useEntryPointStore();
@@ -38,19 +39,9 @@ const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset
 
 const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
 
-const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
-
-const editDisabled = computed(() =>
-    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
-);
-
-const displayUrl = computed(() => prependPath(props.itemUrls.display));
-
 const rerunUrl = computed(() => prependPath(props.itemUrls.rerun));
 
 const viewUrl = computed(() => prependPath(props.itemUrls.view));
-
-const editUrl = computed(() => prependPath(props.itemUrls.edit));
 
 const isCollection = computed(() => !props.isDataset);
 
@@ -102,6 +93,11 @@ function onDisplay($event: MouseEvent) {
     } else {
         emit("display");
     }
+}
+
+function onRerun() {
+    // Emit the rerun event to be handled by parent component
+    emit("rerun");
 }
 </script>
 
