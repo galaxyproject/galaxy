@@ -11,6 +11,7 @@ import {
     type ImportableFile,
     type ImportableZipContents,
     isValidUrl,
+    MAX_IMPORTABLE_FILE_SIZE,
     useZipExplorer,
 } from "@/composables/zipExplorer";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -177,8 +178,10 @@ archiveExplorerEventBus.on((key, source) => {
             <ZipPreview v-if="wizard.isCurrent('zip-file-preview') && zipSource" :zip-source="zipSource" />
 
             <ZipFileSelector
-                v-if="wizard.isCurrent('select-items') && importableZipContents"
+                v-if="wizard.isCurrent('select-items') && zipSource && importableZipContents"
+                :zip-source="zipSource"
                 :zip-contents="importableZipContents"
+                :bytes-limit="MAX_IMPORTABLE_FILE_SIZE"
                 :selected-items="filesToImport"
                 @update:selectedItems="onSelectionUpdate" />
 

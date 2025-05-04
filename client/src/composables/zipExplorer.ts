@@ -391,6 +391,8 @@ export function isGalaxyHistoryExport(explorer?: IZipExplorer): explorer is Gala
     return explorer !== undefined && hasGalaxyHistoryExportMetadata(explorer);
 }
 
+export const MAX_IMPORTABLE_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
 const GALAXY_EXPORT_ATTRS_FILE = "export_attrs.txt";
 const GALAXY_HISTORY_EXPORT_ATTRS_FILE = "history_attrs.txt";
 const GALAXY_DATASET_ATTRS_FILE = "datasets_attrs.txt";

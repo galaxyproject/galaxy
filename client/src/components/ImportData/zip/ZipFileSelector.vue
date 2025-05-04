@@ -14,6 +14,7 @@ interface Props {
     zipSource: ArchiveSource;
     zipContents: ImportableZipContents;
     selectedItems: ImportableFile[];
+    bytesLimit?: number;
 }
 
 const props = defineProps<Props>();
@@ -71,6 +72,7 @@ const currentListView = computed(() => userStore.currentListViewPreferences.zipF
                     v-for="dataset in props.zipContents.files"
                     :key="dataset.path"
                     :file="dataset"
+                    :bytes-limit="props.bytesLimit"
                     :grid-view="currentListView === 'grid'"
                     :selected="localSelectedItems.includes(dataset)"
                     @select="toggleSelection(dataset)" />
