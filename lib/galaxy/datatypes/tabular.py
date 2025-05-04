@@ -1525,7 +1525,7 @@ class GeoCSV(CSV):
         Looks for CSV with latitude/longitude headers.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('1.csv')
+        >>> fname = get_test_fname('2.csv')
         >>> GeoCSV().sniff(fname)
         False
         >>> fname = get_test_fname('1.geocsv')
