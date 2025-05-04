@@ -2,7 +2,7 @@
 import { faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, watch } from "vue";
 
-import { isValidUrl, isZipFile, useZipExplorer } from "@/composables/zipExplorer";
+import { isValidUrl, useZipExplorer, validateLocalZipFile } from "@/composables/zipExplorer";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -44,7 +44,7 @@ async function onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
 
-    errorMessage.value = isZipFile(file);
+    errorMessage.value = validateLocalZipFile(file);
     if (!errorMessage.value && file) {
         zipFile.value = file;
         zipUrl.value = "";

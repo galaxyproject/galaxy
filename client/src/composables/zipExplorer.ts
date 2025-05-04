@@ -324,7 +324,7 @@ function getProxiedUrl(url: string) {
     return proxyUrl;
 }
 
-export function isZipFile(file?: File | null): string {
+export function validateLocalZipFile(file?: File | null): string {
     if (!file) {
         return "No file selected";
     }
