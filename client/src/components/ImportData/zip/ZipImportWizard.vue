@@ -5,6 +5,7 @@ import { useRouter } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import {
+    archiveExplorerEventBus,
     getImportableFiles,
     type ImportableFile,
     type ImportableZipContents,
@@ -133,6 +134,13 @@ async function onZipSourceChanged(source?: File | string) {
         }
     }
 }
+
+archiveExplorerEventBus.on((key, source) => {
+    if (key === "set-archive-source") {
+        onZipSourceChanged(source);
+        wizard.goTo("zip-file-preview");
+    }
+});
 </script>
 
 <template>

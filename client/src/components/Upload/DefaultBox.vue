@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { faCopy, faEdit, faFileArchive, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -10,14 +9,13 @@ import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
-import { useUserStore } from "@/stores/userStore";
+import { archiveExplorerEventBus, type ArchiveSource } from "@/composables/zipExplorer";
 import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
-import { defaultModel, type UploadFile, type UploadItem } from "./model";
+import { defaultModel, isLocalFile, type UploadFile, type UploadItem } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
-import GButton from "../BaseComponents/GButton.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -26,8 +24,6 @@ import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIn
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
-
-const { isAnonymous } = storeToRefs(useUserStore());
 
 interface Props {
     chunkUploadSize: number;
@@ -242,6 +238,12 @@ function eventRemove(index: string) {
     }
 }
 
+async function eventExplore(archiveSource: ArchiveSource) {
+    await router.push({ name: "ZipImportWizard" });
+    archiveExplorerEventBus.emit("set-archive-source", archiveSource);
+    emit("dismiss");
+}
+
 /** Show remote files dialog or FTP files */
 function eventRemoteFiles() {
     filesDialog(
@@ -360,13 +362,6 @@ function uploadPercentage(percentage: number, size: number) {
     return (uploadCompleted.value + percentage * size) / uploadSize.value;
 }
 
-function exploreZipContents() {
-    router.push({
-        name: "ZipImportWizard",
-    });
-    emit("dismiss");
-}
-
 defineExpose({
     addFiles,
     counterAnnounce,
@@ -411,6 +406,7 @@ defineExpose({
                     :db-key="uploadItem.dbKey"
                     :deferred="uploadItem.deferred"
                     :extension="uploadItem.extension"
+                    :file-data="isLocalFile(uploadItem.fileData) ? uploadItem.fileData : undefined"
                     :file-content="uploadItem.fileContent"
                     :file-mode="uploadItem.fileMode"
                     :file-name="uploadItem.fileName"
@@ -423,7 +419,8 @@ defineExpose({
                     :status="uploadItem.status"
                     :to-posix-lines="uploadItem.toPosixLines"
                     @remove="eventRemove"
-                    @input="eventInput" />
+                    @input="eventInput"
+                    @explore="eventExplore" />
                 <div
                     v-if="uploadValues.length > lazyLoad"
                     v-localize
@@ -493,16 +490,6 @@ defineExpose({
                 <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
-            <GButton
-                id="btn-explore-archive"
-                size="medium"
-                title="Explore the contents of a remote or local compressed archive and upload individual files"
-                :disabled="isAnonymous"
-                disabled-title="You must be logged in to use this feature"
-                @click="exploreZipContents">
-                <FontAwesomeIcon :icon="faFileArchive" />
-                <span v-localize>Explore Archive</span>
-            </GButton>
             <BButton
                 id="btn-start"
                 :size="size"

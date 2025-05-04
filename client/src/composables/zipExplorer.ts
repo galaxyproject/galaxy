@@ -1,3 +1,4 @@
+import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 import {
     AbstractZipExplorer,
@@ -336,6 +337,10 @@ export function validateLocalZipFile(file?: File | null): string {
     return "";
 }
 
+export function isLocalZipFile(file?: File | null): boolean {
+    return Boolean(file) && file?.type === "application/zip";
+}
+
 export async function isRemoteZipFile(url: string): Promise<boolean> {
     if (!isValidUrl(url)) {
         return false;
@@ -417,6 +422,13 @@ export interface ImportableZipContents {
     workflows: ImportableFile[];
     files: ImportableFile[];
 }
+
+export type ArchiveSource = File | string;
+export type ArchiveExplorerEventBusKey = "set-archive-source";
+
+export const archiveExplorerEventBus = useEventBus<ArchiveExplorerEventBusKey, ArchiveSource>(
+    "archive-explorer-event-bus"
+);
 
 interface DatasetAttrs {
     file_name: string;
