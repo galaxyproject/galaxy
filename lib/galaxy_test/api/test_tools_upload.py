@@ -221,7 +221,7 @@ class TestToolsUpload(ApiTestCase):
         assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("geocsv")
-    def test_csv_upload_auto(self):
+    def test_geocsv_upload_auto(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="auto")
