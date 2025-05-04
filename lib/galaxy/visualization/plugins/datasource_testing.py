@@ -129,7 +129,7 @@ def is_object_applicable(trans, target_object, data_source_tests):
                     #              target_object, getattr( target_object, 'id', '' ) )
                     continue
         elif test_attr == "ext" and test_type == "eq":
-            if target_object.state == "ok":
+            if target_object.state in ["deferred", "ok"]:
                 test_result = trans.app.datatypes_registry.get_datatype_by_extension(test_result)
                 if isinstance(target_object.datatype, type(test_result)) and _check_uri_support(
                     target_object, supported_protocols
