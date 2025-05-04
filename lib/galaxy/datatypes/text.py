@@ -591,8 +591,6 @@ class CytoscapeJson(Json):
                 segment_str = fh.read(load_size)
                 if "generated_by" in segment_str or "target_cytoscapejs_version" in segment_str:
                     return True
-                elif all(key in segment_str for key in ["nodes", "edges"]):
-                    return True
         except Exception:
             pass
         return False
