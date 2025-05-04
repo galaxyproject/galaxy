@@ -2,7 +2,7 @@
 import { faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, watch } from "vue";
 
-import { isValidUrl, useZipExplorer, validateLocalZipFile } from "@/composables/zipExplorer";
+import { type ArchiveSource, isValidUrl, useZipExplorer, validateLocalZipFile } from "@/composables/zipExplorer";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -10,7 +10,7 @@ import GCard from "@/components/Common/GCard.vue";
 const { reset: resetExplorer } = useZipExplorer();
 
 const props = defineProps<{
-    zipSource?: File | string;
+    zipSource?: ArchiveSource;
 }>();
 
 const fileInputRef = ref<HTMLInputElement>();
@@ -33,7 +33,7 @@ const isSourceSelected = computed(() => {
 });
 
 const emit = defineEmits<{
-    (e: "zipSourceChanged", source?: File | string): void;
+    (e: "zipSourceChanged", source?: ArchiveSource): void;
 }>();
 
 function browseZipFile() {

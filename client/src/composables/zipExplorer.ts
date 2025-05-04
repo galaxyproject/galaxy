@@ -27,7 +27,7 @@ export function useZipExplorer() {
 
     const isZipArchiveAvailable = computed(() => zipExplorer.value?.zipArchive !== undefined);
 
-    async function openZip(zipSource: File | string) {
+    async function openZip(zipSource: ArchiveSource) {
         if (typeof zipSource === "string") {
             if (!isValidUrl(zipSource)) {
                 zipExplorerError.value = "Invalid URL provided for zip archive";
@@ -244,7 +244,7 @@ export function useZipExplorer() {
         await clearDatabaseStore();
     }
 
-    function isZipOpen(zipSource: File | string): boolean {
+    function isZipOpen(zipSource: ArchiveSource): boolean {
         if (!zipExplorer.value) {
             return false;
         }

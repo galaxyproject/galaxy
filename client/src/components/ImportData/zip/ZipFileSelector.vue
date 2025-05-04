@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import type { ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
+import type { ArchiveSource, ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -11,6 +11,7 @@ import ListHeader from "@/components/Common/ListHeader.vue";
 import ZipFileEntryCard from "@/components/ImportData/zip/ZipFileEntryCard.vue";
 
 interface Props {
+    zipSource: ArchiveSource;
     zipContents: ImportableZipContents;
     selectedItems: ImportableFile[];
 }

@@ -2,7 +2,7 @@
 import { faCircleNotch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { isGalaxyZipExport, isRoCrateZip, useZipExplorer } from "@/composables/zipExplorer";
+import { type ArchiveSource, isGalaxyZipExport, isRoCrateZip, useZipExplorer } from "@/composables/zipExplorer";
 
 import GalaxyZipView from "./views/GalaxyZipView.vue";
 import RegularZipView from "./views/RegularZipView.vue";
@@ -12,7 +12,7 @@ import GCard from "@/components/Common/GCard.vue";
 const { isLoading: loadingPreview, zipExplorer, errorMessage, openZip, isZipOpen } = useZipExplorer();
 
 const props = defineProps<{
-    zipSource: File | string;
+    zipSource: ArchiveSource;
 }>();
 
 async function loadZip() {

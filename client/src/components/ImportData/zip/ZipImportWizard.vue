@@ -6,6 +6,7 @@ import { useRouter } from "vue-router/composables";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import {
     archiveExplorerEventBus,
+    type ArchiveSource,
     getImportableFiles,
     type ImportableFile,
     type ImportableZipContents,
@@ -28,7 +29,7 @@ const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplore
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
-const zipSource = ref<File | string>();
+const zipSource = ref<ArchiveSource>();
 
 const filesToImport = ref<ImportableFile[]>([]);
 
@@ -123,7 +124,7 @@ watch(
     { immediate: true }
 );
 
-async function onZipSourceChanged(source?: File | string) {
+async function onZipSourceChanged(source?: ArchiveSource) {
     errorMessage.value = undefined;
     resetExplorer();
     zipSource.value = source;
