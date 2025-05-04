@@ -13,7 +13,6 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_import_from_local_zip(self):
         self.login()
         self.ensure_empty_history()
-        self.upload_start_click()
         self.explore_local_zip(self.get_filename("example-bag.zip"))
         self.expect_total_number_of_files_to_be(8)
         self.go_to_next_step()
@@ -52,12 +51,12 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
             self.history_panel_create_new()
 
     def explore_local_zip(self, test_path: str):
-        self.components.upload.explore_archive_button.wait_for_and_click()
+        self.go_to_import_zip()
         file_upload = self.wait_for_selector('input[type="file"]')
         file_upload.send_keys(test_path)
 
     def explore_remote_zip(self, url: str):
-        self.components.upload.explore_archive_button.wait_for_and_click()
+        self.go_to_import_zip()
         url_input = self.wait_for_selector('input[type="text"]#zip-url')
         url_input.send_keys(url)
 
