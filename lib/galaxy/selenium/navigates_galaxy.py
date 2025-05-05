@@ -832,9 +832,18 @@ class NavigatesGalaxy(HasDriver):
         self._perform_upload(paste_data=paste_data, **kwd)
 
     def _perform_upload(
-        self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None, deferred=None
+        self,
+        test_path=None,
+        paste_data=None,
+        ext=None,
+        genome=None,
+        ext_all=None,
+        genome_all=None,
+        deferred=None,
+        on_current_page=False,
     ):
-        self.home()
+        if not on_current_page:
+            self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)

@@ -67,13 +67,15 @@ const validInput = computed(() => {
     return collectionName.value.length > 0;
 });
 
+const defaultWhatIsBeingCreated = "collection";
+
 /** Plain language for what is being created */
 const shortWhatIsBeingCreated = computed<string>(() => {
     const collectionType: string | undefined = props.collectionType;
     if (collectionType && collectionType in COLLECTION_TYPE_TO_LABEL) {
         return COLLECTION_TYPE_TO_LABEL[collectionType] as string;
     } else {
-        return "collection";
+        return defaultWhatIsBeingCreated;
     }
 });
 
@@ -377,11 +379,13 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                     list-style: circle;
                     margin-left: 16px;
                 }
+                /* This is not referenced anywhere I think.
                 .scss-help {
                     display: inline-block;
                     width: 100%;
                     text-align: right;
                 }
+                */
             }
             .more-help {
                 //display: inline-block;
