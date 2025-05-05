@@ -225,7 +225,7 @@ class YamlToolSource(ToolSource):
         return rval
 
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile", "16.04")
+        return self.root_dict.get("profile") or "16.04"
 
     def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
