@@ -489,7 +489,7 @@ class XmlToolSource(ToolSource):
                 inherit_format = string_as_bool(collection_elem.get("inherit_format", None))
                 inherit_metadata = string_as_bool(collection_elem.get("inherit_metadata", None))
             default_format_source = collection_elem.get("format_source", None)
-            default_metadata_source = collection_elem.get("metadata_source", "")
+            default_metadata_source = collection_elem.get("metadata_source", None)
             filters = collection_elem.findall("filter")
 
             dataset_collector_descriptions = None
@@ -560,7 +560,7 @@ class XmlToolSource(ToolSource):
         app: Optional[ToolOutputActionApp] = None,
         default_format="data",
         default_format_source=None,
-        default_metadata_source="",
+        default_metadata_source=None,
         expression_type=None,
     ):
         from_expression = data_elem.get("from")

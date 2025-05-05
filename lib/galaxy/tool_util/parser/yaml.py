@@ -180,7 +180,7 @@ class YamlToolSource(ToolSource):
             inherit_format = output_dict.get("inherit_format", None)
             inherit_metadata = output_dict.get("inherit_metadata", None)
         default_format_source = output_dict.get("format_source", None)
-        default_metadata_source = output_dict.get("metadata_source", "")
+        default_metadata_source = output_dict.get("metadata_source", None)
         filters = []
         dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
 

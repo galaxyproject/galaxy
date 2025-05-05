@@ -175,7 +175,7 @@ class ToolOutput(ToolOutputBase):
             hidden=self.hidden,
             format=self.format,
             format_source=self.format_source,
-            metadata_source=self.metadata_source or None,  # model is decorated as Optional
+            metadata_source=self.metadata_source,
             discover_datasets=[d.to_model() for d in self.dataset_collector_descriptions],
             from_work_dir=self.from_work_dir,
         )
@@ -187,7 +187,7 @@ class ToolOutput(ToolOutputBase):
         output.change_format = []
         output.format_source = output_dict.get("format_source")
         output.default_identifier_source = output_dict.get("default_identifier_source")
-        output.metadata_source = output_dict.get("metadata_source") or ""
+        output.metadata_source = output_dict.get("metadata_source")
         output.parent = output_dict.get("parent")
         output.label = output_dict.get("label")
         output.count = output_dict.get("count", 1)
