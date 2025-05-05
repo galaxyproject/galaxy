@@ -33,6 +33,7 @@ class ToolOutputDataset(ToolOutputBaseModel):
     format_source: Optional[str]
     metadata_source: Optional[str]
     discover_datasets: Optional[List["DatasetCollectionDescriptionT"]]
+    from_work_dir: Optional[str] = None
 
 
 class ToolOutputCollectionStructure(BaseModel):
