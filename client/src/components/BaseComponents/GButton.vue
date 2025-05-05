@@ -290,8 +290,15 @@ const buttonElementRef = useResolveElement(buttonRef);
     }
 
     &.g-transparent:not(.g-pressed) {
-        border: 1px solid rgb(100% 100% 100% / 0);
+        border: 1px solid rgb(100% 100% 100% / 0) !important;
         background-color: rgb(100% 100% 100% / 0);
+
+        color: var(--color-grey-700);
+
+        &:hover,
+        &:focus-visible {
+            background-color: var(--color-grey-200);
+        }
 
         @each $color in "blue", "green", "red", "yellow", "orange" {
             &.g-#{$color} {
