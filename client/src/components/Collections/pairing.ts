@@ -26,7 +26,7 @@ export function guessInitialFilterType(elements: HasName[]): CommonFiltersType |
         }
     });
     // if we cannot filter don't set an initial filter and hide all the data
-    if (illumina == 0 && dot12s == 0 && Rs == 0) {
+    if (illumina === 0 && dot12s === 0 && Rs === 0) {
         return null;
     } else if (illumina > dot12s && illumina > Rs) {
         return "illumina";

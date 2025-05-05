@@ -453,7 +453,7 @@
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
-                        v-if="gridImplementation == 'hot'"
+                        v-if="gridImplementation === 'hot'"
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
@@ -1226,7 +1226,7 @@ export default {
     mounted() {
         // something bizarre is up with the rendering of hands-on-table, needs a click to render.
         // Vue.nextTick() didn't work here.
-        if (this.gridImplementation == "hot") {
+        if (this.gridImplementation === "hot") {
             setTimeout(() => {
                 this.$refs.hotTable.$el.click();
             }, 200);

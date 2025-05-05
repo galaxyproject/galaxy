@@ -177,7 +177,7 @@ function _ensureElementIds() {
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
-        var problem = isElementInvalid(element);
+        const problem = isElementInvalid(element);
 
         if (problem) {
             invalidElements.value.push(element.name + "  " + problem);

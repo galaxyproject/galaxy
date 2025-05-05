@@ -100,7 +100,7 @@ type NewCollectionOptions = {
 };
 
 export function createCollectionPayload(options: NewCollectionOptions): CreateNewCollectionPayload {
-    const hideSourceItems = options.hide_source_items == undefined ? true : options.hide_source_items;
+    const hideSourceItems = options.hide_source_items === undefined ? true : options.hide_source_items;
     return {
         name: options.name,
         history_id: options.history_id,

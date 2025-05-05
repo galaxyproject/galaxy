@@ -239,7 +239,7 @@ function _elementsSetUp() {
 
 function initialFiltersSet() {
     const filterType = guessInitialFilterType(props.initialElements);
-    if (filterType == null) {
+    if (filterType === null) {
         forwardFilter.value = "";
         reverseFilter.value = "";
     } else {

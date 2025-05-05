@@ -185,11 +185,9 @@ function removeExtensionsToggle() {
     } else {
         workingElements.value.forEach((el) => {
             const originalName = byId[el.id]?.name;
-            console.log(originalName);
             if (originalName) {
                 const strippedOriginalName = stripExtension(originalName);
                 if (strippedOriginalName && el.name == strippedOriginalName) {
-                    console.log("restoring... to" + originalName);
                     el.name = originalName;
                 }
             }
