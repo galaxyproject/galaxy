@@ -11,7 +11,7 @@ from typing import (
     Union,
 )
 
-from fastapi import Query
+from fastapi import Path, Query
 
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
@@ -20,12 +20,15 @@ from galaxy.managers.datatypes import (
     DatatypesCombinedMap,
     DatatypesEDAMDetailsDict,
     DatatypesMap,
+    DatatypeVisualizationMapping,
+    DatatypeVisualizationMappingsList,
     view_converters,
     view_edam_data,
     view_edam_formats,
     view_index,
     view_mapping,
     view_sniffers,
+    view_visualization_mappings,
 )
 from . import (
     depends,
@@ -165,3 +168,36 @@ class FastAPIDatatypes:
         """Gets a map of datatypes and their corresponding EDAM data.
         EDAM data contains the EDAM iri, label, and definition."""
         return view_edam_data(self.datatypes_registry, True)
+        
+    @router.get(
+        "/api/datatypes/visualizations",
+        public=True,
+        summary="Returns a list of all datatype visualization mappings",
+        response_description="List of all datatype visualization mappings",
+        response_model=DatatypeVisualizationMappingsList,
+    )
+    async def visualizations(self) -> DatatypeVisualizationMappingsList:
+        """Gets a list of all datatype visualization mappings."""
+        return view_visualization_mappings(self.datatypes_registry)
+        
+    @router.get(
+        "/api/datatypes/visualizations/{datatype}",
+        public=True,
+        summary="Returns the visualization mapping for a specific datatype",
+        response_description="Visualization mapping for the specified datatype",
+        response_model=DatatypeVisualizationMappingsList,
+    )
+    async def visualization_for_datatype(
+        self,
+        datatype: str = Path(
+            ...,
+            title="Datatype",
+            description="Datatype extension to get visualization mapping for",
+            examples=["bam", "h5"],
+        ),
+    ) -> DatatypeVisualizationMappingsList:
+        """Gets the visualization mapping for a specific datatype.
+        
+        Mappings are defined in the datatypes_conf.xml configuration file.
+        """
+        return view_visualization_mappings(self.datatypes_registry, datatype)

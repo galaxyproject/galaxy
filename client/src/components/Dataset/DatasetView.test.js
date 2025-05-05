@@ -7,6 +7,23 @@ import VueRouter from "vue-router";
 
 import DatasetView from "./DatasetView.vue";
 
+// Mock the datatypeVisualizationsStore
+jest.mock("@/stores/datatypeVisualizationsStore", () => ({
+    useDatatypeVisualizationsStore: jest.fn(() => ({
+        getPreferredVisualizationForDatatype: jest.fn().mockImplementation((datatype) => {
+            // Only return a preferred visualization for a specific test datatype
+            if (datatype === "h5") {
+                return Promise.resolve({
+                    datatype: "h5",
+                    visualization: "h5web",
+                    defaultParams: { param1: "value1" },
+                });
+            }
+            return Promise.resolve(null);
+        }),
+    })),
+}));
+
 const DATASET_ID = "dataset_id";
 const localVue = getLocalVue();
 localVue.use(VueRouter);
@@ -28,6 +45,8 @@ const failedMetadataDataset = { ...mockDataset, state: "failed_metadata" };
 const uploadingDataset = { ...mockDataset, state: "upload" };
 const runningDataset = { ...mockDataset, state: "running" };
 const pausedDataset = { ...mockDataset, state: "paused" };
+// Dataset with preferred visualization
+const h5Dataset = { ...mockDataset, file_ext: "h5" };
 
 /**
  * Mount the DatasetView component with the specified tab and dataset options
@@ -83,6 +102,11 @@ async function mountDatasetView(tab = "preview", options = {}) {
             VisualizationsList: true,
             DatasetAttributes: true,
             DatasetError: true,
+            // Use a stub for the VisualizationFrame component
+            VisualizationFrame: {
+                template: '<div class="viz-frame"></div>',
+                props: ["datasetId", "visualization", "visualizationParams"],
+            },
         },
         mocks: {
             $store: {
@@ -267,6 +291,32 @@ describe("DatasetView", () => {
             expect(wrapper.exists()).toBe(true);
             expect(wrapper.vm.$props.datasetId).toBe(DATASET_ID);
             expect(wrapper.vm.$props.tab).toBe("preview");
+        });
+
+        it("uses preferred visualization for supported datatypes", async () => {
+            const wrapper = await mountDatasetView("preview", { dataset: h5Dataset });
+            await flushPromises(); // Wait for preferred visualization check
+
+            // Check that the preferredVisualization was set
+            expect(wrapper.vm.preferredVisualization).toBe("h5web");
+            expect(wrapper.vm.preferredVisualizationParams).toEqual({ param1: "value1" });
+
+            // Check that we're using the VisualizationFrame for the preferred visualization
+            expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(true);
+            expect(wrapper.find("iframe").exists()).toBe(false);
+        });
+
+        it("falls back to default preview for unsupported datatypes", async () => {
+            const wrapper = await mountDatasetView("preview");
+            await flushPromises(); // Wait for preferred visualization check
+
+            // No preferred visualization should be set
+            expect(wrapper.vm.preferredVisualization).toBeNull();
+
+            // Check that we're using the default iframe
+            expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);
+            expect(wrapper.find("iframe").exists()).toBe(true);
+            expect(wrapper.find("iframe").attributes("src")).toBe(`/datasets/${DATASET_ID}/display/?preview=true`);
         });
     });
 

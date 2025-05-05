@@ -25,6 +25,12 @@
             </li>
             <li>
                 <strong>
+                    <router-link to="/admin/datatype_visualizations">Datatype Visualizations</router-link>
+                </strong>
+                - Configure preferred visualizations for datasets based on their datatype.
+            </li>
+            <li>
+                <strong>
                     <router-link to="/admin/display_applications">Display Applications</router-link>
                 </strong>
                 - See all display applications configured in this Galaxy.

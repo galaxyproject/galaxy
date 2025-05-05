@@ -11,6 +11,19 @@ from pydantic import (
     RootModel,
 )
 
+__all__ = [
+    "CompositeFileInfo",
+    "DatatypeDetails",
+    "DatatypesMap",
+    "DatatypesCombinedMap",
+    "DatatypeConverter",
+    "DatatypeConverterList",
+    "DatatypeEDAMDetails",
+    "DatatypesEDAMDetailsDict",
+    "DatatypeVisualizationMapping",
+    "DatatypeVisualizationMappingsList",
+]
+
 
 class CompositeFileInfo(BaseModel):
     name: str = Field(..., title="Name", description="The name of this composite file")  # Mark this field as required
@@ -129,4 +142,31 @@ class DatatypesEDAMDetailsDict(RootModel):
     root: Dict[str, DatatypeEDAMDetails] = Field(
         title="Dict of EDAM details for formats",
         default={},
+    )
+
+
+class DatatypeVisualizationMapping(BaseModel):
+    datatype: str = Field(
+        ...,  # Mark this field as required
+        title="Datatype",
+        description="The datatype extension this visualization applies to",
+        examples=["bam", "h5", "vcf"],
+    )
+    visualization: str = Field(
+        ...,  # Mark this field as required
+        title="Visualization",
+        description="The visualization plugin to use",
+        examples=["igv", "trackster", "vitessce"],
+    )
+    default_params: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Default Parameters",
+        description="Optional parameters to pass to the visualization plugin",
+    )
+
+
+class DatatypeVisualizationMappingsList(RootModel):
+    root: List[DatatypeVisualizationMapping] = Field(
+        title="List of datatype visualization mappings",
+        default=[],
     )

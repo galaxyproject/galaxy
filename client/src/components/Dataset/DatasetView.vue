@@ -3,12 +3,13 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BTab, BTabs } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { STATES } from "@/components/History/Content/model/states";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
 
 import Heading from "../Common/Heading.vue";
 import DatasetError from "../DatasetInformation/DatasetError.vue";
@@ -16,10 +17,12 @@ import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
+import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 library.add(faChevronUp, faChevronDown);
 
 const datasetStore = useDatasetStore();
+const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
 const router = useRouter();
 const iframeLoading = ref(true);
 
@@ -50,10 +53,23 @@ type TabName = (typeof TABS)[keyof typeof TABS];
 const TAB_VALUES = Object.values(TABS) as TabName[];
 
 const activeTab = ref<TabName>(TABS.PREVIEW);
+const preferredVisualization = ref<string | null>(null);
+const preferredVisualizationParams = ref<Record<string, string> | null>(null);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
-const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview=true`);
+
+// Compute display URL based on whether we have a preferred visualization
+const displayUrl = computed(() => {
+    // Standard preview display URL
+    if (!preferredVisualization.value) {
+        return `/datasets/${props.datasetId}/display/?preview=true`;
+    }
+
+    // Use preferred visualization
+    return null;
+});
+
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
@@ -70,6 +86,28 @@ const hasStateIcon = computed(() => {
 
 function toggleHeader() {
     toggleHeaderCollapse();
+}
+
+// Check if the dataset has a preferred visualization by datatype
+async function checkPreferredVisualization() {
+    if (!dataset.value || !dataset.value.file_ext) {
+        preferredVisualization.value = null;
+        return;
+    }
+
+    try {
+        const mapping = await datatypeVisualizationsStore.getPreferredVisualizationForDatatype(dataset.value.file_ext);
+        if (mapping) {
+            preferredVisualization.value = mapping.visualization;
+            preferredVisualizationParams.value = mapping.defaultParams || null;
+        } else {
+            preferredVisualization.value = null;
+            preferredVisualizationParams.value = null;
+        }
+    } catch (error) {
+        preferredVisualization.value = null;
+        preferredVisualizationParams.value = null;
+    }
 }
 
 function onTabChange(tabName: TabName) {
@@ -130,6 +168,16 @@ watch(
         }
     }
 );
+
+// Watch for changes to the dataset to check for preferred visualizations
+watch(() => dataset.value?.file_ext, checkPreferredVisualization);
+
+onMounted(() => {
+    // Check for preferred visualization when component is mounted
+    if (dataset.value) {
+        checkPreferredVisualization();
+    }
+});
 </script>
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
@@ -189,9 +237,17 @@ watch(
                             <LoadingSpan message="Loading preview" />
                         </div>
 
-                        <!-- Iframe for dataset preview -->
+                        <!-- Show preferred visualization if available -->
+                    <template v-if="preferredVisualization">
+                        <VisualizationFrame
+                            :dataset-id="datasetId"
+                            :visualization="preferredVisualization"
+                            :visualization-params="preferredVisualizationParams" />
+                    </template>
+                    <!-- Default iframe preview otherwise -->
                         <iframe
-                            :src="displayUrl"
+                            v-else
+                        :src="displayUrl"
                             title="galaxy dataset display frame"
                             class="dataset-preview-iframe"
                             frameborder="0"

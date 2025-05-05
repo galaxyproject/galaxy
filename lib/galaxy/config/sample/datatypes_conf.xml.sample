@@ -1148,6 +1148,23 @@
     <!-- rdeval types -->
     <datatype extension="rd" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Rdeval read sketch"/>
   </registration>
+
+  <visualization_mappings>
+    <!-- 
+      This section maps datatypes to their preferred visualization plugins.
+      These visualizations will be used as the default preview when viewing datasets of the specified type.
+      
+      Attributes:
+      - datatype: The file extension/datatype to map
+      - visualization: The visualization plugin to use
+      - default_params: Optional JSON-formatted parameters to pass to the visualization
+    -->
+    <visualization_mapping datatype="h5" visualization="vitessce" />
+    <visualization_mapping datatype="bam" visualization="igv" />
+    <visualization_mapping datatype="vcf" visualization="jbrowse" />
+    <!-- Add more mappings as needed -->
+  </visualization_mappings>
+  
   <sniffers>
     <!--
     The order in which Galaxy attempts to determine data types is

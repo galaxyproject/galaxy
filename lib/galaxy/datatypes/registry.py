@@ -103,6 +103,8 @@ class Registry:
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
         self._converters_by_datatype = {}
+        # Datatype visualization mappings
+        self.visualization_mappings: Dict[str, Dict[str, Any]] = {}
         # Build sites
         self.build_sites = {}
         self.display_sites = {}
@@ -417,6 +419,9 @@ class Registry:
             # Load build sites
             if use_build_sites:
                 self._load_build_sites(root)
+                
+            # Load visualization mappings
+            self._load_visualization_mappings(root)
         self.set_default_values()
 
         def append_to_sniff_order() -> None:
@@ -436,6 +441,60 @@ class Registry:
 
         append_to_sniff_order()
 
+    def _load_visualization_mappings(self, root):
+        """
+        Load datatype to visualization mappings from the datatypes_conf.xml file.
+        
+        Administrators can define preferred visualizations for datatypes in the 
+        datatypes_conf.xml configuration file using the visualization_mappings section.
+        
+        For example:
+        
+        <visualization_mappings>
+            <visualization_mapping datatype="bam" visualization="igv" />
+            <visualization_mapping datatype="vcf" visualization="jbrowse" />
+            <visualization_mapping datatype="h5" visualization="vitessce" default_params='{"layer":"primary"}' />
+        </visualization_mappings>
+        
+        These mappings are read-only and must be manually edited in the configuration file.
+        """
+        # Clear existing mappings
+        self.visualization_mappings = {}
+        
+        # Find the visualization_mappings element
+        mappings_elem = root.find("visualization_mappings")
+        if mappings_elem is None:
+            # No mappings defined, that's okay
+            return
+            
+        for mapping_elem in mappings_elem.findall("visualization_mapping"):
+            datatype = mapping_elem.get("datatype", None)
+            visualization = mapping_elem.get("visualization", None)
+            default_params_str = mapping_elem.get("default_params", None)
+            
+            # Skip incomplete mappings
+            if not datatype or not visualization:
+                self.log.warning("Incomplete visualization mapping (missing datatype or visualization)")
+                continue
+                
+            # Parse default parameters if provided
+            default_params = None
+            if default_params_str:
+                try:
+                    default_params = galaxy.util.safe_loads(default_params_str)
+                except Exception:
+                    self.log.exception("Error parsing default_params for visualization mapping: %s -> %s", 
+                                      datatype, visualization)
+                    continue
+            
+            # Store the mapping
+            self.visualization_mappings[datatype] = {
+                "visualization": visualization,
+                "default_params": default_params
+            }
+            
+            self.log.debug("Loaded visualization mapping: %s -> %s", datatype, visualization)
+    
     def _load_build_sites(self, root):
         def load_build_site(build_site_config):
             # Take in either an XML element or simple dictionary from YAML and add build site for this.
@@ -489,6 +548,31 @@ class Registry:
 
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
+        
+    def get_preferred_visualization(self, datatype_extension):
+        """
+        Get the preferred visualization mapping for a specific datatype extension.
+        Returns a dictionary with 'visualization' and 'default_params' keys, or None if no mapping exists.
+        
+        Preferred visualizations are defined in the datatypes_conf.xml configuration file using 
+        the visualization_mappings section. These mappings determine which visualization plugin 
+        should be used by default when viewing datasets of a specific type.
+        
+        Example configuration:
+        <visualization_mappings>
+            <visualization_mapping datatype="bam" visualization="igv" />
+        </visualization_mappings>
+        """
+        return self.visualization_mappings.get(datatype_extension)
+        
+    def get_all_visualization_mappings(self):
+        """
+        Get all datatype to visualization mappings.
+        Returns a dictionary where keys are datatype extensions and values are mapping configurations.
+        
+        Mappings are defined in the datatypes_conf.xml configuration file and are read-only.
+        """
+        return self.visualization_mappings
 
     def load_datatype_sniffers(
         self,

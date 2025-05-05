@@ -6,6 +6,7 @@ import DataManagerTable from "components/admin/DataManager/DataManagerTable";
 import DataManagerView from "components/admin/DataManager/DataManagerView";
 import DataTables from "components/admin/DataTables";
 import DataTypes from "components/admin/DataTypes";
+import DatatypeVisualizations from "components/admin/DatatypeVisualizations";
 import ToolboxDependencies from "components/admin/Dependencies/Landing";
 import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
@@ -47,6 +48,7 @@ export default [
             },
             { path: "data_tables", component: DataTables },
             { path: "data_types", component: DataTypes },
+            { path: "datatype_visualizations", component: DatatypeVisualizations },
             { path: "display_applications", component: DisplayApplications },
             { path: "error_stack", component: ErrorStack },
             {
