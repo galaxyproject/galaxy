@@ -33,6 +33,9 @@ const emit = defineEmits(["toggleHighlights"]);
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
+const showError = computed(() => {
+    return props.item.state === "error" || props.item.state === "failed_metadata";
+});
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
 });
@@ -51,6 +54,10 @@ function onDownload(resource: string) {
 
 function onHighlight() {
     emit("toggleHighlights");
+}
+
+function onError() {
+    window.location.href = reportErrorUrl.value;
 }
 </script>
 
