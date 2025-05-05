@@ -379,6 +379,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
+    edam_link: 'a[href^="https://edamontology.github.io/edam-browser"]'
     tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
