@@ -2075,7 +2075,7 @@ class NavigatesGalaxy(HasDriver):
     def ensure_collection_builder_filters_cleared(self):
         clear_filters = self.components.collection_builders.clear_filters
         element = clear_filters.wait_for_present()
-        if "disabled" not in element.get_attribute("class").split(" "):
+        if element.is_enabled():
             self.collection_builder_clear_filters()
 
     def collection_builder_clear_filters(self):
