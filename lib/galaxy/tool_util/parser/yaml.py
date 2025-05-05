@@ -85,7 +85,7 @@ class YamlToolSource(ToolSource):
 
     def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root_dict.get("xrefs", [])
-        return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
+        return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)

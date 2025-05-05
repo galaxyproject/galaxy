@@ -224,7 +224,7 @@ class XmlToolSource(ToolSource):
         if xrefs is None:
             return []
         return [
-            XrefDict(value=xref.text.strip(), reftype=str(xref.attrib["type"]))
+            XrefDict(value=xref.text.strip(), type=str(xref.attrib["type"]))
             for xref in xrefs.findall("xref")
             if xref.get("type") and xref.text
         ]
