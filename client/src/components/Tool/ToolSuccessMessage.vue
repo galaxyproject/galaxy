@@ -11,15 +11,13 @@ const props = defineProps<{
     toolName: string;
 }>();
 
-const nOutputs = computed(() =>
-    props.jobResponse && props.jobResponse.outputs ? props.jobResponse.outputs.length : 0
-);
+const outputs = computed(() => props.jobResponse.outputs.concat(props.jobResponse.output_collections));
 
 const nJobs = computed(() => (props.jobResponse && props.jobResponse.jobs ? props.jobResponse.jobs.length : 0));
 
 const nJobsText = computed(() => (nJobs.value > 1 ? `${nJobs.value} jobs` : `1 job`));
 
-const nOutputsText = computed(() => (nOutputs.value > 1 ? `${nOutputs.value} outputs` : `this output`));
+const nOutputsText = computed(() => (outputs.value.length > 1 ? `${outputs.value.length} outputs` : `this output`));
 </script>
 
 <template>
@@ -29,7 +27,7 @@ const nOutputsText = computed(() => (nOutputs.value > 1 ? `${nOutputs.value} out
         </p>
         <p>It produces {{ nOutputsText }}:</p>
         <ul>
-            <li v-for="item of props.jobResponse.outputs" :key="item.hid">
+            <li v-for="item of outputs" :key="item.hid">
                 <b>{{ item.hid }}: {{ item.name }}</b>
             </li>
         </ul>

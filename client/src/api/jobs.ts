@@ -18,7 +18,10 @@ export interface JobResponse {
         hid: number;
         name: string;
     }[]; // TODO: This is temporary, adjust when API response is typed
-    // output_collections // TODO: Add when API response is typed
+    output_collections: {
+        hid: number;
+        name: string;
+    }[]; // TODO: This is temporary, adjust when API response is typed
     // implicit_collections // TODO: Add when API response is typed
 }
 export interface ResponseVal {
