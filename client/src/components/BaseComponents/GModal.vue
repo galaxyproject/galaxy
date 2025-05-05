@@ -5,6 +5,7 @@ import { faXmark } from "font-awesome-6";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import { type ComponentSize, type ComponentSizeClassList, prefix } from "@/components/BaseComponents/componentVariants";
+import { match } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -100,6 +101,14 @@ function onClose() {
     }
 }
 
+const headingSize = computed(() =>
+    match(props.size ?? "medium", {
+        small: () => "sm" as const,
+        medium: () => "md" as const,
+        large: () => "lg" as const,
+    })
+);
+
 defineExpose({ showModal, hideModal });
 </script>
 
@@ -109,9 +118,17 @@ defineExpose({ showModal, hideModal });
     <dialog ref="dialog" class="g-dialog" :class="sizeClass" @click="onClickDialog">
         <section>
             <header>
-                <Heading v-if="props.title" h2 separator size="lg" class="g-modal-title mb-0">
-                    {{ props.title }}
-                </Heading>
+                <template v-if="props.title">
+                    <Heading
+                        v-if="props.size === 'large'"
+                        h2
+                        :separator="props.size === 'large'"
+                        :size="headingSize"
+                        class="g-modal-title mb-0">
+                        {{ props.title }}
+                    </Heading>
+                </template>
+
                 <slot name="header"></slot>
                 <GButton icon-only class="g-modal-close-button" transparent size="large" @click="hideModal(false)">
                     <FontAwesomeIcon fixed-width :icon="faXmark" />
@@ -143,6 +160,8 @@ defineExpose({ showModal, hideModal });
     border-radius: var(--spacing-2);
     border: none;
 
+    padding: var(--spacing-3);
+
     section {
         height: 100%;
         width: 100%;
@@ -154,6 +173,8 @@ defineExpose({ showModal, hideModal });
             flex-grow: 1;
             overflow: auto;
             max-height: 100%;
+            display: flex;
+            flex-direction: column;
         }
     }
 
@@ -164,12 +185,12 @@ defineExpose({ showModal, hideModal });
 
     &.g-small {
         width: var(--g-modal-width, 600px);
-        height: var(--g-modal-height, 400px);
+        height: var(--g-modal-height, 700px);
     }
 
     &.g-medium {
         width: var(--g-modal-width, 900px);
-        height: var(--g-modal-height, 600px);
+        height: var(--g-modal-height, 750px);
     }
 
     &.g-large {
