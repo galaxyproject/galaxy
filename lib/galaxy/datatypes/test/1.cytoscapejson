@@ -1,6 +1,9 @@
 {
+  "format_version" : "1.0",
+  "generated_by" : "cytoscape-3.1.1",
+  "target_cytoscapejs_version" : "~2.1",
   "elements": {
-    "nodes": [
+  "nodes": [
       { "data": { "id": "n1", "label": "Node 1" } },
       { "data": { "id": "n2", "label": "Node 2" } }
     ],
