@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -18,6 +19,7 @@ import Heading from "@/components/Common/Heading.vue";
 
 const toolStore = useToolStore();
 
+const userStore = useUserStore();
 const props = defineProps({
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array, default: null },
@@ -85,6 +87,7 @@ const toolPanelHeader = computed(() => {
 
 async function initializePanel() {
     try {
+        await userStore.loadUser(false);
         await toolStore.fetchPanels();
         await toolStore.fetchTools();
         await toolStore.initializePanel();

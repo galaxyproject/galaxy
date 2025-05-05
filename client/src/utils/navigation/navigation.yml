@@ -381,7 +381,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
-    edam_title: '[data-title="Apply analytical methods to existing data of a specific type."]'
+    edam_link: 'a[href^="https://edamontology.github.io/edam-browser"]'
     tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'

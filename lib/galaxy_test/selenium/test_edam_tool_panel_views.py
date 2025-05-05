@@ -34,7 +34,7 @@ class TestEdamToolPanelViewsSelenium(SeleniumTestCase):
     def _assert_displaying_edam_operations(self):
         tool_panel = self.components.tool_panel
         tool_panel.toolbox.wait_for_visible()
-        tool_panel.edam_title.wait_for_visible()
+        tool_panel.edam_link.wait_for_present()
         labels = tool_panel.panel_labels.all()
         assert len(labels) > 0
         label0 = labels[0]

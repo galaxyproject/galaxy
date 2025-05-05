@@ -6916,6 +6916,30 @@ steps:
         options = run_workflow["steps"][0]["inputs"][0]["options"]
         assert len(options) >= 1
 
+    @skip_without_tool("filter_param_value")
+    def test_value_restriction_with_filter_param_value(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: text
+     restrictOnConnections: true
+steps:
+  select:
+    tool_id: filter_param_value
+    tool_state:
+      select1: "hg19_value"
+    in:
+      select3: select_text
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        options = run_workflow["steps"][0]["inputs"][0]["options"]
+        assert len(options) == 1
+        assert options[0] == ["hg19", "hg19_value", False]
+
     def test_value_restriction_with_select_and_text_param(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
