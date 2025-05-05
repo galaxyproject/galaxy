@@ -26,7 +26,7 @@ const nOutputsText = computed(() => (outputs.value.length > 1 ? `${outputs.value
             Started tool <b>{{ props.toolName }}</b> and successfully added {{ nJobsText }} to the queue.
         </p>
         <p>It produces {{ nOutputsText }}:</p>
-        <ul>
+        <ul data-description="list of outputs">
             <li v-for="item of outputs" :key="item.hid">
                 <b>{{ item.hid }}: {{ item.name }}</b>
             </li>
@@ -38,12 +38,16 @@ const nOutputsText = computed(() => (outputs.value.length > 1 ? `${outputs.value
         </p>
         <p v-if="nJobs > 1">
             Here is a link to each job:
-            <ExternalLink v-for="job in jobResponse.jobs" :key="job.id" :href="`/jobs/${job.id}/view`">
+            <ExternalLink
+                v-for="job in jobResponse.jobs"
+                :key="job.id"
+                :href="`/jobs/${job.id}/view`"
+                data-description="job link">
                 {{ job.id }}
             </ExternalLink>
         </p>
-        <p v-else-if="jobResponse.jobs[0]">
-            Here is a link to the job:
+        <p v-else-if="jobResponse.jobs[0]" data-description="singular job link">
+            Here is a link to the job: {{ jobResponse.jobs[0]?.id }}
             <RouterLink :to="`/jobs/${jobResponse.jobs[0].id}/view`">
                 {{ jobResponse.jobs[0]?.id }}
             </RouterLink>
