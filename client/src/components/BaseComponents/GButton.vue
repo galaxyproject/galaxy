@@ -45,7 +45,7 @@ function onClick(event: PointerEvent) {
 
 const variantClasses = computed(() => {
     const classObject = {} as ComponentVariantClassList;
-    classObject[prefix(!props.color || (props.transparent && props.disabled) ? "grey" : props.color)] = true;
+    classObject[prefix(props.color ?? "grey")] = true;
     classObject[prefix(props.size ?? "medium")] = true;
     return classObject;
 });
@@ -259,44 +259,28 @@ useAccessibleHover(
     }
 
     &.g-disabled {
-        background-color: var(--color-grey-100);
-        border-color: var(--color-grey-200);
-        color: var(--color-grey-500);
-
-        &:hover,
-        &:focus-visible {
-            background-color: var(--color-grey-100);
-            border-color: var(--color-grey-200);
-
-            &:active {
-                background-color: var(--color-grey-100);
-                border-color: var(--color-grey-200);
-                color: var(--color-grey-500);
-            }
-        }
+        background-color: var(--color-grey-100) !important;
+        border-color: var(--color-grey-200) !important;
+        color: var(--color-grey-500) !important;
 
         &:focus-visible {
-            border-color: var(--color-grey-500);
+            border-color: var(--color-grey-500) !important;
         }
 
         &.g-outline {
-            background-color: var(--background-color);
-            border-color: var(--color-grey-400);
-            color: var(--color-grey-400);
-
-            &:hover,
-            &:focus,
-            &:focus-visible {
-                background-color: var(--background-color);
-                border-color: var(--color-grey-400);
-                color: var(--color-grey-400);
-            }
+            background-color: var(--background-color) !important;
+            border-color: var(--color-grey-400) !important;
+            color: var(--color-grey-400) !important;
 
             &:focus-visible {
-                border-color: var(--color-grey-800);
-                background-color: var(--background-color);
-                color: var(--color-grey-500);
+                border-color: var(--color-grey-800) !important;
+                background-color: var(--background-color) !important;
+                color: var(--color-grey-500) !important;
             }
+        }
+
+        &.g-transparent {
+            background-color: rgb(100% 100% 100% / 0) !important;
         }
     }
 
