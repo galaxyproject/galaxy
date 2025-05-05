@@ -135,9 +135,14 @@ class YamlToolSource(ToolSource):
         return error_on_exit_code()
 
     def parse_help(self) -> Optional[HelpContent]:
-        content = self.root_dict.get("help", None)
-        if content:
-            return HelpContent(format="markdown", content=content)
+        help = self.root_dict.get("help")
+        format = "markdown"
+        if isinstance(help, dict):
+            format = help.get("format", "markdown")
+        if isinstance(help, str):
+            return HelpContent(format=format, content=help)
+        elif help and "content" in help:
+            return HelpContent(format=format, content=help["content"])
         else:
             return None
 
