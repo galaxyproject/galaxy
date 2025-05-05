@@ -5,14 +5,21 @@
  * Will set "aria-describedby" property on linked element.
  */
 
-import type { Instance as PopperInstance, Placement } from "@popperjs/core";
-import { createPopper } from "@popperjs/core";
+import {
+    arrow,
+    autoUpdate,
+    computePosition,
+    type ComputePositionConfig,
+    flip,
+    offset,
+    type Placement,
+    shift,
+} from "@floating-ui/dom";
 import { watchImmediate } from "@vueuse/core";
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { useAccessibleHover } from "@/composables/accessibleHover";
 import { useUid } from "@/composables/utils/uid";
-import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
     /** Optional id override. Will auto generate an id if none is provided */
@@ -26,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const tooltip = ref<HTMLDivElement>();
-const popperInstance = ref<PopperInstance | null>(null);
+const tooltipArrow = ref<HTMLDivElement>();
 const isShowing = ref(false);
 const uid = useUid("g-tooltip");
 const elementId = computed(() => props.id ?? uid.value);
@@ -36,8 +43,6 @@ let previousReference: HTMLElement | null = null;
 watchImmediate(
     () => [props.reference, elementId.value],
     () => {
-        popperInstance.value?.destroy();
-
         if (previousReference !== null) {
             previousReference.removeAttribute("aria-describedby");
         }
@@ -47,39 +52,6 @@ watchImmediate(
         }
 
         previousReference = props.reference;
-
-        if (!props.reference) {
-            return;
-        }
-
-        assertDefined(tooltip.value);
-
-        popperInstance.value = createPopper(props.reference, tooltip.value, {
-            placement: props.placement ?? "top",
-            modifiers: [
-                {
-                    name: "flip",
-                },
-                {
-                    name: "offset",
-                    options: {
-                        offset: [0, 8],
-                    },
-                },
-                {
-                    name: "preventOverflow",
-                    options: {
-                        altBoundary: true,
-                    },
-                },
-                {
-                    name: "arrow",
-                    options: {
-                        padding: 8,
-                    },
-                },
-            ],
-        });
     }
 );
 
@@ -89,23 +61,70 @@ onBeforeUnmount(() => {
 
 function show() {
     isShowing.value = true;
-
-    popperInstance.value?.setOptions((options) => ({
-        ...options,
-        modifiers: [...(options.modifiers ?? []), { name: "eventListeners", enabled: true }],
-    }));
-
-    popperInstance.value?.update();
 }
 
 function hide() {
     isShowing.value = false;
-
-    popperInstance.value?.setOptions((options) => ({
-        ...options,
-        modifiers: [...(options.modifiers ?? []), { name: "eventListeners", enabled: false }],
-    }));
 }
+
+type CSSTransform = `transform: translate(${number}px, ${number}px);`;
+
+const tooltipPositionStyle = ref<CSSTransform>();
+const tooltipArrowPositionStyle = ref<CSSTransform>();
+
+function getComputePositionConfig(arrowElement: HTMLDivElement): Partial<ComputePositionConfig> {
+    return {
+        placement: props.placement ?? "top",
+        middleware: [
+            offset(8),
+            flip({
+                altBoundary: true,
+            }),
+            shift({
+                altBoundary: true,
+            }),
+            arrow({
+                element: arrowElement,
+            }),
+        ],
+    };
+}
+
+const finalPlacement = ref<Placement>("bottom");
+
+async function updateTooltipPosition() {
+    if (!props.reference || !tooltip.value || !tooltipArrow.value) {
+        return;
+    }
+
+    const { x, y, middlewareData, placement } = await computePosition(
+        props.reference,
+        tooltip.value,
+        getComputePositionConfig(tooltipArrow.value)
+    );
+
+    tooltipPositionStyle.value = `transform: translate(${x}px, ${y}px);`;
+
+    if (middlewareData.arrow) {
+        const { x, y } = middlewareData.arrow;
+        tooltipArrowPositionStyle.value = `transform: translate(${x ?? 0}px, ${y ?? 0}px);`;
+    }
+
+    finalPlacement.value = placement;
+}
+
+let cleanupFunction: ReturnType<typeof autoUpdate> | null = null;
+
+watch(
+    () => isShowing.value,
+    () => {
+        cleanupFunction?.();
+
+        if (isShowing.value && props.reference && tooltip.value) {
+            cleanupFunction = autoUpdate(props.reference, tooltip.value, updateTooltipPosition);
+        }
+    }
+);
 
 useAccessibleHover(() => props.reference, show, hide);
 
@@ -122,10 +141,15 @@ defineExpose({
         role="tooltip"
         class="g-tooltip"
         :class="{ 'sr-only': !isShowing }"
+        :style="tooltipPositionStyle"
         :data-show="isShowing">
         <slot></slot>
         {{ props.text ?? "" }}
-        <div class="g-tooltip-arrow" data-popper-arrow></div>
+        <div
+            ref="tooltipArrow"
+            class="g-tooltip-arrow"
+            :style="tooltipArrowPositionStyle"
+            :data-placement="finalPlacement"></div>
     </div>
 </template>
 
@@ -139,6 +163,11 @@ defineExpose({
     pointer-events: none;
     font-weight: 400;
     z-index: 9999;
+
+    width: max-content;
+    position: absolute;
+    top: 0;
+    left: 0;
 
     &:not(.sr-only) {
         display: block;
@@ -154,29 +183,36 @@ defineExpose({
             height: 8px;
             background: inherit;
             z-index: -1;
+
+            top: 0;
+            left: 0;
         }
 
         &::before {
             visibility: visible;
             content: "";
-            transform: translateX(-4px) rotate(45deg);
+            transform: rotate(45deg);
         }
-    }
 
-    &[data-popper-placement^="top"] > .g-tooltip-arrow {
-        bottom: -4px;
-    }
+        &[data-placement^="top"] {
+            top: unset;
+            bottom: -4px;
+        }
 
-    &[data-popper-placement^="bottom"] > .g-tooltip-arrow {
-        top: -4px;
-    }
+        &[data-placement^="bottom"] {
+            top: -4px;
+            bottom: unset;
+        }
 
-    &[data-popper-placement^="left"] > .g-tooltip-arrow {
-        right: -4px;
-    }
+        &[data-placement^="left"] {
+            left: unset;
+            right: -4px;
+        }
 
-    &[data-popper-placement^="right"] > .g-tooltip-arrow {
-        left: -4px;
+        &[data-placement^="right"] {
+            left: -4px;
+            right: unset;
+        }
     }
 }
 </style>
