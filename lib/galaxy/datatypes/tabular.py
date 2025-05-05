@@ -1506,6 +1506,46 @@ class CSV(BaseCSV):
     strict_width = False  # Previous csv type did not check column width
 
 
+@build_sniff_from_prefix
+class GeoCSV(CSV):
+    """
+    CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields.
+    https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#csv
+    """
+
+    file_ext = "geocsv"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "GeoCSV"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Looks for CSV with latitude/longitude headers.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('2.csv')
+        >>> GeoCSV().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.geocsv')
+        >>> GeoCSV().sniff(fname)
+        True
+        """
+        try:
+            with open(file_prefix.filename) as f:
+                # Read first line as header
+                header = f.readline().strip()
+                if not header or "," not in header:
+                    return False
+                fields = [col.strip().lower() for col in header.split(",")]
+                has_lat = any(col in fields for col in ["lat", "latitude"])
+                has_lon = any(col in fields for col in ["lon", "lng", "longitude"])
+                return has_lat and has_lon
+        except Exception:
+            return False
+
+
 @dataproviders.decorators.has_dataproviders
 class TSV(BaseCSV):
     """
