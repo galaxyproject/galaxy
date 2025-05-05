@@ -295,9 +295,12 @@ class NavigatesGalaxy(HasDriver):
         """Return to root Galaxy page and wait for some basic widgets to appear."""
         self.get()
         try:
-            self.components.masthead._.wait_for_visible()
+            self.wait_for_masthead()
         except SeleniumTimeoutException as e:
             raise ClientBuildException(e)
+
+    def wait_for_masthead(self):
+        self.components.masthead._.wait_for_visible()
 
     def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: Optional[str]):
         path = f"workflow_landings/{uuid}?public={public}"
@@ -505,6 +508,10 @@ class NavigatesGalaxy(HasDriver):
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
             contents = self.api_get(f"histories/{history_id}/contents")
+            if contents and isinstance(contents, dict) and "err_msg" in contents:
+                raise Exception(f"Error getting history contents: {contents['err_msg']}")
+            if not isinstance(contents, list):
+                raise Exception(f"Expected list of contents, got {type(contents)} for {contents}")
             return [d["hid"] for d in contents]
 
         def history_has_hid(driver):
