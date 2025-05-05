@@ -46,7 +46,7 @@
     "@vueuse/core": "^10.5.0",
     "@vueuse/math": "^10.9.0",
     "ace-builds": "^1.39.0",
-    "ag-grid-community": "^30",
+    "ag-grid-community": "^31",
     "ag-grid-vue": "^30",
     "assert": "^2.1.0",
     "axios": "^1.6.2",
