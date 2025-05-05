@@ -39,6 +39,10 @@ function toggleSelection(item: ImportableFile) {
 }
 
 const currentListView = computed(() => userStore.currentListViewPreferences.zipFileSelector || "list");
+
+const localFileSizeLimit = computed(() => {
+    return props.zipSource instanceof File ? props.bytesLimit : undefined;
+});
 </script>
 
 <template>
@@ -72,7 +76,7 @@ const currentListView = computed(() => userStore.currentListViewPreferences.zipF
                     v-for="dataset in props.zipContents.files"
                     :key="dataset.path"
                     :file="dataset"
-                    :bytes-limit="props.bytesLimit"
+                    :bytes-limit="localFileSizeLimit"
                     :grid-view="currentListView === 'grid'"
                     :selected="localSelectedItems.includes(dataset)"
                     @select="toggleSelection(dataset)" />
