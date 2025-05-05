@@ -241,7 +241,7 @@ class YamlToolSource(ToolSource):
 
     def to_string(self):
         # TODO: Unit test for dumping/restoring
-        return json.dumps(self.root_dict)
+        return json.dumps(self.root_dict, ensure_ascii=False, sort_keys=False)
 
 
 def _parse_test(i, test_dict) -> ToolSourceTest:
