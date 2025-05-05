@@ -654,6 +654,7 @@ class ToolBox(AbstractToolBox):
                 tools = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=True)
             if tools:
                 tool = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
+                assert tool
                 if len(tools) > 1:
                     tool_version_select_field = self.__build_tool_version_select_field(tools, tool.id, set_selected)
                 break

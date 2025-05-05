@@ -311,12 +311,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version")
+        tool_uuid = kwd.get("tool_uuid")
         history = None
         if history_id := kwd.pop("history_id", None):
             history = self.history_manager.get_owned(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
+        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user, tool_uuid=tool_uuid)
         return tool.to_json(trans, kwd.get("inputs", kwd), history=history)
 
     @web.require_admin
