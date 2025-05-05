@@ -379,7 +379,7 @@ function onAlert(value: string | undefined) {
                     :workflow-building-mode="workflowBuildingMode" />
                 <FormOptionalText
                     v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
                     :value="attrs.value"
@@ -396,7 +396,7 @@ function onAlert(value: string | undefined) {
                                 props.type ?? ''
                             ))
                     "
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
                     :value="attrs.value"
@@ -414,7 +414,7 @@ function onAlert(value: string | undefined) {
                         (props.type === undefined && attrs.options) ||
                         ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? '')
                     "
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :data="attrs.data"
                     :display="attrs.display"
@@ -423,13 +423,13 @@ function onAlert(value: string | undefined) {
                     :multiple="attrs.multiple" />
                 <FormDataUri
                     v-else-if="isUriDataField"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData
                     v-else-if="formDataField"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :loading="loading"
                     :extensions="attrs.extensions"
@@ -446,7 +446,7 @@ function onAlert(value: string | undefined) {
                     @focus="addTempFocus" />
                 <FormDrilldown
                     v-else-if="props.type === 'drill_down'"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :options="attrs.options"
                     :multiple="attrs.multiple" />
