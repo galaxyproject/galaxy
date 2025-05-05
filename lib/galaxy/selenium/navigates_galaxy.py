@@ -2473,6 +2473,11 @@ class NavigatesGalaxy(HasDriver):
     def _fill_configuration_template(
         self, name: str, description: Optional[str], parameters: List[ConfigTemplateParameter]
     ):
+        # create button transiently/rarely isn't becoming clickable though the form looks ready.
+        # In the CI screenshot archive the create button looks white. Is the form being filled
+        # so fast the hooks that bind create to the form elements haven't been setup yet?
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+
         self.components.tool_form.parameter_input(parameter="_meta_name").wait_for_and_send_keys(
             name,
         )
