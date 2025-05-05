@@ -140,6 +140,10 @@ defineExpose({ showModal, hideModal });
 </template>
 
 <style lang="scss" scoped>
+/**
+ * If you want more control over the size of the modal, set the custom props `--g-modal-width` and `--g-modal-height`
+ */
+
 .g-dialog {
     background-color: var(--background-color);
     border-radius: var(--spacing-2);
