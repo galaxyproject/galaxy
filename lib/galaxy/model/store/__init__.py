@@ -2260,11 +2260,13 @@ class DirectoryModelExportStore(ModelExportStore):
     ) -> None:
         self.included_invocations.append(workflow_invocation)
         for input_dataset in workflow_invocation.input_datasets:
-            self.add_dataset(input_dataset.dataset)
+            if input_dataset.dataset:
+                self.add_dataset(input_dataset.dataset)
         for output_dataset in workflow_invocation.output_datasets:
             self.add_dataset(output_dataset.dataset)
         for input_dataset_collection in workflow_invocation.input_dataset_collections:
-            self.export_collection(input_dataset_collection.dataset_collection)
+            if input_dataset_collection.dataset_collection:
+                self.export_collection(input_dataset_collection.dataset_collection)
         for output_dataset_collection in workflow_invocation.output_dataset_collections:
             self.export_collection(output_dataset_collection.dataset_collection)
         for workflow_invocation_step in workflow_invocation.steps:
