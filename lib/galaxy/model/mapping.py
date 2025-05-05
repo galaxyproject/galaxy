@@ -18,6 +18,7 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 
 if TYPE_CHECKING:
+    from galaxy.model import User as GalaxyUser
     from galaxy.objectstore import BaseObjectStore
 
 log = logging.getLogger(__name__)
@@ -26,10 +27,9 @@ metadata = mapper_registry.metadata
 
 
 class GalaxyModelMapping(SharedModelMapping):
+    User: Type["GalaxyUser"]
     security_agent: GalaxyRBACAgent
     thread_local_log: Optional[local]
-    User: Type
-    GalaxySession: Type
 
 
 def init(

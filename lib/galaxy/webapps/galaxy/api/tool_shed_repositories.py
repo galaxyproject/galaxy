@@ -28,7 +28,6 @@ from galaxy.schema.schema import (
     InstalledToolShedRepository,
 )
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -284,7 +283,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             )
             if not repository:
                 raise HTTPBadRequest(detail="Repository not found")
-        irm = InstalledRepositoryManager(app=self.app)
+        irm = self.app.installed_repository_manager
         errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
             action = "removed" if remove_from_disk else "deactivated"

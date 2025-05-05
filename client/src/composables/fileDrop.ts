@@ -18,9 +18,12 @@ export function useFileDrop(
     solo: MaybeRefOrGetter<boolean>,
     idleTime = 800
 ) {
-    /** returns if any bootstrap modal is open */
+    /** returns if any bootstrap modal or workflow run form is open */
     function isAnyModalOpen() {
-        return document.querySelectorAll(".modal.show").length > 0;
+        return (
+            document.querySelectorAll(".modal.show").length > 0 ||
+            document.querySelectorAll(".workflow-run-form-simple").length > 0
+        );
     }
 
     type State = "idle" | "blocked" | "fileDragging";

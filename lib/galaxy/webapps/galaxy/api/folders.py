@@ -10,13 +10,11 @@ from typing import (
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
 from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFolderPayload,
     LibraryAvailablePermissions,
@@ -32,16 +30,12 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import FolderIdPathParam
 from galaxy.webapps.galaxy.services.library_folders import LibraryFoldersService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
-
-FolderIdPathParam = Annotated[
-    LibraryFolderDatabaseIdField,
-    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
-]
 
 UndeleteQueryParam = Annotated[
     Optional[bool], Query(title="Undelete", description="Whether to restore a deleted library folder.")

@@ -7,7 +7,6 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     set_datatypes_registry,
 )
-from galaxy.model.base import transaction
 
 METADATA_LIMIT = 500
 
@@ -31,8 +30,7 @@ def create_bed_data(sa_session, string_size):
     sa_session.add(hda)
     hda.metadata.column_names = [big_string]
     assert hda.metadata.column_names
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     return hda
 
 

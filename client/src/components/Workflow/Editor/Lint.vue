@@ -1,77 +1,76 @@
 <template>
-    <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
-        <template v-slot:header>
-            <div class="mb-1 font-weight-bold">
-                <FontAwesomeIcon icon="magic" class="mr-1" />
-                Best Practices Review
-            </div>
-            <div v-if="showRefactor">
-                <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
-            </div>
+    <ActivityPanel title="Best Practices Review">
+        <template v-if="showRefactor" v-slot:header>
+            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
         </template>
-        <b-card-body>
-            <LintSection
-                :okay="checkAnnotation"
-                success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
+        <LintSection
+            :okay="checkAnnotation"
+            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
-                warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
-                    understand the purpose and usage of the workflow."
-                attribute-link="Annotate your Workflow."
-                @onClick="onAttributes" />
-            <LintSection
-                :okay="checkCreator"
-                success-message="This workflow defines creator information."
-                warning-message="This workflow does not specify creator(s). This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors know how to cite the
-                    workflow authors."
-                attribute-link="Provide Creator Details."
-                @onClick="onAttributes" />
-            <LintSection
-                :okay="checkLicense"
-                success-message="This workflow defines a license."
-                warning-message="This workflow does not specify a license. This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors understand how it
-                    may be used."
-                attribute-link="Specify a License."
-                @onClick="onAttributes" />
-            <LintSection
-                success-message="Workflow parameters are using formal input parameters."
-                warning-message="This workflow uses legacy workflow parameters. They should be replaced with
+            :warning-message="bestPracticeWarningAnnotation"
+            attribute-link="Describe your Workflow."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkAnnotationLength"
+            :success-message="annotationLengthSuccessMessage"
+            :warning-message="bestPracticeWarningAnnotationLength"
+            attribute-link="Shorten your Workflow Description."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkReadme"
+            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
+            :warning-message="bestPracticeWarningReadme"
+            attribute-link="Provide Readme for your Workflow."
+            @onClick="onAttributes('readme')" />
+        <LintSection
+            :okay="checkCreator"
+            success-message="This workflow defines creator information."
+            :warning-message="bestPracticeWarningCreator"
+            attribute-link="Provide Creator Details."
+            @onClick="onAttributes('creator')" />
+        <LintSection
+            :okay="checkLicense"
+            success-message="This workflow defines a license."
+            :warning-message="bestPracticeWarningLicense"
+            attribute-link="Specify a License."
+            @onClick="onAttributes('license')" />
+        <LintSection
+            success-message="Workflow parameters are using formal input parameters."
+            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
                 formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
                 and executing the workflow via the API more robust:"
-                :warning-items="warningUntypedParameters"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onFixUntypedParameter" />
-            <LintSection
-                success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
-                warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
+            :warning-items="warningUntypedParameters"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixUntypedParameter" />
+        <LintSection
+            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
+            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
-                :warning-items="warningDisconnectedInputs"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onFixDisconnectedInput" />
-            <LintSection
-                success-message="All workflow inputs have labels and annotations."
-                warning-message="Some workflow inputs are missing labels and/or annotations:"
-                :warning-items="warningMissingMetadata"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onScrollTo" />
-            <LintSection
-                success-message="This workflow has outputs and they all have valid labels."
-                warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
+            :warning-items="warningDisconnectedInputs"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixDisconnectedInput" />
+        <LintSection
+            success-message="All workflow inputs have labels and annotations."
+            warning-message="Some workflow inputs are missing labels and/or annotations:"
+            :warning-items="warningMissingMetadata"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="openAndFocus" />
+        <LintSection
+            success-message="This workflow has outputs and they all have valid labels."
+            warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
-                :warning-items="warningUnlabeledOutputs"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onFixUnlabeledOutputs" />
-            <div v-if="!hasActiveOutputs">
-                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
-                <span>This workflow has no labeled outputs, please select and label at least one output.</span>
-            </div>
-        </b-card-body>
-    </b-card>
+            :warning-items="warningUnlabeledOutputs"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixUnlabeledOutputs" />
+        <div v-if="!hasActiveOutputs">
+            <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
+            <span>This workflow has no labeled outputs, please select and label at least one output.</span>
+        </div>
+    </ActivityPanel>
 </template>
 
 <script>
@@ -79,7 +78,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import LintSection from "components/Workflow/Editor/LintSection";
 import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import { storeToRefs } from "pinia";
 import Vue from "vue";
@@ -88,6 +86,11 @@ import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
 import {
+    bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
+    bestPracticeWarningCreator,
+    bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
@@ -98,6 +101,9 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import LintSection from "@/components/Workflow/Editor/LintSection.vue";
+
 Vue.use(BootstrapVue);
 
 library.add(faExclamationTriangle);
@@ -107,6 +113,7 @@ export default {
     components: {
         FontAwesomeIcon,
         LintSection,
+        ActivityPanel,
     },
     props: {
         untypedParameters: {
@@ -118,6 +125,10 @@ export default {
             required: true,
         },
         annotation: {
+            type: String,
+            default: null,
+        },
+        readme: {
             type: String,
             default: null,
         },
@@ -136,9 +147,18 @@ export default {
     },
     setup() {
         const stores = useWorkflowStores();
-        const { connectionStore, stepStore } = stores;
+        const { connectionStore, stepStore, stateStore } = stores;
         const { hasActiveOutputs } = storeToRefs(stepStore);
-        return { stores, connectionStore, stepStore, hasActiveOutputs };
+        return { stores, connectionStore, stepStore, hasActiveOutputs, stateStore };
+    },
+    data() {
+        return {
+            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
+            bestPracticeWarningAnnotationLength: bestPracticeWarningAnnotationLength,
+            bestPracticeWarningCreator: bestPracticeWarningCreator,
+            bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
+        };
     },
     computed: {
         showRefactor() {
@@ -148,6 +168,23 @@ export default {
         },
         checkAnnotation() {
             return !!this.annotation;
+        },
+        checkAnnotationLength() {
+            const annotation = this.annotation;
+            if (annotation && annotation.length > 250) {
+                return false;
+            }
+            return true;
+        },
+        annotationLengthSuccessMessage() {
+            if (this.annotation) {
+                return "This workflow has a short description of appropriate length.";
+            } else {
+                return "This workflow does not have a short description.";
+            }
+        },
+        checkReadme() {
+            return !!this.readme;
         },
         checkLicense() {
             return !!this.license;
@@ -182,8 +219,9 @@ export default {
         },
     },
     methods: {
-        onAttributes() {
-            this.$emit("onAttributes");
+        onAttributes(highlight) {
+            const args = { highlight: highlight };
+            this.$emit("onAttributes", args);
         },
         onFixUntypedParameter(item) {
             if (
@@ -218,7 +256,8 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        onScrollTo(item) {
+        openAndFocus(item) {
+            this.stateStore.activeNodeId = item.stepId;
             this.$emit("onScrollTo", item.stepId);
         },
         onHighlight(item) {

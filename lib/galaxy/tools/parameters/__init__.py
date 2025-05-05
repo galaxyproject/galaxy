@@ -12,6 +12,7 @@ from typing import (
 
 from boltons.iterutils import remap
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
@@ -31,6 +32,7 @@ from .grouping import (
 )
 from .workflow_utils import (
     is_runtime_value,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .wrapped import flat_to_nested_state
@@ -174,14 +176,36 @@ def visit_input_values(
         if input.name not in input_values:
             args["error"] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
+
+        # is this good enough ? feels very ugh
+        if new_value == [no_replacement_value]:
+            # Single unspecified value in multiple="true" input with a single null input, pretend it's a singular value
+            new_value = no_replacement_value
+        if isinstance(new_value, list):
+            # Maybe mixed input, I guess tool defaults don't really make sense here ?
+            # Would e.g. be default dataset in multiple="true" input, you wouldn't expect the default to be inserted
+            # if other inputs are connected and provided.
+            new_value = [item if not item == no_replacement_value else None for item in new_value]
+
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
         else:
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
-        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, "value"):
-            input_values[input.name] = input.value
+        elif replace_optional_connections:
+            # Only used in workflow context
+            has_default = hasattr(input, "value")
+            if new_value is value is NO_REPLACEMENT or is_runtime_value(value):
+                # NO_REPLACEMENT means value was connected but left unspecified
+                if has_default:
+                    # Use default if we have one
+                    input_values[input.name] = input.value
+                else:
+                    # Should fail if input is not optional and does not have default value
+                    # Effectively however depends on parameter implementation.
+                    # We might want to raise an exception here, instead of depending on a tool parameter value error.
+                    input_values[input.name] = None
 
     def get_current_case(input, input_values):
         test_parameter = input.test_param
@@ -206,8 +230,8 @@ def visit_input_values(
             values = input_values[input.name] = input_values.get(input.name, [])
             for i, d in enumerate(values):
                 d["__index__"] = i
-                new_name_prefix = name_prefix + "%s_%d|" % (input.name, i)
-                new_label_prefix = label_prefix + "%s %d > " % (input.title, i + 1)
+                new_name_prefix = name_prefix + f"{input.name}_{i}|"
+                new_label_prefix = label_prefix + f"{input.title} {i + 1} > "
                 visit_input_values(
                     input.inputs,
                     d,
@@ -220,6 +244,10 @@ def visit_input_values(
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = f"{name_prefix + input.name}|"
+            if not isinstance(values, dict):
+                raise RequestParameterInvalidException(
+                    f"Invalid value '{values}' submitted for conditional parameter '{name_prefix + input.name}'."
+                )
             case_error = None if get_current_case(input, values) >= 0 else "The selected case is unavailable/invalid."
             callback_helper(
                 input.test_param,
@@ -356,7 +384,7 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
             for d in input_values[input.name]:
                 index = d["__index__"]
-                new_name_prefix = name_prefix + "%s_%d|" % (input.name, index)
+                new_name_prefix = name_prefix + f"{input.name}_{index}|"
                 params_to_incoming(incoming, input.inputs, d, app, new_name_prefix)
         elif isinstance(input, Conditional):
             values = input_values[input.name]
@@ -518,7 +546,9 @@ def populate_state(
                     errors[input.name] = error
                 state[input.name] = value
     else:
-        raise Exception(f"Input format {input_format} not recognized; input_format must be either legacy or 21.01.")
+        raise RequestParameterInvalidException(
+            f"Input format {input_format} not recognized; input_format must be either legacy or 21.01."
+        )
 
 
 def _populate_state_legacy(
@@ -545,7 +575,7 @@ def _populate_state_legacy(
             rep_index = 0
             del group_state[:]
             while True:
-                rep_prefix = "%s_%d" % (key, rep_index)
+                rep_prefix = f"{key}_{rep_index}"
                 rep_min_default = repeat_input.default if repeat_input.default > repeat_input.min else repeat_input.min
                 if (
                     not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys())
@@ -632,7 +662,7 @@ def _populate_state_legacy(
                 group_state.append(new_state_upload)
             for rep_index, rep_state in enumerate(group_state):
                 rep_index = rep_state.get("__index__", rep_index)
-                rep_prefix = "%s_%d|" % (key, rep_index)
+                rep_prefix = f"{key}_{rep_index}|"
                 _populate_state_legacy(
                     request_context,
                     dataset_input.inputs,

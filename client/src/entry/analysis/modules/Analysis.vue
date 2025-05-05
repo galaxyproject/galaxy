@@ -1,8 +1,10 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
+import { useUserStore } from "@/stores/userStore";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -13,6 +15,8 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
+
+const { historyPanelWidth } = storeToRefs(useUserStore());
 
 // methods
 function hideCenter() {
@@ -44,7 +48,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" side="right">
+        <FlexPanel v-if="showPanels" side="right" :reactive-width.sync="historyPanelWidth">
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />

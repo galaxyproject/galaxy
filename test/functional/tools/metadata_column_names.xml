@@ -32,6 +32,7 @@
             <param name="input" value="2.tabular" />
             <output name="output">
                 <metadata name="column_names" value="First,2.tabular"/>
+                <metadata name="column_types" value="int,int,float"/>
             </output>
             <output_collection name="paired_output" type="paired">
                 <element name="forward" ftype="tabular" value="2.tabular">

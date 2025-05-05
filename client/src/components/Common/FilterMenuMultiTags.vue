@@ -6,7 +6,7 @@ import { type ValidFilter } from "@/utils/filtering";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-type FilterType = string | boolean | undefined;
+type FilterType = string[] | undefined;
 
 interface Props {
     name: string;

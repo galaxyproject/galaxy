@@ -8,7 +8,10 @@ from sqlalchemy import (
     true,
 )
 
-from galaxy.model import User
+from galaxy.model import (
+    Role,
+    User,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 
 
@@ -64,3 +67,26 @@ def get_users_for_index(
     else:
         stmt = stmt.where(User.deleted == false())
     return session.scalars(stmt).all()
+
+
+def _cleanup_nonprivate_user_roles(session, user, private_role_id):
+    """
+    Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE;
+    Delete sharing roles that are associated with this user only;
+    Remove user email from sharing role names associated with multiple users.
+
+    Note: this method updates the session without flushing or committing.
+    """
+    user_roles = [ura for ura in user.roles if ura.role_id != private_role_id]
+    for user_role_assoc in user_roles:
+        role = user_role_assoc.role
+        if role.type == Role.types.SHARING:
+            if len(role.users) == 1:
+                # This role is associated with this user only, so we can delete it
+                session.delete(role)
+            elif user.email in role.name:
+                # Remove user email from sharing role's name
+                role.name = role.name.replace(user.email, "[USER PURGED]")
+                session.add(role)
+        # Delete user role association
+        session.delete(user_role_assoc)

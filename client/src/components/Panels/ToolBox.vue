@@ -6,12 +6,9 @@ import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getGalaxyInstance } from "@/app";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
-import { getAppRoot } from "@/onload/loadConfig";
 import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-import { type Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 
 import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
@@ -29,18 +26,15 @@ const emit = defineEmits<{
     (e: "update:panel-query", query: string): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
     (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
-    (e: "onInsertWorkflow", workflowLatestId: string | undefined, workflowName: string): void;
-    (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    panelView: { type: String, required: true },
     showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
-    editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
+    useSearchWorker: { type: Boolean, default: true },
 });
 
 library.add(faEye, faEyeSlash);
@@ -72,17 +66,20 @@ const query = computed({
     },
 });
 
-const { currentPanel, currentPanelView } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
 
 const hasDataManagerSection = computed(() => props.workflow && props.dataManagers && props.dataManagers.length > 0);
 const dataManagerSection = computed(() => {
-    return {
+    const dynamicSection: ToolSectionType = {
+        model_class: "ToolSection",
+        id: "__data_managers",
         name: localize("Data Managers"),
-        elems: props.dataManagers,
+        elems: props.dataManagers as Tool[],
     };
+    return dynamicSection;
 });
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
@@ -102,7 +99,7 @@ const localSectionsById = computed(() => {
     const validToolIdsInCurrentView = Object.keys(localToolsById.value);
 
     // Looking within each `ToolSection`, and filtering on child elements
-    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentPanel.value);
+    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentToolSections.value);
 
     // Looking at each item in the panel now (not within each child)
     return getValidPanelItems(
@@ -132,59 +129,12 @@ const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = c
     }
 });
 
-const favWorkflows = computed(() => {
-    const Galaxy = getGalaxyInstance();
-    const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
-    if (storedWorkflowMenuEntries) {
-        const returnedWfs = [];
-        if (!props.workflow) {
-            returnedWfs.push({
-                title: localize("All workflows") as string,
-                href: `${getAppRoot()}workflows/list`,
-                id: "list",
-            });
-        }
-        const storedWfs = [
-            ...storedWorkflowMenuEntries.map((menuEntry: Workflow) => {
-                return {
-                    id: menuEntry.id,
-                    title: menuEntry.name,
-                    href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
-                };
-            }),
-        ];
-        return returnedWfs.concat(storedWfs);
-    } else {
-        return [];
-    }
-});
-
-const workflowSection = computed(() => {
-    if (props.workflow && props.editorWorkflows.length > 0) {
-        return {
-            name: localize("Workflows"),
-            elems: props.workflow && props.editorWorkflows,
-        };
-    } else {
-        return null;
-    }
-});
-
 const buttonIcon = computed(() => (showSections.value ? faEyeSlash : faEye));
 const buttonText = computed(() => (showSections.value ? localize("Hide Sections") : localize("Show Sections")));
 
 function onInsertModule(module: Record<string, any>, event: Event) {
     event.preventDefault();
     emit("onInsertModule", module.name, module.title);
-}
-
-function onInsertWorkflow(workflow: WorkflowType, event: Event) {
-    event.preventDefault();
-    emit("onInsertWorkflow", workflow.latest_id, workflow.name);
-}
-
-function onInsertWorkflowSteps(workflow: WorkflowType) {
-    emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
 }
 
 function onToolClick(tool: Tool, evt: Event) {
@@ -245,13 +195,14 @@ function onToggle() {
         <div class="unified-panel-controls">
             <ToolSearch
                 :enable-advanced="!props.workflow"
-                :current-panel-view="props.panelView || ''"
+                :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
                 :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"
                 :current-panel="localSectionsById"
                 :query="query"
                 :query-pending="queryPending"
+                :use-worker="useSearchWorker"
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
             <section v-if="!propShowAdvanced">
@@ -307,29 +258,6 @@ function onToggle() {
                             :has-filter-button="hasResults && currentPanelView === 'default'"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />
-                    </div>
-                </div>
-                <ToolSection
-                    v-if="props.workflow && workflowSection"
-                    :key="workflowSection.name"
-                    :category="workflowSection"
-                    section-name="workflows"
-                    :sort-items="false"
-                    operation-icon="fa fa-files-o"
-                    operation-title="Insert individual steps."
-                    :query-filter="queryFilter || undefined"
-                    :disable-filter="true"
-                    @onClick="onInsertWorkflow"
-                    @onOperation="onInsertWorkflowSteps" />
-                <div v-else-if="favWorkflows.length > 0">
-                    <ToolSection :category="{ text: 'Workflows' }" />
-                    <div id="internal-workflows" class="toolSectionBody">
-                        <div class="toolSectionBg" />
-                        <div v-for="wf in favWorkflows" :key="wf.id" class="toolTitle">
-                            <a class="title-link" href="javascript:void(0)" @click="router.push(wf.href)">{{
-                                wf.title
-                            }}</a>
-                        </div>
                     </div>
                 </div>
             </div>

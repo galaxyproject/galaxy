@@ -4,6 +4,10 @@ from json import loads
 import paste.httpexceptions
 
 from galaxy import web
+from galaxy.model import (
+    DataManagerJobAssociation,
+    Job,
+)
 from galaxy.util import (
     nice_size,
     unicodify,
@@ -64,9 +68,7 @@ class DataManager(BaseUIController):
         if data_manager is None:
             return {"message": f"Invalid Data Manager ({data_manager_id}) was requested", "status": "error"}
         jobs = []
-        for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(
-            data_manager_id=data_manager_id
-        ):
+        for assoc in trans.sa_session.query(DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id):
             j = assoc.job
             jobs.append(
                 {
@@ -109,7 +111,7 @@ class DataManager(BaseUIController):
         job_id = kwd.get("id", None)
         try:
             job_id = trans.security.decode_id(job_id)
-            job = trans.sa_session.query(trans.app.model.Job).get(job_id)
+            job = trans.sa_session.query(Job).get(job_id)
         except Exception as e:
             job = None
             log.error(f"Bad job id ({job_id}) passed to job_info: {e}")

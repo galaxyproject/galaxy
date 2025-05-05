@@ -5,7 +5,7 @@ import Vue, { computed, ref } from "vue";
 import { uploadPayload } from "@/utils/upload-payload.js";
 import { uploadSubmit } from "@/utils/upload-submit.js";
 
-import { defaultModel } from "./model.js";
+import { defaultModel } from "./model";
 
 import CompositeRow from "./CompositeRow.vue";
 import UploadSelect from "./UploadSelect.vue";

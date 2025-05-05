@@ -7,13 +7,10 @@ from typing import Optional
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
@@ -25,16 +22,12 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import FolderIdPathParam
 from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
-
-FolderIdPathParam = Annotated[
-    LibraryFolderDatabaseIdField,
-    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
-]
 
 LimitQueryParam: int = Query(default=10, ge=1, title="Limit", description="Maximum number of contents to return.")
 

@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     List,
     Optional,
@@ -119,3 +120,35 @@ class ComputeDatasetHashTaskRequest(Model):
 
 class PurgeDatasetsTaskRequest(Model):
     dataset_ids: List[int]
+
+
+class TaskState(str, Enum):
+    """Enum representing the possible states of a task."""
+
+    PENDING = "PENDING"
+    """The task is waiting for execution."""
+
+    STARTED = "STARTED"
+    """The task has been started."""
+
+    RETRY = "RETRY"
+    """The task is to be retried, possibly because of failure."""
+
+    FAILURE = "FAILURE"
+    """The task raised an exception, or has exceeded the retry limit."""
+
+    SUCCESS = "SUCCESS"
+    """The task executed successfully."""
+
+
+class TaskResult(Model):
+    """Contains information about the result of an asynchronous task."""
+
+    state: TaskState = Field(
+        title="State",
+        description="The current state of the task.",
+    )
+    result: str = Field(
+        title="Result",
+        description="The result message of the task. Empty if the task is still running. If the task failed, this will contain the exception message.",
+    )

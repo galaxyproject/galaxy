@@ -23,7 +23,7 @@ async def fetch_url(
     method: REQUEST_METHOD = "GET",
 ):
     async with session.request(method=method, url=url, params=params, data=data, headers=headers) as response:
-        return await response.json()
+        return await response.json(content_type=None)
 
 
 async def async_request_with_timeout(

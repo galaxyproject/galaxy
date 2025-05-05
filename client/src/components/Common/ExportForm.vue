@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 interface Props {
@@ -60,14 +61,9 @@ const doExport = () => {
 
         <BRow align-h="end">
             <BCol>
-                <BButton
-                    v-localize
-                    class="export-button"
-                    variant="primary"
-                    :disabled="!canExport"
-                    @click.prevent="doExport">
+                <GButton v-localize class="export-button" color="blue" :disabled="!canExport" @click.prevent="doExport">
                     Export
-                </BButton>
+                </GButton>
             </BCol>
         </BRow>
     </div>

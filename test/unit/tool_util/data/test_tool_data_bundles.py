@@ -55,7 +55,7 @@ def test_xml_parsing() -> None:
 
 
 def test_parsing_manual() -> None:
-    with as_file(resource_path(__package__, "example_data_managers/manual.xml")) as path:
+    with as_file(resource_path(__name__, "example_data_managers/manual.xml")) as path:
         tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")
@@ -66,7 +66,7 @@ def test_parsing_manual() -> None:
 
 
 def test_parsing_mothur() -> None:
-    with as_file(resource_path(__package__, "example_data_managers/mothur.xml")) as path:
+    with as_file(resource_path(__name__, "example_data_managers/mothur.xml")) as path:
         tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")

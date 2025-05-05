@@ -722,13 +722,12 @@ class BaseMetadataGenerator:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
                 # into a Galaxy instance, so handle changes to tool dependencies appropriately.
-                installation_target = cast(InstallationTarget, self.app)
-                irm = installation_target.installed_repository_manager
-                (
-                    updated_tool_dependency_names,
-                    deleted_tool_dependency_names,
-                ) = irm.handle_existing_tool_dependencies_that_changed_in_update(
-                    self.repository, original_valid_tool_dependencies_dict, rvs.valid_tool_dependencies_dict
+                assert isinstance(self.app, InstallationTarget)
+                irm = self.app.installed_repository_manager
+                assert self.repository
+                gx_repository = cast(ToolShedRepository, self.repository)
+                irm.handle_existing_tool_dependencies_that_changed_in_update(
+                    gx_repository, original_valid_tool_dependencies_dict, rvs.valid_tool_dependencies_dict
                 )
             metadata_dict["tool_dependencies"] = rvs.valid_tool_dependencies_dict
         if rvs.invalid_tool_dependencies_dict:

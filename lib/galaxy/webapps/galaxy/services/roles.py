@@ -1,5 +1,8 @@
+from typing import Optional
+
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.roles import RoleManager
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     Security,
@@ -14,10 +17,14 @@ from galaxy.webapps.base.controller import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
-def role_to_model(role):
+def role_to_model(role, displayed_name: Optional[str] = None):
     item = role.to_dict(view="element")
     role_id = Security.security.encode_id(role.id)
     item["url"] = url_for("role", id=role_id)
+    # If displayed_name provided, use that value in place of Role.name. It is
+    # used to disambiguate generic role names like "private role".
+    if displayed_name:
+        item["name"] = displayed_name
     return RoleModelResponse(**item)
 
 
@@ -33,7 +40,12 @@ class RolesService(ServiceBase):
 
     def get_index(self, trans: ProvidesUserContext) -> RoleListResponse:
         roles = self.role_manager.list_displayable_roles(trans)
-        return RoleListResponse(root=[role_to_model(r) for r in roles])
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+        data = []
+        for role in roles:
+            displayed_name = private_role_emails.get(role.id, role.name)
+            data.append(role_to_model(role, displayed_name))
+        return RoleListResponse(root=data)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> RoleModelResponse:
         role = self.role_manager.get(trans, id)

@@ -38,7 +38,7 @@
                 </b-button>
             </span>
             <b-button
-                v-if="currentUser.is_admin"
+                v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
                 :to="{

@@ -1,6 +1,6 @@
 """
-    Sorts tabular data on one or more columns. All comments of the file are collected
-    and placed at the beginning of the sorted output file.
+Sorts tabular data on one or more columns. All comments of the file are collected
+and placed at the beginning of the sorted output file.
 """
 
 # 03/05/2013 guerler

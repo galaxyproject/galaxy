@@ -16,7 +16,6 @@ from typing import (
 )
 
 from galaxy import util
-from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import (
     ToolDependency,
     ToolShedRepository,
@@ -146,8 +145,7 @@ class InstalledRepositoryManager:
                     repository_tools_tups,
                 )
         self.context.add(repository)
-        with transaction(self.context):
-            self.context.commit()
+        self.context.commit()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories(
         self, repository: ToolShedRepository
@@ -704,8 +702,7 @@ class InstalledRepositoryManager:
         else:
             repository.status = ToolShedRepository.installation_status.DEACTIVATED
         self.context.add(repository)
-        with transaction(self.context):
-            self.context.commit()
+        self.context.commit()
         return errors
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
@@ -893,8 +890,7 @@ class InstalledRepositoryManager:
                     tool_dependency.status = ToolDependency.installation_status.UNINSTALLED
                     tool_dependency.error_message = None
                     context.add(tool_dependency)
-                    with transaction(context):
-                        context.commit()
+                    context.commit()
                     new_tool_dependency = tool_dependency
                 else:
                     # We have no new tool dependency definition based on a matching dependency name, so remove
@@ -906,6 +902,5 @@ class InstalledRepositoryManager:
                         tool_dependency.name,
                     )
                     context.delete(tool_dependency)
-                    with transaction(context):
-                        context.commit()
+                    context.commit()
         return new_tool_dependency

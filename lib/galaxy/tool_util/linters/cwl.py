@@ -20,7 +20,7 @@ class CWLValid(Linter):
             schema_loader.process_definition(raw_reference)
         except Exception:
             return
-        lint_ctx.info("CWL appears to be valid.")
+        lint_ctx.info("CWL appears to be valid.", linter=cls.name())
 
 
 class CWLInValid(Linter):
@@ -30,7 +30,7 @@ class CWLInValid(Linter):
         try:
             schema_loader.process_definition(raw_reference)
         except Exception as e:
-            lint_ctx.error(f"Failed to valdiate CWL artifact: {e}")
+            lint_ctx.error(f"Failed to valdiate CWL artifact: {e}", linter=cls.name())
 
 
 class CWLVersionMissing(Linter):
@@ -39,7 +39,7 @@ class CWLVersionMissing(Linter):
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version is None:
-            lint_ctx.error("CWL file does not contain a 'cwlVersion'")
+            lint_ctx.error("CWL file does not contain a 'cwlVersion'", linter=cls.name())
 
 
 class CWLVersionUnknown(Linter):
@@ -48,7 +48,9 @@ class CWLVersionUnknown(Linter):
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version not in ["v1.0"]:
-            lint_ctx.warn(f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.")
+            lint_ctx.warn(
+                f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.", linter=cls.name()
+            )
 
 
 class CWLVersionGood(Linter):
@@ -57,7 +59,7 @@ class CWLVersionGood(Linter):
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version in ["v1.0"]:
-            lint_ctx.info(f"Modern CWL version [{cwl_version}].")
+            lint_ctx.info(f"Modern CWL version [{cwl_version}].", linter=cls.name())
 
 
 class CWLDockerMissing(Linter):
@@ -65,7 +67,7 @@ class CWLDockerMissing(Linter):
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, containers, *_ = tool_source.parse_requirements_and_containers()
         if len(containers) == 0:
-            lint_ctx.warn("Tool does not specify a DockerPull source.")
+            lint_ctx.warn("Tool does not specify a DockerPull source.", linter=cls.name())
 
 
 class CWLDockerGood(Linter):
@@ -74,7 +76,7 @@ class CWLDockerGood(Linter):
         _, containers, *_ = tool_source.parse_requirements_and_containers()
         if len(containers) > 0:
             identifier = containers[0].identifier
-            lint_ctx.info(f"Tool will run in Docker image [{identifier}].")
+            lint_ctx.info(f"Tool will run in Docker image [{identifier}].", linter=cls.name())
 
 
 class CWLDescriptionMissing(Linter):
@@ -82,7 +84,7 @@ class CWLDescriptionMissing(Linter):
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         help = tool_source.parse_help()
         if not help:
-            lint_ctx.warn("Description of tool is empty or absent.")
+            lint_ctx.warn("Description of tool is empty or absent.", linter=cls.name())
 
 
 class CWLHelpTODO(Linter):
@@ -90,4 +92,4 @@ class CWLHelpTODO(Linter):
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         help = tool_source.parse_help()
         if help and "TODO" in help.content:
-            lint_ctx.warn("Help contains TODO text.")
+            lint_ctx.warn("Help contains TODO text.", linter=cls.name())

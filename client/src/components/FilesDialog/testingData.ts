@@ -69,6 +69,20 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             sorting: false,
         },
     },
+    {
+        id: "c5504eb8-51cf-4b44-88f8-24347c031f52",
+        type: "ftp",
+        label: "My own FTP",
+        doc: "This FTP is accessible only by me",
+        browsable: true,
+        writable: true,
+        supports: {
+            pagination: true,
+            search: true,
+            sorting: false,
+        },
+        uri_root: "gxuserfiles://c5504eb8-51cf-4b44-88f8-24347c031f52",
+    },
 ];
 
 export const pdbResponse: RemoteFilesList = [

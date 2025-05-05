@@ -42,13 +42,13 @@ from ..container_classes import (
 )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
-    DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
     mull_targets,
 )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
+    DEFAULT_CHANNELS,
     default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,
@@ -738,7 +738,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self._mulled_kwds["channels"] = default_mulled_conda_channels_from_env() or self._get_config_option(
             "mulled_channels", DEFAULT_CHANNELS
@@ -789,7 +789,7 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
             "namespace": "local",
             "singularity": True,
             "singularity_image_dir": self.cache_directory.path,
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self.involucro_context = InvolucroContext(**self._involucro_context_kwds)
         auto_init = self._get_config_option("involucro_auto_init", True)

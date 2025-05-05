@@ -18,6 +18,7 @@ from galaxy.jobs.runners.util.job_script import (
     ScriptIntegrityChecks,
     write_script,
 )
+from galaxy.model import Dataset
 from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,
@@ -261,7 +262,7 @@ def __handle_metadata(
     metadata_kwds = remote_command_params.get("metadata_kwds", {})
     exec_dir = metadata_kwds.get("exec_dir", abspath(getcwd()))
     tmp_dir = metadata_kwds.get("tmp_dir", job_wrapper.working_directory)
-    dataset_files_path = metadata_kwds.get("dataset_files_path", runner.app.model.Dataset.file_path)
+    dataset_files_path = metadata_kwds.get("dataset_files_path", Dataset.file_path)
     output_fnames = metadata_kwds.get("output_fnames", job_wrapper.job_io.get_output_fnames())
     config_root = metadata_kwds.get("config_root", None)
     config_file = metadata_kwds.get("config_file", None)

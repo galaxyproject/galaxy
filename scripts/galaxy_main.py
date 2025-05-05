@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Entry point for starting Galaxy without starting as part of a web server.
+"""Entry point for starting Galaxy without starting as part of a web server.
 
 Example Usage: Start a job/workflow handler without a web server and with
 a given name using.

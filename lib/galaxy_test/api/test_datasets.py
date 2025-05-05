@@ -19,10 +19,12 @@ from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
+    requires_new_library,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_datatype,
     skip_without_tool,
 )
@@ -47,6 +49,7 @@ class TestDatasetsApi(ApiTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_index(self):
@@ -706,6 +709,21 @@ class TestDatasetsApi(ApiTestCase):
         for purged_source_id in expected_purged_source_ids:
             self.dataset_populator.wait_for_purge(history_id, purged_source_id["id"])
 
+    @requires_new_library
+    def test_delete_batch_lddas(self):
+        # Create a library dataset
+        ld = self.library_populator.new_library_dataset("lda_test_library")
+        ldda_id = ld["ldda_id"]
+
+        # Delete the library dataset using the delete_batch endpoint
+        delete_payload = {"datasets": [{"id": ldda_id, "src": "ldda"}]}
+        deleted_result = self._delete_batch_with_payload(delete_payload)
+        assert deleted_result["success_count"] == 1
+
+        # Ensure the library dataset is deleted
+        library_dataset = self.library_populator.show_ldda(ldda_id=ldda_id)
+        assert library_dataset["deleted"] is True
+
     def test_delete_batch_error(self):
         num_datasets = 4
         dataset_map: Dict[int, str] = {}
@@ -819,9 +837,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_storage_show(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
-        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
-        dataset_id = hda_details["dataset_id"]
-        storage_info_dict = self.dataset_populator.dataset_storage_info(dataset_id)
+        storage_info_dict = self.dataset_populator.dataset_storage_info(hda["id"])
         assert_has_keys(storage_info_dict, "object_store_id", "name", "description")
 
     def test_storage_show_on_discarded(self, history_id):

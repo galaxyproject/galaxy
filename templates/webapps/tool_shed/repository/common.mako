@@ -563,7 +563,7 @@
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import asbool
-        from tool_shed.util.repository_util import get_repository_by_name_and_owner
+        from tool_shed.webapp.model.db import get_repository_by_name_and_owner
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -590,7 +590,7 @@
         else:
             # We're in the tool shed.
             cell_type = 'td'
-            rd = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+            rd = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
     %>
     <tr class="datasetRow"
         %if parent is not None:

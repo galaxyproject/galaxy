@@ -65,7 +65,7 @@ RECOMMENDED_LICENSES = [
     "MPL-2.0",
     "PDDL-1.0",
 ]
-SPDX_LICENSES_STRING = resource_string(__package__, "licenses.json")
+SPDX_LICENSES_STRING = resource_string(__name__, "licenses.json")
 SPDX_LICENSES = json.loads(SPDX_LICENSES_STRING)
 for license in SPDX_LICENSES["licenses"]:
     license["recommended"] = license["licenseId"] in RECOMMENDED_LICENSES

@@ -8,7 +8,6 @@ from galaxy.model import (
     History,
     Job,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
@@ -188,6 +187,5 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     )
     outputs.append(hdca)
     # Following flushed needed for an ID.
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     target["destination"]["object_id"] = hdca.id

@@ -55,9 +55,9 @@ const {
     isRunning,
     isCompleted,
     hasFailed,
+    failureReason,
     requestHasFailed,
     storedTaskId,
-    status,
     hasExpired,
     expirationDate,
     monitoringData,
@@ -142,8 +142,8 @@ function dismissAlert() {
         </BAlert>
         <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>
-            <span v-if="status">
-                Reason: <b>{{ status }}</b>
+            <span v-if="failureReason">
+                Reason: <b>{{ failureReason }}</b>
             </span>
         </BAlert>
         <BAlert v-else-if="requestHasFailed" variant="danger" show dismissible @dismissed="dismissAlert">

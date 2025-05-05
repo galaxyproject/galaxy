@@ -5,7 +5,6 @@ from pathlib import Path
 
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesApp
-from galaxy.model.base import transaction
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util.unittest import TestCase
 
@@ -141,5 +140,4 @@ class TestErrorReporter(TestCase, UsesApp):
     def _commit_objects(self, objects):
         session = self.app.model.context
         session.add_all(objects)
-        with transaction(session):
-            session.commit()
+        session.commit()

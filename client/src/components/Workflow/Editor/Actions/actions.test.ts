@@ -269,11 +269,8 @@ describe("Workflow Undo Redo Actions", () => {
 
         it("RemoveStepAction", () => {
             const step = addStep();
-            const showAttributesCallback = jest.fn();
-            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
+            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, step);
             testUndoRedo(action);
-
-            expect(showAttributesCallback).toBeCalledTimes(2);
         });
 
         it("CopyStepAction", () => {

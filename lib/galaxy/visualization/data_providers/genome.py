@@ -4,6 +4,7 @@ Data providers for genome visualizations.
 
 import abc
 import itertools
+import logging
 import math
 import os
 import random
@@ -43,6 +44,8 @@ from galaxy.exceptions import MessageException
 from galaxy.model import DatasetInstance
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
+
+log = logging.getLogger(__name__)
 
 IntWebParam = Union[str, int]
 
@@ -234,7 +237,12 @@ class GenomeDataProvider(BaseDataProvider):
         start, end = int(start), int(end)
         with self.open_data_file() as data_file:
             iterator = self.get_iterator(data_file, chrom, start, end, **kwargs)
-            data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
+            try:
+                data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
+            except ValueError as e:
+                err_msg = f"Could not return data, error was '{e}'"
+                log.warning(err_msg, exc_info=True)
+                raise MessageException(err_msg)
         return data
 
     def get_genome_data(self, chroms_info, **kwargs):
@@ -251,7 +259,7 @@ class GenomeDataProvider(BaseDataProvider):
             # create a dummy dict if necessary.
             if not chrom_data:
                 chrom_data = {"data": None}
-            chrom_data["region"] = "%s:%i-%i" % (chrom, 0, chrom_len)
+            chrom_data["region"] = f"{chrom}:{0}-{chrom_len}"
             genome_data.append(chrom_data)
 
         return {"data": genome_data, "dataset_type": self.dataset_type}
@@ -970,7 +978,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                     pair = paired_pending[qname]
                     results.append(
                         [
-                            hash("%i_%s" % (pair["start"], qname)),
+                            hash("{}_{}".format(pair["start"], qname)),
                             pair["start"],
                             read.pos + read_len,
                             qname,
@@ -997,7 +1005,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             else:
                 results.append(
                     [
-                        hash("%i_%s" % (read.pos, qname)),
+                        hash(f"{read.pos}_{qname}"),
                         read.pos,
                         read.pos + read_len,
                         qname,
@@ -1028,9 +1036,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                 r1 = [read["start"], read["end"], read["cigar"], read["strand"], read["seq"]]
                 r2 = [read["mate_start"], read["mate_start"]]
 
-            results.append(
-                [hash("%i_%s" % (read_start, qname)), read_start, read_end, qname, r1, r2, [read["mapq"], 125]]
-            )
+            results.append([hash(f"{read_start}_{qname}"), read_start, read_end, qname, r1, r2, [read["mapq"], 125]])
 
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
@@ -1052,7 +1058,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             cigar_ops = "MIDNSHP=X"
             read_cigar = ""
             for op_tuple in read[cigar_field]:
-                read_cigar += "%i%s" % (op_tuple[1], cigar_ops[op_tuple[0]])
+                read_cigar += f"{op_tuple[1]}{cigar_ops[op_tuple[0]]}"
             read[cigar_field] = read_cigar
 
         # Choose method for processing reads. Use reference-based compression

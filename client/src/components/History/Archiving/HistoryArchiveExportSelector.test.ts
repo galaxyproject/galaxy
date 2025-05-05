@@ -29,7 +29,7 @@ const ARCHIVE_HISTORY_BTN = "#archive-history-btn";
 const CONFIRM_DELETE_CHECKBOX = "[type='checkbox']";
 
 async function mountComponentWithHistory(history: HistorySummary) {
-    const wrapper = shallowMount(HistoryArchiveExportSelector, {
+    const wrapper = shallowMount(HistoryArchiveExportSelector as object, {
         propsData: { history },
         localVue,
         stubs: {

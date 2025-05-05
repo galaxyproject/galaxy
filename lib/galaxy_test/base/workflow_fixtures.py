@@ -617,6 +617,7 @@ inputs:
   int_input:
     type: integer
     default: 3
+    optional: true
 steps:
   random:
     tool_id: random_lines1

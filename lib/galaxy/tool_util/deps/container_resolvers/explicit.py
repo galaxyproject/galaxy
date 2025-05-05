@@ -4,7 +4,6 @@ import copy
 import logging
 import os
 from typing import (
-    cast,
     Container,
     Optional,
     TYPE_CHECKING,
@@ -97,7 +96,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
         a correct container. We use singularity here to fetch docker containers,
         hence the container_description hack here.
         """
-        for container_description in tool_info.container_descriptions:  # type: ContainerDescription
+        for container_description in tool_info.container_descriptions:
             container_description = copy.copy(container_description)
             if container_description.type == "docker":
                 container_description.type = self.container_type
@@ -106,7 +105,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 return None
             if not self.cli_available:
                 return container_description
-            image_id = cast(str, container_description.identifier)
+            image_id = container_description.identifier
             cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
             if install and not os.path.exists(cache_path):
                 destination_info = {}

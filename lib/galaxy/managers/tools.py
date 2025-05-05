@@ -1,5 +1,7 @@
 import logging
 from typing import (
+    Any,
+    Dict,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -28,9 +30,10 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
+    from galaxy.managers.context import ProvidesUserContext
 
 
-class DynamicToolManager(ModelManager):
+class DynamicToolManager(ModelManager[model.DynamicTool]):
     """Manages dynamic tools stored in Galaxy's database."""
 
     model_class = model.DynamicTool
@@ -47,7 +50,7 @@ class DynamicToolManager(ModelManager):
         stmt = select(DynamicTool).where(DynamicTool.id == object_id)
         return self.session().scalars(stmt).one_or_none()
 
-    def create_tool(self, trans, tool_payload, allow_load=True):
+    def create_tool(self, trans: "ProvidesUserContext", tool_payload: Dict[str, Any], allow_load: bool = True):
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."

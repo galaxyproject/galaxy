@@ -25,10 +25,7 @@ from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -190,8 +187,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2
         sa_session.add(output_hda)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         job = model.Job()
         job.history = history
         ensure_object_added_to_session(job, object_in_session=history)
@@ -201,8 +197,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session.add(job)
         job.add_input_dataset("input1", hda)
         job.add_output_dataset("output1", output_hda)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         self._app.object_store.create(output_hda.dataset)
         self._app.object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
         working_directory = self._app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
@@ -218,8 +213,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         job.state = state
         sa_session = self.sa_session
         sa_session.add(job)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
 
 def _assert_insufficient_permissions(response):

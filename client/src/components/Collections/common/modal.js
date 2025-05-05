@@ -17,8 +17,14 @@ export function collectionCreatorModalSetup(options, Galaxy = null) {
     });
     const showEl = function (el) {
         const close_event = options.closing_events === undefined || options.closing_events;
+        const title = options.title || _l("Create a collection");
+        const titleSuffix = options.historyName ? `From history: <b>${options.historyName}</b>` : "";
+        const titleHtml = `<div class='d-flex justify-content-between unselectable'>
+                <span>${title}</span>
+                <span>${titleSuffix}</span>
+            </div>`;
         modal.show({
-            title: options.title || _l("Create a collection"),
+            title: titleHtml,
             body: el,
             width: "85%",
             height: "100%",

@@ -317,14 +317,15 @@
                                         >{{ mappingTargets()[target].label }}</a
                                     >
                                 </div>
-                                <b-button
+                                <GButton
                                     v-if="!hasActiveMappingEdit"
-                                    v-b-tooltip.hover.bottom
+                                    tooltip
+                                    tooltip-placement="bottom"
                                     :title="titleApplyColumnDefinitions"
                                     class="rule-mapping-ok"
-                                    @click="displayRuleType = null"
-                                    >{{ l("Apply") }}</b-button
-                                >
+                                    @click="displayRuleType = null">
+                                    {{ l("Apply") }}
+                                </GButton>
                             </div>
                         </div>
                         <div v-if="displayRuleType == null" class="rule-summary">
@@ -462,15 +463,15 @@
             </div>
         </RuleModalMiddle>
         <RuleModalFooter v-if="ruleView == 'source'">
-            <b-button v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">{{
-                l("Cancel")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">{{
-                l("Reset")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">{{
-                l("Apply")
-            }}</b-button>
+            <GButton tooltip :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">
+                {{ l("Cancel") }}
+            </GButton>
+            <GButton tooltip :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </GButton>
+            <GButton tooltip :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">
+                {{ l("Apply") }}
+            </GButton>
         </RuleModalFooter>
         <RuleModalFooter v-else-if="ruleView == 'normal'">
             <template v-slot:inputs>
@@ -505,27 +506,28 @@
                 </div>
             </template>
             <b-row class="mx-auto">
-                <b-button
-                    :help="titleCancel"
+                <GButton
+                    tooltip
+                    :title="titleCancel"
                     class="creator-cancel-btn rule-btn-cancel"
                     tabindex="-1"
-                    @click="cancel"
-                    >{{ l("Cancel") }}</b-button
-                >
+                    @click="cancel">
+                    {{ l("Cancel") }}
+                </GButton>
 
                 <TooltipOnHover class="menu-option" :title="titleReset">
-                    <b-button class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">{{
-                        l("Reset")
-                    }}</b-button>
+                    <GButton class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">
+                        {{ l("Reset") }}
+                    </GButton>
                 </TooltipOnHover>
                 <TooltipOnHover class="menu-option" :disabled="!validInput" :title="titleFinish">
-                    <b-button
+                    <GButton
                         class="create-collection rule-btn-okay"
-                        variant="primary"
+                        color="blue"
                         :disabled="!validInput"
-                        @click="createCollection"
-                        >{{ finishButtonTitle }}</b-button
-                    >
+                        @click="createCollection">
+                        {{ finishButtonTitle }}
+                    </GButton>
                 </TooltipOnHover>
             </b-row>
         </RuleModalFooter>
@@ -546,7 +548,7 @@
             }}
         </RuleModalHeader>
         <RuleModalFooter>
-            <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</b-button>
+            <GButton class="creator-cancel-btn" tabindex="-1" @click="cancel"> {{ l("Close") }} </GButton>
         </RuleModalFooter>
     </StateDiv>
     <StateDiv v-else-if="state == 'error'" class="rule-collection-builder">
@@ -556,15 +558,14 @@
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
         <RuleModalFooter>
-            <b-button v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
-                l("Close")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{
-                l("Okay")
-            }}</b-button>
+            <GButton tooltip :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">
+                {{ l("Close") }}
+            </GButton>
+            <GButton tooltip :title="titleErrorOkay" tabindex="-1" @click="state = 'build'"> {{ l("Okay") }} </GButton>
         </RuleModalFooter>
     </StateDiv>
 </template>
+
 <script>
 import HotTable from "@handsontable/vue";
 import { getGalaxyInstance } from "app";
@@ -589,10 +590,13 @@ import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocation
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
-import { refreshContentsWrapper } from "utils/data";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { errorMessageAsString } from "@/utils/simple-error";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
+
+import GButton from "./BaseComponents/GButton.vue";
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);
@@ -624,6 +628,7 @@ export default {
         RuleModalMiddle,
         RuleModalFooter,
         Select2,
+        GButton,
     },
     mixins: [SaveRules],
     props: {
@@ -1329,7 +1334,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            refreshContentsWrapper();
+            startWatchingHistory();
             this.waitOnJob(response);
         },
         waitOnJob(response) {
@@ -1345,7 +1350,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    refreshContentsWrapper();
+                    startWatchingHistory();
                     this.oncreate();
                 }
             };
@@ -1373,7 +1378,7 @@ export default {
             this.state = "error";
             if (error.response) {
                 console.log(error.response);
-                this.errorMessage = error.response.data.err_msg;
+                this.errorMessage = errorMessageAsString(error);
             } else {
                 console.log(error);
                 this.errorMessage = "Unknown error encountered: " + error;

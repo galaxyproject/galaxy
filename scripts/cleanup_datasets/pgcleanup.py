@@ -401,7 +401,8 @@ class RequiresDiskUsageRecalculation:
             statements = calculate_user_disk_usage_statements(user_id, quota_source_map)
 
             for sql, args in statements:
-                sql, _ = re.subn(r"\:([\w]+)", r"%(\1)s", sql)
+                sql = sql.replace("%", "%%")
+                sql = re.sub(r"\:([\w]+)", r"%(\1)s", sql)
                 new_args = {}
                 for key, val in args.items():
                     if isinstance(val, list):

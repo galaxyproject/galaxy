@@ -9,7 +9,7 @@ const localVue = getLocalVue(true);
 
 describe("TemplateSummaryPopover", () => {
     it("should render a secrets for for file source templates", async () => {
-        const wrapper = shallowMount(TemplateSummaryPopover, {
+        const wrapper = shallowMount(TemplateSummaryPopover as object, {
             propsData: {
                 template: STANDARD_FILE_SOURCE_TEMPLATE,
                 target: "popover-target",

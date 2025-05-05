@@ -45,6 +45,7 @@ from typing import (
     Optional,
     overload,
     Tuple,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -75,6 +76,7 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+    from lxml.etree import DocumentInvalid
 
     # lxml.etree.Element is a function that returns a new instance of the
     # lxml.etree._Element class. This class doesn't have a proper __init__()
@@ -123,6 +125,10 @@ except ImportError:
         XML,
     )
 
+    class DocumentInvalid(Exception):  # type: ignore[no-redef]
+        pass
+
+
 from . import requests
 from .custom_logging import get_logger
 from .inflection import Inflector
@@ -141,6 +147,9 @@ except AttributeError:
     def shlex_join(split_command):
         return " ".join(map(shlex.quote, split_command))
 
+
+if TYPE_CHECKING:
+    from galaxy.util.resources import Traversable
 
 inflector = Inflector()
 
@@ -171,6 +180,8 @@ RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 defaultdict = collections.defaultdict
 
 UNKNOWN = "unknown"
+
+DOI_MAX_LENGTH = 200  # This is a reasonable limit. The DOI spec does not set a limit.
 
 
 def str_removeprefix(s: str, prefix: str):
@@ -305,7 +316,10 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
         yield data
 
 
-def chunk_iterable(it: Iterable, size: int = 1000) -> Iterator[tuple]:
+ItemType = TypeVar("ItemType")
+
+
+def chunk_iterable(it: Iterable[ItemType], size: int = 1000) -> Iterator[Tuple[ItemType, ...]]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -333,7 +347,10 @@ def unique_id(KEY_SIZE=128):
 
 
 def parse_xml(
-    fname: StrPath, strip_whitespace=True, remove_comments=True, schemafname: Union[StrPath, None] = None
+    fname: Union[StrPath, "Traversable"],
+    strip_whitespace: bool = True,
+    remove_comments: bool = True,
+    schemafname: Union[StrPath, None] = None,
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
@@ -348,8 +365,10 @@ def parse_xml(
             schema_root = etree.XML(schema_file.read())
             schema = etree.XMLSchema(schema_root)
 
+    source = Path(fname) if isinstance(fname, (str, os.PathLike)) else fname
     try:
-        tree = cast(ElementTree, etree.parse(str(fname), parser=parser))
+        with source.open("rb") as f:
+            tree = cast(ElementTree, etree.parse(f, parser=parser))
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -359,15 +378,10 @@ def parse_xml(
                     elem.tail = elem.tail.strip()
         if schema:
             schema.assertValid(tree)
-    except OSError as e:
-        if e.errno is None and not os.path.exists(fname):  # type: ignore[unreachable]
-            # lxml doesn't set errno
-            e.errno = errno.ENOENT  # type: ignore[unreachable]
-        raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
-    except etree.DocumentInvalid:
+    except DocumentInvalid:
         log.exception("Validation of file %s failed", fname)
         raise
     return tree
@@ -525,9 +539,7 @@ def shrink_stream_by_size(
                 rval = value.read(size)
                 value.seek(start)
                 return rval
-            raise ValueError(
-                "With the provided join_by value (%s), the minimum size value is %i." % (join_by, min_size)
-            )
+            raise ValueError(f"With the provided join_by value ({join_by}), the minimum size value is {min_size}.")
         left_index = right_index = int((size - len_join_by) / 2)
         if left_index + right_index + len_join_by < size:
             if left_larger:
@@ -566,9 +578,7 @@ def shrink_string_by_size(
                 return value[:size]
             elif end_on_size_error:
                 return value[-size:]
-            raise ValueError(
-                "With the provided join_by value (%s), the minimum size value is %i." % (join_by, min_size)
-            )
+            raise ValueError(f"With the provided join_by value ({join_by}), the minimum size value is {min_size}.")
         left_index = right_index = int((size - len_join_by) / 2)
         if left_index + right_index + len_join_by < size:
             if left_larger:
@@ -1073,9 +1083,6 @@ def string_as_bool_or_none(string):
         return False
 
 
-ItemType = TypeVar("ItemType")
-
-
 @overload
 def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List: ...
 
@@ -1113,7 +1120,9 @@ def listify(item: Any, do_strip: bool = False) -> List:
     """
     if not item:
         return []
-    elif isinstance(item, (list, tuple)):
+    elif isinstance(item, list):
+        return item
+    elif isinstance(item, tuple):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:
@@ -1540,7 +1549,7 @@ def nice_size(size: Union[float, int, str, Decimal]) -> str:
         return "??? bytes"
     size, prefix = metric_prefix(size, 1024)
     if prefix == "":
-        return "%d bytes" % size
+        return f"{int(size)} bytes"
     else:
         return f"{size:.1f} {prefix}B"
 
@@ -1841,7 +1850,7 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
         parsed_url.scheme = scheme
     assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {parsed_url.scheme}"
     if port != 80:
-        url = "%s://%s:%d/%s" % (parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
+        url = "{}://{}:{}/{}".format(parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
     else:
         url = f"{parsed_url.scheme}://{parsed_url.netloc.rstrip('/')}/{parsed_url.path.lstrip('/')}"
     if len(pathspec) > 0:
@@ -2015,3 +2024,13 @@ def to_content_disposition(target: str) -> str:
     sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
     utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
     return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
+
+
+def validate_doi(doi: str) -> bool:
+    if len(doi) > DOI_MAX_LENGTH:
+        return False
+    prefix = "https://doi.org/|doi.org/|doi:"
+    doi_prefix = r"10\.\d+"
+    doi_suffix = r"\S+"
+    doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
+    return bool(doi_re.match(doi))

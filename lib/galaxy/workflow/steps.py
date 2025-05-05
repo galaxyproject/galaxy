@@ -1,4 +1,4 @@
-""" This module contains utility methods for reasoning about and ordering
+"""This module contains utility methods for reasoning about and ordering
 workflow steps.
 """
 

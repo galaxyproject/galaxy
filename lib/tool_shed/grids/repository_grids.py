@@ -16,9 +16,9 @@ from galaxy.web.legacy_framework import grids
 from tool_shed.util import (
     hg_util,
     metadata_util,
-    repository_util,
 )
 from tool_shed.webapp import model
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
 
@@ -1079,9 +1079,7 @@ class RepositoryDependenciesGrid(RepositoryMetadataGrid):
                         for rd_tup in sorted_rd_tups:
                             name, owner, changeset_revision = rd_tup[1:4]
                             rd_line = ""
-                            required_repository = repository_util.get_repository_by_name_and_owner(
-                                trans.app, name, owner
-                            )
+                            required_repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
                             if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id(required_repository.id)
                                 required_repository_metadata = (

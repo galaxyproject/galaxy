@@ -22,7 +22,6 @@ import { storeToRefs } from "pinia";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
-import { withPrefix } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
 
 import PageHtml from "./PageHtml.vue";
@@ -56,16 +55,13 @@ export default {
     },
     computed: {
         userOwnsPage() {
-            return this.currentUser.username === this.page.username;
+            return this.currentUser?.username === this.page.username;
         },
         dataUrl() {
             return `/api/pages/${this.pageId}`;
         },
         exportUrl() {
             return `${this.dataUrl}.pdf`;
-        },
-        editUrl() {
-            return `/pages/editor?id=${this.pageId}`;
         },
     },
     created() {
@@ -75,7 +71,7 @@ export default {
     },
     methods: {
         onEdit() {
-            window.location = withPrefix(this.editUrl);
+            this.$router.push(`/pages/editor?id=${this.pageId}`);
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;

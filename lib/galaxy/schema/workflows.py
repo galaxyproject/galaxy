@@ -1,7 +1,6 @@
 import json
 from typing import (
     Any,
-    cast,
     Dict,
     List,
     Optional,
@@ -44,7 +43,7 @@ STEP_PARAMETERS_NORMALIZED_DESCRIPTION = "Indicates if legacy parameters are alr
 STEP_PARAMETERS_TITLE = "Legacy Step Parameters"
 STEP_PARAMETERS_DESCRIPTION = "Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead."
 ReplacementParametersField = Field(
-    {},
+    None,
     title="Replacement Parameters",
     description="Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters",
 )
@@ -69,7 +68,7 @@ PreferredOutputsObjectStoreIdField = Field(
     description="The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.",
 )
 ResourceParametersField = Field(
-    {},
+    None,
     title="Resource Parameters",
     description="If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.",
 )
@@ -81,8 +80,7 @@ def validateInputsBy(inputsBy: Optional[str]) -> Optional[str]:
     if inputsBy is not None:
         if not isinstance(inputsBy, str):
             raise ValueError(f"Invalid type for inputsBy {inputsBy}")
-        inputsByStr = cast(str, inputsBy)
-        inputsByArray: List[str] = inputsByStr.split("|")
+        inputsByArray: List[str] = inputsBy.split("|")
         for inputsByItem in inputsByArray:
             if inputsByItem not in VALID_INPUTS_BY_ITEMS:
                 raise ValueError(f"Invalid inputsBy delineation {inputsByItem}")
@@ -225,6 +223,14 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),
     )
+    creator_deleted: bool = Field(
+        ...,
+        title="Creator deleted",
+        description="Whether the creator of this Workflow has been deleted.",
+    )
+    doi: Optional[List[str]] = Field(
+        None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
+    )
     steps: Dict[
         int,
         Annotated[
@@ -252,6 +258,16 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         ...,
         title="Email Hash",
         description="The hash of the email of the creator of this workflow",
+    )
+    readme: Optional[str] = Field(
+        ...,
+        title="Readme",
+        description="The detailed markdown readme of the workflow.",
+    )
+    help: Optional[str] = Field(
+        ...,
+        title="Help",
+        description="The detailed help text for how to use the workflow and debug problems with it.",
     )
     slug: Optional[str] = Field(
         ...,

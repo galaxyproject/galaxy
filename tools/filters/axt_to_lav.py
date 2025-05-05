@@ -12,6 +12,7 @@ standard out;  some statistics are written to standard error.
 from __future__ import print_function
 
 import sys
+from typing import Optional
 
 import bx.align.axt
 import bx.align.lav
@@ -44,11 +45,9 @@ axt_to_lav primary_spec secondary_spec [--silent] < axt_file > lav_file
 
 
 def main():
-    global debug
-
     # parse the command line
 
-    primary = None
+    primary: Optional[str] = None
     secondary = None
     silent = False
 
@@ -74,7 +73,7 @@ def main():
         elif primary is None and val is None:
             primary = arg
         elif secondary is None and val is None:
-            secondary = arg  # type: ignore[unreachable]
+            secondary = arg
         else:
             usage("unknown argument: %s" % arg)
 

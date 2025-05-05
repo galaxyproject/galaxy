@@ -33,6 +33,7 @@ class TestPageJsonEncodingIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.session
         page_revision = sa_session.scalars(select(model.PageRevision).filter_by(content_format="html")).all()[0]
+        assert page_revision.content is not None
         assert history_num_re.search(page_revision.content), page_revision.content
         assert f'''id="History-{history_id}"''' not in page_revision.content, page_revision.content
 
@@ -59,6 +60,7 @@ history_dataset_display(history_dataset_id={})
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.session
         page_revision = sa_session.scalars(select(model.PageRevision).filter_by(content_format="markdown")).all()[0]
+        assert page_revision.content is not None
         assert (
             """```galaxy
 history_dataset_display(history_dataset_id=1)

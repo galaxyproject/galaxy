@@ -1,25 +1,73 @@
 <script setup lang="ts">
-import { BTab } from "bootstrap-vue";
+import { BAlert, BTab } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
+import type { InvocationInput, WorkflowInvocationElementView } from "@/api/invocations";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
+
+import Heading from "../Common/Heading.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import ParameterStep from "./ParameterStep.vue";
 import GenericHistoryItem from "components/History/Content/GenericItem.vue";
 
-const props = defineProps({
-    invocation: {
-        type: Object,
-        required: true,
+const OUTPUTS_NOT_AVAILABLE_YET_MSG =
+    "Either no outputs have been produced yet, or no steps were checked to " +
+    "mark their outputs as primary workflow outputs.";
+
+const props = defineProps<{
+    invocation: WorkflowInvocationElementView;
+    terminal?: boolean;
+}>();
+
+// Fetching full workflow to get the workflow output labels (for when invocation is not terminal)
+const workflowOutputLabels = ref<string[]>([]);
+const workflow = computed(() => {
+    if (!props.terminal) {
+        const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
+        return workflow.value;
+    }
+    return undefined;
+});
+const workflowStore = useWorkflowStore();
+watch(
+    workflow,
+    async (newWorkflow) => {
+        if (newWorkflow) {
+            try {
+                const wf = await workflowStore.getFullWorkflowCached(newWorkflow.id, newWorkflow.version);
+                if (wf) {
+                    const fullWorkflowSteps = (wf.steps ? Object.values(wf.steps) : []) as Step[];
+                    workflowOutputLabels.value = fullWorkflowSteps
+                        .flatMap((step) => step.workflow_outputs || [])
+                        .map((output) => output.label)
+                        .filter((label) => label !== null && label !== undefined);
+                }
+            } catch (error) {
+                console.error("Error fetching full workflow:", error);
+            }
+        }
     },
+    { immediate: true }
+);
+
+const inputData = computed(() => Object.entries(props.invocation.inputs));
+
+const outputs = computed(() => {
+    const outputEntries = Object.entries(props.invocation.outputs);
+    const outputCollectionEntries = Object.entries(props.invocation.output_collections);
+    return [...outputEntries, ...outputCollectionEntries];
 });
 
-interface HasSrc {
-    src: string;
-}
+const parameters = computed(() => Object.values(props.invocation.input_step_parameters));
 
-function dataInputStepLabel(key: number, input: HasSrc) {
-    const invocationStep = props.invocation.steps[key];
+function dataInputStepLabel(key: string, input: InvocationInput) {
+    const index: number = parseInt(key);
+    const invocationStep = props.invocation.steps[index];
     let label = invocationStep && invocationStep.workflow_step_label;
     if (!label) {
-        if (input.src === "hda" || input.src === "ldda") {
+        if (input.src === "hda") {
             label = "Input dataset";
         } else if (input.src === "hdca") {
             label = "Input dataset collection";
@@ -29,27 +77,74 @@ function dataInputStepLabel(key: number, input: HasSrc) {
 }
 </script>
 <template>
-    <span v-if="invocation">
-        <BTab v-if="Object.keys(invocation.input_step_parameters).length" title="Parameters" lazy>
-            <ParameterStep :parameters="Object.values(invocation.input_step_parameters)" />
-        </BTab>
-        <BTab v-if="Object.keys(invocation.inputs).length" title="Inputs" lazy>
-            <div v-for="(input, key) in invocation.inputs" :key="input.id" :data-label="dataInputStepLabel(key, input)">
-                <b>{{ dataInputStepLabel(key, input) }}</b>
-                <GenericHistoryItem :item-id="input.id" :item-src="input.src" />
+    <span>
+        <BTab title="Inputs">
+            <div v-if="parameters.length">
+                <Heading size="text" bold separator>Parameter Values</Heading>
+                <div class="mx-1">
+                    <ParameterStep data-description="input parameters table" :parameters="parameters" styled-table />
+                </div>
             </div>
-        </BTab>
-        <BTab v-if="Object.keys(invocation.outputs).length" title="Outputs" lazy>
-            <div v-for="(output, key) in invocation.outputs" :key="output.id">
-                <b>{{ key }}:</b>
-                <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
+            <div v-if="inputData.length">
+                <div
+                    v-for="([key, input], index) in inputData"
+                    :key="index"
+                    :data-label="dataInputStepLabel(key, input)">
+                    <Heading size="text" bold separator>
+                        {{ dataInputStepLabel(key, input) }}
+                    </Heading>
+                    <GenericHistoryItem :item-id="input.id" :item-src="input.src" />
+                </div>
             </div>
+            <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
         </BTab>
-        <BTab v-if="Object.keys(invocation.output_collections).length" title="Output Collections" lazy>
-            <div v-for="(output, key) in invocation.output_collections" :key="output.id">
-                <b>{{ key }}:</b>
-                <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
+        <BTab title="Outputs">
+            <div v-if="outputs.length">
+                <div
+                    v-for="([key, output], index) in outputs"
+                    :key="index"
+                    data-description="terminal invocation output">
+                    <Heading size="text" bold separator>{{ key }}</Heading>
+                    <GenericHistoryItem
+                        :item-id="output.id"
+                        :item-src="output.src"
+                        data-description="terminal invocation output item" />
+                </div>
             </div>
+            <div v-else-if="workflowOutputLabels.length">
+                <div
+                    v-for="(label, index) in workflowOutputLabels"
+                    :key="index"
+                    data-description="non-terminal invocation output">
+                    <Heading size="text" bold separator>{{ label }}</Heading>
+                    <BAlert
+                        v-if="!props.terminal"
+                        class="m-1 py-2"
+                        show
+                        variant="info"
+                        data-description="non-terminal invocation output loading">
+                        <LoadingSpan message="Output not created yet" />
+                    </BAlert>
+                    <BAlert v-else class="m-1 py-2" show variant="danger">
+                        <LoadingSpan message="Output not available" />
+                    </BAlert>
+                </div>
+            </div>
+            <BAlert v-else show variant="info">
+                <p>
+                    <LoadingSpan v-if="!props.terminal" :message="OUTPUTS_NOT_AVAILABLE_YET_MSG" />
+                    <span v-else v-localize>
+                        No steps were checked to mark their outputs as primary workflow outputs.
+                    </span>
+                </p>
+                <p>
+                    To get outputs from a workflow in this tab, you need to check the
+                    <i>
+                        "Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    </i>
+                    option on individual outputs on individual steps in the workflow.
+                </p>
+            </BAlert>
         </BTab>
     </span>
 </template>

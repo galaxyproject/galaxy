@@ -3,8 +3,9 @@ import { curveBasis, line } from "d3";
 import { computed, type PropType } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import { type Connection, getConnectionId } from "@/stores/workflowConnectionStore";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+import type { Connection } from "@/stores/workflowStoreTypes";
 
 const props = defineProps({
     id: String,

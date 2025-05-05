@@ -122,6 +122,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
 ]]></xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="icon" type="Icon" minOccurs="0"/>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
         <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1"/>
@@ -242,6 +243,16 @@ this attribute defined the HTTP request method to use when communicating with an
       </xs:attribute>
     </xs:complexType>
   </xs:element>
+  <xs:complexType name="Icon">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Icon image associated with the tool. Ideally, this should be a square PNG image with maximum dimensions of 512x512 pixels.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="src" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Relative path to the icon image. It must be contained within the tool directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Macros">
     <xs:annotation>
       <xs:documentation xml:lang="en">Frequently, tools may require the same XML
@@ -675,6 +686,12 @@ resolver.
     </xs:simpleContent>
   </xs:complexType>
   <xs:complexType name="Resource">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Allows to describe a resource requirement of a tool. At the moment this tag is mostly descriptive,
+It can be used by dynamic job rules and serves to guide Galaxy admins.
+]]></xs:documentation>
+    </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ResourceType" use="required">
@@ -1566,12 +1583,19 @@ used to load typed parameters. This string will be loaded as JSON and its type w
 attempt to be preserved through API requests to Galaxy.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ftype" type="xs:string">
+    <xs:attribute name="ftype" type="Format">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute name should be included
 only with parameters of ``type`` ``data`` for the tool. If this
 attribute name is not included, the functional test framework will attempt to
 determine the data type for the input dataset using the data type sniffers.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="class" type="Class">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This attribute name should be included
+only with parameter of ``type`` ``data`` for the tool. If this attribute name is not included the test framework will
+assume that the dataset is a file. Set this to ``Directory`` to interpret and upload the value as a directory.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="dbkey" type="xs:string">
@@ -1711,7 +1735,7 @@ generated as JSON. This can be useful for testing tool outputs that are not file
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ftype" type="xs:string">
+    <xs:attribute name="ftype" type="Format">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
@@ -4202,7 +4226,7 @@ only when the ``type`` attribute value is ``data``, ``float``, or ``integer``.</
 only when the ``type`` attribute value is ``data``, ``float``, or ``integer``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="format" type="xs:string">
+        <xs:attribute name="format" type="FormatList">
           <xs:annotation>
             <xs:documentation xml:lang="en">The comma-separated list of accepted
 data formats for this input. The list of supported data formats is contained in the
@@ -4309,14 +4333,14 @@ parameter should be checked (or ``true``) by default. Used only when the
         <xs:attribute name="truevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``true`` or checked by the user. Used only when the
+template if the parameter is ``true`` or checked by the user (defaults to "true"). Used only when the
 ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="falsevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``false`` or not checked by the user. Used only
+template if the parameter is ``false`` or not checked by the user (defaults to "false"). Used only
 when the ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -4353,7 +4377,7 @@ Here is an example command section that handles the above sample input:
       ## Here, the input is a deferred dataset which source URI has the protocol 'https', 'http' or 's3'.
       echo '$input' > '$output' ## The ouput will be the source URI of the input.
   #else:
-      ## Here, the input is a regular dataset or a materialized dataset in case of a 
+      ## Here, the input is a regular dataset or a materialized dataset in case of a
       ## deferred dataset which source URI has a protocol different than 'https', 'http' or 's3'.
       cp '$input' '$output' ## The output will be a copy of the input content.
 </command>
@@ -4575,7 +4599,8 @@ Name | Description
 ``$__root_dir__`` | Top-level Galaxy source directory made absolute via ``os.path.abspath()``
 ``$__datatypes_config__`` | ``config/galaxy.ini``'s datatypes_config value
 ``$__user_id__`` | Numeric ID of user (id column of ``galaxy_user`` table in the database)
-``$__user_email__`` | Email address of user
+``$__user_email__`` | Email address of the user
+``$__user_name__`` | User name of the user
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
@@ -5943,7 +5968,7 @@ The default is ``galaxy.json``.
     </xs:choice>
   </xs:group>
   <xs:attributeGroup name="OutputCommon">
-    <xs:attribute name="format" type="xs:string">
+    <xs:attribute name="format" type="Format">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 The short name for the output datatype. The valid values for format can be found in
@@ -6331,12 +6356,12 @@ Therefore a filter for such a variable looks like the following example.
         <xs:documentation xml:lang="en">Indicates that the entire path of the discovered dataset relative to the specified directory should be available for matching patterns.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="optional">
+    <xs:attribute name="format" type="Format" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ext" type="xs:string" use="optional">
+    <xs:attribute name="ext" type="Format" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
@@ -7660,7 +7685,7 @@ parameter (e.g. ``value="interval"`` above), or of the deprecated ``input_datase
 attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="required">
+    <xs:attribute name="format" type="Format" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This value must be a supported data type
 (e.g. ``format="interval"``). See
@@ -8082,6 +8107,22 @@ favour of a ``has_size`` assertion.</xs:documentation>
         </xs:restriction>
       </xs:simpleType>
     </xs:union>
+  </xs:simpleType>
+  <xs:simpleType name="Format">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-z._-]+"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FormatList">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Class">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="File"/>
+      <xs:enumeration value="Directory"/>
+    </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">
     <xs:annotation gxdocs:best_practices="tool-annotations-edam">

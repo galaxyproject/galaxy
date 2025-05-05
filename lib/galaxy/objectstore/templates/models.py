@@ -7,8 +7,14 @@ from typing import (
     Union,
 )
 
-from pydantic import RootModel
-from typing_extensions import Literal
+from pydantic import (
+    Field,
+    RootModel,
+)
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.objectstore.badges import (
     BadgeDict,
@@ -314,21 +320,28 @@ class OnedataObjectStoreConfiguration(StrictModel):
     badges: BadgeList = None
 
 
-ObjectStoreTemplateConfiguration = Union[
-    AwsS3ObjectStoreTemplateConfiguration,
-    Boto3ObjectStoreTemplateConfiguration,
-    GenericS3ObjectStoreTemplateConfiguration,
-    DiskObjectStoreTemplateConfiguration,
-    AzureObjectStoreTemplateConfiguration,
-    OnedataObjectStoreTemplateConfiguration,
+ObjectStoreTemplateConfiguration = Annotated[
+    Union[
+        AwsS3ObjectStoreTemplateConfiguration,
+        Boto3ObjectStoreTemplateConfiguration,
+        GenericS3ObjectStoreTemplateConfiguration,
+        DiskObjectStoreTemplateConfiguration,
+        AzureObjectStoreTemplateConfiguration,
+        OnedataObjectStoreTemplateConfiguration,
+    ],
+    Field(discriminator="type"),
 ]
-ObjectStoreConfiguration = Union[
-    AwsS3ObjectStoreConfiguration,
-    Boto3ObjectStoreConfiguration,
-    DiskObjectStoreConfiguration,
-    AzureObjectStoreConfiguration,
-    GenericS3ObjectStoreConfiguration,
-    OnedataObjectStoreConfiguration,
+
+ObjectStoreConfiguration = Annotated[
+    Union[
+        AwsS3ObjectStoreConfiguration,
+        Boto3ObjectStoreConfiguration,
+        DiskObjectStoreConfiguration,
+        AzureObjectStoreConfiguration,
+        GenericS3ObjectStoreConfiguration,
+        OnedataObjectStoreConfiguration,
+    ],
+    Field(discriminator="type"),
 ]
 
 

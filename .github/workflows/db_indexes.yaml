@@ -5,11 +5,13 @@ on:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,11 +26,11 @@ jobs:
       matrix:
         db: ['postgresql', 'sqlite']
         postgresql-version: ['13']
-        python-version: ['3.8']
+        python-version: ['3.9']
         include:
           - db: postgresql
             postgresql-version: '9.6'
-            python-version: '3.8'
+            python-version: '3.9'
     services:
       postgres:
         image: postgres:${{ matrix.postgresql-version }}

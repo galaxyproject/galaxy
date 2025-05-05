@@ -6,7 +6,11 @@ from datetime import (
     datetime,
     timedelta,
 )
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+    TYPE_CHECKING,
+)
 from unittest import SkipTest
 from urllib.parse import (
     parse_qs,
@@ -27,6 +31,9 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
 class TestCustosAuthnz(TestCase):
@@ -233,7 +240,7 @@ class TestCustosAuthnz(TestCase):
                 self.cookies = {}
                 self.cookies_args = {}
                 self.request = Request()
-                self.sa_session = Session()
+                self.sa_session = cast("scoped_session", Session())
                 self.user = None
 
             def set_cookie(self, value, name=None, **kwargs):

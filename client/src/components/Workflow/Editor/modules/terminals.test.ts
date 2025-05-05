@@ -42,6 +42,7 @@ function useStores(id = "mock-workflow") {
     const undoRedoStore = useUndoRedoStore(id);
 
     return {
+        workflowId: id,
         connectionStore,
         stateStore,
         stepStore,

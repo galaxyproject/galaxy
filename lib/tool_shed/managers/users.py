@@ -3,7 +3,6 @@ from typing import List
 from sqlalchemy import select
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -20,7 +19,7 @@ from tool_shed_client.schema import (
 
 def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:
     users: List[ApiUser] = []
-    for user in get_users_by_deleted(app.model.context, app.model.User, deleted):
+    for user in get_users_by_deleted(app.model.context, User, deleted):
         users.append(get_api_user(app, user))
     return users
 
@@ -38,8 +37,7 @@ def create_user(app: ToolShedApp, email: str, username: str, password: str) -> U
     # else:
     #    user.active = True  # Activation is off, every new user is active by default.
     sa_session.add(user)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     app.security_agent.create_private_user_role(user)
     return user
 

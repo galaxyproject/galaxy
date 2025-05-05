@@ -31,7 +31,7 @@ const emit = defineEmits(["input"]);
 </script>
 
 <template>
-    <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click-to-open">
+    <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click">
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>

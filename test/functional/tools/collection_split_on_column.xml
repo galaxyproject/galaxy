@@ -1,6 +1,6 @@
 <tool id="collection_split_on_column" name="collection_split_on_column" version="0.1.0">
   <command>
-    mkdir outputs; cd outputs; awk '{ print \$2 > (\$1 ".tabular") }' $input1
+    mkdir outputs; cd outputs; awk '{ print \$2 > (\$1 ".Tabular") }' $input1
   </command>
   <inputs>
     <param name="input1" type="data" label="Input Table" help="Table to split on first column" format="tabular" />

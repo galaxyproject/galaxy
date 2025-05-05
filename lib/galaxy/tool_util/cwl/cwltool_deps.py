@@ -64,10 +64,14 @@ except ImportError:
 
 try:
     from cwltool.utils import (
+        CWLObjectType,
+        JobsType,
         normalizeFilesDirs,
         visit_class,
     )
 except ImportError:
+    CWLObjectType = object  # type: ignore[assignment, misc]
+    JobsType = object  # type: ignore[misc, unused-ignore]
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
 
@@ -115,9 +119,11 @@ def ensure_cwltool_available():
 
 __all__ = (
     "CommentedMap",
+    "CWLObjectType",
     "default_loader",
     "ensure_cwltool_available",
     "getdefault",
+    "JobsType",
     "load_tool",
     "LoadingContext",
     "main",

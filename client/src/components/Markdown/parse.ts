@@ -4,14 +4,40 @@ const FUNCTION_ARGUMENT_REGEX = `\\s*[\\w\\|]+\\s*=` + FUNCTION_ARGUMENT_VALUE_R
 const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_ARGUMENT_REGEX})(,${FUNCTION_ARGUMENT_REGEX})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
-type DefaultSection = { name: "default"; content: string };
-type GalaxyDirectiveSection = { name: string; content: string; args: { [key: string]: string } };
-type Section = DefaultSection | GalaxyDirectiveSection;
+type DefaultSection = { name: "markdown"; content: string };
+type GalaxySection = { name: string; content: string; args: { [key: string]: string } };
+type Section = DefaultSection | GalaxySection;
 
 type WorkflowLabelKind = "input" | "output" | "step";
 
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
+
+function parseResult(result: { name: string; content: string }[], name: string, content: string[]) {
+    const trimmedContent = content.join("\n").trim();
+    if (trimmedContent.length > 0) {
+        result.push({ name: name, content: trimmedContent });
+    }
+}
+
+export function parseMarkdown(input: string): { name: string; content: string }[] {
+    const result: { name: string; content: string }[] = [];
+    const lines = input.split("\n");
+    let currentName: string = "markdown";
+    let currentContent: string[] = [];
+    lines.forEach((line) => {
+        const sectionMatch = line.trim().match(/^```(.*)$/);
+        if (sectionMatch) {
+            parseResult(result, currentName, currentContent);
+            currentName = sectionMatch[1] || "markdown";
+            currentContent = [];
+        } else {
+            currentContent.push(line);
+        }
+    });
+    parseResult(result, currentName, currentContent);
+    return result;
+}
 
 export function splitMarkdown(markdown: string, preserveWhitespace = false) {
     const sections: Section[] = [];
@@ -27,7 +53,7 @@ export function splitMarkdown(markdown: string, preserveWhitespace = false) {
                     const defaultContent = rawContent.trim();
                     if (preserveWhitespace || defaultContent) {
                         sections.push({
-                            name: "default",
+                            name: "markdown",
                             content: preserveWhitespace ? rawContent : defaultContent,
                         });
                     }
@@ -50,7 +76,7 @@ export function splitMarkdown(markdown: string, preserveWhitespace = false) {
             }
         } else {
             sections.push({
-                name: "default",
+                name: "markdown",
                 content: digest,
             });
             break;
@@ -69,7 +95,7 @@ export function replaceLabel(
 
     function rewriteSection(section: Section) {
         if ("args" in section) {
-            const directiveSection = section as GalaxyDirectiveSection;
+            const directiveSection = section as GalaxySection;
             const args = directiveSection.args;
             if (!(labelType in args)) {
                 return section;
@@ -121,7 +147,7 @@ function getQuoteChar(argMatch: string): string {
     return quoteChar;
 }
 
-export function getArgs(content: string): GalaxyDirectiveSection {
+export function getArgs(content: string): GalaxySection {
     const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
     if (galaxy_function == null) {
         throw Error("Failed to parse galaxy directive");

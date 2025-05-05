@@ -72,17 +72,18 @@ class DisplayApplicationsManager:
         )
         reloaded, failed = self.datatypes_registry.reload_display_applications(ids)
         if not reloaded and failed:
-            message = 'Unable to reload any of the %i requested display applications ("%s").' % (
+            message = 'Unable to reload any of the {} requested display applications ("{}").'.format(
                 len(failed),
                 '", "'.join(failed),
             )
         elif failed:
             message = (
-                'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed))
+                'Reloaded {} display applications ("{}"), but failed to reload {} display applications ("{}").'.format(
+                    len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)
+                )
             )
         elif not reloaded:
             message = "You need to request at least one display application to reload."
         else:
-            message = 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))
+            message = 'Reloaded {} requested display applications ("{}").'.format(len(reloaded), '", "'.join(reloaded))
         return ReloadFeedback(message=message, reloaded=reloaded, failed=failed)

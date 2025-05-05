@@ -527,6 +527,7 @@ class InputsOptionsFiltersRequiredAttributes(Linter):
                     if attrib not in filter.attrib:
                         lint_ctx.error(
                             f"Select parameter [{param_name}] '{filter_type}' filter misses required attribute '{attrib}'",
+                            linter=cls.name(),
                             node=filter,
                         )
 
@@ -572,6 +573,7 @@ class InputsOptionsRemoveValueFilterRequiredAttributes(Linter):
                 ):
                     lint_ctx.error(
                         f"Select parameter [{param_name}] '{filter_type}'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)",
+                        linter=cls.name(),
                         node=filter,
                     )
 
@@ -611,6 +613,7 @@ class InputsOptionsFiltersAllowedAttributes(Linter):
                     if attrib not in FILTER_ALLOWED_ATTRIBUTES[filter_type]:
                         lint_ctx.warn(
                             f"Select parameter [{param_name}] '{filter_type}' filter specifies unnecessary attribute '{attrib}'",
+                            linter=cls.name(),
                             node=filter,
                         )
 
@@ -638,6 +641,7 @@ class InputsOptionsRegexFilterExpression(Linter):
                     except re.error as re_error:
                         lint_ctx.error(
                             f"Select parameter [{param_name}] '{filter_type}'' filter 'value' is not a valid regular expression ({re_error})'",
+                            linter=cls.name(),
                             node=filter,
                         )
 
@@ -670,6 +674,7 @@ class InputsOptionsFiltersCheckReferences(Linter):
                         if ref_attrib in filter.attrib and filter.attrib[ref_attrib] not in param_names:
                             lint_ctx.error(
                                 f"Select parameter [{param_name}] '{filter_type}'' filter attribute '{ref_attrib}' refers to non existing parameter '{filter.attrib[ref_attrib]}'",
+                                linter=cls.name(),
                                 node=filter,
                             )
 
@@ -894,12 +899,14 @@ class InputsSelectOptionsDefinesOptions(Linter):
             # TODO check if input param is present for from_dataset
             from_dataset = options.get("from_dataset", None)
             from_data_table = options.get("from_data_table", None)
+            from_url = options.get("from_url", None)
 
             if (
                 from_file is None
                 and from_parameter is None
                 and from_dataset is None
                 and from_data_table is None
+                and from_url is None
                 and not filter_adds_options
             ):
                 lint_ctx.error(

@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { ref, onMounted } from "vue"
+import type { Repository } from "@/api"
+import { errorMessageAsString } from "@/util"
+import { recentlyCreatedRepositories } from "@/api"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
-import { graphql } from "@/gql"
-import { useQuery } from "@vue/apollo-composable"
 import RepositoryCreation from "@/components/RepositoryCreation.vue"
 
-const query = graphql(`
-    query recentlyCreatedRepositories {
-        relayRepositories(first: 10, sort: CREATE_TIME_DESC) {
-            edges {
-                node {
-                    ...RepositoryCreationItem
-                }
-            }
-        }
+const error = ref<string>()
+const loading = ref(true)
+const repositories = ref<Repository[]>()
+
+onMounted(async () => {
+    try {
+        const repos = await recentlyCreatedRepositories()
+        repositories.value = repos["hits"]
+    } catch (e) {
+        error.value = errorMessageAsString(e)
+    } finally {
+        loading.value = false
     }
-`)
-const { loading, error, result } = useQuery(query)
-const creations = computed(() => result.value?.relayRepositories?.edges.map((v) => v?.node))
+})
 </script>
 
 <template>
@@ -26,12 +28,12 @@ const creations = computed(() => result.value?.relayRepositories?.edges.map((v) 
     <div class="q-pa-md">
         <q-list bordered padding>
             <q-item-label header>Newest Repositories</q-item-label>
-            <error-banner :error="error.message" v-if="error" />
+            <error-banner :error="error" v-if="error" />
             <loading-div message="Loading most recently created repositories" v-else-if="loading" />
             <div v-else>
                 <q-separator spaced />
-                <span v-for="creation of creations" :key="(creation as any)?.encodedId">
-                    <repository-creation :creation="creation" v-if="creation != undefined" />
+                <span v-for="repository of repositories" :key="repository.id">
+                    <repository-creation :repository="repository" />
                 </span>
             </div>
         </q-list>

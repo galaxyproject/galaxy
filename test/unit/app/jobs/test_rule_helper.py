@@ -3,7 +3,6 @@ import uuid
 from galaxy import model
 from galaxy.jobs.rule_helper import RuleHelper
 from galaxy.model import mapping
-from galaxy.model.base import transaction
 from galaxy.util import bunch
 
 USER_EMAIL_1 = "u1@example.com"
@@ -199,5 +198,4 @@ class MockApp:
         for arg in args:
             self.model.context.add(arg)
         session = self.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()

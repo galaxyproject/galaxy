@@ -1,11 +1,14 @@
 import os
 from tempfile import mkdtemp
+from typing import (
+    Any,
+    Dict,
+)
 
 from sqlalchemy import select
 
 from galaxy import model
 from galaxy.model import store
-from galaxy.model.base import transaction
 from galaxy.model.store.discover import persist_target_to_export_store
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
@@ -219,7 +222,7 @@ def _assert_one_library_created(sa_session):
     return new_library
 
 
-def _import_library_target(target, work_directory):
+def _import_library_target(target: Dict[str, Any], work_directory: str):
     app = _mock_app()
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, serialize_dataset_objects=True) as export_store:
@@ -245,8 +248,7 @@ def _import_directory_to_history(app, target, work_directory):
 
     sa_session = app.model.context
     sa_session.add_all([u, import_history])
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     assert len(import_history.datasets) == 0
 

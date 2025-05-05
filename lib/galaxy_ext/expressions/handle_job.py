@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 def run(environment_path=None):
     if expression is None:
-        raise Exception("Python library cwltool must be available to evaluate expressions.")
+        raise Exception("Python library cwl-utils must be available to evaluate expressions.")
 
     if environment_path is None:
         environment_path = os.environ.get("GALAXY_EXPRESSION_INPUTS")

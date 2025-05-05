@@ -7,6 +7,15 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from typing import Union
+
+from galaxy.model import (
+    DatasetCollectionElement,
+    DatasetInstance,
+    HistoryDatasetCollectionAssociation,
+)
+
+DeferrableObjectsT = Union[DatasetInstance, HistoryDatasetCollectionAssociation, DatasetCollectionElement]
 
 
 def dataset_path_rewrites(dataset_paths):

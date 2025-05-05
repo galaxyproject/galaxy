@@ -19,7 +19,6 @@ interface HistoryRecord extends SelectionItem {
 }
 
 interface Props {
-    folderId: string;
     title?: string;
     actionButtonText?: string;
 }
@@ -153,7 +152,7 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         }
 
         const limit = ctx.perPage;
-        const offset = (ctx.currentPage - 1) * ctx.perPage;
+        const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
         const sortDesc = ctx.sortDesc;
         const sortBy: HistorySortByLiteral =
             ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
@@ -201,7 +200,7 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
 
     try {
         const limit = ctx.perPage;
-        const offset = (ctx.currentPage - 1) * ctx.perPage;
+        const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
         const query = ctx.filter || "";
         const querySortBy = ctx.sortBy === "time" ? "update_time" : "name";
         const sortPrefix = ctx.sortDesc ? "-dsc" : "-asc";

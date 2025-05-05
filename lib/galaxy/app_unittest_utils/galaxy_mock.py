@@ -36,7 +36,6 @@ from galaxy.model import (
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
-    transaction,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -175,7 +174,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
         # need to wait.
-        return True
+        return
 
     def reindex_tool_search(self) -> None:
         raise NotImplementedError
@@ -226,6 +225,8 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.custom_activation_email_message = "custom_activation_email_message"
         self.email_domain_allowlist_content = None
         self.email_domain_blocklist_content = None
+        self.email_ban_file = None
+        self.canonical_email_rules = None
         self.email_from = "email_from"
         self.enable_old_display_applications = True
         self.error_email_to = "admin@email.to"
@@ -330,7 +331,13 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host", url_path="mock/url/path")
+        self.request: Any = Bunch(
+            headers={},
+            is_body_readable=False,
+            host="request.host",
+            host_url="request.host_url",
+            url_path="mock/url/path",
+        )
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property
@@ -357,8 +364,7 @@ class MockTrans:
         if self.galaxy_session:
             self.galaxy_session.user = user
             self.sa_session.add(self.galaxy_session)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         self.__user = user
 
     user = property(get_user, set_user)
@@ -435,7 +441,7 @@ class MockTemplateHelpers:
         pass
 
     def dumps(*kwargs):
-        return {}
+        return kwargs
 
     def js(*js_files):
         pass

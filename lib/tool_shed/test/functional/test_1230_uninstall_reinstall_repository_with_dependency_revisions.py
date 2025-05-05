@@ -131,7 +131,6 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0010_install_emboss_repository(self):
         """Install the emboss repository into the Galaxy instance."""
-        global running_standalone
         self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,

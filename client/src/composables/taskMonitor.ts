@@ -23,10 +23,23 @@ export function useTaskMonitor() {
 
         return data;
     };
+
+    const fetchFailureReason = async (taskId: string) => {
+        const { data, error } = await GalaxyApi().GET("/api/tasks/{task_id}/result", {
+            params: { path: { task_id: taskId } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        return data.result;
+    };
     return useGenericMonitor({
         fetchStatus,
         completedCondition: (status?: string) => status === SUCCESS_STATE,
         failedCondition: (status?: string) => status === FAILURE_STATE,
+        fetchFailureReason,
         defaultPollDelay: DEFAULT_POLL_DELAY,
         expirationTime: DEFAULT_EXPIRATION_TIME,
     });

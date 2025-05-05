@@ -23,7 +23,6 @@ from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,
     EncodedJobParameterHistoryItem,
-    JobMetricCollection,
     JobState,
     JobSummary,
     Model,
@@ -247,55 +246,4 @@ class JobDisplayParametersSummary(Model):
         default=...,
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.",
-    )
-
-
-class ShowFullJobResponse(EncodedJobDetails):
-    tool_stdout: Optional[str] = Field(
-        default=None,
-        title="Tool Standard Output",
-        description="The captured standard output of the tool executed by the job.",
-    )
-    tool_stderr: Optional[str] = Field(
-        default=None,
-        title="Tool Standard Error",
-        description="The captured standard error of the tool executed by the job.",
-    )
-    job_stdout: Optional[str] = Field(
-        default=None,
-        title="Job Standard Output",
-        description="The captured standard output of the job execution.",
-    )
-    job_stderr: Optional[str] = Field(
-        default=None,
-        title="Job Standard Error",
-        description="The captured standard error of the job execution.",
-    )
-    stdout: Optional[str] = Field(  # Redundant? it seems to be (tool_stdout + "\n" + job_stdout)
-        default=None,
-        title="Standard Output",
-        description="Combined tool and job standard output streams.",
-    )
-    stderr: Optional[str] = Field(  # Redundant? it seems to be (tool_stderr + "\n" + job_stderr)
-        default=None,
-        title="Standard Error",
-        description="Combined tool and job standard error streams.",
-    )
-    job_messages: Optional[List[Any]] = Field(
-        default=None,
-        title="Job Messages",
-        description="List with additional information and possible reasons for a failed job.",
-    )
-    dependencies: Optional[List[Any]] = Field(
-        default=None,
-        title="Job dependencies",
-        description="The dependencies of the job.",
-    )
-    job_metrics: Optional[JobMetricCollection] = Field(
-        default=None,
-        title="Job Metrics",
-        description=(
-            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
-            "Only administrators can see these metrics."
-        ),
     )

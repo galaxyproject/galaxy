@@ -8,7 +8,6 @@ from typing import Optional
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
-from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
@@ -113,8 +112,7 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
         repository.uninstalled = False
         self.app.install_model.context.add(repository)
         session = self.app.install_model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         return repository
 
     def _setup_two_versions(self):
@@ -123,16 +121,14 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
         version1.tool_id = "github.com/galaxyproject/example/test_tool/0.1"
         self.app.install_model.context.add(version1)
         session = self.app.install_model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         self._repo_install(changeset="2")
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
         self.app.install_model.context.add(version2)
         session = self.app.install_model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         version_association = tool_shed_install.ToolVersionAssociation()
         version_association.parent_id = version1.id
@@ -140,8 +136,7 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
 
         self.app.install_model.context.add(version_association)
         session = self.app.install_model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def _setup_two_versions_in_config(self, section=False):
         if section:

@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from galaxy import model
 from galaxy.model import store
-from galaxy.model.base import transaction
 from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.path import external_chown
 
@@ -76,8 +75,7 @@ class JobImportHistoryArchiveWrapper:
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:
                 jiha.history = new_history
-                with transaction(self.sa_session):
-                    self.sa_session.commit()
+                self.sa_session.commit()
                 model_store.perform_import(new_history, job=job, new_history=True)
                 # Cleanup.
                 if os.path.exists(archive_dir):
@@ -85,8 +83,7 @@ class JobImportHistoryArchiveWrapper:
 
         except Exception as e:
             jiha.job.tool_stderr += f"Error cleaning up history import job: {e}"
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
             raise
 
         return new_history

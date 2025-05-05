@@ -71,7 +71,7 @@ const INSTANCE: UserConcreteObjectStore = {
 
 describe("UpgradeForm", () => {
     it("should render with old variable values re-filled in", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -88,7 +88,7 @@ describe("UpgradeForm", () => {
     });
 
     it("should render with new variable values with empty values", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -105,7 +105,7 @@ describe("UpgradeForm", () => {
     });
 
     it("should put to update on submit and return to index", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -132,7 +132,7 @@ describe("UpgradeForm", () => {
     });
 
     it("should indicate an error on failure", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,

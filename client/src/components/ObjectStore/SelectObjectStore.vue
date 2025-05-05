@@ -13,16 +13,13 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
-    defaultOptionTitle: String;
+    defaultOptionTitle: string;
     defaultOptionDescription: String;
-    forWhat: String;
+    forWhat: string;
     parentError?: String | null;
 }
 
-const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
-    selectedObjectStoreId: null,
-    parentError: null,
-});
+const props = defineProps<SelectObjectStoreProps>();
 
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
@@ -47,7 +44,7 @@ click on the info icon in the history panel to view information about where it i
 is not stored in the place you want, contact Galaxy administrator for more information.
 `);
 
-function variant(objectStoreId: string) {
+function variant(objectStoreId: string | null) {
     if (props.selectedObjectStoreId == objectStoreId) {
         return "outline-primary";
     } else {
@@ -86,14 +83,14 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                             class="preferred-object-store-select-button"
                             data-object-store-id="__null__"
                             @click="handleSubmit(null)"
-                            ><i>{{ defaultOptionTitle | localize }}</i></b-button
+                            ><i v-localize>{{ defaultOptionTitle }}</i></b-button
                         >
                         <ObjectStoreSelectButton
                             v-for="objectStore in selectableAndVisibleObjectStores"
                             :key="objectStore.object_store_id"
                             id-prefix="preferred"
                             :object-store="objectStore"
-                            :variant="variant(objectStore.object_store_id)"
+                            :variant="variant(objectStore.object_store_id ?? null)"
                             class="preferred-object-store-select-button"
                             @click="handleSubmit(objectStore)" />
                     </b-button-group>

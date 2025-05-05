@@ -1,17 +1,12 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faExchangeAlt, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
+import { faCopy, faDatabase, faExchangeAlt, faEye, faGlobe, faUndo } from "font-awesome-6";
 import { computed } from "vue";
 
 import { type ArchivedHistorySummary } from "@/api/histories.archived";
-import localize from "@/utils/localization";
+import { type CardAttributes } from "@/components/Common/GCard.types";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
-import Heading from "@/components/Common/Heading.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import UtcDate from "@/components/UtcDate.vue";
+import GCard from "@/components/Common/GCard.vue";
 
 interface Props {
     history: ArchivedHistorySummary;
@@ -28,8 +23,6 @@ const emit = defineEmits<{
     (e: "onImportCopy", history: ArchivedHistorySummary): void;
 }>();
 
-library.add(faExchangeAlt, faUndo, faCopy, faEye);
-
 function onViewHistoryInCenterPanel() {
     emit("onView", props.history);
 }
@@ -45,90 +38,88 @@ async function onRestoreHistory() {
 async function onImportCopy() {
     emit("onImportCopy", props.history);
 }
+
+const badges: CardAttributes[] = [
+    {
+        id: "published",
+        label: "Published",
+        title: "This history is published and can be viewed by others",
+        icon: faGlobe,
+        visible: props.history.published,
+    },
+    {
+        id: "count",
+        label: `${props.history.count} items`,
+        title: "Amount of items in history",
+        icon: faDatabase,
+        visible: !props.history.purged,
+    },
+    {
+        id: "snapshot",
+        label: "Snapshot available",
+        title: "This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history.",
+        icon: faCopy,
+        visible: !!props.history.export_record_data,
+    },
+];
+
+const secondaryActions: CardAttributes[] = [
+    {
+        id: "view",
+        label: "View",
+        icon: faEye,
+        title: "View this history",
+        handler: onViewHistoryInCenterPanel,
+        visible: true,
+    },
+    {
+        id: "switch",
+        label: "Switch",
+        icon: faExchangeAlt,
+        title: "Set as current history",
+        handler: onSetAsCurrentHistory,
+        visible: true,
+    },
+];
+
+const primaryActions: CardAttributes[] = [
+    {
+        id: "import-copy",
+        label: "Import Copy",
+        icon: faCopy,
+        title: "Import a new copy of this history from the associated export record",
+        disabled: !canImportCopy.value,
+        variant: props.history.purged ? "primary" : "outline-primary",
+        handler: onImportCopy,
+        visible: canImportCopy.value,
+    },
+    {
+        id: "restore",
+        label: "Unarchive",
+        icon: faUndo,
+        title: "Unarchive this history and move it back to your active histories",
+        variant: !props.history.purged ? "primary" : "outline-primary",
+        handler: onRestoreHistory,
+        visible: true,
+    },
+];
 </script>
 
 <template>
-    <div class="archived-history-card">
-        <div class="d-flex justify-content-between align-items-center">
-            <Heading h3 inline bold size="sm">
-                {{ history.name }} <ExportRecordDOILink :export-record-uri="history.export_record_data?.target_uri" />
-            </Heading>
-
-            <div class="d-flex align-items-center flex-gapx-1 badges">
-                <BBadge v-if="history.published" v-b-tooltip pill :title="localize('This history is public.')">
-                    {{ localize("Published") }}
-                </BBadge>
-                <BBadge v-if="!history.purged" v-b-tooltip pill :title="localize('Amount of items in history')">
-                    {{ history.count }} {{ localize("items") }}
-                </BBadge>
-                <BBadge
-                    v-if="history.export_record_data"
-                    v-b-tooltip
-                    pill
-                    :title="
-                        localize(
-                            'This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history.'
-                        )
-                    ">
-                    {{ localize("Snapshot available") }}
-                </BBadge>
-                <BBadge v-b-tooltip pill :title="localize('Last edited/archived')">
-                    <UtcDate :date="history.update_time" mode="elapsed" />
-                </BBadge>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-start align-items-center mt-1">
-            <BButtonGroup class="actions">
-                <BButton
-                    v-b-tooltip
-                    :title="localize('View this history')"
-                    variant="link"
-                    class="p-0 px-1"
-                    @click.stop="onViewHistoryInCenterPanel">
-                    <FontAwesomeIcon :icon="faEye" size="lg" />
-                    View
-                </BButton>
-                <BButton
-                    v-b-tooltip
-                    :title="localize('Set as current history')"
-                    variant="link"
-                    class="p-0 px-1"
-                    @click.stop="onSetAsCurrentHistory">
-                    <FontAwesomeIcon :icon="faExchangeAlt" size="lg" />
-                    Switch
-                </BButton>
-                <BButton
-                    v-b-tooltip
-                    :title="localize('Unarchive this history and move it back to your active histories')"
-                    variant="link"
-                    class="p-0 px-1"
-                    @click.stop="onRestoreHistory">
-                    <FontAwesomeIcon :icon="faUndo" size="lg" />
-                    Unarchive
-                </BButton>
-
-                <BButton
-                    v-if="canImportCopy"
-                    v-b-tooltip
-                    :title="localize('Import a new copy of this history from the associated export record')"
-                    variant="link"
-                    class="p-0 px-1"
-                    @click.stop="onImportCopy">
-                    <FontAwesomeIcon :icon="faCopy" size="lg" />
-                    Import Copy
-                </BButton>
-            </BButtonGroup>
-        </div>
-
-        <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
-
-        <StatelessTags class="my-1" :value="history.tags" :disabled="true" :max-visible-tags="10" />
-    </div>
+    <GCard
+        :id="history.id"
+        :title="history.name"
+        :description="history.annotation || ''"
+        :badges="badges"
+        :secondary-actions="secondaryActions"
+        :primary-actions="primaryActions"
+        :update-time="history.update_time"
+        update-time-title="Last edited/archived"
+        :published="history.published"
+        :tags="history.tags"
+        :max-visible-tags="10">
+        <template v-slot:titleActions>
+            <ExportRecordDOILink :export-record-uri="history.export_record_data?.target_uri" />
+        </template>
+    </GCard>
 </template>
-
-<style scoped>
-.badges {
-    font-size: 1rem;
-}
-</style>

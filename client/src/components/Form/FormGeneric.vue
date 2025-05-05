@@ -13,12 +13,12 @@
                 </template>
             </FormCard>
             <div class="mt-3">
-                <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
+                <GButton id="submit" color="blue" class="mr-1" @click="onSubmit()">
                     <span :class="submitIconClass" />{{ submitTitle | l }}
-                </b-button>
-                <b-button v-if="cancelRedirect" @click="onCancel()">
+                </GButton>
+                <GButton v-if="cancelRedirect" @click="onCancel()">
                     <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
-                </b-button>
+                </GButton>
             </div>
         </div>
     </UrlDataProvider>
@@ -33,11 +33,14 @@ import { withPrefix } from "utils/redirect";
 
 import { submitData } from "./services";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 export default {
     components: {
         FormCard,
         FormDisplay,
         UrlDataProvider,
+        GButton,
     },
     props: {
         id: {
@@ -72,6 +75,10 @@ export default {
             type: String,
             default: null,
         },
+        trimInputs: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -103,7 +110,18 @@ export default {
             window.location = withPrefix(this.cancelRedirect);
         },
         onSubmit() {
-            submitData(this.url, this.formData).then((response) => {
+            const formData = { ...this.formData };
+
+            if (this.trimInputs) {
+                // Trim string values in form data
+                Object.keys(formData).forEach((key) => {
+                    if (typeof formData[key] === "string") {
+                        formData[key] = formData[key].trim();
+                    }
+                });
+            }
+
+            submitData(this.url, formData).then((response) => {
                 let params = {};
                 if (response.id) {
                     params.id = response.id;

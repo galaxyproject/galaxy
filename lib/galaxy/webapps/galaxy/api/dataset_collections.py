@@ -68,55 +68,55 @@ class FastAPIDatasetCollections:
         return self.service.create(trans, payload)
 
     @router.post(
-        "/api/dataset_collections/{id}/copy",
+        "/api/dataset_collections/{hdca_id}/copy",
         summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def copy(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
-        self.service.copy(trans, id, payload)
+        self.service.copy(trans, hdca_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
-        "/api/dataset_collections/{id}/attributes",
+        "/api/dataset_collections/{hdca_id}/attributes",
         summary="Returns `dbkey`/`extension` attributes for all the collection elements.",
     )
     def attributes(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> DatasetCollectionAttributesResult:
-        return self.service.attributes(trans, id, instance_type)
+        return self.service.attributes(trans, hdca_id, instance_type)
 
     @router.get(
-        "/api/dataset_collections/{id}/suitable_converters",
+        "/api/dataset_collections/{hdca_id}/suitable_converters",
         summary="Returns a list of applicable converters for all datatypes in the given collection.",
     )
     def suitable_converters(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> SuitableConverters:
-        return self.service.suitable_converters(trans, id, instance_type)
+        return self.service.suitable_converters(trans, hdca_id, instance_type)
 
     @router.get(
-        "/api/dataset_collections/{id}",
+        "/api/dataset_collections/{hdca_id}",
         summary="Returns detailed information about the given collection.",
     )
     def show(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
         view: str = ViewTypeQueryParam,
     ) -> AnyHDCA:
-        return self.service.show(trans, id, instance_type, view=view)
+        return self.service.show(trans, hdca_id, instance_type, view=view)
 
     @router.get(
         "/api/dataset_collections/{hdca_id}/contents/{parent_id}",

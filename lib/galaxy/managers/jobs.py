@@ -9,8 +9,10 @@ from typing import (
     Any,
     cast,
     Dict,
+    Iterable,
     List,
     Optional,
+    Set,
     Union,
 )
 
@@ -46,7 +48,6 @@ from galaxy.job_metrics import (
 )
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import (
-    ProvidesHistoryContext,
     ProvidesUserContext,
 )
 from galaxy.managers.datasets import DatasetManager
@@ -65,7 +66,6 @@ from galaxy.model import (
     WorkflowStep,
     YIELD_PER_ROWS,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -96,7 +96,7 @@ from galaxy.util.search import (
 log = logging.getLogger(__name__)
 
 JobStateT = str
-JobStatesT = Union[JobStateT, List[JobStateT]]
+JobStatesT = Union[JobStateT, Iterable[JobStateT]]
 
 
 STDOUT_LOCATION = "outputs/tool_stdout"
@@ -346,10 +346,9 @@ class JobManager:
 
     def stop(self, job, message=None):
         if not job.finished:
-            job.mark_deleted(self.app.config.track_jobs_in_database)
+            job.mark_deleted(self.app.config.track_jobs_in_database, message)
             session = self.app.model.session
-            with transaction(session):
-                session.commit()
+            session.commit()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
@@ -375,15 +374,15 @@ class JobSearch:
 
     def by_tool_input(
         self,
-        trans: ProvidesHistoryContext,
+        user: User,
         tool_id: str,
         tool_version: Optional[str],
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
-        job_state: Optional[JobStatesT] = "ok",
+        job_state: Optional[JobStatesT] = (Job.states.OK, Job.states.SKIPPED),
+        require_name_match: bool = True,
     ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
-        user = trans.user
         input_data = defaultdict(list)
 
         def populate_input_data_input_id(path, key, value):
@@ -393,7 +392,12 @@ class JobSearch:
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
-                src = current_case["src"]
+                src = current_case.get("src")
+                if src is None:
+                    # just a parameter named id.
+                    # TODO: dispatch on tool parameter type instead of values,
+                    # maybe with tool state variant
+                    return key, value
                 current_case = param
                 for i, p in enumerate(path):
                     if p == "values" and i == len(path) - 2:
@@ -420,6 +424,7 @@ class JobSearch:
             job_state=job_state,
             param_dump=param_dump,
             wildcard_param_dump=wildcard_param_dump,
+            require_name_match=require_name_match,
         )
 
     def __search(
@@ -431,6 +436,7 @@ class JobSearch:
         job_state: Optional[JobStatesT],
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
+        require_name_match: bool = True,
     ):
         search_timer = ExecutionTimer()
 
@@ -440,14 +446,16 @@ class JobSearch:
                 current_case = param_dump
                 for p in path:
                     current_case = current_case[p]
-                src = current_case["src"]
+                src = current_case.get("src")
+                if src is None:
+                    # just a parameter named id.
+                    # same workaround as in populate_input_data_input_id
+                    return key, value
                 value = job_input_ids[src][value]
                 return key, value
             return key, value
 
-        stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
-
-        stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
+        stmt = self._build_job_query(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
         data_conditions: List = []
 
@@ -469,7 +477,9 @@ class JobSearch:
                 data_types.append(t)
                 identifier = type_values["identifier"]
                 if t == "hda":
-                    stmt = self._build_stmt_for_hda(stmt, data_conditions, used_ids, k, v, identifier)
+                    stmt = self._build_stmt_for_hda(
+                        stmt, data_conditions, used_ids, k, v, identifier, require_name_match=require_name_match
+                    )
                 elif t == "ldda":
                     stmt = self._build_stmt_for_ldda(stmt, data_conditions, used_ids, k, v)
                 elif t == "hdca":
@@ -477,7 +487,8 @@ class JobSearch:
                 elif t == "dce":
                     stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v)
                 else:
-                    return []
+                    log.error("Unknown input data type %s", t)
+                    return None
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
@@ -508,9 +519,15 @@ class JobSearch:
                         continue
                     elif k == "chromInfo" and "?.len" in v:
                         continue
+                    elif k == "__when_value__":
+                        continue
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
-                        and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
+                        and_(
+                            model.Job.id == a.job_id,
+                            a.name == k,
+                            a.value == (None if v is None else json.dumps(v, sort_keys=True)),
+                        )
                     )
             else:
                 job_parameter_conditions = [model.Job.id == job[0]]
@@ -539,9 +556,7 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
-    def _build_job_subquery(
-        self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
-    ):
+    def _build_job_query(self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump):
         """Build subquery that selects a job with correct job parameters."""
         stmt = (
             select(model.Job.id)
@@ -561,16 +576,21 @@ class JobSearch:
             stmt = stmt.where(Job.tool_version == str(tool_version))
 
         if job_state is None:
-            stmt = stmt.where(
-                Job.state.in_(
-                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
-                )
-            )
+            job_states: Set[str] = {
+                Job.states.NEW,
+                Job.states.QUEUED,
+                Job.states.WAITING,
+                Job.states.RUNNING,
+                Job.states.OK,
+            }
         else:
             if isinstance(job_state, str):
-                stmt = stmt.where(Job.state == job_state)
-            elif isinstance(job_state, list):
-                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
+                job_states = {job_state}
+            else:
+                job_states = {*job_state}
+        if wildcard_param_dump.get("__when_value__") is False:
+            job_states = {Job.states.SKIPPED}
+        stmt = stmt.where(Job.state.in_(job_states))
 
         # exclude jobs with deleted outputs
         stmt = stmt.where(
@@ -589,10 +609,14 @@ class JobSearch:
                 continue
             elif k == "chromInfo" and "?.len" in v:
                 continue
-            value_dump = json.dumps(v, sort_keys=True)
-            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            elif k == "__when_value__":
+                # TODO: really need to separate this.
+                continue
+            value_dump = None if v is None else json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %') if value_dump else None
             a = aliased(JobParameter)
             if value_dump == wildcard_value:
+                # No wildcard needed, use exact match
                 stmt = stmt.join(a).where(
                     and_(
                         Job.id == a.job_id,
@@ -609,9 +633,9 @@ class JobSearch:
                     )
                 )
 
-        return stmt.subquery()
+        return stmt
 
-    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier, require_name_match=True):
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
         c = aliased(model.HistoryDatasetAssociation)
@@ -624,7 +648,7 @@ class JobSearch:
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
         )
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)  # type:ignore[attr-defined]
+        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
         name_condition = []
         if identifier:
             stmt = stmt.join(d)
@@ -634,7 +658,7 @@ class JobSearch:
                     d.value == json.dumps(identifier),
                 )
             )
-        else:
+        elif require_name_match:
             hda_stmt = hda_stmt.where(e.name == c.name)
             name_condition.append(b.name == c.name)
         hda_stmt = (
@@ -679,65 +703,97 @@ class JobSearch:
         used_ids.append(a.ldda_id)
         return stmt
 
-    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v):
+    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, require_name_match=True):
+        # Determine depth based on collection_type of the HDCA we're matching against
+        collection_type = self.sa_session.scalar(
+            select(model.DatasetCollection.collection_type)
+            .select_from(model.HistoryDatasetCollectionAssociation)
+            .join(model.DatasetCollection)
+            .where(model.HistoryDatasetCollectionAssociation.id == v)
+        )
+        depth = collection_type.count(":") if collection_type else 0
+
         a = aliased(model.JobToInputDatasetCollectionAssociation)
-        b = aliased(model.HistoryDatasetCollectionAssociation)
-        c = aliased(model.HistoryDatasetCollectionAssociation)
+        hdca_input = aliased(model.HistoryDatasetCollectionAssociation)
+        root_collection = aliased(model.DatasetCollection)
+
+        dce_left = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        dce_right = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        hda_left = aliased(model.HistoryDatasetAssociation)
+        hda_right = aliased(model.HistoryDatasetAssociation)
+
+        # Start joins from job → input HDCA → its collection → DCE
         stmt = stmt.add_columns(a.dataset_collection_id)
-        stmt = stmt.join(a, a.job_id == model.Job.id).join(b, b.id == a.dataset_collection_id).join(c, b.name == c.name)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
+        stmt = stmt.join(root_collection, root_collection.id == hdca_input.collection_id)
+        stmt = stmt.join(dce_left[0], dce_left[0].dataset_collection_id == root_collection.id)
+
+        # Join to target HDCA (v), then to its collection and its first-level DCE
+        hdca_target = aliased(model.HistoryDatasetCollectionAssociation)
+        target_collection = aliased(model.DatasetCollection)
+        stmt = stmt.join(hdca_target, hdca_target.id == v)
+        stmt = stmt.join(target_collection, target_collection.id == hdca_target.collection_id)
+        stmt = stmt.join(dce_right[0], dce_right[0].dataset_collection_id == target_collection.id)
+
+        # Parallel walk the structure
+        for i in range(1, depth + 1):
+            stmt = (
+                stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
+                .join(dce_right[i], dce_right[i].dataset_collection_id == dce_right[i - 1].child_collection_id)
+                .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
+            )
+
+        # Compare leaf-level HDAs
+        leaf_left = dce_left[-1]
+        leaf_right = dce_right[-1]
+        stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
+        stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
+
         data_conditions.append(
             and_(
                 a.name.in_(k),
-                c.id == v,
-                or_(
-                    and_(b.deleted == false(), b.id == v),
-                    and_(
-                        or_(
-                            c.copied_from_history_dataset_collection_association_id == b.id,
-                            b.copied_from_history_dataset_collection_association_id == c.id,
-                        ),
-                        c.deleted == false(),
-                    ),
-                ),
+                hda_left.dataset_id == hda_right.dataset_id,
             )
         )
-        used_ids.append(a.dataset_collection_id)
+
+        used_ids.append(a.dataset_collection_id)  # input-side HDCA
         return stmt
 
     def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
+        dce = self.sa_session.get_one(model.DatasetCollectionElement, v)
+        if dce.child_collection:
+            depth = dce.child_collection.collection_type.count(":") + 1
+        else:
+            depth = 0
         a = aliased(model.JobToInputDatasetCollectionElementAssociation)
-        b = aliased(model.DatasetCollectionElement)
-        c = aliased(model.DatasetCollectionElement)
-        d = aliased(model.HistoryDatasetAssociation)
-        e = aliased(model.HistoryDatasetAssociation)
+        dce_left = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        dce_right = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
+        hda_left = aliased(model.HistoryDatasetAssociation)
+        hda_right = aliased(model.HistoryDatasetAssociation)
+
+        # Base joins
         stmt = stmt.add_columns(a.dataset_collection_element_id)
-        stmt = (
-            stmt.join(a, a.job_id == model.Job.id)
-            .join(b, b.id == a.dataset_collection_element_id)
-            .join(
-                c,
-                and_(
-                    c.element_identifier == b.element_identifier,
-                    or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
-                ),
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        stmt = stmt.join(dce_left[0], dce_left[0].id == a.dataset_collection_element_id)
+        stmt = stmt.join(dce_right[0], dce_right[0].id == v)
+
+        # Parallel walk the collection structure
+        for i in range(1, depth + 1):
+            stmt = (
+                stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
+                .join(dce_right[i], dce_right[i].dataset_collection_id == dce_right[i - 1].child_collection_id)
+                .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
             )
-            .outerjoin(d, d.id == c.hda_id)
-            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
-        )
-        data_conditions.append(
-            and_(
-                a.name.in_(k),
-                or_(
-                    c.child_collection_id == b.child_collection_id,
-                    and_(
-                        c.hda_id == b.hda_id,
-                        d.id == c.hda_id,
-                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
-                    ),
-                ),
-                c.id == v,
-            )
-        )
+
+        # Compare dataset_ids at the leaf level
+        leaf_left = dce_left[-1]
+        leaf_right = dce_right[-1]
+        stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
+        stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
+
+        data_conditions.append(and_(a.name.in_(k), hda_left.dataset_id == hda_right.dataset_id))
+
         used_ids.append(a.dataset_collection_element_id)
         return stmt
 
@@ -788,7 +844,7 @@ def invocation_job_source_iter(sa_session, invocation_id):
 
 def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
     single_job_stmnt = (
-        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
         .join(
             WorkflowInvocationStep,
@@ -799,7 +855,7 @@ def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation
         .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
     )
     collection_job_stmnt = (
-        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
         .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
         .join(
@@ -1084,7 +1140,11 @@ def summarize_job_parameters(trans, job: Job):
                         is_valid = False
                     if is_valid:
                         rval.append(
-                            dict(text=input.test_param.label, depth=depth, value=input.cases[current_case].value)
+                            dict(
+                                text=input.test_param.label or input.test_param.name,
+                                depth=depth,
+                                value=input.cases[current_case].value,
+                            )
                         )
                         rval.extend(
                             inputs_recursive(
@@ -1247,6 +1307,6 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
     return session.scalars(stmt).all()
 
 
-def get_job(session, *where_clauses):
+def get_job(session: galaxy_scoped_session, *where_clauses):
     stmt = select(Job).where(*where_clauses).limit(1)
     return session.scalars(stmt).first()

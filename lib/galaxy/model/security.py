@@ -49,7 +49,6 @@ from galaxy.model import (
     UserGroupAssociation,
     UserRoleAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.role import (
     get_npns_roles,
     get_private_user_role,
@@ -367,17 +366,21 @@ class GalaxyRBACAgent(RBACAgent):
                     if len(base_result) == len(new_result):
                         common_result = set(base_result).intersection(new_result)
                         if len(common_result) == len(base_result):
-                            log.debug("Match on permissions for id %d" % item.library_dataset_id)
+                            log.debug("Match on permissions for id %d", item.library_dataset_id)
                         # TODO: Fix this failure message:
                         else:
                             log.debug(
-                                "Error: dataset %d; originally: %s; now: %s"
-                                % (item.library_dataset_id, base_result, new_result)
+                                "Error: dataset %d; originally: %s; now: %s",
+                                item.library_dataset_id,
+                                base_result,
+                                new_result,
                             )
                     else:
                         log.debug(
-                            "Error: dataset %d: had %d entries, now %d entries"
-                            % (item.library_dataset_id, len(base_result), len(new_result))
+                            "Error: dataset %d: had %d entries, now %d entries",
+                            item.library_dataset_id,
+                            len(base_result),
+                            len(new_result),
                         )
                 log.debug("get_actions_for_items: Test end")
             except Exception as e:
@@ -431,9 +434,9 @@ class GalaxyRBACAgent(RBACAgent):
             for item in items:
                 orig_value = self.allow_action(user_roles, action, item)
                 if orig_value == ret_allow_action[item.id]:
-                    log.debug("Item %d: success" % item.id)
+                    log.debug("Item %d: success", item.id)
                 else:
-                    log.debug("Item %d: fail: original: %s; new: %s" % (item.id, orig_value, ret_allow_action[item.id]))
+                    log.debug("Item %d: fail: original: %s; new: %s", item.id, orig_value, ret_allow_action[item.id])
             log.debug("allow_action_for_items: test end")
         return ret_allow_action
 
@@ -691,29 +694,25 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
     def associate_user_group(self, user, group):
         assoc = UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def associate_user_role(self, user, role):
         assoc = UserRoleAssociation(user, role)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def associate_group_role(self, group, role):
         assoc = GroupRoleAssociation(group, role)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def associate_action_dataset_role(self, action, dataset, role):
         assoc = DatasetPermissions(action, dataset, role)
         self.sa_session.add(assoc)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return assoc
 
     def create_user_role(self, user, app):
@@ -765,8 +764,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             num_in_groups = len(in_groups) + 1
         else:
             num_in_groups = len(in_groups)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return role, num_in_groups
 
     def get_sharing_roles(self, user):
@@ -812,8 +810,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dup)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         if history:
             for history in user.active_histories:
                 self.history_set_default_permissions(
@@ -852,8 +849,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dhp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         if dataset:
             # Only deal with datasets that are not purged
             for hda in history.activatable_datasets:
@@ -921,8 +917,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed and flush:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         return ""
 
     def set_dataset_permission(self, dataset, permission=None):
@@ -951,8 +946,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def get_permissions(self, item):
         """
@@ -1004,8 +998,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
     def _create_sharing_role(self, users):
         sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
         self.sa_session.add(sharing_role)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         for user in users:
             self.associate_user_role(user, sharing_role)
         return sharing_role
@@ -1046,8 +1039,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                             permissions[self.permitted_actions.DATASET_MANAGE_PERMISSIONS] = roles
                             self.set_dataset_permission(library_item.dataset, permissions)
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def set_library_item_permission(self, library_item, permission=None):
         """
@@ -1074,8 +1066,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     self.sa_session.add(item_permission)
                     flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def library_is_public(self, library, contents=False):
         if contents:
@@ -1100,8 +1091,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.delete(lp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def folder_is_public(self, folder):
         for sub_folder in folder.folders:
@@ -1212,8 +1202,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.sa_session.delete(dp)
                 flush_needed = True
         if flush_needed:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def derive_roles_from_access(self, trans, item_id, cntrller, library=False, **kwd):
         # Check the access permission on a dataset.  If library is true, item_id refers to a library.  If library
@@ -1340,8 +1329,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 if not found_permission_class.filter_by(role_id=private_role.id, action=action.action).first():
                     lp = found_permission_class(action.action, target_library_item, private_role)
                     self.sa_session.add(lp)
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
+                    self.sa_session.commit()
 
     def get_permitted_libraries(self, trans, user, actions):
         """
@@ -1394,9 +1382,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 if can_show:
                     return True, hidden_folder_ids
                 if hidden_folder_ids:
-                    hidden_folder_ids = "%s,%d" % (hidden_folder_ids, folder.id)
+                    hidden_folder_ids = f"{hidden_folder_ids},{folder.id}"
                 else:
-                    hidden_folder_ids = "%d" % folder.id
+                    hidden_folder_ids = f"{folder.id}"
         return False, hidden_folder_ids
 
     def get_showable_folders(
@@ -1650,9 +1638,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             if can_access:
                 return True, hidden_folder_ids
             if hidden_folder_ids:
-                hidden_folder_ids = "%s,%d" % (hidden_folder_ids, sub_folder.id)
+                hidden_folder_ids = f"{hidden_folder_ids},{sub_folder.id}"
             else:
-                hidden_folder_ids = "%d" % sub_folder.id
+                hidden_folder_ids = f"{sub_folder.id}"
         return False, hidden_folder_ids
 
 
@@ -1690,7 +1678,7 @@ class HostAgent(RBACAgent):
             if action == self.permitted_actions.DATASET_ACCESS and action.action not in [
                 dp.action for dp in hda.dataset.actions
             ]:
-                log.debug("Allowing access to public dataset with hda: %i." % hda.id)
+                log.debug("Allowing access to public dataset with hda: %d.", hda.id)
                 return True  # dataset has no roles associated with the access permission, thus is already public
             stmt = (
                 select(HistoryDatasetAssociationDisplayAtAuthorization)
@@ -1699,9 +1687,7 @@ class HostAgent(RBACAgent):
             )
             hdadaa = self.sa_session.scalars(stmt).first()
             if not hdadaa:
-                log.debug(
-                    "Denying access to private dataset with hda: %i.  No hdadaa record for this dataset." % hda.id
-                )
+                log.debug("Denying access to private dataset with hda: %d.  No hdadaa record for this dataset.", hda.id)
                 return False  # no auth
             # We could just look up the reverse of addr, but then we'd also
             # have to verify it with the forward address and special case any
@@ -1719,17 +1705,18 @@ class HostAgent(RBACAgent):
                     pass  # can't resolve, try next
             else:
                 log.debug(
-                    "Denying access to private dataset with hda: %i.  Remote addr is not a valid server for site: %s."
-                    % (hda.id, hdadaa.site)
+                    "Denying access to private dataset with hda: %d.  Remote addr is not a valid server for site: %s.",
+                    hda.id,
+                    hdadaa.site,
                 )
                 return False  # remote addr is not in the server list
             if (datetime.utcnow() - hdadaa.update_time) > timedelta(seconds=60):
                 log.debug(
-                    "Denying access to private dataset with hda: %i.  Authorization was granted, but has expired."
-                    % hda.id
+                    "Denying access to private dataset with hda: %d.  Authorization was granted, but has expired.",
+                    hda.id,
                 )
                 return False  # not authz'd in the last 60 seconds
-            log.debug("Allowing access to private dataset with hda: %i.  Remote server is: %s." % (hda.id, server))
+            log.debug("Allowing access to private dataset with hda: %d.  Remote server is: %s.", hda.id, server)
             return True
         else:
             raise Exception("The dataset access permission is the only valid permission in the host security agent.")
@@ -1746,8 +1733,7 @@ class HostAgent(RBACAgent):
         else:
             hdadaa = HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
         self.sa_session.add(hdadaa)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
 
 def _walk_action_roles(permissions, query_action):

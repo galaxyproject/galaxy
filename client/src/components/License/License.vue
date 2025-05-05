@@ -18,10 +18,10 @@
 </template>
 
 <script>
-import axios from "axios";
 import ExternalLink from "components/ExternalLink";
 import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
+
+import { GalaxyApi } from "@/api";
 
 export default {
     components: {
@@ -62,9 +62,14 @@ export default {
     methods: {
         fetchLicense() {
             this.license = null;
-            const url = `${getAppRoot()}api/licenses/${this.licenseId}`;
-            axios
-                .get(url)
+            GalaxyApi()
+                .GET("/api/licenses/{license_id}", {
+                    params: {
+                        path: {
+                            license_id: this.licenseId,
+                        },
+                    },
+                })
                 .then((response) => response.data)
                 .then((data) => {
                     this.license = data;

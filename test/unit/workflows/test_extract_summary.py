@@ -121,6 +121,10 @@ class MockHistory:
     def active_contents(self):
         return self.active_datasets
 
+    @property
+    def visible_contents(self):
+        return self.active_contents
+
 
 class MockTrans:
     def __init__(self, history):

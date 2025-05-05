@@ -1,5 +1,5 @@
-""" This module is responsible for converting between Galaxy's tool
-input description and the CWL description for a job json. """
+"""This module is responsible for converting between Galaxy's tool
+input description and the CWL description for a job json."""
 
 import json
 import logging

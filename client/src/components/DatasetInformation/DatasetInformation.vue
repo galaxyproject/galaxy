@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { RouterLink } from "vue-router";
+
 import { type HDADetailed } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
+import HelpText from "../Help/HelpText.vue";
 import DatasetHashes from "@/components/DatasetInformation/DatasetHashes.vue";
 import DatasetSources from "@/components/DatasetInformation/DatasetSources.vue";
 import DecodedId from "@/components/DecodedId.vue";
@@ -51,7 +54,7 @@ defineProps<Props>();
                     <td id="file-size" v-html="bytesToString(dataset.file_size, false)" />
                 </tr>
 
-                <tr>
+                <tr v-if="'metadata_dbkey' in dataset">
                     <td>Dbkey</td>
 
                     <td id="dbkey">
@@ -60,7 +63,9 @@ defineProps<Props>();
                 </tr>
 
                 <tr>
-                    <td>Format</td>
+                    <td>
+                        <HelpText uri="galaxy.datasets.formatVsDatatypeVsExtension" text="Format" />
+                    </td>
 
                     <td id="format">
                         {{ dataset.file_ext }}
@@ -93,6 +98,7 @@ defineProps<Props>();
                         <div id="history_id">
                             {{ dataset.history_id }}
                             <DecodedId :id="dataset.history_id" />
+                            (<RouterLink :to="`/histories/view?id=${dataset.history_id}`">view</RouterLink>)
                         </div>
                     </td>
                 </tr>

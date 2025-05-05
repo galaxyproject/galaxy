@@ -1,4 +1,4 @@
-""" Compute tool recommendations """
+"""Compute tool recommendations"""
 
 import json
 import logging

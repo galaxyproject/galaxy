@@ -27,7 +27,6 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util import requests
 from . import IdentityProvider
@@ -118,10 +117,16 @@ class OIDCAuthnzBase(IdentityProvider):
         if custos_authnz_token is None:
             raise exceptions.AuthenticationFailed("cannot find authorized user while refreshing token")
         id_token_decoded = self._decode_token_no_signature(custos_authnz_token.id_token)
-        # do not refresh tokens if they didn't reach their half lifetime
+        # do not refresh tokens if the id_token didn't reach its half-life
         if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2 * int(time.time()):
             return False
-        log.info(custos_authnz_token.access_token)
+        if not custos_authnz_token.refresh_token:
+            return False
+        refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
+        # do not attempt to use refresh token that is already expired
+        if int(refresh_token_decoded["exp"]) <= int(time.time()):
+            # in the future we might want to log out the user here
+            return False
         oauth2_session = self._create_oauth2_session()
         token_endpoint = self.config.token_endpoint
         if self.config.iam_client_secret:
@@ -293,8 +298,7 @@ class OIDCAuthnzBase(IdentityProvider):
             redirect_url = "/"
 
         trans.sa_session.add(custos_authnz_token)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return redirect_url, custos_authnz_token.user
 
@@ -342,8 +346,7 @@ class OIDCAuthnzBase(IdentityProvider):
 
         trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return login_redirect_url, user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
@@ -360,8 +363,7 @@ class OIDCAuthnzBase(IdentityProvider):
                     if id_token_decoded["email"] == email:
                         index = idx
             trans.sa_session.delete(provider_tokens[index])
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return True, "", disconnect_redirect_url
         except Exception as e:
             return False, f"Failed to disconnect provider {provider}: {util.unicodify(e)}", None
@@ -488,10 +490,10 @@ class OIDCAuthnzBase(IdentityProvider):
         if "@" in username:
             username = username.split("@")[0]  # username created from username portion of email
         username = util.ready_name_for_url(username).lower()
-        if trans.sa_session.query(trans.app.model.User).filter_by(username=username).first():
+        if trans.sa_session.query(User).filter_by(username=username).first():
             # if username already exists in database, append integer and iterate until unique username found
             count = 0
-            while trans.sa_session.query(trans.app.model.User).filter_by(username=(f"{username}{count}")).first():
+            while trans.sa_session.query(User).filter_by(username=(f"{username}{count}")).first():
                 count += 1
             return f"{username}{count}"
         else:

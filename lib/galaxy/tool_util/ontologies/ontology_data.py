@@ -9,10 +9,8 @@ from typing import (
 )
 
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
-from galaxy.tool_util.parser import (
-    ToolSource,
-    XrefDict,
-)
+from galaxy.tool_util.parser import ToolSource
+from galaxy.tool_util_models.tool_source import XrefDict
 from galaxy.util.resources import resource_string
 
 
@@ -27,7 +25,7 @@ def _multi_dict_mapping(content: str) -> Dict[str, List[str]]:
 
 
 def _read_ontology_data_text(filename: str) -> str:
-    return resource_string(__package__, filename)
+    return resource_string(__name__, filename)
 
 
 BIOTOOLS_MAPPING_FILENAME = "biotools_mappings.tsv"

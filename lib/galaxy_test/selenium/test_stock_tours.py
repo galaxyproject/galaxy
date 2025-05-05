@@ -50,5 +50,5 @@ class TourCallback:
     def __init__(self, test_case: TestStockToursTestCase):
         self.test_case = test_case
 
-    def handle_step(self, step, step_index):
+    def handle_step(self, step, step_index: int):
         self.test_case.assert_baseline_accessibility()

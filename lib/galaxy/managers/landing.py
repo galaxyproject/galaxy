@@ -19,7 +19,6 @@ from galaxy.model import (
     ToolLandingRequest as ToolLandingRequestModel,
     WorkflowLandingRequest as WorkflowLandingRequestModel,
 )
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     ClaimLandingPayload,
@@ -199,5 +198,4 @@ class LandingRequestManager:
     def _save(self, model: LandingRequestModel):
         sa_session = self.sa_session
         sa_session.add(model)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()

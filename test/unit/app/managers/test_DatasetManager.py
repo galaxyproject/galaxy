@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from unittest import mock
 

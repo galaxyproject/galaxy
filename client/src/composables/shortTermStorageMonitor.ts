@@ -30,6 +30,7 @@ export function useShortTermStorageMonitor() {
         fetchStatus,
         completedCondition: (status?: string) => status === READY_STATE,
         failedCondition: (status?: string) => typeof status === "string" && !VALID_STATES.includes(status),
+        fetchFailureReason: fetchStatus, // The error message is the status itself for short-term storage requests
         defaultPollDelay: DEFAULT_POLL_DELAY,
         expirationTime: DEFAULT_EXPIRATION_TIME,
     });

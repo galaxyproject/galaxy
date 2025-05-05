@@ -16,6 +16,7 @@ from base64 import b64decode
 
 from galaxy.files import ConfiguredFileSources
 from galaxy.files.uris import stream_url_to_file
+from galaxy.util.compression_utils import CompressedFile
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
@@ -52,19 +53,6 @@ def check_archive(archive_file, dest_dir):
     return True
 
 
-def unpack_archive(archive_file, dest_dir):
-    """
-    Unpack a tar and/or gzipped archive into a destination directory.
-    """
-    if zipfile.is_zipfile(archive_file):
-        with zipfile.ZipFile(archive_file, "r") as zip_archive:
-            zip_archive.extractall(path=dest_dir)
-    else:
-        archive_fp = tarfile.open(archive_file, mode="r")
-        archive_fp.extractall(path=dest_dir)
-        archive_fp.close()
-
-
 def main(options, args):
     is_url = bool(options.is_url)
     is_file = bool(options.is_file)
@@ -84,7 +72,8 @@ def main(options, args):
 
     # Unpack archive.
     check_archive(archive_file, dest_dir)
-    unpack_archive(archive_file, dest_dir)
+    with CompressedFile(archive_file) as cf:
+        cf.archive.extractall(dest_dir)
 
 
 if __name__ == "__main__":

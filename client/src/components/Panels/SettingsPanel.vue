@@ -10,7 +10,17 @@ import ActivitySettings from "@/components/ActivityBar/ActivitySettings.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
-const activityStore = useActivityStore();
+const props = defineProps<{
+    activityBarId: string;
+    heading: string;
+    searchPlaceholder: string;
+}>();
+
+const emit = defineEmits<{
+    (e: "activityClicked", activityId: string): void;
+}>();
+
+const activityStore = useActivityStore(props.activityBarId);
 
 const confirmRestore = ref(false);
 const query = ref("");
@@ -21,9 +31,9 @@ function onQuery(newQuery: string) {
 </script>
 
 <template>
-    <ActivityPanel title="Additional Activities">
+    <ActivityPanel :title="props.heading">
         <template v-slot:header>
-            <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
+            <DelayedInput :delay="100" :placeholder="props.searchPlaceholder" @change="onQuery" />
         </template>
         <template v-slot:header-buttons>
             <BButton
@@ -37,7 +47,10 @@ function onQuery(newQuery: string) {
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
             </BButton>
         </template>
-        <ActivitySettings :query="query" />
+        <ActivitySettings
+            :query="query"
+            :activity-bar-id="props.activityBarId"
+            @activityClicked="(...args) => emit('activityClicked', ...args)" />
         <BModal
             v-model="confirmRestore"
             title="Restore Activity Bar Defaults"

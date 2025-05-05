@@ -41,10 +41,7 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script,
 )
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
@@ -129,7 +126,7 @@ class BaseJobRunner:
         self.work_threads = []
         log.debug(f"Starting {self.nworkers} {self.runner_name} workers")
         for i in range(self.nworkers):
-            worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
+            worker = threading.Thread(name=f"{self.runner_name}.work_thread-{i}", target=self.run_next)
             worker.daemon = True
             worker.start()
             self.work_threads.append(worker)
@@ -300,7 +297,9 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            if job_wrapper.prepare() is False:
+                # job cache
+                return False
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
@@ -415,12 +414,8 @@ class BaseJobRunner:
             for dataset in (
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
-                if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    stmt = (
-                        select(self.app.model.JobToOutputDatasetAssociation)
-                        .filter_by(job=job, dataset=dataset)
-                        .limit(1)
-                    )
+                if isinstance(dataset, model.HistoryDatasetAssociation):
+                    stmt = select(model.JobToOutputDatasetAssociation).filter_by(job=job, dataset=dataset).limit(1)
                     joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
@@ -493,7 +488,7 @@ class BaseJobRunner:
                     env=os.environ,
                     preexec_fn=os.setpgrp,
                 )
-            log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
+            log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:
         job_metrics = job_wrapper.app.job_metrics
@@ -610,6 +605,7 @@ class BaseJobRunner:
     def mark_as_resubmitted(self, job_state: "JobState", info: Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
+            assert self.app.job_manager.job_handler.dispatcher
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
@@ -669,8 +665,7 @@ class BaseJobRunner:
 
             # Flush with streams...
             self.sa_session.add(job)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
             if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR

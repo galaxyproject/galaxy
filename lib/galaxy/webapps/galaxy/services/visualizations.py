@@ -22,7 +22,6 @@ from galaxy.model import (
     Visualization,
     VisualizationRevision,
 )
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     add_item_annotation,
     get_item_annotation_str,
@@ -77,7 +76,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesUserContext,
         payload: VisualizationIndexQueryPayload,
         include_total_count: bool = False,
-    ) -> Tuple[VisualizationSummaryList, int]:
+    ) -> Tuple[VisualizationSummaryList, Union[int, None]]:
         """Return a list of Visualizations viewable by the user
 
         :rtype:     list
@@ -175,8 +174,7 @@ class VisualizationsService(ServiceBase):
 
             session = trans.sa_session
             session.add(revision)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
         return VisualizationCreateResponse(id=str(visualization.id))
 
@@ -221,8 +219,7 @@ class VisualizationsService(ServiceBase):
         # allow updating vis title
         visualization.title = title
         visualization.deleted = deleted
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return VisualizationUpdateResponse(**rval) if rval else None
 
@@ -280,8 +277,7 @@ class VisualizationsService(ServiceBase):
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
         trans.sa_session.add(revision)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return revision
 
     def _create_visualization(
@@ -323,8 +319,7 @@ class VisualizationsService(ServiceBase):
 
         session = trans.sa_session
         session.add(visualization)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         return visualization
 
@@ -359,6 +354,5 @@ class VisualizationsService(ServiceBase):
         # TODO: need to handle custom db keys.
         imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
         trans.sa_session.add(imported_visualization)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return imported_visualization

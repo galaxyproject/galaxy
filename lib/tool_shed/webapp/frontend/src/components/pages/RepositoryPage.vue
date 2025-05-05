@@ -10,13 +10,13 @@ import ManagePushAccess from "@/components/ManagePushAccess.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
 import RevisionActions from "@/components/RevisionActions.vue"
 import RepositoryHealth from "@/components/RepositoryHealth.vue"
-import ConfigFileContents from "@/components/ConfigFileContents.vue"
+import InstallingHowto from "@/components/InstallingHowto.vue"
 import RepositoryLinks from "@/components/RepositoryLinks.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
-import { type RevisionMetadata } from "@/schema"
+import { type RevisionMetadata, type RepositoryTool as RepositoryToolModel } from "@/schema"
 import { ToolShedApi } from "@/schema"
 import { notifyOnCatch } from "@/util"
-import { UPDATING_WITH_PLANEMO_URL, EPHEMERIS_TRAINING } from "@/constants"
+import { UPDATING_WITH_PLANEMO_URL } from "@/constants"
 
 interface RepositoryProps {
     repositoryId: string
@@ -63,6 +63,18 @@ watch(
         repositoryStore.setId(second)
     }
 )
+
+function trsToolId(tool: RepositoryToolModel) {
+    const repo = repository.value
+    if (repo) {
+        const repoOwner = repo.owner
+        const repoName = repo.name
+        const toolId = tool.id
+        return `${repoOwner}~${repoName}~${toolId}`
+    } else {
+        return undefined
+    }
+}
 
 const repositoryRevisionKeys = computed(() => {
     const keys = []
@@ -164,13 +176,6 @@ const invalidTools = computed(() => currentMetadata.value?.invalid_tools || [])
 const malicious = computed(() => currentMetadata.value?.malicious || false)
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
 const canPush = computed(() => repositoryPermissions.value?.can_push || false)
-const toolsYaml = computed(
-    () =>
-        `tools:
-- name: ${repositoryName.value}
-  owner: ${repositoryOwner.value}
-`
-)
 </script>
 
 <template>
@@ -217,16 +222,11 @@ const toolsYaml = computed(
             </q-card-section>
             <q-separator />
             <q-card-section>
-                <div class="repository-select-label text-h5 q-mr-lg">Installing</div>
-                This repository can be installed by Galaxy admins by searching for it in the
-                <code>Admin -> Tool Management -> Install and Uninstall</code> and choosing to install it. It can also
-                be installed using the Galaxy API via
-                <a href="https://ephemeris.readthedocs.io/en/latest/commands/shed-tools.html">Ephemeris</a> or
-                <a href="https://github.com/galaxyproject/ansible-galaxy-tools">Ansible Galaxy Tools</a>. The following
-                YAML block will instruct these tools to install the latest revision of this repository.
-                <config-file-contents name="tools.yml" :contents="toolsYaml" what="Ephemeris tools configuration" />
-                Be sure to check out the <a :href="EPHEMERIS_TRAINING">tool installation training materials</a> for more
-                information.
+                <InstallingHowto
+                    v-if="repositoryName && repositoryOwner"
+                    :repository-name="repositoryName"
+                    :repository-owner="repositoryOwner"
+                />
             </q-card-section>
             <q-separator />
             <q-card-section v-if="canManage">
@@ -265,7 +265,13 @@ const toolsYaml = computed(
                     <q-list bordered class="rounded-borders" v-if="tools && tools.length > 0">
                         <!-- style="max-width: 600px"> -->
                         <q-item-label header>Tools</q-item-label>
-                        <repository-tool v-for="tool in tools" :key="tool.id" :tool="tool"> </repository-tool>
+                        <repository-tool
+                            v-for="tool in tools"
+                            :key="tool.id"
+                            :tool="tool"
+                            :trs-tool-id="trsToolId(tool)"
+                            :changeset-revision="currentMetadata.changeset_revision"
+                        ></repository-tool>
                     </q-list>
 
                     <q-list bordered class="rounded-borders q-mt-md" v-if="invalidTools && invalidTools.length > 0">

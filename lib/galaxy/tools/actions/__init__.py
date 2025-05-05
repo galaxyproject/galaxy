@@ -9,6 +9,8 @@ from typing import (
     cast,
     Dict,
     List,
+    Mapping,
+    MutableMapping,
     Optional,
     Set,
     Tuple,
@@ -33,11 +35,11 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tool_util.parser.output_objects import tool_output_is_collection
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -70,6 +72,7 @@ from galaxy.util.template import fill_template
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
     from galaxy.tool_util.parser.output_objects import ToolOutput
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ class ToolAction:
     @abstractmethod
     def execute(
         self,
-        tool,
+        tool: "Tool",
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
@@ -415,14 +418,14 @@ class DefaultToolAction(ToolAction):
 
     def execute(
         self,
-        tool,
+        tool: "Tool",
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
-        dataset_collection_elements=None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
         completed_job: Optional[Job] = None,
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
@@ -522,6 +525,7 @@ class DefaultToolAction(ToolAction):
         async_tool = tool.tool_type == "data_source_async"
 
         def handle_output(name, output, hidden=None):
+            assert incoming is not None
             if async_tool and name in incoming:
                 # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
@@ -533,7 +537,7 @@ class DefaultToolAction(ToolAction):
                     output,
                     wrapped_params.params,
                     inp_data,
-                    inp_dataset_collections,
+                    input_collections,
                     input_ext,
                     python_template_version=tool.python_template_version,
                     execution_cache=execution_cache,
@@ -546,10 +550,11 @@ class DefaultToolAction(ToolAction):
                         if output_dataset.name == name:
                             create_datasets = False
                             completed_data = output_dataset.dataset
+                            ext = completed_data.extension
                             dataset = output_dataset.dataset.dataset
                             break
 
-                data = app.model.HistoryDatasetAssociation(
+                data = HistoryDatasetAssociation(
                     extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False
                 )
                 if create_datasets:
@@ -603,19 +608,19 @@ class DefaultToolAction(ToolAction):
             out_data[name] = data
             if output.actions:
                 # Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
-                output_action_params = dict(out_data)
+                output_action_params: Dict[str, Any] = dict(out_data)
                 output_action_params.update(wrapped_params.params)
                 output_action_params["__python_template_version__"] = tool.python_template_version
                 output.actions.apply_action(data, output_action_params)
             # Flush all datasets at once.
             return data
 
-        child_dataset_names = set()
+        child_dataset_names: Set[str] = set()
 
         for name, output in tool.outputs.items():
             if not filter_output(tool, output, incoming):
                 handle_output_timer = ExecutionTimer()
-                if output.collection:
+                if tool_output_is_collection(output):  # Only XML tools include collections in tool.outputs
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
                         # Output collection is mapped over and has already been copied from original job
                         continue
@@ -629,10 +634,12 @@ class DefaultToolAction(ToolAction):
                         # Add elements to top-level collection, unless nested...
                         current_element_identifiers = element_identifiers
                         current_collection_type = output.structure.collection_type
+                        assert current_collection_type
 
                         for parent_id in output_part_def.parent_ids or []:
+                            # Get subcollection type
                             # TODO: replace following line with formal abstractions for doing this.
-                            current_collection_type = ":".join(current_collection_type.split(":")[1:])
+                            current_collection_type = current_collection_type.partition(":")[2]
                             name_to_index = {
                                 value["name"]: index for (index, value) in enumerate(current_element_identifiers)
                             }
@@ -751,18 +758,16 @@ class DefaultToolAction(ToolAction):
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
             redirect_url += f"&GALAXY_URL={GALAXY_URL}"
             # Job should not be queued, so set state to ok
-            job.set_state(app.model.Job.states.OK)
+            job.set_state(Job.states.OK)
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             trans.response.send_redirect(redirect_url)
         else:
             if flush_job:
                 # Set HID and add to history.
                 job_flush_timer = ExecutionTimer()
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
         return job, out_data, history
@@ -810,8 +815,7 @@ class DefaultToolAction(ToolAction):
         session = trans.sa_session()
         try:
             session.expire_on_commit = False
-            with transaction(session):
-                session.commit()
+            session.commit()
         finally:
             session.expire_on_commit = True
         try:
@@ -879,7 +883,13 @@ class DefaultToolAction(ToolAction):
         jtid.dataset.hid = jtod.dataset.hid
         log.info(f"Job {job_to_remap.id} input HDA {jtod.dataset.id} remapped to new HDA {jtid.dataset.id}")
 
-    def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
+    def _wrapped_params(
+        self,
+        trans,
+        tool: "Tool",
+        incoming: "ToolStateJobInstancePopulatedT",
+        input_datasets: Optional[LegacyUnprefixedDict] = None,
+    ) -> WrappedParameters:
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
         return wrapped_params
 
@@ -891,15 +901,17 @@ class DefaultToolAction(ToolAction):
 
         return on_text_for_names(input_names)
 
-    def _new_job_for_session(self, trans, tool, history) -> Tuple[model.Job, Optional[model.GalaxySession]]:
-        job = trans.app.model.Job()
+    def _new_job_for_session(
+        self, trans, tool: "Tool", history: Optional[History]
+    ) -> Tuple[Job, Optional[model.GalaxySession]]:
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         galaxy_session = None
 
         if hasattr(trans, "get_galaxy_session"):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
-            if isinstance(galaxy_session, trans.model.GalaxySession):
+            if isinstance(galaxy_session, model.GalaxySession):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
@@ -912,7 +924,8 @@ class DefaultToolAction(ToolAction):
             job.tool_version = tool.version
         except AttributeError:
             job.tool_version = "1.0.0"
-        job.dynamic_tool = tool.dynamic_tool
+        if tool.dynamic_tool:
+            job.dynamic_tool_id = model.cached_id(tool.dynamic_tool)
         return job, galaxy_session
 
     def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
@@ -956,10 +969,13 @@ class DefaultToolAction(ToolAction):
             job.add_parameter(name, value)
         self._record_input_datasets(trans, job, inp_data)
 
-    def _record_outputs(self, job, out_data, output_collections):
+    def _record_outputs(
+        self, job: Job, out_data: Mapping[str, "DatasetInstance"], output_collections: "OutputCollections"
+    ):
         out_collections = output_collections.out_collections
         out_collection_instances = output_collections.out_collection_instances
         for name, dataset in out_data.items():
+            assert isinstance(dataset, HistoryDatasetAssociation)
             job.add_output_dataset(name, dataset)
         for name, dataset_collection in out_collections.items():
             job.add_implicit_output_dataset_collection(name, dataset_collection)
@@ -1156,7 +1172,7 @@ def determine_output_format(
     output: "ToolOutput",
     parameter_context,
     input_datasets,
-    input_dataset_collections,
+    input_dataset_collections: MutableMapping[str, model.HistoryDatasetCollectionAssociation],
     random_input_ext,
     python_template_version="3",
     execution_cache=None,
@@ -1198,7 +1214,7 @@ def determine_output_format(
 
         if collection_name in input_dataset_collections:
             try:
-                input_collection = input_dataset_collections[collection_name][0][0]
+                input_collection = input_dataset_collections[collection_name]
                 input_collection_collection = input_collection.collection
                 if element_index is None:
                     # just pick the first HDA

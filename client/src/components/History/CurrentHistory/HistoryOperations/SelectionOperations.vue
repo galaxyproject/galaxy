@@ -138,11 +138,20 @@
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
         </b-modal>
+        <CollectionCreatorIndex
+            v-if="collectionModalType"
+            :history-id="history.id"
+            :collection-type="collectionModalType"
+            :filter-text="filterText"
+            :selected-items="collectionSelection"
+            :show.sync="collectionModalShow"
+            hide-on-create
+            default-hide-source-items
+            @created-collection="createdCollection" />
     </section>
 </template>
 
 <script>
-import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { HistoryFilters } from "components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
@@ -159,13 +168,16 @@ import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
-import { GalaxyApi } from "@/api";
-import { createDatasetCollection, filtersToQueryValues } from "@/components/History/model/queries";
+import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
-import { rethrowSimple } from "@/utils/simple-error";
+
+import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
+
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 
 export default {
     components: {
+        CollectionCreatorIndex,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
@@ -186,6 +198,9 @@ export default {
     },
     data: function () {
         return {
+            collectionModalShow: false,
+            collectionModalType: null,
+            collectionSelection: undefined,
             selectedDbKey: { id: "?", text: "unspecified (?)" },
             selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
@@ -361,38 +376,26 @@ export default {
         },
 
         // collection creation, fires up a modal
-        async buildDatasetList() {
-            await this.buildNewCollection("list");
+        buildDatasetList() {
+            this.collectionModalType = "list";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.collectionModalShow = true;
         },
-        async buildDatasetListAll() {
-            let allContents = [];
-            const filters = HistoryFilters.getQueryDict(this.filterText);
-            const filterQuery = filtersToQueryValues(filters);
-            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents/{type}s", {
-                params: {
-                    path: { history_id: this.history.id, type: "dataset" },
-                    query: { ...filterQuery, v: "dev" },
-                },
-            });
-            if (error) {
-                rethrowSimple(error);
-            }
-
-            allContents = data;
-
-            this.buildNewCollection("list", allContents);
+        buildDatasetListAll() {
+            this.collectionModalType = "list";
+            this.collectionSelection = undefined;
+            this.collectionModalShow = true;
         },
-        async buildListOfPairs() {
-            await this.buildNewCollection("list:paired");
+        buildListOfPairs() {
+            this.collectionModalType = "list:paired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.collectionModalShow = true;
+        },
+        createdCollection(collection) {
+            this.$emit("reset-selection");
         },
         async buildCollectionFromRules() {
-            await this.buildNewCollection("rules");
-        },
-        async buildNewCollection(collectionType, contents) {
-            if (contents === undefined) {
-                contents = this.contentSelection;
-            }
-            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id);
+            const modalResult = await buildRuleCollectionModal(this.contentSelection, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested
@@ -408,5 +411,6 @@ export default {
 <style>
 .modal-with-selector {
     overflow: initial;
+    min-height: 300px; /* To make room for the selector */
 }
 </style>

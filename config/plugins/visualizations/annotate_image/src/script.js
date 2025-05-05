@@ -467,6 +467,6 @@ const { root, visualization_config } = JSON.parse(document.getElementById("app")
 
 const datasetId = visualization_config.dataset_id;
 
-const downloadUrl = window.location.origin + root + "api/datasets/" + datasetId + "/display";
+const downloadUrl = root + "api/datasets/" + datasetId + "/display";
 
 render(downloadUrl);

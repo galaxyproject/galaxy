@@ -1,5 +1,4 @@
 import logging
-from json import loads
 
 from markupsafe import escape
 from paste.httpexceptions import (
@@ -14,7 +13,6 @@ from galaxy import (
 from galaxy.exceptions import MessageException
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -70,8 +68,7 @@ class VisualizationController(
         # Persist
         session = trans.sa_session
         session.add(copied_viz)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         # Display the management page
         trans.set_message(f'Created new visualization with name "{copied_viz.title}"')
@@ -110,8 +107,7 @@ class VisualizationController(
             # Persist
             session = trans.sa_session
             session.add(imported_visualization)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
@@ -147,21 +143,6 @@ class VisualizationController(
                 id=visualization_id,
             )
         )
-
-    @web.json
-    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None, **kwargs):
-        """
-        Save a visualization; if visualization does not have an ID, a new
-        visualization is created. Returns JSON of visualization.
-        """
-        # Get visualization attributes from kwargs or from config.
-        vis_config = loads(vis_json)
-        vis_type = type or vis_config["type"]
-        vis_id = id or vis_config.get("id", None)
-        vis_title = title or vis_config.get("title", None)
-        vis_dbkey = dbkey or vis_config.get("dbkey", None)
-        vis_annotation = annotation or vis_config.get("annotation", None)
-        return self.save_visualization(trans, vis_config, vis_type, vis_id, vis_title, vis_dbkey, vis_annotation)
 
     @web.legacy_expose_api
     @web.require_login("edit visualizations")
@@ -232,8 +213,7 @@ class VisualizationController(
                     v_annotation = sanitize_html(v_annotation)
                     self.add_item_annotation(trans.sa_session, trans_user, v, v_annotation)
                 trans.sa_session.add(v)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
 
     # ------------------------- registry.
@@ -284,12 +264,8 @@ class VisualizationController(
     @web.require_login("use Galaxy visualizations", use_panels=True)
     def saved(self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs):
         """
-        Save (on POST) or load (on GET) a visualization then render.
+        Load a visualization and render it.
         """
-        # TODO: consider merging saved and render at this point (could break saved URLs, tho)
-        if trans.request.method == "POST":
-            self._POST_to_saved(trans, id=id, revision=revision, type=type, config=config, title=title, **kwargs)
-
         # check the id and load the saved visualization
         if id is None:
             return HTTPBadRequest("A valid visualization id is required to load a visualization")
@@ -304,38 +280,6 @@ class VisualizationController(
         except Exception as exception:
             self._handle_plugin_error(trans, visualization.type, exception)
 
-    def _POST_to_saved(self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs):
-        """
-        Save the visualiztion info (revision, type, config, title, etc.) to
-        the Visualization at `id` or to a new Visualization if `id` is None.
-
-        Uses POST/redirect/GET after a successful save, redirecting to GET.
-        """
-        DEFAULT_VISUALIZATION_NAME = "Unnamed Visualization"
-
-        # post to saved in order to save a visualization
-        if type is None or config is None:
-            return HTTPBadRequest("A visualization type and config are required to save a visualization")
-        if isinstance(config, str):
-            config = loads(config)
-        title = title or DEFAULT_VISUALIZATION_NAME
-
-        # TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
-        # TODO: would be easier if this returned the visualization directly
-        # check security if posting to existing visualization
-        if id is not None:
-            self.get_visualization(trans, id, check_ownership=True, check_accessible=False)
-            # ??: on not owner: error raised, but not returned (status = 200)
-        # TODO: there's no security check in save visualization (if passed an id)
-        returned = self.save_visualization(trans, config, type, id, title)
-
-        # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
-        render_url = web.url_for(controller="visualization", action="saved", id=returned.get("vis_id"))
-        return trans.response.send_redirect(render_url)
-
-    #
-    # Visualizations.
-    #
     @web.expose
     @web.require_login()
     def trackster(self, trans, **kwargs):

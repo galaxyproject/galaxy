@@ -397,6 +397,8 @@ def validation_error_to_message_exception(e: Union[ValidationError, "RequestVali
     clean_validation_errors = []
     for error in e.errors():
         messages.append(f"{error['msg']} in {error['loc']}")
+        if error["type"] == "message_exception" and "ctx" in error:
+            return error["ctx"]["exception"]
         if error["type"] == "missing" or error["type"] == "type_error.none.not_allowed":
             missing_found = True
         elif error["type"].startswith("type_error"):

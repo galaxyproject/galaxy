@@ -12,6 +12,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.roles import RoleManager
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     BasicRoleModel,
@@ -114,9 +115,12 @@ class LibraryFoldersService(ServiceBase):
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder, query, page, page_limit)
+
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             return_roles = []
             for role in roles:
-                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(BasicRoleModel(id=role.id, name=displayed_name, type=role.type))
             return LibraryAvailablePermissions(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise RequestParameterInvalidException(

@@ -24,7 +24,7 @@ RANDOM_SECRET_LENGTH = 10
 
 
 def load_default_catalog():
-    catalog_yaml = resource_string("galaxy.tool_util.client", "landing_catalog.sample.yml")
+    catalog_yaml = resource_string(__name__, "landing_catalog.sample.yml")
     return yaml.safe_load(catalog_yaml)
 
 

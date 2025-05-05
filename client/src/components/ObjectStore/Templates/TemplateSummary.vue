@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type components } from "@/api/schema";
+import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 
 import { type ObjectStoreTemplateSummary } from "./types";
 
@@ -9,13 +9,12 @@ import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdow
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ObjectStoreTypeSpan from "@/components/ObjectStore/ObjectStoreTypeSpan.vue";
 
-type BadgeType = components["schemas"]["BadgeDict"];
 interface Props {
     template: ObjectStoreTemplateSummary;
 }
 
 const props = defineProps<Props>();
-const badges = computed<BadgeType[]>(() => props.template.badges);
+const badges = computed<ObjectStoreBadgeType[]>(() => props.template.badges);
 const objectStoreType = computed(() => props.template.type);
 </script>
 

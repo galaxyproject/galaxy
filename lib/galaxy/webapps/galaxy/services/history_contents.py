@@ -65,7 +65,6 @@ from galaxy.model import (
     LibraryDataset,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.objectstore import BaseObjectStore
 from galaxy.schema import (
@@ -628,8 +627,14 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                     any values that were different from the original and, therefore, updated
         """
         if history_id is None:
-            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
-            history_id = hda.history.id
+            if contents_type == HistoryContentType.dataset:
+                item: Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation] = (
+                    self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+                )
+            else:
+                item = self.hdca_manager.get_owned(id, trans.user, current_history=trans.history)
+            assert item.history
+            history_id = item.history.id
 
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if contents_type == HistoryContentType.dataset:
@@ -710,8 +715,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 filters,
             )
         errors = self._apply_bulk_operation(contents, payload.operation, payload.params, trans)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         success_count = len(contents) - len(errors)
         return HistoryContentBulkOperationResult(success_count=success_count, errors=errors)
 
@@ -1179,8 +1183,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             ]
             history.add_pending_items()
 
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
             for hda in hdas:
                 hda_dict = self.hda_serializer.serialize_to_view(
@@ -1216,8 +1219,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         if hda is None:
             return None
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return self.hda_serializer.serialize_to_view(
             hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
         )
@@ -1293,7 +1295,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
             dbkey = payload.dbkey
             copy_required = dbkey is not None
-            copy_elements = payload.copy_elements
+            copy_elements = bool(payload.copy_elements)
             if copy_required and not copy_elements:
                 raise exceptions.RequestParameterInvalidException(
                     "copy_elements passed as 'false' but it is required to change specified attributes"
@@ -1476,8 +1478,7 @@ class HistoryItemOperator:
     ):
         if isinstance(item, HistoryDatasetAssociation):
             wrapped_task = self._change_item_datatype(item, params, trans)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if wrapped_task:
                 wrapped_task.delay()
 
@@ -1487,8 +1488,7 @@ class HistoryItemOperator:
                 wrapped_task = self._change_item_datatype(dataset_instance, params, trans)
                 if wrapped_task:
                     wrapped_tasks.append(wrapped_task)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             # chain these for sequential execution. chord would be nice, but requires a non-RPC backend.
             chain(
                 *wrapped_tasks,

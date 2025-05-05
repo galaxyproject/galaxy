@@ -36,9 +36,9 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric("Container Type", value)
         value = int(value)
         if key == GALAXY_SLOTS_KEY:
-            return FormattedMetric("Cores Allocated", "%d" % value)
+            return FormattedMetric("Cores Allocated", f"{value}")
         elif key == GALAXY_MEMORY_MB_KEY:
-            return FormattedMetric("Memory Allocated (MB)", "%d" % value)
+            return FormattedMetric("Memory Allocated (MB)", f"{value}")
         elif key == RUNTIME_SECONDS_KEY:
             return FormattedMetric("Job Runtime (Wall Clock)", seconds_to_str(value))
         else:

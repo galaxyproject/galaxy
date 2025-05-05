@@ -3,6 +3,7 @@
 from .base import (
     AbstractToolBox,
     AbstractToolTagManager,
+    ToolLoadConfigurationConflict,
     ToolLoadError,
 )
 from .panel import (
@@ -15,6 +16,7 @@ __all__ = (
     "AbstractToolBox",
     "AbstractToolTagManager",
     "panel_item_types",
+    "ToolLoadConfigurationConflict",
     "ToolLoadError",
     "ToolSection",
     "ToolSectionLabel",

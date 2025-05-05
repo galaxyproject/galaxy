@@ -91,12 +91,6 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
                         >
                     </q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup tabindex="0" href="/graphql/">
-                    <q-item-section>
-                        <q-item-label>GraphQL</q-item-label>
-                        <q-item-label caption>GraphQL graphical console and query explorer.</q-item-label>
-                    </q-item-section>
-                </q-item>
             </q-list>
         </q-btn-dropdown>
         <q-btn

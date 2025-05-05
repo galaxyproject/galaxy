@@ -4,7 +4,7 @@ import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-sv
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BOverlay } from "bootstrap-vue";
+import { BAlert, BBadge, BListGroup, BListGroupItem, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -20,6 +20,8 @@ import { HistoriesFilters } from "./HistoriesFilters";
 
 import TextSummary from "../Common/TextSummary.vue";
 import HistoryIndicators from "./HistoryIndicators.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
@@ -293,40 +295,43 @@ async function loadMore(noScroll = false) {
                             <div
                                 v-if="props.additionalOptions.length > 0"
                                 class="d-flex justify-content-end align-items-center mt-1">
-                                <BButtonGroup>
-                                    <BButton
+                                <GButtonGroup>
+                                    <GButton
                                         v-if="
                                             props.additionalOptions.includes('set-current') &&
                                             currentHistoryId !== history.id
                                         "
-                                        v-b-tooltip.noninteractive.hover
+                                        tooltip
                                         :title="localize('Set as current history')"
-                                        variant="link"
+                                        color="blue"
+                                        transparent
                                         class="p-0 px-1"
                                         @click.stop="() => setCurrentHistory(history)">
                                         <FontAwesomeIcon :icon="faSignInAlt" />
-                                    </BButton>
+                                    </GButton>
 
-                                    <BButton
+                                    <GButton
                                         v-if="props.additionalOptions.includes('multi')"
-                                        v-b-tooltip.noninteractive.hover
+                                        tooltip
                                         :title="localize('Open in multi-view')"
-                                        variant="link"
+                                        color="blue"
+                                        transparent
                                         class="p-0 px-1"
                                         @click.stop="() => openInMulti(history)">
                                         <FontAwesomeIcon :icon="faColumns" />
-                                    </BButton>
+                                    </GButton>
 
-                                    <BButton
+                                    <GButton
                                         v-if="props.additionalOptions.includes('center')"
-                                        v-b-tooltip.noninteractive.hover
+                                        tooltip
                                         :title="localize('Open in center panel')"
-                                        variant="link"
+                                        color="blue"
+                                        transparent
                                         class="p-0 px-1"
                                         @click.stop="() => setCenterPanelHistory(history)">
                                         <FontAwesomeIcon :icon="faListAlt" />
-                                    </BButton>
-                                </BButtonGroup>
+                                    </GButton>
+                                </GButtonGroup>
                             </div>
                         </div>
                         <div v-if="isMultiviewPanel">
@@ -352,16 +357,17 @@ async function loadMore(noScroll = false) {
                 class="mr-auto d-flex justify-content-center align-items-center"
                 :class="isMultiviewPanel && 'mt-1'">
                 <i class="mr-1">Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
-                <BButton
+                <GButton
                     v-if="!props.filter"
-                    v-b-tooltip.noninteractive.hover
+                    tooltip
                     data-description="load more histories button"
-                    size="sm"
+                    size="small"
                     :title="localize('Load More')"
-                    variant="link"
+                    color="blue"
+                    transparent
                     @click="loadMore()">
                     <FontAwesomeIcon :icon="faArrowDown" />
-                </BButton>
+                </GButton>
             </div>
 
             <div v-if="props.inModal" class="ml-auto">

@@ -146,7 +146,6 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         Visit the following url and check for appropriate strings: ``<tool shed base url>/view/user1/filtering_0420/<revision 0>`` .
         The resulting page should not contain change set revision 1, but should contain change set revision 0.
         """
-        global first_changeset_hash
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)

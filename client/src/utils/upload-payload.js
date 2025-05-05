@@ -1,22 +1,6 @@
-export const DEFAULT_FILE_NAME = "New File";
-export const URI_PREFIXES = [
-    "http://",
-    "https://",
-    "ftp://",
-    "file://",
-    "gxfiles://",
-    "gximport://",
-    "gxuserimport://",
-    "gxuserfiles://",
-    "gxftp://",
-    "drs://",
-    "invenio://",
-    "zenodo://",
-];
+import { isUrl } from "./url";
 
-export function isUrl(content) {
-    return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
-}
+export const DEFAULT_FILE_NAME = "New File";
 
 export function uploadPayload(items, historyId, composite = false) {
     const files = [];

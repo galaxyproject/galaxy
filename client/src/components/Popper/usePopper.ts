@@ -1,252 +1,79 @@
-import { createPopper } from "@popperjs/core";
-import { onMounted, onUnmounted, onUpdated, type Ref, ref, unref, watch } from "vue";
+import { createPopper, type Placement } from "@popperjs/core";
+import { onMounted, onUnmounted, type Ref, ref, watch } from "vue";
 
-export type MaybeRef<T> = T | Ref<T>;
-
-export type Trigger = "hover" | "focus" | "click-to-open" | "click-to-toggle" | "manual";
-
-export type EventOptions = {
-    onShow: () => void;
-    onHide: () => void;
-};
-
-function on(element: Element, event: string, handler: EventListenerOrEventListenerObject) {
-    if (element && event && handler) {
-        element.addEventListener(event, handler, false);
-    }
-}
-function off(element: Element, event: string, handler: EventListenerOrEventListenerObject) {
-    if (element && event) {
-        element.removeEventListener(event, handler, false);
-    }
-}
+export type Trigger = "click" | "hover" | "none";
 
 const defaultTrigger: Trigger = "hover";
 
-export function usePopperjs(
-    reference: MaybeRef<Parameters<typeof createPopper>["0"]>,
-    popper: MaybeRef<Parameters<typeof createPopper>["1"]>,
-    options?: Partial<
-        Parameters<typeof createPopper>["2"] &
-            EventOptions & {
-                trigger: MaybeRef<Trigger | undefined>;
-                delayOnMouseover: MaybeRef<number | undefined>;
-                delayOnMouseout: MaybeRef<number | undefined>;
-                disabled: MaybeRef<boolean | undefined>;
-                forceShow: MaybeRef<boolean | undefined>;
-            }
-    >
+export function usePopper(
+    reference: Ref<HTMLElement>,
+    popper: Ref<HTMLElement>,
+    options: { placement?: Placement; trigger?: Trigger }
 ) {
-    const isMounted = ref(false);
-    onMounted(() => {
-        isMounted.value = true;
-    });
-    onUnmounted(() => {
-        isMounted.value = false;
-        destroy();
-    });
-
-    const updatedFlag = ref(true);
-    onUpdated(() => {
-        updatedFlag.value = !updatedFlag.value;
-    });
-
-    const referenceRef = ref<Element>();
-    const popperRef = ref<HTMLElement>();
-    watch(
-        () => [isMounted.value, updatedFlag.value],
-        () => {
-            if (!isMounted.value) {
-                return;
-            }
-            if ((unref(reference) as any)?.$el) {
-                referenceRef.value = (unref(reference) as any).$el;
-            } else {
-                referenceRef.value = unref(reference) as Element;
-            }
-
-            if ((unref(popper) as any)?.$el) {
-                popperRef.value = (unref(popper) as any).$el;
-            } else {
-                popperRef.value = unref(popper);
-            }
-        }
-    );
-
     const instance = ref<ReturnType<typeof createPopper>>();
-    watch(
-        () => [referenceRef.value, popperRef.value],
-        () => {
-            destroy();
-            if (!referenceRef.value) {
-                return;
-            }
-            if (!popperRef.value) {
-                return;
-            }
-            concrete();
-        }
-    );
-    const concrete = () => {
-        instance.value = createPopper(referenceRef.value!, popperRef.value!, {
-            placement: options?.placement ?? "bottom",
-            modifiers: options?.modifiers ?? [],
-            strategy: options?.strategy ?? "absolute",
-            onFirstUpdate: options?.onFirstUpdate ?? undefined,
-        });
-    };
-    const destroy = () => {
-        instance.value?.destroy();
-        instance.value = undefined;
-    };
-
     const visible = ref(false);
-    const doToggle = () => (visible.value = !visible.value);
+    const listeners: Array<{ target: EventTarget; event: string; handler: EventListener }> = [];
+
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
-    watch(
-        () => [instance.value, unref(options?.trigger), unref(options?.forceShow)],
-        () => {
-            if (!instance.value) {
-                return;
-            }
-
-            if (unref(options?.forceShow)) {
-                visible.value = true;
-                doOff();
-                return;
-            }
-
-            doOn();
-        }
-    );
-
-    watch(
-        () => unref(options?.forceShow),
-        () => {
-            if (unref(options?.forceShow)) {
-                return;
-            }
-            if (unref(options?.trigger) === "manual") {
-                return;
-            }
+    const doCloseDocument = (e: Event) => {
+        if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node)) {
             visible.value = false;
         }
-    );
-
-    watch(
-        () => unref(options?.disabled),
-        () => {
-            if (unref(options?.disabled)) {
-                doOff();
-            } else {
-                doOn();
-            }
-        }
-    );
-
-    const timer = ref<any>();
-    const doMouseover = () => {
-        if (unref(options?.delayOnMouseover) === 0) {
-            doOpen();
-        } else {
-            clearTimeout(timer.value);
-            timer.value = setTimeout(() => {
-                doOpen();
-            }, unref(options?.delayOnMouseover) ?? 100);
-        }
     };
-    const doMouseout = () => {
-        if (unref(options?.delayOnMouseout) === 0) {
+    const doCloseElement = (event: Event) => {
+        const target = event.target as Element;
+        if (target && target.closest(".popper-close")) {
             doClose();
-        } else {
-            clearTimeout(timer.value);
-            timer.value = setTimeout(() => {
-                doClose();
-            }, unref(options?.delayOnMouseout) ?? 100);
+        }
+    };
+    const doCloseEscape = (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key === "Escape") {
+            visible.value = false;
         }
     };
 
-    const doOn = () => {
-        doOff();
-
-        switch (unref(options?.trigger) ?? defaultTrigger) {
-            case "click-to-open": {
-                on(referenceRef.value!, "click", doOpen);
-                on(document as any, "click", doCloseForDocument);
-                break;
-            }
-
-            case "click-to-toggle": {
-                on(referenceRef.value!, "click", doToggle);
-                on(document as any, "click", doCloseForDocument);
-                break;
-            }
-
-            case "hover": {
-                on(referenceRef.value!, "mouseover", doMouseover);
-                on(referenceRef.value!, "mouseout", doMouseout);
-                on(referenceRef.value!, "mousedown", doMouseout);
-                break;
-            }
-
-            case "focus": {
-                on(referenceRef.value!, "focus", doOpen);
-                on(referenceRef.value!, "blur", doClose);
-                break;
-            }
-
-            case "manual": {
-                break;
-            }
-
-            default: {
-                throw TypeError();
-            }
-        }
-    };
-    const doOff = () => {
-        off(referenceRef.value!, "click", doOpen);
-        off(document as any, "click", doCloseForDocument);
-
-        off(referenceRef.value!, "click", doToggle);
-
-        off(referenceRef.value!, "mouseover", doMouseover);
-        off(referenceRef.value!, "mouseout", doMouseout);
-        off(referenceRef.value!, "mousedown", doMouseout);
-
-        off(referenceRef.value!, "focus", doOpen);
-        off(referenceRef.value!, "blur", doClose);
-    };
-    const doCloseForDocument = (e: Event) => {
-        if (referenceRef.value?.contains(e.target as Element)) {
-            return;
-        }
-        if (popperRef.value?.contains(e.target as Element)) {
-            return;
-        }
-        doClose();
+    const addEventListener = (target: EventTarget, event: string, handler: EventListener) => {
+        target.addEventListener(event, handler);
+        listeners.push({ target, event, handler });
     };
 
-    watch(
-        () => [instance.value, visible.value],
-        () => {
-            if (!instance.value) {
-                return;
-            }
-            if (visible.value || unref(options?.forceShow)) {
-                popperRef.value?.classList.remove("vue-use-popperjs-none");
-                options?.onShow?.();
-                instance.value?.update();
-            } else {
-                popperRef.value?.classList.add("vue-use-popperjs-none");
-                options?.onHide?.();
-            }
-        }
-    );
+    onMounted(() => {
+        instance.value = createPopper(reference.value, popper.value, {
+            placement: options.placement ?? "bottom",
+            strategy: "absolute",
+            modifiers: [
+                {
+                    name: "offset",
+                    options: {
+                        offset: [0, 5],
+                    },
+                },
+            ],
+        });
 
-    return {
-        instance,
-        visible,
-    };
+        const trigger = options.trigger ?? defaultTrigger;
+        if (trigger === "click") {
+            addEventListener(reference.value, "click", doOpen);
+            addEventListener(popper.value, "click", doCloseElement);
+            addEventListener(document, "click", doCloseDocument);
+            addEventListener(document, "keydown", doCloseEscape);
+        } else if (trigger === "hover") {
+            addEventListener(reference.value, "mouseover", doOpen);
+            addEventListener(reference.value, "mouseout", doClose);
+            addEventListener(popper.value, "mouseover", doOpen);
+            addEventListener(popper.value, "mouseout", doClose);
+        }
+    });
+
+    onUnmounted(() => {
+        instance.value?.destroy();
+        listeners.forEach(({ target, event, handler }) => target.removeEventListener(event, handler));
+        listeners.length = 0;
+    });
+
+    watch([instance, visible], () => instance.value?.update());
+
+    return { instance, visible };
 }

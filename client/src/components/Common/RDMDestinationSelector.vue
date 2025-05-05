@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BAlert, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
@@ -172,14 +173,14 @@ defineExpose({
                     {{ errorCreatingRecord }}
                 </BAlert>
 
-                <BButton
+                <GButton
                     id="create-record-button"
                     v-localize
-                    variant="primary"
+                    color="blue"
                     :disabled="!canCreateRecord"
                     @click.prevent="onCreateRecord">
                     Create new record
-                </BButton>
+                </GButton>
             </div>
         </div>
         <div v-else>

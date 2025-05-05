@@ -8,6 +8,8 @@ import { ref, watch } from "vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+type FormGenericPropsType = InstanceType<typeof FormGeneric>["$props"];
+
 library.add(faUsers);
 
 interface DatasetPermissionsFormProps {
@@ -15,7 +17,7 @@ interface DatasetPermissionsFormProps {
     simplePermissions: boolean;
     title: string;
     checked: boolean;
-    formConfig: object;
+    formConfig: FormGenericPropsType;
 }
 
 const props = defineProps<DatasetPermissionsFormProps>();

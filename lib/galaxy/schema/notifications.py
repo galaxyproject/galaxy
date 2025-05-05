@@ -26,6 +26,7 @@ from galaxy.schema.fields import (
 from galaxy.schema.generics import (
     DatabaseIdT,
     GenericModel,
+    PatchGenericPickle,
 )
 from galaxy.schema.schema import Model
 from galaxy.schema.types import (
@@ -275,7 +276,7 @@ class NotificationCreateData(Model):
     )
 
 
-class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT]):
+class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT], PatchGenericPickle):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
     user_ids: List[DatabaseIdT] = Field(

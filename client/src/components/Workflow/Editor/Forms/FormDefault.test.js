@@ -24,6 +24,7 @@ describe("FormDefault", () => {
                     contentId: "id",
                     annotation: "annotation",
                     label: "label",
+                    name: "name",
                     type: "subworkflow",
                     configForm: {
                         inputs: [],
@@ -42,7 +43,7 @@ describe("FormDefault", () => {
 
     it("check initial value and value change", async () => {
         const title = wrapper.find(".portlet-title-text").text();
-        expect(title).toBe("label");
+        expect(title).toBe("name");
         const inputCount = wrapper.findAll("input").length;
         expect(inputCount).toBe(4);
         const outputLabelCount = wrapper.findAll("#__label__output-name").length;

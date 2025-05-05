@@ -318,6 +318,16 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         });
     }
 
+    function allCommentBounds() {
+        const bounds = new AxisAlignedBoundingBox();
+
+        comments.value.forEach((frame) => {
+            bounds.fitRectangle(commentToRectangle(frame));
+        });
+
+        return bounds;
+    }
+
     return {
         commentsRecord,
         comments,
@@ -342,5 +352,6 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         resolveCommentsInFrames,
         resolveStepsInFrames,
         $reset,
+        allCommentBounds,
     };
 });

@@ -19,6 +19,8 @@ _:  # global stuff
     right_panel_drag: '.flex-panel.right .drag-handle'
     right_panel_collapse: '.collapse-button.right'
     by_attribute: '${scope} [${name}="${value}"]'
+    active_nav_item: '.nav-item-active'
+    toolbox_panel: '#toolbox-panel'
 
     confirm_button:
       type: xpath
@@ -55,7 +57,7 @@ masthead:
     username:
       type: xpath
       selector: '//a[contains(text(), "Signed in as")]'
-    window_manager: '#enable-window-manager'
+    window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
 preferences:
@@ -89,41 +91,41 @@ preferences:
 object_store_instances:
   index:
     selectors:
-      create_button: '#object-store-create'
+      create_button: '#create-button-storage-locations'
       _: '#user-object-stores-index'
 
-  create: 
+  create:
     selectors:
-      select: '.object-store-template-select-button[data-template-id="${template_id}"]'
-      _: '#create-object-store-landing'      
-      submit: '#submit'
+      select: '#g-card-action-select-${template_id}'
+      _: '#create-object-store-landing'
+      submit: '#submit:not([aria-disabled])'
 
 file_source_instances:
   index:
     selectors:
-      create_button: '#file-source-create'
+      create_button: '#create-button-remote-file-sources'
       _: '#user-file-sources-index'
 
-  create: 
+  create:
     selectors:
-      select: '.file-source-template-select-button[data-template-id="${template_id}"]'
-      _: '#create-file-source-landing'      
-      submit: '#submit'
+      select: '#g-card-action-select-${template_id}'
+      _: '#create-file-source-landing'
+      submit: '#submit:not([aria-disabled])'
 
 toolbox_filters:
   selectors:
     input:
       type: xpath
       selector: "//span[contains(., '${description}')]/../div/div/label[@class='custom-control-label']"
-    submit: '#submit'
+    submit: '#submit:not([aria-disabled])'
 
 change_user_email:
   selectors:
-    submit: '#submit'
+    submit: '#submit:not([aria-disabled])'
 
 change_user_password:
   selectors:
-    submit: '#submit'
+    submit: '#submit:not([aria-disabled])'
 
 change_user_address:
   selectors:
@@ -182,16 +184,15 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
       state_icon: '${_} .state-icon'
 
-      # Title buttons...
-      display_button: '${_} .display-btn'
-      edit_button: '${_} .edit-btn'
+      # Actions
+      alltags: '${_} .stateless-tags .tag'
       delete_button: '${_} .delete-btn'
-
-      # Action buttons...
+      display_button: '${_} .display-btn'
       download_button: '${_} .download-btn'
+      edit_button: '${_} .edit-btn'
       info_button: '${_} .params-btn'
       rerun_button: '${_} .rerun-btn'
-      alltags: '${_} .stateless-tags .tag'
+      visualize_button: '${_} .visualize-btn'
 
   # history content item
   content_item:
@@ -249,6 +250,7 @@ history_panel:
       input: '${_} input'
       tag_area: '${_} .interactive-tags'
       tag_close_btn: '${_} .tag-delete-button'
+      show_more_button: '${_} .show-more-tags'
 
   multi_operations:
     selectors:
@@ -285,6 +287,8 @@ history_panel:
     name_edit_input:
       selector: 'name input'
       type: data-description
+    history_name_edit_label: '[data-description="name display"]'
+    history_name_edit_input: '[data-description="name display"] #click-to-edit-input'
     contents: '.history-index .content-item'
     empty_message: '#empty-history-message'
     size: '.history-size'
@@ -377,15 +381,18 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
+    edam_title: '[data-title="Apply analytical methods to existing data of a specific type."]'
     tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
     search: '.search-query'
+    toolbox: '[data-description="panel toolbox"]'
     workflow_names: '#internal-workflows .toolTitle'
     views_button: '.tool-panel-dropdown'
     views_menu_item: '[data-panel-id="${panel_id}"]'
     panel_labels: '.tool-panel-label'
+
 
 multi_history_panel:
   selectors:
@@ -438,7 +445,7 @@ history_copy_elements:
 
 collection_builders:
   selectors:
-    clear_filters: "a.clear-filters-link"
+    clear_filters: "button.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
@@ -521,12 +528,12 @@ history_import:
 
 pages:
   selectors:
-    activity: "#activity-pages"
-    create: '#page-create'
-    submit: '#submit'
-    create_title_input: '#form-element-title input'
-    create_slug_input: '#form-element-slug input'
+    activity: '#activity-pages'
+    create: '#page-create:not([aria-disabled])'
     export: '.markdown-pdf-export'
+    slug_input: '#page-slug'
+    submit: '#page-submit'
+    title_input: '#page-title'
 
   editor:
     selectors:
@@ -568,6 +575,7 @@ tool_form:
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
     parameter_error: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-error-text'
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
+    parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
@@ -584,6 +592,7 @@ tool_form:
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'
     drilldown_expand: '.fa-caret-down'
+    tool_version_button: ".tool-versions"
 
   labels:
     generate_tour: 'Generate Tour'
@@ -601,27 +610,30 @@ workflows:
     advanced_search_toggle: '.workflows-list [data-description="toggle advanced search"]'
     advanced_search_name_input: '#workflows-advanced-filter-name'
     advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
-    workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     workflows_list: '#workflows-list'
     workflows_list_empty: '#workflow-list-empty'
     workflow_not_found_message: '#no-workflow-found'
-    workflow_card: '.workflow-card'
+    workflow_card: '.g-card.workflow-card'
+    workflow_card_title: '[id^="g-card-title-"] a'
+    workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
+    workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'
+    workflow_insert_sub_workflow: '[id^="g-card-action-workflow-insert-sub-workflow-"]'
     workflow_cards: '#workflow-cards'
-    external_link: '.workflow-external-link'
-    trs_icon: '.workflow-trs-icon'
-    dropdown: '[data-workflow-actions-dropdown="${id}"]'
-    share_button: '#workflow-share-button'
-    download_button: '#workflow-download-button'
-    run_button: '[data-workflow-run]'
-    edit_button: '.workflow-edit-button'
+    external_link: '[id^="g-card-indicator-workflow-source-url-"]'
+    trs_icon: '[id^="g-card-indicator-workflow-source-trs-"]'
+    dropdown: '[id="g-card-extra-actions-${id}"]'
+    share_button: '[id^="g-card-action-workflow-share-"]'
+    download_button: '[id^="g-card-action-workflow-download-"]'
+    run_button: '[id^="g-card-action-workflow-run-"]'
+    edit_button: '[id^="g-card-action-workflow-edit-"]'
     rename_input: '#workflow-name-input'
-    workflow_drop_down: '[data-workflow-actions-dropdown]'
-    delete_button: '.workflow-delete-button'
-    view_button: '.workflow-name-preview'
+    workflow_drop_down: '[id^="g-card-extra-actions-"]'
+    delete_button: '[id^="g-card-action-workflow-delete-"]'
+    view_button: '[id^="g-card-title-link-"]'
     workflow_preview_container: '.workflow-card-preview-modal .workflow-published .published-workflow'
     workflow_preview_information: '.workflow-information'
-    view_external_link: ".workflow-view-external-link-button"
-    bookmark_link: '.workflow-bookmark-button-${action}'
+    view_external_link: "[id^='g-card-action-workflow-view-external-link-']"
+    bookmark_link: '[id^="g-card-bookmark-${action}-"]'
     import_file: '.workflow-import-file'
     import_trs_search: '.workflow-import-trs-search'
     import_trs_id: '.workflow-import-trs-id'
@@ -636,13 +648,12 @@ workflows:
     selectors:
       name: '#workflow_name'
       annotation: '#workflow_annotation'
-      submit: '#submit'
+      submit: '#submit:not([aria-disabled])'
 
 visualization:
   selectors:
-    _: '#center div.plugin-list'
     activity: '#activity-visualizations'
-    plugin_item: '[data-plugin-name*="${id}"]'
+    matched_plugin: '#center [data-plugin-name*="${id}"]'
 
 trs_search:
   selectors:
@@ -671,15 +682,42 @@ trs_import:
     url_input: "#trs-import-url-input"
     url_import_button: "#trs-url-import-button"
 
+# not meant as a stand-alone component - just using for the anchor
+upload_mixin:
+  selectors: &upload_mixin
+    create_button: '${_} #btn-new'
+    paste_option: '${_} #upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
+    paste_content: '${_} #upload-row-${n} .upload-text-content'
+    row: '${_} #upload-row-${n}'
+    status: '${_} [data-description="upload state alert"]'
+    embedded_start_button: '${_} #btn-start'
+    use_button: '${_} #btn-emit'
+
 workflow_run:
+  input:
+    selectors:
+      _: '[data-label="${label}"]'
+      upload: '${_} [data-description="upload"]'
+      collection_tab_build_link: '${_} [data-description="collection create tab build"]'
+      collection_tab_upload_link: '${_} [data-description="collection create tab upload"]'
+      # data inputs
+      <<: *upload_mixin
+
+    collection_builder:
+      selectors:
+        _: '[data-label="${label}"] .tabs'
+        create: '${_} .create-collection'
+        <<: *upload_mixin
+
   selectors:
     warning: '[data-description="workflow run warning"]'
+    run_error: '[data-description="workflow run error"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
-    run_workflow_disabled: "#run-workflow.disabled"
+    run_workflow_disabled: '#run-workflow[aria-disabled="true"]'
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
@@ -700,6 +738,7 @@ workflow_editor:
   node:
     selectors:
       _: "[node-label='${label}']"
+      by_id: "#wf-node-step-${id}"
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
@@ -731,6 +770,7 @@ workflow_editor:
       clear_selection: "[title='clear selection']"
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
+      auto_layout: "#auto-layout-button"
   comment:
     selectors:
       _: ".workflow-editor-comment"
@@ -743,7 +783,14 @@ workflow_editor:
       freehand_comment: ".freehand-workflow-comment"
       freehand_path: ".freehand-workflow-comment path"
       delete: "button[title='Delete comment']"
+  inputs:
+    selectors:
+      activity_button: "#activity-workflow-editor-inputs"
+      activity_panel: ".activity-panel[data-description='Inputs']"
+      input: ".workflow-input-button[data-id='${id}']"
   selectors:
+    node_inspector: '.tool-inspector'
+    node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
@@ -764,8 +811,8 @@ workflow_editor:
       type: xpath
       selector: >
         //a/span[text()='${workflow_title}']/following-sibling::span[@title='Insert individual steps.']
-    connect_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-connected-icon'
-    collapse_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-collapsible-icon'
+    connect_icon: 'div.ui-form-element[id="form-element-${name}"] [data-connected]'
+    collapse_icon: 'div.ui-form-element[id="form-element-${name}"] [data-collapsible]'
     edit_subworkflow: 'button[title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."]'
     node_title:
       type: xpath
@@ -803,10 +850,7 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
-    select_datatype_text_search:
-      type: xpath
-      selector: >
-        //input[@class="multiselect__input"]
+    select_datatype_text_search: "div[data-label='Change datatype'] .multiselect__input"
     select_datatype:
       type: xpath
       selector: >
@@ -830,10 +874,12 @@ workflow_editor:
     tool_version_button: ".tool-versions"
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
-    save_button: '.editor-button-save'
+    save_button: '#workflow-save-button'
     save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
+    workflow_activity: '#activity-workflow-editor-workflows'
+    save_as_activity: "#activity-save-workflow-as"
 
 workflow_show:
   selectors:
@@ -848,7 +894,7 @@ invocations:
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
     invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
-    invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list button.panel-item'
+    invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list .g-card[id^="g-card-invocation-"]'
     pager: '[data-description="grid pager"]'
     pager_page: '[data-description="grid pager"] .gx-grid-pager-page [aria-posinset=${page}]'
     pager_page_next: '[data-description="grid pager"] .gx-grid-pager-next button'
@@ -878,6 +924,13 @@ invocations:
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
+    export_tab: '.invocation-export-tab'
+    export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
+    export_output_format: '[data-invocation-export-type="${type}"] .card-body'
+    export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
+    export_download_link: '.download-link'
 
 tour:
   popover:
@@ -891,10 +944,13 @@ tour:
 tools:
   selectors:
     activity: '#activity-tools'
+    tools_activity_workflow_editor: '#activity-workflow-editor-tools'
+    workflows_activity: '#activity-workflow-editor-workflows'
     body: '#center #tool-card-body'
     execute: '#execute'
     help: 'div.form-help'
-    search: '.search-query'
+    search: '#toolbox-panel .search-query'
+    clear_search: '#toolbox-panel .search-clear'
     title: '.toolSectionTitle'
 
 admin:
@@ -951,7 +1007,7 @@ admin:
       add_new: '[data-description="grid action create new quota"]'
       items: '#quotas-grid table tr'
       add_form: "[url='/admin/create_quota']"
-      add_form_submit: "[url='/admin/create_quota'] #submit"
+      add_form_submit: "[url='/admin/create_quota'] #submit:not([aria-disabled])"
 
   index:
     selectors:
@@ -999,7 +1055,7 @@ admin:
     registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
-    groups_create_view: '#submit'
+    groups_create_view: '#submit:not([aria-disabled])'
 
 libraries:
 
@@ -1051,7 +1107,7 @@ libraries:
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
       export_to_history_new_history: 'input[name=history_name]'
-      clear_filters: '.clear-filters-link'
+      clear_filters: "button.clear-filters-link"
       import_progress_bar: '.progress-bar-import'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
@@ -1124,6 +1180,7 @@ upload:
     paste_option: '#upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
     paste_content: '#upload-row-${n} .upload-text-content'
     row: '#upload-row-${n}'
+    status: '[data-description="upload state alert"]'
     rule_dataset_dialog: '[data-description="rules dataset dialog"]'
     rule_dataset_selector:
       selector: '.selection-dialog-modal'

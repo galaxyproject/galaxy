@@ -165,7 +165,11 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
         });
-        const result = await props.operation.fetchItems(options);
+        const operation = props.operation;
+        if (!operation) {
+            return [];
+        }
+        const result = await operation.fetchItems(options);
         return result;
     } catch (error) {
         return [];
@@ -174,7 +178,11 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
 
 async function selectAllItems() {
     isBusy.value = true;
-    const allItems = await props.operation.fetchItems(
+    const operation = props.operation;
+    if (!operation) {
+        return;
+    }
+    const allItems = await operation.fetchItems(
         new PaginationOptions({
             offset: 0,
             limit: totalRows.value,

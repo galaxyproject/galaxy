@@ -9,6 +9,7 @@ import sys
 import threading
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -23,7 +24,11 @@ from conda_package_streaming.url import stream_conda_info as stream_conda_info_f
 from packaging.version import Version
 from requests import Session
 
-from galaxy.tool_util.deps.conda_util import CondaTarget
+from galaxy.tool_util.deps.conda_util import (
+    CondaContext,
+    CondaTarget,
+)
+from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
@@ -41,6 +46,7 @@ MULLED_SOCKET_TIMEOUT = 12
 QUAY_VERSIONS_CACHE_EXPIRY = 300
 NAMESPACE_HAS_REPO_NAME_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
 TAG_CACHE_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
+CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 
 class PARSED_TAG(NamedTuple):
@@ -55,6 +61,36 @@ def default_mulled_conda_channels_from_env() -> Optional[List[str]]:
         return os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
     else:
         return None
+
+
+DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "bioconda"]
+
+
+class CondaInDockerContext(CondaContext):
+    def __init__(
+        self,
+        conda_prefix: Optional[str] = None,
+        conda_exec: Optional[Union[str, List[str]]] = None,
+        shell_exec: Optional[Callable[..., int]] = None,
+        debug: bool = False,
+        ensure_channels: Union[str, List[str]] = DEFAULT_CHANNELS,
+        condarc_override: Optional[str] = None,
+    ):
+        if not conda_exec:
+            binds = []
+            for channel in ensure_channels:
+                if channel.startswith("file://"):
+                    bind_path = channel[7:]
+                    binds.extend(["-v", f"{bind_path}:{bind_path}"])
+            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
+        super().__init__(
+            conda_prefix=conda_prefix,
+            conda_exec=conda_exec,
+            shell_exec=shell_exec,
+            debug=debug,
+            ensure_channels=ensure_channels,
+            condarc_override=condarc_override,
+        )
 
 
 def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
@@ -440,7 +476,10 @@ image_name = v1_image_name  # deprecated
 
 __all__ = (
     "build_target",
+    "CONDA_IMAGE",
     "conda_build_target_str",
+    "CondaInDockerContext",
+    "DEFAULT_CHANNELS",
     "get_files_from_conda_package",
     "image_name",
     "mulled_tags_for",

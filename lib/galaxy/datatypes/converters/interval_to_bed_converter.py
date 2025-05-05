@@ -5,12 +5,6 @@ import sys
 
 import bx.intervals.io
 
-assert sys.version_info[:2] >= (2, 6)
-
-
-def stop_err(msg):
-    sys.exit(msg)
-
 
 def __main__():
     output_name = sys.argv[1]
@@ -18,19 +12,19 @@ def __main__():
     try:
         chromCol = int(sys.argv[3]) - 1
     except Exception:
-        stop_err(
+        sys.exit(
             f"'{str(sys.argv[3])}' is an invalid chrom column, correct the column settings before attempting to convert the data format."
         )
     try:
         startCol = int(sys.argv[4]) - 1
     except Exception:
-        stop_err(
+        sys.exit(
             f"'{str(sys.argv[4])}' is an invalid start column, correct the column settings before attempting to convert the data format."
         )
     try:
         endCol = int(sys.argv[5]) - 1
     except Exception:
-        stop_err(
+        sys.exit(
             f"'{str(sys.argv[5])}' is an invalid end column, correct the column settings before attempting to convert the data format."
         )
     try:
@@ -63,16 +57,16 @@ def __main__():
                 else:
                     raise IndexError
             except Exception:
-                name = "region_%i" % count
+                name = f"region_{count}"
             try:
-                out.write("%s\t%i\t%i\t%s\t%i\t%s\n" % (region.chrom, region.start, region.end, name, 0, region.strand))
+                out.write(f"{region.chrom}\t{region.start}\t{region.end}\t{name}\t0\t{region.strand}\n")
             except Exception:
                 skipped_lines += 1
                 if not first_skipped_line:
                     first_skipped_line = count + 1
-    print("%i regions converted to BED." % (count + 1 - skipped_lines))
+    print(f"{count + 1 - skipped_lines} regions converted to BED.")
     if skipped_lines > 0:
-        print("Skipped %d blank or invalid lines starting with line # %d." % (skipped_lines, first_skipped_line))
+        print(f"Skipped {skipped_lines} blank or invalid lines starting with line # {first_skipped_line}.")
 
 
 if __name__ == "__main__":

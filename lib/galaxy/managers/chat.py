@@ -16,7 +16,6 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ChatExchange
-from galaxy.model.base import transaction
 from galaxy.util import unicodify
 
 
@@ -38,8 +37,7 @@ class ChatManager:
         """
         chat_exchange = ChatExchange(user=trans.user, job_id=job_id, message=message)
         trans.sa_session.add(chat_exchange)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return chat_exchange
 
     def get(self, trans: ProvidesUserContext, job_id: int) -> Union[ChatExchange, None]:
@@ -93,7 +91,6 @@ class ChatManager:
         # There is only one message in an exchange currently, so we can set the feedback on the first message
         chat_exchange.messages[0].feedback = feedback
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return chat_exchange

@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNavItem, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
-import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
-import { getRootFromIndexLink } from "@/onload";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { cancelWorkflowScheduling } from "./services";
 import {
     errorCount as jobStatesSummaryErrorCount,
     isTerminal,
@@ -30,6 +28,7 @@ import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.v
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
+import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -37,7 +36,6 @@ interface Props {
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
-    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -54,6 +52,7 @@ const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
 const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
+const cancellingInvocation = ref(false);
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = ref(false);
@@ -67,19 +66,23 @@ watch(
     }
 );
 
-// Report and PDF generation
-const generatePdfTooltip = "Generate PDF report for this workflow invocation";
-const invocationPdfLink = computed<string | null>(
-    () => getRootFromIndexLink() + `api/invocations/${props.invocationId}/report.pdf`
+const workflowStore = useWorkflowStore();
+const tabsDisabled = computed(
+    () =>
+        !invocationStateSuccess.value ||
+        !invocation.value ||
+        !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id)
 );
-const disabledReportTooltip = computed(() => {
+
+/** Tooltip message for the a tab when it is disabled */
+const disabledTabTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
-    } else if (runningCount.value != 0) {
-        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed this option will become available.`;
+        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete any disabled tabs will become available.`;
+    } else if (stateCounts.value && stateCounts.value.runningCount != 0) {
+        return `The workflow invocation still contains ${stateCounts.value.runningCount} running job(s). Once these jobs have completed any disabled tabs will become available.`;
     } else {
-        return "Steps for this workflow are still running. A report will be available once complete.";
+        return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
     }
 });
 
@@ -105,18 +108,23 @@ const invocationSchedulingTerminal = computed(() => {
     );
 });
 const jobStatesTerminal = computed(() => {
+    // If the job states summary is null, we haven't fetched it yet
+    // If the `populated_state` for the summary is `new`, we haven't finished scheduling all jobs
+    if (jobStatesSummary.value === null || jobStatesSummary.value.populated_state === "new") {
+        return false;
+    }
+
     if (invocationSchedulingTerminal.value && jobCount.value === 0) {
-        // no jobs for this invocation (think subworkflow or just inputs)
+        // no jobs for this invocation (think it has just subworkflows/inputs)
         return true;
     }
-    return !!jobStatesSummary.value && isTerminal(jobStatesSummary.value as InvocationJobsSummary);
+    return isTerminal(jobStatesSummary.value);
 });
-const jobStatesSummary = computed(() => {
-    const jobsSummary = invocationStore.getInvocationJobsSummaryById(props.invocationId);
-    return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
-});
+const jobStatesSummary = computed(() => invocationStore.getInvocationJobsSummaryById(props.invocationId));
 const invocationStateSuccess = computed(() => {
-    return invocationState.value == "scheduled" && runningCount.value === 0 && invocationAndJobTerminal.value;
+    return (
+        invocationState.value == "scheduled" && stateCounts.value?.runningCount === 0 && invocationAndJobTerminal.value
+    );
 });
 
 type StepStateType = { [state: string]: number };
@@ -147,27 +155,31 @@ const stepStatesStr = computed<string>(() => {
     return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
 });
 
-const okCount = computed<number>(() => {
-    return jobStatesSummaryOkCount(jobStatesSummary.value);
-});
-
-const errorCount = computed<number>(() => {
-    return jobStatesSummaryErrorCount(jobStatesSummary.value);
-});
-
-const runningCount = computed<number>(() => {
-    return jobStatesSummaryRunningCount(jobStatesSummary.value);
+const stateCounts = computed<{
+    okCount: number;
+    errorCount: number;
+    runningCount: number;
+    newCount: number;
+} | null>(() => {
+    if (jobStatesSummary.value === null) {
+        return null;
+    }
+    const okCount = jobStatesSummaryOkCount(jobStatesSummary.value);
+    const errorCount = jobStatesSummaryErrorCount(jobStatesSummary.value);
+    const runningCount = jobStatesSummaryRunningCount(jobStatesSummary.value);
+    const newCount = jobCount.value - okCount - runningCount - errorCount;
+    return { okCount, errorCount, runningCount, newCount };
 });
 
 const jobCount = computed<number>(() => {
     return jobStatesSummaryJobCount(jobStatesSummary.value);
 });
 
-const newCount = computed<number>(() => {
-    return jobCount.value - okCount.value - runningCount.value - errorCount.value;
-});
-
 const jobStatesStr = computed(() => {
+    if (jobStatesSummary.value === null) {
+        return "No jobs summary available yet.";
+    }
+
     let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
     if (!invocationSchedulingTerminal.value) {
         jobStr += " (total number of jobs will change until all steps fully scheduled)";
@@ -175,14 +187,12 @@ const jobStatesStr = computed(() => {
     return `${jobStr}.`;
 });
 
-const workflowStore = useWorkflowStore();
-
 watch(
     () => props.invocationId,
     async (id) => {
         invocationLoaded.value = false;
         try {
-            await invocationStore.fetchInvocationForId({ id });
+            await invocationStore.fetchInvocationById({ id });
             invocationLoaded.value = true;
             // Only start polling if there is a valid invocation
             if (invocation.value) {
@@ -198,6 +208,16 @@ watch(
 
 const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
 
+watch(
+    () => invocationSchedulingTerminal.value,
+    async (newVal, oldVal) => {
+        if (oldVal && !newVal) {
+            // If the invocation was terminal and now is not, start polling again
+            await pollStepStatesUntilTerminal();
+        }
+    }
+);
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -205,7 +225,7 @@ onUnmounted(() => {
 
 async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
-        await invocationStore.fetchInvocationForId({ id: props.invocationId });
+        await invocationStore.fetchInvocationById({ id: props.invocationId });
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
 }
@@ -218,26 +238,51 @@ async function pollJobStatesUntilTerminal() {
 function onError(e: any) {
     console.error(e);
 }
-function onCancel() {
-    emit("invocation-cancelled");
-}
-function cancelWorkflowSchedulingLocal() {
-    cancelWorkflowScheduling(props.invocationId).then(onCancel).catch(onError);
+async function onCancel() {
+    try {
+        cancellingInvocation.value = true;
+        await invocationStore.cancelWorkflowScheduling(props.invocationId);
+    } catch (e) {
+        onError(e);
+    } finally {
+        emit("invocation-cancelled");
+        cancellingInvocation.value = false;
+    }
 }
 </script>
 
 <template>
     <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
         <WorkflowNavigationTitle
-            v-if="props.isFullPage && !props.success"
+            v-if="props.isFullPage"
             :invocation="invocation"
-            :workflow-id="invocation.workflow_id" />
+            :workflow-id="invocation.workflow_id"
+            :success="props.success">
+            <template v-slot:workflow-title-actions>
+                <BButton
+                    v-if="!invocationAndJobTerminal"
+                    v-b-tooltip.noninteractive.hover
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="header cancel invocation button"
+                    size="sm"
+                    class="text-decoration-none"
+                    variant="link"
+                    :disabled="cancellingInvocation || invocationState == 'cancelling'"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faSquare" fixed-width />
+                    Cancel
+                </BButton>
+                <WorkflowInvocationShare
+                    :invocation-id="invocation.id"
+                    :workflow-id="invocation.workflow_id"
+                    :history-id="invocation.history_id" />
+            </template>
+        </WorkflowNavigationTitle>
         <WorkflowAnnotation
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
             :invocation-update-time="invocation.update_time"
-            :history-id="invocation.history_id"
-            :new-history-target="props.newHistoryTarget">
+            :history-id="invocation.history_id">
             <template v-slot:middle-content>
                 <div class="progress-bars mx-1">
                     <ProgressBar
@@ -263,12 +308,13 @@ function cancelWorkflowSchedulingLocal() {
                         :loading="!invocationSchedulingTerminal"
                         class="steps-progress" />
                     <ProgressBar
+                        v-if="stateCounts"
                         :note="jobStatesStr"
                         :total="jobCount"
-                        :ok-count="okCount"
-                        :running-count="runningCount"
-                        :new-count="newCount"
-                        :error-count="errorCount"
+                        :ok-count="stateCounts.okCount"
+                        :running-count="stateCounts.runningCount"
+                        :new-count="stateCounts.newCount"
+                        :error-count="stateCounts.errorCount"
                         :loading="!invocationAndJobTerminal"
                         class="jobs-progress" />
                 </div>
@@ -284,9 +330,7 @@ function cancelWorkflowSchedulingLocal() {
                     :invocation="invocation"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
-                    :invocation-scheduling-terminal="invocationSchedulingTerminal"
-                    :is-subworkflow="isSubworkflow"
-                    @invocation-cancelled="cancelWorkflowSchedulingLocal" />
+                    :is-subworkflow="isSubworkflow" />
             </BTab>
             <BTab v-if="!isSubworkflow" title="Steps" lazy>
                 <WorkflowInvocationSteps
@@ -295,62 +339,46 @@ function cancelWorkflowSchedulingLocal() {
                     :store-id="storeId"
                     :is-full-page="props.isFullPage" />
             </BTab>
-            <WorkflowInvocationInputOutputTabs :invocation="invocation" />
-            <!-- <BTab title="Workflow Overview">
-                <p>TODO: Insert readonly version of workflow editor here</p>
-            </BTab> -->
+            <WorkflowInvocationInputOutputTabs :invocation="invocation" :terminal="invocationAndJobTerminal" />
             <BTab
                 v-if="!props.isSubworkflow"
                 title="Report"
                 title-item-class="invocation-report-tab"
-                :disabled="
-                    !invocationStateSuccess || !workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id)
-                "
+                :disabled="tabsDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
-            <BTab title="Export" lazy>
+            <BTab title="Export" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
-                <BAlert v-else variant="info" show>
-                    <LoadingSpan message="Waiting to complete invocation" />
-                </BAlert>
             </BTab>
             <BTab title="Metrics" :lazy="true">
-                <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
+                <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
             <template v-slot:tabs-end>
-                <BNavItem v-if="!invocationAndJobTerminal" class="ml-auto alert-info mr-1">
-                    <LoadingSpan message="Waiting to complete invocation" />
+                <div class="ml-auto d-flex align-items-center">
+                    <BBadge
+                        v-if="tabsDisabled"
+                        v-b-tooltip.hover.noninteractive
+                        class="mr-1"
+                        :title="disabledTabTooltip"
+                        variant="primary">
+                        <FontAwesomeIcon :icon="faExclamation" />
+                    </BBadge>
                     <BButton
+                        v-if="!props.isFullPage && !invocationAndJobTerminal"
                         v-b-tooltip.noninteractive.hover
+                        class="my-1"
                         title="Cancel scheduling of workflow invocation"
                         data-description="cancel invocation button"
                         size="sm"
-                        variant="danger"
                         @click="onCancel">
                         <FontAwesomeIcon :icon="faTimes" fixed-width />
                         Cancel Workflow
                     </BButton>
-                </BNavItem>
-                <li
-                    role="presentation"
-                    class="nav-item align-self-center mr-2"
-                    :class="{ 'ml-auto': invocationAndJobTerminal }"
-                    data-description="generate pdf report button">
-                    <BButton
-                        v-b-tooltip.hover.bottom.noninteractive
-                        :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
-                        :disabled="!invocationStateSuccess"
-                        :href="invocationPdfLink"
-                        size="sm"
-                        target="_blank">
-                        <FontAwesomeIcon :icon="faDownload" fixed-width />
-                        Generate PDF
-                    </BButton>
-                </li>
+                </div>
             </template>
         </BTabs>
     </div>
@@ -364,6 +392,16 @@ function cancelWorkflowSchedulingLocal() {
         <span v-localize>Invocation not found.</span>
     </BAlert>
 </template>
+
+<style lang="scss">
+// To show the tooltip on the disabled report tab badge
+.invocation-report-tab,
+.invocation-export-tab {
+    .nav-link.disabled {
+        background-color: #e9edf0;
+    }
+}
+</style>
 
 <style scoped lang="scss">
 .progress-bars {

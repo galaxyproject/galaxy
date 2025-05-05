@@ -5,7 +5,6 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from enum import Enum
 from os.path import join
 from typing import (
     Any,
@@ -19,16 +18,30 @@ from typing import (
 )
 
 import packaging.version
-from pydantic import BaseModel
 from typing_extensions import (
     Literal,
     NotRequired,
     TypedDict,
 )
 
+from galaxy.tool_util_models.parameter_validators import (
+    AnyValidatorModel,
+)
+from galaxy.tool_util_models.tool_source import (
+    BaseJsonTestCollectionDefCollectionElementDict,
+    Citation,
+    DrillDownOptionsDict,
+    HelpContent,
+    JsonTestCollectionDefCollectionElementDict,
+    JsonTestCollectionDefDatasetElementDict,
+    JsonTestCollectionDefDict,
+    JsonTestCollectionDefElementDict,
+    JsonTestDatasetDefDict,
+    OutputCompareType,
+    XrefDict,
+)
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
-from .parameter_validators import AnyValidatorModel
 from .util import _parse_name
 
 if TYPE_CHECKING:
@@ -37,6 +50,12 @@ if TYPE_CHECKING:
         ResourceRequirement,
         ToolRequirements,
     )
+    from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
+    from galaxy.tool_util.parser.output_objects import (
+        ToolOutputBase,
+        ToolOutputCollection,
+    )
+
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
@@ -49,15 +68,6 @@ class AssertionDict(TypedDict):
 
 AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
-
-
-class OutputCompareType(str, Enum):
-    diff = "diff"
-    re_match = "re_match"
-    sim_size = "sim_size"
-    re_match_multiline = "re_match_multiline"
-    contains = "contains"
-    image_diff = "image_diff"
 
 
 class ToolSourceTestOutputAttributes(TypedDict):
@@ -123,21 +133,6 @@ class ToolSourceTests(TypedDict):
     tests: List[ToolSourceTest]
 
 
-class XrefDict(TypedDict):
-    value: str
-    reftype: str
-
-
-class Citation(BaseModel):
-    type: str
-    content: str
-
-
-class HelpContent(BaseModel):
-    format: Literal["restructuredtext", "plain_text", "markdown"]
-    content: str
-
-
 class ToolSource(metaclass=ABCMeta):
     """This interface represents an abstract source to parse tool
     information from.
@@ -184,6 +179,10 @@ class ToolSource(metaclass=ABCMeta):
 
         We parse this out as "" if it isn't explicitly declared.
         """
+
+    @abstractmethod
+    def parse_icon(self) -> Optional[str]:
+        """Return icon path for tool."""
 
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
@@ -331,7 +330,9 @@ class ToolSource(metaclass=ABCMeta):
         return "galaxy.json"
 
     @abstractmethod
-    def parse_outputs(self, tool):
+    def parse_outputs(
+        self, app: Optional["ToolOutputActionApp"]
+    ) -> Tuple[Dict[str, "ToolOutputBase"], Dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
         """
@@ -600,65 +601,6 @@ class XmlTestCollectionDefDict(TypedDict):
     name: str
 
 
-JsonTestDatasetDefDict = TypedDict(
-    "JsonTestDatasetDefDict",
-    {
-        "class": Literal["File"],
-        "path": NotRequired[Optional[str]],
-        "location": NotRequired[Optional[str]],
-        "name": NotRequired[Optional[str]],
-        "dbkey": NotRequired[Optional[str]],
-        "filetype": NotRequired[Optional[str]],
-        "composite_data": NotRequired[Optional[List[str]]],
-        "tags": NotRequired[Optional[List[str]]],
-    },
-)
-
-JsonTestCollectionDefElementDict = Union[
-    "JsonTestCollectionDefDatasetElementDict", "JsonTestCollectionDefCollectionElementDict"
-]
-JsonTestCollectionDefDatasetElementDict = TypedDict(
-    "JsonTestCollectionDefDatasetElementDict",
-    {
-        "identifier": str,
-        "class": Literal["File"],
-        "path": NotRequired[Optional[str]],
-        "location": NotRequired[Optional[str]],
-        "name": NotRequired[Optional[str]],
-        "dbkey": NotRequired[Optional[str]],
-        "filetype": NotRequired[Optional[str]],
-        "composite_data": NotRequired[Optional[List[str]]],
-        "tags": NotRequired[Optional[List[str]]],
-    },
-)
-BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
-    "BaseJsonTestCollectionDefCollectionElementDict",
-    {
-        "class": Literal["Collection"],
-        "collection_type": str,
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-    },
-)
-JsonTestCollectionDefCollectionElementDict = TypedDict(
-    "JsonTestCollectionDefCollectionElementDict",
-    {
-        "identifier": str,
-        "class": Literal["Collection"],
-        "collection_type": str,
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-    },
-)
-JsonTestCollectionDefDict = TypedDict(
-    "JsonTestCollectionDefDict",
-    {
-        "class": Literal["Collection"],
-        "collection_type": str,
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-        "name": NotRequired[Optional[str]],
-    },
-)
-
-
 def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTestDatasetDefDict"]:
     attributes = xml_input["attributes"]
     value = xml_input["value"]
@@ -758,7 +700,7 @@ class TestCollectionDef:
 
     @staticmethod
     def from_dict(
-        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict]
+        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict],
     ) -> "TestCollectionDef":
         if "model_class" in as_dict:
             xml_as_dict = cast(XmlTestCollectionDefDict, as_dict)
@@ -901,10 +843,3 @@ class TestCollectionOutputDef:
 
     def to_dict(self):
         return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests, element_count=self.count)
-
-
-class DrillDownOptionsDict(TypedDict):
-    name: Optional[str]
-    value: str
-    options: List["DrillDownOptionsDict"]
-    selected: bool

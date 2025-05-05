@@ -29,6 +29,7 @@ function useMonitorMock(): TaskMonitor {
         isRunning,
         isCompleted: ref(false),
         hasFailed: ref(false),
+        failureReason: ref(),
         requestHasFailed: ref(false),
         taskStatus,
         expirationTime: 1000,

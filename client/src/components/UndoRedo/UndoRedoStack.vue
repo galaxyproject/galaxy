@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faHistory } from "@fortawesome/free-solid-svg-icons";
 import { ref, watch } from "vue";
 
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
 
-import Heading from "@/components/Common/Heading.vue";
-
-library.add(faHistory);
+import ActivityPanel from "../Panels/ActivityPanel.vue";
 
 const props = defineProps<{
     storeId: string;
@@ -37,9 +33,7 @@ function updateSavedUndoActions() {
 </script>
 
 <template>
-    <section class="undo-redo-stack">
-        <Heading h2 size="sm" icon="fa-history">Latest Changes</Heading>
-
+    <ActivityPanel title="Latest Changes" class="undo-redo-stack">
         <div class="scroll-list">
             <button
                 v-for="action in currentStore.redoActionStack"
@@ -87,7 +81,7 @@ function updateSavedUndoActions() {
                 @focusout="updateSavedUndoActions"
                 @keyup.enter="updateSavedUndoActions" />
         </label>
-    </section>
+    </ActivityPanel>
 </template>
 
 <style scoped lang="scss">

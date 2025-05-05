@@ -10,11 +10,14 @@ from typing import (
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    Dataset,
+    DatasetInstance,
     History,
+    HistoryDatasetAssociation,
     Job,
+    LibraryDatasetDatasetAssociation,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
@@ -119,12 +122,12 @@ class SetMetadataToolAction(ToolAction):
             # Why are we looping here and not just using a fixed input name? Needed?
             if not name.startswith("input"):
                 continue
-            if isinstance(value, app.model.HistoryDatasetAssociation):
-                dataset = value
+            if isinstance(value, HistoryDatasetAssociation):
+                dataset: DatasetInstance = value
                 dataset_name = name
                 type = "hda"
                 break
-            elif isinstance(value, app.model.LibraryDatasetDatasetAssociation):
+            elif isinstance(value, LibraryDatasetDatasetAssociation):
                 dataset = value
                 dataset_name = name
                 type = "ldda"
@@ -135,7 +138,7 @@ class SetMetadataToolAction(ToolAction):
         sa_session = app.model.context
 
         # Create the job object
-        job = app.model.Job()
+        job = Job()
         job.galaxy_version = app.config.version_major
         job.session_id = session_id
         job.history_id = history_id
@@ -155,8 +158,7 @@ class SetMetadataToolAction(ToolAction):
             job.states.WAITING
         )  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         sa_session.add(job)
-        with transaction(sa_session):  # ensure job.id is available
-            sa_session.commit()
+        sa_session.commit()  # ensure job.id is available
 
         # add parameters to job_parameter table
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
@@ -177,7 +179,7 @@ class SetMetadataToolAction(ToolAction):
             sa_session,
             exec_dir=None,
             tmp_dir=job_working_dir,
-            dataset_files_path=app.model.Dataset.file_path,
+            dataset_files_path=Dataset.file_path,
             output_fnames=input_paths,
             config_root=app.config.root,
             config_file=app.config.config_file,
@@ -202,8 +204,7 @@ class SetMetadataToolAction(ToolAction):
         # i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
         dataset.state = dataset.states.SETTING_METADATA
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)

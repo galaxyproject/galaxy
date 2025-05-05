@@ -100,20 +100,28 @@ watch(
 );
 
 const showSelectPreference = computed(
-    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio"
+    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && props.display !== "simple"
 );
 
 const displayMany = computed(() => showSelectPreference.value && useMany.value);
 const showManyButton = computed(() => showSelectPreference.value && !useMany.value);
 const showMultiButton = computed(() => displayMany.value);
+
+defineExpose({
+    displayMany,
+});
 </script>
 
 <template>
-    <div>
+    <div class="form-selection">
         <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
         <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
         <FormSelectMany v-else-if="displayMany" v-model="currentValue" :options="currentOptions" />
-        <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
+        <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions">
+            <template v-slot:no-options>
+                <slot name="no-options" />
+            </template>
+        </FormSelect>
 
         <div v-if="showSelectPreference" class="d-flex">
             <button v-if="showManyButton" class="ui-link ml-1" @click="useMany = true">switch to column select</button>
@@ -145,3 +153,11 @@ const showMultiButton = computed(() => displayMany.value);
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+.form-selection {
+    &:deep(.alert) {
+        margin-bottom: 0;
+    }
+}
+</style>

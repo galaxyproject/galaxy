@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
-from galaxy.model.base import transaction
+from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
 
@@ -71,13 +71,8 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
                     usage = quota_source_usage.disk_usage
         return usage
 
-    def is_over_quota(self, app, job, job_destination):
-        """Return True if the user or history is over quota for specified job.
-
-        job_destination unused currently but an important future application will
-        be admins and/or users dynamically specifying which object stores to use
-        and that will likely come in through the job destination.
-        """
+    def is_over_quota(self, quota_source_map, job):
+        """Return True if the user or history is over quota for specified job."""
 
 
 class NoQuotaAgent(QuotaAgent):
@@ -101,7 +96,7 @@ class NoQuotaAgent(QuotaAgent):
     ) -> Optional[int]:
         return None
 
-    def is_over_quota(self, app, job, job_destination):
+    def is_over_quota(self, quota_source_map, job):
         return False
 
 
@@ -325,8 +320,7 @@ WHERE default_quota_association.type = :default_type
         else:
             target_default = self.model.DefaultQuotaAssociation(default_type, quota)
         self.sa_session.add(target_default)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
@@ -366,27 +360,21 @@ WHERE default_quota_association.type = :default_type
                     self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
+                    self.sa_session.commit()
             for user in users:
                 uqa = self.model.UserQuotaAssociation(user, quota)
                 self.sa_session.add(uqa)
             for group in groups:
                 gqa = self.model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
-    def is_over_quota(self, app, job, job_destination):
-        # Doesn't work because job.object_store_id until inside handler :_(
-        # quota_source_label = job.quota_source_label
-        if job_destination is not None:
-            object_store_id = job_destination.params.get("object_store_id", None)
-            object_store = app.object_store
-            quota_source_map = object_store.get_quota_source_map()
-            quota_source_label = quota_source_map.get_quota_source_info(object_store_id).label
-        else:
-            quota_source_label = None
+    def is_over_quota(self, quota_source_map, job):
+        if is_user_object_store(job.object_store_id):
+            return False  # User object stores are not subject to quotas
+
+        quota_source_label = quota_source_map.get_quota_source_info(job.object_store_id).label
+
         quota = self.get_quota(job.user, quota_source_label=quota_source_label)
         if quota is not None:
             try:

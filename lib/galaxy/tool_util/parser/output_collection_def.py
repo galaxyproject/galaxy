@@ -1,4 +1,4 @@
-""" This module define an abstract class for reasoning about Galaxy's
+"""This module define an abstract class for reasoning about Galaxy's
 dataset collection after jobs are finished.
 """
 
@@ -8,8 +8,7 @@ from typing import (
     Optional,
 )
 
-from galaxy.util import asbool
-from .output_models import (
+from galaxy.tool_util_models.tool_outputs import (
     DatasetCollectionDescriptionT,
     DiscoverViaT,
     FilePatternDatasetCollectionDescription as FilePatternDatasetCollectionDescriptionModel,
@@ -17,6 +16,7 @@ from .output_models import (
     SortKeyT,
     ToolProvidedMetadataDatasetCollection as ToolProvidedMetadataDatasetCollectionModel,
 )
+from galaxy.util import asbool
 from .util import is_dict
 
 DEFAULT_EXTRA_FILENAME_PATTERN = (

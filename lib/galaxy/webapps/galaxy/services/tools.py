@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import tempfile
 from json import dumps
@@ -17,6 +18,7 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -27,7 +29,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
@@ -36,6 +37,7 @@ from galaxy.schema.fetch_data import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -191,8 +193,7 @@ class ToolsService(ServiceBase):
                     new_pja_flush = True
 
         if new_pja_flush:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
@@ -203,7 +204,17 @@ class ToolsService(ServiceBase):
         rval["produces_entry_points"] = tool.produces_entry_points
         if job_errors := vars.get("job_errors", []):
             # If we are here - some jobs were successfully executed but some failed.
-            rval["errors"] = job_errors
+            # TODO: We should probably alter the response status code and have a component that knows
+            # how to template in things like src and id, so we don't have to rely just on a textual error message.
+            execution_errors = [
+                (
+                    trans.security.encode_all_ids(api_error_to_dict(exception=e))
+                    if isinstance(e, exceptions.MessageException)
+                    else e
+                )
+                for e in job_errors
+            ]
+            rval["errors"] = execution_errors
 
         outputs = rval["outputs"]
         # TODO:?? poss. only return ids?
@@ -316,3 +327,18 @@ class ToolsService(ServiceBase):
                 if tool and tool.allow_user_access(trans.user):
                     detected_versions.append(tool.version)
         return detected_versions
+
+    def get_tool_icon_path(self, trans, tool_id, tool_version=None) -> Optional[str]:
+        tool = self._get_tool(trans, tool_id, tool_version)
+        if tool and tool.icon:
+            icon_file_path = tool.icon
+            if icon_file_path and tool.tool_dir:
+                # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
+                if not safe_contains(tool.tool_dir, icon_file_path):
+                    raise Exception(
+                        f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
+                    )
+                file_path = os.path.join(tool.tool_dir, icon_file_path)
+                if os.path.exists(file_path):
+                    return file_path
+        return None

@@ -1,6 +1,15 @@
 from collections.abc import MutableMapping
 
 
+class NoReplacement:
+
+    def __str__(self):
+        return "NO_REPLACEMENT singleton"
+
+
+NO_REPLACEMENT = NoReplacement()
+
+
 class workflow_building_modes:
     DISABLED = False
     ENABLED = True

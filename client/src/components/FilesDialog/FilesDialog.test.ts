@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 
 /**
@@ -80,7 +81,7 @@ const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
     [paramsToKey({ target: "gxfiles://empty-dir", recursive: "false" }), []],
 ]);
 
-const initComponent = async (props: { multiple: boolean; mode?: string }) => {
+const initComponent = async (props: { multiple: boolean; mode?: string }, hasTemplates = false) => {
     const localVue = getLocalVue();
 
     server.use(
@@ -103,11 +104,16 @@ const initComponent = async (props: { multiple: boolean; mode?: string }) => {
                 return response("5XX").json({ err_msg: "No mocked response found", err_code: 500 }, { status: 500 });
             }
             return response(200).json(mockedResponse, { headers: { total_matches: mockedTotalMatches } });
+        }),
+
+        http.get("/api/file_source_templates", ({ response }) => {
+            const fileSourceTemplates = hasTemplates ? [{ id: "test_template" } as FileSourceTemplateSummary] : [];
+            return response(200).json(fileSourceTemplates);
         })
     );
 
     const testingPinia = createTestingPinia({ stubActions: false });
-    const wrapper = mount(FilesDialog, {
+    const wrapper = mount(FilesDialog as object, {
         localVue,
         propsData: { ...props, modalStatic: true },
         pinia: testingPinia,
@@ -129,6 +135,14 @@ describe("FilesDialog, file mode", () => {
     it("should show the number of items expected", async () => {
         await utils.openRootDirectory();
         expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
+    });
+
+    it("should list the user defined file sources first", async () => {
+        await utils.openRoot();
+        const rows = utils.getRenderedRows();
+        const firstItem = rows[0];
+        expect(firstItem).toBeDefined();
+        expect(firstItem!.url).toContain("gxuserfiles://");
     });
 
     it("should allow selecting files and update OK button accordingly", async () => {
@@ -242,6 +256,22 @@ describe("FilesDialog, file mode", () => {
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
     });
+
+    it("should not render create new button since file source templates are not defined", async () => {
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(false);
+    });
+});
+
+describe("FilesDialog, file mode with templates", () => {
+    let wrapper: Wrapper<any>;
+    beforeEach(async () => {
+        wrapper = await initComponent({ multiple: true }, true);
+    });
+    it("should render create new button since file source templates are defined", async () => {
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(true);
+    });
 });
 
 describe("FilesDialog, directory mode", () => {
@@ -296,9 +326,13 @@ class Utils {
         this.wrapper = wrapper;
     }
 
-    async openRootDirectory() {
+    async openRoot() {
         expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         expect(this.getRenderedRows().length).toBe(rootResponse.length);
+    }
+
+    async openRootDirectory() {
+        await this.openRoot();
         await this.openDirectoryById(rootId);
     }
 

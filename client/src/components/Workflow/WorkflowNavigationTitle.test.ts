@@ -24,8 +24,8 @@ const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
 
 const SELECTORS = {
     WORKFLOW_HEADING: "[data-description='workflow heading']",
-    ACTIONS_BUTTON_GROUP: "bbuttongroup-stub",
-    EDIT_WORKFLOW_BUTTON: `bbutton-stub[title='<b>Edit</b><br>${SAMPLE_WORKFLOW.name}']`,
+    ACTIONS_BUTTON_GROUP: "[data-button-group]",
+    EDIT_WORKFLOW_BUTTON: `[data-button-edit][title='Edit ${SAMPLE_WORKFLOW.name}']`,
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
     EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
     ROUTE_TO_RUN_BUTTON: "[data-description='route to workflow run button']",
@@ -66,17 +66,13 @@ const localVue = getLocalVue();
  * @param version The version of the component to mount (`run_form` or `invocation` view)
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param unimportableWorkflow Whether the workflow import should fail
- * @returns The wrapper object, and the mockRouter object
+ * @returns The wrapper object
  */
 async function mountWorkflowNavigationTitle(
     version: "run_form" | "invocation",
     ownsWorkflow = true,
     unimportableWorkflow = false
 ) {
-    const mockRouter = {
-        push: jest.fn(),
-    };
-
     let workflowId: string;
     let invocation;
     if (version === "invocation") {
@@ -96,9 +92,6 @@ async function mountWorkflowNavigationTitle(
             workflowId,
         },
         localVue,
-        mocks: {
-            $router: mockRouter,
-        },
         pinia: createTestingPinia(),
     });
 
@@ -107,7 +100,7 @@ async function mountWorkflowNavigationTitle(
         username: ownsWorkflow ? WORKFLOW_OWNER : OTHER_USER,
     });
 
-    return { wrapper, mockRouter };
+    return { wrapper };
 }
 
 describe("WorkflowNavigationTitle renders", () => {
@@ -116,10 +109,9 @@ describe("WorkflowNavigationTitle renders", () => {
 
         const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
         expect(heading.text()).toContain(`Invoked Workflow: ${SAMPLE_WORKFLOW.name}`);
-        expect(heading.text()).toContain(`(version: ${SAMPLE_WORKFLOW.version + 1})`);
+        expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
-        const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const runButton = actionsGroup.find(SELECTORS.ROUTE_TO_RUN_BUTTON);
+        const runButton = wrapper.find(SELECTORS.ROUTE_TO_RUN_BUTTON);
         expect(runButton.attributes("title")).toContain("Rerun");
         expect(runButton.attributes("title")).toContain(SAMPLE_WORKFLOW.name);
     });
@@ -129,24 +121,19 @@ describe("WorkflowNavigationTitle renders", () => {
 
         const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
         expect(heading.text()).toContain(`Workflow: ${SAMPLE_WORKFLOW.name}`);
-        expect(heading.text()).toContain(`(version: ${SAMPLE_WORKFLOW.version + 1})`);
+        expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
-        const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const runButton = actionsGroup.find(SELECTORS.EXECUTE_WORKFLOW_BUTTON);
+        const runButton = wrapper.find(SELECTORS.EXECUTE_WORKFLOW_BUTTON);
         expect(runButton.attributes("title")).toContain("Run");
     });
 
     it("edit button if user owns the workflow", async () => {
         async function findAndClickEditButton(version: "invocation" | "run_form") {
-            const { wrapper, mockRouter } = await mountWorkflowNavigationTitle(version);
+            const { wrapper } = await mountWorkflowNavigationTitle(version);
             const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
 
             const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
-            await editButton.trigger("click");
-            await flushPromises();
-
-            expect(mockRouter.push).toHaveBeenCalledTimes(1);
-            expect(mockRouter.push).toHaveBeenCalledWith(
+            expect(editButton.attributes("to")).toBe(
                 `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
             );
         }

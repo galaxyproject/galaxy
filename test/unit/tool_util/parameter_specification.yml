@@ -129,6 +129,8 @@ gx_int_optional:
    - parameter: null
   job_internal_invalid:
    - {}
+  test_case_xml_valid:
+  - parameter: null
   landing_request_valid:
     - {}
     - parameter: 5
@@ -1569,7 +1571,7 @@ gx_repeat_boolean_min:
     - parameter: [{}, {}]
     # even though a minimum is set here - each instance of the repeat does not require a value
     # so we can skip the repeat all together and Galaxy I think will just use the defaults at
-    # each stage - see API tests -> test_tools.py -> test_optional_repeats_with_mins_filled_id
+    # each stage - see API tests -> test_tool_execute.py -> test_optional_repeats_with_mins_filled_id
     - {}
   request_invalid:
     - parameter: []
@@ -1592,6 +1594,8 @@ gx_repeat_boolean_min:
   job_internal_invalid:
     - parameter: [{}, {}]
     - parameter: []
+  test_case_xml_valid:
+  - {}
 
 gx_repeat_data:
   request_valid:
@@ -1818,6 +1822,7 @@ gx_data_column_multiple:
   request_invalid:
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: ["0"] }
+  - { ref_parameter: {src: hda, id: abcdabcd} }
   request_internal_valid:
   - { ref_parameter: {src: hda, id: 123}, parameter: [0] }
   job_internal_valid:
@@ -1828,6 +1833,17 @@ gx_data_column_multiple:
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
   - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
+
+gx_data_column_multiple_accept_default:
+  request_valid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [0] }
+  - { ref_parameter: {src: hda, id: abcdabcd} }
+  request_internal_valid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: [0] }
+  job_internal_valid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: [0] }
+  job_internal_invalid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: ["0"] }
 
 gx_group_tag:
   request_valid:

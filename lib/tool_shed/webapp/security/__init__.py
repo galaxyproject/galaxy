@@ -8,7 +8,6 @@ from sqlalchemy import (
     select,
 )
 
-from galaxy.model.base import transaction
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
 from tool_shed.webapp.model import (
@@ -117,32 +116,28 @@ class CommunityRBACAgent(RBACAgent):
         assoc = self.model.GroupRoleAssociation(group, role)
         self.sa_session.add(assoc)
         session = self.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
         return assoc
 
     def associate_user_group(self, user, group):
         assoc = self.model.UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
         session = self.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
         return assoc
 
     def associate_user_role(self, user, role):
         assoc = self.model.UserRoleAssociation(user, role)
         self.sa_session.add(assoc)
         session = self.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
         return assoc
 
     def associate_repository_category(self, repository, category):
         assoc = self.model.RepositoryCategoryAssociation(repository, category)
         self.sa_session.add(assoc)
         session = self.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
         return assoc
 
     def create_private_user_role(self, user):
@@ -152,8 +147,7 @@ class CommunityRBACAgent(RBACAgent):
         )
         self.sa_session.add(role)
         session = self.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
         # Add user to role
         self.associate_components(role=role, user=user)
         return role
@@ -186,8 +180,7 @@ class CommunityRBACAgent(RBACAgent):
                 for a in group.roles + group.users:
                     self.sa_session.delete(a)
                     session = self.sa_session()
-                    with transaction(session):
-                        session.commit()
+                    session.commit()
             for role in roles:
                 self.associate_components(group=group, role=role)
             for user in users:
@@ -209,8 +202,7 @@ class CommunityRBACAgent(RBACAgent):
                 for a in role.users + role.groups:
                     self.sa_session.delete(a)
                     session = self.sa_session()
-                    with transaction(session):
-                        session.commit()
+                    session.commit()
             for user in users:
                 self.associate_components(user=user, role=role)
             for group in groups:
@@ -228,8 +220,7 @@ class CommunityRBACAgent(RBACAgent):
                 for a in user.non_private_roles + user.groups:
                     self.sa_session.delete(a)
                     session = self.sa_session()
-                    with transaction(session):
-                        session.commit()
+                    session.commit()
             self.sa_session.refresh(user)
             for role in roles:
                 # Make sure we are not creating an additional association with a PRIVATE role

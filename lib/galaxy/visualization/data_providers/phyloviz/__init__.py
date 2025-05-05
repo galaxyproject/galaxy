@@ -1,4 +1,4 @@
-""" Data providers code for PhyloViz """
+"""Data providers code for PhyloViz"""
 
 from typing import (
     Any,

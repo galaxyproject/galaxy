@@ -8,12 +8,13 @@ import {
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ColorVariant } from ".";
 import { type ExportRecord } from "./models/exportRecordModel";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -123,30 +124,31 @@ function onMessageDismissed() {
                     {{ props.actionMessage }}
                 </BAlert>
                 <div v-else class="actions">
-                    <BButton
+                    <GButton
                         v-if="props.record.canDownload"
                         class="record-download-btn"
-                        variant="primary"
+                        color="blue"
                         @click="downloadObject">
                         Download
-                    </BButton>
+                    </GButton>
 
-                    <BButton
+                    <GButton
                         v-if="props.record.canDownload"
                         title="Copy Download Link"
-                        size="sm"
-                        variant="link"
+                        size="small"
+                        color="blue"
+                        transparent
                         @click.stop="copyDownloadLink">
                         <FontAwesomeIcon :icon="faLink" />
-                    </BButton>
+                    </GButton>
 
-                    <BButton
+                    <GButton
                         v-if="props.record.canReimport"
                         class="record-reimport-btn"
-                        variant="primary"
+                        color="blue"
                         @click="reimportObject">
                         Reimport
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-""" Apply tags to the inherited history items of Galaxy """
+"""Apply tags to the inherited history items of Galaxy"""
 
 import sys
 import time

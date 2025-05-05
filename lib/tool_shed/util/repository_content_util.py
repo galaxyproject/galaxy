@@ -1,6 +1,5 @@
 import os
 import shutil
-import tarfile
 import tempfile
 from typing import (
     Optional,
@@ -9,7 +8,7 @@ from typing import (
 
 import tool_shed.repository_types.util as rt_util
 from galaxy.tool_shed.util.hg_util import clone_repository
-from galaxy.util import checkers
+from galaxy.util.compression_utils import CompressedFile
 from tool_shed.dependencies.attribute_handlers import (
     RepositoryDependencyAttributeHandler,
     ToolDependencyAttributeHandler,
@@ -26,20 +25,6 @@ if TYPE_CHECKING:
     from tool_shed.webapp.model import Repository
 
 
-def tar_open(uploaded_file):
-    isgzip = False
-    isbz2 = False
-    isgzip = checkers.is_gzip(uploaded_file)
-    if not isgzip:
-        isbz2 = checkers.is_bz2(uploaded_file)
-    if isgzip or isbz2:
-        # Open for reading with transparent compression.
-        tar = tarfile.open(uploaded_file, "r:*")
-    else:
-        tar = tarfile.open(uploaded_file)
-    return tar
-
-
 def upload_tar(
     trans: "ProvidesRepositoriesContext",
     username: str,
@@ -49,14 +34,12 @@ def upload_tar(
     dry_run: bool = False,
     remove_repo_files_not_in_tar: bool = True,
     new_repo_alert: bool = False,
-    tar=None,
     rdah: Optional[RepositoryDependencyAttributeHandler] = None,
     tdah: Optional[ToolDependencyAttributeHandler] = None,
 ) -> ChangeResponseT:
     host = trans.repositories_hostname
     app = trans.app
-    if tar is None:
-        tar = tar_open(uploaded_file)
+    tar = CompressedFile.open_tar(uploaded_file)
     rdah = rdah or RepositoryDependencyAttributeHandler(trans, unpopulate=False)
     tdah = tdah or ToolDependencyAttributeHandler(trans, unpopulate=False)
     # Upload a tar archive of files.

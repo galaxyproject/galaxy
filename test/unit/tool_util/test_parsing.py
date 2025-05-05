@@ -4,21 +4,20 @@ import shutil
 import tempfile
 from math import isinf
 from typing import (
-    cast,
-    List,
     Optional,
+    Sequence,
     Type,
     TypeVar,
 )
 
 from galaxy.tool_util.parser.factory import get_tool_source
-from galaxy.tool_util.parser.output_models import (
-    from_tool_source,
+from galaxy.tool_util.parser.output_objects import from_tool_source
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
+from galaxy.tool_util_models.tool_outputs import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputDataset,
 )
-from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest import TestCase
 
@@ -262,7 +261,7 @@ class BaseLoaderTestCase(TestCase):
         return self._get_tool_source()
 
     @property
-    def _output_models(self) -> List[ToolOutput]:
+    def _output_models(self) -> Sequence[ToolOutput]:
         return from_tool_source(self._tool_source)
 
     def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
@@ -971,4 +970,4 @@ T = TypeVar("T")
 
 def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
     assert isinstance(obj, clazz)
-    return cast(T, obj)
+    return obj

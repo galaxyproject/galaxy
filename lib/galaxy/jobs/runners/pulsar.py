@@ -365,7 +365,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
+                    compute_environment.materialized_objects
+                ):
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -449,9 +451,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
             # params from the Pulsar client.
-            # Flush with change_state.
-            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=False, job=job)
-            job_wrapper.change_state(model.Job.states.QUEUED, job=job)
+            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=True, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)
@@ -497,7 +497,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if rewrite_parameters:
                 compute_environment = PulsarComputeEnvironment(client, job_wrapper, remote_job_config)
                 prepare_kwds["compute_environment"] = compute_environment
-            job_wrapper.prepare(**prepare_kwds)
+
+            if job_wrapper.prepare(**prepare_kwds) is False:
+                return command_line, client, remote_job_config, compute_environment, remote_container
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
@@ -723,11 +725,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
             return True
         except OSError as e:
             if e.errno == errno.ESRCH:
-                log.debug("check_pid(): PID %d is dead" % pid)
+                log.debug("check_pid(): PID %d is dead", pid)
             else:
                 log.warning(
-                    "check_pid(): Got errno %s when attempting to check PID %d: %s"
-                    % (errno.errorcode[e.errno], pid, e.strerror)
+                    "check_pid(): Got errno %s when attempting to check PID %d: %s",
+                    errno.errorcode[e.errno],
+                    pid,
+                    e.strerror,
                 )
             return False
 
@@ -747,23 +751,27 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 return
             pid = int(pid)
             if not self.check_pid(pid):
-                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled", job.id, pid)
                 return
             for sig in [15, 9]:
                 try:
                     os.killpg(pid, sig)
                 except OSError as e:
                     log.warning(
-                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s"
-                        % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s",
+                        job.id,
+                        errno.errorcode[e.errno],
+                        sig,
+                        pid,
+                        e.strerror,
                     )
                     return  # give up
                 sleep(2)
                 if not self.check_pid(pid):
-                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
+                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d", job.id, pid, sig)
                     return
                 else:
-                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL", job.id, pid)
         else:
             # Remote kill
             pulsar_url = job.job_runner_name

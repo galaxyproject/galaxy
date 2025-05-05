@@ -246,8 +246,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/file_source_templates/{template_id}/new")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
-    webapp.add_client_route("/visualizations/edit")
+    webapp.add_client_route("/visualizations/create/{visualization}")
     webapp.add_client_route("/visualizations/display{path:.*?}")
+    webapp.add_client_route("/visualizations/edit")
     webapp.add_client_route("/visualizations/sharing")
     webapp.add_client_route("/visualizations/list_published")
     webapp.add_client_route("/visualizations/list")
@@ -284,7 +285,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/collection/{collection_id}/edit")
     webapp.add_client_route("/jobs/submission/success")
     webapp.add_client_route("/jobs/{job_id}/view")
-    webapp.add_client_route("/wizard")
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
     webapp.add_client_route("/workflows/list_shared_with_me")
@@ -618,6 +618,7 @@ def populate_api_routes(webapp, app):
         "/plugins/visualizations/{visualization_name}/saved",
         controller="visualization",
         action="saved",
+        conditions={"method": ["GET"]},
     )
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect(

@@ -8,18 +8,18 @@ import requests
 import yaml
 from gxformat2.yaml import ordered_load
 
-from galaxy.tool_util.models import (
-    OutputChecks,
-    OutputsDict,
-    TestDicts,
-    TestJobDict,
-)
 from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import verify_file_contents_against_dict
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     get_metadata_to_test,
     verify_collection,
+)
+from galaxy.tool_util_models import (
+    OutputChecks,
+    OutputsDict,
+    TestDicts,
+    TestJobDict,
 )
 from galaxy.util import asbool
 from galaxy_test.api._framework import ApiTestCase
@@ -64,14 +64,23 @@ class TestWorkflow(ApiTestCase):
         with workflow_path.open() as f:
             yaml_content = ordered_load(f)
         with self.dataset_populator.test_history() as history_id:
-            run_summary = self.workflow_populator.run_workflow(
-                yaml_content,
-                test_data=test_job["job"],
-                history_id=history_id,
-            )
-            if TEST_WORKFLOW_AFTER_RERUN:
-                run_summary = self.workflow_populator.rerun(run_summary)
-            self._verify(run_summary, test_job["outputs"])
+            exc = None
+            try:
+                run_summary = self.workflow_populator.run_workflow(
+                    yaml_content,
+                    test_data=test_job["job"],
+                    history_id=history_id,
+                )
+                if TEST_WORKFLOW_AFTER_RERUN:
+                    run_summary = self.workflow_populator.rerun(run_summary)
+                self._verify(run_summary, test_job["outputs"])
+            except Exception as e:
+                exc = e
+            if test_job.get("expect_failure"):
+                if not exc:
+                    raise Exception("Expected workflow test to fail but it passed")
+            elif exc:
+                raise exc
 
     def _verify(self, run_summary: RunJobsSummary, output_definitions: OutputsDict):
         for output_name, output_definition in output_definitions.items():
@@ -83,8 +92,8 @@ class TestWorkflow(ApiTestCase):
         )
         item_label = f"Output named {output_name}"
 
-        def get_filename(name):
-            return tempfile.NamedTemporaryFile(prefix=f"gx_workflow_framework_test_file_{output_name}", delete=False)
+        def get_filename(name: str) -> str:
+            return self.test_data_resolver.get_filename(name)
 
         def verify_dataset(dataset: dict, test_properties: OutputChecks):
             output_content = self.dataset_populator.get_history_dataset_content(

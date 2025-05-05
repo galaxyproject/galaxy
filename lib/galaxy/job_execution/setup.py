@@ -22,6 +22,7 @@ from galaxy.files import (
 from galaxy.job_execution.datasets import (
     DatasetPath,
     DatasetPathRewriter,
+    DeferrableObjectsT,
     get_path_rewriter,
 )
 from galaxy.model import (
@@ -148,7 +149,7 @@ class JobIO(UsesDictVisibleKeys):
         self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
 
     @property
-    def job(self):
+    def job(self) -> Job:
         return self.sa_session.get(Job, self.job_id)
 
     @classmethod
@@ -217,11 +218,19 @@ class JobIO(UsesDictVisibleKeys):
             filenames.append(ds.dataset.extra_files_path)
         return filenames
 
-    def get_input_datasets(self) -> List[DatasetInstance]:
+    def get_input_datasets(
+        self, materialized_objects: Optional[Dict[str, DeferrableObjectsT]] = None
+    ) -> List[DatasetInstance]:
         job = self.job
-        return [
-            da.dataset for da in job.input_datasets + job.input_library_datasets if da.dataset
-        ]  # da is JobToInputDatasetAssociation object
+        datasets: List[DatasetInstance] = []
+        for da in job.input_datasets + job.input_library_datasets:
+            if materialized_objects and da.name in materialized_objects:
+                materialized_object = materialized_objects[da.name]
+                if isinstance(materialized_object, DatasetInstance):
+                    datasets.append(materialized_object)
+            elif da.dataset:
+                datasets.append(da.dataset)
+        return datasets
 
     def get_input_fnames(self) -> List[str]:
         filenames = []
@@ -229,9 +238,9 @@ class JobIO(UsesDictVisibleKeys):
             filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
-    def get_input_paths(self) -> List[DatasetPath]:
+    def get_input_paths(self, materialized_objects: Optional[Dict[str, DeferrableObjectsT]]) -> List[DatasetPath]:
         paths = []
-        for ds in self.get_input_datasets():
+        for ds in self.get_input_datasets(materialized_objects):
             paths.append(self.get_input_path(ds))
         return paths
 

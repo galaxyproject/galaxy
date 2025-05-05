@@ -2,8 +2,9 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
-import { Activities } from "@/stores/activitySetup";
+import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
 import mountTarget from "./ActivitySettings.vue";
@@ -40,32 +41,33 @@ describe("ActivitySettings", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
-        activityStore = useActivityStore();
-        activityStore.sync();
+        activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
             props: {
                 query: "",
+                activityBarId: undefined,
             },
             stubs: {
-                icon: { template: "<div></div>" },
+                FontAwesomeIcon: { template: "<div></div>" },
             },
         });
+        await activityStore.sync();
     });
 
     it("availability of built-in activities", async () => {
         const items = wrapper.findAll(activityItemSelector);
-        const nOptional = Activities.filter((x) => x.optional).length;
+        const nOptional = defaultActivities.filter((x) => x.optional).length;
         expect(items.length).toBe(nOptional);
     });
 
     it("visible and optional activity", async () => {
         activityStore.setAll([testActivity("1")]);
-        await wrapper.vm.$nextTick();
+        await nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[title='Hide in Activity Bar']");
+        const checkbox = items.at(0).find("[data-title='Hide in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
         const icon = wrapper.find("[icon='activity-test-icon'");
         expect(icon.exists()).toBeTruthy();
@@ -85,12 +87,12 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[title='Show in Activity Bar']");
+        const checkbox = items.at(0).find("[data-title='Show in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeFalsy();
         checkbox.trigger("click");
         await wrapper.vm.$nextTick();
-        const visibleCheckbox = items.at(0).find("[title='Hide in Activity Bar']");
+        const visibleCheckbox = items.at(0).find("[data-title='Hide in Activity Bar']");
         expect(visibleCheckbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeTruthy();
     });
@@ -100,7 +102,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-icon='trash']");
+        const trash = items.at(0).find("[data-description='delete activity']");
         expect(trash.exists()).toBeTruthy();
         expect(activityStore.getAll().length).toBe(1);
         trash.trigger("click");

@@ -159,6 +159,10 @@ const fields: FieldArray = [
                     const historyStore = useHistoryStore();
                     historyStore.setCurrentHistory(String(data.id));
                 },
+                loading: () => {
+                    const historyStore = useHistoryStore();
+                    return historyStore.changingCurrentHistory;
+                },
             },
             {
                 title: "View",

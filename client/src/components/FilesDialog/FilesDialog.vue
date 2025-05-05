@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
@@ -20,10 +22,13 @@ import {
 } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { USER_FILE_PREFIX } from "@/utils/url";
 
 import { Model } from "./model";
 
+import GButton from "../BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 const filesSources = useFileSources();
@@ -43,6 +48,8 @@ interface FilesDialogProps {
     requireWritable?: boolean;
     /** Optional selected item to start browsing from */
     selectedItem?: SelectionItem;
+    /** Whether the dialog is visible at the start */
+    isOpen?: boolean;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -53,6 +60,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     requireWritable: false,
     selectedItem: undefined,
+    isOpen: true,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -65,7 +73,7 @@ const errorMessage = ref<string>();
 const filter = ref();
 const items = ref<SelectionItem[]>([]);
 const itemsProvider = ref<ItemsProvider>();
-const modalShow = ref(true);
+const modalShow = ref(props.isOpen);
 const optionsShow = ref(false);
 const undoShow = ref(false);
 const hasValue = ref(false);
@@ -95,6 +103,9 @@ const fileMode = computed(() => props.mode == "file");
 const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
+
+const fileSourceTemplatesStore = useFileSourceTemplatesStore();
+fileSourceTemplatesStore.ensureTemplates();
 
 /** Collects selected datasets in value array **/
 function clicked(record: SelectionItem) {
@@ -249,7 +260,9 @@ function load(record?: SelectionItem) {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
                     .map(fileSourcePluginToItem);
-                items.value = convertedItems;
+
+                const sortedItems = convertedItems.sort(sortPrivateFileSourcesFirst);
+                items.value = sortedItems;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = false;
@@ -295,6 +308,20 @@ function load(record?: SelectionItem) {
     }
 }
 
+function isPrivateFileSource(item: SelectionItem): boolean {
+    return item.url.startsWith(USER_FILE_PREFIX);
+}
+
+function sortPrivateFileSourcesFirst(a: SelectionItem, b: SelectionItem): number {
+    if (isPrivateFileSource(a) && !isPrivateFileSource(b)) {
+        return -1;
+    }
+    if (!isPrivateFileSource(a) && isPrivateFileSource(b)) {
+        return 1;
+    }
+    return 0;
+}
+
 /**
  * Check if the current file source supports server-side pagination.
  * If it does, we will use the items provider to fetch items.
@@ -318,7 +345,7 @@ async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<Se
             return [];
         }
         const limit = ctx.perPage;
-        const offset = (ctx.currentPage - 1) * ctx.perPage;
+        const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
         const query = ctx.filter;
         const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query);
         const result = response.entries.map(entryToRecord);
@@ -436,6 +463,19 @@ onMounted(() => {
                     form with your email to create a password for your account.</span
                 >
             </BAlert>
+        </template>
+        <template v-slot:buttons>
+            <!-- TODO: Change this to a `:to` router-link button -->
+            <GButton
+                v-if="fileSourceTemplatesStore.hasTemplates"
+                tooltip
+                size="small"
+                title="Create a new remote file source"
+                data-description="create new file source button"
+                href="/file_source_instances/create">
+                <FontAwesomeIcon :icon="faPlus" />
+                Create new
+            </GButton>
         </template>
     </SelectionDialog>
 </template>

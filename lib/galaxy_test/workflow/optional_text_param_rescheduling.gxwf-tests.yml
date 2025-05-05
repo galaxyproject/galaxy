@@ -1,0 +1,12 @@
+- doc: |
+    Test that scheduling succeeds even if step needs rescheduling
+  job:
+    optional_text:
+      type: raw
+      value: null
+  outputs:
+    out:
+      class: File
+      asserts:
+      - that: has_text
+        text: "null"

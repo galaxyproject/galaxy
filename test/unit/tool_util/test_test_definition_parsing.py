@@ -68,6 +68,21 @@ class TestTestParsing(TestCase):
         tool_source = get_tool_source(path)
         self.tool_source = tool_source
 
+    def test_maxseconds_not_filled_with_default(self):
+        self._init_tool_for_path(functional_test_tool_path("simple_constructs.xml"))
+        test_dicts = list(self._parse_tests())
+        assert test_dicts[0].maxseconds is None
+        assert "maxseconds" not in test_dicts[0].to_dict()
+
+    def test_maxseconds_parsed(self):
+        self._init_tool_for_path(functional_test_tool_path("maxseconds.xml"))
+        test_def = next(iter(self._parse_tests()))
+        assert test_def.maxseconds == 5
+        test_dict = test_def.to_dict()
+        print(test_dict)
+        assert "maxseconds" in test_dict
+        assert test_dict["maxseconds"] == 5
+
     def test_simple_state_parsing(self):
         self._init_tool_for_path(functional_test_tool_path("simple_constructs.xml"))
         test_dicts = self._parse_tests()

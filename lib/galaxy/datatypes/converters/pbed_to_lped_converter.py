@@ -49,7 +49,7 @@ def main():
     """
     nparm = 4
     if len(sys.argv) < nparm:
-        sys.exit("PBED to LPED converter called with %s - needs %d parameters \n" % (sys.argv, nparm))
+        sys.exit(f"PBED to LPED converter called with {sys.argv} - needs {nparm} parameters \n")
     inpedfilepath = sys.argv[1]
     outhtmlname = sys.argv[2]
     outfilepath = sys.argv[3]

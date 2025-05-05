@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
+import { BAlert, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -151,7 +151,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     <section id="archived-histories" class="d-flex flex-column">
         <div>
             <DelayedInput
-                :query="searchText"
+                :value="searchText"
                 class="m-1 mb-3"
                 placeholder="search by name"
                 @change="updateSearchQuery" />
@@ -165,16 +165,17 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                 You do not have any archived histories. You can select the 'Archive History' option from the history
                 menu to archive a history.
             </BAlert>
-            <BListGroup v-else>
-                <BListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
-                    <ArchivedHistoryCard
-                        :history="history"
-                        @onView="onViewHistoryInCenterPanel"
-                        @onSwitch="onSetAsCurrentHistory"
-                        @onRestore="onRestoreHistory"
-                        @onImportCopy="onImportCopy" />
-                </BListGroupItem>
-            </BListGroup>
+            <template v-else>
+                <ArchivedHistoryCard
+                    v-for="history in archivedHistories"
+                    :key="history.id"
+                    :history="history"
+                    @onView="onViewHistoryInCenterPanel"
+                    @onSwitch="onSetAsCurrentHistory"
+                    @onRestore="onRestoreHistory"
+                    @onImportCopy="onImportCopy" />
+            </template>
+
             <BPagination
                 v-if="showPagination"
                 v-model="currentPage"

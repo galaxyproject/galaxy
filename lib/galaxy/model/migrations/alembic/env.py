@@ -10,6 +10,7 @@ from alembic import context
 from alembic.script import ScriptDirectory
 from alembic.script.base import Script
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 from galaxy.model import Base
 from galaxy.model.migrations import (
@@ -111,17 +112,28 @@ def _configure_and_run_migrations_offline(url: str) -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-    with context.begin_transaction():
-        context.run_migrations()
+    _run_migrations()
 
 
 def _configure_and_run_migrations_online(url) -> None:
     engine = create_engine(url)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
-        with context.begin_transaction():
-            context.run_migrations()
+        _run_migrations()
     engine.dispose()
+
+
+def _run_migrations():
+    with context.begin_transaction():
+        try:
+            context.run_migrations()
+        except OperationalError as error:
+            if getattr(error.orig, "pgcode", None) == "40P01":  # PostgreSQL DeadlockDetected error detected
+                msg = """A deadlock has been detected. This may be due to a database
+revision requiring exclusive access to a database object. To avoid this error, it is recommended to
+shut down all Galaxy procesess during database migration."""
+                log.error(msg)
+                raise
 
 
 def _get_url_from_config() -> str:

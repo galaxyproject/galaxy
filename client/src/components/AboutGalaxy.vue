@@ -85,7 +85,7 @@ const versionUserDocumentationUrl = computed(() => {
                 <template v-if="config.version_extra">
                     <p v-localize>The server also provides the following extra version information</p>
                     <ul>
-                        <li v-for="(value, name, index) in config.version_extra" :key="index">
+                        <li v-for="([name, value], index) in Object.entries(config.version_extra)" :key="index">
                             <strong>{{ name }}</strong>
                             : {{ value }}
                         </li>

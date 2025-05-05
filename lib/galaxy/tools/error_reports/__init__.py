@@ -1,5 +1,4 @@
-"""This module defines the error reporting framework for Galaxy jobs.
-"""
+"""This module defines the error reporting framework for Galaxy jobs."""
 
 import collections
 import logging

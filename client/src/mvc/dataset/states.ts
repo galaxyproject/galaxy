@@ -2,7 +2,7 @@
 /** Map of possible HDA/collection/job states to their string equivalents.
  *      A port of galaxy.model.Dataset.states.
  */
-const STATES = {
+const RAW_STATES = {
     // NOT ready states
     /** is uploading and not ready */
     UPLOAD: "upload",
@@ -34,23 +34,31 @@ const STATES = {
     DEFERRED: "deferred",
     /** the tool producing this dataset failed */
     ERROR: "error",
-
-    READY_STATES: [] as string[],
-    NOT_READY_STATES: [] as string[],
 };
 
-STATES.READY_STATES = [
-    STATES.OK,
-    STATES.EMPTY,
-    STATES.PAUSED,
-    STATES.FAILED_METADATA,
-    STATES.NOT_VIEWABLE,
-    STATES.DEFERRED,
-    STATES.DISCARDED,
-    STATES.ERROR,
-];
-
-STATES.NOT_READY_STATES = [STATES.UPLOAD, STATES.QUEUED, STATES.RUNNING, STATES.SETTING_METADATA, STATES.NEW];
+const STATES = {
+    ...RAW_STATES,
+    READY_STATES: [
+        RAW_STATES.OK,
+        RAW_STATES.EMPTY,
+        RAW_STATES.PAUSED,
+        RAW_STATES.FAILED_METADATA,
+        RAW_STATES.NOT_VIEWABLE,
+        RAW_STATES.DEFERRED,
+        RAW_STATES.DISCARDED,
+        RAW_STATES.ERROR,
+    ],
+    NOT_READY_STATES: [
+        RAW_STATES.UPLOAD,
+        RAW_STATES.QUEUED,
+        RAW_STATES.RUNNING,
+        RAW_STATES.SETTING_METADATA,
+        RAW_STATES.NEW,
+    ],
+    VALID_INPUT_STATES: Object.values(RAW_STATES).filter(
+        (state) => ![RAW_STATES.ERROR, RAW_STATES.DISCARDED, RAW_STATES.FAILED_METADATA].includes(state)
+    ),
+};
 
 //==============================================================================
 export default STATES;

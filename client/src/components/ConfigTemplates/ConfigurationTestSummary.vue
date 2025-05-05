@@ -18,7 +18,7 @@ defineProps<Props>();
         <ConfigurationTestItem
             v-if="testResults?.oauth2_access_token_generation != null"
             :status="testResults?.oauth2_access_token_generation" />
-        <ConfigurationTestItem :status="testResults?.template_settings" />
-        <ConfigurationTestItem :status="testResults?.connection" />
+        <ConfigurationTestItem :status="testResults?.template_settings ?? undefined" />
+        <ConfigurationTestItem :status="testResults?.connection ?? undefined" />
     </BListGroup>
 </template>

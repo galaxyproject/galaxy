@@ -4,7 +4,7 @@
         :markdown-text="markdownText"
         :markdown-config="contentData"
         mode="page"
-        @onUpdate="onUpdate">
+        @update="onUpdate">
         <template v-slot:buttons>
             <ObjectPermissionsModal
                 id="object-permissions-modal"

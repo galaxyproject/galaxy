@@ -67,7 +67,7 @@ async function onCreate() {
 
         <div class="float-right">
             <AsyncButton
-                variant="primary"
+                color="blue"
                 :icon="faCheck"
                 title="Create workflow"
                 :disabled="workflowName.length === 0"

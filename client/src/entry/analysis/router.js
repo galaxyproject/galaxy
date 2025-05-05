@@ -21,6 +21,7 @@ import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/C
 import ToolLanding from "components/Landing/ToolLanding";
 import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageDisplay from "components/PageDisplay/PageDisplay";
+import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
@@ -34,6 +35,7 @@ import NotificationsPreferences from "components/User/Notifications/Notification
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
+import VisualizationCreate from "components/Visualizations/VisualizationCreate";
 import VisualizationFrame from "components/Visualizations/VisualizationFrame";
 import VisualizationPublished from "components/Visualizations/VisualizationPublished";
 import HistoryInvocations from "components/Workflow/HistoryInvocations";
@@ -62,6 +64,7 @@ import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateI
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
+import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -128,14 +131,6 @@ export function getRouter(Galaxy) {
                 path: "/login/start",
                 component: Login,
                 redirect: redirectLoggedIn(),
-            },
-            /** Page editor */
-            {
-                path: "/pages/editor",
-                component: PageEditor,
-                props: (route) => ({
-                    pageId: route.query.id,
-                }),
             },
             /** Workflow editor */
             {
@@ -238,6 +233,7 @@ export function getRouter(Galaxy) {
                         component: CenterFrame,
                         props: (route) => ({
                             src: `/datasets/${route.params.datasetId}/display/?preview=True`,
+                            isPreview: true,
                         }),
                     },
                     {
@@ -429,27 +425,25 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/create",
-                        component: FormGeneric,
-                        props: (route) => {
-                            let url = "/page/create";
-                            const invocation_id = route.query.invocation_id;
-                            if (invocation_id) {
-                                url += `?invocation_id=${invocation_id}`;
-                            }
-                            return {
-                                url: url,
-                                redirect: "/pages/list",
-                                active_tab: "user",
-                            };
-                        },
+                        component: PageForm,
+                        props: (route) => ({
+                            invocationId: route.query.invocation_id,
+                            mode: "create",
+                        }),
                     },
                     {
                         path: "pages/edit",
-                        component: FormGeneric,
+                        component: PageForm,
                         props: (route) => ({
-                            url: `/page/edit?id=${route.query.id}`,
-                            redirect: "/pages/list",
-                            active_tab: "user",
+                            id: route.query.id,
+                            mode: "edit",
+                        }),
+                    },
+                    {
+                        path: "/pages/editor",
+                        component: PageEditor,
+                        props: (route) => ({
+                            pageId: route.query.id,
                         }),
                     },
                     {
@@ -522,6 +516,7 @@ export function getRouter(Galaxy) {
                             public: route.query.public.toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
+                        beforeEnter: requireAuth,
                     },
                     {
                         path: "user",
@@ -575,6 +570,13 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             datasetId: route.query.dataset_id,
                         }),
+                    },
+                    {
+                        path: "visualizations/create/:visualization",
+                        component: VisualizationCreate,
+                        name: "VisualizationsCreate",
+                        props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "visualizations/display",
@@ -661,6 +663,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.params.invocationId,
                             isFullPage: true,
+                            success: Boolean(route.query.success),
                         }),
                     },
                     {

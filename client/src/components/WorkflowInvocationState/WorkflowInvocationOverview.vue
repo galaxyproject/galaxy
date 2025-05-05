@@ -15,7 +15,6 @@ import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMe
 interface Props {
     invocation: WorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
-    invocationSchedulingTerminal: boolean;
     isFullPage?: boolean;
     isSubworkflow?: boolean;
 }
@@ -62,7 +61,6 @@ const uniqueMessages = computed(() => {
                 :invocation="invocation"
                 :workflow="workflow"
                 :is-terminal="invocationAndJobTerminal"
-                :is-scheduled="invocationSchedulingTerminal"
                 :is-full-page="isFullPage"
                 :show-minimap="isFullPage" />
         </div>

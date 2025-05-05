@@ -124,7 +124,7 @@ watch(referencedHistoryDatasetCollectionIds, async () => {
             "Failed to fetch collection information",
             "Some referenced objects may not be listed."
         );
-        fetchCollectionSummary({ id: historyDatasetCollectionId })
+        fetchCollectionSummary({ hdca_id: historyDatasetCollectionId })
             .then((data) => {
                 const historyId = data.history_id;
                 Vue.set(historyDatasetCollectionsToHistories.value, historyDatasetCollectionId, historyId);

@@ -54,6 +54,7 @@ var ImportCollectionModal = Backbone.View.extend({
                         buttons: {
                             Continue: () => {
                                 this.showCollectionBuilder(checked_items.dataset_ids);
+                                Galaxy.modal.hide();
                             },
                             Close: () => {
                                 Galaxy.modal.hide();
@@ -106,17 +107,19 @@ var ImportCollectionModal = Backbone.View.extend({
     },
     collectionImport: function (collectionElements, historyId) {
         const collectionType = this.modal.$el.find("#library-collection-type-select").val();
-        let selection = null;
+        let selection = {};
         if (collectionType == "rules") {
-            selection = collectionElements;
             selection.selectionType = "library_datasets";
-        } else {
-            selection = {
-                models: collectionElements,
-            };
         }
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel.buildCollection(collectionType, selection, historyId);
+        selection = {
+            models: collectionElements,
+        };
+        if (collectionType === "rules") {
+            const Galaxy = getGalaxyInstance();
+            Galaxy.currHistoryPanel.buildCollectionFromRules(selection, historyId);
+        } else if (this.options.onCollectionImport) {
+            this.options.onCollectionImport(collectionType, selection, historyId);
+        }
     },
     templateCollectionSelectModal: function () {
         return _.template(

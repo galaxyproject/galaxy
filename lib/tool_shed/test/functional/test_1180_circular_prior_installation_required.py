@@ -79,7 +79,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0010_create_column_repository(self):
         """Create and populate convert_chars_0160."""
-        global running_standalone
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(
             name=column_repository_name,
@@ -98,7 +97,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0015_create_filtering_repository(self):
         """Create and populate filtering_0160."""
-        global running_standalone
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(
             name=filter_repository_name,
@@ -120,7 +118,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
         Each of the three repositories should depend on the other two, to make this as circular as possible.
         """
-        global running_standalone
         filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)

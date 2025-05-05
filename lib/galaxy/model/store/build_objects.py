@@ -2,6 +2,10 @@ import argparse
 import logging
 import os
 import sys
+from typing import (
+    Dict,
+    Type,
+)
 
 import yaml
 
@@ -103,18 +107,15 @@ def main(argv=None):
     if export_type is None:
         export_type = "directory" if not export_path.endswith(".tgz") else "bag_archive"
 
-    export_types = {
+    export_types: Dict[str, Type[store.DirectoryModelExportStore]] = {
         "directory": store.DirectoryModelExportStore,
         "tar": store.TarModelExportStore,
         "bag_directory": store.BagDirectoryModelExportStore,
         "bag_archive": store.BagArchiveModelExportStore,
     }
     store_class = export_types[export_type]
-    export_kwds = {
-        "serialize_dataset_objects": True,
-    }
 
-    with store_class(export_path, **export_kwds) as export_store:
+    with store_class(export_path, serialize_dataset_objects=True) as export_store:
         for target in targets:
             persist_target_to_export_store(target, export_store, object_store, ".")
 

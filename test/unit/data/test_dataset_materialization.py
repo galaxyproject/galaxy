@@ -10,7 +10,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     store,
 )
-from galaxy.model.base import transaction
 from galaxy.model.deferred import (
     materialize_collection_instance,
     materializer_factory,
@@ -34,8 +33,7 @@ def test_undeferred_hdas_untouched(tmpdir):
     hda_fh = tmpdir.join("file.txt")
     hda_fh.write("Moo Cow")
     hda = _create_hda(sa_session, app.object_store, history, hda_fh, include_metadata_file=False)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     materializer = materializer_factory(True, object_store=app.object_store)
     assert materializer.ensure_materialized(hda) == hda
@@ -365,8 +363,7 @@ def _test_hdca(
     )
     sa_session.add(hdca)
     sa_session.add(collection)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     return hdca
 
 
@@ -374,6 +371,7 @@ def _deferred_element_count(dataset_collection: DatasetCollection) -> int:
     count = 0
     for element in dataset_collection.elements:
         if element.is_collection:
+            assert element.child_collection
             count += _deferred_element_count(element.child_collection)
         else:
             dataset_instance = element.dataset_instance

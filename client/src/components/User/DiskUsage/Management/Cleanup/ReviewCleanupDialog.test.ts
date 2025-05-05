@@ -42,7 +42,7 @@ const FAKE_OPERATION: CleanupOperation = {
 };
 
 async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalItems = EXPECTED_TOTAL_ITEMS) {
-    const wrapper = mount(ReviewCleanupDialog, {
+    const wrapper = mount(ReviewCleanupDialog as object, {
         propsData: { operation, totalItems, show: true, modalStatic: true },
         localVue,
     });

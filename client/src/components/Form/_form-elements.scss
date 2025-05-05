@@ -38,25 +38,4 @@
         position: relative;
         margin-top: $margin-v * 0.25;
     }
-
-    &:deep(.ui-form-collapsible-icon),
-    &:deep(.ui-form-connected-icon) {
-        border: none;
-        background: none;
-        padding: 0;
-        line-height: 1;
-        font-size: 1.2em;
-
-        &:hover {
-            color: $brand-info;
-        }
-
-        &:focus {
-            color: $brand-primary;
-        }
-
-        &:active {
-            background: none;
-        }
-    }
 }

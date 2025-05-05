@@ -23,9 +23,9 @@ class TestVisualizations(SeleniumTestCase):
         dataset_component = self.history_panel_click_item_title(hid, wait=True)
         dataset_component.visualize_button.wait_for_and_click()
 
-        self.components.visualization.plugin_item(id="annotate_image").wait_for_visible()
+        self.components.visualization.matched_plugin(id="annotate_image").wait_for_visible()
         self.screenshot("visualization_plugins_png")
-        self.components.visualization.plugin_item(id="annotate_image").wait_for_and_click()
+        self.components.visualization.matched_plugin(id="annotate_image").wait_for_and_click()
 
         with self.visualization_panel():
             self.wait_for_selector("#image-annotate")
@@ -40,9 +40,9 @@ class TestVisualizations(SeleniumTestCase):
         dataset_component = self.history_panel_click_item_title(hid, wait=True)
         dataset_component.visualize_button.wait_for_and_click()
 
-        self.components.visualization.plugin_item(id="nvd3_bar").wait_for_visible()
+        self.components.visualization.matched_plugin(id="nvd3_bar").wait_for_visible()
         self.screenshot("visualization_plugins_sam")
-        self.components.visualization.plugin_item(id="nvd3_bar").wait_for_and_click()
+        self.components.visualization.matched_plugin(id="nvd3_bar").wait_for_and_click()
 
         with self.visualization_panel():
             self.wait_for_selector("g.nvd3")
@@ -58,9 +58,9 @@ class TestVisualizations(SeleniumTestCase):
         dataset_component = self.history_panel_click_item_title(hid, wait=True)
         dataset_component.visualize_button.wait_for_and_click()
 
-        self.components.visualization.plugin_item(id="h5web").wait_for_visible()
+        self.components.visualization.matched_plugin(id="h5web").wait_for_visible()
         self.screenshot("visualization_plugins_h5")
-        self.components.visualization.plugin_item(id="h5web").wait_for_and_click()
+        self.components.visualization.matched_plugin(id="h5web").wait_for_and_click()
 
         with self.visualization_panel():
             # Look for the h5web-explorer-tree identifier to verify it loads.

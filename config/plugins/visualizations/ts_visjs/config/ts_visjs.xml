@@ -1,16 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Transition system visualization" embeddable="false">
-    <description>- visjs-based interactive visualization of transition system in graph form.</description>
+<visualization name="Transition System" embeddable="true">
+    <description>Interactive Flow Graph Diagram</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">text.BCSLts</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">bcsl.ts</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="mako">ts_visjs.mako</entry_point>
+    <requirements>
+        <requirement type="npm" version="0.0.5" package="@galaxyproject/ts_visjs"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.bcsl.ts" ftype="bcsl.ts" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is the Transition System?
+
+The **Transition System Visualization** displays datasets as dynamic flow diagrams, showing how one system state transitions into another. Each state is represented as a labeled node, and transitions are shown as directional arrows with optional rates.
+
+This visualization is helpful for understanding:
+- State-based models such as **automata**, **Petri nets**, or **biological process simulations**.
+- How states evolve through reactions or transitions.
+- Which states are terminal or unreachable.
+
+#### Key Features
+
+- **Interactive Graph**: Zoom, drag, and explore transitions between system states.
+- **Readable Labels**: Each node shows the components of a state in a readable breakdown.
+    ]]></help>
 </visualization>
