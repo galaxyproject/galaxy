@@ -704,7 +704,7 @@ class ToolBox(AbstractToolBox):
         """
         id = self.app.security.decode_id(workflow_id)
         session = self.app.model.context
-        stored = session.get(StoredWorkflow, id)
+        stored = session.get_one(StoredWorkflow, id)
         return stored.latest_workflow
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
