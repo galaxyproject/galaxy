@@ -112,6 +112,9 @@ useAccessibleHover(
         tooltipRef.value?.hide();
     }
 );
+const nativeDisabledAttrs = computed(() => {
+    return baseComponent.value === "button" && props.disabled ? { disabled: true } : {};
+});
 </script>
 
 <template>
@@ -126,7 +129,7 @@ useAccessibleHover(
         :title="currentTitle"
         :aria-describedby="describedBy"
         :aria-disabled="props.disabled"
-        v-bind="$attrs"
+        v-bind="{ ...$attrs, ...nativeDisabledAttrs }"
         @click="onClick">
         <slot></slot>
 
