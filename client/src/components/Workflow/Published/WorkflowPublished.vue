@@ -188,7 +188,6 @@ defineExpose({
     .published-workflow {
         display: grid;
         gap: 0.5rem 1rem;
-        grid-template-rows: max-content;
         grid-template-columns: auto auto 30%;
 
         height: 100%;

@@ -113,14 +113,8 @@ defineExpose({ showModal, hideModal });
                     {{ props.title }}
                 </Heading>
                 <slot name="header"></slot>
-                <GButton
-                    icon-only
-                    inline
-                    class="g-modal-close-button"
-                    size="large"
-                    transparent
-                    @click="hideModal(false)">
-                    <FontAwesomeIcon :icon="faXmark" />
+                <GButton icon-only class="g-modal-close-button" transparent size="large" @click="hideModal(false)">
+                    <FontAwesomeIcon fixed-width :icon="faXmark" />
                 </GButton>
             </header>
 

@@ -9,6 +9,7 @@ import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowRename from "./WorkflowRename.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 
 interface Props {
     workflows: WorkflowSummary[];
@@ -77,6 +78,8 @@ function onInsert(workflow: WorkflowSummary) {
 function onInsertSteps(workflow: WorkflowSummary) {
     emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
 }
+
+const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </script>
 
 <template>
@@ -115,7 +118,20 @@ function onInsertSteps(workflow: WorkflowSummary) {
             hide-header
             dialog-class="workflow-card-preview-modal w-auto"
             centered>
-            <WorkflowPublished v-if="showPreview" :id="modalOptions.preview.id" :show-heading="false" quick-view />
+            <template v-slot:header>
+                <WorkflowPublishedButtons
+                    v-if="workflowPublished?.workflowInfo"
+                    :id="modalOptions.preview.id"
+                    :workflow-info="workflowPublished?.workflowInfo" />
+            </template>
+
+            <WorkflowPublished
+                v-if="showPreview"
+                :id="modalOptions.preview.id"
+                ref="workflowPublished"
+                :show-heading="false"
+                :show-buttons="false"
+                quick-view />
         </GModal>
     </div>
 </template>
