@@ -7,6 +7,10 @@ from .framework import (
     UsesHistoryItemAssertions,
 )
 
+REMOTE_ZIP_URL = (
+    "https://raw.githubusercontent.com/davelopez/ro-crate-zip-explorer/refs/heads/main/tests/test-data/rocrate-test.zip"
+)
+
 
 class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
@@ -23,13 +27,26 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         self.expect_history_item_to_be_imported(hid=1, name="README.txt")
 
     @selenium_test
-    @skip_if_github_down
-    def test_import_from_remote_zip(self):
-        remote_zip_url = "https://raw.githubusercontent.com/davelopez/ro-crate-zip-explorer/refs/heads/main/tests/test-data/rocrate-test.zip"
+    def test_explore_from_local_upload(self):
         self.login()
         self.ensure_empty_history()
         self.upload_start_click()
-        self.explore_remote_zip(remote_zip_url)
+        self.upload_queue_local_file(self.get_filename("example-bag.zip"))
+        self.components.upload.explore_archive_button.wait_for_and_click()
+        self.expect_total_number_of_files_to_be(8)
+        self.go_to_next_step()
+        self.select_file_entry(file_path="test-bag-fetch-http/data/README.txt")
+        self.go_to_next_step()
+        self.expect_number_of_files_to_import(1)
+        self.start_importing_files()
+        self.expect_history_item_to_be_imported(hid=1, name="README.txt")
+
+    @selenium_test
+    @skip_if_github_down
+    def test_import_from_remote_zip(self):
+        self.login()
+        self.ensure_empty_history()
+        self.explore_remote_zip(REMOTE_ZIP_URL)
         self.go_to_next_step()
         self.wait_for_loading_indicator_to_finish()
         self.expect_preview_title_to_be("Simple Workflow")
@@ -42,6 +59,17 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         self.start_importing_files()
         self.expect_history_item_to_be_imported(hid=1, name="Trim on data 1")
         self.expect_workflow_to_be_imported_with_name(name="Simple Workflow")
+
+    @selenium_test
+    @skip_if_github_down
+    def test_explore_remote_zip_paste_url(self):
+        self.login()
+        self.ensure_empty_history()
+        self.upload_start_click()
+        self.upload_paste_data(REMOTE_ZIP_URL)
+        self.components.upload.explore_archive_button.wait_for_and_click()
+        self.wait_for_loading_indicator_to_finish()
+        self.expect_preview_title_to_be("Simple Workflow")
 
     # Helper methods
     # ------------------------------------------------------------------

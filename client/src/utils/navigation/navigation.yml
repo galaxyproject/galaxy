@@ -1200,7 +1200,7 @@ upload:
     start: '#activity-upload'
     start_button: '#regular #btn-start'
     local_button: '#btn-local'
-    explore_archive_button: '#btn-explore-archive'
+    explore_archive_button: '.btn-explore-archive'
 
 new_user_welcome:
   selectors:

@@ -200,7 +200,7 @@ initializeExplorableArchive();
             </div>
             <GButton
                 v-if="isExplorable"
-                id="btn-explore-archive"
+                class="btn-explore-archive"
                 size="small"
                 title="Explore the contents of a remote or local compressed archive and upload individual files"
                 :disabled="isAnonymous"
